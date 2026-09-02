@@ -24,7 +24,7 @@ fmt.Println(string(screen)) // hello\nworld
 | Path | Contents |
 |---|---|
 | `*_gen.go` | The public Go package, at the module root. Generated; do not edit. |
-| `internal/raw/` | Generated cgo call layer. Not part of the supported API. |
+| `internal/raw/` | Generated cgo call layer. Not part of the supported API. `zigo_link_inputs_gen.go` there is machine-local and not committed. |
 | `zig/build.zig` | Build definition: ghostty dependency, zigo wiring, link fixups. |
 | `zig/src/bindings.zig` | What is exposed to Go. |
 | `zig/src/root.zig` | The few declarations ghostty does not provide and zigo needs. |
@@ -62,14 +62,16 @@ toolchain — but the native archive is not, so a fresh checkout must run
 - Every handle has an idempotent `Close`. Calls after `Close` return
   `ErrInvalidHandle` rather than touching freed memory.
 - **A `Stream` must be closed before the `Terminal` it feeds.** ghostty's
-  handler reaches through the terminal for its allocator when it tears down, so
-  the reverse order is a use-after-free. Nothing enforces this for you.
+  handler reaches through the terminal for its allocator when it tears down.
+  The binding declares the stream a child of its terminal, so closing the
+  terminal first returns `ErrHandleInUse` instead of corrupting memory.
 
 ## Status
 
-Early. The bound surface is a useful slice of libghostty-vt — terminal state,
-VT stream parsing, cursor, unicode width — not all of it. SIMD is currently
-disabled; see `docs/zigo-findings.md`.
+Early. The bound surface is a useful slice of libghostty-vt — terminal state
+and editing, VT stream parsing, cursor and charsets, unicode width — not all of
+it. Input encoding (keys, mouse, paste) is not bound yet. See
+`docs/zigo-findings.md` for what is blocked and why.
 
 ## License
 

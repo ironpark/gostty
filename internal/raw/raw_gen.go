@@ -6,7 +6,6 @@ package raw
 
 /*
 #cgo CFLAGS: -I${SRCDIR}/../../zig/zig-out/include
-#cgo LDFLAGS: ${SRCDIR}/../../zig/zig-out/lib/libgostty_zigo.a ${SRCDIR}/../../zig/zig-out/lib/libubsan_rt.a
 #include "zigo_gostty.h"
 */
 import "C"
@@ -435,6 +434,17 @@ func TerminalPrintRepeat(self unsafe.Pointer, countReq uint) int32 {
 	return code
 }
 
+// TerminalPrintSlice calls the generated C ABI wrapper for zg_terminal_print_slice.
+func TerminalPrintSlice(self unsafe.Pointer, cps []uint32) int32 {
+	var cpsZero C.uint32_t
+	cpsPtr := &cpsZero
+	if len(cps) != 0 {
+		cpsPtr = (*C.uint32_t)(unsafe.Pointer(&cps[0]))
+	}
+	code := int32(C.zg_terminal_print_slice((*C.zg_terminal)(self), cpsPtr, C.size_t(len(cps))))
+	return code
+}
+
 // TerminalPlainStringUnwrapped calls the generated C ABI wrapper for zg_terminal_plain_string_unwrapped.
 func TerminalPlainStringUnwrapped(self unsafe.Pointer) ([]uint8, int32) {
 	var outResultPtr *C.uint8_t
@@ -504,6 +514,48 @@ func TerminalSetTitle(self unsafe.Pointer, t []uint8) int32 {
 // TerminalSetProtectedMode calls the generated C ABI wrapper for zg_terminal_set_protected_mode.
 func TerminalSetProtectedMode(self unsafe.Pointer, mode uint8) int32 {
 	code := int32(C.zg_terminal_set_protected_mode((*C.zg_terminal)(self), C.uint8_t(mode)))
+	return code
+}
+
+// TerminalSetDefaultCursorStyle calls the generated C ABI wrapper for zg_terminal_set_default_cursor_style.
+func TerminalSetDefaultCursorStyle(self unsafe.Pointer, configuredStyle uint8) int32 {
+	code := int32(C.zg_terminal_set_default_cursor_style((*C.zg_terminal)(self), C.uint8_t(configuredStyle)))
+	return code
+}
+
+// TerminalSetDefaultCursorBlink calls the generated C ABI wrapper for zg_terminal_set_default_cursor_blink.
+func TerminalSetDefaultCursorBlink(self unsafe.Pointer, blink *uint8) int32 {
+	var blinkValue C.uint8_t
+	var blinkPtr *C.uint8_t
+	if blink != nil {
+		blinkValue = C.uint8_t(*blink)
+		blinkPtr = &blinkValue
+	}
+	code := int32(C.zg_terminal_set_default_cursor_blink((*C.zg_terminal)(self), blinkPtr))
+	return code
+}
+
+// TerminalConfigureCharset calls the generated C ABI wrapper for zg_terminal_configure_charset.
+func TerminalConfigureCharset(self unsafe.Pointer, slot uint8, set uint8) int32 {
+	code := int32(C.zg_terminal_configure_charset((*C.zg_terminal)(self), C.uint8_t(slot), C.uint8_t(set)))
+	return code
+}
+
+// TerminalInvokeCharset calls the generated C ABI wrapper for zg_terminal_invoke_charset.
+func TerminalInvokeCharset(self unsafe.Pointer, active uint8, slot uint8, single uint8) int32 {
+	code := int32(C.zg_terminal_invoke_charset((*C.zg_terminal)(self), C.uint8_t(active), C.uint8_t(slot), C.uint8_t(single)))
+	return code
+}
+
+// TerminalDeccolm calls the generated C ABI wrapper for zg_terminal_deccolm.
+func TerminalDeccolm(self unsafe.Pointer, mode uint8) int32 {
+	code := int32(C.zg_terminal_deccolm((*C.zg_terminal)(self), C.uint8_t(mode)))
+	return code
+}
+
+// TerminalScrollViewport calls the generated C ABI wrapper for zg_terminal_scroll_viewport.
+func TerminalScrollViewport(self unsafe.Pointer, behavior_tag uint8, behavior_delta int, behavior_row uint) int32 {
+	code := int32(C.zg_terminal_scroll_viewport((*C.zg_terminal)(self), C.uint8_t(behavior_tag), C.ptrdiff_t(behavior_delta), C.size_t(behavior_row)))
 	return code
 }
 

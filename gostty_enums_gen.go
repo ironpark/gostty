@@ -187,3 +187,137 @@ func (value ProtectedMode) String() string {
 		return "ProtectedMode(" + strconv.Itoa(int(value)) + ")"
 	}
 }
+
+// Charset represents the corresponding Zig enum.
+type Charset uint8
+
+const (
+	// CharsetUTF8 corresponds to the Zig tag utf8.
+	CharsetUTF8 Charset = 0
+	// CharsetAscii corresponds to the Zig tag ascii.
+	CharsetAscii Charset = 1
+	// CharsetBritish corresponds to the Zig tag british.
+	CharsetBritish Charset = 2
+	// CharsetDecSpecial corresponds to the Zig tag dec_special.
+	CharsetDecSpecial Charset = 3
+)
+
+// String returns the Zig tag name.
+func (value Charset) String() string {
+	switch value {
+	case CharsetUTF8:
+		return "utf8"
+	case CharsetAscii:
+		return "ascii"
+	case CharsetBritish:
+		return "british"
+	case CharsetDecSpecial:
+		return "dec_special"
+	default:
+		return "Charset(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// CharsetSlot represents the corresponding Zig enum.
+type CharsetSlot uint8
+
+const (
+	// CharsetSlotG0 corresponds to the Zig tag G0.
+	CharsetSlotG0 CharsetSlot = 0
+	// CharsetSlotG1 corresponds to the Zig tag G1.
+	CharsetSlotG1 CharsetSlot = 1
+	// CharsetSlotG2 corresponds to the Zig tag G2.
+	CharsetSlotG2 CharsetSlot = 2
+	// CharsetSlotG3 corresponds to the Zig tag G3.
+	CharsetSlotG3 CharsetSlot = 3
+)
+
+// String returns the Zig tag name.
+func (value CharsetSlot) String() string {
+	switch value {
+	case CharsetSlotG0:
+		return "G0"
+	case CharsetSlotG1:
+		return "G1"
+	case CharsetSlotG2:
+		return "G2"
+	case CharsetSlotG3:
+		return "G3"
+	default:
+		return "CharsetSlot(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// CharsetActiveSlot represents the corresponding Zig enum.
+type CharsetActiveSlot uint8
+
+const (
+	// CharsetActiveSlotGl corresponds to the Zig tag GL.
+	CharsetActiveSlotGl CharsetActiveSlot = 0
+	// CharsetActiveSlotGr corresponds to the Zig tag GR.
+	CharsetActiveSlotGr CharsetActiveSlot = 1
+)
+
+// String returns the Zig tag name.
+func (value CharsetActiveSlot) String() string {
+	switch value {
+	case CharsetActiveSlotGl:
+		return "GL"
+	case CharsetActiveSlotGr:
+		return "GR"
+	default:
+		return "CharsetActiveSlot(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// DeccolmMode represents the corresponding Zig enum.
+type DeccolmMode uint8
+
+const (
+	// DeccolmMode80Cols corresponds to the Zig tag 80_cols.
+	DeccolmMode80Cols DeccolmMode = 0
+	// DeccolmMode132Cols corresponds to the Zig tag 132_cols.
+	DeccolmMode132Cols DeccolmMode = 1
+)
+
+// String returns the Zig tag name.
+func (value DeccolmMode) String() string {
+	switch value {
+	case DeccolmMode80Cols:
+		return "80_cols"
+	case DeccolmMode132Cols:
+		return "132_cols"
+	default:
+		return "DeccolmMode(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// ScrollViewportTag represents the corresponding Zig enum.
+type ScrollViewportTag uint8
+
+const (
+	// ScrollViewportTagTop corresponds to the Zig tag top.
+	ScrollViewportTagTop ScrollViewportTag = 0
+	// ScrollViewportTagBottom corresponds to the Zig tag bottom.
+	ScrollViewportTagBottom ScrollViewportTag = 1
+	// ScrollViewportTagDelta corresponds to the Zig tag delta.
+	ScrollViewportTagDelta ScrollViewportTag = 2
+	// ScrollViewportTagRow corresponds to the Zig tag row.
+	ScrollViewportTagRow ScrollViewportTag = 3
+)
+
+// String returns the Zig tag name.
+func (value ScrollViewportTag) String() string {
+	switch value {
+	case ScrollViewportTagTop:
+		return "top"
+	case ScrollViewportTagBottom:
+		return "bottom"
+	case ScrollViewportTagDelta:
+		return "delta"
+	case ScrollViewportTagRow:
+		return "row"
+	default:
+		return "ScrollViewportTag(" + strconv.Itoa(int(value)) + ")"
+	}
+}

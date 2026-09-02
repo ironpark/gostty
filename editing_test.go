@@ -272,3 +272,123 @@ func TestGraphemeWidth(t *testing.T) {
 		}
 	}
 }
+
+func TestPrintSlice(t *testing.T) {
+	term := newTerm(t, 10, 2)
+	if err := term.PrintSlice([]uint32{'h', 'i', 0xAC00}); err != nil {
+		t.Fatalf("PrintSlice: %v", err)
+	}
+	if got, want := screen(t, term), "hi가"; got != want {
+		t.Errorf("screen = %q, want %q", got, want)
+	}
+}
+
+func TestDeccolm(t *testing.T) {
+	term := newTerm(t, 80, 5)
+	// DECCOLM is ignored unless DEC mode 40 is enabled, so this only checks
+	// that the call crosses the boundary and leaves the terminal usable.
+	if err := term.Deccolm(DeccolmMode132Cols); err != nil {
+		t.Fatalf("Deccolm(132): %v", err)
+	}
+	if err := term.Deccolm(DeccolmMode80Cols); err != nil {
+		t.Fatalf("Deccolm(80): %v", err)
+	}
+	if cols, err := term.Cols(); err != nil || cols != 80 {
+		t.Errorf("Cols() = %d, %v; want 80, nil", cols, err)
+	}
+}
+
+func TestScrollViewport(t *testing.T) {
+	term := newTerm(t, 10, 2)
+	for i := range 6 {
+		if err := term.PrintString([]byte{byte('a' + i)}); err != nil {
+			t.Fatalf("PrintString: %v", err)
+		}
+		if err := term.Index(); err != nil {
+			t.Fatalf("Index: %v", err)
+		}
+		if err := term.CarriageReturn(); err != nil {
+			t.Fatalf("CarriageReturn: %v", err)
+		}
+	}
+
+	if err := term.ScrollViewport(ScrollViewportTop()); err != nil {
+		t.Fatalf("ScrollViewport(top): %v", err)
+	}
+	top := screen(t, term)
+	if !strings.Contains(top, "a") {
+		t.Errorf("viewport at top = %q, want it to show the oldest row", top)
+	}
+
+	if err := term.ScrollViewport(ScrollViewportBottom()); err != nil {
+		t.Fatalf("ScrollViewport(bottom): %v", err)
+	}
+	bottom := screen(t, term)
+	if strings.Contains(bottom, "a") {
+		t.Errorf("viewport at bottom = %q, want the oldest row scrolled off", bottom)
+	}
+
+	if err := term.ScrollViewport(ScrollViewportDelta(-2)); err != nil {
+		t.Fatalf("ScrollViewport(delta): %v", err)
+	}
+	if screen(t, term) == bottom {
+		t.Error("ScrollViewport(delta -2) did not move the viewport")
+	}
+	if err := term.ScrollViewport(ScrollViewportRow(0)); err != nil {
+		t.Fatalf("ScrollViewport(row): %v", err)
+	}
+	if got := screen(t, term); got != top {
+		t.Errorf("ScrollViewport(row 0) = %q, want the same as top %q", got, top)
+	}
+}
+
+func TestSetDefaultCursor(t *testing.T) {
+	term := newTerm(t, 10, 2)
+	if err := term.SetDefaultCursorStyle(CursorStyleUnderline); err != nil {
+		t.Fatalf("SetDefaultCursorStyle: %v", err)
+	}
+	got, err := term.CursorStyle()
+	if err != nil {
+		t.Fatalf("CursorStyle: %v", err)
+	}
+	if got != CursorStyleUnderline {
+		t.Errorf("CursorStyle() = %v, want %v", got, CursorStyleUnderline)
+	}
+
+	// ?bool: nil selects the emulator default.
+	if err := term.SetDefaultCursorBlink(nil); err != nil {
+		t.Fatalf("SetDefaultCursorBlink(nil): %v", err)
+	}
+	blink := true
+	if err := term.SetDefaultCursorBlink(&blink); err != nil {
+		t.Fatalf("SetDefaultCursorBlink(&true): %v", err)
+	}
+}
+
+// Charset, CharsetSlot and CursorStyle are all four-tag comptime enums whose
+// truncated @typeName is one string; each parameter must still get its own type.
+func TestCharsets(t *testing.T) {
+	term := newTerm(t, 10, 2)
+	if err := term.ConfigureCharset(CharsetSlotG1, CharsetDecSpecial); err != nil {
+		t.Fatalf("ConfigureCharset: %v", err)
+	}
+	if err := term.InvokeCharset(CharsetActiveSlotGl, CharsetSlotG1, false); err != nil {
+		t.Fatalf("InvokeCharset: %v", err)
+	}
+	// DEC special graphics maps `q` to a horizontal line.
+	if err := term.PrintString([]byte("q")); err != nil {
+		t.Fatalf("PrintString: %v", err)
+	}
+	if got, want := screen(t, term), "\u2500"; got != want {
+		t.Errorf("screen = %q, want %q", got, want)
+	}
+}
+
+func TestScrollViewportTag(t *testing.T) {
+	if got := ScrollViewportDelta(-3).Tag(); got != ScrollViewportTagDelta {
+		t.Errorf("Tag() = %v, want %v", got, ScrollViewportTagDelta)
+	}
+	if got := ScrollViewportTop().Tag().String(); got != "top" {
+		t.Errorf("Tag().String() = %q, want %q", got, "top")
+	}
+}

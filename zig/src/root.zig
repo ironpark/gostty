@@ -39,14 +39,19 @@ pub const CursorStyleReq = @typeInfo(@TypeOf(Terminal.setCursorStyle)).@"fn".par
 
 /// A VT stream: parses escape sequences and applies them to a `Terminal`.
 ///
-/// A stream borrows its terminal and must be closed before it. ghostty's
-/// `Handler.deinit` reaches through the terminal for its allocator, so closing
-/// the terminal first is a use-after-free. zigo has no way to express that
-/// ordering between two independent handles, so it is the caller's contract.
+/// A stream borrows its terminal and must be closed before it: ghostty's
+/// `Handler.deinit` reaches through the terminal for its allocator. The binding
+/// declares the stream a child of its terminal, so closing the terminal first is
+/// refused rather than left to the caller to get right.
 pub const Stream = vt.TerminalStream;
 
 pub const ProtectedMode = vt.ProtectedMode;
 
+pub const Charset = vt.Charset;
+pub const CharsetSlot = vt.CharsetSlot;
+pub const CharsetActiveSlot = vt.CharsetActiveSlot;
+pub const DeccolmMode = Terminal.DeccolmMode;
+pub const ScrollViewport = Terminal.ScrollViewport;
 pub const EraseDisplay = vt.EraseDisplay;
 pub const EraseLine = vt.EraseLine;
 pub const TabClear = vt.TabClear;

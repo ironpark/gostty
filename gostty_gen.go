@@ -61,16 +61,23 @@ func NewTerminal(width uint16, height uint16) (*Terminal, error) {
 func (t *Terminal) NewStream(continuationMaxBytes uint) (*Stream, error) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
-	ptr, err := zigoCheckedPointer("Terminal.NewStream receiver", t)
+	ptr, err := t.zigoAcquireChild("Terminal.NewStream receiver")
 	if err != nil {
 		return nil, err
 	}
-	defer t.zigoRelease()
+	zigoChildCreated := false
+	defer func() {
+		t.zigoRelease()
+		if !zigoChildCreated {
+			t.zigoDropChild()
+		}
+	}()
 	result, code := raw.TerminalNewStream(ptr, continuationMaxBytes)
 	if code != 0 {
 		return nil, zigoPoisonAfterPanic(errorForCode("Terminal.NewStream", code), t)
 	}
-	return newStream(result), nil
+	zigoChildCreated = true
+	return newStream(result, t), nil
 }
 
 // Failed calls the Zig function Stream.failed.
@@ -824,6 +831,24 @@ func (t *Terminal) PrintRepeat(countReq uint) error {
 	return nil
 }
 
+// PrintSlice calls the Zig function Terminal.printSlice.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (t *Terminal) PrintSlice(cps []uint32) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Terminal.PrintSlice receiver", t)
+	if err != nil {
+		return err
+	}
+	defer t.zigoRelease()
+	code := raw.TerminalPrintSlice(ptr, cps)
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Terminal.PrintSlice", code), t)
+	}
+	return nil
+}
+
 // PlainStringUnwrapped calls the Zig function Terminal.plainStringUnwrapped.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
@@ -928,6 +953,119 @@ func (t *Terminal) SetProtectedMode(mode ProtectedMode) error {
 	code := raw.TerminalSetProtectedMode(ptr, uint8(mode))
 	if code != 0 {
 		return zigoPoisonAfterPanic(errorForCode("Terminal.SetProtectedMode", code), t)
+	}
+	return nil
+}
+
+// SetDefaultCursorStyle calls the Zig function Terminal.setDefaultCursorStyle.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (t *Terminal) SetDefaultCursorStyle(configuredStyle CursorStyle) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Terminal.SetDefaultCursorStyle receiver", t)
+	if err != nil {
+		return err
+	}
+	defer t.zigoRelease()
+	code := raw.TerminalSetDefaultCursorStyle(ptr, uint8(configuredStyle))
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Terminal.SetDefaultCursorStyle", code), t)
+	}
+	return nil
+}
+
+// SetDefaultCursorBlink calls the Zig function Terminal.setDefaultCursorBlink.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (t *Terminal) SetDefaultCursorBlink(blink *bool) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Terminal.SetDefaultCursorBlink receiver", t)
+	if err != nil {
+		return err
+	}
+	defer t.zigoRelease()
+	var blinkRaw *uint8
+	if blink != nil {
+		blinkRawValue := boolToUint8(*blink)
+		blinkRaw = &blinkRawValue
+	}
+	code := raw.TerminalSetDefaultCursorBlink(ptr, blinkRaw)
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Terminal.SetDefaultCursorBlink", code), t)
+	}
+	return nil
+}
+
+// ConfigureCharset calls the Zig function Terminal.configureCharset.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (t *Terminal) ConfigureCharset(slot CharsetSlot, set Charset) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Terminal.ConfigureCharset receiver", t)
+	if err != nil {
+		return err
+	}
+	defer t.zigoRelease()
+	code := raw.TerminalConfigureCharset(ptr, uint8(slot), uint8(set))
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Terminal.ConfigureCharset", code), t)
+	}
+	return nil
+}
+
+// InvokeCharset calls the Zig function Terminal.invokeCharset.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (t *Terminal) InvokeCharset(active CharsetActiveSlot, slot CharsetSlot, single bool) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Terminal.InvokeCharset receiver", t)
+	if err != nil {
+		return err
+	}
+	defer t.zigoRelease()
+	code := raw.TerminalInvokeCharset(ptr, uint8(active), uint8(slot), boolToUint8(single))
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Terminal.InvokeCharset", code), t)
+	}
+	return nil
+}
+
+// Deccolm calls the Zig function Terminal.deccolm.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (t *Terminal) Deccolm(mode DeccolmMode) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Terminal.Deccolm receiver", t)
+	if err != nil {
+		return err
+	}
+	defer t.zigoRelease()
+	code := raw.TerminalDeccolm(ptr, uint8(mode))
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Terminal.Deccolm", code), t)
+	}
+	return nil
+}
+
+// ScrollViewport calls the Zig function Terminal.scrollViewport.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (t *Terminal) ScrollViewport(behavior ScrollViewport) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Terminal.ScrollViewport receiver", t)
+	if err != nil {
+		return err
+	}
+	defer t.zigoRelease()
+	code := raw.TerminalScrollViewport(ptr, uint8(behavior.tag), behavior.delta, behavior.row)
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Terminal.ScrollViewport", code), t)
 	}
 	return nil
 }

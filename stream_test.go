@@ -1,12 +1,15 @@
 package gostty
 
 import (
+	"errors"
 	"strings"
 	"testing"
 )
 
 // newStreamPair returns a terminal and a stream feeding it. The stream is
 // closed first, as ghostty's handler reaches through the terminal on deinit.
+// The binding declares that relationship, so closing them in the other order
+// is refused rather than undefined.
 func newStreamPair(t *testing.T, cols, rows uint16) (*Terminal, *Stream) {
 	t.Helper()
 	term, err := NewTerminal(cols, rows)
@@ -135,5 +138,40 @@ func TestStreamNoSemanticFailure(t *testing.T) {
 	}
 	if failed {
 		t.Error("stream reported a semantic failure on well-formed input")
+	}
+}
+
+// The stream is a child handle of its terminal, so the terminal cannot be
+// closed while the stream is open.
+func TestStreamKeepsTerminalOpen(t *testing.T) {
+	term, err := NewTerminal(10, 2)
+	if err != nil {
+		t.Fatalf("NewTerminal: %v", err)
+	}
+	stream, err := term.NewStream(0)
+	if err != nil {
+		term.Close()
+		t.Fatalf("NewStream: %v", err)
+	}
+
+	err = term.Close()
+	if !errors.Is(err, ErrHandleInUse) {
+		t.Fatalf("Close with an open stream = %v, want ErrHandleInUse", err)
+	}
+	var inUse *HandleInUseError
+	if !errors.As(err, &inUse) {
+		t.Fatalf("error is not *HandleInUseError: %v", err)
+	}
+
+	// The terminal is still usable after the refusal.
+	if _, err := term.Cols(); err != nil {
+		t.Errorf("Cols() after a refused Close: %v", err)
+	}
+
+	if err := stream.Close(); err != nil {
+		t.Fatalf("stream Close: %v", err)
+	}
+	if err := term.Close(); err != nil {
+		t.Fatalf("terminal Close after the stream closed: %v", err)
 	}
 }

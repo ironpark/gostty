@@ -3,6 +3,7 @@
 .idea/
 .vscode/
 .zig-cache/
+internal/raw/zigo_link_inputs_gen.go
 zig-cache/
 zig-out/
 zig-pkg/

@@ -17,6 +17,11 @@ pub const bindings = zigo.define(.{
         .{ .name = "EraseLine", .type = gostty.EraseLine, .repr = .enumeration, .exhaustive = false },
         .{ .name = "TabClear", .type = gostty.TabClear, .repr = .enumeration, .exhaustive = false },
         .{ .name = "ProtectedMode", .type = gostty.ProtectedMode, .repr = .enumeration },
+        .{ .name = "Charset", .type = gostty.Charset, .repr = .enumeration },
+        .{ .name = "CharsetSlot", .type = gostty.CharsetSlot, .repr = .enumeration },
+        .{ .name = "CharsetActiveSlot", .type = gostty.CharsetActiveSlot, .repr = .enumeration },
+        .{ .name = "DeccolmMode", .type = gostty.DeccolmMode, .repr = .enumeration },
+        .{ .name = "ScrollViewport", .type = gostty.ScrollViewport, .repr = .tagged_union },
     },
     .functions = .{
         .{ .path = "root.unicode.codepointWidth" },
@@ -27,7 +32,9 @@ pub const bindings = zigo.define(.{
         .{ .path = "root.newTerminal", .constructs = "Terminal" },
         .{ .path = "root.freeTerminal", .destroys = "Terminal" },
         .{ .path = "root.freeString", .params = .{"str"} },
-        .{ .path = "root.newStream", .constructs = "Stream", .params = .{"continuation_max_bytes"} },
+        // A stream borrows its terminal: ghostty's handler reaches through it for
+        // an allocator when it tears down, so the terminal must outlive it.
+        .{ .path = "root.newStream", .constructs = "Stream", .child_of_receiver = true, .params = .{"continuation_max_bytes"} },
         .{ .path = "root.freeStream", .destroys = "Stream" },
         .{ .path = "root.streamFailed", .name = "failed" },
         .{ .path = "Stream.nextSlice", .name = "feed", .params = .{"input"} },
@@ -82,6 +89,7 @@ pub const bindings = zigo.define(.{
         // Printing.
         .{ .path = "Terminal.print", .params = .{"c"} },
         .{ .path = "Terminal.printRepeat", .params = .{"count_req"} },
+        .{ .path = "Terminal.printSlice", .params = .{"cps"} },
         .{ .path = "Terminal.plainStringUnwrapped", .returns = .caller, .release = "root.freeString" },
 
         // Metadata the terminal tracks for the shell.
@@ -90,6 +98,12 @@ pub const bindings = zigo.define(.{
         .{ .path = "Terminal.getTitle" },
         .{ .path = "Terminal.setTitle", .params = .{"t"} },
         .{ .path = "Terminal.setProtectedMode", .params = .{"mode"} },
+        .{ .path = "Terminal.setDefaultCursorStyle", .params = .{"configured_style"} },
+        .{ .path = "Terminal.setDefaultCursorBlink", .params = .{"blink"} },
+        .{ .path = "Terminal.configureCharset", .params = .{ "slot", "set" } },
+        .{ .path = "Terminal.invokeCharset", .params = .{ "active", "slot", "single" } },
+        .{ .path = "Terminal.deccolm", .params = .{"mode"} },
+        .{ .path = "Terminal.scrollViewport", .params = .{"behavior"} },
         .{ .path = "Terminal.compressionActivity" },
         .{ .path = "root.resize", .params = .{ "width", "height" } },
 

@@ -51,7 +51,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 66,
+            "line": 71,
             "column": 22
           },
           "type": {
@@ -74,7 +74,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 66,
+        "line": 71,
         "column": 8
       },
       "symbol": "zg_grapheme_width"
@@ -92,7 +92,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 74,
+            "line": 79,
             "column": 20
           },
           "type": {
@@ -106,7 +106,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 74,
+            "line": 79,
             "column": 36
           },
           "type": {
@@ -119,7 +119,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 74,
+            "line": 79,
             "column": 53
           },
           "type": {
@@ -135,7 +135,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 74,
+            "line": 79,
             "column": 65
           },
           "type": {
@@ -160,7 +160,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 74,
+        "line": 79,
         "column": 8
       },
       "symbol": "zg_new_terminal"
@@ -177,7 +177,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 82,
+            "line": 87,
             "column": 38
           },
           "type": {
@@ -191,7 +191,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 82,
+        "line": 87,
         "column": 8
       },
       "zig_path": "freeTerminal",
@@ -209,7 +209,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 115,
+            "line": 120,
             "column": 19
           },
           "type": {
@@ -222,7 +222,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 115,
+            "line": 120,
             "column": 35
           },
           "type": {
@@ -242,12 +242,13 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 115,
+        "line": 120,
         "column": 8
       },
       "symbol": "zg_free_string"
     },
     {
+      "child_of_receiver": true,
       "doc": "Create a VT stream that applies escape sequences to `terminal`.\n\n`continuation_max_bytes` caps the unfinished-sequence suffix the stream\ntracks across feeds; zero disables tracking.",
       "go_owner": "Stream",
       "name": "newStream",
@@ -260,7 +261,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 91,
+            "line": 96,
             "column": 34
           },
           "type": {
@@ -273,7 +274,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 91,
+            "line": 96,
             "column": 55
           },
           "type": {
@@ -300,7 +301,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 91,
+        "line": 96,
         "column": 8
       },
       "zig_path": "newStream",
@@ -318,7 +319,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 103,
+            "line": 108,
             "column": 34
           },
           "type": {
@@ -332,7 +333,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 103,
+        "line": 108,
         "column": 8
       },
       "zig_path": "freeStream",
@@ -1215,6 +1216,40 @@
       "symbol": "zg_terminal_print_repeat"
     },
     {
+      "name": "printSlice",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "cps",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "const": true,
+            "element": {
+              "bits": 32,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          }
+        }
+      ],
+      "receiver": "Terminal",
+      "return": {
+        "error_set": [
+          "OutOfMemory",
+          "OutOfSpace"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "void"
+        }
+      },
+      "symbol": "zg_terminal_print_slice"
+    },
+    {
       "name": "plainStringUnwrapped",
       "ownership": "caller",
       "params": [
@@ -1381,6 +1416,180 @@
       "symbol": "zg_terminal_set_protected_mode"
     },
     {
+      "name": "setDefaultCursorStyle",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "configured_style",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "kind": "enum",
+            "ref": "CursorStyle"
+          }
+        }
+      ],
+      "receiver": "Terminal",
+      "return": {
+        "kind": "void"
+      },
+      "symbol": "zg_terminal_set_default_cursor_style"
+    },
+    {
+      "name": "setDefaultCursorBlink",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "blink",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "child": {
+              "kind": "bool"
+            },
+            "kind": "optional"
+          }
+        }
+      ],
+      "receiver": "Terminal",
+      "return": {
+        "kind": "void"
+      },
+      "symbol": "zg_terminal_set_default_cursor_blink"
+    },
+    {
+      "name": "configureCharset",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "slot",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "kind": "enum",
+            "ref": "CharsetSlot"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "set",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "kind": "enum",
+            "ref": "Charset"
+          }
+        }
+      ],
+      "receiver": "Terminal",
+      "return": {
+        "kind": "void"
+      },
+      "symbol": "zg_terminal_configure_charset"
+    },
+    {
+      "name": "invokeCharset",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "active",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "kind": "enum",
+            "ref": "CharsetActiveSlot"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "slot",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "kind": "enum",
+            "ref": "CharsetSlot"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "single",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "kind": "bool"
+          }
+        }
+      ],
+      "receiver": "Terminal",
+      "return": {
+        "kind": "void"
+      },
+      "symbol": "zg_terminal_invoke_charset"
+    },
+    {
+      "name": "deccolm",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "injected": "allocator",
+          "name": "allocator",
+          "name_source": "fallback",
+          "retention": "borrowed",
+          "type": {
+            "kind": "void"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "mode",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "kind": "enum",
+            "ref": "DeccolmMode"
+          }
+        }
+      ],
+      "receiver": "Terminal",
+      "return": {
+        "error_set": [
+          "OutOfMemory",
+          "InvalidValue"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "void"
+        }
+      },
+      "symbol": "zg_terminal_deccolm"
+    },
+    {
+      "name": "scrollViewport",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "behavior",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "kind": "value_struct",
+            "ref": "ScrollViewport"
+          }
+        }
+      ],
+      "receiver": "Terminal",
+      "return": {
+        "kind": "void"
+      },
+      "symbol": "zg_terminal_scroll_viewport"
+    },
+    {
       "name": "compressionActivity",
       "ownership": "borrowed",
       "params": [],
@@ -1405,7 +1614,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 58,
+            "line": 63,
             "column": 32
           },
           "type": {
@@ -1418,7 +1627,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 58,
+            "line": 63,
             "column": 48
           },
           "type": {
@@ -1434,7 +1643,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 58,
+            "line": 63,
             "column": 60
           },
           "type": {
@@ -1458,7 +1667,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 58,
+        "line": 63,
         "column": 8
       },
       "zig_path": "resize",
@@ -1477,7 +1686,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 119,
+        "line": 124,
         "column": 8
       },
       "zig_path": "cols",
@@ -1496,7 +1705,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 123,
+        "line": 128,
         "column": 8
       },
       "zig_path": "rows",
@@ -1515,7 +1724,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 127,
+        "line": 132,
         "column": 8
       },
       "zig_path": "cursorX",
@@ -1534,7 +1743,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 131,
+        "line": 136,
         "column": 8
       },
       "zig_path": "cursorY",
@@ -1551,7 +1760,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 135,
+        "line": 140,
         "column": 8
       },
       "zig_path": "cursorStyle",
@@ -1605,7 +1814,7 @@
         "kind": "int",
         "signed": false
       },
-      "zig_path": "lib.enum.Enum(.{ .zig = {} },&.{ &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)] }[0..4])"
+      "zig_path": "lib.enum.Enum(.{ .zig = {} },&.{ &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)] }[0..4])#CursorStyle"
     },
     {
       "exhaustive": true,
@@ -1762,6 +1971,186 @@
         "signed": false
       },
       "zig_path": "lib.enum.Enum(.{ .zig = {} },&.{ &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)] }[0..3])"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "name": "utf8",
+          "value": 0
+        },
+        {
+          "name": "ascii",
+          "value": 1
+        },
+        {
+          "name": "british",
+          "value": 2
+        },
+        {
+          "name": "dec_special",
+          "value": 3
+        }
+      ],
+      "kind": "enum",
+      "name": "Charset",
+      "tag_type": {
+        "bits": 2,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "zig_path": "lib.enum.Enum(.{ .zig = {} },&.{ &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)] }[0..4])#Charset"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "name": "G0",
+          "value": 0
+        },
+        {
+          "name": "G1",
+          "value": 1
+        },
+        {
+          "name": "G2",
+          "value": 2
+        },
+        {
+          "name": "G3",
+          "value": 3
+        }
+      ],
+      "kind": "enum",
+      "name": "CharsetSlot",
+      "tag_type": {
+        "bits": 2,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "zig_path": "lib.enum.Enum(.{ .zig = {} },&.{ &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)] }[0..4])#CharsetSlot"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "name": "GL",
+          "value": 0
+        },
+        {
+          "name": "GR",
+          "value": 1
+        }
+      ],
+      "kind": "enum",
+      "name": "CharsetActiveSlot",
+      "tag_type": {
+        "bits": 1,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "zig_path": "lib.enum.Enum(.{ .zig = {} },&.{ &.{ ... }[0..(...)], &.{ ... }[0..(...)] }[0..2])"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "name": "80_cols",
+          "value": 0
+        },
+        {
+          "name": "132_cols",
+          "value": 1
+        }
+      ],
+      "kind": "enum",
+      "name": "DeccolmMode",
+      "tag_type": {
+        "bits": 1,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "zig_path": "terminal.Terminal.DeccolmMode"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "name": "top",
+          "type": {
+            "kind": "void"
+          },
+          "value": 0
+        },
+        {
+          "name": "bottom",
+          "type": {
+            "kind": "void"
+          },
+          "value": 1
+        },
+        {
+          "name": "delta",
+          "type": {
+            "bits": 64,
+            "is_usize": true,
+            "kind": "int",
+            "signed": true
+          },
+          "value": 2
+        },
+        {
+          "name": "row",
+          "type": {
+            "bits": 64,
+            "is_usize": true,
+            "kind": "int",
+            "signed": false
+          },
+          "value": 3
+        }
+      ],
+      "kind": "tagged_union",
+      "name": "ScrollViewport",
+      "tag_type": {
+        "kind": "enum",
+        "ref": "ScrollViewportTag"
+      },
+      "zig_path": "terminal.Terminal.ScrollViewport"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "name": "top",
+          "value": 0
+        },
+        {
+          "name": "bottom",
+          "value": 1
+        },
+        {
+          "name": "delta",
+          "value": 2
+        },
+        {
+          "name": "row",
+          "value": 3
+        }
+      ],
+      "kind": "enum",
+      "name": "ScrollViewportTag",
+      "tag_type": {
+        "bits": 2,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "zig_path": "lib.enum.Enum(.{ .zig = {} },&.{ &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)] }[0..4])"
     }
   ],
   "zig_version": "0.16.0"
