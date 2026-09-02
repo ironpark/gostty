@@ -2,6 +2,175 @@
 
 package gostty
 
+// Attribute is a tagged-union value passed to native code by copy.
+type Attribute struct {
+	tag               AttributeTag
+	underline         Underline
+	underlineColorRgb uint32
+	underlineColor256 uint8
+	directColorFg     uint32
+	directColorBg     uint32
+	color256Fg        uint8
+	color256Bg        uint8
+	namedFg           ColorName
+	namedBg           ColorName
+	brightNamedFg     ColorName
+	brightNamedBg     ColorName
+}
+
+// Tag returns the active Attribute variant.
+func (value Attribute) Tag() AttributeTag { return value.tag }
+
+// AttributeUnset constructs the unset variant.
+func AttributeUnset() Attribute {
+	return Attribute{tag: AttributeTagUnset}
+}
+
+// AttributeBold constructs the bold variant.
+func AttributeBold() Attribute {
+	return Attribute{tag: AttributeTagBold}
+}
+
+// AttributeResetBold constructs the reset_bold variant.
+func AttributeResetBold() Attribute {
+	return Attribute{tag: AttributeTagResetBold}
+}
+
+// AttributeItalic constructs the italic variant.
+func AttributeItalic() Attribute {
+	return Attribute{tag: AttributeTagItalic}
+}
+
+// AttributeResetItalic constructs the reset_italic variant.
+func AttributeResetItalic() Attribute {
+	return Attribute{tag: AttributeTagResetItalic}
+}
+
+// AttributeFaint constructs the faint variant.
+func AttributeFaint() Attribute {
+	return Attribute{tag: AttributeTagFaint}
+}
+
+// AttributeUnderline constructs the underline variant.
+func AttributeUnderline(value Underline) Attribute {
+	return Attribute{tag: AttributeTagUnderline, underline: value}
+}
+
+// AttributeUnderlineColorRgb constructs the underline_color_rgb variant.
+func AttributeUnderlineColorRgb(n uint32) Attribute {
+	return Attribute{tag: AttributeTagUnderlineColorRgb, underlineColorRgb: n}
+}
+
+// AttributeUnderlineColor256 constructs the underline_color_256 variant.
+func AttributeUnderlineColor256(n uint8) Attribute {
+	return Attribute{tag: AttributeTagUnderlineColor256, underlineColor256: n}
+}
+
+// AttributeResetUnderlineColor constructs the reset_underline_color variant.
+func AttributeResetUnderlineColor() Attribute {
+	return Attribute{tag: AttributeTagResetUnderlineColor}
+}
+
+// AttributeOverline constructs the overline variant.
+func AttributeOverline() Attribute {
+	return Attribute{tag: AttributeTagOverline}
+}
+
+// AttributeResetOverline constructs the reset_overline variant.
+func AttributeResetOverline() Attribute {
+	return Attribute{tag: AttributeTagResetOverline}
+}
+
+// AttributeBlink constructs the blink variant.
+func AttributeBlink() Attribute {
+	return Attribute{tag: AttributeTagBlink}
+}
+
+// AttributeResetBlink constructs the reset_blink variant.
+func AttributeResetBlink() Attribute {
+	return Attribute{tag: AttributeTagResetBlink}
+}
+
+// AttributeInverse constructs the inverse variant.
+func AttributeInverse() Attribute {
+	return Attribute{tag: AttributeTagInverse}
+}
+
+// AttributeResetInverse constructs the reset_inverse variant.
+func AttributeResetInverse() Attribute {
+	return Attribute{tag: AttributeTagResetInverse}
+}
+
+// AttributeInvisible constructs the invisible variant.
+func AttributeInvisible() Attribute {
+	return Attribute{tag: AttributeTagInvisible}
+}
+
+// AttributeResetInvisible constructs the reset_invisible variant.
+func AttributeResetInvisible() Attribute {
+	return Attribute{tag: AttributeTagResetInvisible}
+}
+
+// AttributeStrikethrough constructs the strikethrough variant.
+func AttributeStrikethrough() Attribute {
+	return Attribute{tag: AttributeTagStrikethrough}
+}
+
+// AttributeResetStrikethrough constructs the reset_strikethrough variant.
+func AttributeResetStrikethrough() Attribute {
+	return Attribute{tag: AttributeTagResetStrikethrough}
+}
+
+// AttributeDirectColorFg constructs the direct_color_fg variant.
+func AttributeDirectColorFg(n uint32) Attribute {
+	return Attribute{tag: AttributeTagDirectColorFg, directColorFg: n}
+}
+
+// AttributeDirectColorBg constructs the direct_color_bg variant.
+func AttributeDirectColorBg(n uint32) Attribute {
+	return Attribute{tag: AttributeTagDirectColorBg, directColorBg: n}
+}
+
+// AttributeColor256Fg constructs the color_256_fg variant.
+func AttributeColor256Fg(n uint8) Attribute {
+	return Attribute{tag: AttributeTagColor256Fg, color256Fg: n}
+}
+
+// AttributeColor256Bg constructs the color_256_bg variant.
+func AttributeColor256Bg(n uint8) Attribute {
+	return Attribute{tag: AttributeTagColor256Bg, color256Bg: n}
+}
+
+// AttributeNamedFg constructs the named_fg variant.
+func AttributeNamedFg(value ColorName) Attribute {
+	return Attribute{tag: AttributeTagNamedFg, namedFg: value}
+}
+
+// AttributeNamedBg constructs the named_bg variant.
+func AttributeNamedBg(value ColorName) Attribute {
+	return Attribute{tag: AttributeTagNamedBg, namedBg: value}
+}
+
+// AttributeBrightNamedFg constructs the bright_named_fg variant.
+func AttributeBrightNamedFg(value ColorName) Attribute {
+	return Attribute{tag: AttributeTagBrightNamedFg, brightNamedFg: value}
+}
+
+// AttributeBrightNamedBg constructs the bright_named_bg variant.
+func AttributeBrightNamedBg(value ColorName) Attribute {
+	return Attribute{tag: AttributeTagBrightNamedBg, brightNamedBg: value}
+}
+
+// AttributeResetFg constructs the reset_fg variant.
+func AttributeResetFg() Attribute {
+	return Attribute{tag: AttributeTagResetFg}
+}
+
+// AttributeResetBg constructs the reset_bg variant.
+func AttributeResetBg() Attribute {
+	return Attribute{tag: AttributeTagResetBg}
+}
+
 // ScrollViewport is a tagged-union value passed to native code by copy.
 type ScrollViewport struct {
 	tag   ScrollViewportTag

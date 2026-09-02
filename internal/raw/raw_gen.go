@@ -822,6 +822,12 @@ func TerminalSetTitle(self unsafe.Pointer, t []uint8) int32 {
 	return code
 }
 
+// TerminalSetAttribute calls the generated C ABI wrapper for zg_terminal_set_attribute.
+func TerminalSetAttribute(self unsafe.Pointer, attr_tag uint8, attr_underline uint8, attr_underline_color_rgb uint32, attr_underline_color_256 uint8, attr_direct_color_fg uint32, attr_direct_color_bg uint32, attr_color_256_fg uint8, attr_color_256_bg uint8, attr_named_fg uint8, attr_named_bg uint8, attr_bright_named_fg uint8, attr_bright_named_bg uint8) int32 {
+	code := int32(C.zg_terminal_set_attribute((*C.zg_terminal)(self), C.uint8_t(attr_tag), C.uint8_t(attr_underline), C.uint32_t(attr_underline_color_rgb), C.uint8_t(attr_underline_color_256), C.uint32_t(attr_direct_color_fg), C.uint32_t(attr_direct_color_bg), C.uint8_t(attr_color_256_fg), C.uint8_t(attr_color_256_bg), C.uint8_t(attr_named_fg), C.uint8_t(attr_named_bg), C.uint8_t(attr_bright_named_fg), C.uint8_t(attr_bright_named_bg)))
+	return code
+}
+
 // TerminalSetProtectedMode calls the generated C ABI wrapper for zg_terminal_set_protected_mode.
 func TerminalSetProtectedMode(self unsafe.Pointer, mode uint8) int32 {
 	code := int32(C.zg_terminal_set_protected_mode((*C.zg_terminal)(self), C.uint8_t(mode)))

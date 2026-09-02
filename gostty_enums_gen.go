@@ -210,6 +210,256 @@ func (value ScreenKey) String() string {
 	}
 }
 
+// Underline represents the corresponding Zig enum.
+type Underline uint8
+
+const (
+	// UnderlineNone corresponds to the Zig tag none.
+	UnderlineNone Underline = 0
+	// UnderlineSingle corresponds to the Zig tag single.
+	UnderlineSingle Underline = 1
+	// UnderlineDouble corresponds to the Zig tag double.
+	UnderlineDouble Underline = 2
+	// UnderlineCurly corresponds to the Zig tag curly.
+	UnderlineCurly Underline = 3
+	// UnderlineDotted corresponds to the Zig tag dotted.
+	UnderlineDotted Underline = 4
+	// UnderlineDashed corresponds to the Zig tag dashed.
+	UnderlineDashed Underline = 5
+)
+
+// String returns the Zig tag name.
+func (value Underline) String() string {
+	switch value {
+	case UnderlineNone:
+		return "none"
+	case UnderlineSingle:
+		return "single"
+	case UnderlineDouble:
+		return "double"
+	case UnderlineCurly:
+		return "curly"
+	case UnderlineDotted:
+		return "dotted"
+	case UnderlineDashed:
+		return "dashed"
+	default:
+		return "Underline(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// ColorName represents the corresponding Zig open enum; values outside the named constants are valid.
+type ColorName uint8
+
+const (
+	// ColorNameBlack corresponds to the Zig tag black.
+	ColorNameBlack ColorName = 0
+	// ColorNameRed corresponds to the Zig tag red.
+	ColorNameRed ColorName = 1
+	// ColorNameGreen corresponds to the Zig tag green.
+	ColorNameGreen ColorName = 2
+	// ColorNameYellow corresponds to the Zig tag yellow.
+	ColorNameYellow ColorName = 3
+	// ColorNameBlue corresponds to the Zig tag blue.
+	ColorNameBlue ColorName = 4
+	// ColorNameMagenta corresponds to the Zig tag magenta.
+	ColorNameMagenta ColorName = 5
+	// ColorNameCyan corresponds to the Zig tag cyan.
+	ColorNameCyan ColorName = 6
+	// ColorNameWhite corresponds to the Zig tag white.
+	ColorNameWhite ColorName = 7
+	// ColorNameBrightBlack corresponds to the Zig tag bright_black.
+	ColorNameBrightBlack ColorName = 8
+	// ColorNameBrightRed corresponds to the Zig tag bright_red.
+	ColorNameBrightRed ColorName = 9
+	// ColorNameBrightGreen corresponds to the Zig tag bright_green.
+	ColorNameBrightGreen ColorName = 10
+	// ColorNameBrightYellow corresponds to the Zig tag bright_yellow.
+	ColorNameBrightYellow ColorName = 11
+	// ColorNameBrightBlue corresponds to the Zig tag bright_blue.
+	ColorNameBrightBlue ColorName = 12
+	// ColorNameBrightMagenta corresponds to the Zig tag bright_magenta.
+	ColorNameBrightMagenta ColorName = 13
+	// ColorNameBrightCyan corresponds to the Zig tag bright_cyan.
+	ColorNameBrightCyan ColorName = 14
+	// ColorNameBrightWhite corresponds to the Zig tag bright_white.
+	ColorNameBrightWhite ColorName = 15
+)
+
+// String returns the Zig tag name.
+func (value ColorName) String() string {
+	switch value {
+	case ColorNameBlack:
+		return "black"
+	case ColorNameRed:
+		return "red"
+	case ColorNameGreen:
+		return "green"
+	case ColorNameYellow:
+		return "yellow"
+	case ColorNameBlue:
+		return "blue"
+	case ColorNameMagenta:
+		return "magenta"
+	case ColorNameCyan:
+		return "cyan"
+	case ColorNameWhite:
+		return "white"
+	case ColorNameBrightBlack:
+		return "bright_black"
+	case ColorNameBrightRed:
+		return "bright_red"
+	case ColorNameBrightGreen:
+		return "bright_green"
+	case ColorNameBrightYellow:
+		return "bright_yellow"
+	case ColorNameBrightBlue:
+		return "bright_blue"
+	case ColorNameBrightMagenta:
+		return "bright_magenta"
+	case ColorNameBrightCyan:
+		return "bright_cyan"
+	case ColorNameBrightWhite:
+		return "bright_white"
+	default:
+		return "ColorName(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// AttributeTag represents the corresponding Zig enum.
+type AttributeTag uint8
+
+const (
+	// AttributeTagUnset corresponds to the Zig tag unset.
+	AttributeTagUnset AttributeTag = 0
+	// AttributeTagBold corresponds to the Zig tag bold.
+	AttributeTagBold AttributeTag = 1
+	// AttributeTagResetBold corresponds to the Zig tag reset_bold.
+	AttributeTagResetBold AttributeTag = 2
+	// AttributeTagItalic corresponds to the Zig tag italic.
+	AttributeTagItalic AttributeTag = 3
+	// AttributeTagResetItalic corresponds to the Zig tag reset_italic.
+	AttributeTagResetItalic AttributeTag = 4
+	// AttributeTagFaint corresponds to the Zig tag faint.
+	AttributeTagFaint AttributeTag = 5
+	// AttributeTagUnderline corresponds to the Zig tag underline.
+	AttributeTagUnderline AttributeTag = 6
+	// AttributeTagUnderlineColorRgb corresponds to the Zig tag underline_color_rgb.
+	AttributeTagUnderlineColorRgb AttributeTag = 7
+	// AttributeTagUnderlineColor256 corresponds to the Zig tag underline_color_256.
+	AttributeTagUnderlineColor256 AttributeTag = 8
+	// AttributeTagResetUnderlineColor corresponds to the Zig tag reset_underline_color.
+	AttributeTagResetUnderlineColor AttributeTag = 9
+	// AttributeTagOverline corresponds to the Zig tag overline.
+	AttributeTagOverline AttributeTag = 10
+	// AttributeTagResetOverline corresponds to the Zig tag reset_overline.
+	AttributeTagResetOverline AttributeTag = 11
+	// AttributeTagBlink corresponds to the Zig tag blink.
+	AttributeTagBlink AttributeTag = 12
+	// AttributeTagResetBlink corresponds to the Zig tag reset_blink.
+	AttributeTagResetBlink AttributeTag = 13
+	// AttributeTagInverse corresponds to the Zig tag inverse.
+	AttributeTagInverse AttributeTag = 14
+	// AttributeTagResetInverse corresponds to the Zig tag reset_inverse.
+	AttributeTagResetInverse AttributeTag = 15
+	// AttributeTagInvisible corresponds to the Zig tag invisible.
+	AttributeTagInvisible AttributeTag = 16
+	// AttributeTagResetInvisible corresponds to the Zig tag reset_invisible.
+	AttributeTagResetInvisible AttributeTag = 17
+	// AttributeTagStrikethrough corresponds to the Zig tag strikethrough.
+	AttributeTagStrikethrough AttributeTag = 18
+	// AttributeTagResetStrikethrough corresponds to the Zig tag reset_strikethrough.
+	AttributeTagResetStrikethrough AttributeTag = 19
+	// AttributeTagDirectColorFg corresponds to the Zig tag direct_color_fg.
+	AttributeTagDirectColorFg AttributeTag = 20
+	// AttributeTagDirectColorBg corresponds to the Zig tag direct_color_bg.
+	AttributeTagDirectColorBg AttributeTag = 21
+	// AttributeTagColor256Fg corresponds to the Zig tag color_256_fg.
+	AttributeTagColor256Fg AttributeTag = 22
+	// AttributeTagColor256Bg corresponds to the Zig tag color_256_bg.
+	AttributeTagColor256Bg AttributeTag = 23
+	// AttributeTagNamedFg corresponds to the Zig tag named_fg.
+	AttributeTagNamedFg AttributeTag = 24
+	// AttributeTagNamedBg corresponds to the Zig tag named_bg.
+	AttributeTagNamedBg AttributeTag = 25
+	// AttributeTagBrightNamedFg corresponds to the Zig tag bright_named_fg.
+	AttributeTagBrightNamedFg AttributeTag = 26
+	// AttributeTagBrightNamedBg corresponds to the Zig tag bright_named_bg.
+	AttributeTagBrightNamedBg AttributeTag = 27
+	// AttributeTagResetFg corresponds to the Zig tag reset_fg.
+	AttributeTagResetFg AttributeTag = 28
+	// AttributeTagResetBg corresponds to the Zig tag reset_bg.
+	AttributeTagResetBg AttributeTag = 29
+)
+
+// String returns the Zig tag name.
+func (value AttributeTag) String() string {
+	switch value {
+	case AttributeTagUnset:
+		return "unset"
+	case AttributeTagBold:
+		return "bold"
+	case AttributeTagResetBold:
+		return "reset_bold"
+	case AttributeTagItalic:
+		return "italic"
+	case AttributeTagResetItalic:
+		return "reset_italic"
+	case AttributeTagFaint:
+		return "faint"
+	case AttributeTagUnderline:
+		return "underline"
+	case AttributeTagUnderlineColorRgb:
+		return "underline_color_rgb"
+	case AttributeTagUnderlineColor256:
+		return "underline_color_256"
+	case AttributeTagResetUnderlineColor:
+		return "reset_underline_color"
+	case AttributeTagOverline:
+		return "overline"
+	case AttributeTagResetOverline:
+		return "reset_overline"
+	case AttributeTagBlink:
+		return "blink"
+	case AttributeTagResetBlink:
+		return "reset_blink"
+	case AttributeTagInverse:
+		return "inverse"
+	case AttributeTagResetInverse:
+		return "reset_inverse"
+	case AttributeTagInvisible:
+		return "invisible"
+	case AttributeTagResetInvisible:
+		return "reset_invisible"
+	case AttributeTagStrikethrough:
+		return "strikethrough"
+	case AttributeTagResetStrikethrough:
+		return "reset_strikethrough"
+	case AttributeTagDirectColorFg:
+		return "direct_color_fg"
+	case AttributeTagDirectColorBg:
+		return "direct_color_bg"
+	case AttributeTagColor256Fg:
+		return "color_256_fg"
+	case AttributeTagColor256Bg:
+		return "color_256_bg"
+	case AttributeTagNamedFg:
+		return "named_fg"
+	case AttributeTagNamedBg:
+		return "named_bg"
+	case AttributeTagBrightNamedFg:
+		return "bright_named_fg"
+	case AttributeTagBrightNamedBg:
+		return "bright_named_bg"
+	case AttributeTagResetFg:
+		return "reset_fg"
+	case AttributeTagResetBg:
+		return "reset_bg"
+	default:
+		return "AttributeTag(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
 // SearchDirection represents the corresponding Zig enum.
 type SearchDirection uint8
 

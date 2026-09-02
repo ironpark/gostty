@@ -190,6 +190,101 @@ pub fn screenString(self: *Terminal, gpa: Allocator) ![]const u8 {
     return try self.screens.active.dumpStringAlloc(gpa, .{ .screen = .{} });
 }
 
+/// The underline style an `Attribute` selects.
+pub const Underline = vt.Attribute.Underline;
+
+/// One of the 16 named ANSI colors.
+pub const ColorName = vt.color.Name;
+
+/// A single SGR attribute to apply to the cursor's pen.
+///
+/// A curated mirror of ghostty's `sgr.Attribute`. Two things keep the original
+/// from crossing: its `unknown` variant carries the raw CSI parameters, which
+/// are a parser detail rather than something a caller sets, and its color
+/// variants carry a `packed struct(u24)` that has no C representation. RGB is
+/// carried here as `0xRRGGBB` instead.
+pub const Attribute = union(enum) {
+    unset,
+    bold,
+    reset_bold,
+    italic,
+    reset_italic,
+    faint,
+    underline: Underline,
+    underline_color_rgb: u32,
+    underline_color_256: u8,
+    reset_underline_color,
+    overline,
+    reset_overline,
+    blink,
+    reset_blink,
+    inverse,
+    reset_inverse,
+    invisible,
+    reset_invisible,
+    strikethrough,
+    reset_strikethrough,
+    direct_color_fg: u32,
+    direct_color_bg: u32,
+    color_256_fg: u8,
+    color_256_bg: u8,
+    named_fg: ColorName,
+    named_bg: ColorName,
+    bright_named_fg: ColorName,
+    bright_named_bg: ColorName,
+    reset_fg,
+    reset_bg,
+
+    fn rgb(value: u32) vt.color.RGB {
+        return .{
+            .r = @truncate(value >> 16),
+            .g = @truncate(value >> 8),
+            .b = @truncate(value),
+        };
+    }
+
+    fn toVt(self: Attribute) vt.Attribute {
+        return switch (self) {
+            .unset => .unset,
+            .bold => .bold,
+            .reset_bold => .reset_bold,
+            .italic => .italic,
+            .reset_italic => .reset_italic,
+            .faint => .faint,
+            .underline => |v| .{ .underline = v },
+            .underline_color_rgb => |v| .{ .underline_color = rgb(v) },
+            .underline_color_256 => |v| .{ .@"256_underline_color" = v },
+            .reset_underline_color => .reset_underline_color,
+            .overline => .overline,
+            .reset_overline => .reset_overline,
+            .blink => .blink,
+            .reset_blink => .reset_blink,
+            .inverse => .inverse,
+            .reset_inverse => .reset_inverse,
+            .invisible => .invisible,
+            .reset_invisible => .reset_invisible,
+            .strikethrough => .strikethrough,
+            .reset_strikethrough => .reset_strikethrough,
+            .direct_color_fg => |v| .{ .direct_color_fg = rgb(v) },
+            .direct_color_bg => |v| .{ .direct_color_bg = rgb(v) },
+            .color_256_fg => |v| .{ .@"256_fg" = v },
+            .color_256_bg => |v| .{ .@"256_bg" = v },
+            .named_fg => |v| .{ .@"8_fg" = v },
+            .named_bg => |v| .{ .@"8_bg" = v },
+            .bright_named_fg => |v| .{ .@"8_bright_fg" = v },
+            .bright_named_bg => |v| .{ .@"8_bright_bg" = v },
+            .reset_fg => .reset_fg,
+            .reset_bg => .reset_bg,
+        };
+    }
+};
+
+/// Apply an SGR attribute to the cursor's pen. Everything printed afterwards
+/// carries it until it is reset.
+pub fn setAttribute(self: *Terminal, attr: Attribute) !void {
+    try self.setAttribute(attr.toVt());
+}
+
 /// The display width of a grapheme cluster given as codepoints.
 ///
 /// Wrapped because `vt.unicode.graphemeWidth` is generic over the codepoint

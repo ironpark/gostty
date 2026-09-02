@@ -1243,6 +1243,26 @@ func (te *Terminal) SetTitle(t []byte) error {
 	return nil
 }
 
+// SetAttribute
+// Apply an SGR attribute to the cursor's pen. Everything printed afterwards
+// carries it until it is reset.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (t *Terminal) SetAttribute(attr Attribute) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Terminal.SetAttribute receiver", t)
+	if err != nil {
+		return err
+	}
+	defer t.zigoRelease()
+	code := raw.TerminalSetAttribute(ptr, uint8(attr.tag), uint8(attr.underline), attr.underlineColorRgb, attr.underlineColor256, attr.directColorFg, attr.directColorBg, attr.color256Fg, attr.color256Bg, uint8(attr.namedFg), uint8(attr.namedBg), uint8(attr.brightNamedFg), uint8(attr.brightNamedBg))
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Terminal.SetAttribute", code), t)
+	}
+	return nil
+}
+
 // SetProtectedMode calls the Zig function Terminal.setProtectedMode.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
