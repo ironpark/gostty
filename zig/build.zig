@@ -58,7 +58,11 @@ pub fn build(b: *std.Build) void {
             "${SRCDIR}/../../zig/zig-out/lib/libubsan_rt.a",
         } },
     });
-    b.getInstallStep().dependOn(&b.addInstallArtifact(ubsan_rt, .{}).step);
+    const install_ubsan = b.addInstallArtifact(ubsan_rt, .{});
+    b.getInstallStep().dependOn(&install_ubsan.step);
 
-    _ = bindings.addStandardSteps(b, .{});
+    // The binding library is useless to cgo without the runtime beside it, so
+    // whatever step produces one produces the other.
+    const steps = bindings.addStandardSteps(b, .{});
+    steps.library.dependOn(&install_ubsan.step);
 }

@@ -8,10 +8,19 @@ GO      ?= go
 ZIG_DIR := zig
 LIB     := $(ZIG_DIR)/zig-out/lib/libgostty_zigo.a
 
+# The native library dominates run time and Zig's default is Debug, which costs
+# roughly 360x on VT parsing (feeding one line: 159us Debug, 5.8us ReleaseSafe,
+# 0.44us ReleaseFast). Ship speed by default; override for a safety-checked
+# build while chasing a bug in the Zig side:
+#
+#   make build OPTIMIZE=ReleaseSafe
+OPTIMIZE ?= ReleaseFast
+ZIG_FLAGS := -Doptimize=$(OPTIMIZE)
+
 ZIG_SOURCES := $(ZIG_DIR)/build.zig $(ZIG_DIR)/build.zig.zon $(wildcard $(ZIG_DIR)/src/*.zig)
 
 .DEFAULT_GOAL := help
-.PHONY: help all build generate test race vet example verify check doctor report fmt clean distclean
+.PHONY: help all build generate test race bench vet example verify check doctor report fmt clean distclean
 
 help: ## Show this help
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -22,16 +31,19 @@ all: build test ## Build the native library and run the tests
 build: $(LIB) ## Build and install the native binding library
 
 $(LIB): $(ZIG_SOURCES)
-	cd $(ZIG_DIR) && $(ZIG) build go-lib
+	cd $(ZIG_DIR) && $(ZIG) build go-lib $(ZIG_FLAGS)
 
 generate: ## Regenerate the Go tree from zig/src/bindings.zig, then build
-	cd $(ZIG_DIR) && $(ZIG) build go
+	cd $(ZIG_DIR) && $(ZIG) build go $(ZIG_FLAGS)
 
 test: build ## Run the Go tests
 	$(GO) test ./...
 
 race: build ## Run the Go tests under the race detector
 	$(GO) test -race -count=2 ./...
+
+bench: build ## Run the benchmarks
+	$(GO) test -bench . -benchmem -run '^$$' ./... 
 
 vet: build ## Run go vet
 	$(GO) vet ./...

@@ -84,7 +84,12 @@ make build      # build the native binding library
 make test       # build, then run the Go tests
 make generate   # regenerate the Go tree from zig/src/bindings.zig
 make example    # run the example program
+make bench      # measure the boundary and the parser
 ```
+
+The native library is built `ReleaseFast`. Zig's default is `Debug`, which costs
+about 360x on VT parsing, so the default here is speed; use
+`make build OPTIMIZE=ReleaseSafe` while chasing a bug on the Zig side.
 
 `zig build go` writes the `*_gen.go` files at the root, plus `internal/raw/` and
 `zig/zigo/`. Both the
