@@ -424,6 +424,94 @@ func TerminalActiveScreenKey(self unsafe.Pointer) (uint8, int32) {
 	return uint8(outResult), code
 }
 
+// TerminalActiveScreen calls the generated C ABI wrapper for zg_terminal_active_screen.
+func TerminalActiveScreen(self unsafe.Pointer) (unsafe.Pointer, int32) {
+	var outResult *C.zg_screen
+	code := int32(C.zg_terminal_active_screen((*C.zg_terminal)(self), &outResult))
+	return unsafe.Pointer(outResult), code
+}
+
+// TerminalScreen calls the generated C ABI wrapper for zg_terminal_screen.
+func TerminalScreen(self unsafe.Pointer, key uint8) (unsafe.Pointer, int32) {
+	var outResult *C.zg_screen
+	code := int32(C.zg_terminal_screen((*C.zg_terminal)(self), C.uint8_t(key), &outResult))
+	return unsafe.Pointer(outResult), code
+}
+
+// ScreenSelectAll calls the generated C ABI wrapper for zg_screen_select_all.
+func ScreenSelectAll(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_screen_select_all((*C.zg_screen)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// ScreenClearSelection calls the generated C ABI wrapper for zg_screen_clear_selection.
+func ScreenClearSelection(self unsafe.Pointer) int32 {
+	code := int32(C.zg_screen_clear_selection((*C.zg_screen)(self)))
+	return code
+}
+
+// ScreenHasSelection calls the generated C ABI wrapper for zg_screen_has_selection.
+func ScreenHasSelection(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_screen_has_selection((*C.zg_screen)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// TerminalNewSearch calls the generated C ABI wrapper for zg_terminal_new_search.
+func TerminalNewSearch(self unsafe.Pointer, needle []uint8) (unsafe.Pointer, int32) {
+	var needleZero C.uint8_t
+	needlePtr := &needleZero
+	if len(needle) != 0 {
+		needlePtr = (*C.uint8_t)(unsafe.Pointer(&needle[0]))
+	}
+	var outResult *C.zg_search
+	code := int32(C.zg_terminal_new_search((*C.zg_terminal)(self), needlePtr, C.size_t(len(needle)), &outResult))
+	return unsafe.Pointer(outResult), code
+}
+
+// SearchFreeSearch calls the generated C ABI wrapper for zg_search_free_search.
+func SearchFreeSearch(self unsafe.Pointer) int32 {
+	code := int32(C.zg_search_free_search((*C.zg_search)(self)))
+	return code
+}
+
+// SearchSearchAll calls the generated C ABI wrapper for zg_search_search_all.
+func SearchSearchAll(self unsafe.Pointer) int32 {
+	code := int32(C.zg_search_search_all((*C.zg_search)(self)))
+	return code
+}
+
+// SearchMatchCount calls the generated C ABI wrapper for zg_search_match_count.
+func SearchMatchCount(self unsafe.Pointer) (uint, int32) {
+	var outResult C.size_t
+	code := int32(C.zg_search_match_count((*C.zg_search)(self), &outResult))
+	return uint(outResult), code
+}
+
+// SearchSelect calls the generated C ABI wrapper for zg_search_select.
+func SearchSelect(self unsafe.Pointer, to uint8) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_search_select((*C.zg_search)(self), C.uint8_t(to), &outResult))
+	return uint8(outResult), code
+}
+
+// ScreenSelectionString calls the generated C ABI wrapper for zg_screen_selection_string.
+func ScreenSelectionString(self unsafe.Pointer) ([]uint8, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_screen_selection_string((*C.zg_screen)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return nil, code
+	}
+	var result []uint8
+	if outResultLen != 0 {
+		result = C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen))
+	}
+	C.zg_free_string(outResultPtr, outResultLen)
+	return result, code
+}
+
 // TerminalPrintAttributesInto calls the generated C ABI wrapper for zg_terminal_print_attributes_into.
 func TerminalPrintAttributesInto(self unsafe.Pointer, dst []uint8) (uint, int32) {
 	var dstZero C.uint8_t

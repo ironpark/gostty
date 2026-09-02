@@ -210,6 +210,28 @@ func (value ScreenKey) String() string {
 	}
 }
 
+// SearchDirection represents the corresponding Zig enum.
+type SearchDirection uint8
+
+const (
+	// SearchDirectionNext corresponds to the Zig tag next.
+	SearchDirectionNext SearchDirection = 0
+	// SearchDirectionPrev corresponds to the Zig tag prev.
+	SearchDirectionPrev SearchDirection = 1
+)
+
+// String returns the Zig tag name.
+func (value SearchDirection) String() string {
+	switch value {
+	case SearchDirectionNext:
+		return "next"
+	case SearchDirectionPrev:
+		return "prev"
+	default:
+		return "SearchDirection(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
 // Key represents the corresponding Zig enum.
 type Key int32
 

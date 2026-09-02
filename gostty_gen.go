@@ -765,6 +765,204 @@ func (t *Terminal) ActiveScreenKey() (ScreenKey, error) {
 	return ScreenKey(result), nil
 }
 
+// ActiveScreen
+// The screen the terminal is currently writing to.
+// The returned reference remains valid only while its parent handle remains open.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (t *Terminal) ActiveScreen() (*Screen, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Terminal.ActiveScreen receiver", t)
+	if err != nil {
+		return nil, err
+	}
+	defer t.zigoRelease()
+	result, code := raw.TerminalActiveScreen(ptr)
+	if code != 0 {
+		return nil, zigoPoisonAfterPanic(errorForCode("Terminal.ActiveScreen", code), t)
+	}
+	return newBorrowedScreen(result, t), nil
+}
+
+// Screen
+// A specific screen, or absent if the terminal has not created it yet. The
+// alternate screen only exists once something has switched to it.
+// The returned reference remains valid only while its parent handle remains open.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (t *Terminal) Screen(key ScreenKey) (*Screen, bool, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Terminal.Screen receiver", t)
+	if err != nil {
+		return nil, false, err
+	}
+	defer t.zigoRelease()
+	result, code := raw.TerminalScreen(ptr, uint8(key))
+	if code != 0 {
+		return nil, false, zigoPoisonAfterPanic(errorForCode("Terminal.Screen", code), t)
+	}
+	if result == nil {
+		return nil, false, nil
+	}
+	return newBorrowedScreen(result, t), true, nil
+}
+
+// SelectAll calls the Zig function Screen.selectAll.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (s *Screen) SelectAll() (bool, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Screen.SelectAll receiver", s)
+	if err != nil {
+		return false, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.ScreenSelectAll(ptr)
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(errorForCode("Screen.SelectAll", code), s)
+	}
+	return result != 0, nil
+}
+
+// ClearSelection calls the Zig function Screen.clearSelection.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Screen) ClearSelection() error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Screen.ClearSelection receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	code := raw.ScreenClearSelection(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Screen.ClearSelection", code), s)
+	}
+	return nil
+}
+
+// HasSelection calls the Zig function Screen.hasSelection.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Screen) HasSelection() (bool, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Screen.HasSelection receiver", s)
+	if err != nil {
+		return false, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.ScreenHasSelection(ptr)
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(errorForCode("Screen.HasSelection", code), s)
+	}
+	return result != 0, nil
+}
+
+// NewSearch
+// Start searching the active screen for `needle`. The search does not run
+// until `searchAll`.
+// The caller must call Close on the returned handle.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (t *Terminal) NewSearch(needle []byte) (*Search, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := t.zigoAcquireChild("Terminal.NewSearch receiver")
+	if err != nil {
+		return nil, err
+	}
+	zigoChildCreated := false
+	defer func() {
+		t.zigoRelease()
+		if !zigoChildCreated {
+			t.zigoDropChild()
+		}
+	}()
+	result, code := raw.TerminalNewSearch(ptr, needle)
+	if code != 0 {
+		return nil, zigoPoisonAfterPanic(errorForCode("Terminal.NewSearch", code), t)
+	}
+	zigoChildCreated = true
+	return newSearch(result, t), nil
+}
+
+// SearchAll calls the Zig function Search.searchAll.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (s *Search) SearchAll() error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Search.SearchAll receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	code := raw.SearchSearchAll(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Search.SearchAll", code), s)
+	}
+	return nil
+}
+
+// MatchCount calls the Zig function Search.matchCount.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Search) MatchCount() (uint, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Search.MatchCount receiver", s)
+	if err != nil {
+		return 0, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.SearchMatchCount(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(errorForCode("Search.MatchCount", code), s)
+	}
+	return result, nil
+}
+
+// Select calls the Zig function Search.select.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (s *Search) Select(to SearchDirection) (bool, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Search.Select receiver", s)
+	if err != nil {
+		return false, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.SearchSelect(ptr, uint8(to))
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(errorForCode("Search.Select", code), s)
+	}
+	return result != 0, nil
+}
+
+// SelectionString calls the Zig function Screen.selectionString.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (s *Screen) SelectionString() ([]byte, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Screen.SelectionString receiver", s)
+	if err != nil {
+		return nil, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.ScreenSelectionString(ptr)
+	if code != 0 {
+		return nil, zigoPoisonAfterPanic(errorForCode("Screen.SelectionString", code), s)
+	}
+	return result, nil
+}
+
 // PrintAttributesInto
 // Write the cursor's current SGR attributes into `dst` as a DECRPSS response
 // body, and report how many bytes were written.

@@ -1,6 +1,7 @@
 package gostty
 
 import (
+	"errors"
 	"strings"
 	"testing"
 )
@@ -111,5 +112,93 @@ func TestHistoryAndScreenString(t *testing.T) {
 		if !strings.Contains(string(full), want) {
 			t.Errorf("ScreenString() = %q, want it to contain %q", full, want)
 		}
+	}
+}
+
+// A Screen handle is borrowed from its terminal: it has no Close, stays valid
+// while the terminal is open, and stops working once the terminal is closed.
+func TestBorrowedScreen(t *testing.T) {
+	term, err := NewTerminal(20, 3)
+	if err != nil {
+		t.Fatalf("NewTerminal: %v", err)
+	}
+	if err := term.PrintString([]byte("hello")); err != nil {
+		t.Fatalf("PrintString: %v", err)
+	}
+
+	sc, err := term.ActiveScreen()
+	if err != nil {
+		t.Fatalf("ActiveScreen: %v", err)
+	}
+
+	ok, err := sc.SelectAll()
+	if err != nil {
+		t.Fatalf("SelectAll: %v", err)
+	}
+	if !ok {
+		t.Fatal("SelectAll() = false on a screen with text")
+	}
+	if has, err := sc.HasSelection(); err != nil || !has {
+		t.Fatalf("HasSelection() = %v, %v; want true, nil", has, err)
+	}
+	text, err := sc.SelectionString()
+	if err != nil {
+		t.Fatalf("SelectionString: %v", err)
+	}
+	if got, want := strings.TrimSpace(string(text)), "hello"; got != want {
+		t.Errorf("SelectionString() = %q, want %q", got, want)
+	}
+
+	if err := sc.ClearSelection(); err != nil {
+		t.Fatalf("ClearSelection: %v", err)
+	}
+	if has, err := sc.HasSelection(); err != nil || has {
+		t.Fatalf("HasSelection() after clear = %v, %v; want false, nil", has, err)
+	}
+	if text, err := sc.SelectionString(); err != nil || len(text) != 0 {
+		t.Errorf("SelectionString() with no selection = %q, %v; want empty, nil", text, err)
+	}
+
+	// A borrowed handle does not keep the terminal open.
+	if err := term.Close(); err != nil {
+		t.Fatalf("Close with a screen handle out: %v", err)
+	}
+	if _, err := sc.HasSelection(); !errors.Is(err, ErrInvalidHandle) {
+		t.Errorf("screen call after the terminal closed = %v, want ErrInvalidHandle", err)
+	}
+}
+
+// The alternate screen does not exist until something switches to it.
+func TestOptionalScreen(t *testing.T) {
+	term := newTerm(t, 20, 3)
+
+	if _, ok, err := term.Screen(ScreenKeyAlternate); err != nil || ok {
+		t.Errorf("Screen(alternate) before use = ok %v, err %v; want false, nil", ok, err)
+	}
+	if _, ok, err := term.Screen(ScreenKeyPrimary); err != nil || !ok {
+		t.Errorf("Screen(primary) = ok %v, err %v; want true, nil", ok, err)
+	}
+
+	if err := term.SwitchScreen(ScreenKeyAlternate); err != nil {
+		t.Fatalf("SwitchScreen: %v", err)
+	}
+	alt, ok, err := term.Screen(ScreenKeyAlternate)
+	if err != nil || !ok {
+		t.Fatalf("Screen(alternate) after switching = ok %v, err %v; want true, nil", ok, err)
+	}
+
+	// The primary screen is still reachable while the alternate is active.
+	if err := term.PrintString([]byte("on alternate")); err != nil {
+		t.Fatalf("PrintString: %v", err)
+	}
+	if _, err := alt.SelectAll(); err != nil {
+		t.Fatalf("SelectAll on the alternate screen: %v", err)
+	}
+	text, err := alt.SelectionString()
+	if err != nil {
+		t.Fatalf("SelectionString: %v", err)
+	}
+	if got, want := strings.TrimSpace(string(text)), "on alternate"; got != want {
+		t.Errorf("alternate selection = %q, want %q", got, want)
 	}
 }

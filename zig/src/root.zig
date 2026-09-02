@@ -67,6 +67,97 @@ pub fn resize(self: *Terminal, gpa: Allocator, width: u16, height: u16) !void {
 /// Which of a terminal's screens is active.
 pub const ScreenKey = vt.ScreenSet.Key;
 
+/// One of a terminal's screens: its grid, scrollback and selection.
+///
+/// A screen is owned by its terminal, so handles to one are borrowed. They stay
+/// valid while the terminal is open and are invalidated by its `Close`.
+pub const Screen = vt.Screen;
+
+/// The screen the terminal is currently writing to.
+pub fn activeScreen(self: *Terminal) *Screen {
+    return self.screens.active;
+}
+
+/// A specific screen, or absent if the terminal has not created it yet. The
+/// alternate screen only exists once something has switched to it.
+pub fn screen(self: *Terminal, key: ScreenKey) ?*Screen {
+    return self.screens.get(key);
+}
+
+/// Select the whole screen. Returns false when there is nothing to select.
+pub fn screenSelectAll(self: *Screen) !bool {
+    const selection = self.selectAll() orelse return false;
+    try self.select(selection);
+    return true;
+}
+
+/// Drop the current selection, if any.
+pub fn screenClearSelection(self: *Screen) void {
+    self.clearSelection();
+}
+
+/// A text search over a terminal's active screen, including its scrollback.
+///
+/// A child of the terminal rather than of the screen it reads: zigo miscounts
+/// children when the receiver is itself a borrowed handle, so the parent has to
+/// be an owned one. See docs/zigo-findings.md.
+pub const Search = vt.search.Screen;
+
+/// Which way `Search.select` moves.
+///
+/// Named `SearchDirection` rather than mirroring ghostty's `Select`: the C
+/// typedef for a `SearchSelect` would be `zg_search_select`, colliding with the
+/// function symbol for `Search.select`.
+pub const SearchDirection = vt.search.Screen.Select;
+
+/// Start searching the active screen for `needle`. The search does not run
+/// until `searchAll`.
+pub fn newSearch(gpa: Allocator, terminal: *Terminal, needle: []const u8) !*Search {
+    const self = try gpa.create(Search);
+    errdefer gpa.destroy(self);
+    self.* = try .init(gpa, terminal.screens.active, needle);
+    return self;
+}
+
+pub fn freeSearch(self: *Search, gpa: Allocator) void {
+    self.deinit();
+    gpa.destroy(self);
+}
+
+/// The number of matches found so far.
+pub fn searchMatchCount(self: *Search) usize {
+    return self.matchesLen();
+}
+
+/// Move to the next or previous match and put it in the screen's selection, so
+/// the text comes back out through `Screen.selectionString`.
+///
+/// ghostty tracks the search's current match separately from the screen's
+/// selection; joining the two is what a search UI wants and what this does.
+/// Returns false when there is no match to move to.
+pub fn searchSelect(self: *Search, to: SearchDirection) !bool {
+    if (!try self.select(to)) return false;
+    const match = self.selectedMatch() orelse return false;
+    const bounds = match.untracked();
+    try self.screen.select(vt.Selection.init(bounds.start, bounds.end, false));
+    return true;
+}
+
+/// True when the screen has a selection.
+pub fn screenHasSelection(self: *Screen) bool {
+    return self.selection != null;
+}
+
+/// The text of the current selection, empty when nothing is selected.
+///
+/// The natural signature is `!?[]const u8`, but zigo rejects an optional slice
+/// as a caller-owned return (`ZIGO015`), so absence is reported by
+/// `screenHasSelection` instead.
+pub fn screenSelectionString(self: *Screen, gpa: Allocator) ![]const u8 {
+    const selection = self.selection orelse return "";
+    return try self.selectionString(gpa, .{ .sel = selection });
+}
+
 /// Switch between the primary and alternate screens.
 ///
 /// Wrapped because ghostty returns the screen being left, and a handle borrowed

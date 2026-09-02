@@ -128,6 +128,11 @@ func (t *Terminal) Close() error {
 		t.mu.Unlock()
 		return &HandleInUseError{Operation: "Terminal.Close", Children: children}
 	}
+	if t.active != 0 {
+		active := t.active
+		t.mu.Unlock()
+		return &HandleInUseError{Operation: "Terminal.Close", Children: active}
+	}
 	t.closed = true
 	t.cleanup.Stop()
 	state, release := t.zigoTakeLocked()
@@ -288,6 +293,252 @@ func (s *Stream) zigoTakeLocked() (streamCleanupState, bool) {
 		return streamCleanupState{}, false
 	}
 	state := streamCleanupState{ptr: s.ptr, parent: s.parent}
+	s.ptr = nil
+	s.parent = nil
+	if s.poison != nil {
+		state.ptr = nil
+	}
+	return state, true
+}
+
+// Screen represents a native Zig handle.
+type Screen struct {
+	ptr    unsafe.Pointer
+	mu     sync.Mutex
+	active int
+	closed bool
+	poison *NativePanicError
+	owner  zigoHandle
+}
+
+func newBorrowedScreen(ptr unsafe.Pointer, owner zigoHandle) *Screen {
+	return &Screen{ptr: ptr, owner: owner}
+}
+
+// zigoAcquire pins s and its parent open for one native call.
+func (s *Screen) zigoAcquire(operation string) (unsafe.Pointer, error) {
+	if s == nil {
+		return nil, &HandleError{Operation: operation}
+	}
+	s.mu.Lock()
+	var parent zigoHandle
+	parent = s.owner
+	s.mu.Unlock()
+	if parent != nil {
+		if _, err := parent.zigoAcquire(operation); err != nil {
+			return nil, err
+		}
+	}
+	s.mu.Lock()
+	if s.closed || s.ptr == nil {
+		s.mu.Unlock()
+		if parent != nil {
+			parent.zigoRelease()
+		}
+		return nil, &HandleError{Operation: operation}
+	}
+	if s.poison != nil {
+		err := s.poison.poisoned(operation)
+		s.mu.Unlock()
+		if parent != nil {
+			parent.zigoRelease()
+		}
+		return nil, err
+	}
+	s.active++
+	ptr := s.ptr
+	s.mu.Unlock()
+	return ptr, nil
+}
+
+func (s *Screen) zigoRelease() {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	s.active--
+	var parent zigoHandle
+	parent = s.owner
+	s.mu.Unlock()
+	if parent != nil {
+		parent.zigoRelease()
+	}
+}
+
+// zigoPoison marks s unusable: a Zig panic unwound through native frames
+// without running their defers, so the state behind it is unknown.
+func (s *Screen) zigoPoison(cause *NativePanicError) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	var parent zigoHandle
+	parent = s.owner
+	if s.poison == nil {
+		s.poison = cause
+	}
+	s.mu.Unlock()
+	if parent != nil {
+		parent.zigoPoison(cause)
+	}
+}
+
+// Close detaches this borrowed Screen view without releasing native resources.
+func (s *Screen) Close() error {
+	if s == nil {
+		return nil
+	}
+	s.mu.Lock()
+	if s.closed {
+		s.mu.Unlock()
+		return nil
+	}
+	if s.active != 0 {
+		active := s.active
+		s.mu.Unlock()
+		return &HandleInUseError{Operation: "Screen.Close", Children: active}
+	}
+	s.closed = true
+	s.ptr = nil
+	s.owner = nil
+	s.mu.Unlock()
+	return nil
+}
+
+// Search is a caller-owned native handle. Call Close when it is no longer needed.
+type Search struct {
+	ptr     unsafe.Pointer
+	mu      sync.Mutex
+	active  int
+	closed  bool
+	poison  *NativePanicError
+	parent  *Terminal
+	cleanup runtime.Cleanup
+}
+
+// zigoAcquire pins s and its parent open for one native call.
+func (s *Search) zigoAcquire(operation string) (unsafe.Pointer, error) {
+	if s == nil {
+		return nil, &HandleError{Operation: operation}
+	}
+	s.mu.Lock()
+	parent := s.parent
+	s.mu.Unlock()
+	if parent != nil {
+		if _, err := parent.zigoAcquire(operation); err != nil {
+			return nil, err
+		}
+	}
+	s.mu.Lock()
+	if s.closed || s.ptr == nil {
+		s.mu.Unlock()
+		if parent != nil {
+			parent.zigoRelease()
+		}
+		return nil, &HandleError{Operation: operation}
+	}
+	if s.poison != nil {
+		err := s.poison.poisoned(operation)
+		s.mu.Unlock()
+		if parent != nil {
+			parent.zigoRelease()
+		}
+		return nil, err
+	}
+	s.active++
+	ptr := s.ptr
+	s.mu.Unlock()
+	return ptr, nil
+}
+
+func (s *Search) zigoRelease() {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	s.active--
+	parent := s.parent
+	state, release := s.zigoTakeLocked()
+	s.mu.Unlock()
+	if release {
+		cleanupSearch(state)
+	}
+	if parent != nil {
+		parent.zigoRelease()
+	}
+}
+
+// zigoPoison marks s unusable: a Zig panic unwound through native frames
+// without running their defers, so the state behind it is unknown.
+func (s *Search) zigoPoison(cause *NativePanicError) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	parent := s.parent
+	if s.poison == nil {
+		s.poison = cause
+		s.cleanup.Stop()
+	}
+	s.mu.Unlock()
+	if parent != nil {
+		parent.zigoPoison(cause)
+	}
+}
+
+type searchCleanupState struct {
+	ptr    unsafe.Pointer
+	parent *Terminal
+}
+
+func newSearch(ptr unsafe.Pointer, parent *Terminal) *Search {
+	value := &Search{ptr: ptr, parent: parent}
+	state := searchCleanupState{ptr: ptr}
+	value.cleanup = runtime.AddCleanup(value, cleanupSearch, state)
+	return value
+}
+
+func cleanupSearch(state searchCleanupState) {
+	if state.ptr != nil {
+		raw.SearchFreeSearch(state.ptr)
+	}
+	if state.parent != nil {
+		state.parent.zigoDropChild()
+	}
+}
+
+// Close releases the native Search resources. It is safe to call more than once.
+// The error result is always nil; it exists so Search satisfies io.Closer.
+// Close does not wait: a call still inside native keeps the resources until it
+// returns, and every call made after Close fails with *HandleError.
+func (s *Search) Close() error {
+	if s == nil {
+		return nil
+	}
+	s.mu.Lock()
+	if s.closed {
+		s.mu.Unlock()
+		return nil
+	}
+	s.closed = true
+	s.cleanup.Stop()
+	state, release := s.zigoTakeLocked()
+	s.mu.Unlock()
+	if release {
+		cleanupSearch(state)
+	}
+	runtime.KeepAlive(s)
+	return nil
+}
+
+// zigoTakeLocked hands out what is left to release once s is closed and no
+// call is inside native; mu must be held. A poisoned handle keeps its native
+// object: releasing state a panic left half-changed could fault, so it leaks.
+func (s *Search) zigoTakeLocked() (searchCleanupState, bool) {
+	if !s.closed || s.active != 0 || s.ptr == nil {
+		return searchCleanupState{}, false
+	}
+	state := searchCleanupState{ptr: s.ptr, parent: s.parent}
 	s.ptr = nil
 	s.parent = nil
 	if s.poison != nil {
