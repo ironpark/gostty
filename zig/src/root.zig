@@ -37,13 +37,175 @@ pub const CursorStyle = vt.CursorStyle;
 /// signature until that is fixed.
 pub const CursorStyleReq = @typeInfo(@TypeOf(Terminal.setCursorStyle)).@"fn".params[1].type.?;
 
+/// Something a running program asked the embedder to do, rather than a change
+/// to terminal state.
+///
+/// ghostty reports these through `Handler.effects`, a struct of function
+/// pointers called from inside a feed with payloads borrowed for the duration
+/// of the call. Rather than reflect that into Go -- where a callback signature
+/// is a raw C signature and the borrow would be a trap -- the stream copies
+/// each one into a queue that `nextEvent` drains after the feed returns.
+pub const StreamEvent = enum(u8) {
+    /// BEL. No payload.
+    bell,
+    /// OSC 0/2. The new title is on the terminal.
+    title_changed,
+    /// OSC 7. The new working directory is on the terminal.
+    pwd_changed,
+    /// OSC 9 or 777. `eventTitle` and `eventBody` carry the text.
+    desktop_notification,
+    /// OSC 9;4. `eventProgressState` and `eventProgress` carry the report.
+    progress_report,
+};
+
+/// How far along an OSC 9;4 progress report says the program is.
+pub const ProgressState = vt.osc.Command.ProgressReport.State;
+
 /// A VT stream: parses escape sequences and applies them to a `Terminal`.
 ///
 /// A stream borrows its terminal and must be closed before it: ghostty's
 /// `Handler.deinit` reaches through the terminal for its allocator. The binding
 /// declares the stream a child of its terminal, so closing the terminal first is
 /// refused rather than left to the caller to get right.
-pub const Stream = vt.TerminalStream;
+pub const Stream = struct {
+    inner: vt.TerminalStream,
+    gpa: Allocator,
+
+    /// Events collected during a feed, oldest first.
+    queue: std.ArrayList(Queued) = .empty,
+    /// What `nextEvent` last handed out. Its payload stays readable until the
+    /// following `nextEvent`.
+    current: ?Queued = null,
+
+    const Queued = struct {
+        kind: StreamEvent,
+        /// Notification title. Owned.
+        title: []const u8 = "",
+        /// Notification body. Owned.
+        body: []const u8 = "",
+        progress_state: ProgressState = .remove,
+        /// 0..100, or 255 when the report carried no percentage.
+        progress: u8 = 255,
+
+        fn deinit(self: Queued, gpa: Allocator) void {
+            gpa.free(self.title);
+            gpa.free(self.body);
+        }
+    };
+
+    fn fromHandler(handler: *vt.TerminalStream.Handler) *Stream {
+        const inner: *vt.TerminalStream = @fieldParentPtr("handler", handler);
+        return @fieldParentPtr("inner", inner);
+    }
+
+    /// Dropping an event beats failing the feed: the terminal state the same
+    /// sequence produced has already been applied.
+    fn push(self: *Stream, event: Queued) void {
+        self.queue.append(self.gpa, event) catch event.deinit(self.gpa);
+    }
+
+    fn onBell(handler: *vt.TerminalStream.Handler) void {
+        fromHandler(handler).push(.{ .kind = .bell });
+    }
+
+    fn onTitleChanged(handler: *vt.TerminalStream.Handler) void {
+        fromHandler(handler).push(.{ .kind = .title_changed });
+    }
+
+    fn onPwdChanged(handler: *vt.TerminalStream.Handler) void {
+        fromHandler(handler).push(.{ .kind = .pwd_changed });
+    }
+
+    fn onDesktopNotification(
+        handler: *vt.TerminalStream.Handler,
+        notification: vt.TerminalStream.Action.ShowDesktopNotification,
+    ) void {
+        const self = fromHandler(handler);
+        const title = self.gpa.dupe(u8, notification.title) catch return;
+        const body = self.gpa.dupe(u8, notification.body) catch {
+            self.gpa.free(title);
+            return;
+        };
+        self.push(.{ .kind = .desktop_notification, .title = title, .body = body });
+    }
+
+    fn onProgressReport(
+        handler: *vt.TerminalStream.Handler,
+        report: vt.osc.Command.ProgressReport,
+    ) void {
+        fromHandler(handler).push(.{
+            .kind = .progress_report,
+            .progress_state = report.state,
+            .progress = report.progress orelse 255,
+        });
+    }
+
+    fn effects() vt.TerminalStream.Handler.Effects {
+        var result: vt.TerminalStream.Handler.Effects = .readonly;
+        result.bell = onBell;
+        result.title_changed = onTitleChanged;
+        result.pwd_changed = onPwdChanged;
+        result.desktop_notification = onDesktopNotification;
+        result.progress_report = onProgressReport;
+        return result;
+    }
+
+    /// Feed bytes to the parser, applying them to the terminal.
+    pub fn feed(self: *Stream, bytes: []const u8) void {
+        self.inner.nextSlice(bytes);
+    }
+
+    /// True once a sequence failed in a way the terminal could not absorb, such
+    /// as an allocation failure. Streams are best-effort and keep going.
+    pub fn failed(self: *Stream) bool {
+        return self.inner.handler.semantic_failure;
+    }
+
+    /// Write the unfinished sequence suffix, when continuation tracking is on.
+    pub fn writeContinuation(self: *Stream, writer: *std.Io.Writer) !void {
+        try self.inner.writeContinuation(writer);
+    }
+
+    /// Take the next event a feed produced, absent when the queue is empty.
+    ///
+    /// The payload accessors below describe the event this returned, until the
+    /// next call.
+    pub fn nextEvent(self: *Stream) ?StreamEvent {
+        if (self.current) |event| {
+            event.deinit(self.gpa);
+            self.current = null;
+        }
+        if (self.queue.items.len == 0) return null;
+        const event = self.queue.orderedRemove(0);
+        self.current = event;
+        return event.kind;
+    }
+
+    /// The current event's notification title, empty for other events.
+    pub fn eventTitle(self: *Stream) []const u8 {
+        const event = self.current orelse return "";
+        return event.title;
+    }
+
+    /// The current event's notification body, empty for other events.
+    pub fn eventBody(self: *Stream) []const u8 {
+        const event = self.current orelse return "";
+        return event.body;
+    }
+
+    pub fn eventProgressState(self: *Stream) ProgressState {
+        const event = self.current orelse return .remove;
+        return event.progress_state;
+    }
+
+    /// The current event's progress percentage, absent when the report carried
+    /// none.
+    pub fn eventProgress(self: *Stream) ?u8 {
+        const event = self.current orelse return null;
+        if (event.progress > 100) return null;
+        return event.progress;
+    }
+};
 
 pub const ProtectedMode = vt.ProtectedMode;
 
@@ -539,24 +701,28 @@ pub fn freeTerminal(self: *Terminal, gpa: Allocator) void {
 pub fn newStream(gpa: Allocator, terminal: *Terminal, continuation_max_bytes: usize) !*Stream {
     const self = try gpa.create(Stream);
     errdefer gpa.destroy(self);
-    self.* = .init(.{
-        .allocator = gpa,
-        .handler = .init(terminal),
-        .continuation_max_bytes = continuation_max_bytes,
-    });
+    self.* = .{
+        .inner = .init(.{
+            .allocator = gpa,
+            .handler = handler: {
+                var value: vt.TerminalStream.Handler = .init(terminal);
+                value.effects = Stream.effects();
+                break :handler value;
+            },
+            .continuation_max_bytes = continuation_max_bytes,
+        }),
+        .gpa = gpa,
+    };
     return self;
 }
 
 /// Destroys a stream created by `newStream`.
 pub fn freeStream(self: *Stream, gpa: Allocator) void {
-    self.deinit();
+    for (self.queue.items) |event| event.deinit(gpa);
+    self.queue.deinit(gpa);
+    if (self.current) |event| event.deinit(gpa);
+    self.inner.deinit();
     gpa.destroy(self);
-}
-
-/// True once a sequence failed in a way the terminal could not absorb, such as
-/// an allocation failure. Streams are best-effort and keep going regardless.
-pub fn streamFailed(self: *Stream) bool {
-    return self.handler.semantic_failure;
 }
 
 /// Releases a string handed out by `plainString`.

@@ -210,6 +210,74 @@ func (value ScreenKey) String() string {
 	}
 }
 
+// StreamEvent represents the corresponding Zig enum.
+type StreamEvent uint8
+
+const (
+	// StreamEventBell corresponds to the Zig tag bell.
+	StreamEventBell StreamEvent = 0
+	// StreamEventTitleChanged corresponds to the Zig tag title_changed.
+	StreamEventTitleChanged StreamEvent = 1
+	// StreamEventPwdChanged corresponds to the Zig tag pwd_changed.
+	StreamEventPwdChanged StreamEvent = 2
+	// StreamEventDesktopNotification corresponds to the Zig tag desktop_notification.
+	StreamEventDesktopNotification StreamEvent = 3
+	// StreamEventProgressReport corresponds to the Zig tag progress_report.
+	StreamEventProgressReport StreamEvent = 4
+)
+
+// String returns the Zig tag name.
+func (value StreamEvent) String() string {
+	switch value {
+	case StreamEventBell:
+		return "bell"
+	case StreamEventTitleChanged:
+		return "title_changed"
+	case StreamEventPwdChanged:
+		return "pwd_changed"
+	case StreamEventDesktopNotification:
+		return "desktop_notification"
+	case StreamEventProgressReport:
+		return "progress_report"
+	default:
+		return "StreamEvent(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// ProgressState represents the corresponding Zig enum.
+type ProgressState uint8
+
+const (
+	// ProgressStateRemove corresponds to the Zig tag remove.
+	ProgressStateRemove ProgressState = 0
+	// ProgressStateSet corresponds to the Zig tag set.
+	ProgressStateSet ProgressState = 1
+	// ProgressStateError corresponds to the Zig tag error.
+	ProgressStateError ProgressState = 2
+	// ProgressStateIndeterminate corresponds to the Zig tag indeterminate.
+	ProgressStateIndeterminate ProgressState = 3
+	// ProgressStatePause corresponds to the Zig tag pause.
+	ProgressStatePause ProgressState = 4
+)
+
+// String returns the Zig tag name.
+func (value ProgressState) String() string {
+	switch value {
+	case ProgressStateRemove:
+		return "remove"
+	case ProgressStateSet:
+		return "set"
+	case ProgressStateError:
+		return "error"
+	case ProgressStateIndeterminate:
+		return "indeterminate"
+	case ProgressStatePause:
+		return "pause"
+	default:
+		return "ProgressState(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
 // Underline represents the corresponding Zig enum.
 type Underline uint8
 

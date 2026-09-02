@@ -52,6 +52,8 @@ pub const bindings = zigo.define(.{
         .{ .name = "TabClear", .type = gostty.TabClear, .repr = .enumeration, .exhaustive = false },
         .{ .name = "ProtectedMode", .type = gostty.ProtectedMode, .repr = .enumeration },
         .{ .name = "ScreenKey", .type = gostty.ScreenKey, .repr = .enumeration },
+        .{ .name = "StreamEvent", .type = gostty.StreamEvent, .repr = .enumeration },
+        .{ .name = "ProgressState", .type = gostty.ProgressState, .repr = .enumeration },
         .{ .name = "Underline", .type = gostty.Underline, .repr = .enumeration },
         .{ .name = "ColorName", .type = gostty.ColorName, .repr = .enumeration, .exhaustive = false },
         .{ .name = "Attribute", .type = gostty.Attribute, .repr = .tagged_union },
@@ -106,8 +108,13 @@ pub const bindings = zigo.define(.{
         // an allocator when it tears down, so the terminal must outlive it.
         .{ .path = "root.newStream", .constructs = "Stream", .child_of_receiver = true, .params = .{"continuation_max_bytes"} },
         .{ .path = "root.freeStream", .destroys = "Stream" },
-        .{ .path = "root.streamFailed", .name = "failed" },
-        .{ .path = "Stream.nextSlice", .name = "feed", .params = .{"input"} },
+        .{ .path = "Stream.feed", .params = .{"bytes"} },
+        .{ .path = "Stream.failed" },
+        .{ .path = "Stream.nextEvent" },
+        .{ .path = "Stream.eventTitle" },
+        .{ .path = "Stream.eventBody" },
+        .{ .path = "Stream.eventProgressState" },
+        .{ .path = "Stream.eventProgress" },
         .{ .path = "Stream.writeContinuation", .params = .{"writer"} },
 
         // ghostty's own methods, bound directly.

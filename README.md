@@ -19,6 +19,24 @@ screen, _ := term.PlainString()
 fmt.Println(string(screen)) // hello\nworld
 ```
 
+Anything the program asked *of you* rather than of the screen -- a bell, a
+desktop notification, a progress report -- queues up during the feed and is
+drained afterwards.
+
+```go
+for {
+	kind, ok, _ := stream.NextEvent()
+	if !ok {
+		break
+	}
+	if kind == gostty.StreamEventDesktopNotification {
+		title, _ := stream.EventTitle()
+		body, _ := stream.EventBody()
+		notify(string(title), string(body))
+	}
+}
+```
+
 Input goes the other way: build a key event and encode it for whatever the
 program on the pty currently expects. Key, mouse, focus and paste encoding live
 in `github.com/ironpark/gostty/input`, which is most of the public surface and
@@ -88,9 +106,10 @@ toolchain — but the native archive is not, so a fresh checkout must run
 Early. The bound surface is a useful slice of libghostty-vt — terminal state
 and editing, VT stream parsing, cursor and charsets, key/mouse/focus/paste
 encoding, alternate screen, scrollback dumps, selection, text search, SGR
-attributes, unicode width — not all of it. The OSC parser is not bound, though
-the state it produces (title, pwd) is readable off the terminal after feeding.
-See `docs/zigo-findings.md` for what is left and why.
+attributes, unicode width — not all of it. OSC side effects (bell, desktop
+notifications, progress reports, title and pwd changes) arrive as events drained
+off the stream after a feed. Clipboard access is not bound. See
+`docs/zigo-findings.md` for what is left and why.
 
 ## License
 

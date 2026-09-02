@@ -317,6 +317,17 @@ func StreamFreeStream(self unsafe.Pointer) int32 {
 	return code
 }
 
+// StreamFeed calls the generated C ABI wrapper for zg_stream_feed.
+func StreamFeed(self unsafe.Pointer, bytes []uint8) int32 {
+	var bytesZero C.uint8_t
+	bytesPtr := &bytesZero
+	if len(bytes) != 0 {
+		bytesPtr = (*C.uint8_t)(unsafe.Pointer(&bytes[0]))
+	}
+	code := int32(C.zg_stream_feed((*C.zg_stream)(self), bytesPtr, C.size_t(len(bytes))))
+	return code
+}
+
 // StreamFailed calls the generated C ABI wrapper for zg_stream_failed.
 func StreamFailed(self unsafe.Pointer) (uint8, int32) {
 	var outResult C.uint8_t
@@ -324,15 +335,49 @@ func StreamFailed(self unsafe.Pointer) (uint8, int32) {
 	return uint8(outResult), code
 }
 
-// StreamFeed calls the generated C ABI wrapper for zg_stream_feed.
-func StreamFeed(self unsafe.Pointer, input []uint8) int32 {
-	var inputZero C.uint8_t
-	inputPtr := &inputZero
-	if len(input) != 0 {
-		inputPtr = (*C.uint8_t)(unsafe.Pointer(&input[0]))
+// StreamNextEvent calls the generated C ABI wrapper for zg_stream_next_event.
+func StreamNextEvent(self unsafe.Pointer) (uint8, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.uint8_t
+	code := int32(C.zg_stream_next_event((*C.zg_stream)(self), &outResultHas, &outResult))
+	return uint8(outResult), outResultHas != 0, code
+}
+
+// StreamEventTitle calls the generated C ABI wrapper for zg_stream_event_title.
+func StreamEventTitle(self unsafe.Pointer) ([]uint8, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_stream_event_title((*C.zg_stream)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return nil, code
 	}
-	code := int32(C.zg_stream_feed((*C.zg_stream)(self), inputPtr, C.size_t(len(input))))
-	return code
+	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
+}
+
+// StreamEventBody calls the generated C ABI wrapper for zg_stream_event_body.
+func StreamEventBody(self unsafe.Pointer) ([]uint8, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_stream_event_body((*C.zg_stream)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return nil, code
+	}
+	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
+}
+
+// StreamEventProgressState calls the generated C ABI wrapper for zg_stream_event_progress_state.
+func StreamEventProgressState(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_stream_event_progress_state((*C.zg_stream)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// StreamEventProgress calls the generated C ABI wrapper for zg_stream_event_progress.
+func StreamEventProgress(self unsafe.Pointer) (uint8, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.uint8_t
+	code := int32(C.zg_stream_event_progress((*C.zg_stream)(self), &outResultHas, &outResult))
+	return uint8(outResult), outResultHas != 0, code
 }
 
 // StreamWriteContinuation calls the generated C ABI wrapper for zg_stream_write_continuation.

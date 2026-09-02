@@ -80,7 +80,27 @@ func (t *Terminal) NewStream(continuationMaxBytes uint) (*Stream, error) {
 	return newStream(result, zigoChildParent), nil
 }
 
-// Failed calls the Zig function Stream.failed.
+// Feed bytes to the parser, applying them to the terminal.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Stream) Feed(bytes []byte) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Stream.Feed receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	code := raw.StreamFeed(ptr, bytes)
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Stream.Feed", code), s)
+	}
+	return nil
+}
+
+// Failed
+// True once a sequence failed in a way the terminal could not absorb, such
+// as an allocation failure. Streams are best-effort and keep going.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *Stream) Failed() (bool, error) {
@@ -98,25 +118,106 @@ func (s *Stream) Failed() (bool, error) {
 	return result != 0, nil
 }
 
-// Feed calls the Zig function Stream.feed.
+// NextEvent
+// Take the next event a feed produced, absent when the queue is empty.
+//
+// The payload accessors below describe the event this returned, until the
+// next call.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-func (s *Stream) Feed(input []byte) error {
+func (s *Stream) NextEvent() (StreamEvent, bool, error) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
-	ptr, err := zigoCheckedPointer("Stream.Feed receiver", s)
+	ptr, err := zigoCheckedPointer("Stream.NextEvent receiver", s)
 	if err != nil {
-		return err
+		return 0, false, err
 	}
 	defer s.zigoRelease()
-	code := raw.StreamFeed(ptr, input)
+	result, zigoHas, code := raw.StreamNextEvent(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Stream.Feed", code), s)
+		return 0, false, zigoPoisonAfterPanic(errorForCode("Stream.NextEvent", code), s)
 	}
-	return nil
+	return StreamEvent(result), zigoHas, nil
 }
 
-// WriteContinuation calls the Zig function Stream.writeContinuation.
+// EventTitle
+// The current event's notification title, empty for other events.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Stream) EventTitle() ([]byte, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Stream.EventTitle receiver", s)
+	if err != nil {
+		return nil, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.StreamEventTitle(ptr)
+	if code != 0 {
+		return nil, zigoPoisonAfterPanic(errorForCode("Stream.EventTitle", code), s)
+	}
+	return result, nil
+}
+
+// EventBody
+// The current event's notification body, empty for other events.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Stream) EventBody() ([]byte, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Stream.EventBody receiver", s)
+	if err != nil {
+		return nil, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.StreamEventBody(ptr)
+	if code != 0 {
+		return nil, zigoPoisonAfterPanic(errorForCode("Stream.EventBody", code), s)
+	}
+	return result, nil
+}
+
+// EventProgressState calls the Zig function Stream.eventProgressState.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Stream) EventProgressState() (ProgressState, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Stream.EventProgressState receiver", s)
+	if err != nil {
+		return 0, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.StreamEventProgressState(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(errorForCode("Stream.EventProgressState", code), s)
+	}
+	return ProgressState(result), nil
+}
+
+// EventProgress
+// The current event's progress percentage, absent when the report carried
+// none.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Stream) EventProgress() (uint8, bool, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Stream.EventProgress receiver", s)
+	if err != nil {
+		return 0, false, err
+	}
+	defer s.zigoRelease()
+	result, zigoHas, code := raw.StreamEventProgress(ptr)
+	if code != 0 {
+		return 0, false, zigoPoisonAfterPanic(errorForCode("Stream.EventProgress", code), s)
+	}
+	return result, zigoHas, nil
+}
+
+// WriteContinuation
+// Write the unfinished sequence suffix, when continuation tracking is on.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
