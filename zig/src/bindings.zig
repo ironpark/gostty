@@ -6,6 +6,35 @@ pub const bindings = zigo.define(.{
     .root = gostty,
     .allocator = .smp_allocator,
     .io = "io",
+    // Key and mouse encoding is over half the public surface -- the `Key` enum
+    // alone is 176 constants -- and nothing on the terminal side names it, so it
+    // gets its own package. The dependency runs one way: `input` names
+    // `*Terminal`, the root package names nothing from `input`.
+    .packages = .{
+        .{
+            .path = "input",
+            .doc = "Package input encodes key, mouse, focus and paste events into the bytes a program reading the pty expects.",
+            .types = .{
+                "KeyEvent",
+                "MouseEvent",
+                "RenderSize",
+                "Key",
+                "KeyAction",
+                "KeyMod",
+                "FocusEvent",
+                "MouseAction",
+                "MouseButton",
+            },
+            .functions = .{
+                "root.encodeKey",
+                "root.encodeMouse",
+                "root.encodeFocus",
+                "root.isSafePaste",
+                "root.encodePaste",
+            },
+        },
+    },
+
     .types = .{
         .{ .type = gostty.Terminal, .repr = .@"opaque" },
         .{ .type = gostty.Stream, .repr = .@"opaque", .name = "Stream" },

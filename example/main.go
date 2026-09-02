@@ -3,10 +3,12 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 
 	"github.com/ironpark/gostty"
+	"github.com/ironpark/gostty/input"
 )
 
 func main() {
@@ -40,4 +42,19 @@ func main() {
 
 	w, _ := gostty.CodepointWidth('가')
 	fmt.Printf("width of 가: %d\n", w)
+
+	// Input goes the other way: encoding follows the terminal's own modes.
+	ev, err := input.NewKeyEvent()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer ev.Close()
+	if err := ev.SetKey(input.KeyArrowUp); err != nil {
+		log.Fatal(err)
+	}
+	var keys bytes.Buffer
+	if err := input.EncodeKey(&keys, term, ev); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("arrow up encodes as: %q\n", keys.String())
 }

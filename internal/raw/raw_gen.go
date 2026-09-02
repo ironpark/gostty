@@ -458,15 +458,15 @@ func ScreenHasSelection(self unsafe.Pointer) (uint8, int32) {
 	return uint8(outResult), code
 }
 
-// TerminalNewSearch calls the generated C ABI wrapper for zg_terminal_new_search.
-func TerminalNewSearch(self unsafe.Pointer, needle []uint8) (unsafe.Pointer, int32) {
+// ScreenNewSearch calls the generated C ABI wrapper for zg_screen_new_search.
+func ScreenNewSearch(self unsafe.Pointer, needle []uint8) (unsafe.Pointer, int32) {
 	var needleZero C.uint8_t
 	needlePtr := &needleZero
 	if len(needle) != 0 {
 		needlePtr = (*C.uint8_t)(unsafe.Pointer(&needle[0]))
 	}
 	var outResult *C.zg_search
-	code := int32(C.zg_terminal_new_search((*C.zg_terminal)(self), needlePtr, C.size_t(len(needle)), &outResult))
+	code := int32(C.zg_screen_new_search((*C.zg_screen)(self), needlePtr, C.size_t(len(needle)), &outResult))
 	return unsafe.Pointer(outResult), code
 }
 
@@ -497,19 +497,22 @@ func SearchSelect(self unsafe.Pointer, to uint8) (uint8, int32) {
 }
 
 // ScreenSelectionString calls the generated C ABI wrapper for zg_screen_selection_string.
-func ScreenSelectionString(self unsafe.Pointer) ([]uint8, int32) {
+func ScreenSelectionString(self unsafe.Pointer) ([]uint8, bool, int32) {
 	var outResultPtr *C.uint8_t
 	var outResultLen C.size_t
 	code := int32(C.zg_screen_selection_string((*C.zg_screen)(self), &outResultPtr, &outResultLen))
 	if code != 0 {
-		return nil, code
+		return nil, false, code
+	}
+	if outResultPtr == nil {
+		return nil, false, code
 	}
 	var result []uint8
 	if outResultLen != 0 {
 		result = C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen))
 	}
 	C.zg_free_string(outResultPtr, outResultLen)
-	return result, code
+	return result, true, code
 }
 
 // TerminalPrintAttributesInto calls the generated C ABI wrapper for zg_terminal_print_attributes_into.

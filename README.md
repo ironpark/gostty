@@ -20,15 +20,17 @@ fmt.Println(string(screen)) // hello\nworld
 ```
 
 Input goes the other way: build a key event and encode it for whatever the
-program on the pty currently expects.
+program on the pty currently expects. Key, mouse, focus and paste encoding live
+in `github.com/ironpark/gostty/input`, which is most of the public surface and
+nothing on the terminal side refers to.
 
 ```go
-ev, _ := gostty.NewKeyEvent()
+ev, _ := input.NewKeyEvent()
 defer ev.Close()
-ev.SetKey(gostty.KeyArrowUp)
+ev.SetKey(input.KeyArrowUp)
 
 var buf bytes.Buffer
-gostty.EncodeKey(&buf, term, ev) // "\x1b[A", or "\x1bOA" under DECCKM
+input.EncodeKey(&buf, term, ev) // "\x1b[A", or "\x1bOA" under DECCKM
 ```
 
 ## Layout
@@ -36,6 +38,7 @@ gostty.EncodeKey(&buf, term, ev) // "\x1b[A", or "\x1bOA" under DECCKM
 | Path | Contents |
 |---|---|
 | `*_gen.go` | The public Go package, at the module root. Generated; do not edit. |
+| `input/` | Key, mouse, focus and paste encoding. Generated. |
 | `internal/raw/` | Generated cgo call layer. Not part of the supported API. `zigo_link_inputs_gen.go` there is machine-local and not committed. |
 | `zig/build.zig` | Build definition: ghostty dependency, zigo wiring, link fixups. |
 | `zig/src/bindings.zig` | What is exposed to Go. |

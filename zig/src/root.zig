@@ -96,11 +96,10 @@ pub fn screenClearSelection(self: *Screen) void {
     self.clearSelection();
 }
 
-/// A text search over a terminal's active screen, including its scrollback.
+/// A text search over one screen, including its scrollback.
 ///
-/// A child of the terminal rather than of the screen it reads: zigo miscounts
-/// children when the receiver is itself a borrowed handle, so the parent has to
-/// be an owned one. See docs/zigo-findings.md.
+/// A child of the screen it reads, which is itself borrowed from a terminal, so
+/// the close order is search, then terminal.
 pub const Search = vt.search.Screen;
 
 /// Which way `Search.select` moves.
@@ -110,12 +109,12 @@ pub const Search = vt.search.Screen;
 /// function symbol for `Search.select`.
 pub const SearchDirection = vt.search.Screen.Select;
 
-/// Start searching the active screen for `needle`. The search does not run
-/// until `searchAll`.
-pub fn newSearch(gpa: Allocator, terminal: *Terminal, needle: []const u8) !*Search {
+/// Start searching `target` for `needle`. The search does not run until
+/// `searchAll`.
+pub fn newSearch(gpa: Allocator, target: *Screen, needle: []const u8) !*Search {
     const self = try gpa.create(Search);
     errdefer gpa.destroy(self);
-    self.* = try .init(gpa, terminal.screens.active, needle);
+    self.* = try .init(gpa, target, needle);
     return self;
 }
 
@@ -148,13 +147,9 @@ pub fn screenHasSelection(self: *Screen) bool {
     return self.selection != null;
 }
 
-/// The text of the current selection, empty when nothing is selected.
-///
-/// The natural signature is `!?[]const u8`, but zigo rejects an optional slice
-/// as a caller-owned return (`ZIGO015`), so absence is reported by
-/// `screenHasSelection` instead.
-pub fn screenSelectionString(self: *Screen, gpa: Allocator) ![]const u8 {
-    const selection = self.selection orelse return "";
+/// The text of the current selection, absent when nothing is selected.
+pub fn screenSelectionString(self: *Screen, gpa: Allocator) !?[]const u8 {
+    const selection = self.selection orelse return null;
     return try self.selectionString(gpa, .{ .sel = selection });
 }
 

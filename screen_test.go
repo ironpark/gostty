@@ -141,9 +141,9 @@ func TestBorrowedScreen(t *testing.T) {
 	if has, err := sc.HasSelection(); err != nil || !has {
 		t.Fatalf("HasSelection() = %v, %v; want true, nil", has, err)
 	}
-	text, err := sc.SelectionString()
-	if err != nil {
-		t.Fatalf("SelectionString: %v", err)
+	text, ok, err := sc.SelectionString()
+	if err != nil || !ok {
+		t.Fatalf("SelectionString() = ok %v, err %v; want true, nil", ok, err)
 	}
 	if got, want := strings.TrimSpace(string(text)), "hello"; got != want {
 		t.Errorf("SelectionString() = %q, want %q", got, want)
@@ -155,8 +155,8 @@ func TestBorrowedScreen(t *testing.T) {
 	if has, err := sc.HasSelection(); err != nil || has {
 		t.Fatalf("HasSelection() after clear = %v, %v; want false, nil", has, err)
 	}
-	if text, err := sc.SelectionString(); err != nil || len(text) != 0 {
-		t.Errorf("SelectionString() with no selection = %q, %v; want empty, nil", text, err)
+	if text, ok, err := sc.SelectionString(); err != nil || ok {
+		t.Errorf("SelectionString() with no selection = %q, ok %v, err %v; want absent, nil", text, ok, err)
 	}
 
 	// A borrowed handle does not keep the terminal open.
@@ -194,9 +194,9 @@ func TestOptionalScreen(t *testing.T) {
 	if _, err := alt.SelectAll(); err != nil {
 		t.Fatalf("SelectAll on the alternate screen: %v", err)
 	}
-	text, err := alt.SelectionString()
-	if err != nil {
-		t.Fatalf("SelectionString: %v", err)
+	text, ok, err := alt.SelectionString()
+	if err != nil || !ok {
+		t.Fatalf("SelectionString() = ok %v, err %v; want true, nil", ok, err)
 	}
 	if got, want := strings.TrimSpace(string(text)), "on alternate"; got != want {
 		t.Errorf("alternate selection = %q, want %q", got, want)

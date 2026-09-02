@@ -12,7 +12,7 @@ func newSearchOn(t *testing.T, term *Terminal, needle string) (*Screen, *Search)
 	if err != nil {
 		t.Fatalf("ActiveScreen: %v", err)
 	}
-	s, err := term.NewSearch([]byte(needle))
+	s, err := sc.NewSearch([]byte(needle))
 	if err != nil {
 		t.Fatalf("NewSearch: %v", err)
 	}
@@ -86,9 +86,9 @@ func TestSearchSelect(t *testing.T) {
 	if has, err := sc.HasSelection(); err != nil || !has {
 		t.Fatalf("HasSelection() after Select = %v, %v; want true, nil", has, err)
 	}
-	text, err := sc.SelectionString()
-	if err != nil {
-		t.Fatalf("SelectionString: %v", err)
+	text, ok, err := sc.SelectionString()
+	if err != nil || !ok {
+		t.Fatalf("SelectionString() = ok %v, err %v; want true, nil", ok, err)
 	}
 	if got, want := strings.TrimSpace(string(text)), "needle"; got != want {
 		t.Errorf("selected text = %q, want %q", got, want)
@@ -96,7 +96,9 @@ func TestSearchSelect(t *testing.T) {
 }
 
 // A search is a child of its screen, and the screen is borrowed from the
-// terminal, so the terminal cannot close while a search is open.
+// terminal, so the reservation has to land on the terminal that actually owns
+// the memory: closing it is refused while a search is open, and closing it
+// after the search closes has to work.
 func TestSearchKeepsTerminalOpen(t *testing.T) {
 	term, err := NewTerminal(20, 4)
 	if err != nil {
@@ -105,7 +107,11 @@ func TestSearchKeepsTerminalOpen(t *testing.T) {
 	if err := term.PrintString([]byte("needle")); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
-	s, err := term.NewSearch([]byte("needle"))
+	sc, err := term.ActiveScreen()
+	if err != nil {
+		t.Fatalf("ActiveScreen: %v", err)
+	}
+	s, err := sc.NewSearch([]byte("needle"))
 	if err != nil {
 		t.Fatalf("NewSearch: %v", err)
 	}
@@ -118,5 +124,61 @@ func TestSearchKeepsTerminalOpen(t *testing.T) {
 	}
 	if err := term.Close(); err != nil {
 		t.Fatalf("terminal Close after the search closed: %v", err)
+	}
+}
+
+// Closing a search without ever attempting to close the terminal first must
+// leave the terminal's child count at zero, not below it.
+func TestSearchChildCountThroughBorrowedScreen(t *testing.T) {
+	term, err := NewTerminal(20, 4)
+	if err != nil {
+		t.Fatalf("NewTerminal: %v", err)
+	}
+	sc, err := term.ActiveScreen()
+	if err != nil {
+		t.Fatalf("ActiveScreen: %v", err)
+	}
+	s, err := sc.NewSearch([]byte("x"))
+	if err != nil {
+		t.Fatalf("NewSearch: %v", err)
+	}
+	if err := s.Close(); err != nil {
+		t.Fatalf("search Close: %v", err)
+	}
+	if err := term.Close(); err != nil {
+		t.Fatalf("terminal Close: %v", err)
+	}
+}
+
+// Two searches on the same screen each hold the terminal open.
+func TestMultipleSearches(t *testing.T) {
+	term, err := NewTerminal(20, 4)
+	if err != nil {
+		t.Fatalf("NewTerminal: %v", err)
+	}
+	sc, err := term.ActiveScreen()
+	if err != nil {
+		t.Fatalf("ActiveScreen: %v", err)
+	}
+	first, err := sc.NewSearch([]byte("a"))
+	if err != nil {
+		t.Fatalf("NewSearch: %v", err)
+	}
+	second, err := sc.NewSearch([]byte("b"))
+	if err != nil {
+		t.Fatalf("NewSearch: %v", err)
+	}
+
+	if err := first.Close(); err != nil {
+		t.Fatalf("first Close: %v", err)
+	}
+	if err := term.Close(); !errors.Is(err, ErrHandleInUse) {
+		t.Fatalf("Close with one search still open = %v, want ErrHandleInUse", err)
+	}
+	if err := second.Close(); err != nil {
+		t.Fatalf("second Close: %v", err)
+	}
+	if err := term.Close(); err != nil {
+		t.Fatalf("terminal Close after both searches closed: %v", err)
 	}
 }

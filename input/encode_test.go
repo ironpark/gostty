@@ -1,25 +1,75 @@
-package gostty
+package input_test
 
 import (
 	"bytes"
+	"strings"
 	"testing"
+
+	"github.com/ironpark/gostty"
+	"github.com/ironpark/gostty/input"
 )
 
-func newKeyEv(t *testing.T) *KeyEvent {
+// Local copies of the terminal helpers: these tests live in their own package.
+
+func newTerm(t *testing.T, cols, rows uint16) *gostty.Terminal {
 	t.Helper()
-	ev, err := NewKeyEvent()
+	term, err := gostty.NewTerminal(cols, rows)
 	if err != nil {
-		t.Fatalf("NewKeyEvent: %v", err)
+		t.Fatalf("NewTerminal: %v", err)
+	}
+	t.Cleanup(func() { term.Close() })
+	return term
+}
+
+func newStreamPair(t *testing.T, cols, rows uint16) (*gostty.Terminal, *gostty.Stream) {
+	t.Helper()
+	term, err := gostty.NewTerminal(cols, rows)
+	if err != nil {
+		t.Fatalf("NewTerminal: %v", err)
+	}
+	stream, err := term.NewStream(0)
+	if err != nil {
+		term.Close()
+		t.Fatalf("NewStream: %v", err)
+	}
+	t.Cleanup(func() {
+		stream.Close()
+		term.Close()
+	})
+	return term, stream
+}
+
+func feed(t *testing.T, s *gostty.Stream, data string) {
+	t.Helper()
+	if err := s.Feed([]byte(data)); err != nil {
+		t.Fatalf("Feed(%q): %v", data, err)
+	}
+}
+
+func screen(t *testing.T, term *gostty.Terminal) string {
+	t.Helper()
+	got, err := term.PlainString()
+	if err != nil {
+		t.Fatalf("PlainString: %v", err)
+	}
+	return strings.TrimRight(string(got), "\n")
+}
+
+func newKeyEv(t *testing.T) *input.KeyEvent {
+	t.Helper()
+	ev, err := input.NewKeyEvent()
+	if err != nil {
+		t.Fatalf("input.NewKeyEvent: %v", err)
 	}
 	t.Cleanup(func() { ev.Close() })
 	return ev
 }
 
-func encodeKey(t *testing.T, term *Terminal, ev *KeyEvent) string {
+func encodeKey(t *testing.T, term *gostty.Terminal, ev *input.KeyEvent) string {
 	t.Helper()
 	var buf bytes.Buffer
-	if err := EncodeKey(&buf, term, ev); err != nil {
-		t.Fatalf("EncodeKey: %v", err)
+	if err := input.EncodeKey(&buf, term, ev); err != nil {
+		t.Fatalf("input.EncodeKey: %v", err)
 	}
 	return buf.String()
 }
@@ -27,7 +77,7 @@ func encodeKey(t *testing.T, term *Terminal, ev *KeyEvent) string {
 func TestEncodePlainText(t *testing.T) {
 	term := newTerm(t, 20, 3)
 	ev := newKeyEv(t)
-	if err := ev.SetKey(KeyKeyA); err != nil {
+	if err := ev.SetKey(input.KeyKeyA); err != nil {
 		t.Fatalf("SetKey: %v", err)
 	}
 	if err := ev.SetUTF8([]byte("a")); err != nil {
@@ -41,10 +91,10 @@ func TestEncodePlainText(t *testing.T) {
 func TestEncodeCtrlKey(t *testing.T) {
 	term := newTerm(t, 20, 3)
 	ev := newKeyEv(t)
-	if err := ev.SetKey(KeyKeyC); err != nil {
+	if err := ev.SetKey(input.KeyKeyC); err != nil {
 		t.Fatalf("SetKey: %v", err)
 	}
-	if err := ev.SetMod(KeyModCtrl, true); err != nil {
+	if err := ev.SetMod(input.KeyModCtrl, true); err != nil {
 		t.Fatalf("SetMod: %v", err)
 	}
 	// ctrl+c is 0x03.
@@ -56,7 +106,7 @@ func TestEncodeCtrlKey(t *testing.T) {
 func TestEncodeEnter(t *testing.T) {
 	term := newTerm(t, 20, 3)
 	ev := newKeyEv(t)
-	if err := ev.SetKey(KeyEnter); err != nil {
+	if err := ev.SetKey(input.KeyEnter); err != nil {
 		t.Fatalf("SetKey: %v", err)
 	}
 	if got, want := encodeKey(t, term, ev), "\r"; got != want {
@@ -69,7 +119,7 @@ func TestEncodeEnter(t *testing.T) {
 func TestEncodeArrowFollowsCursorKeyMode(t *testing.T) {
 	term, stream := newStreamPair(t, 20, 3)
 	ev := newKeyEv(t)
-	if err := ev.SetKey(KeyArrowUp); err != nil {
+	if err := ev.SetKey(input.KeyArrowUp); err != nil {
 		t.Fatalf("SetKey: %v", err)
 	}
 
@@ -86,10 +136,10 @@ func TestEncodeArrowFollowsCursorKeyMode(t *testing.T) {
 func TestKeyEventReset(t *testing.T) {
 	term := newTerm(t, 20, 3)
 	ev := newKeyEv(t)
-	if err := ev.SetKey(KeyKeyC); err != nil {
+	if err := ev.SetKey(input.KeyKeyC); err != nil {
 		t.Fatalf("SetKey: %v", err)
 	}
-	if err := ev.SetMod(KeyModCtrl, true); err != nil {
+	if err := ev.SetMod(input.KeyModCtrl, true); err != nil {
 		t.Fatalf("SetMod: %v", err)
 	}
 	if got := encodeKey(t, term, ev); got != "\x03" {
@@ -99,7 +149,7 @@ func TestKeyEventReset(t *testing.T) {
 	if err := ev.Reset(); err != nil {
 		t.Fatalf("Reset: %v", err)
 	}
-	if err := ev.SetKey(KeyEnter); err != nil {
+	if err := ev.SetKey(input.KeyEnter); err != nil {
 		t.Fatalf("SetKey: %v", err)
 	}
 	if got, want := encodeKey(t, term, ev), "\r"; got != want {
@@ -109,30 +159,30 @@ func TestKeyEventReset(t *testing.T) {
 
 func TestEncodeFocus(t *testing.T) {
 	for _, tc := range []struct {
-		event FocusEvent
+		event input.FocusEvent
 		want  string
 	}{
-		{FocusEventGained, "\x1b[I"},
-		{FocusEventLost, "\x1b[O"},
+		{input.FocusEventGained, "\x1b[I"},
+		{input.FocusEventLost, "\x1b[O"},
 	} {
 		var buf bytes.Buffer
-		if err := EncodeFocus(&buf, tc.event); err != nil {
-			t.Fatalf("EncodeFocus(%v): %v", tc.event, err)
+		if err := input.EncodeFocus(&buf, tc.event); err != nil {
+			t.Fatalf("input.EncodeFocus(%v): %v", tc.event, err)
 		}
 		if buf.String() != tc.want {
-			t.Errorf("EncodeFocus(%v) = %q, want %q", tc.event, buf.String(), tc.want)
+			t.Errorf("input.EncodeFocus(%v) = %q, want %q", tc.event, buf.String(), tc.want)
 		}
 	}
 }
 
 func TestIsSafePaste(t *testing.T) {
-	if !IsSafePaste([]byte("plain text")) {
+	if !input.IsSafePaste([]byte("plain text")) {
 		t.Error("plain text reported unsafe")
 	}
-	if IsSafePaste([]byte("two\nlines")) {
+	if input.IsSafePaste([]byte("two\nlines")) {
 		t.Error("text with a newline reported safe")
 	}
-	if IsSafePaste([]byte("escape \x1b[201~ hatch")) {
+	if input.IsSafePaste([]byte("escape \x1b[201~ hatch")) {
 		t.Error("text with a bracketed-paste terminator reported safe")
 	}
 }
@@ -143,8 +193,8 @@ func TestEncodePasteFollowsBracketedMode(t *testing.T) {
 	term, stream := newStreamPair(t, 20, 3)
 
 	var plain bytes.Buffer
-	if err := EncodePaste(&plain, term, []byte("hello")); err != nil {
-		t.Fatalf("EncodePaste: %v", err)
+	if err := input.EncodePaste(&plain, term, []byte("hello")); err != nil {
+		t.Fatalf("input.EncodePaste: %v", err)
 	}
 	if got, want := plain.String(), "hello"; got != want {
 		t.Errorf("unbracketed paste = %q, want %q", got, want)
@@ -152,8 +202,8 @@ func TestEncodePasteFollowsBracketedMode(t *testing.T) {
 
 	feed(t, stream, "\x1b[?2004h")
 	var bracketed bytes.Buffer
-	if err := EncodePaste(&bracketed, term, []byte("hello")); err != nil {
-		t.Fatalf("EncodePaste: %v", err)
+	if err := input.EncodePaste(&bracketed, term, []byte("hello")); err != nil {
+		t.Fatalf("input.EncodePaste: %v", err)
 	}
 	if got, want := bracketed.String(), "\x1b[200~hello\x1b[201~"; got != want {
 		t.Errorf("bracketed paste = %q, want %q", got, want)
@@ -164,7 +214,7 @@ func TestEncodePasteFollowsBracketedMode(t *testing.T) {
 func TestKeyEventThroughStream(t *testing.T) {
 	term, stream := newStreamPair(t, 20, 3)
 	ev := newKeyEv(t)
-	if err := ev.SetKey(KeyKeyH); err != nil {
+	if err := ev.SetKey(input.KeyKeyH); err != nil {
 		t.Fatalf("SetKey: %v", err)
 	}
 	if err := ev.SetUTF8([]byte("h")); err != nil {
@@ -172,8 +222,8 @@ func TestKeyEventThroughStream(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	if err := EncodeKey(&buf, term, ev); err != nil {
-		t.Fatalf("EncodeKey: %v", err)
+	if err := input.EncodeKey(&buf, term, ev); err != nil {
+		t.Fatalf("input.EncodeKey: %v", err)
 	}
 	feed(t, stream, buf.String())
 
@@ -182,29 +232,29 @@ func TestKeyEventThroughStream(t *testing.T) {
 	}
 }
 
-func newMouseEv(t *testing.T) *MouseEvent {
+func newMouseEv(t *testing.T) *input.MouseEvent {
 	t.Helper()
-	ev, err := NewMouseEvent()
+	ev, err := input.NewMouseEvent()
 	if err != nil {
-		t.Fatalf("NewMouseEvent: %v", err)
+		t.Fatalf("input.NewMouseEvent: %v", err)
 	}
 	t.Cleanup(func() { ev.Close() })
 	return ev
 }
 
 // A 10x20 pixel cell with no padding, so pixel (x, y) is cell (x/10, y/20).
-var testSize = RenderSize{
+var testSize = input.RenderSize{
 	ScreenWidth:  800,
 	ScreenHeight: 480,
 	CellWidth:    10,
 	CellHeight:   20,
 }
 
-func encodeMouse(t *testing.T, term *Terminal, ev *MouseEvent, pressed bool) string {
+func encodeMouse(t *testing.T, term *gostty.Terminal, ev *input.MouseEvent, pressed bool) string {
 	t.Helper()
 	var buf bytes.Buffer
-	if err := EncodeMouse(&buf, term, ev, testSize, pressed); err != nil {
-		t.Fatalf("EncodeMouse: %v", err)
+	if err := input.EncodeMouse(&buf, term, ev, testSize, pressed); err != nil {
+		t.Fatalf("input.EncodeMouse: %v", err)
 	}
 	return buf.String()
 }
@@ -213,10 +263,10 @@ func encodeMouse(t *testing.T, term *Terminal, ev *MouseEvent, pressed bool) str
 func TestEncodeMouseSilentWithoutTracking(t *testing.T) {
 	term, _ := newStreamPair(t, 80, 24)
 	ev := newMouseEv(t)
-	if err := ev.SetAction(MouseActionPress); err != nil {
+	if err := ev.SetAction(input.MouseActionPress); err != nil {
 		t.Fatalf("SetAction: %v", err)
 	}
-	if err := ev.SetButton(MouseButtonLeft); err != nil {
+	if err := ev.SetButton(input.MouseButtonLeft); err != nil {
 		t.Fatalf("SetButton: %v", err)
 	}
 	if err := ev.SetPosition(0, 0); err != nil {
@@ -233,10 +283,10 @@ func TestEncodeMouseSGR(t *testing.T) {
 	feed(t, stream, "\x1b[?1000h\x1b[?1006h")
 
 	ev := newMouseEv(t)
-	if err := ev.SetAction(MouseActionPress); err != nil {
+	if err := ev.SetAction(input.MouseActionPress); err != nil {
 		t.Fatalf("SetAction: %v", err)
 	}
-	if err := ev.SetButton(MouseButtonLeft); err != nil {
+	if err := ev.SetButton(input.MouseButtonLeft); err != nil {
 		t.Fatalf("SetButton: %v", err)
 	}
 	// Pixel (25, 45) with a 10x20 cell is column 3, row 3 one-based.
@@ -247,7 +297,7 @@ func TestEncodeMouseSGR(t *testing.T) {
 		t.Errorf("press encoded %q, want %q", got, want)
 	}
 
-	if err := ev.SetAction(MouseActionRelease); err != nil {
+	if err := ev.SetAction(input.MouseActionRelease); err != nil {
 		t.Fatalf("SetAction: %v", err)
 	}
 	if got, want := encodeMouse(t, term, ev, false), "\x1b[<0;3;3m"; got != want {
@@ -261,13 +311,13 @@ func TestEncodeMouseModifiers(t *testing.T) {
 	feed(t, stream, "\x1b[?1000h\x1b[?1006h")
 
 	ev := newMouseEv(t)
-	if err := ev.SetAction(MouseActionPress); err != nil {
+	if err := ev.SetAction(input.MouseActionPress); err != nil {
 		t.Fatalf("SetAction: %v", err)
 	}
-	if err := ev.SetButton(MouseButtonRight); err != nil {
+	if err := ev.SetButton(input.MouseButtonRight); err != nil {
 		t.Fatalf("SetButton: %v", err)
 	}
-	if err := ev.SetMod(KeyModShift, true); err != nil {
+	if err := ev.SetMod(input.KeyModShift, true); err != nil {
 		t.Fatalf("SetMod: %v", err)
 	}
 	if err := ev.SetPosition(0, 0); err != nil {
@@ -284,16 +334,16 @@ func TestMouseEventReset(t *testing.T) {
 	feed(t, stream, "\x1b[?1000h\x1b[?1006h")
 
 	ev := newMouseEv(t)
-	if err := ev.SetButton(MouseButtonRight); err != nil {
+	if err := ev.SetButton(input.MouseButtonRight); err != nil {
 		t.Fatalf("SetButton: %v", err)
 	}
-	if err := ev.SetMod(KeyModShift, true); err != nil {
+	if err := ev.SetMod(input.KeyModShift, true); err != nil {
 		t.Fatalf("SetMod: %v", err)
 	}
 	if err := ev.Reset(); err != nil {
 		t.Fatalf("Reset: %v", err)
 	}
-	if err := ev.SetButton(MouseButtonLeft); err != nil {
+	if err := ev.SetButton(input.MouseButtonLeft); err != nil {
 		t.Fatalf("SetButton: %v", err)
 	}
 	if err := ev.SetPosition(0, 0); err != nil {
