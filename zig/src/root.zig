@@ -75,6 +75,131 @@ pub fn graphemeWidth(cps: []const u32) u8 {
 /// Unicode helpers, re-exported as-is.
 pub const unicode = vt.unicode;
 
+/// Input encoding: turning key, mouse and focus events into the bytes a
+/// program reading the pty expects.
+pub const input = vt.input;
+
+pub const Key = vt.input.Key;
+pub const KeyAction = vt.input.KeyAction;
+pub const FocusEvent = vt.input.FocusEvent;
+
+/// A single keyboard modifier.
+///
+/// ghostty stores modifiers as a `packed struct(u16)`, which has no C
+/// representation, so they are set one at a time instead of passed as a mask.
+pub const KeyMod = enum(u8) {
+    shift,
+    ctrl,
+    alt,
+    super,
+    caps_lock,
+    num_lock,
+};
+
+/// A key event being assembled for encoding.
+///
+/// ghostty's `KeyEvent` holds a borrowed `utf8` slice, so a Go caller could not
+/// keep one alive across calls. This owns the text instead, which is also the
+/// shape ghostty's own C API uses.
+pub const KeyEvent = struct {
+    /// Long enough for any single key event's text: a grapheme cluster with
+    /// combining marks, not arbitrary input.
+    const utf8_capacity = 64;
+
+    inner: vt.input.KeyEvent = .{},
+    utf8_buf: [utf8_capacity]u8 = undefined,
+
+    fn applyMod(mods: *vt.input.KeyMods, mod: KeyMod, value: bool) void {
+        switch (mod) {
+            .shift => mods.shift = value,
+            .ctrl => mods.ctrl = value,
+            .alt => mods.alt = value,
+            .super => mods.super = value,
+            .caps_lock => mods.caps_lock = value,
+            .num_lock => mods.num_lock = value,
+        }
+    }
+
+    /// Return the event to its defaults so one handle can encode many keys.
+    pub fn reset(self: *KeyEvent) void {
+        self.inner = .{};
+    }
+
+    pub fn setAction(self: *KeyEvent, action: KeyAction) void {
+        self.inner.action = action;
+    }
+
+    pub fn setKey(self: *KeyEvent, key: Key) void {
+        self.inner.key = key;
+    }
+
+    pub fn setMod(self: *KeyEvent, mod: KeyMod, value: bool) void {
+        applyMod(&self.inner.mods, mod, value);
+    }
+
+    /// Mark a modifier as consumed producing the event text. Effective
+    /// modifiers are the set modifiers minus the consumed ones.
+    pub fn setConsumedMod(self: *KeyEvent, mod: KeyMod, value: bool) void {
+        applyMod(&self.inner.consumed_mods, mod, value);
+    }
+
+    /// True while the event is part of an unfinished dead-key composition.
+    pub fn setComposing(self: *KeyEvent, composing: bool) void {
+        self.inner.composing = composing;
+    }
+
+    /// The text this key produced, if any. Copied into the event.
+    pub fn setUtf8(self: *KeyEvent, text: []const u8) error{NoSpaceLeft}!void {
+        if (text.len > utf8_capacity) return error.NoSpaceLeft;
+        @memcpy(self.utf8_buf[0..text.len], text);
+        self.inner.utf8 = self.utf8_buf[0..text.len];
+    }
+
+    /// The codepoint this key produces unshifted, or zero for none.
+    pub fn setUnshiftedCodepoint(self: *KeyEvent, cp: u32) void {
+        self.inner.unshifted_codepoint = @intCast(cp);
+    }
+};
+
+pub fn newKeyEvent(gpa: Allocator) !*KeyEvent {
+    const self = try gpa.create(KeyEvent);
+    self.* = .{};
+    return self;
+}
+
+pub fn freeKeyEvent(self: *KeyEvent, gpa: Allocator) void {
+    gpa.destroy(self);
+}
+
+/// Encode a key event for `terminal`, whose modes decide the encoding.
+pub fn encodeKey(
+    writer: *std.Io.Writer,
+    terminal: *const Terminal,
+    event: *const KeyEvent,
+) !void {
+    try vt.input.encodeKey(writer, event.inner, .fromTerminal(terminal));
+}
+
+/// Encode a focus in/out report (CSI I / CSI O).
+pub fn encodeFocus(writer: *std.Io.Writer, event: FocusEvent) !void {
+    try vt.input.encodeFocus(writer, event);
+}
+
+/// True if `data` can be pasted without the receiving program seeing it as
+/// something other than literal text.
+pub fn isSafePaste(data: []const u8) bool {
+    return vt.input.isSafePaste(data);
+}
+
+/// Encode `data` for pasting into `terminal`, respecting bracketed paste mode.
+pub fn encodePaste(
+    writer: *std.Io.Writer,
+    terminal: *const Terminal,
+    data: []const u8,
+) !void {
+    try vt.input.encodePasteWriter(writer, data, .fromTerminal(terminal));
+}
+
 /// Create a terminal with the given viewport size.
 pub fn newTerminal(gpa: Allocator, io_impl: std.Io, width: u16, height: u16) !*Terminal {
     const self = try gpa.create(Terminal);

@@ -19,6 +19,18 @@ screen, _ := term.PlainString()
 fmt.Println(string(screen)) // hello\nworld
 ```
 
+Input goes the other way: build a key event and encode it for whatever the
+program on the pty currently expects.
+
+```go
+ev, _ := gostty.NewKeyEvent()
+defer ev.Close()
+ev.SetKey(gostty.KeyArrowUp)
+
+var buf bytes.Buffer
+gostty.EncodeKey(&buf, term, ev) // "\x1b[A", or "\x1bOA" under DECCKM
+```
+
 ## Layout
 
 | Path | Contents |
@@ -33,7 +45,9 @@ fmt.Println(string(screen)) // hello\nworld
 
 The public package sits at the module root, so `gostty_*_gen.go` names are
 reserved for the generator: a hand-written file with one of those names would be
-overwritten on the next `make generate`.
+overwritten on the next `make generate`. The generator's unexported helpers
+(`newTerminal`, `newStream`, `newKeyEvent`, ...) share the package namespace
+too, so hand-written code has to avoid those names.
 
 Most of libghostty-vt is bound directly: `Terminal` is ghostty's own type and
 its methods become Go methods without a wrapper. `zig/src/root.zig` only adds a
@@ -69,9 +83,10 @@ toolchain — but the native archive is not, so a fresh checkout must run
 ## Status
 
 Early. The bound surface is a useful slice of libghostty-vt — terminal state
-and editing, VT stream parsing, cursor and charsets, unicode width — not all of
-it. Input encoding (keys, mouse, paste) is not bound yet. See
-`docs/zigo-findings.md` for what is blocked and why.
+and editing, VT stream parsing, cursor and charsets, key/focus/paste encoding,
+unicode width — not all of it. Mouse encoding, SGR attributes, screen selection
+and search are not bound. See `docs/zigo-findings.md` for what is blocked and
+why.
 
 ## License
 

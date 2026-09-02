@@ -118,6 +118,105 @@ func GraphemeWidth(cps []uint32) uint8 {
 	return uint8(C.zg_grapheme_width(cpsPtr, C.size_t(len(cps))))
 }
 
+// NewKeyEvent calls the generated C ABI wrapper for zg_new_key_event.
+func NewKeyEvent() (unsafe.Pointer, int32) {
+	var outResult *C.zg_key_event
+	code := int32(C.zg_new_key_event(&outResult))
+	return unsafe.Pointer(outResult), code
+}
+
+// KeyEventFreeKeyEvent calls the generated C ABI wrapper for zg_key_event_free_key_event.
+func KeyEventFreeKeyEvent(self unsafe.Pointer) int32 {
+	code := int32(C.zg_key_event_free_key_event((*C.zg_key_event)(self)))
+	return code
+}
+
+// KeyEventReset calls the generated C ABI wrapper for zg_key_event_reset.
+func KeyEventReset(self unsafe.Pointer) int32 {
+	code := int32(C.zg_key_event_reset((*C.zg_key_event)(self)))
+	return code
+}
+
+// KeyEventSetAction calls the generated C ABI wrapper for zg_key_event_set_action.
+func KeyEventSetAction(self unsafe.Pointer, action int32) int32 {
+	code := int32(C.zg_key_event_set_action((*C.zg_key_event)(self), C.int32_t(action)))
+	return code
+}
+
+// KeyEventSetKey calls the generated C ABI wrapper for zg_key_event_set_key.
+func KeyEventSetKey(self unsafe.Pointer, key int32) int32 {
+	code := int32(C.zg_key_event_set_key((*C.zg_key_event)(self), C.int32_t(key)))
+	return code
+}
+
+// KeyEventSetMod calls the generated C ABI wrapper for zg_key_event_set_mod.
+func KeyEventSetMod(self unsafe.Pointer, mod uint8, value uint8) int32 {
+	code := int32(C.zg_key_event_set_mod((*C.zg_key_event)(self), C.uint8_t(mod), C.uint8_t(value)))
+	return code
+}
+
+// KeyEventSetConsumedMod calls the generated C ABI wrapper for zg_key_event_set_consumed_mod.
+func KeyEventSetConsumedMod(self unsafe.Pointer, mod uint8, value uint8) int32 {
+	code := int32(C.zg_key_event_set_consumed_mod((*C.zg_key_event)(self), C.uint8_t(mod), C.uint8_t(value)))
+	return code
+}
+
+// KeyEventSetComposing calls the generated C ABI wrapper for zg_key_event_set_composing.
+func KeyEventSetComposing(self unsafe.Pointer, composing uint8) int32 {
+	code := int32(C.zg_key_event_set_composing((*C.zg_key_event)(self), C.uint8_t(composing)))
+	return code
+}
+
+// KeyEventSetUTF8 calls the generated C ABI wrapper for zg_key_event_set_utf8.
+func KeyEventSetUTF8(self unsafe.Pointer, text []uint8) int32 {
+	var textZero C.uint8_t
+	textPtr := &textZero
+	if len(text) != 0 {
+		textPtr = (*C.uint8_t)(unsafe.Pointer(&text[0]))
+	}
+	code := int32(C.zg_key_event_set_utf8((*C.zg_key_event)(self), textPtr, C.size_t(len(text))))
+	return code
+}
+
+// KeyEventSetUnshiftedCodepoint calls the generated C ABI wrapper for zg_key_event_set_unshifted_codepoint.
+func KeyEventSetUnshiftedCodepoint(self unsafe.Pointer, cp uint32) int32 {
+	code := int32(C.zg_key_event_set_unshifted_codepoint((*C.zg_key_event)(self), C.uint32_t(cp)))
+	return code
+}
+
+// EncodeKey calls the generated C ABI wrapper for zg_encode_key.
+func EncodeKey(writerHandle uintptr, terminal unsafe.Pointer, event unsafe.Pointer) int32 {
+	code := int32(C.zg_encode_key(C.size_t(writerHandle), (*C.zg_terminal)(terminal), (*C.zg_key_event)(event)))
+	return code
+}
+
+// EncodeFocus calls the generated C ABI wrapper for zg_encode_focus.
+func EncodeFocus(writerHandle uintptr, event uint8) int32 {
+	code := int32(C.zg_encode_focus(C.size_t(writerHandle), C.uint8_t(event)))
+	return code
+}
+
+// IsSafePaste calls the generated C ABI wrapper for zg_is_safe_paste.
+func IsSafePaste(data []uint8) uint8 {
+	var dataZero C.uint8_t
+	dataPtr := &dataZero
+	if len(data) != 0 {
+		dataPtr = (*C.uint8_t)(unsafe.Pointer(&data[0]))
+	}
+	return uint8(C.zg_is_safe_paste(dataPtr, C.size_t(len(data))))
+}
+
+// EncodePaste calls the generated C ABI wrapper for zg_encode_paste.
+func EncodePaste(writerHandle uintptr, terminal unsafe.Pointer, data []uint8) int32 {
+	var dataZero C.uint8_t
+	dataPtr := &dataZero
+	if len(data) != 0 {
+		dataPtr = (*C.uint8_t)(unsafe.Pointer(&data[0]))
+	}
+	code := int32(C.zg_encode_paste(C.size_t(writerHandle), (*C.zg_terminal)(terminal), dataPtr, C.size_t(len(data))))
+	return code
+}
+
 // NewTerminal calls the generated C ABI wrapper for zg_new_terminal.
 func NewTerminal(width uint16, height uint16) (unsafe.Pointer, int32) {
 	var outResult *C.zg_terminal

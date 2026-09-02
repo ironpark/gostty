@@ -9,6 +9,7 @@ pub const bindings = zigo.define(.{
     .types = .{
         .{ .type = gostty.Terminal, .repr = .@"opaque" },
         .{ .type = gostty.Stream, .repr = .@"opaque", .name = "Stream" },
+        .{ .type = gostty.KeyEvent, .repr = .@"opaque", .name = "KeyEvent" },
         .{ .name = "CursorStyle", .type = gostty.CursorStyle, .repr = .enumeration },
         .{ .name = "CursorStyleReq", .type = gostty.CursorStyleReq, .repr = .enumeration },
         .{ .name = "EraseDisplay", .type = gostty.EraseDisplay, .repr = .enumeration },
@@ -17,6 +18,10 @@ pub const bindings = zigo.define(.{
         .{ .name = "EraseLine", .type = gostty.EraseLine, .repr = .enumeration, .exhaustive = false },
         .{ .name = "TabClear", .type = gostty.TabClear, .repr = .enumeration, .exhaustive = false },
         .{ .name = "ProtectedMode", .type = gostty.ProtectedMode, .repr = .enumeration },
+        .{ .name = "Key", .type = gostty.Key, .repr = .enumeration },
+        .{ .name = "KeyAction", .type = gostty.KeyAction, .repr = .enumeration },
+        .{ .name = "KeyMod", .type = gostty.KeyMod, .repr = .enumeration },
+        .{ .name = "FocusEvent", .type = gostty.FocusEvent, .repr = .enumeration },
         .{ .name = "Charset", .type = gostty.Charset, .repr = .enumeration },
         .{ .name = "CharsetSlot", .type = gostty.CharsetSlot, .repr = .enumeration },
         .{ .name = "CharsetActiveSlot", .type = gostty.CharsetActiveSlot, .repr = .enumeration },
@@ -26,6 +31,22 @@ pub const bindings = zigo.define(.{
     .functions = .{
         .{ .path = "root.unicode.codepointWidth" },
         .{ .path = "root.graphemeWidth", .params = .{"cps"} },
+
+        // Input encoding.
+        .{ .path = "root.newKeyEvent", .constructs = "KeyEvent" },
+        .{ .path = "root.freeKeyEvent", .destroys = "KeyEvent" },
+        .{ .path = "KeyEvent.reset" },
+        .{ .path = "KeyEvent.setAction", .params = .{"action"} },
+        .{ .path = "KeyEvent.setKey", .params = .{"key"} },
+        .{ .path = "KeyEvent.setMod", .params = .{ "mod", "value" } },
+        .{ .path = "KeyEvent.setConsumedMod", .params = .{ "mod", "value" } },
+        .{ .path = "KeyEvent.setComposing", .params = .{"composing"} },
+        .{ .path = "KeyEvent.setUtf8", .params = .{"text"} },
+        .{ .path = "KeyEvent.setUnshiftedCodepoint", .params = .{"cp"} },
+        .{ .path = "root.encodeKey", .params = .{ "writer", "terminal", "event" } },
+        .{ .path = "root.encodeFocus", .params = .{ "writer", "event" } },
+        .{ .path = "root.isSafePaste", .params = .{"data"} },
+        .{ .path = "root.encodePaste", .params = .{ "writer", "terminal", "data" } },
 
         // Lifecycle. `Terminal.init` returns by value and takes an `Options`
         // that cannot cross the C ABI, so the pair lives outside the type.

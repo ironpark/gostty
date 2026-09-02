@@ -295,3 +295,114 @@ func (s *Stream) zigoTakeLocked() (streamCleanupState, bool) {
 	}
 	return state, true
 }
+
+// KeyEvent is a caller-owned native handle. Call Close when it is no longer needed.
+type KeyEvent struct {
+	ptr     unsafe.Pointer
+	mu      sync.Mutex
+	active  int
+	closed  bool
+	poison  *NativePanicError
+	cleanup runtime.Cleanup
+}
+
+// zigoAcquire pins k open for one native call and hands back its pointer;
+// the call ends with zigoRelease. A nil, closed, or poisoned handle is the error.
+func (k *KeyEvent) zigoAcquire(operation string) (unsafe.Pointer, error) {
+	if k == nil {
+		return nil, &HandleError{Operation: operation}
+	}
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	if k.closed || k.ptr == nil {
+		return nil, &HandleError{Operation: operation}
+	}
+	if k.poison != nil {
+		return nil, k.poison.poisoned(operation)
+	}
+	k.active++
+	return k.ptr, nil
+}
+
+func (k *KeyEvent) zigoRelease() {
+	if k == nil {
+		return
+	}
+	k.mu.Lock()
+	k.active--
+	state, release := k.zigoTakeLocked()
+	k.mu.Unlock()
+	if release {
+		cleanupKeyEvent(state)
+	}
+}
+
+// zigoPoison marks k unusable: a Zig panic unwound through native frames
+// without running their defers, so the state behind it is unknown.
+func (k *KeyEvent) zigoPoison(cause *NativePanicError) {
+	if k == nil {
+		return
+	}
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	if k.poison == nil {
+		k.poison = cause
+		k.cleanup.Stop()
+	}
+}
+
+type keyEventCleanupState struct {
+	ptr unsafe.Pointer
+}
+
+func newKeyEvent(ptr unsafe.Pointer) *KeyEvent {
+	value := &KeyEvent{ptr: ptr}
+	state := keyEventCleanupState{ptr: ptr}
+	value.cleanup = runtime.AddCleanup(value, cleanupKeyEvent, state)
+	return value
+}
+
+func cleanupKeyEvent(state keyEventCleanupState) {
+	if state.ptr != nil {
+		raw.KeyEventFreeKeyEvent(state.ptr)
+	}
+}
+
+// Close releases the native KeyEvent resources. It is safe to call more than once.
+// The error result is always nil; it exists so KeyEvent satisfies io.Closer.
+// Close does not wait: a call still inside native keeps the resources until it
+// returns, and every call made after Close fails with *HandleError.
+func (k *KeyEvent) Close() error {
+	if k == nil {
+		return nil
+	}
+	k.mu.Lock()
+	if k.closed {
+		k.mu.Unlock()
+		return nil
+	}
+	k.closed = true
+	k.cleanup.Stop()
+	state, release := k.zigoTakeLocked()
+	k.mu.Unlock()
+	if release {
+		cleanupKeyEvent(state)
+	}
+	runtime.KeepAlive(k)
+	return nil
+}
+
+// zigoTakeLocked hands out what is left to release once k is closed and no
+// call is inside native; mu must be held. A poisoned handle keeps its native
+// object: releasing state a panic left half-changed could fault, so it leaks.
+func (k *KeyEvent) zigoTakeLocked() (keyEventCleanupState, bool) {
+	if !k.closed || k.active != 0 || k.ptr == nil {
+		return keyEventCleanupState{}, false
+	}
+	state := keyEventCleanupState{ptr: k.ptr}
+	k.ptr = nil
+	if k.poison != nil {
+		state.ptr = nil
+	}
+	return state, true
+}

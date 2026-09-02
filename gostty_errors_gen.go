@@ -206,6 +206,9 @@ var ErrContinuationUnavailable = &Error{Code: 7, Name: "ContinuationUnavailable"
 // ErrInvalidValue represents Zig error.InvalidValue.
 var ErrInvalidValue = &Error{Code: 8, Name: "InvalidValue"}
 
+// ErrNoSpaceLeft represents Zig error.NoSpaceLeft.
+var ErrNoSpaceLeft = &Error{Code: 9, Name: "NoSpaceLeft"}
+
 func errorForCode(operation string, code int32) error {
 	switch code {
 	case -2:
@@ -226,6 +229,8 @@ func errorForCode(operation string, code int32) error {
 		return &Error{Code: 7, Name: "ContinuationUnavailable", Operation: operation}
 	case 8:
 		return &Error{Code: 8, Name: "InvalidValue", Operation: operation}
+	case 9:
+		return &Error{Code: 9, Name: "NoSpaceLeft", Operation: operation}
 	default:
 		return &Error{Code: code, Name: "Unknown(" + strconv.Itoa(int(code)) + ")", Operation: operation}
 	}
