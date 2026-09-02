@@ -1,0 +1,21 @@
+{
+  "codes": {
+    "ContinuationDisabled": 6,
+    "ContinuationUnavailable": 7,
+    "InvalidUtf8": 2,
+    "InvalidValue": 8,
+    "OutOfMemory": 1,
+    "OutOfSpace": 3,
+    "UnknownPoint": 5,
+    "WriteFailed": 4
+  },
+  "ir_version": 1,
+  "next_code": 9,
+  "reserved": {
+    "-1": "Unknown",
+    "-2": "PanicCaught",
+    "-3": "CallbackPanic",
+    "-4": "InvalidHandle",
+    "0": "OK"
+  }
+}
