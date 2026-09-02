@@ -20,6 +20,7 @@ pub const bindings = zigo.define(.{
         .{ .name = "EraseLine", .type = gostty.EraseLine, .repr = .enumeration, .exhaustive = false },
         .{ .name = "TabClear", .type = gostty.TabClear, .repr = .enumeration, .exhaustive = false },
         .{ .name = "ProtectedMode", .type = gostty.ProtectedMode, .repr = .enumeration },
+        .{ .name = "ScreenKey", .type = gostty.ScreenKey, .repr = .enumeration },
         .{ .name = "Key", .type = gostty.Key, .repr = .enumeration },
         .{ .name = "KeyAction", .type = gostty.KeyAction, .repr = .enumeration },
         .{ .name = "KeyMod", .type = gostty.KeyMod, .repr = .enumeration },
@@ -84,6 +85,15 @@ pub const bindings = zigo.define(.{
         .{ .path = "Terminal.backspace" },
         .{ .path = "Terminal.cursorIsAtPrompt" },
         .{ .path = "Terminal.fullReset" },
+        .{ .path = "root.switchScreen", .params = .{"key"} },
+        .{ .path = "root.activeScreenKey" },
+        .{
+            .path = "root.printAttributesInto",
+            .params = .{"dst"},
+            .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
+        },
+        .{ .path = "root.historyString", .returns = .caller, .release = "root.freeString" },
+        .{ .path = "root.screenString", .returns = .caller, .release = "root.freeString" },
 
         // Cursor movement.
         .{ .path = "Terminal.cursorUp", .params = .{"count_req"} },

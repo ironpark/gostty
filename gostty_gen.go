@@ -723,6 +723,112 @@ func (t *Terminal) FullReset() error {
 	return nil
 }
 
+// SwitchScreen
+// Switch between the primary and alternate screens.
+//
+// Wrapped because ghostty returns the screen being left, and a handle borrowed
+// from its receiver has no representation in zigo -- only tagged-union
+// projections produce one.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (t *Terminal) SwitchScreen(key ScreenKey) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Terminal.SwitchScreen receiver", t)
+	if err != nil {
+		return err
+	}
+	defer t.zigoRelease()
+	code := raw.TerminalSwitchScreen(ptr, uint8(key))
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Terminal.SwitchScreen", code), t)
+	}
+	return nil
+}
+
+// ActiveScreenKey
+// Which screen is currently active.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (t *Terminal) ActiveScreenKey() (ScreenKey, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Terminal.ActiveScreenKey receiver", t)
+	if err != nil {
+		return 0, err
+	}
+	defer t.zigoRelease()
+	result, code := raw.TerminalActiveScreenKey(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(errorForCode("Terminal.ActiveScreenKey", code), t)
+	}
+	return ScreenKey(result), nil
+}
+
+// PrintAttributesInto
+// Write the cursor's current SGR attributes into `dst` as a DECRPSS response
+// body, and report how many bytes were written.
+//
+// Wrapped because ghostty returns a slice into the caller's buffer, and zigo
+// reports a written count instead.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (t *Terminal) PrintAttributesInto(dst []byte) (uint, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Terminal.PrintAttributesInto receiver", t)
+	if err != nil {
+		return 0, err
+	}
+	defer t.zigoRelease()
+	result, code := raw.TerminalPrintAttributesInto(ptr, dst)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(errorForCode("Terminal.PrintAttributesInto", code), t)
+	}
+	return result, nil
+}
+
+// HistoryString
+// The scrollback contents, oldest row first, newline separated.
+//
+// Wrapped because the region is chosen with `point.Point`, a tagged union
+// carrying a coordinate, which zigo cannot take by value.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (t *Terminal) HistoryString() ([]byte, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Terminal.HistoryString receiver", t)
+	if err != nil {
+		return nil, err
+	}
+	defer t.zigoRelease()
+	result, code := raw.TerminalHistoryString(ptr)
+	if code != 0 {
+		return nil, zigoPoisonAfterPanic(errorForCode("Terminal.HistoryString", code), t)
+	}
+	return result, nil
+}
+
+// ScreenString
+// The full screen: scrollback followed by the active area.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (t *Terminal) ScreenString() ([]byte, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Terminal.ScreenString receiver", t)
+	if err != nil {
+		return nil, err
+	}
+	defer t.zigoRelease()
+	result, code := raw.TerminalScreenString(ptr)
+	if code != 0 {
+		return nil, zigoPoisonAfterPanic(errorForCode("Terminal.ScreenString", code), t)
+	}
+	return result, nil
+}
+
 // CursorUp calls the Zig function Terminal.cursorUp.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.

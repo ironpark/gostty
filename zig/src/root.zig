@@ -64,6 +64,46 @@ pub fn resize(self: *Terminal, gpa: Allocator, width: u16, height: u16) !void {
     try self.resize(gpa, .{ .cols = width, .rows = height });
 }
 
+/// Which of a terminal's screens is active.
+pub const ScreenKey = vt.ScreenSet.Key;
+
+/// Switch between the primary and alternate screens.
+///
+/// Wrapped because ghostty returns the screen being left, and a handle borrowed
+/// from its receiver has no representation in zigo -- only tagged-union
+/// projections produce one.
+pub fn switchScreen(self: *Terminal, key: ScreenKey) !void {
+    _ = try self.switchScreen(key);
+}
+
+/// Which screen is currently active.
+pub fn activeScreenKey(self: *Terminal) ScreenKey {
+    return self.screens.active_key;
+}
+
+/// Write the cursor's current SGR attributes into `dst` as a DECRPSS response
+/// body, and report how many bytes were written.
+///
+/// Wrapped because ghostty returns a slice into the caller's buffer, and zigo
+/// reports a written count instead.
+pub fn printAttributesInto(self: *Terminal, dst: []u8) !usize {
+    const written = try self.printAttributes(dst);
+    return written.len;
+}
+
+/// The scrollback contents, oldest row first, newline separated.
+///
+/// Wrapped because the region is chosen with `point.Point`, a tagged union
+/// carrying a coordinate, which zigo cannot take by value.
+pub fn historyString(self: *Terminal, gpa: Allocator) ![]const u8 {
+    return try self.screens.active.dumpStringAlloc(gpa, .{ .history = .{} });
+}
+
+/// The full screen: scrollback followed by the active area.
+pub fn screenString(self: *Terminal, gpa: Allocator) ![]const u8 {
+    return try self.screens.active.dumpStringAlloc(gpa, .{ .screen = .{} });
+}
+
 /// The display width of a grapheme cluster given as codepoints.
 ///
 /// Wrapped because `vt.unicode.graphemeWidth` is generic over the codepoint

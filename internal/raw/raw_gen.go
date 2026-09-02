@@ -411,6 +411,63 @@ func TerminalFullReset(self unsafe.Pointer) int32 {
 	return code
 }
 
+// TerminalSwitchScreen calls the generated C ABI wrapper for zg_terminal_switch_screen.
+func TerminalSwitchScreen(self unsafe.Pointer, key uint8) int32 {
+	code := int32(C.zg_terminal_switch_screen((*C.zg_terminal)(self), C.uint8_t(key)))
+	return code
+}
+
+// TerminalActiveScreenKey calls the generated C ABI wrapper for zg_terminal_active_screen_key.
+func TerminalActiveScreenKey(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_terminal_active_screen_key((*C.zg_terminal)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// TerminalPrintAttributesInto calls the generated C ABI wrapper for zg_terminal_print_attributes_into.
+func TerminalPrintAttributesInto(self unsafe.Pointer, dst []uint8) (uint, int32) {
+	var dstZero C.uint8_t
+	dstPtr := &dstZero
+	if len(dst) != 0 {
+		dstPtr = (*C.uint8_t)(unsafe.Pointer(&dst[0]))
+	}
+	var outResult C.size_t
+	code := int32(C.zg_terminal_print_attributes_into((*C.zg_terminal)(self), dstPtr, C.size_t(len(dst)), &outResult))
+	return uint(outResult), code
+}
+
+// TerminalHistoryString calls the generated C ABI wrapper for zg_terminal_history_string.
+func TerminalHistoryString(self unsafe.Pointer) ([]uint8, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_terminal_history_string((*C.zg_terminal)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return nil, code
+	}
+	var result []uint8
+	if outResultLen != 0 {
+		result = C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen))
+	}
+	C.zg_free_string(outResultPtr, outResultLen)
+	return result, code
+}
+
+// TerminalScreenString calls the generated C ABI wrapper for zg_terminal_screen_string.
+func TerminalScreenString(self unsafe.Pointer) ([]uint8, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_terminal_screen_string((*C.zg_terminal)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return nil, code
+	}
+	var result []uint8
+	if outResultLen != 0 {
+		result = C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen))
+	}
+	C.zg_free_string(outResultPtr, outResultLen)
+	return result, code
+}
+
 // TerminalCursorUp calls the generated C ABI wrapper for zg_terminal_cursor_up.
 func TerminalCursorUp(self unsafe.Pointer, countReq uint) int32 {
 	code := int32(C.zg_terminal_cursor_up((*C.zg_terminal)(self), C.size_t(countReq)))

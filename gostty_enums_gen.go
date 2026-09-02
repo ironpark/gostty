@@ -188,6 +188,28 @@ func (value ProtectedMode) String() string {
 	}
 }
 
+// ScreenKey represents the corresponding Zig enum.
+type ScreenKey uint8
+
+const (
+	// ScreenKeyPrimary corresponds to the Zig tag primary.
+	ScreenKeyPrimary ScreenKey = 0
+	// ScreenKeyAlternate corresponds to the Zig tag alternate.
+	ScreenKeyAlternate ScreenKey = 1
+)
+
+// String returns the Zig tag name.
+func (value ScreenKey) String() string {
+	switch value {
+	case ScreenKeyPrimary:
+		return "primary"
+	case ScreenKeyAlternate:
+		return "alternate"
+	default:
+		return "ScreenKey(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
 // Key represents the corresponding Zig enum.
 type Key int32
 
