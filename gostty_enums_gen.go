@@ -278,6 +278,62 @@ func (value ProgressState) String() string {
 	}
 }
 
+// ClipboardLocation represents the corresponding Zig open enum; values outside the named constants are valid.
+type ClipboardLocation int32
+
+const (
+	// ClipboardLocationStandard corresponds to the Zig tag standard.
+	ClipboardLocationStandard ClipboardLocation = 0
+	// ClipboardLocationSelection corresponds to the Zig tag selection.
+	ClipboardLocationSelection ClipboardLocation = 1
+	// ClipboardLocationPrimary corresponds to the Zig tag primary.
+	ClipboardLocationPrimary ClipboardLocation = 2
+)
+
+// String returns the Zig tag name.
+func (value ClipboardLocation) String() string {
+	switch value {
+	case ClipboardLocationStandard:
+		return "standard"
+	case ClipboardLocationSelection:
+		return "selection"
+	case ClipboardLocationPrimary:
+		return "primary"
+	default:
+		return "ClipboardLocation(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// ClipboardDenial represents the corresponding Zig enum.
+type ClipboardDenial uint8
+
+const (
+	// ClipboardDenialDenied corresponds to the Zig tag denied.
+	ClipboardDenialDenied ClipboardDenial = 0
+	// ClipboardDenialUnsupported corresponds to the Zig tag unsupported.
+	ClipboardDenialUnsupported ClipboardDenial = 1
+	// ClipboardDenialBusy corresponds to the Zig tag busy.
+	ClipboardDenialBusy ClipboardDenial = 2
+	// ClipboardDenialIoError corresponds to the Zig tag io_error.
+	ClipboardDenialIoError ClipboardDenial = 3
+)
+
+// String returns the Zig tag name.
+func (value ClipboardDenial) String() string {
+	switch value {
+	case ClipboardDenialDenied:
+		return "denied"
+	case ClipboardDenialUnsupported:
+		return "unsupported"
+	case ClipboardDenialBusy:
+		return "busy"
+	case ClipboardDenialIoError:
+		return "io_error"
+	default:
+		return "ClipboardDenial(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
 // Underline represents the corresponding Zig enum.
 type Underline uint8
 

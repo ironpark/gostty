@@ -216,6 +216,289 @@ func (s *Stream) EventProgress() (uint8, bool, error) {
 	return result, zigoHas, nil
 }
 
+// OnClipboardWriteRequest
+// Handle clipboard writes (OSC 52 set, Kitty OSC 5522). Without a
+// callback the terminal answers every write with `denied`.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Stream) OnClipboardWriteRequest(callback ClipboardHandler) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Stream.OnClipboardWriteRequest receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	callbackHandle := newClipboardHandlerHandle(callback)
+	code := raw.StreamOnClipboardWriteRequest(ptr, uintptr(callbackHandle))
+	zigoRethrowCallbackPanic("Stream.OnClipboardWriteRequest", callbackHandle)
+	if code != 0 {
+		deleteCallbackHandle(callbackHandle)
+		return zigoPoisonAfterPanic(errorForCode("Stream.OnClipboardWriteRequest", code), s)
+	}
+	return nil
+}
+
+// OnClipboardReadRequest
+// Handle clipboard reads (OSC 52 query, Kitty OSC 5522). Without a
+// callback OSC 52 reads are ignored, which is the safe default: answering
+// one lets the running program read the user's clipboard.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Stream) OnClipboardReadRequest(callback ClipboardHandler) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Stream.OnClipboardReadRequest receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	callbackHandle := newClipboardHandlerHandle(callback)
+	code := raw.StreamOnClipboardReadRequest(ptr, uintptr(callbackHandle))
+	zigoRethrowCallbackPanic("Stream.OnClipboardReadRequest", callbackHandle)
+	if code != 0 {
+		deleteCallbackHandle(callbackHandle)
+		return zigoPoisonAfterPanic(errorForCode("Stream.OnClipboardReadRequest", code), s)
+	}
+	return nil
+}
+
+// ClipboardLocation
+// Which clipboard the pending request names.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Stream) ClipboardLocation() (ClipboardLocation, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Stream.ClipboardLocation receiver", s)
+	if err != nil {
+		return 0, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.StreamClipboardLocation(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(errorForCode("Stream.ClipboardLocation", code), s)
+	}
+	return ClipboardLocation(result), nil
+}
+
+// ClipboardName
+// The requesting program's name, empty when the protocol carries none.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Stream) ClipboardName() ([]byte, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Stream.ClipboardName receiver", s)
+	if err != nil {
+		return nil, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.StreamClipboardName(ptr)
+	if code != 0 {
+		return nil, zigoPoisonAfterPanic(errorForCode("Stream.ClipboardName", code), s)
+	}
+	return result, nil
+}
+
+// ClipboardGranted
+// True when the terminal already holds a session grant, so the embedder
+// should skip its permission prompt.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Stream) ClipboardGranted() (bool, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Stream.ClipboardGranted receiver", s)
+	if err != nil {
+		return false, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.StreamClipboardGranted(ptr)
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(errorForCode("Stream.ClipboardGranted", code), s)
+	}
+	return result != 0, nil
+}
+
+// ClipboardCanRemember
+// True when the program supplied a session password, so a decision can be
+// remembered via the `remember` argument when answering.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Stream) ClipboardCanRemember() (bool, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Stream.ClipboardCanRemember receiver", s)
+	if err != nil {
+		return false, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.StreamClipboardCanRemember(ptr)
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(errorForCode("Stream.ClipboardCanRemember", code), s)
+	}
+	return result != 0, nil
+}
+
+// ClipboardContentCount
+// How many representations a pending write carries. Zero clears the
+// destination.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Stream) ClipboardContentCount() (uint, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Stream.ClipboardContentCount receiver", s)
+	if err != nil {
+		return 0, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.StreamClipboardContentCount(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(errorForCode("Stream.ClipboardContentCount", code), s)
+	}
+	return result, nil
+}
+
+// ClipboardContentMime
+// The MIME type of one representation of a pending write.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Stream) ClipboardContentMime(index uint) ([]byte, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Stream.ClipboardContentMime receiver", s)
+	if err != nil {
+		return nil, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.StreamClipboardContentMime(ptr, index)
+	if code != 0 {
+		return nil, zigoPoisonAfterPanic(errorForCode("Stream.ClipboardContentMime", code), s)
+	}
+	return result, nil
+}
+
+// ClipboardContentData
+// The bytes of one representation of a pending write. Binary safe.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Stream) ClipboardContentData(index uint) ([]byte, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Stream.ClipboardContentData receiver", s)
+	if err != nil {
+		return nil, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.StreamClipboardContentData(ptr, index)
+	if code != 0 {
+		return nil, zigoPoisonAfterPanic(errorForCode("Stream.ClipboardContentData", code), s)
+	}
+	return result, nil
+}
+
+// ClipboardMimeCount
+// How many MIME types a pending read asks for, in order of preference.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Stream) ClipboardMimeCount() (uint, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Stream.ClipboardMimeCount receiver", s)
+	if err != nil {
+		return 0, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.StreamClipboardMimeCount(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(errorForCode("Stream.ClipboardMimeCount", code), s)
+	}
+	return result, nil
+}
+
+// ClipboardMime
+// One of the MIME types a pending read asks for.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Stream) ClipboardMime(index uint) ([]byte, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Stream.ClipboardMime receiver", s)
+	if err != nil {
+		return nil, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.StreamClipboardMime(ptr, index)
+	if code != 0 {
+		return nil, zigoPoisonAfterPanic(errorForCode("Stream.ClipboardMime", code), s)
+	}
+	return result, nil
+}
+
+// AllowClipboard
+// Accept a pending write. Answering a read this way serves empty text.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Stream) AllowClipboard(remember bool) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Stream.AllowClipboard receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	code := raw.StreamAllowClipboard(ptr, boolToUint8(remember))
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Stream.AllowClipboard", code), s)
+	}
+	return nil
+}
+
+// ReplyClipboardText
+// Serve a pending read with plain text.
+//
+// `text` is borrowed for this call only; the terminal copies what it
+// needs before returning.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Stream) ReplyClipboardText(text []byte, remember bool) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Stream.ReplyClipboardText receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	code := raw.StreamReplyClipboardText(ptr, text, boolToUint8(remember))
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Stream.ReplyClipboardText", code), s)
+	}
+	return nil
+}
+
+// DenyClipboard
+// Refuse a pending request.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Stream) DenyClipboard(reason ClipboardDenial) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Stream.DenyClipboard receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	code := raw.StreamDenyClipboard(ptr, uint8(reason))
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Stream.DenyClipboard", code), s)
+	}
+	return nil
+}
+
 // WriteContinuation
 // Write the unfinished sequence suffix, when continuation tracking is on.
 // It returns *HandleError if a required handle is nil or closed.

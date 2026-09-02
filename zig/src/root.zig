@@ -61,6 +61,30 @@ pub const StreamEvent = enum(u8) {
 /// How far along an OSC 9;4 progress report says the program is.
 pub const ProgressState = vt.osc.Command.ProgressReport.State;
 
+/// Which clipboard a request names.
+pub const ClipboardLocation = vt.clipboard.Location;
+
+/// Why a clipboard request was not served.
+pub const ClipboardDenial = enum(u8) {
+    /// Policy or the user said no.
+    denied,
+    /// This embedder cannot reach that clipboard.
+    unsupported,
+    /// The clipboard is temporarily unavailable.
+    busy,
+    /// Reading or writing the clipboard failed.
+    io_error,
+};
+
+/// Called while a feed is in flight, once per clipboard request.
+///
+/// The callback carries no payload: a zigo callback signature is a raw C
+/// signature, so slices would arrive as loose pointer and length pairs. It
+/// instead reads the pending request off the stream and answers it there.
+///
+/// The `i32` result is unused; zigo requires a scalar return.
+pub const ClipboardFn = *const fn (userdata: usize) callconv(.c) i32;
+
 /// A VT stream: parses escape sequences and applies them to a `Terminal`.
 ///
 /// A stream borrows its terminal and must be closed before it: ghostty's
@@ -73,6 +97,19 @@ pub const Stream = struct {
 
     /// Events collected during a feed, oldest first.
     queue: std.ArrayList(Queued) = .empty,
+
+    /// The clipboard request being answered, if a callback is running. Both
+    /// are borrowed for the duration of the effect call and nulled after.
+    pending_write: ?vt.clipboard.Write = null,
+    pending_read: ?vt.clipboard.Read = null,
+    /// Whether the callback answered. An unanswered request is denied so the
+    /// program is not left waiting.
+    answered: bool = false,
+
+    on_clipboard_write: ?ClipboardFn = null,
+    write_userdata: usize = 0,
+    on_clipboard_read: ?ClipboardFn = null,
+    read_userdata: usize = 0,
     /// What `nextEvent` last handed out. Its payload stays readable until the
     /// following `nextEvent`.
     current: ?Queued = null,
@@ -140,6 +177,38 @@ pub const Stream = struct {
         });
     }
 
+    fn onClipboardWrite(
+        handler: *vt.TerminalStream.Handler,
+        write: vt.clipboard.Write,
+    ) void {
+        const self = fromHandler(handler);
+        const callback = self.on_clipboard_write orelse {
+            write.reply(.denied);
+            return;
+        };
+        self.pending_write = write;
+        self.answered = false;
+        defer self.pending_write = null;
+        _ = callback(self.write_userdata);
+        if (!self.answered) write.reply(.denied);
+    }
+
+    fn onClipboardRead(
+        handler: *vt.TerminalStream.Handler,
+        read: vt.clipboard.Read,
+    ) void {
+        const self = fromHandler(handler);
+        const callback = self.on_clipboard_read orelse {
+            read.reply(.denied);
+            return;
+        };
+        self.pending_read = read;
+        self.answered = false;
+        defer self.pending_read = null;
+        _ = callback(self.read_userdata);
+        if (!self.answered) read.reply(.denied);
+    }
+
     fn effects() vt.TerminalStream.Handler.Effects {
         var result: vt.TerminalStream.Handler.Effects = .readonly;
         result.bell = onBell;
@@ -147,6 +216,8 @@ pub const Stream = struct {
         result.pwd_changed = onPwdChanged;
         result.desktop_notification = onDesktopNotification;
         result.progress_report = onProgressReport;
+        result.clipboard_write = onClipboardWrite;
+        result.clipboard_read = onClipboardRead;
         return result;
     }
 
@@ -204,6 +275,149 @@ pub const Stream = struct {
         const event = self.current orelse return null;
         if (event.progress > 100) return null;
         return event.progress;
+    }
+
+    /// Handle clipboard writes (OSC 52 set, Kitty OSC 5522). Without a
+    /// callback the terminal answers every write with `denied`.
+    pub fn onClipboardWriteRequest(
+        self: *Stream,
+        callback: ClipboardFn,
+        userdata: usize,
+    ) void {
+        self.on_clipboard_write = callback;
+        self.write_userdata = userdata;
+    }
+
+    /// Handle clipboard reads (OSC 52 query, Kitty OSC 5522). Without a
+    /// callback OSC 52 reads are ignored, which is the safe default: answering
+    /// one lets the running program read the user's clipboard.
+    pub fn onClipboardReadRequest(
+        self: *Stream,
+        callback: ClipboardFn,
+        userdata: usize,
+    ) void {
+        self.on_clipboard_read = callback;
+        self.read_userdata = userdata;
+    }
+
+    /// Which clipboard the pending request names.
+    pub fn clipboardLocation(self: *Stream) ClipboardLocation {
+        if (self.pending_write) |write| return write.location;
+        if (self.pending_read) |read| return read.location;
+        return .standard;
+    }
+
+    /// The requesting program's name, empty when the protocol carries none.
+    pub fn clipboardName(self: *Stream) []const u8 {
+        if (self.pending_write) |write| return write.name;
+        if (self.pending_read) |read| return read.name;
+        return "";
+    }
+
+    /// True when the terminal already holds a session grant, so the embedder
+    /// should skip its permission prompt.
+    pub fn clipboardGranted(self: *Stream) bool {
+        if (self.pending_write) |write| return write.granted;
+        if (self.pending_read) |read| return read.granted;
+        return false;
+    }
+
+    /// True when the program supplied a session password, so a decision can be
+    /// remembered via the `remember` argument when answering.
+    pub fn clipboardCanRemember(self: *Stream) bool {
+        if (self.pending_write) |write| return write.can_remember;
+        if (self.pending_read) |read| return read.can_remember;
+        return false;
+    }
+
+    /// How many representations a pending write carries. Zero clears the
+    /// destination.
+    pub fn clipboardContentCount(self: *Stream) usize {
+        const write = self.pending_write orelse return 0;
+        return write.contents.len;
+    }
+
+    /// The MIME type of one representation of a pending write.
+    pub fn clipboardContentMime(self: *Stream, index: usize) []const u8 {
+        const write = self.pending_write orelse return "";
+        if (index >= write.contents.len) return "";
+        return write.contents[index].mime;
+    }
+
+    /// The bytes of one representation of a pending write. Binary safe.
+    pub fn clipboardContentData(self: *Stream, index: usize) []const u8 {
+        const write = self.pending_write orelse return "";
+        if (index >= write.contents.len) return "";
+        return write.contents[index].data;
+    }
+
+    /// How many MIME types a pending read asks for, in order of preference.
+    pub fn clipboardMimeCount(self: *Stream) usize {
+        const read = self.pending_read orelse return 0;
+        return read.mimes.len;
+    }
+
+    /// One of the MIME types a pending read asks for.
+    pub fn clipboardMime(self: *Stream, index: usize) []const u8 {
+        const read = self.pending_read orelse return "";
+        if (index >= read.mimes.len) return "";
+        return read.mimes[index];
+    }
+
+    /// Accept a pending write. Answering a read this way serves empty text.
+    pub fn allowClipboard(self: *Stream, remember: bool) void {
+        if (self.answered) return;
+        if (self.pending_write) |write| {
+            write.reply(.{ .success = .{ .remember = remember } });
+            self.answered = true;
+            return;
+        }
+        if (self.pending_read) |read| {
+            read.reply(.{ .success = .{ .remember = remember } });
+            self.answered = true;
+        }
+    }
+
+    /// Serve a pending read with plain text.
+    ///
+    /// `text` is borrowed for this call only; the terminal copies what it
+    /// needs before returning.
+    pub fn replyClipboardText(self: *Stream, text: []const u8, remember: bool) void {
+        if (self.answered) return;
+        const read = self.pending_read orelse return;
+        const contents: [1]vt.clipboard.Content = .{.{
+            .mime = "text/plain",
+            .data = text,
+        }};
+        read.reply(.{ .success = .{
+            .contents = &contents,
+            .remember = remember,
+        } });
+        self.answered = true;
+    }
+
+    /// Refuse a pending request.
+    pub fn denyClipboard(self: *Stream, reason: ClipboardDenial) void {
+        if (self.answered) return;
+        if (self.pending_write) |write| {
+            write.reply(switch (reason) {
+                .denied => .denied,
+                .unsupported => .unsupported,
+                .busy => .busy,
+                .io_error => .io_error,
+            });
+            self.answered = true;
+            return;
+        }
+        if (self.pending_read) |read| {
+            read.reply(switch (reason) {
+                .denied => .denied,
+                .unsupported => .unsupported,
+                .busy => .busy,
+                .io_error => .io_error,
+            });
+            self.answered = true;
+        }
     }
 };
 

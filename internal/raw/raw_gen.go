@@ -101,6 +101,32 @@ func zg_zigo_stream_write(p0 *C.uint8_t, p1 C.size_t, p2 C.size_t) (result C.int
 	return C.int32_t(0)
 }
 
+//export zg_stream_on_clipboard_write_request_go_callback_callback
+func zg_stream_on_clipboard_write_request_go_callback_callback(p0 C.size_t) (result C.int32_t) {
+	state := cgo.Handle(p0).Value().(*CallbackState)
+	defer func() {
+		if value := recover(); value != nil {
+			state.record(value)
+			result = C.int32_t(-3)
+		}
+	}()
+	callback := state.Fn.(func() int32)
+	return C.int32_t(callback())
+}
+
+//export zg_stream_on_clipboard_read_request_go_callback_callback
+func zg_stream_on_clipboard_read_request_go_callback_callback(p0 C.size_t) (result C.int32_t) {
+	state := cgo.Handle(p0).Value().(*CallbackState)
+	defer func() {
+		if value := recover(); value != nil {
+			state.record(value)
+			result = C.int32_t(-3)
+		}
+	}()
+	callback := state.Fn.(func() int32)
+	return C.int32_t(callback())
+}
+
 // UnicodeCodepointWidth calls the generated C ABI wrapper for zg_unicode_codepoint_width.
 func UnicodeCodepointWidth(p0 uint32) (uint8, int32) {
 	var outResult C.uint8_t
@@ -378,6 +404,120 @@ func StreamEventProgress(self unsafe.Pointer) (uint8, bool, int32) {
 	var outResult C.uint8_t
 	code := int32(C.zg_stream_event_progress((*C.zg_stream)(self), &outResultHas, &outResult))
 	return uint8(outResult), outResultHas != 0, code
+}
+
+// StreamOnClipboardWriteRequest calls the generated C ABI wrapper for zg_stream_on_clipboard_write_request.
+func StreamOnClipboardWriteRequest(self unsafe.Pointer, callbackHandle uintptr) int32 {
+	code := int32(C.zg_stream_on_clipboard_write_request((*C.zg_stream)(self), C.size_t(callbackHandle)))
+	return code
+}
+
+// StreamOnClipboardReadRequest calls the generated C ABI wrapper for zg_stream_on_clipboard_read_request.
+func StreamOnClipboardReadRequest(self unsafe.Pointer, callbackHandle uintptr) int32 {
+	code := int32(C.zg_stream_on_clipboard_read_request((*C.zg_stream)(self), C.size_t(callbackHandle)))
+	return code
+}
+
+// StreamClipboardLocation calls the generated C ABI wrapper for zg_stream_clipboard_location.
+func StreamClipboardLocation(self unsafe.Pointer) (int32, int32) {
+	var outResult C.int32_t
+	code := int32(C.zg_stream_clipboard_location((*C.zg_stream)(self), &outResult))
+	return int32(outResult), code
+}
+
+// StreamClipboardName calls the generated C ABI wrapper for zg_stream_clipboard_name.
+func StreamClipboardName(self unsafe.Pointer) ([]uint8, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_stream_clipboard_name((*C.zg_stream)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return nil, code
+	}
+	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
+}
+
+// StreamClipboardGranted calls the generated C ABI wrapper for zg_stream_clipboard_granted.
+func StreamClipboardGranted(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_stream_clipboard_granted((*C.zg_stream)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// StreamClipboardCanRemember calls the generated C ABI wrapper for zg_stream_clipboard_can_remember.
+func StreamClipboardCanRemember(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_stream_clipboard_can_remember((*C.zg_stream)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// StreamClipboardContentCount calls the generated C ABI wrapper for zg_stream_clipboard_content_count.
+func StreamClipboardContentCount(self unsafe.Pointer) (uint, int32) {
+	var outResult C.size_t
+	code := int32(C.zg_stream_clipboard_content_count((*C.zg_stream)(self), &outResult))
+	return uint(outResult), code
+}
+
+// StreamClipboardContentMime calls the generated C ABI wrapper for zg_stream_clipboard_content_mime.
+func StreamClipboardContentMime(self unsafe.Pointer, index uint) ([]uint8, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_stream_clipboard_content_mime((*C.zg_stream)(self), C.size_t(index), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return nil, code
+	}
+	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
+}
+
+// StreamClipboardContentData calls the generated C ABI wrapper for zg_stream_clipboard_content_data.
+func StreamClipboardContentData(self unsafe.Pointer, index uint) ([]uint8, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_stream_clipboard_content_data((*C.zg_stream)(self), C.size_t(index), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return nil, code
+	}
+	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
+}
+
+// StreamClipboardMimeCount calls the generated C ABI wrapper for zg_stream_clipboard_mime_count.
+func StreamClipboardMimeCount(self unsafe.Pointer) (uint, int32) {
+	var outResult C.size_t
+	code := int32(C.zg_stream_clipboard_mime_count((*C.zg_stream)(self), &outResult))
+	return uint(outResult), code
+}
+
+// StreamClipboardMime calls the generated C ABI wrapper for zg_stream_clipboard_mime.
+func StreamClipboardMime(self unsafe.Pointer, index uint) ([]uint8, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_stream_clipboard_mime((*C.zg_stream)(self), C.size_t(index), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return nil, code
+	}
+	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
+}
+
+// StreamAllowClipboard calls the generated C ABI wrapper for zg_stream_allow_clipboard.
+func StreamAllowClipboard(self unsafe.Pointer, remember uint8) int32 {
+	code := int32(C.zg_stream_allow_clipboard((*C.zg_stream)(self), C.uint8_t(remember)))
+	return code
+}
+
+// StreamReplyClipboardText calls the generated C ABI wrapper for zg_stream_reply_clipboard_text.
+func StreamReplyClipboardText(self unsafe.Pointer, text []uint8, remember uint8) int32 {
+	var textZero C.uint8_t
+	textPtr := &textZero
+	if len(text) != 0 {
+		textPtr = (*C.uint8_t)(unsafe.Pointer(&text[0]))
+	}
+	code := int32(C.zg_stream_reply_clipboard_text((*C.zg_stream)(self), textPtr, C.size_t(len(text)), C.uint8_t(remember)))
+	return code
+}
+
+// StreamDenyClipboard calls the generated C ABI wrapper for zg_stream_deny_clipboard.
+func StreamDenyClipboard(self unsafe.Pointer, reason uint8) int32 {
+	code := int32(C.zg_stream_deny_clipboard((*C.zg_stream)(self), C.uint8_t(reason)))
+	return code
 }
 
 // StreamWriteContinuation calls the generated C ABI wrapper for zg_stream_write_continuation.

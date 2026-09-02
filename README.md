@@ -92,6 +92,26 @@ generated Go and the metadata are committed, so consumers only need a Go
 toolchain — but the native archive is not, so a fresh checkout must run
 `zig build` once before `go build` will link.
 
+Clipboard requests cannot wait for a drain: the program is blocked until they
+are answered, so they arrive as a callback that runs while `Feed` is still on
+the stack.
+
+```go
+stream.OnClipboardWriteRequest(func() int32 {
+	n, _ := stream.ClipboardContentCount()
+	for i := uint(0); i < n; i++ {
+		data, _ := stream.ClipboardContentData(i)
+		setSystemClipboard(data)
+	}
+	stream.AllowClipboard(false)
+	return 0
+})
+```
+
+A request that is not answered is denied, as is any request arriving on a stream
+with no handler installed. Answering a read lets the running program read the
+user's clipboard, so mediate consent before calling `ReplyClipboardText`.
+
 ## Lifetimes
 
 - Every handle has an idempotent `Close`. Calls after `Close` return
@@ -108,8 +128,8 @@ and editing, VT stream parsing, cursor and charsets, key/mouse/focus/paste
 encoding, alternate screen, scrollback dumps, selection, text search, SGR
 attributes, unicode width — not all of it. OSC side effects (bell, desktop
 notifications, progress reports, title and pwd changes) arrive as events drained
-off the stream after a feed. Clipboard access is not bound. See
-`docs/zigo-findings.md` for what is left and why.
+off the stream after a feed, and clipboard requests as callbacks answered during
+one. See `docs/zigo-findings.md` for what is left and why.
 
 ## License
 
