@@ -233,6 +233,167 @@ func EncodeKey(writer io.Writer, terminal *Terminal, event *KeyEvent) error {
 	return nil
 }
 
+// NewMouseEvent creates a caller-owned MouseEvent.
+// The caller must call Close on the returned handle.
+// Native failures are returned as generated error values.
+func NewMouseEvent() (*MouseEvent, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	result, code := raw.NewMouseEvent()
+	if code != 0 {
+		return nil, errorForCode("NewMouseEvent", code)
+	}
+	return newMouseEvent(result), nil
+}
+
+// Reset
+// Return the event to its defaults so one handle can encode many events.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (m *MouseEvent) Reset() error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("MouseEvent.Reset receiver", m)
+	if err != nil {
+		return err
+	}
+	defer m.zigoRelease()
+	code := raw.MouseEventReset(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("MouseEvent.Reset", code), m)
+	}
+	return nil
+}
+
+// SetAction calls the Zig function MouseEvent.setAction.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (m *MouseEvent) SetAction(action MouseAction) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("MouseEvent.SetAction receiver", m)
+	if err != nil {
+		return err
+	}
+	defer m.zigoRelease()
+	code := raw.MouseEventSetAction(ptr, int32(action))
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("MouseEvent.SetAction", code), m)
+	}
+	return nil
+}
+
+// SetButton
+// The button involved. Motion with no button held uses `clearButton`.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (m *MouseEvent) SetButton(button MouseButton) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("MouseEvent.SetButton receiver", m)
+	if err != nil {
+		return err
+	}
+	defer m.zigoRelease()
+	code := raw.MouseEventSetButton(ptr, int32(button))
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("MouseEvent.SetButton", code), m)
+	}
+	return nil
+}
+
+// ClearButton calls the Zig function MouseEvent.clearButton.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (m *MouseEvent) ClearButton() error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("MouseEvent.ClearButton receiver", m)
+	if err != nil {
+		return err
+	}
+	defer m.zigoRelease()
+	code := raw.MouseEventClearButton(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("MouseEvent.ClearButton", code), m)
+	}
+	return nil
+}
+
+// SetMod calls the Zig function MouseEvent.setMod.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (m *MouseEvent) SetMod(mod KeyMod, value bool) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("MouseEvent.SetMod receiver", m)
+	if err != nil {
+		return err
+	}
+	defer m.zigoRelease()
+	code := raw.MouseEventSetMod(ptr, uint8(mod), boolToUint8(value))
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("MouseEvent.SetMod", code), m)
+	}
+	return nil
+}
+
+// SetPosition
+// The position in surface-space pixels, (0, 0) at the top left.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (m *MouseEvent) SetPosition(x float32, y float32) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("MouseEvent.SetPosition receiver", m)
+	if err != nil {
+		return err
+	}
+	defer m.zigoRelease()
+	code := raw.MouseEventSetPosition(ptr, x, y)
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("MouseEvent.SetPosition", code), m)
+	}
+	return nil
+}
+
+// EncodeMouse
+// Encode a mouse event for `terminal`, whose reporting mode and format decide
+// whether anything is written at all.
+//
+// `any_button_pressed` should include this event, so a press reports true.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func EncodeMouse(writer io.Writer, terminal *Terminal, event *MouseEvent, size RenderSize, anyButtonPressed bool) error {
+	if writer == nil {
+		return &StreamError{Operation: "EncodeMouse", Parameter: "writer", Err: ErrNilStream}
+	}
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	terminalPtr, err := zigoCheckedPointer("EncodeMouse parameter terminal", terminal)
+	if err != nil {
+		return err
+	}
+	defer terminal.zigoRelease()
+	eventPtr, err := zigoCheckedPointer("EncodeMouse parameter event", event)
+	if err != nil {
+		return err
+	}
+	defer event.zigoRelease()
+	writerHandle := newZigoWriterHandle(writer)
+	defer deleteCallbackHandle(writerHandle)
+	code := raw.EncodeMouse(uintptr(writerHandle), terminalPtr, eventPtr, zigoRenderSizeToRaw(size), boolToUint8(anyButtonPressed))
+	zigoRethrowCallbackPanic("EncodeMouse", writerHandle)
+	if err := zigoStreamError("EncodeMouse", "writer", writerHandle); err != nil {
+		return err
+	}
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("EncodeMouse", code), terminal, event)
+	}
+	return nil
+}
+
 // EncodeFocus
 // Encode a focus in/out report (CSI I / CSI O).
 // Native failures are returned as generated error values.

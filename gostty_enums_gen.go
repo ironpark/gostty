@@ -992,6 +992,94 @@ func (value FocusEvent) String() string {
 	}
 }
 
+// MouseAction represents the corresponding Zig enum.
+type MouseAction int32
+
+const (
+	// MouseActionPress corresponds to the Zig tag press.
+	MouseActionPress MouseAction = 0
+	// MouseActionRelease corresponds to the Zig tag release.
+	MouseActionRelease MouseAction = 1
+	// MouseActionMotion corresponds to the Zig tag motion.
+	MouseActionMotion MouseAction = 2
+)
+
+// String returns the Zig tag name.
+func (value MouseAction) String() string {
+	switch value {
+	case MouseActionPress:
+		return "press"
+	case MouseActionRelease:
+		return "release"
+	case MouseActionMotion:
+		return "motion"
+	default:
+		return "MouseAction(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// MouseButton represents the corresponding Zig enum.
+type MouseButton int32
+
+const (
+	// MouseButtonUnknown corresponds to the Zig tag unknown.
+	MouseButtonUnknown MouseButton = 0
+	// MouseButtonLeft corresponds to the Zig tag left.
+	MouseButtonLeft MouseButton = 1
+	// MouseButtonRight corresponds to the Zig tag right.
+	MouseButtonRight MouseButton = 2
+	// MouseButtonMiddle corresponds to the Zig tag middle.
+	MouseButtonMiddle MouseButton = 3
+	// MouseButtonFour corresponds to the Zig tag four.
+	MouseButtonFour MouseButton = 4
+	// MouseButtonFive corresponds to the Zig tag five.
+	MouseButtonFive MouseButton = 5
+	// MouseButtonSix corresponds to the Zig tag six.
+	MouseButtonSix MouseButton = 6
+	// MouseButtonSeven corresponds to the Zig tag seven.
+	MouseButtonSeven MouseButton = 7
+	// MouseButtonEight corresponds to the Zig tag eight.
+	MouseButtonEight MouseButton = 8
+	// MouseButtonNine corresponds to the Zig tag nine.
+	MouseButtonNine MouseButton = 9
+	// MouseButtonTen corresponds to the Zig tag ten.
+	MouseButtonTen MouseButton = 10
+	// MouseButtonEleven corresponds to the Zig tag eleven.
+	MouseButtonEleven MouseButton = 11
+)
+
+// String returns the Zig tag name.
+func (value MouseButton) String() string {
+	switch value {
+	case MouseButtonUnknown:
+		return "unknown"
+	case MouseButtonLeft:
+		return "left"
+	case MouseButtonRight:
+		return "right"
+	case MouseButtonMiddle:
+		return "middle"
+	case MouseButtonFour:
+		return "four"
+	case MouseButtonFive:
+		return "five"
+	case MouseButtonSix:
+		return "six"
+	case MouseButtonSeven:
+		return "seven"
+	case MouseButtonEight:
+		return "eight"
+	case MouseButtonNine:
+		return "nine"
+	case MouseButtonTen:
+		return "ten"
+	case MouseButtonEleven:
+		return "eleven"
+	default:
+		return "MouseButton(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
 // Charset represents the corresponding Zig enum.
 type Charset uint8
 

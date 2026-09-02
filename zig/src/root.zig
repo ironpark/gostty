@@ -180,6 +180,103 @@ pub fn encodeKey(
     try vt.input.encodeKey(writer, event.inner, .fromTerminal(terminal));
 }
 
+pub const MouseAction = vt.input.MouseAction;
+pub const MouseButton = vt.input.MouseButton;
+
+/// The renderer geometry mouse encoding needs to turn a pixel position into a
+/// grid cell. All values are in already-DPI-scaled pixels.
+///
+/// ghostty's own `renderer.Size` nests three extern structs inside a plain one,
+/// which has no C representation, so this is the flattened equivalent.
+pub const RenderSize = extern struct {
+    /// The size of the area the grid is drawn into, padding included.
+    screen_width: u32,
+    screen_height: u32,
+    /// The size of one cell.
+    cell_width: u32,
+    cell_height: u32,
+    padding_top: u32 = 0,
+    padding_bottom: u32 = 0,
+    padding_right: u32 = 0,
+    padding_left: u32 = 0,
+
+    const Size = @FieldType(vt.input.MouseEncodeOptions, "size");
+
+    fn toRenderer(self: RenderSize) Size {
+        return .{
+            .screen = .{ .width = self.screen_width, .height = self.screen_height },
+            .cell = .{ .width = self.cell_width, .height = self.cell_height },
+            .padding = .{
+                .top = self.padding_top,
+                .bottom = self.padding_bottom,
+                .right = self.padding_right,
+                .left = self.padding_left,
+            },
+        };
+    }
+};
+
+/// A mouse event being assembled for encoding.
+///
+/// A handle rather than a value because ghostty's event carries an optional
+/// button and packed modifiers, neither of which crosses as a struct field.
+pub const MouseEvent = struct {
+    inner: vt.input.MouseEncodeEvent = .{},
+
+    /// Return the event to its defaults so one handle can encode many events.
+    pub fn reset(self: *MouseEvent) void {
+        self.inner = .{};
+    }
+
+    pub fn setAction(self: *MouseEvent, action: MouseAction) void {
+        self.inner.action = action;
+    }
+
+    /// The button involved. Motion with no button held uses `clearButton`.
+    pub fn setButton(self: *MouseEvent, button: MouseButton) void {
+        self.inner.button = button;
+    }
+
+    pub fn clearButton(self: *MouseEvent) void {
+        self.inner.button = null;
+    }
+
+    pub fn setMod(self: *MouseEvent, mod: KeyMod, value: bool) void {
+        KeyEvent.applyMod(&self.inner.mods, mod, value);
+    }
+
+    /// The position in surface-space pixels, (0, 0) at the top left.
+    pub fn setPosition(self: *MouseEvent, x: f32, y: f32) void {
+        self.inner.pos = .{ .x = x, .y = y };
+    }
+};
+
+pub fn newMouseEvent(gpa: Allocator) !*MouseEvent {
+    const self = try gpa.create(MouseEvent);
+    self.* = .{};
+    return self;
+}
+
+pub fn freeMouseEvent(self: *MouseEvent, gpa: Allocator) void {
+    gpa.destroy(self);
+}
+
+/// Encode a mouse event for `terminal`, whose reporting mode and format decide
+/// whether anything is written at all.
+///
+/// `any_button_pressed` should include this event, so a press reports true.
+pub fn encodeMouse(
+    writer: *std.Io.Writer,
+    terminal: *const Terminal,
+    event: *const MouseEvent,
+    size: RenderSize,
+    any_button_pressed: bool,
+) !void {
+    var opts: vt.input.MouseEncodeOptions = .fromTerminal(terminal, size.toRenderer());
+    opts.any_button_pressed = any_button_pressed;
+    try vt.input.encodeMouse(writer, event.inner, opts);
+}
+
 /// Encode a focus in/out report (CSI I / CSI O).
 pub fn encodeFocus(writer: *std.Io.Writer, event: FocusEvent) !void {
     try vt.input.encodeFocus(writer, event);

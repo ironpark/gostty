@@ -181,3 +181,125 @@ func TestKeyEventThroughStream(t *testing.T) {
 		t.Errorf("screen = %q, want %q", got, want)
 	}
 }
+
+func newMouseEv(t *testing.T) *MouseEvent {
+	t.Helper()
+	ev, err := NewMouseEvent()
+	if err != nil {
+		t.Fatalf("NewMouseEvent: %v", err)
+	}
+	t.Cleanup(func() { ev.Close() })
+	return ev
+}
+
+// A 10x20 pixel cell with no padding, so pixel (x, y) is cell (x/10, y/20).
+var testSize = RenderSize{
+	ScreenWidth:  800,
+	ScreenHeight: 480,
+	CellWidth:    10,
+	CellHeight:   20,
+}
+
+func encodeMouse(t *testing.T, term *Terminal, ev *MouseEvent, pressed bool) string {
+	t.Helper()
+	var buf bytes.Buffer
+	if err := EncodeMouse(&buf, term, ev, testSize, pressed); err != nil {
+		t.Fatalf("EncodeMouse: %v", err)
+	}
+	return buf.String()
+}
+
+// Nothing is reported until the program turns mouse tracking on.
+func TestEncodeMouseSilentWithoutTracking(t *testing.T) {
+	term, _ := newStreamPair(t, 80, 24)
+	ev := newMouseEv(t)
+	if err := ev.SetAction(MouseActionPress); err != nil {
+		t.Fatalf("SetAction: %v", err)
+	}
+	if err := ev.SetButton(MouseButtonLeft); err != nil {
+		t.Fatalf("SetButton: %v", err)
+	}
+	if err := ev.SetPosition(0, 0); err != nil {
+		t.Fatalf("SetPosition: %v", err)
+	}
+	if got := encodeMouse(t, term, ev, true); got != "" {
+		t.Errorf("encoded %q with tracking off, want nothing", got)
+	}
+}
+
+// Mode 1000 turns on button tracking; mode 1006 selects the SGR format.
+func TestEncodeMouseSGR(t *testing.T) {
+	term, stream := newStreamPair(t, 80, 24)
+	feed(t, stream, "\x1b[?1000h\x1b[?1006h")
+
+	ev := newMouseEv(t)
+	if err := ev.SetAction(MouseActionPress); err != nil {
+		t.Fatalf("SetAction: %v", err)
+	}
+	if err := ev.SetButton(MouseButtonLeft); err != nil {
+		t.Fatalf("SetButton: %v", err)
+	}
+	// Pixel (25, 45) with a 10x20 cell is column 3, row 3 one-based.
+	if err := ev.SetPosition(25, 45); err != nil {
+		t.Fatalf("SetPosition: %v", err)
+	}
+	if got, want := encodeMouse(t, term, ev, true), "\x1b[<0;3;3M"; got != want {
+		t.Errorf("press encoded %q, want %q", got, want)
+	}
+
+	if err := ev.SetAction(MouseActionRelease); err != nil {
+		t.Fatalf("SetAction: %v", err)
+	}
+	if got, want := encodeMouse(t, term, ev, false), "\x1b[<0;3;3m"; got != want {
+		t.Errorf("release encoded %q, want %q", got, want)
+	}
+}
+
+// The button and modifier bits land in the same field.
+func TestEncodeMouseModifiers(t *testing.T) {
+	term, stream := newStreamPair(t, 80, 24)
+	feed(t, stream, "\x1b[?1000h\x1b[?1006h")
+
+	ev := newMouseEv(t)
+	if err := ev.SetAction(MouseActionPress); err != nil {
+		t.Fatalf("SetAction: %v", err)
+	}
+	if err := ev.SetButton(MouseButtonRight); err != nil {
+		t.Fatalf("SetButton: %v", err)
+	}
+	if err := ev.SetMod(KeyModShift, true); err != nil {
+		t.Fatalf("SetMod: %v", err)
+	}
+	if err := ev.SetPosition(0, 0); err != nil {
+		t.Fatalf("SetPosition: %v", err)
+	}
+	// Right button is 2, shift adds 4.
+	if got, want := encodeMouse(t, term, ev, true), "\x1b[<6;1;1M"; got != want {
+		t.Errorf("encoded %q, want %q", got, want)
+	}
+}
+
+func TestMouseEventReset(t *testing.T) {
+	term, stream := newStreamPair(t, 80, 24)
+	feed(t, stream, "\x1b[?1000h\x1b[?1006h")
+
+	ev := newMouseEv(t)
+	if err := ev.SetButton(MouseButtonRight); err != nil {
+		t.Fatalf("SetButton: %v", err)
+	}
+	if err := ev.SetMod(KeyModShift, true); err != nil {
+		t.Fatalf("SetMod: %v", err)
+	}
+	if err := ev.Reset(); err != nil {
+		t.Fatalf("Reset: %v", err)
+	}
+	if err := ev.SetButton(MouseButtonLeft); err != nil {
+		t.Fatalf("SetButton: %v", err)
+	}
+	if err := ev.SetPosition(0, 0); err != nil {
+		t.Fatalf("SetPosition: %v", err)
+	}
+	if got, want := encodeMouse(t, term, ev, true), "\x1b[<0;1;1M"; got != want {
+		t.Errorf("after Reset encoded %q, want %q", got, want)
+	}
+}

@@ -190,6 +190,70 @@ func EncodeKey(writerHandle uintptr, terminal unsafe.Pointer, event unsafe.Point
 	return code
 }
 
+// NewMouseEvent calls the generated C ABI wrapper for zg_new_mouse_event.
+func NewMouseEvent() (unsafe.Pointer, int32) {
+	var outResult *C.zg_mouse_event
+	code := int32(C.zg_new_mouse_event(&outResult))
+	return unsafe.Pointer(outResult), code
+}
+
+// MouseEventFreeMouseEvent calls the generated C ABI wrapper for zg_mouse_event_free_mouse_event.
+func MouseEventFreeMouseEvent(self unsafe.Pointer) int32 {
+	code := int32(C.zg_mouse_event_free_mouse_event((*C.zg_mouse_event)(self)))
+	return code
+}
+
+// MouseEventReset calls the generated C ABI wrapper for zg_mouse_event_reset.
+func MouseEventReset(self unsafe.Pointer) int32 {
+	code := int32(C.zg_mouse_event_reset((*C.zg_mouse_event)(self)))
+	return code
+}
+
+// MouseEventSetAction calls the generated C ABI wrapper for zg_mouse_event_set_action.
+func MouseEventSetAction(self unsafe.Pointer, action int32) int32 {
+	code := int32(C.zg_mouse_event_set_action((*C.zg_mouse_event)(self), C.int32_t(action)))
+	return code
+}
+
+// MouseEventSetButton calls the generated C ABI wrapper for zg_mouse_event_set_button.
+func MouseEventSetButton(self unsafe.Pointer, button int32) int32 {
+	code := int32(C.zg_mouse_event_set_button((*C.zg_mouse_event)(self), C.int32_t(button)))
+	return code
+}
+
+// MouseEventClearButton calls the generated C ABI wrapper for zg_mouse_event_clear_button.
+func MouseEventClearButton(self unsafe.Pointer) int32 {
+	code := int32(C.zg_mouse_event_clear_button((*C.zg_mouse_event)(self)))
+	return code
+}
+
+// MouseEventSetMod calls the generated C ABI wrapper for zg_mouse_event_set_mod.
+func MouseEventSetMod(self unsafe.Pointer, mod uint8, value uint8) int32 {
+	code := int32(C.zg_mouse_event_set_mod((*C.zg_mouse_event)(self), C.uint8_t(mod), C.uint8_t(value)))
+	return code
+}
+
+// MouseEventSetPosition calls the generated C ABI wrapper for zg_mouse_event_set_position.
+func MouseEventSetPosition(self unsafe.Pointer, x float32, y float32) int32 {
+	code := int32(C.zg_mouse_event_set_position((*C.zg_mouse_event)(self), C.float(x), C.float(y)))
+	return code
+}
+
+// EncodeMouse calls the generated C ABI wrapper for zg_encode_mouse.
+func EncodeMouse(writerHandle uintptr, terminal unsafe.Pointer, event unsafe.Pointer, size RenderSizeData, anyButtonPressed uint8) int32 {
+	var csize C.zg_render_size
+	csize.screen_width = C.uint32_t(size.ScreenWidth)
+	csize.screen_height = C.uint32_t(size.ScreenHeight)
+	csize.cell_width = C.uint32_t(size.CellWidth)
+	csize.cell_height = C.uint32_t(size.CellHeight)
+	csize.padding_top = C.uint32_t(size.PaddingTop)
+	csize.padding_bottom = C.uint32_t(size.PaddingBottom)
+	csize.padding_right = C.uint32_t(size.PaddingRight)
+	csize.padding_left = C.uint32_t(size.PaddingLeft)
+	code := int32(C.zg_encode_mouse(C.size_t(writerHandle), (*C.zg_terminal)(terminal), (*C.zg_mouse_event)(event), &csize, C.uint8_t(anyButtonPressed)))
+	return code
+}
+
 // EncodeFocus calls the generated C ABI wrapper for zg_encode_focus.
 func EncodeFocus(writerHandle uintptr, event uint8) int32 {
 	code := int32(C.zg_encode_focus(C.size_t(writerHandle), C.uint8_t(event)))
@@ -705,3 +769,26 @@ func TerminalCursorStyle(self unsafe.Pointer) (uint8, int32) {
 	code := int32(C.zg_terminal_cursor_style((*C.zg_terminal)(self), &outResult))
 	return uint8(outResult), code
 }
+
+// RenderSizeData mirrors the zg_render_size layout, padding included.
+type RenderSizeData struct {
+	ScreenWidth   uint32
+	ScreenHeight  uint32
+	CellWidth     uint32
+	CellHeight    uint32
+	PaddingTop    uint32
+	PaddingBottom uint32
+	PaddingRight  uint32
+	PaddingLeft   uint32
+}
+
+// RenderSizeData crosses to C as a cast, so it must match zg_render_size byte for byte.
+var _ = [1]struct{}{}[unsafe.Sizeof(RenderSizeData{})-unsafe.Sizeof(C.zg_render_size{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.ScreenWidth)-unsafe.Offsetof(C.zg_render_size{}.screen_width)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.ScreenHeight)-unsafe.Offsetof(C.zg_render_size{}.screen_height)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.CellWidth)-unsafe.Offsetof(C.zg_render_size{}.cell_width)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.CellHeight)-unsafe.Offsetof(C.zg_render_size{}.cell_height)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.PaddingTop)-unsafe.Offsetof(C.zg_render_size{}.padding_top)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.PaddingBottom)-unsafe.Offsetof(C.zg_render_size{}.padding_bottom)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.PaddingRight)-unsafe.Offsetof(C.zg_render_size{}.padding_right)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.PaddingLeft)-unsafe.Offsetof(C.zg_render_size{}.padding_left)]

@@ -406,3 +406,114 @@ func (k *KeyEvent) zigoTakeLocked() (keyEventCleanupState, bool) {
 	}
 	return state, true
 }
+
+// MouseEvent is a caller-owned native handle. Call Close when it is no longer needed.
+type MouseEvent struct {
+	ptr     unsafe.Pointer
+	mu      sync.Mutex
+	active  int
+	closed  bool
+	poison  *NativePanicError
+	cleanup runtime.Cleanup
+}
+
+// zigoAcquire pins m open for one native call and hands back its pointer;
+// the call ends with zigoRelease. A nil, closed, or poisoned handle is the error.
+func (m *MouseEvent) zigoAcquire(operation string) (unsafe.Pointer, error) {
+	if m == nil {
+		return nil, &HandleError{Operation: operation}
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.closed || m.ptr == nil {
+		return nil, &HandleError{Operation: operation}
+	}
+	if m.poison != nil {
+		return nil, m.poison.poisoned(operation)
+	}
+	m.active++
+	return m.ptr, nil
+}
+
+func (m *MouseEvent) zigoRelease() {
+	if m == nil {
+		return
+	}
+	m.mu.Lock()
+	m.active--
+	state, release := m.zigoTakeLocked()
+	m.mu.Unlock()
+	if release {
+		cleanupMouseEvent(state)
+	}
+}
+
+// zigoPoison marks m unusable: a Zig panic unwound through native frames
+// without running their defers, so the state behind it is unknown.
+func (m *MouseEvent) zigoPoison(cause *NativePanicError) {
+	if m == nil {
+		return
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.poison == nil {
+		m.poison = cause
+		m.cleanup.Stop()
+	}
+}
+
+type mouseEventCleanupState struct {
+	ptr unsafe.Pointer
+}
+
+func newMouseEvent(ptr unsafe.Pointer) *MouseEvent {
+	value := &MouseEvent{ptr: ptr}
+	state := mouseEventCleanupState{ptr: ptr}
+	value.cleanup = runtime.AddCleanup(value, cleanupMouseEvent, state)
+	return value
+}
+
+func cleanupMouseEvent(state mouseEventCleanupState) {
+	if state.ptr != nil {
+		raw.MouseEventFreeMouseEvent(state.ptr)
+	}
+}
+
+// Close releases the native MouseEvent resources. It is safe to call more than once.
+// The error result is always nil; it exists so MouseEvent satisfies io.Closer.
+// Close does not wait: a call still inside native keeps the resources until it
+// returns, and every call made after Close fails with *HandleError.
+func (m *MouseEvent) Close() error {
+	if m == nil {
+		return nil
+	}
+	m.mu.Lock()
+	if m.closed {
+		m.mu.Unlock()
+		return nil
+	}
+	m.closed = true
+	m.cleanup.Stop()
+	state, release := m.zigoTakeLocked()
+	m.mu.Unlock()
+	if release {
+		cleanupMouseEvent(state)
+	}
+	runtime.KeepAlive(m)
+	return nil
+}
+
+// zigoTakeLocked hands out what is left to release once m is closed and no
+// call is inside native; mu must be held. A poisoned handle keeps its native
+// object: releasing state a panic left half-changed could fault, so it leaks.
+func (m *MouseEvent) zigoTakeLocked() (mouseEventCleanupState, bool) {
+	if !m.closed || m.active != 0 || m.ptr == nil {
+		return mouseEventCleanupState{}, false
+	}
+	state := mouseEventCleanupState{ptr: m.ptr}
+	m.ptr = nil
+	if m.poison != nil {
+		state.ptr = nil
+	}
+	return state, true
+}

@@ -83,10 +83,9 @@ toolchain — but the native archive is not, so a fresh checkout must run
 ## Status
 
 Early. The bound surface is a useful slice of libghostty-vt — terminal state
-and editing, VT stream parsing, cursor and charsets, key/focus/paste encoding,
-unicode width — not all of it. Mouse encoding, SGR attributes, screen selection
-and search are not bound. See `docs/zigo-findings.md` for what is blocked and
-why.
+and editing, VT stream parsing, cursor and charsets, key/mouse/focus/paste
+encoding, unicode width — not all of it. SGR attributes, screen selection and
+search are not bound. See `docs/zigo-findings.md` for what is blocked and why.
 
 ## License
 
