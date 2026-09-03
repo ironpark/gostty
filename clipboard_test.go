@@ -40,7 +40,7 @@ func TestClipboardWrite(t *testing.T) {
 				t.Errorf("ClipboardContentData: %v", err)
 				return
 			}
-			got = append(got, capture{loc, string(mime), string(data)})
+			got = append(got, capture{loc, mime, string(data)})
 		}
 		if err := stream.AllowClipboard(false); err != nil {
 			t.Errorf("AllowClipboard: %v", err)
@@ -77,7 +77,7 @@ func TestClipboardRead(t *testing.T) {
 		if n, err := stream.ClipboardMimeCount(); err != nil || n == 0 {
 			t.Errorf("ClipboardMimeCount() = %d, %v; want at least one", n, err)
 		}
-		if err := stream.ReplyClipboardText([]byte("from go"), false); err != nil {
+		if err := stream.ReplyClipboardText("from go", false); err != nil {
 			t.Errorf("ReplyClipboardText: %v", err)
 		}
 	})

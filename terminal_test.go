@@ -28,7 +28,7 @@ func TestTerminalSize(t *testing.T) {
 
 func TestPrintStringAndDump(t *testing.T) {
 	term := newTerm(t, 20, 3)
-	if err := term.PrintString([]byte("hello")); err != nil {
+	if err := term.PrintString("hello"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
 	if err := term.CarriageReturn(); err != nil {
@@ -37,7 +37,7 @@ func TestPrintStringAndDump(t *testing.T) {
 	if err := term.Linefeed(); err != nil {
 		t.Fatalf("Linefeed: %v", err)
 	}
-	if err := term.PrintString([]byte("world")); err != nil {
+	if err := term.PrintString("world"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
 
@@ -45,7 +45,7 @@ func TestPrintStringAndDump(t *testing.T) {
 	if err != nil {
 		t.Fatalf("PlainString: %v", err)
 	}
-	if want := "hello\nworld"; strings.TrimRight(string(got), "\n") != want {
+	if want := "hello\nworld"; strings.TrimRight(got, "\n") != want {
 		t.Errorf("PlainString() = %q, want %q", got, want)
 	}
 
@@ -59,14 +59,14 @@ func TestPrintStringAndDump(t *testing.T) {
 
 func TestPrintStringUTF8(t *testing.T) {
 	term := newTerm(t, 20, 2)
-	if err := term.PrintString([]byte("안녕😀")); err != nil {
+	if err := term.PrintString("안녕😀"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
 	got, err := term.PlainString()
 	if err != nil {
 		t.Fatalf("PlainString: %v", err)
 	}
-	if !strings.HasPrefix(string(got), "안녕😀") {
+	if !strings.HasPrefix(got, "안녕😀") {
 		t.Errorf("PlainString() = %q, want prefix %q", got, "안녕😀")
 	}
 	// Each of these is a wide cell, so the cursor advanced by 6 columns.
@@ -108,7 +108,7 @@ func TestCursorStyleRoundTrip(t *testing.T) {
 
 func TestFullReset(t *testing.T) {
 	term := newTerm(t, 10, 2)
-	if err := term.PrintString([]byte("dirty")); err != nil {
+	if err := term.PrintString("dirty"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
 	if err := term.FullReset(); err != nil {
@@ -118,7 +118,7 @@ func TestFullReset(t *testing.T) {
 	if err != nil {
 		t.Fatalf("PlainString: %v", err)
 	}
-	if strings.TrimSpace(string(got)) != "" {
+	if strings.TrimSpace(got) != "" {
 		t.Errorf("PlainString() after FullReset = %q, want empty", got)
 	}
 }
@@ -142,20 +142,20 @@ func TestUseAfterClose(t *testing.T) {
 
 func TestBackspace(t *testing.T) {
 	term := newTerm(t, 10, 2)
-	if err := term.PrintString([]byte("abc")); err != nil {
+	if err := term.PrintString("abc"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
 	if err := term.Backspace(); err != nil {
 		t.Fatalf("Backspace: %v", err)
 	}
-	if err := term.PrintString([]byte("X")); err != nil {
+	if err := term.PrintString("X"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
 	got, err := term.PlainString()
 	if err != nil {
 		t.Fatalf("PlainString: %v", err)
 	}
-	if want := "abX"; strings.TrimSpace(string(got)) != want {
+	if want := "abX"; strings.TrimSpace(got) != want {
 		t.Errorf("PlainString() = %q, want %q", got, want)
 	}
 }

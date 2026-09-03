@@ -16,7 +16,7 @@ defer stream.Close() // before term: see "Lifetimes" below
 stream.Feed([]byte("\x1b[1;1Hhello\x1b[2;1H\x1b[31mworld"))
 
 screen, _ := term.PlainString()
-fmt.Println(string(screen)) // hello\nworld
+fmt.Println(screen) // hello\nworld
 ```
 
 Anything the program asked *of you* rather than of the screen -- a bell, a
@@ -32,7 +32,7 @@ for {
 	if kind == gostty.StreamEventDesktopNotification {
 		title, _ := stream.EventTitle()
 		body, _ := stream.EventBody()
-		notify(string(title), string(body))
+		notify(title, body)
 	}
 }
 ```
@@ -74,15 +74,33 @@ input.EncodeKey(&buf, term, ev) // "\x1b[A", or "\x1bOA" under DECCKM
 └── Makefile              # Toolchain entry point; `make help` lists targets
 ```
 
-The public package sits at the module root, so `gostty_*_gen.go` names are
-reserved for the generator: a hand-written file with one of those names would be
-overwritten on the next `make generate`. The generator's unexported helpers
-(`newTerminal`, `newStream`, `newKeyEvent`, ...) share the package namespace
-too, so hand-written code has to avoid those names.
+Three quarters of the Go is generated: 7,600 lines from `bindings.zig` against
+2,400 lines of tests. Everything named `*_gen.go`, plus `internal/lifecycle/`
+and `zig/zigo/`, is rewritten by `make generate`, so a hand-written file with
+one of those names would be overwritten. The generator owns unexported names in
+the public package too — `newTerminal`, `newStream`, `newKeyEvent` and friends.
 
-Most of libghostty-vt is bound directly: `Terminal` is ghostty's own type and
-its methods become Go methods without a wrapper. `zig/src/root.zig` only adds a
-constructor pair, an `std.Io` value, field accessors and a release function.
+`internal/raw/zigo_link_inputs_gen.go` is generated as well but holds absolute
+paths from the machine that built it, so it is not committed.
+
+### What `root.zig` is for
+
+Most of libghostty-vt is bound directly: `Terminal` is ghostty's own type and its
+methods become Go methods with nothing in between, while `.fields` and
+`.flatten` in `bindings.zig` cover plain field reads and `Terminal.init`. What is
+left in `root.zig` is the shapes that cannot cross a C ABI at all:
+
+- an `std.Io` value, because ghostty ships `TinyIo` as a type rather than a
+  ready-made declaration;
+- `Stream`, which owns the event queue and the clipboard callbacks that
+  ghostty's handler reaches back for through `@fieldParentPtr`;
+- lifecycles for `Search` and `RenderState`, which need more than a `create`;
+- wrappers for calls that return a value holding page pins — `SelectWord`,
+  `SelectLine`, `SelectOutput` — which apply the selection instead of handing it
+  back;
+- flat mirrors for the two things with no C representation: `Attribute`,
+  ghostty's SGR union, and `RenderCell`, one viewport cell with its colors
+  already resolved.
 
 ## Example
 

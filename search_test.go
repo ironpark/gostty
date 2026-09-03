@@ -12,7 +12,7 @@ func newSearchOn(t *testing.T, term *Terminal, needle string) (*Screen, *Search)
 	if err != nil {
 		t.Fatalf("ActiveScreen: %v", err)
 	}
-	s, err := sc.NewSearch([]byte(needle))
+	s, err := sc.NewSearch(needle)
 	if err != nil {
 		t.Fatalf("NewSearch: %v", err)
 	}
@@ -26,7 +26,7 @@ func newSearchOn(t *testing.T, term *Terminal, needle string) (*Screen, *Search)
 func writeLines(t *testing.T, term *Terminal, lines ...string) {
 	t.Helper()
 	for _, line := range lines {
-		if err := term.PrintString([]byte(line)); err != nil {
+		if err := term.PrintString(line); err != nil {
 			t.Fatalf("PrintString: %v", err)
 		}
 		if err := term.Index(); err != nil {
@@ -90,7 +90,7 @@ func TestSearchSelect(t *testing.T) {
 	if err != nil || !ok {
 		t.Fatalf("SelectionString() = ok %v, err %v; want true, nil", ok, err)
 	}
-	if got, want := strings.TrimSpace(string(text)), "needle"; got != want {
+	if got, want := strings.TrimSpace(text), "needle"; got != want {
 		t.Errorf("selected text = %q, want %q", got, want)
 	}
 }
@@ -104,14 +104,14 @@ func TestSearchKeepsTerminalOpen(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewTerminal: %v", err)
 	}
-	if err := term.PrintString([]byte("needle")); err != nil {
+	if err := term.PrintString("needle"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
 	sc, err := term.ActiveScreen()
 	if err != nil {
 		t.Fatalf("ActiveScreen: %v", err)
 	}
-	s, err := sc.NewSearch([]byte("needle"))
+	s, err := sc.NewSearch("needle")
 	if err != nil {
 		t.Fatalf("NewSearch: %v", err)
 	}
@@ -138,7 +138,7 @@ func TestSearchChildCountThroughBorrowedScreen(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ActiveScreen: %v", err)
 	}
-	s, err := sc.NewSearch([]byte("x"))
+	s, err := sc.NewSearch("x")
 	if err != nil {
 		t.Fatalf("NewSearch: %v", err)
 	}
@@ -160,11 +160,11 @@ func TestMultipleSearches(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ActiveScreen: %v", err)
 	}
-	first, err := sc.NewSearch([]byte("a"))
+	first, err := sc.NewSearch("a")
 	if err != nil {
 		t.Fatalf("NewSearch: %v", err)
 	}
-	second, err := sc.NewSearch([]byte("b"))
+	second, err := sc.NewSearch("b")
 	if err != nil {
 		t.Fatalf("NewSearch: %v", err)
 	}

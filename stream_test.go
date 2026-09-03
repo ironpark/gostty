@@ -43,7 +43,7 @@ func TestStreamPlainText(t *testing.T) {
 	if err != nil {
 		t.Fatalf("PlainString: %v", err)
 	}
-	if want := "hello\nworld"; strings.TrimRight(string(got), "\n") != want {
+	if want := "hello\nworld"; strings.TrimRight(got, "\n") != want {
 		t.Errorf("PlainString() = %q, want %q", got, want)
 	}
 }
@@ -74,7 +74,7 @@ func TestStreamSGRIsParsedNotPrinted(t *testing.T) {
 	if err != nil {
 		t.Fatalf("PlainString: %v", err)
 	}
-	if want := "red"; strings.TrimSpace(string(got)) != want {
+	if want := "red"; strings.TrimSpace(got) != want {
 		t.Errorf("PlainString() = %q, want %q", got, want)
 	}
 }
@@ -89,7 +89,7 @@ func TestStreamEraseDisplay(t *testing.T) {
 	if err != nil {
 		t.Fatalf("PlainString: %v", err)
 	}
-	if strings.TrimSpace(string(got)) != "" {
+	if strings.TrimSpace(got) != "" {
 		t.Errorf("PlainString() after ED 2 = %q, want empty", got)
 	}
 }

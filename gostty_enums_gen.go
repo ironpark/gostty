@@ -739,3 +739,33 @@ func (value ScrollViewportTag) String() string {
 		return "ScrollViewportTag(" + strconv.Itoa(int(value)) + ")"
 	}
 }
+
+// CellWidth represents the corresponding Zig enum.
+type CellWidth uint8
+
+const (
+	// CellWidthNarrow corresponds to the Zig tag narrow.
+	CellWidthNarrow CellWidth = 0
+	// CellWidthWide corresponds to the Zig tag wide.
+	CellWidthWide CellWidth = 1
+	// CellWidthSpacerTail corresponds to the Zig tag spacer_tail.
+	CellWidthSpacerTail CellWidth = 2
+	// CellWidthSpacerHead corresponds to the Zig tag spacer_head.
+	CellWidthSpacerHead CellWidth = 3
+)
+
+// String returns the Zig tag name.
+func (value CellWidth) String() string {
+	switch value {
+	case CellWidthNarrow:
+		return "narrow"
+	case CellWidthWide:
+		return "wide"
+	case CellWidthSpacerTail:
+		return "spacer_tail"
+	case CellWidthSpacerHead:
+		return "spacer_head"
+	default:
+		return "CellWidth(" + strconv.Itoa(int(value)) + ")"
+	}
+}

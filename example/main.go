@@ -150,7 +150,7 @@ func (g *game) start() error {
 		// A read hands the running program whatever the user copied, so a real
 		// emulator would ask the user first. This one answers immediately,
 		// which is the wrong default for anything but a demo.
-		_ = g.stream.ReplyClipboardText(g.pasteText(), false)
+		_ = g.stream.ReplyClipboardText(string(g.pasteText()), false)
 	}); err != nil {
 		return err
 	}
@@ -250,7 +250,7 @@ func (g *game) drainEvents() error {
 			// The event only announces the change; the value lives on the
 			// terminal, which is where ghostty keeps it.
 			if title, ok, err := g.vt.GetTitle(); err == nil && ok {
-				ebiten.SetWindowTitle("gostty - " + string(title))
+				ebiten.SetWindowTitle("gostty - " + title)
 			}
 		}
 	}

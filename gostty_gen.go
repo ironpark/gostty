@@ -248,12 +248,12 @@ func (s *Stream) NextEvent() (StreamEvent, bool, error) {
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) EventTitle() ([]byte, error) {
+func (s *Stream) EventTitle() (string, error) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	ptr, err := zigoCheckedPointer("Stream.EventTitle receiver", s)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer s.zigoRelease()
 	result, code := raw.StreamEventTitle(ptr)
@@ -261,9 +261,9 @@ func (s *Stream) EventTitle() ([]byte, error) {
 		zigoRethrowCallbackPanic("Stream.EventTitle", s.zigoCallbackHandle(slot))
 	}
 	if code != 0 {
-		return nil, zigoPoisonAfterPanic(errorForCode("Stream.EventTitle", code), s)
+		return "", zigoPoisonAfterPanic(errorForCode("Stream.EventTitle", code), s)
 	}
-	return result, nil
+	return string(result), nil
 }
 
 // EventBody
@@ -271,12 +271,12 @@ func (s *Stream) EventTitle() ([]byte, error) {
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) EventBody() ([]byte, error) {
+func (s *Stream) EventBody() (string, error) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	ptr, err := zigoCheckedPointer("Stream.EventBody receiver", s)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer s.zigoRelease()
 	result, code := raw.StreamEventBody(ptr)
@@ -284,9 +284,9 @@ func (s *Stream) EventBody() ([]byte, error) {
 		zigoRethrowCallbackPanic("Stream.EventBody", s.zigoCallbackHandle(slot))
 	}
 	if code != 0 {
-		return nil, zigoPoisonAfterPanic(errorForCode("Stream.EventBody", code), s)
+		return "", zigoPoisonAfterPanic(errorForCode("Stream.EventBody", code), s)
 	}
-	return result, nil
+	return string(result), nil
 }
 
 // EventProgressState calls the Zig function Stream.eventProgressState.
@@ -438,12 +438,12 @@ func (s *Stream) ClipboardLocation() (ClipboardLocation, error) {
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) ClipboardName() ([]byte, error) {
+func (s *Stream) ClipboardName() (string, error) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	ptr, err := zigoCheckedPointer("Stream.ClipboardName receiver", s)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer s.zigoRelease()
 	result, code := raw.StreamClipboardName(ptr)
@@ -451,9 +451,9 @@ func (s *Stream) ClipboardName() ([]byte, error) {
 		zigoRethrowCallbackPanic("Stream.ClipboardName", s.zigoCallbackHandle(slot))
 	}
 	if code != 0 {
-		return nil, zigoPoisonAfterPanic(errorForCode("Stream.ClipboardName", code), s)
+		return "", zigoPoisonAfterPanic(errorForCode("Stream.ClipboardName", code), s)
 	}
-	return result, nil
+	return string(result), nil
 }
 
 // ClipboardGranted
@@ -533,12 +533,12 @@ func (s *Stream) ClipboardContentCount() (uint, error) {
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) ClipboardContentMime(index uint) ([]byte, error) {
+func (s *Stream) ClipboardContentMime(index uint) (string, error) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	ptr, err := zigoCheckedPointer("Stream.ClipboardContentMime receiver", s)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer s.zigoRelease()
 	result, code := raw.StreamClipboardContentMime(ptr, index)
@@ -546,9 +546,9 @@ func (s *Stream) ClipboardContentMime(index uint) ([]byte, error) {
 		zigoRethrowCallbackPanic("Stream.ClipboardContentMime", s.zigoCallbackHandle(slot))
 	}
 	if code != 0 {
-		return nil, zigoPoisonAfterPanic(errorForCode("Stream.ClipboardContentMime", code), s)
+		return "", zigoPoisonAfterPanic(errorForCode("Stream.ClipboardContentMime", code), s)
 	}
-	return result, nil
+	return string(result), nil
 }
 
 // ClipboardContentData
@@ -602,12 +602,12 @@ func (s *Stream) ClipboardMimeCount() (uint, error) {
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) ClipboardMime(index uint) ([]byte, error) {
+func (s *Stream) ClipboardMime(index uint) (string, error) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	ptr, err := zigoCheckedPointer("Stream.ClipboardMime receiver", s)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer s.zigoRelease()
 	result, code := raw.StreamClipboardMime(ptr, index)
@@ -615,9 +615,9 @@ func (s *Stream) ClipboardMime(index uint) ([]byte, error) {
 		zigoRethrowCallbackPanic("Stream.ClipboardMime", s.zigoCallbackHandle(slot))
 	}
 	if code != 0 {
-		return nil, zigoPoisonAfterPanic(errorForCode("Stream.ClipboardMime", code), s)
+		return "", zigoPoisonAfterPanic(errorForCode("Stream.ClipboardMime", code), s)
 	}
-	return result, nil
+	return string(result), nil
 }
 
 // AllowClipboard
@@ -651,7 +651,7 @@ func (s *Stream) AllowClipboard(remember bool) error {
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) ReplyClipboardText(text []byte, remember bool) error {
+func (s *Stream) ReplyClipboardText(text string, remember bool) error {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	ptr, err := zigoCheckedPointer("Stream.ReplyClipboardText receiver", s)
@@ -659,7 +659,7 @@ func (s *Stream) ReplyClipboardText(text []byte, remember bool) error {
 		return err
 	}
 	defer s.zigoRelease()
-	code := raw.StreamReplyClipboardText(ptr, text, boolToUint8(remember))
+	code := raw.StreamReplyClipboardText(ptr, []byte(text), boolToUint8(remember))
 	for slot := range 2 {
 		zigoRethrowCallbackPanic("Stream.ReplyClipboardText", s.zigoCallbackHandle(slot))
 	}
@@ -727,7 +727,7 @@ func (s *Stream) WriteContinuation(writer io.Writer) error {
 // PrintString calls the Zig function Terminal.printString.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
-func (t *Terminal) PrintString(str []byte) error {
+func (t *Terminal) PrintString(str string) error {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	ptr, err := zigoCheckedPointer("Terminal.PrintString receiver", t)
@@ -735,7 +735,7 @@ func (t *Terminal) PrintString(str []byte) error {
 		return err
 	}
 	defer t.zigoRelease()
-	code := raw.TerminalPrintString(ptr, str)
+	code := raw.TerminalPrintString(ptr, []byte(str))
 	if code != 0 {
 		return zigoPoisonAfterPanic(errorForCode("Terminal.PrintString", code), t)
 	}
@@ -745,19 +745,19 @@ func (t *Terminal) PrintString(str []byte) error {
 // PlainString calls the Zig function Terminal.plainString.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
-func (t *Terminal) PlainString() ([]byte, error) {
+func (t *Terminal) PlainString() (string, error) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	ptr, err := zigoCheckedPointer("Terminal.PlainString receiver", t)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer t.zigoRelease()
 	result, code := raw.TerminalPlainString(ptr)
 	if code != 0 {
-		return nil, zigoPoisonAfterPanic(errorForCode("Terminal.PlainString", code), t)
+		return "", zigoPoisonAfterPanic(errorForCode("Terminal.PlainString", code), t)
 	}
-	return result, nil
+	return string(result), nil
 }
 
 // SetCursorStyle calls the Zig function Terminal.setCursorStyle.
@@ -1044,28 +1044,15 @@ func (s *Screen) SelectRange(x1 uint16, y1 uint16, x2 uint16, y2 uint16, rectang
 	return result != 0, nil
 }
 
-// ViewportIsBottom calls the Zig function Screen.viewportIsBottom.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Screen) ViewportIsBottom() (bool, error) {
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
-	ptr, err := zigoCheckedPointer("Screen.ViewportIsBottom receiver", s)
-	if err != nil {
-		return false, err
-	}
-	defer s.zigoRelease()
-	result, code := raw.ScreenViewportIsBottom(ptr)
-	if code != 0 {
-		return false, zigoPoisonAfterPanic(errorForCode("Screen.ViewportIsBottom", code), s)
-	}
-	return result != 0, nil
-}
-
 // SelectWord calls the Zig function Screen.selectWord.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (s *Screen) SelectWord(x uint16, y uint16, boundaries []uint32) (bool, error) {
+	for _, zigoValue := range boundaries {
+		if zigoValue > 2097151 {
+			return false, &RangeError{Operation: "Screen.SelectWord", Parameter: "boundaries", Type: "u21"}
+		}
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	ptr, err := zigoCheckedPointer("Screen.SelectWord receiver", s)
@@ -1119,19 +1106,37 @@ func (s *Screen) SelectOutput(x uint16, y uint16) (bool, error) {
 // SelectionString calls the Zig function Screen.selectionString.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
-func (s *Screen) SelectionString() ([]byte, bool, error) {
+func (s *Screen) SelectionString() (string, bool, error) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	ptr, err := zigoCheckedPointer("Screen.SelectionString receiver", s)
 	if err != nil {
-		return nil, false, err
+		return "", false, err
 	}
 	defer s.zigoRelease()
 	result, zigoHas, code := raw.ScreenSelectionString(ptr)
 	if code != 0 {
-		return nil, false, zigoPoisonAfterPanic(errorForCode("Screen.SelectionString", code), s)
+		return "", false, zigoPoisonAfterPanic(errorForCode("Screen.SelectionString", code), s)
 	}
-	return result, zigoHas, nil
+	return string(result), zigoHas, nil
+}
+
+// ViewportIsBottom calls the Zig function Screen.viewportIsBottom.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Screen) ViewportIsBottom() (bool, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Screen.ViewportIsBottom receiver", s)
+	if err != nil {
+		return false, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.ScreenViewportIsBottom(ptr)
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(errorForCode("Screen.ViewportIsBottom", code), s)
+	}
+	return result != 0, nil
 }
 
 // NewSearch
@@ -1140,7 +1145,7 @@ func (s *Screen) SelectionString() ([]byte, bool, error) {
 // The caller must call Close on the returned handle.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
-func (s *Screen) NewSearch(needle []byte) (*Search, error) {
+func (s *Screen) NewSearch(needle string) (*Search, error) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	ptr, zigoChildParent, err := s.zigoAcquireChild("Screen.NewSearch receiver")
@@ -1154,7 +1159,7 @@ func (s *Screen) NewSearch(needle []byte) (*Search, error) {
 			zigoChildParent.ZigoDropChild()
 		}
 	}()
-	result, code := raw.ScreenNewSearch(ptr, needle)
+	result, code := raw.ScreenNewSearch(ptr, []byte(needle))
 	if code != 0 {
 		return nil, zigoPoisonAfterPanic(errorForCode("Screen.NewSearch", code), s)
 	}
@@ -1246,38 +1251,38 @@ func (t *Terminal) PrintAttributesInto(dst []byte) (uint, error) {
 // carrying a coordinate, which zigo cannot take by value.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
-func (t *Terminal) HistoryString() ([]byte, error) {
+func (t *Terminal) HistoryString() (string, error) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	ptr, err := zigoCheckedPointer("Terminal.HistoryString receiver", t)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer t.zigoRelease()
 	result, code := raw.TerminalHistoryString(ptr)
 	if code != 0 {
-		return nil, zigoPoisonAfterPanic(errorForCode("Terminal.HistoryString", code), t)
+		return "", zigoPoisonAfterPanic(errorForCode("Terminal.HistoryString", code), t)
 	}
-	return result, nil
+	return string(result), nil
 }
 
 // ScreenString
 // The full screen: scrollback followed by the active area.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
-func (t *Terminal) ScreenString() ([]byte, error) {
+func (t *Terminal) ScreenString() (string, error) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	ptr, err := zigoCheckedPointer("Terminal.ScreenString receiver", t)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer t.zigoRelease()
 	result, code := raw.TerminalScreenString(ptr)
 	if code != 0 {
-		return nil, zigoPoisonAfterPanic(errorForCode("Terminal.ScreenString", code), t)
+		return "", zigoPoisonAfterPanic(errorForCode("Terminal.ScreenString", code), t)
 	}
-	return result, nil
+	return string(result), nil
 }
 
 // CursorUp calls the Zig function Terminal.cursorUp.
@@ -1826,25 +1831,25 @@ func (t *Terminal) PrintSlice(cps []uint32) error {
 // PlainStringUnwrapped calls the Zig function Terminal.plainStringUnwrapped.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
-func (t *Terminal) PlainStringUnwrapped() ([]byte, error) {
+func (t *Terminal) PlainStringUnwrapped() (string, error) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	ptr, err := zigoCheckedPointer("Terminal.PlainStringUnwrapped receiver", t)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer t.zigoRelease()
 	result, code := raw.TerminalPlainStringUnwrapped(ptr)
 	if code != 0 {
-		return nil, zigoPoisonAfterPanic(errorForCode("Terminal.PlainStringUnwrapped", code), t)
+		return "", zigoPoisonAfterPanic(errorForCode("Terminal.PlainStringUnwrapped", code), t)
 	}
-	return result, nil
+	return string(result), nil
 }
 
 // SetPwd calls the Zig function Terminal.setPwd.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
-func (t *Terminal) SetPwd(pwd []byte) error {
+func (t *Terminal) SetPwd(pwd string) error {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	ptr, err := zigoCheckedPointer("Terminal.SetPwd receiver", t)
@@ -1852,7 +1857,7 @@ func (t *Terminal) SetPwd(pwd []byte) error {
 		return err
 	}
 	defer t.zigoRelease()
-	code := raw.TerminalSetPwd(ptr, pwd)
+	code := raw.TerminalSetPwd(ptr, []byte(pwd))
 	if code != 0 {
 		return zigoPoisonAfterPanic(errorForCode("Terminal.SetPwd", code), t)
 	}
@@ -1862,43 +1867,43 @@ func (t *Terminal) SetPwd(pwd []byte) error {
 // GetPwd calls the Zig function Terminal.getPwd.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-func (t *Terminal) GetPwd() ([]byte, bool, error) {
+func (t *Terminal) GetPwd() (string, bool, error) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	ptr, err := zigoCheckedPointer("Terminal.GetPwd receiver", t)
 	if err != nil {
-		return nil, false, err
+		return "", false, err
 	}
 	defer t.zigoRelease()
 	result, zigoHas, code := raw.TerminalGetPwd(ptr)
 	if code != 0 {
-		return nil, false, zigoPoisonAfterPanic(errorForCode("Terminal.GetPwd", code), t)
+		return "", false, zigoPoisonAfterPanic(errorForCode("Terminal.GetPwd", code), t)
 	}
-	return result, zigoHas, nil
+	return string(result), zigoHas, nil
 }
 
 // GetTitle calls the Zig function Terminal.getTitle.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-func (t *Terminal) GetTitle() ([]byte, bool, error) {
+func (t *Terminal) GetTitle() (string, bool, error) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	ptr, err := zigoCheckedPointer("Terminal.GetTitle receiver", t)
 	if err != nil {
-		return nil, false, err
+		return "", false, err
 	}
 	defer t.zigoRelease()
 	result, zigoHas, code := raw.TerminalGetTitle(ptr)
 	if code != 0 {
-		return nil, false, zigoPoisonAfterPanic(errorForCode("Terminal.GetTitle", code), t)
+		return "", false, zigoPoisonAfterPanic(errorForCode("Terminal.GetTitle", code), t)
 	}
-	return result, zigoHas, nil
+	return string(result), zigoHas, nil
 }
 
 // SetTitle calls the Zig function Terminal.setTitle.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
-func (te *Terminal) SetTitle(t []byte) error {
+func (te *Terminal) SetTitle(t string) error {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	ptr, err := zigoCheckedPointer("Terminal.SetTitle receiver", te)
@@ -1906,7 +1911,7 @@ func (te *Terminal) SetTitle(t []byte) error {
 		return err
 	}
 	defer te.zigoRelease()
-	code := raw.TerminalSetTitle(ptr, t)
+	code := raw.TerminalSetTitle(ptr, []byte(t))
 	if code != 0 {
 		return zigoPoisonAfterPanic(errorForCode("Terminal.SetTitle", code), te)
 	}

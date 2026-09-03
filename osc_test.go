@@ -26,12 +26,12 @@ func drain(t *testing.T, s *Stream) []event {
 		if err != nil {
 			t.Fatalf("EventTitle: %v", err)
 		}
-		ev.title = string(title)
+		ev.title = title
 		body, err := s.EventBody()
 		if err != nil {
 			t.Fatalf("EventBody: %v", err)
 		}
-		ev.body = string(body)
+		ev.body = body
 		if ev.progressState, err = s.EventProgressState(); err != nil {
 			t.Fatalf("EventProgressState: %v", err)
 		}
@@ -126,11 +126,11 @@ func TestTitleAndPwdEvents(t *testing.T) {
 	}
 
 	title, ok, err := term.GetTitle()
-	if err != nil || !ok || string(title) != "my title" {
+	if err != nil || !ok || title != "my title" {
 		t.Errorf("GetTitle() = %q, %v, %v", title, ok, err)
 	}
 	pwd, ok, err := term.GetPwd()
-	if err != nil || !ok || string(pwd) != "file:///tmp/work" {
+	if err != nil || !ok || pwd != "file:///tmp/work" {
 		t.Errorf("GetPwd() = %q, %v, %v", pwd, ok, err)
 	}
 }

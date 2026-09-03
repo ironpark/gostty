@@ -8,6 +8,60 @@ import (
 	"github.com/ironpark/gostty/internal/raw"
 )
 
+// CellFlags mirrors the Zig packed struct of the same name.
+type CellFlags struct {
+	Bold          bool
+	Italic        bool
+	Faint         bool
+	Blink         bool
+	Inverse       bool
+	Invisible     bool
+	Strikethrough bool
+	Overline      bool
+	Underline     Underline
+	Wide          CellWidth
+	Selected      bool
+	Pad           uint32
+}
+
+func zigoCellFlagsToBacking(value CellFlags) uint32 {
+	var result uint64
+	result |= (uint64(boolToUint8(value.Bold)) & 0x1) << 0
+	result |= (uint64(boolToUint8(value.Italic)) & 0x1) << 1
+	result |= (uint64(boolToUint8(value.Faint)) & 0x1) << 2
+	result |= (uint64(boolToUint8(value.Blink)) & 0x1) << 3
+	result |= (uint64(boolToUint8(value.Inverse)) & 0x1) << 4
+	result |= (uint64(boolToUint8(value.Invisible)) & 0x1) << 5
+	result |= (uint64(boolToUint8(value.Strikethrough)) & 0x1) << 6
+	result |= (uint64(boolToUint8(value.Overline)) & 0x1) << 7
+	result |= (uint64(value.Underline) & 0x7) << 8
+	result |= (uint64(value.Wide) & 0x3) << 11
+	result |= (uint64(boolToUint8(value.Selected)) & 0x1) << 13
+	result |= (uint64(value.Pad) & 0x3ffff) << 14
+	return uint32(result)
+}
+
+// Backing returns the integer representation used by Zig.
+func (value CellFlags) Backing() uint32 { return zigoCellFlagsToBacking(value) }
+
+// CellFlagsFromBacking reconstructs a CellFlags from its Zig integer representation.
+func CellFlagsFromBacking(value uint32) CellFlags {
+	return CellFlags{
+		Bold:          ((uint64(value) >> 0) & 0x1) != 0,
+		Italic:        ((uint64(value) >> 1) & 0x1) != 0,
+		Faint:         ((uint64(value) >> 2) & 0x1) != 0,
+		Blink:         ((uint64(value) >> 3) & 0x1) != 0,
+		Inverse:       ((uint64(value) >> 4) & 0x1) != 0,
+		Invisible:     ((uint64(value) >> 5) & 0x1) != 0,
+		Strikethrough: ((uint64(value) >> 6) & 0x1) != 0,
+		Overline:      ((uint64(value) >> 7) & 0x1) != 0,
+		Underline:     Underline(((uint64(value) >> 8) & 0x7)),
+		Wide:          CellWidth(((uint64(value) >> 11) & 0x3)),
+		Selected:      ((uint64(value) >> 13) & 0x1) != 0,
+		Pad:           uint32(((uint64(value) >> 14) & 0x3ffff)),
+	}
+}
+
 // RenderCell mirrors the Zig `extern struct` of the same name.
 type RenderCell struct {
 	// Codepoint corresponds to the Zig field codepoint.
@@ -17,11 +71,7 @@ type RenderCell struct {
 	// Bg corresponds to the Zig field bg.
 	Bg uint32
 	// Flags corresponds to the Zig field flags.
-	Flags uint16
-	// Wide corresponds to the Zig field wide.
-	Wide uint8
-	// Pad corresponds to the Zig field _pad.
-	Pad uint8
+	Flags uint32
 }
 
 // RenderCell is reinterpreted as raw.RenderCellData instead of copied, so the two
@@ -31,39 +81,6 @@ var _ = [1]struct{}{}[unsafe.Offsetof(RenderCell{}.Codepoint)-unsafe.Offsetof(ra
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderCell{}.Fg)-unsafe.Offsetof(raw.RenderCellData{}.Fg)]
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderCell{}.Bg)-unsafe.Offsetof(raw.RenderCellData{}.Bg)]
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderCell{}.Flags)-unsafe.Offsetof(raw.RenderCellData{}.Flags)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderCell{}.Wide)-unsafe.Offsetof(raw.RenderCellData{}.Wide)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderCell{}.Pad)-unsafe.Offsetof(raw.RenderCellData{}.Pad)]
-
-func zigoRenderCellToRaw(value RenderCell) raw.RenderCellData {
-	return raw.RenderCellData{
-		Codepoint: value.Codepoint,
-		Fg:        value.Fg,
-		Bg:        value.Bg,
-		Flags:     value.Flags,
-		Wide:      value.Wide,
-		Pad:       value.Pad,
-	}
-}
-
-func zigoRenderCellFromRaw(value raw.RenderCellData) RenderCell {
-	return RenderCell{
-		Codepoint: value.Codepoint,
-		Fg:        value.Fg,
-		Bg:        value.Bg,
-		Flags:     value.Flags,
-		Wide:      value.Wide,
-		Pad:       value.Pad,
-	}
-}
-
-// zigoRenderCellSliceView reinterprets a slice the raw layer already owns as
-// []RenderCell without copying it again.
-func zigoRenderCellSliceView(values []raw.RenderCellData) []RenderCell {
-	if len(values) == 0 {
-		return nil
-	}
-	return unsafe.Slice((*RenderCell)(unsafe.Pointer(&values[0])), len(values))
-}
 
 // Attribute is a tagged-union value passed to native code by copy.
 type Attribute struct {

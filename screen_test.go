@@ -10,7 +10,7 @@ import (
 // screen's contents and scrollback survive underneath.
 func TestSwitchScreen(t *testing.T) {
 	term := newTerm(t, 20, 3)
-	if err := term.PrintString([]byte("primary")); err != nil {
+	if err := term.PrintString("primary"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
 
@@ -29,7 +29,7 @@ func TestSwitchScreen(t *testing.T) {
 		t.Errorf("alternate screen = %q, want empty", got)
 	}
 
-	if err := term.PrintString([]byte("alternate")); err != nil {
+	if err := term.PrintString("alternate"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
 	if got, want := screen(t, term), "alternate"; got != want {
@@ -82,7 +82,7 @@ func TestHistoryAndScreenString(t *testing.T) {
 	term := newTerm(t, 10, 2)
 	// Two rows fit on screen, so the first rows scroll into history.
 	for _, line := range []string{"one", "two", "three", "four"} {
-		if err := term.PrintString([]byte(line)); err != nil {
+		if err := term.PrintString(line); err != nil {
 			t.Fatalf("PrintString: %v", err)
 		}
 		if err := term.Index(); err != nil {
@@ -97,10 +97,10 @@ func TestHistoryAndScreenString(t *testing.T) {
 	if err != nil {
 		t.Fatalf("HistoryString: %v", err)
 	}
-	if !strings.Contains(string(history), "one") {
+	if !strings.Contains(history, "one") {
 		t.Errorf("HistoryString() = %q, want it to contain the scrolled-off rows", history)
 	}
-	if strings.Contains(string(history), "four") {
+	if strings.Contains(history, "four") {
 		t.Errorf("HistoryString() = %q, should not contain the active area", history)
 	}
 
@@ -109,7 +109,7 @@ func TestHistoryAndScreenString(t *testing.T) {
 		t.Fatalf("ScreenString: %v", err)
 	}
 	for _, want := range []string{"one", "four"} {
-		if !strings.Contains(string(full), want) {
+		if !strings.Contains(full, want) {
 			t.Errorf("ScreenString() = %q, want it to contain %q", full, want)
 		}
 	}
@@ -122,7 +122,7 @@ func TestBorrowedScreen(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewTerminal: %v", err)
 	}
-	if err := term.PrintString([]byte("hello")); err != nil {
+	if err := term.PrintString("hello"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
 
@@ -145,7 +145,7 @@ func TestBorrowedScreen(t *testing.T) {
 	if err != nil || !ok {
 		t.Fatalf("SelectionString() = ok %v, err %v; want true, nil", ok, err)
 	}
-	if got, want := strings.TrimSpace(string(text)), "hello"; got != want {
+	if got, want := strings.TrimSpace(text), "hello"; got != want {
 		t.Errorf("SelectionString() = %q, want %q", got, want)
 	}
 
@@ -188,7 +188,7 @@ func TestOptionalScreen(t *testing.T) {
 	}
 
 	// The primary screen is still reachable while the alternate is active.
-	if err := term.PrintString([]byte("on alternate")); err != nil {
+	if err := term.PrintString("on alternate"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
 	if _, err := alt.SelectAll(); err != nil {
@@ -198,7 +198,7 @@ func TestOptionalScreen(t *testing.T) {
 	if err != nil || !ok {
 		t.Fatalf("SelectionString() = ok %v, err %v; want true, nil", ok, err)
 	}
-	if got, want := strings.TrimSpace(string(text)), "on alternate"; got != want {
+	if got, want := strings.TrimSpace(text), "on alternate"; got != want {
 		t.Errorf("alternate selection = %q, want %q", got, want)
 	}
 }

@@ -52,25 +52,3 @@ func zigoRenderSizeToRaw(value RenderSize) raw.RenderSizeData {
 		PaddingLeft:   value.PaddingLeft,
 	}
 }
-
-func zigoRenderSizeFromRaw(value raw.RenderSizeData) RenderSize {
-	return RenderSize{
-		ScreenWidth:   value.ScreenWidth,
-		ScreenHeight:  value.ScreenHeight,
-		CellWidth:     value.CellWidth,
-		CellHeight:    value.CellHeight,
-		PaddingTop:    value.PaddingTop,
-		PaddingBottom: value.PaddingBottom,
-		PaddingRight:  value.PaddingRight,
-		PaddingLeft:   value.PaddingLeft,
-	}
-}
-
-// zigoRenderSizeSliceView reinterprets a slice the raw layer already owns as
-// []RenderSize without copying it again.
-func zigoRenderSizeSliceView(values []raw.RenderSizeData) []RenderSize {
-	if len(values) == 0 {
-		return nil
-	}
-	return unsafe.Slice((*RenderSize)(unsafe.Pointer(&values[0])), len(values))
-}

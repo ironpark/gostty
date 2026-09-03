@@ -131,9 +131,11 @@ func (g *game) copySelection() error {
 	if err != nil || !ok || len(text) == 0 {
 		return err
 	}
+	// The clipboard keeps bytes: that is what the system clipboard and OSC 52
+	// both deal in, and the selection is the only place a string arrives.
 	g.clipboard = append(g.clipboard[:0], text...)
 	if g.systemClipboard {
-		if _, err := clipboard.Write(context.Background(), clipboard.FmtText, text); err != nil {
+		if _, err := clipboard.Write(context.Background(), clipboard.FmtText, g.clipboard); err != nil {
 			return err
 		}
 	}

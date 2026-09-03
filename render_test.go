@@ -51,9 +51,10 @@ func TestRenderCells(t *testing.T) {
 	if cells[0].Codepoint != 'h' || cells[1].Codepoint != 'i' {
 		t.Errorf("row 0 = %q%q, want \"hi\"", cells[0].Codepoint, cells[1].Codepoint)
 	}
-	const bold = 1 << 0
-	if cells[0].Flags&bold == 0 {
-		t.Errorf("flags = %#x, want bold set", cells[0].Flags)
+	// The flags word decodes into named fields, so nothing here has to know
+	// which bit ghostty put bold in.
+	if !CellFlagsFromBacking(cells[0].Flags).Bold {
+		t.Errorf("flags = %+v, want bold set", CellFlagsFromBacking(cells[0].Flags))
 	}
 	// Palette index 1 is red; the render state resolves it for us.
 	if cells[0].Fg == cells[0].Bg {
@@ -129,7 +130,7 @@ func TestRenderSelection(t *testing.T) {
 	}
 
 	text, ok, err := screen.SelectionString()
-	if err != nil || !ok || string(text) != "bcd" {
+	if err != nil || !ok || text != "bcd" {
 		t.Errorf("SelectionString = %q, %v, %v; want \"bcd\"", text, ok, err)
 	}
 
@@ -146,9 +147,8 @@ func TestRenderSelection(t *testing.T) {
 		t.Fatalf("Cells: %v", err)
 	}
 
-	const selected = 1 << 12
 	for x, want := range []bool{false, true, true, true, false, false} {
-		if got := cells[x].Flags&selected != 0; got != want {
+		if got := CellFlagsFromBacking(cells[x].Flags).Selected; got != want {
 			t.Errorf("cell %d selected = %v, want %v", x, got, want)
 		}
 	}
@@ -180,27 +180,22 @@ func TestRenderWideCells(t *testing.T) {
 		t.Fatalf("Cells: %v", err)
 	}
 
-	const (
-		widthNarrow = 0
-		widthWide   = 1
-		widthSpacer = 2
-	)
 	want := []struct {
 		codepoint rune
-		wide      uint8
+		wide      CellWidth
 	}{
-		{'안', widthWide},
-		{0, widthSpacer},
-		{'녕', widthWide},
-		{0, widthSpacer},
-		{0, widthNarrow},
+		{'안', CellWidthWide},
+		{0, CellWidthSpacerTail},
+		{'녕', CellWidthWide},
+		{0, CellWidthSpacerTail},
+		{0, CellWidthNarrow},
 	}
 	for i, w := range want {
 		if got := rune(cells[i].Codepoint); got != w.codepoint {
 			t.Errorf("cell %d codepoint = %q, want %q", i, got, w.codepoint)
 		}
-		if cells[i].Wide != w.wide {
-			t.Errorf("cell %d wide = %d, want %d", i, cells[i].Wide, w.wide)
+		if got := CellFlagsFromBacking(cells[i].Flags).Wide; got != w.wide {
+			t.Errorf("cell %d wide = %v, want %v", i, got, w.wide)
 		}
 	}
 
@@ -231,7 +226,7 @@ func TestSelectWordAndLine(t *testing.T) {
 	if err != nil || !ok {
 		t.Fatalf("SelectWord = %v, %v; want true, nil", ok, err)
 	}
-	if text, ok, err := screen.SelectionString(); err != nil || !ok || string(text) != "hello" {
+	if text, ok, err := screen.SelectionString(); err != nil || !ok || text != "hello" {
 		t.Errorf("word = %q, %v, %v; want \"hello\"", text, ok, err)
 	}
 
@@ -240,7 +235,7 @@ func TestSelectWordAndLine(t *testing.T) {
 	if err != nil || !ok {
 		t.Fatalf("SelectLine = %v, %v; want true, nil", ok, err)
 	}
-	if text, ok, err := screen.SelectionString(); err != nil || !ok || string(text) != "hello world" {
+	if text, ok, err := screen.SelectionString(); err != nil || !ok || text != "hello world" {
 		t.Errorf("line = %q, %v, %v; want \"hello world\"", text, ok, err)
 	}
 
@@ -289,7 +284,7 @@ func TestSelectOutput(t *testing.T) {
 	if err != nil {
 		t.Fatalf("SelectionString: %v", err)
 	}
-	if got := string(text); got != "out one\nout two" {
+	if got := text; got != "out one\nout two" {
 		t.Errorf("output = %q, want %q", got, "out one\nout two")
 	}
 }

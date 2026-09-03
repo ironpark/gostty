@@ -111,11 +111,11 @@ func TestOSCReachesTerminalState(t *testing.T) {
 	feed(t, stream, "\x1b]7;file:///tmp/work\x1b\\")
 
 	title, ok, err := term.GetTitle()
-	if err != nil || !ok || string(title) != "my title" {
+	if err != nil || !ok || title != "my title" {
 		t.Errorf("GetTitle() = %q, %v, %v; want \"my title\", true, nil", title, ok, err)
 	}
 	pwd, ok, err := term.GetPwd()
-	if err != nil || !ok || string(pwd) != "file:///tmp/work" {
+	if err != nil || !ok || pwd != "file:///tmp/work" {
 		t.Errorf("GetPwd() = %q, %v, %v; want the reported URL, true, nil", pwd, ok, err)
 	}
 }

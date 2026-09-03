@@ -683,13 +683,6 @@ func ScreenSelectRange(self unsafe.Pointer, x1 uint16, y1 uint16, x2 uint16, y2 
 	return uint8(outResult), code
 }
 
-// ScreenViewportIsBottom calls the generated C ABI wrapper for zg_screen_viewport_is_bottom.
-func ScreenViewportIsBottom(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_screen_viewport_is_bottom((*C.zg_screen)(self), &outResult))
-	return uint8(outResult), code
-}
-
 // ScreenSelectWord calls the generated C ABI wrapper for zg_screen_select_word.
 func ScreenSelectWord(self unsafe.Pointer, x uint16, y uint16, boundaries []uint32) (uint8, int32) {
 	var boundariesZero C.uint32_t
@@ -733,6 +726,13 @@ func ScreenSelectionString(self unsafe.Pointer) ([]uint8, bool, int32) {
 	}
 	C.zg_free_string(outResultPtr, outResultLen)
 	return result, true, code
+}
+
+// ScreenViewportIsBottom calls the generated C ABI wrapper for zg_screen_viewport_is_bottom.
+func ScreenViewportIsBottom(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_screen_viewport_is_bottom((*C.zg_screen)(self), &outResult))
+	return uint8(outResult), code
 }
 
 // ScreenNewSearch calls the generated C ABI wrapper for zg_screen_new_search.
@@ -1260,9 +1260,7 @@ type RenderCellData struct {
 	Codepoint uint32
 	Fg        uint32
 	Bg        uint32
-	Flags     uint16
-	Wide      uint8
-	Pad       uint8
+	Flags     uint32
 }
 
 // RenderSizeData crosses to C as a cast, so it must match zg_render_size byte for byte.
@@ -1282,5 +1280,3 @@ var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Codepoint)-unsafe.Offseto
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Fg)-unsafe.Offsetof(C.zg_render_cell{}.fg)]
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Bg)-unsafe.Offsetof(C.zg_render_cell{}.bg)]
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Flags)-unsafe.Offsetof(C.zg_render_cell{}.flags)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Wide)-unsafe.Offsetof(C.zg_render_cell{}.wide)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Pad)-unsafe.Offsetof(C.zg_render_cell{}._pad)]

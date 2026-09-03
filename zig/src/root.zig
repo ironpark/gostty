@@ -24,14 +24,6 @@ pub const io: std.Io = (vt.TinyIo.init).io();
 
 pub const Terminal = vt.Terminal;
 
-/// Re-exported so the generated shim can name `Terminal.Options`.
-///
-/// zigo 0.7.2 spells a registered type through its reflected `zig_path`, but
-/// only when that path starts with `root.`. ghostty declares this one, so the
-/// path is `terminal.Terminal.Options` and the shim falls back to
-/// `target.Options` -- a name that only exists if the root module provides it.
-pub const Options = Terminal.Options;
-
 /// The visual style of the cursor.
 pub const CursorStyle = vt.CursorStyle;
 
@@ -542,15 +534,6 @@ pub fn searchSelect(self: *Search, to: SearchDirection) !bool {
     return true;
 }
 
-/// Whether the viewport is scrolled to the bottom, which is what a GUI needs to
-/// decide whether new output should follow the cursor.
-///
-/// Wrapped because ghostty takes the screen by value here, and an opaque handle
-/// has no by-value representation across the C ABI.
-pub fn screenViewportIsBottom(self: *Screen) bool {
-    return self.viewportIsBottom();
-}
-
 /// Select the word under a viewport position -- what a double click does.
 ///
 /// `boundaries` are the codepoints that end a word. ghostty has no default for
@@ -560,22 +543,9 @@ pub fn screenViewportIsBottom(self: *Screen) bool {
 /// Wrapped because ghostty returns the `Selection` rather than applying it, and
 /// a `Selection` holds page pins that cannot cross the C ABI. False when the
 /// position is outside the viewport or there is no word under it.
-/// `boundaries` is taken as `[]const u32` because zigo widens a narrow integer
-/// only as a whole parameter, not as a slice element (ZIGO018); values outside
-/// the codepoint range are dropped rather than rejected.
-pub fn screenSelectWord(self: *Screen, gpa: Allocator, x: u16, y: u16, boundaries: []const u32) !bool {
+pub fn screenSelectWord(self: *Screen, x: u16, y: u16, boundaries: []const u21) !bool {
     const pin = self.pages.pin(.{ .viewport = .{ .x = x, .y = y } }) orelse return false;
-
-    const cps = try gpa.alloc(u21, boundaries.len);
-    defer gpa.free(cps);
-    var count: usize = 0;
-    for (boundaries) |cp| {
-        if (cp > std.math.maxInt(u21)) continue;
-        cps[count] = @intCast(cp);
-        count += 1;
-    }
-
-    const selection = self.selectWord(pin, cps[0..count]) orelse return false;
+    const selection = self.selectWord(pin, boundaries) orelse return false;
     try self.select(selection);
     return true;
 }
@@ -1030,6 +1000,37 @@ pub const RenderState = vt.RenderState;
 /// state's palette and defaults are filled in from the terminal's own
 /// foreground and background, so Go never has to carry a palette. `inverse`
 /// is applied here too, for the same reason.
+/// How wide a cell is, and whether it is a spacer another cell owns.
+pub const CellWidth = vt.page.Cell.Wide;
+
+/// Everything about a cell that is not a codepoint or a color.
+///
+/// A `packed struct` rather than a hand-packed integer: the bit layout is
+/// ghostty's and Go should not have to know it. zigo mirrors the fields and
+/// still passes one `u32` across the boundary.
+pub const CellFlags = packed struct(u32) {
+    bold: bool = false,
+    italic: bool = false,
+    faint: bool = false,
+    blink: bool = false,
+    inverse: bool = false,
+    invisible: bool = false,
+    strikethrough: bool = false,
+    overline: bool = false,
+    underline: Underline = .none,
+    /// Narrow, wide, or a spacer the renderer should skip.
+    wide: CellWidth = .narrow,
+    /// Whether the cell falls inside the screen's selection.
+    selected: bool = false,
+    _pad: u18 = 0,
+};
+
+/// One cell of the viewport, flattened for the C ABI.
+///
+/// Colors are already resolved: palette indices are looked up in the render
+/// state's palette and defaults are filled in from the terminal's own
+/// foreground and background, so Go never has to carry a palette. `inverse`
+/// is applied here too, for the same reason.
 pub const RenderCell = extern struct {
     /// The cell's codepoint, or 0 for an empty cell. Only the first codepoint
     /// of a grapheme cluster; combining marks are not carried across.
@@ -1037,13 +1038,10 @@ pub const RenderCell = extern struct {
     /// 0xRRGGBB.
     fg: u32,
     bg: u32,
-    /// bold, italic, faint, blink, inverse, invisible, strikethrough and
-    /// overline in bits 0..7; the underline style in bits 8..11; whether the
-    /// cell falls inside the screen's selection in bit 12.
-    flags: u16,
-    /// 0 narrow, 1 wide, 2 spacer_tail, 3 spacer_head. Skip the spacers.
-    wide: u8,
-    _pad: u8 = 0,
+    /// `CellFlags` in its backing integer. Decode it with `CellFlagsFromBacking`
+    /// on the cells you actually draw: keeping the array element plain is what
+    /// lets a whole viewport cross the boundary without being copied.
+    flags: u32,
 };
 
 pub fn newRenderState(gpa: Allocator) !*RenderState {
@@ -1091,8 +1089,7 @@ pub fn renderCells(self: *RenderState, dst: []RenderCell) !usize {
                 .codepoint = 0,
                 .fg = fg_default,
                 .bg = bg_default,
-                .flags = 0,
-                .wide = @intFromEnum(cell.wide),
+                .flags = packFlags(.{ .wide = cell.wide }),
             };
 
             switch (cell.content_tag) {
@@ -1110,13 +1107,17 @@ pub fn renderCells(self: *RenderState, dst: []RenderCell) !usize {
             // `style` is only meaningful when the cell carries a style id;
             // the default-styled cells keep the defaults filled in above.
             if (sel) |range| {
-                if (x >= range[0] and x <= range[1]) out.flags |= selected_flag;
+                if (x >= range[0] and x <= range[1]) {
+                    var flags = unpackFlags(out.flags);
+                    flags.selected = true;
+                    out.flags = packFlags(flags);
+                }
             }
 
             if (cell.style_id != 0) {
                 if (resolveColor(self, style.fg_color)) |c| out.fg = c;
                 if (resolveColor(self, style.bg_color)) |c| out.bg = c;
-                out.flags = packFlags(style.flags);
+                out.flags = packFlags(mergeFlags(unpackFlags(out.flags), style.flags));
                 if (style.flags.inverse) {
                     const tmp = out.fg;
                     out.fg = out.bg;
@@ -1127,10 +1128,6 @@ pub fn renderCells(self: *RenderState, dst: []RenderCell) !usize {
     }
     return total;
 }
-
-/// Bit 12 of `RenderCell.flags`: the cell is inside the selection. It sits
-/// above the underline style, which occupies bits 8..11.
-const selected_flag: u16 = 1 << 12;
 
 fn packRgb(c: vt.color.RGB) u32 {
     return (@as(u32, c.r) << 16) | (@as(u32, c.g) << 8) | @as(u32, c.b);
@@ -1144,18 +1141,28 @@ fn resolveColor(self: *RenderState, c: vt.Style.Color) ?u32 {
     };
 }
 
-fn packFlags(f: anytype) u16 {
-    var out: u16 = 0;
-    if (f.bold) out |= 1 << 0;
-    if (f.italic) out |= 1 << 1;
-    if (f.faint) out |= 1 << 2;
-    if (f.blink) out |= 1 << 3;
-    if (f.inverse) out |= 1 << 4;
-    if (f.invisible) out |= 1 << 5;
-    if (f.strikethrough) out |= 1 << 6;
-    if (f.overline) out |= 1 << 7;
-    out |= @as(u16, @intFromEnum(f.underline)) << 8;
-    return out;
+fn packFlags(f: CellFlags) u32 {
+    return @bitCast(f);
+}
+
+fn unpackFlags(v: u32) CellFlags {
+    return @bitCast(v);
+}
+
+/// Fold ghostty's style flags into ours, leaving the fields this binding owns
+/// (`wide`, `selected`) as they were.
+fn mergeFlags(out: CellFlags, f: anytype) CellFlags {
+    var merged = out;
+    merged.bold = f.bold;
+    merged.italic = f.italic;
+    merged.faint = f.faint;
+    merged.blink = f.blink;
+    merged.inverse = f.inverse;
+    merged.invisible = f.invisible;
+    merged.strikethrough = f.strikethrough;
+    merged.overline = f.overline;
+    merged.underline = f.underline;
+    return merged;
 }
 
 pub fn renderRows(self: *RenderState) u16 {

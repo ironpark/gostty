@@ -11,7 +11,7 @@ func screen(t *testing.T, term *Terminal) string {
 	if err != nil {
 		t.Fatalf("PlainString: %v", err)
 	}
-	return strings.TrimRight(string(got), "\n")
+	return strings.TrimRight(got, "\n")
 }
 
 func TestCursorMovement(t *testing.T) {
@@ -49,7 +49,7 @@ func TestCursorMovement(t *testing.T) {
 
 func TestEraseLine(t *testing.T) {
 	term := newTerm(t, 10, 2)
-	if err := term.PrintString([]byte("abcdef")); err != nil {
+	if err := term.PrintString("abcdef"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
 	if err := term.SetCursorPos(1, 3); err != nil {
@@ -65,7 +65,7 @@ func TestEraseLine(t *testing.T) {
 
 func TestEraseDisplay(t *testing.T) {
 	term := newTerm(t, 10, 3)
-	if err := term.PrintString([]byte("keep")); err != nil {
+	if err := term.PrintString("keep"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
 	if err := term.Index(); err != nil {
@@ -74,7 +74,7 @@ func TestEraseDisplay(t *testing.T) {
 	if err := term.CarriageReturn(); err != nil {
 		t.Fatalf("CarriageReturn: %v", err)
 	}
-	if err := term.PrintString([]byte("drop")); err != nil {
+	if err := term.PrintString("drop"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
 	if err := term.SetCursorPos(2, 1); err != nil {
@@ -90,7 +90,7 @@ func TestEraseDisplay(t *testing.T) {
 
 func TestInsertAndDeleteChars(t *testing.T) {
 	term := newTerm(t, 12, 2)
-	if err := term.PrintString([]byte("abcd")); err != nil {
+	if err := term.PrintString("abcd"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
 	if err := term.SetCursorPos(1, 2); err != nil {
@@ -162,7 +162,7 @@ func TestOptionalScalarParam(t *testing.T) {
 func TestPlainStringUnwrapped(t *testing.T) {
 	term := newTerm(t, 4, 3)
 	// Longer than a row, so the text wraps.
-	if err := term.PrintString([]byte("abcdef")); err != nil {
+	if err := term.PrintString("abcdef"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
 	wrapped, err := term.PlainString()
@@ -173,10 +173,10 @@ func TestPlainStringUnwrapped(t *testing.T) {
 	if err != nil {
 		t.Fatalf("PlainStringUnwrapped: %v", err)
 	}
-	if !strings.Contains(string(wrapped), "\n") {
+	if !strings.Contains(wrapped, "\n") {
 		t.Errorf("PlainString() = %q, expected a wrap newline", wrapped)
 	}
-	if got, want := strings.TrimRight(string(unwrapped), "\n"), "abcdef"; got != want {
+	if got, want := strings.TrimRight(unwrapped, "\n"), "abcdef"; got != want {
 		t.Errorf("PlainStringUnwrapped() = %q, want %q", got, want)
 	}
 }
@@ -190,19 +190,19 @@ func TestPwdAndTitleRoundTrip(t *testing.T) {
 		t.Errorf("GetPwd() on a fresh terminal = ok %v, err %v; want false, nil", ok, err)
 	}
 
-	if err := term.SetPwd([]byte("/tmp")); err != nil {
+	if err := term.SetPwd("/tmp"); err != nil {
 		t.Fatalf("SetPwd: %v", err)
 	}
-	if err := term.SetTitle([]byte("shell")); err != nil {
+	if err := term.SetTitle("shell"); err != nil {
 		t.Fatalf("SetTitle: %v", err)
 	}
 
 	pwd, ok, err := term.GetPwd()
-	if err != nil || !ok || string(pwd) != "/tmp" {
+	if err != nil || !ok || pwd != "/tmp" {
 		t.Errorf("GetPwd() = %q, %v, %v; want \"/tmp\", true, nil", pwd, ok, err)
 	}
 	title, ok, err := term.GetTitle()
-	if err != nil || !ok || string(title) != "shell" {
+	if err != nil || !ok || title != "shell" {
 		t.Errorf("GetTitle() = %q, %v, %v; want \"shell\", true, nil", title, ok, err)
 	}
 }
@@ -222,7 +222,7 @@ func TestOpenEnums(t *testing.T) {
 	}
 
 	term := newTerm(t, 10, 2)
-	if err := term.PrintString([]byte("abc")); err != nil {
+	if err := term.PrintString("abc"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
 	// An unnamed mode reaches the terminal, which ignores it rather than
@@ -301,7 +301,7 @@ func TestDeccolm(t *testing.T) {
 func TestScrollViewport(t *testing.T) {
 	term := newTerm(t, 10, 2)
 	for i := range 6 {
-		if err := term.PrintString([]byte{byte('a' + i)}); err != nil {
+		if err := term.PrintString(string(rune('a' + i))); err != nil {
 			t.Fatalf("PrintString: %v", err)
 		}
 		if err := term.Index(); err != nil {
@@ -376,7 +376,7 @@ func TestCharsets(t *testing.T) {
 		t.Fatalf("InvokeCharset: %v", err)
 	}
 	// DEC special graphics maps `q` to a horizontal line.
-	if err := term.PrintString([]byte("q")); err != nil {
+	if err := term.PrintString("q"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
 	if got, want := screen(t, term), "\u2500"; got != want {
