@@ -112,8 +112,18 @@ pub const bindings = zigo.define(.{
 
         // Lifecycle. `Terminal.init` returns by value and takes an `Options`
         // that cannot cross the C ABI, so the pair lives outside the type.
-        .{ .path = "root.newTerminal", .constructs = "Terminal" },
-        .{ .path = "root.freeTerminal", .destroys = "Terminal" },
+        // `Terminal.init` returns by value and takes an `Options` whose `colors`
+        // field holds optionals that cannot cross the C ABI. `.flatten` picks
+        // the two fields that can and leaves the rest at their Zig defaults, so
+        // ghostty's own constructor is bound without a wrapper.
+        .{
+            .path = "Terminal.init",
+            .constructs = "Terminal",
+            .name = "newTerminal",
+            .params = .{"opts"},
+            .param_meta = .{ .opts = .{ .flatten = .{ "cols", "rows" } } },
+        },
+        .{ .path = "Terminal.deinit", .destroys = "Terminal" },
         .{ .path = "root.freeString", .params = .{"str"} },
         // A stream borrows its terminal: ghostty's handler reaches through it for
         // an allocator when it tears down, so the terminal must outlive it.
@@ -186,6 +196,10 @@ pub const bindings = zigo.define(.{
                 "root.screenClearSelection",
                 "root.screenHasSelection",
                 .{ .path = "root.screenSelectRange", .params = .{ "x1", "y1", "x2", "y2", "rectangle" } },
+                "root.screenViewportIsBottom",
+                .{ .path = "root.screenSelectWord", .params = .{ "x", "y", "boundaries" } },
+                .{ .path = "root.screenSelectLine", .params = .{ "x", "y" } },
+                .{ .path = "root.screenSelectOutput", .params = .{ "x", "y" } },
                 .{ .path = "root.screenSelectionString", .returns = .caller, .release = "root.freeString" },
             },
         },

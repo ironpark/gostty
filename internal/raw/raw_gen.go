@@ -340,16 +340,16 @@ func EncodePaste(writerHandle uintptr, terminal unsafe.Pointer, data []uint8) in
 	return code
 }
 
-// NewTerminal calls the generated C ABI wrapper for zg_new_terminal.
-func NewTerminal(width uint16, height uint16) (unsafe.Pointer, int32) {
+// TerminalNewTerminal calls the generated C ABI wrapper for zg_terminal_new_terminal.
+func TerminalNewTerminal(cols uint16, rows uint16) (unsafe.Pointer, int32) {
 	var outResult *C.zg_terminal
-	code := int32(C.zg_new_terminal(C.uint16_t(width), C.uint16_t(height), &outResult))
+	code := int32(C.zg_terminal_new_terminal(C.uint16_t(cols), C.uint16_t(rows), &outResult))
 	return unsafe.Pointer(outResult), code
 }
 
-// TerminalFreeTerminal calls the generated C ABI wrapper for zg_terminal_free_terminal.
-func TerminalFreeTerminal(self unsafe.Pointer) int32 {
-	code := int32(C.zg_terminal_free_terminal((*C.zg_terminal)(self)))
+// TerminalDeinit calls the generated C ABI wrapper for zg_terminal_deinit.
+func TerminalDeinit(self unsafe.Pointer) int32 {
+	code := int32(C.zg_terminal_deinit((*C.zg_terminal)(self)))
 	return code
 }
 
@@ -680,6 +680,39 @@ func ScreenHasSelection(self unsafe.Pointer) (uint8, int32) {
 func ScreenSelectRange(self unsafe.Pointer, x1 uint16, y1 uint16, x2 uint16, y2 uint16, rectangle uint8) (uint8, int32) {
 	var outResult C.uint8_t
 	code := int32(C.zg_screen_select_range((*C.zg_screen)(self), C.uint16_t(x1), C.uint16_t(y1), C.uint16_t(x2), C.uint16_t(y2), C.uint8_t(rectangle), &outResult))
+	return uint8(outResult), code
+}
+
+// ScreenViewportIsBottom calls the generated C ABI wrapper for zg_screen_viewport_is_bottom.
+func ScreenViewportIsBottom(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_screen_viewport_is_bottom((*C.zg_screen)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// ScreenSelectWord calls the generated C ABI wrapper for zg_screen_select_word.
+func ScreenSelectWord(self unsafe.Pointer, x uint16, y uint16, boundaries []uint32) (uint8, int32) {
+	var boundariesZero C.uint32_t
+	boundariesPtr := &boundariesZero
+	if len(boundaries) != 0 {
+		boundariesPtr = (*C.uint32_t)(unsafe.Pointer(&boundaries[0]))
+	}
+	var outResult C.uint8_t
+	code := int32(C.zg_screen_select_word((*C.zg_screen)(self), C.uint16_t(x), C.uint16_t(y), boundariesPtr, C.size_t(len(boundaries)), &outResult))
+	return uint8(outResult), code
+}
+
+// ScreenSelectLine calls the generated C ABI wrapper for zg_screen_select_line.
+func ScreenSelectLine(self unsafe.Pointer, x uint16, y uint16) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_screen_select_line((*C.zg_screen)(self), C.uint16_t(x), C.uint16_t(y), &outResult))
+	return uint8(outResult), code
+}
+
+// ScreenSelectOutput calls the generated C ABI wrapper for zg_screen_select_output.
+func ScreenSelectOutput(self unsafe.Pointer, x uint16, y uint16) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_screen_select_output((*C.zg_screen)(self), C.uint16_t(x), C.uint16_t(y), &outResult))
 	return uint8(outResult), code
 }
 

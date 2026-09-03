@@ -209,3 +209,116 @@ func TestRenderWideCells(t *testing.T) {
 		t.Errorf("CodepointWidth('안') = %d, %v; want 2", w, err)
 	}
 }
+
+// The word boundaries a double click uses are the embedder's choice, not
+// ghostty's: its own UI reads them from configuration.
+var wordBoundaries = []uint32{0, ' ', '\t', '\'', '"', '`', '|', ':', ';', ',', '(', ')', '[', ']', '{', '}', '<', '>', '$'}
+
+// Word and line selection are what a double and triple click do. ghostty owns
+// what a "word" and a "line" are -- soft wraps, whitespace trimming, semantic
+// prompt boundaries -- and hands back the selection.
+func TestSelectWordAndLine(t *testing.T) {
+	term, stream := newStreamPair(t, 40, 3)
+	feed(t, stream, "  hello world  ")
+
+	screen, err := term.ActiveScreen()
+	if err != nil {
+		t.Fatalf("ActiveScreen: %v", err)
+	}
+
+	// Column 4 is inside "hello".
+	ok, err := screen.SelectWord(4, 0, wordBoundaries)
+	if err != nil || !ok {
+		t.Fatalf("SelectWord = %v, %v; want true, nil", ok, err)
+	}
+	if text, ok, err := screen.SelectionString(); err != nil || !ok || string(text) != "hello" {
+		t.Errorf("word = %q, %v, %v; want \"hello\"", text, ok, err)
+	}
+
+	// A line selection covers both words and trims the surrounding blanks.
+	ok, err = screen.SelectLine(4, 0)
+	if err != nil || !ok {
+		t.Fatalf("SelectLine = %v, %v; want true, nil", ok, err)
+	}
+	if text, ok, err := screen.SelectionString(); err != nil || !ok || string(text) != "hello world" {
+		t.Errorf("line = %q, %v, %v; want \"hello world\"", text, ok, err)
+	}
+
+	// A boundary character is a run of its own rather than nothing: double
+	// clicking the gap selects the gap, which is what every terminal does.
+	if ok, err := screen.SelectWord(0, 0, wordBoundaries); err != nil || !ok {
+		t.Fatalf("SelectWord on a blank = %v, %v; want true, nil", ok, err)
+	}
+	// The text of that run comes back empty: ghostty trims trailing whitespace
+	// when it dumps a region, and a run of blanks is all trailing whitespace.
+	if text, _, err := screen.SelectionString(); err != nil || len(text) != 0 {
+		t.Errorf("blank run = %q, %v; want empty", text, err)
+	}
+
+	// Past the viewport is a refusal rather than a panic.
+	if ok, err := screen.SelectLine(0, 99); err != nil || ok {
+		t.Errorf("SelectLine past the viewport = %v, %v; want false, nil", ok, err)
+	}
+}
+
+// Output selection needs the shell to mark its prompts with OSC 133. Without
+// the marks there is no block to find; with them the command's output comes
+// back on its own.
+func TestSelectOutput(t *testing.T) {
+	term, stream := newStreamPair(t, 40, 6)
+
+	screen, err := term.ActiveScreen()
+	if err != nil {
+		t.Fatalf("ActiveScreen: %v", err)
+	}
+	feed(t, stream, "plain text\r\n")
+	if ok, err := screen.SelectOutput(0, 0); err != nil || ok {
+		t.Errorf("SelectOutput without prompt marks = %v, %v; want false, nil", ok, err)
+	}
+
+	// A prompt, the command, then its output.
+	feed(t, stream, "\x1b]133;A\x07$ \x1b]133;B\x07ls\x1b]133;C\x07\r\nout one\r\nout two\r\n\x1b]133;D\x07")
+	ok, err := screen.SelectOutput(0, 2)
+	if err != nil {
+		t.Fatalf("SelectOutput: %v", err)
+	}
+	if !ok {
+		t.Fatal("SelectOutput found no block on a marked output row")
+	}
+	text, _, err := screen.SelectionString()
+	if err != nil {
+		t.Fatalf("SelectionString: %v", err)
+	}
+	if got := string(text); got != "out one\nout two" {
+		t.Errorf("output = %q, want %q", got, "out one\nout two")
+	}
+}
+
+// Whether the viewport sits at the bottom is what decides if new output should
+// scroll into view. ghostty takes the screen by value here, so it is reached
+// through a wrapper.
+func TestViewportIsBottom(t *testing.T) {
+	term, stream := newStreamPair(t, 20, 3)
+	screen, err := term.ActiveScreen()
+	if err != nil {
+		t.Fatalf("ActiveScreen: %v", err)
+	}
+	if bottom, err := screen.ViewportIsBottom(); err != nil || !bottom {
+		t.Errorf("a fresh screen reports %v, %v; want true", bottom, err)
+	}
+
+	// Push rows into the scrollback, then look at them.
+	feed(t, stream, "one\r\ntwo\r\nthree\r\nfour\r\nfive\r\n")
+	if err := term.ScrollViewport(ScrollViewportTop()); err != nil {
+		t.Fatalf("ScrollViewport: %v", err)
+	}
+	if bottom, err := screen.ViewportIsBottom(); err != nil || bottom {
+		t.Errorf("after scrolling up, reports %v, %v; want false", bottom, err)
+	}
+	if err := term.ScrollViewport(ScrollViewportBottom()); err != nil {
+		t.Fatalf("ScrollViewport: %v", err)
+	}
+	if bottom, err := screen.ViewportIsBottom(); err != nil || !bottom {
+		t.Errorf("after scrolling back, reports %v, %v; want true", bottom, err)
+	}
+}

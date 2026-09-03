@@ -128,14 +128,13 @@ func GraphemeWidth(cps []uint32) uint8 {
 	return raw.GraphemeWidth(cps)
 }
 
-// NewTerminal
-// Create a terminal with the given viewport size.
+// NewTerminal creates a caller-owned Terminal.
 // The caller must call Close on the returned handle.
 // Native failures are returned as generated error values.
-func NewTerminal(width uint16, height uint16) (*Terminal, error) {
+func NewTerminal(cols uint16, rows uint16) (*Terminal, error) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
-	result, code := raw.NewTerminal(width, height)
+	result, code := raw.TerminalNewTerminal(cols, rows)
 	if code != 0 {
 		return nil, errorForCode("NewTerminal", code)
 	}
@@ -1041,6 +1040,78 @@ func (s *Screen) SelectRange(x1 uint16, y1 uint16, x2 uint16, y2 uint16, rectang
 	result, code := raw.ScreenSelectRange(ptr, x1, y1, x2, y2, boolToUint8(rectangle))
 	if code != 0 {
 		return false, zigoPoisonAfterPanic(errorForCode("Screen.SelectRange", code), s)
+	}
+	return result != 0, nil
+}
+
+// ViewportIsBottom calls the Zig function Screen.viewportIsBottom.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Screen) ViewportIsBottom() (bool, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Screen.ViewportIsBottom receiver", s)
+	if err != nil {
+		return false, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.ScreenViewportIsBottom(ptr)
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(errorForCode("Screen.ViewportIsBottom", code), s)
+	}
+	return result != 0, nil
+}
+
+// SelectWord calls the Zig function Screen.selectWord.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (s *Screen) SelectWord(x uint16, y uint16, boundaries []uint32) (bool, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Screen.SelectWord receiver", s)
+	if err != nil {
+		return false, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.ScreenSelectWord(ptr, x, y, boundaries)
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(errorForCode("Screen.SelectWord", code), s)
+	}
+	return result != 0, nil
+}
+
+// SelectLine calls the Zig function Screen.selectLine.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (s *Screen) SelectLine(x uint16, y uint16) (bool, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Screen.SelectLine receiver", s)
+	if err != nil {
+		return false, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.ScreenSelectLine(ptr, x, y)
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(errorForCode("Screen.SelectLine", code), s)
+	}
+	return result != 0, nil
+}
+
+// SelectOutput calls the Zig function Screen.selectOutput.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (s *Screen) SelectOutput(x uint16, y uint16) (bool, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Screen.SelectOutput receiver", s)
+	if err != nil {
+		return false, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.ScreenSelectOutput(ptr, x, y)
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(errorForCode("Screen.SelectOutput", code), s)
 	}
 	return result != 0, nil
 }

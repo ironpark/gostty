@@ -126,7 +126,7 @@ func newTerminal(ptr unsafe.Pointer) *Terminal {
 
 func cleanupTerminal(state terminalCleanupState) {
 	if state.ptr != nil {
-		raw.TerminalFreeTerminal(state.ptr)
+		raw.TerminalDeinit(state.ptr)
 	}
 }
 

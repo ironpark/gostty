@@ -6,9 +6,6 @@
 //!
 //!   - an `std.Io` value for `.io` injection (ghostty ships `TinyIo` as a type,
 //!     not as a ready-made `Io` declaration);
-//!   - a constructor and destructor, because `Terminal.init` takes a
-//!     `Terminal.Options` whose `Colors` field holds optionals and so cannot
-//!     cross the C ABI, and because it returns by value;
 //!   - a release function for the string `plainString` hands out.
 //!
 //! Plain field reads are not here: `.fields` in `bindings.zig` generates those
@@ -26,6 +23,14 @@ const Allocator = std.mem.Allocator;
 pub const io: std.Io = (vt.TinyIo.init).io();
 
 pub const Terminal = vt.Terminal;
+
+/// Re-exported so the generated shim can name `Terminal.Options`.
+///
+/// zigo 0.7.2 spells a registered type through its reflected `zig_path`, but
+/// only when that path starts with `root.`. ghostty declares this one, so the
+/// path is `terminal.Terminal.Options` and the shim falls back to
+/// `target.Options` -- a name that only exists if the root module provides it.
+pub const Options = Terminal.Options;
 
 /// The visual style of the cursor.
 pub const CursorStyle = vt.CursorStyle;
@@ -537,6 +542,66 @@ pub fn searchSelect(self: *Search, to: SearchDirection) !bool {
     return true;
 }
 
+/// Whether the viewport is scrolled to the bottom, which is what a GUI needs to
+/// decide whether new output should follow the cursor.
+///
+/// Wrapped because ghostty takes the screen by value here, and an opaque handle
+/// has no by-value representation across the C ABI.
+pub fn screenViewportIsBottom(self: *Screen) bool {
+    return self.viewportIsBottom();
+}
+
+/// Select the word under a viewport position -- what a double click does.
+///
+/// `boundaries` are the codepoints that end a word. ghostty has no default for
+/// them on purpose: its own UI reads the set from configuration, so the choice
+/// belongs to the embedder.
+///
+/// Wrapped because ghostty returns the `Selection` rather than applying it, and
+/// a `Selection` holds page pins that cannot cross the C ABI. False when the
+/// position is outside the viewport or there is no word under it.
+/// `boundaries` is taken as `[]const u32` because zigo widens a narrow integer
+/// only as a whole parameter, not as a slice element (ZIGO018); values outside
+/// the codepoint range are dropped rather than rejected.
+pub fn screenSelectWord(self: *Screen, gpa: Allocator, x: u16, y: u16, boundaries: []const u32) !bool {
+    const pin = self.pages.pin(.{ .viewport = .{ .x = x, .y = y } }) orelse return false;
+
+    const cps = try gpa.alloc(u21, boundaries.len);
+    defer gpa.free(cps);
+    var count: usize = 0;
+    for (boundaries) |cp| {
+        if (cp > std.math.maxInt(u21)) continue;
+        cps[count] = @intCast(cp);
+        count += 1;
+    }
+
+    const selection = self.selectWord(pin, cps[0..count]) orelse return false;
+    try self.select(selection);
+    return true;
+}
+
+/// Select the line under a viewport position -- what a triple click does.
+///
+/// Soft-wrapped lines are followed as one line, leading and trailing whitespace
+/// is trimmed, and a semantic prompt boundary ends the selection.
+pub fn screenSelectLine(self: *Screen, x: u16, y: u16) !bool {
+    const pin = self.pages.pin(.{ .viewport = .{ .x = x, .y = y } }) orelse return false;
+    const selection = self.selectLine(.{ .pin = pin }) orelse return false;
+    try self.select(selection);
+    return true;
+}
+
+/// Select the command output the given position belongs to.
+///
+/// Needs the shell to mark its prompts with OSC 133; without those marks there
+/// is no output block to find and this returns false.
+pub fn screenSelectOutput(self: *Screen, x: u16, y: u16) !bool {
+    const pin = self.pages.pin(.{ .viewport = .{ .x = x, .y = y } }) orelse return false;
+    const selection = self.selectOutput(pin) orelse return false;
+    try self.select(selection);
+    return true;
+}
+
 /// True when the screen has a selection.
 pub fn screenHasSelection(self: *Screen) bool {
     return self.selection != null;
@@ -911,20 +976,6 @@ pub fn encodePaste(
     data: []const u8,
 ) !void {
     try vt.input.encodePasteWriter(writer, data, .fromTerminal(terminal));
-}
-
-/// Create a terminal with the given viewport size.
-pub fn newTerminal(gpa: Allocator, io_impl: std.Io, width: u16, height: u16) !*Terminal {
-    const self = try gpa.create(Terminal);
-    errdefer gpa.destroy(self);
-    self.* = try .init(io_impl, gpa, .{ .cols = width, .rows = height });
-    return self;
-}
-
-/// Destroys a terminal created by `newTerminal`.
-pub fn freeTerminal(self: *Terminal, gpa: Allocator) void {
-    self.deinit(gpa);
-    gpa.destroy(self);
 }
 
 /// Create a VT stream that applies escape sequences to `terminal`.
