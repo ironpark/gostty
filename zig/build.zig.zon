@@ -8,7 +8,10 @@
             .url = "git+https://github.com/ghostty-org/ghostty#3c1ef5b32fc5ea6b93d28493fabf193f595139cf",
             .hash = "ghostty-1.3.2-dev-5UdBC4obYwU_lU6iqdM86Iv8elWxMg0TXDTPw5un3lYd",
         },
-        .zigo = .{ .path = "../../zigo" },
+        .zigo = .{
+            .url = "https://github.com/ironpark/zigo/archive/refs/tags/0.8.1.tar.gz",
+            .hash = "zigo-0.8.1-iRIf5rOeGgDr81P8-ly_Tr-cM9LwlNscwTlA6fsha80P",
+        },
     },
     .paths = .{
         "build.zig",

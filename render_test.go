@@ -317,3 +317,62 @@ func TestViewportIsBottom(t *testing.T) {
 		t.Errorf("after scrolling back, reports %v, %v; want true", bottom, err)
 	}
 }
+
+// The scrollback is a viewport position, not a pixel offset: scrolling moves
+// what the render state hands back, so a renderer that draws the cells it is
+// given follows the scrollback without tracking anything itself.
+func TestRenderStateFollowsViewport(t *testing.T) {
+	term, stream := newStreamPair(t, 20, 3)
+	for _, line := range []string{"one", "two", "three", "four", "five"} {
+		feed(t, stream, line+"\r\n")
+	}
+	state, err := NewRenderState()
+	if err != nil {
+		t.Fatalf("NewRenderState: %v", err)
+	}
+	defer state.Close()
+
+	topRow := func() string {
+		t.Helper()
+		if err := state.Update(term); err != nil {
+			t.Fatalf("Update: %v", err)
+		}
+		n, err := state.CellCount()
+		if err != nil {
+			t.Fatalf("CellCount: %v", err)
+		}
+		cells := make([]RenderCell, n)
+		if _, err := state.Cells(cells); err != nil {
+			t.Fatalf("Cells: %v", err)
+		}
+		cols, err := state.Cols()
+		if err != nil {
+			t.Fatalf("Cols: %v", err)
+		}
+		var out []rune
+		for _, cell := range cells[:cols] {
+			if cell.Codepoint > ' ' {
+				out = append(out, rune(cell.Codepoint))
+			}
+		}
+		return string(out)
+	}
+
+	if got := topRow(); got != "four" {
+		t.Errorf("top row at the bottom of the scrollback = %q, want %q", got, "four")
+	}
+	// A negative delta is up, which is the direction a wheel notch away from
+	// the user means.
+	if err := term.ScrollViewport(ScrollViewportDelta(-1)); err != nil {
+		t.Fatalf("ScrollViewport: %v", err)
+	}
+	if got := topRow(); got != "three" {
+		t.Errorf("top row after scrolling up one = %q, want %q", got, "three")
+	}
+	if err := term.ScrollViewport(ScrollViewportBottom()); err != nil {
+		t.Fatalf("ScrollViewport: %v", err)
+	}
+	if got := topRow(); got != "four" {
+		t.Errorf("top row after scrolling back to the bottom = %q, want %q", got, "four")
+	}
+}

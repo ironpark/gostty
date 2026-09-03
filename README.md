@@ -1,4 +1,4 @@
-# G~~h~~ostty
+# **G**~~h~~**o**stty
 
 Go bindings for [libghostty-vt](https://github.com/ghostty-org/ghostty), the
 terminal emulation core extracted from [**G**h**o**stty](https://ghostty.org). The
@@ -19,7 +19,7 @@ screen, _ := term.PlainString()
 fmt.Println(screen) // hello\nworld
 ```
 
-Anything the program asked *of you* rather than of the screen -- a bell, a
+Anything the program asked _of you_ rather than of the screen -- a bell, a
 desktop notification, a progress report -- queues up during the feed and is
 drained afterwards.
 
@@ -70,7 +70,6 @@ input.EncodeKey(&buf, term, ev) // "\x1b[A", or "\x1bOA" under DECCKM
 │       ├── semantic.json     # ABI description consumed by abi-diff
 │       └── errors.lock.json  # Stable numeric codes for Zig errors
 ├── example/              # GUI terminal emulator in a separate Go module
-├── docs/                 # Ignored, uncommitted working notes
 └── Makefile              # Toolchain entry point; `make help` lists targets
 ```
 
@@ -80,8 +79,8 @@ and `zig/zigo/`, is rewritten by `make generate`, so a hand-written file with
 one of those names would be overwritten. The generator owns unexported names in
 the public package too — `newTerminal`, `newStream`, `newKeyEvent` and friends.
 
-`internal/raw/zigo_link_inputs_gen.go` is generated as well but holds absolute
-paths from the machine that built it, so it is not committed.
+The platform-tagged `internal/raw/zigo_link_inputs_*_gen.go` files are generated
+as well. They select the matching archives in `libs/` and are not committed.
 
 ### What `root.zig` is for
 
@@ -119,21 +118,39 @@ lists every target.
 ```bash
 make build      # build the native binding library
 make test       # build, then run the Go tests
-make generate   # regenerate the Go tree from zig/src/bindings.zig
+make generate   # regenerate Go and build the desktop target matrix
 make example    # run the GUI terminal emulator
 make bench      # measure the boundary and the parser
 make coverage   # report which public Zig declarations are bound
 ```
 
-The native library is built `ReleaseFast`. Zig's default is `Debug`, which costs
-about 360x on VT parsing, so the default here is speed; use
-`make build OPTIMIZE=ReleaseSafe` while chasing a bug on the Zig side.
+The native library is built `ReleaseSafe` into `libs/`, beside the Go package
+that links it. Zig's default is `Debug`, which costs about 360x on VT parsing,
+so that is not an option; `ReleaseSafe` keeps the bounds and overflow checks,
+which is what you want in code parsing whatever a program writes to a pty. Trade
+them for the last of the speed with `make build OPTIMIZE=ReleaseFast`.
+
+The build installs with the repository root as its prefix, and the generated
+cgo directives point at `libs/`, so a `zig build` run by hand needs the same
+prefix -- run it through the Makefile.
+
+`make generate` builds macOS, Linux, and Windows archives for both amd64 and
+arm64. Matching `GOOS`/`GOARCH` constraints let all six targets coexist in
+`libs/`. Build a subset with, for example,
+`make generate TARGETS="aarch64-macos x86_64-linux-gnu"`. `make build` only
+builds the current host target.
+
+`make build` goes through the generator rather than `zig build go-lib`, because
+the cgo link line depends on the optimize mode: a `Debug` build compiles
+ghostty's vendored C with full UBSan and needs Zig's `ubsan_rt` on the link
+line, while the release modes do not reference one of those symbols and would
+otherwise carry three megabytes of sanitizer runtime for nothing.
 
 `zig build go` writes the `*_gen.go` files at the root, plus `internal/raw/` and
 `zig/zigo/`. Both the
 generated Go and the metadata are committed, so consumers only need a Go
-toolchain — but the native archive is not, so a fresh checkout must run
-`zig build` once before `go build` will link.
+toolchain — but the archives in `libs/` are not, so a fresh checkout must run
+`make build` once before `go build` will link.
 
 Clipboard requests cannot wait for a drain: the program is blocked until they
 are answered, so they arrive as a callback that runs while `Feed` is still on
@@ -163,18 +180,6 @@ user's clipboard, so mediate consent before calling `ReplyClipboardText`.
   handler reaches through the terminal for its allocator when it tears down.
   The binding declares the stream a child of its terminal, so closing the
   terminal first returns `ErrHandleInUse` instead of corrupting memory.
-
-## Status
-
-Early. The bound surface is a useful slice of libghostty-vt — terminal state
-and editing, VT stream parsing, cursor and charsets, key/mouse/focus/paste
-encoding, alternate screen, scrollback dumps, selection, text search, SGR
-attributes, unicode width, and ghostty's own `RenderState` snapshot for
-renderers — not all of it. OSC side effects (bell, desktop
-notifications, progress reports, title and pwd changes) arrive as events drained
-off the stream after a feed, and clipboard requests as callbacks answered during
-one. `make coverage` reports which public Zig declarations are bound and why
-the rest are not.
 
 ## License
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/ironpark/gostty"
 	"github.com/ironpark/gostty/input"
 )
 
@@ -80,6 +81,12 @@ func (g *game) handleInput(m mods) error {
 	}
 
 	if len(g.out) > 0 {
+		// Typing means you want to see what you are typing, so anything that
+		// goes to the program snaps the viewport back to the bottom. Every
+		// terminal does this; the program has no idea the view had moved.
+		if err := g.vt.ScrollViewport(gostty.ScrollViewportBottom()); err != nil {
+			return err
+		}
 		if _, err := g.ptmx.Write(g.out); err != nil {
 			return err
 		}

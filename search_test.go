@@ -182,3 +182,140 @@ func TestMultipleSearches(t *testing.T) {
 		t.Fatalf("terminal Close after both searches closed: %v", err)
 	}
 }
+
+// A match in the scrollback is no use to a UI that cannot see it, so selecting
+// one brings the viewport to it.
+func TestSearchScrollsToMatch(t *testing.T) {
+	term, stream := newStreamPair(t, 20, 3)
+	feed(t, stream, "needle here\r\n")
+	for range 20 {
+		feed(t, stream, "filler\r\n")
+	}
+	screen, err := term.ActiveScreen()
+	if err != nil {
+		t.Fatalf("ActiveScreen: %v", err)
+	}
+	if bottom, err := screen.ViewportIsBottom(); err != nil {
+		t.Fatalf("ViewportIsBottom: %v", err)
+	} else if !bottom {
+		t.Fatal("the viewport did not start at the bottom")
+	}
+
+	search, err := screen.NewSearch("needle")
+	if err != nil {
+		t.Fatalf("NewSearch: %v", err)
+	}
+	defer search.Close()
+	if err := search.SearchAll(); err != nil {
+		t.Fatalf("SearchAll: %v", err)
+	}
+	if n, err := search.MatchCount(); err != nil {
+		t.Fatalf("MatchCount: %v", err)
+	} else if n != 1 {
+		t.Fatalf("matches = %d, want 1", n)
+	}
+
+	if ok, err := search.Select(SearchDirectionNext); err != nil {
+		t.Fatalf("Select: %v", err)
+	} else if !ok {
+		t.Fatal("Select found nothing")
+	}
+
+	// The match scrolled off long ago, so the viewport had to move to it.
+	if bottom, err := screen.ViewportIsBottom(); err != nil {
+		t.Fatalf("ViewportIsBottom: %v", err)
+	} else if bottom {
+		t.Error("the viewport is still at the bottom, so the match is off screen")
+	}
+	// And it is the screen's selection, so it draws as one.
+	text, ok, err := screen.SelectionString()
+	if err != nil {
+		t.Fatalf("SelectionString: %v", err)
+	}
+	if !ok || text != "needle" {
+		t.Errorf("selection = %q (ok=%v), want %q", text, ok, "needle")
+	}
+}
+
+// Which way the two directions go, because the names do not say and a search UI
+// has to bind them to keys: `next` starts at the match nearest the prompt and
+// walks backwards in time, which is the direction a search through what already
+// scrolled past goes. Both wrap.
+func TestSearchDirectionOrder(t *testing.T) {
+	term, stream := newStreamPair(t, 20, 3)
+	// Three matches, each far enough apart to be on its own viewport.
+	for _, tag := range []string{"AAA", "BBB", "CCC"} {
+		feed(t, stream, tag+" needle\r\n")
+		for range 10 {
+			feed(t, stream, "filler\r\n")
+		}
+	}
+	screen, err := term.ActiveScreen()
+	if err != nil {
+		t.Fatalf("ActiveScreen: %v", err)
+	}
+	search, err := screen.NewSearch("needle")
+	if err != nil {
+		t.Fatalf("NewSearch: %v", err)
+	}
+	defer search.Close()
+	if err := search.SearchAll(); err != nil {
+		t.Fatalf("SearchAll: %v", err)
+	}
+
+	state, err := NewRenderState()
+	if err != nil {
+		t.Fatalf("NewRenderState: %v", err)
+	}
+	defer state.Close()
+	// Which match is selected is read off the screen: selecting one scrolls to
+	// it, and the tag on its line says which it was.
+	at := func() string {
+		t.Helper()
+		if err := state.Update(term); err != nil {
+			t.Fatalf("Update: %v", err)
+		}
+		n, err := state.CellCount()
+		if err != nil {
+			t.Fatalf("CellCount: %v", err)
+		}
+		cells := make([]RenderCell, n)
+		if _, err := state.Cells(cells); err != nil {
+			t.Fatalf("Cells: %v", err)
+		}
+		cols, err := state.Cols()
+		if err != nil {
+			t.Fatalf("Cols: %v", err)
+		}
+		var out []rune
+		for _, cell := range cells[:cols] {
+			if cell.Codepoint > ' ' {
+				out = append(out, rune(cell.Codepoint))
+			}
+		}
+		return string(out)
+	}
+
+	step := func(dir SearchDirection) string {
+		t.Helper()
+		ok, err := search.Select(dir)
+		if err != nil {
+			t.Fatalf("Select: %v", err)
+		}
+		if !ok {
+			t.Fatal("Select found nothing")
+		}
+		return at()
+	}
+
+	for i, want := range []string{"CCCneedle", "BBBneedle", "AAAneedle", "CCCneedle"} {
+		if got := step(SearchDirectionNext); got != want {
+			t.Errorf("next %d landed on %q, want %q", i, got, want)
+		}
+	}
+	for i, want := range []string{"AAAneedle", "BBBneedle", "CCCneedle"} {
+		if got := step(SearchDirectionPrev); got != want {
+			t.Errorf("prev %d landed on %q, want %q", i, got, want)
+		}
+	}
+}

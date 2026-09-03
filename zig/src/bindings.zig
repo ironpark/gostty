@@ -84,6 +84,11 @@ pub const bindings = zigo.define(.{
         // one u32.
         .{ .type = gostty.CellFlags, .repr = .value, .name = "CellFlags" },
         .{ .type = gostty.CellWidth, .repr = .enumeration, .name = "CellWidth" },
+        .{ .type = gostty.KittyImages, .repr = .@"opaque", .name = "KittyImages" },
+        .{ .type = gostty.KittyPlacement, .repr = .value, .name = "KittyPlacement" },
+        .{ .type = gostty.KittyImage, .repr = .value, .name = "KittyImage" },
+        .{ .type = gostty.KittyFormat, .repr = .enumeration, .name = "KittyFormat" },
+        .{ .type = gostty.KittyCompression, .repr = .enumeration, .name = "KittyCompression" },
     },
     .functions = .{
         .{ .path = "root.unicode.codepointWidth" },
@@ -175,6 +180,8 @@ pub const bindings = zigo.define(.{
         .{ .path = "Stream.replyClipboardText", .params = .{ "text", "remember" }, .param_meta = .{ .text = .{ .semantic = .utf8_string } } },
         .{ .path = "Stream.denyClipboard", .params = .{"reason"} },
         .{ .path = "Stream.writeContinuation", .params = .{"writer"} },
+        .{ .path = "Stream.hasReplies" },
+        .{ .path = "Stream.writeReplies", .params = .{"writer"} },
 
         // ghostty's own methods, bound directly.
         .{ .path = "Terminal.printString", .params = .{"str"}, .param_meta = .{ .str = .{ .semantic = .utf8_string } } },
@@ -286,6 +293,7 @@ pub const bindings = zigo.define(.{
         .{ .path = "Terminal.scrollViewport", .params = .{"behavior"} },
         .{ .path = "Terminal.compressionActivity" },
         .{ .path = "root.resize", .params = .{ "width", "height" }, .covers = "Terminal.resize" },
+        .{ .path = "root.resizeCells", .params = .{ "width", "height", "cell_width", "cell_height" } },
 
         // Rendering. `RenderState` is ghostty's own renderer-facing snapshot;
         // a frame is one `update` plus one `cells` crossing.
@@ -313,5 +321,31 @@ pub const bindings = zigo.define(.{
             },
         },
 
+        // Kitty graphics. `KittyImages` is the same kind of snapshot as
+        // `RenderState`, for the images rather than the cells: one `update` and
+        // one `placements` crossing per frame, with the pixels fetched by id
+        // only when their generation says they changed.
+        .{ .path = "root.newKittyImages", .constructs = "KittyImages" },
+        .{ .path = "root.freeKittyImages", .destroys = "KittyImages" },
+        .{
+            .receiver = "KittyImages",
+            .strip_prefix = "kitty",
+            .functions = .{
+                .{ .path = "root.kittyUpdate", .params = .{"term"} },
+                "root.kittyGeneration",
+                "root.kittyPlacementCount",
+                .{
+                    .path = "root.kittyPlacements",
+                    .params = .{"dst"},
+                    .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
+                },
+            },
+        },
+        .{ .path = "root.kittyImage", .params = .{"image_id"} },
+        .{
+            .path = "root.kittyImageData",
+            .params = .{ "image_id", "dst" },
+            .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
+        },
     },
 });

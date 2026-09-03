@@ -810,3 +810,125 @@ func (r *RenderState) zigoTakeLocked() (renderStateCleanupState, bool) {
 	}
 	return state, true
 }
+
+// KittyImages is a caller-owned native handle. Call Close when it is no longer needed.
+type KittyImages struct {
+	ptr     unsafe.Pointer
+	mu      sync.Mutex
+	active  int
+	closed  bool
+	poison  *NativePanicError
+	cleanup runtime.Cleanup
+}
+
+// zigoAcquire pins k open for one native call and hands back its pointer;
+// the call ends with zigoRelease. A nil, closed, or poisoned handle is the error.
+func (k *KittyImages) zigoAcquire(operation string) (unsafe.Pointer, error) {
+	if k == nil {
+		return nil, &HandleError{Operation: operation}
+	}
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	if k.closed || k.ptr == nil {
+		return nil, &HandleError{Operation: operation}
+	}
+	if k.poison != nil {
+		return nil, k.poison.Poisoned(operation)
+	}
+	k.active++
+	return k.ptr, nil
+}
+
+func (k *KittyImages) zigoRelease() {
+	if k == nil {
+		return
+	}
+	k.mu.Lock()
+	k.active--
+	state, release := k.zigoTakeLocked()
+	k.mu.Unlock()
+	if release {
+		cleanupKittyImages(state)
+	}
+}
+
+// zigoPoison marks k unusable: a Zig panic unwound through native frames
+// without running their defers, so the state behind it is unknown.
+func (k *KittyImages) zigoPoison(cause *NativePanicError) {
+	if k == nil {
+		return
+	}
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	if k.poison == nil {
+		k.poison = cause
+		k.cleanup.Stop()
+	}
+}
+
+// ZigoAcquire implements the shared lifecycle handle contract.
+func (k *KittyImages) ZigoAcquire(operation string) (unsafe.Pointer, error) {
+	return k.zigoAcquire(operation)
+}
+
+// ZigoRelease implements the shared lifecycle handle contract.
+func (k *KittyImages) ZigoRelease() { k.zigoRelease() }
+
+// ZigoPoison implements the shared lifecycle handle contract.
+func (k *KittyImages) ZigoPoison(cause *NativePanicError) { k.zigoPoison(cause) }
+
+type kittyImagesCleanupState struct {
+	ptr unsafe.Pointer
+}
+
+func newKittyImages(ptr unsafe.Pointer) *KittyImages {
+	value := &KittyImages{ptr: ptr}
+	state := kittyImagesCleanupState{ptr: ptr}
+	value.cleanup = runtime.AddCleanup(value, cleanupKittyImages, state)
+	return value
+}
+
+func cleanupKittyImages(state kittyImagesCleanupState) {
+	if state.ptr != nil {
+		raw.KittyImagesFreeKittyImages(state.ptr)
+	}
+}
+
+// Close releases the native KittyImages resources. It is safe to call more than once.
+// The error result is always nil; it exists so KittyImages satisfies io.Closer.
+// Close does not wait: a call still inside native keeps the resources until it
+// returns, and every call made after Close fails with *HandleError.
+func (k *KittyImages) Close() error {
+	if k == nil {
+		return nil
+	}
+	k.mu.Lock()
+	if k.closed {
+		k.mu.Unlock()
+		return nil
+	}
+	k.closed = true
+	k.cleanup.Stop()
+	state, release := k.zigoTakeLocked()
+	k.mu.Unlock()
+	if release {
+		cleanupKittyImages(state)
+	}
+	runtime.KeepAlive(k)
+	return nil
+}
+
+// zigoTakeLocked hands out what is left to release once k is closed and no
+// call is inside native; mu must be held. A poisoned handle keeps its native
+// object: releasing state a panic left half-changed could fault, so it leaks.
+func (k *KittyImages) zigoTakeLocked() (kittyImagesCleanupState, bool) {
+	if !k.closed || k.active != 0 || k.ptr == nil {
+		return kittyImagesCleanupState{}, false
+	}
+	state := kittyImagesCleanupState{ptr: k.ptr}
+	k.ptr = nil
+	if k.poison != nil {
+		state.ptr = nil
+	}
+	return state, true
+}

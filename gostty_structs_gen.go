@@ -82,6 +82,100 @@ var _ = [1]struct{}{}[unsafe.Offsetof(RenderCell{}.Fg)-unsafe.Offsetof(raw.Rende
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderCell{}.Bg)-unsafe.Offsetof(raw.RenderCellData{}.Bg)]
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderCell{}.Flags)-unsafe.Offsetof(raw.RenderCellData{}.Flags)]
 
+// KittyPlacement mirrors the Zig `extern struct` of the same name.
+type KittyPlacement struct {
+	// ImageID corresponds to the Zig field image_id.
+	ImageID uint32
+	// PlacementID corresponds to the Zig field placement_id.
+	PlacementID uint32
+	// ViewportCol corresponds to the Zig field viewport_col.
+	ViewportCol int32
+	// ViewportRow corresponds to the Zig field viewport_row.
+	ViewportRow int32
+	// XOffset corresponds to the Zig field x_offset.
+	XOffset uint32
+	// YOffset corresponds to the Zig field y_offset.
+	YOffset uint32
+	// PixelWidth corresponds to the Zig field pixel_width.
+	PixelWidth uint32
+	// PixelHeight corresponds to the Zig field pixel_height.
+	PixelHeight uint32
+	// GridCols corresponds to the Zig field grid_cols.
+	GridCols uint32
+	// GridRows corresponds to the Zig field grid_rows.
+	GridRows uint32
+	// SourceX corresponds to the Zig field source_x.
+	SourceX uint32
+	// SourceY corresponds to the Zig field source_y.
+	SourceY uint32
+	// SourceWidth corresponds to the Zig field source_width.
+	SourceWidth uint32
+	// SourceHeight corresponds to the Zig field source_height.
+	SourceHeight uint32
+	// Z corresponds to the Zig field z.
+	Z int32
+}
+
+// KittyPlacement is reinterpreted as raw.KittyPlacementData instead of copied, so the two
+// layouts must stay identical.
+var _ = [1]struct{}{}[unsafe.Sizeof(KittyPlacement{})-unsafe.Sizeof(raw.KittyPlacementData{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.ImageID)-unsafe.Offsetof(raw.KittyPlacementData{}.ImageID)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.PlacementID)-unsafe.Offsetof(raw.KittyPlacementData{}.PlacementID)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.ViewportCol)-unsafe.Offsetof(raw.KittyPlacementData{}.ViewportCol)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.ViewportRow)-unsafe.Offsetof(raw.KittyPlacementData{}.ViewportRow)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.XOffset)-unsafe.Offsetof(raw.KittyPlacementData{}.XOffset)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.YOffset)-unsafe.Offsetof(raw.KittyPlacementData{}.YOffset)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.PixelWidth)-unsafe.Offsetof(raw.KittyPlacementData{}.PixelWidth)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.PixelHeight)-unsafe.Offsetof(raw.KittyPlacementData{}.PixelHeight)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.GridCols)-unsafe.Offsetof(raw.KittyPlacementData{}.GridCols)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.GridRows)-unsafe.Offsetof(raw.KittyPlacementData{}.GridRows)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.SourceX)-unsafe.Offsetof(raw.KittyPlacementData{}.SourceX)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.SourceY)-unsafe.Offsetof(raw.KittyPlacementData{}.SourceY)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.SourceWidth)-unsafe.Offsetof(raw.KittyPlacementData{}.SourceWidth)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.SourceHeight)-unsafe.Offsetof(raw.KittyPlacementData{}.SourceHeight)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.Z)-unsafe.Offsetof(raw.KittyPlacementData{}.Z)]
+
+// KittyImage mirrors the Zig `extern struct` of the same name.
+type KittyImage struct {
+	// Generation corresponds to the Zig field generation.
+	Generation uint64
+	// DataLen corresponds to the Zig field data_len.
+	DataLen uint64
+	// Width corresponds to the Zig field width.
+	Width uint32
+	// Height corresponds to the Zig field height.
+	Height uint32
+	// Format corresponds to the Zig field format.
+	Format uint8
+	// Compression corresponds to the Zig field compression.
+	Compression uint8
+	// Pad corresponds to the Zig field _pad.
+	Pad uint16
+}
+
+// KittyImage is reinterpreted as raw.KittyImageData instead of copied, so the two
+// layouts must stay identical.
+var _ = [1]struct{}{}[unsafe.Sizeof(KittyImage{})-unsafe.Sizeof(raw.KittyImageData{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Generation)-unsafe.Offsetof(raw.KittyImageData{}.Generation)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.DataLen)-unsafe.Offsetof(raw.KittyImageData{}.DataLen)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Width)-unsafe.Offsetof(raw.KittyImageData{}.Width)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Height)-unsafe.Offsetof(raw.KittyImageData{}.Height)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Format)-unsafe.Offsetof(raw.KittyImageData{}.Format)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Compression)-unsafe.Offsetof(raw.KittyImageData{}.Compression)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Pad)-unsafe.Offsetof(raw.KittyImageData{}.Pad)]
+
+func zigoKittyImageFromRaw(value raw.KittyImageData) KittyImage {
+	return KittyImage{
+		Generation:  value.Generation,
+		DataLen:     value.DataLen,
+		Width:       value.Width,
+		Height:      value.Height,
+		Format:      value.Format,
+		Compression: value.Compression,
+		Pad:         value.Pad,
+	}
+}
+
 // Attribute is a tagged-union value passed to native code by copy.
 type Attribute struct {
 	tag               AttributeTag

@@ -1,93 +1,92 @@
-# example
+# HyperCat Term
 
-A small GUI terminal emulator built on [gostty](../). It runs your shell on a
-pty and draws the screen in a window with [Ebitengine](https://ebitengine.org).
+A small GUI terminal emulator built with [gostty](../) and
+[Ebitengine](https://ebitengine.org).
 
+```sh
+make example # run from the repository root
 ```
-make example        # from the repository root
-```
 
-Everything a terminal has to know comes from the binding; this program only owns
-the pixels.
+This example demonstrates:
 
-```
+- parsing PTY output with `Stream.Feed`
+- rendering cells and Kitty graphics from frame snapshots
+- mode-aware keyboard, mouse, focus, and paste encoding
+- scrollback, selection, search, and clipboard integration
+- terminal replies and OSC side effects such as title, bell, and progress
+
+```text
 shell --pty--> Stream.Feed --> Terminal --> RenderState --> Ebitengine
 shell <--pty-- input.EncodeKey <-- KeyEvent <-- Ebitengine
 ```
 
-## What it uses the binding for
+## Controls
 
-- **Parsing.** Bytes from the shell go into `Stream.Feed`. Escape sequences
-  split across reads are held for the next call.
-- **The grid.** `RenderState` hands back the viewport as one flat
-  `[]RenderCell` per frame, with palette indices and defaults already resolved
-  to RGB. This is ghostty's own renderer-facing snapshot, so the dirty tracking
-  and the palette lookups are not reimplemented here.
-- **Keys.** Keystrokes go out through `input.EncodeKey`, so what Ctrl+C or an
-  arrow key encodes to follows the modes the running program has set: DECCKM,
-  the Kitty keyboard protocol, bracketed paste. The window only says which key
-  was pressed.
-- **Selection.** Dragging hands two viewport positions to `Screen.SelectRange`;
-  ghostty works out what that means for wrapped lines and wide characters. The
-  text comes back from `Screen.SelectionString`, and the render state marks the
-  selected cells so they can be drawn inverted.
-- **OSC side effects.** The title becomes the window title, the bell becomes a
-  visual flash, and OSC 52 reads and writes go through the same clipboard the
-  user does. `input.IsSafePaste` refuses a paste with a newline in it when the
-  program has not asked for bracketed paste.
+| Input | Action |
+| --- | --- |
+| Wheel | Scroll; sends arrow keys on the alternate screen. |
+| Shift+wheel | Scroll while the application owns the mouse. |
+| Drag | Select; hold Alt for block selection. |
+| Shift+drag | Select while the application owns the mouse. |
+| Ctrl+Shift+C / Cmd+C | Copy. |
+| Ctrl+Shift+V / Cmd+V | Paste. |
+| Ctrl+Shift+F / Cmd+F | Search. |
+| Ctrl+Shift+, / Cmd+, | Open settings. |
+| Click the cat | Interact with the cat and open settings. |
 
-## Keys
+Everything else is sent to the shell. In search, use Enter or Shift+Enter to
+move between matches and Escape to close.
 
-| | |
-|---|---|
-| Drag | Select. Hold Alt for a block selection. |
-| Click | Clear the selection. |
-| Ctrl+Shift+C, Cmd+C | Copy the selection. |
-| Ctrl+Shift+V, Cmd+V | Paste. |
+## Kitty graphics
 
-Everything else goes to the shell.
+Run these commands inside HyperCat Term, Ghostty, or Kitty:
 
-## Text
+```sh
+./kittydemo.py
+./kittydemo.py --cells 20x10
+./kittydemo.py --rgba
+./kittydemo.py --z -1
+./kittydemo.py --query
+```
 
-The fonts come from the system. On macOS that is Menlo with Apple SD Gothic Neo
-for the wide scripts; on Linux, DejaVu Sans Mono or Noto with Noto Sans CJK;
-on Windows, Consolas with Malgun Gothic. `GOSTTY_FONT` and `GOSTTY_FONT_CJK`
-override the search with a path to a `.ttf`, `.otf` or `.ttc`. If nothing is
-found, a bundled 12px bitmap font covering Hangul, kana and CJK takes over, so
-the example still runs on a machine with no fonts installed.
+The demo supports raw RGB, RGBA, and grayscale images. PNG transmission is not
+supported because library builds of libghostty-vt do not provide a PNG decoder.
+Use `--reply` to request and inspect terminal replies.
 
-Two faces rather than a fallback chain, because the terminal has already decided
-how many columns each character gets, and picking the face from that decision
-keeps the glyph and the cell in agreement.
+## Fonts and the cat
 
-Both faces are drawn at the same em size, and the wide one is centred in its two
-columns. Matching its *advance* to two cells instead -- the obvious thing, since
-the cell is two columns wide -- makes it far too big: a monospace Latin advance
-is about 0.6em while a CJK one is near 1em, so forcing the wide advance to twice
-the narrow one inflates its em by half again, and a CJK glyph fills its em much
-more fully than a Latin one fills its own. Nothing here needs the advance
-anyway; every glyph is placed at its own cell's origin, so the advance only has
-to fit. It is shrunk only if it does not.
+The settings panel includes terminal, midnight, Catppuccin, and Solarized
+themes. The example discovers system fonts and prefers JetBrains Mono when
+available.
+Set `GOSTTY_FONT` and `GOSTTY_FONT_CJK` to override the narrow and wide font
+paths. A bundled bitmap font is used as a final fallback. Font and size changes
+are available in settings.
 
-The monospace face defines the grid, its height included. Sizing the row to
-whichever face is taller would leave the Latin text swimming in a cell far
-bigger than it needs, so the wide face shares its baseline and is allowed to
-overflow the row a little instead.
+Colour emoji are drawn from the emoji font's own bitmaps (`sbix` on macOS,
+`CBDT` elsewhere) rather than through the text renderer, which rasterises
+outlines and would draw them blank. Only two-column cells take that path, which
+is the rule the terminal laid the line out with. Set `GOSTTY_FONT_EMOJI` to
+override the search. Emoji written as several codepoints -- flags, ZWJ
+sequences -- are not drawn, because a cell carries one codepoint and the picture
+belongs to the combination; Windows keeps its text face, since Segoe UI Emoji is
+a layered vector font rather than a bitmap one.
 
-Typed text is encoded from the UTF-8 the platform produced rather than from a
-key code, so an IME's committed string goes through unchanged. Composition
-itself is still drawn by the OS: Ebitengine does not expose preedit state, so
-there is nothing to draw in the window until the text is committed.
+The cat uses the rendered cell grid as terrain, so it follows terminal output
+and scrollback without maintaining a separate world model. It can be disabled
+in settings. Hyper Cat mode adds infinite stamina, faster movement, a pulsing
+aura, rainbow particles, and motion afterimages. The cat setting cycles through
+`off`, `on`, and `hyper`.
 
-## What it is not
+Sprites are by **Jump Button**
+([Bluesky](https://bsky.app/profile/jumpbutton.bsky.social),
+[X](https://twitter.com/Jump_Button)); see `thecat/cat/Read_me.txt` for terms.
 
-Not a terminal you would use. No scrollback view, no preedit display, no mouse
-reporting to the program, no font fallback, no ligatures, and it answers OSC 52
-read requests without asking the user -- which hands the running program
-whatever is on the clipboard, and is the wrong default for anything but a demo.
+## Limitations
 
-## Module layout
+This is a binding demo, not a production terminal. It has no preedit display,
+font fallback chain, ligatures, tabs, splits, or persistent settings. OSC 52
+clipboard reads are accepted without confirmation, which is unsafe for a
+general-purpose terminal.
 
-It needs Ebitengine, `pty` and a clipboard package, so it is its own Go module
-with a `replace` back to the repository root. The binding module itself has no
-dependencies, and keeping it that way is the point of the split.
+The example is a separate Go module because its UI, PTY, and clipboard packages
+are intentionally not dependencies of the binding module.

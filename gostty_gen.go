@@ -724,6 +724,66 @@ func (s *Stream) WriteContinuation(writer io.Writer) error {
 	return nil
 }
 
+// HasReplies
+// Whether the terminal has answered a query since the last `writeReplies`.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Stream) HasReplies() (bool, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Stream.HasReplies receiver", s)
+	if err != nil {
+		return false, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.StreamHasReplies(ptr)
+	for slot := range 2 {
+		zigoRethrowCallbackPanic("Stream.HasReplies", s.zigoCallbackHandle(slot))
+	}
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(errorForCode("Stream.HasReplies", code), s)
+	}
+	return result != 0, nil
+}
+
+// WriteReplies
+// Write everything the terminal has answered to `writer` and forget it.
+//
+// These are the terminal's own replies -- device status, Kitty graphics
+// acknowledgements, size reports -- and they go back to the program the
+// same way a keystroke does. Nothing is written from inside a feed, so
+// this belongs next to it: feed, then drain.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Stream) WriteReplies(writer io.Writer) error {
+	if writer == nil {
+		return &StreamError{Operation: "Stream.WriteReplies", Parameter: "writer", Err: ErrNilStream}
+	}
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Stream.WriteReplies receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	writerHandle := newZigoWriterHandle(writer)
+	defer deleteCallbackHandle(writerHandle)
+	code := raw.StreamWriteReplies(ptr, uintptr(writerHandle))
+	zigoRethrowCallbackPanic("Stream.WriteReplies", writerHandle)
+	for slot := range 2 {
+		zigoRethrowCallbackPanic("Stream.WriteReplies", s.zigoCallbackHandle(slot))
+	}
+	if err := zigoStreamError("Stream.WriteReplies", "writer", writerHandle); err != nil {
+		return err
+	}
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Stream.WriteReplies", code), s)
+	}
+	return nil
+}
+
 // PrintString calls the Zig function Terminal.printString.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
@@ -2088,7 +2148,7 @@ func (t *Terminal) CompressionActivity() (uint64, error) {
 }
 
 // Resize
-// Change the viewport size.
+// Change the viewport size, leaving the pixel geometry alone.
 //
 // Wrapped because `vt.Terminal.Resize` carries a nested optional struct for
 // the cell size in pixels, which has no C representation.
@@ -2105,6 +2165,31 @@ func (t *Terminal) Resize(width uint16, height uint16) error {
 	code := raw.TerminalResize(ptr, width, height)
 	if code != 0 {
 		return zigoPoisonAfterPanic(errorForCode("Terminal.Resize", code), t)
+	}
+	return nil
+}
+
+// ResizeCells
+// Change the viewport size and tell the terminal how many pixels a cell is.
+//
+// The pixel geometry is only used by the parts of the protocol that measure in
+// pixels -- Kitty graphics placements above all -- and is zero until it is set,
+// which leaves every image sized zero. A renderer that draws images should
+// resize with this rather than `resize`: the terminal stores the pixel size of
+// the whole grid, so it goes stale as soon as the column count changes.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (t *Terminal) ResizeCells(width uint16, height uint16, cellWidth uint32, cellHeight uint32) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Terminal.ResizeCells receiver", t)
+	if err != nil {
+		return err
+	}
+	defer t.zigoRelease()
+	code := raw.TerminalResizeCells(ptr, width, height, cellWidth, cellHeight)
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Terminal.ResizeCells", code), t)
 	}
 	return nil
 }
@@ -2327,4 +2412,142 @@ func (r *RenderState) CursorStyle() (CursorStyle, error) {
 		return 0, zigoPoisonAfterPanic(errorForCode("RenderState.CursorStyle", code), r)
 	}
 	return CursorStyle(result), nil
+}
+
+// NewKittyImages creates a caller-owned KittyImages.
+// The caller must call Close on the returned handle.
+// Native failures are returned as generated error values.
+func NewKittyImages() (*KittyImages, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	result, code := raw.NewKittyImages()
+	if code != 0 {
+		return nil, errorForCode("NewKittyImages", code)
+	}
+	return newKittyImages(result), nil
+}
+
+// Update calls the Zig function KittyImages.update.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (k *KittyImages) Update(term *Terminal) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("KittyImages.Update receiver", k)
+	if err != nil {
+		return err
+	}
+	defer k.zigoRelease()
+	termPtr, err := zigoCheckedPointer("KittyImages.Update parameter term", term)
+	if err != nil {
+		return err
+	}
+	defer lifecycle.Release(term)
+	code := raw.KittyImagesUpdate(ptr, termPtr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("KittyImages.Update", code), k, term)
+	}
+	return nil
+}
+
+// Generation calls the Zig function KittyImages.generation.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (k *KittyImages) Generation() (uint64, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("KittyImages.Generation receiver", k)
+	if err != nil {
+		return 0, err
+	}
+	defer k.zigoRelease()
+	result, code := raw.KittyImagesGeneration(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(errorForCode("KittyImages.Generation", code), k)
+	}
+	return result, nil
+}
+
+// PlacementCount calls the Zig function KittyImages.placementCount.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (k *KittyImages) PlacementCount() (uint, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("KittyImages.PlacementCount receiver", k)
+	if err != nil {
+		return 0, err
+	}
+	defer k.zigoRelease()
+	result, code := raw.KittyImagesPlacementCount(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(errorForCode("KittyImages.PlacementCount", code), k)
+	}
+	return result, nil
+}
+
+// Placements calls the Zig function KittyImages.placements.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (k *KittyImages) Placements(dst []KittyPlacement) (uint, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("KittyImages.Placements receiver", k)
+	if err != nil {
+		return 0, err
+	}
+	defer k.zigoRelease()
+	var dstRaw []raw.KittyPlacementData
+	if len(dst) != 0 {
+		dstRaw = unsafe.Slice((*raw.KittyPlacementData)(unsafe.Pointer(&dst[0])), len(dst))
+	}
+	result, code := raw.KittyImagesPlacements(ptr, dstRaw)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(errorForCode("KittyImages.Placements", code), k)
+	}
+	return result, nil
+}
+
+// KittyImage
+// Look up an image on the active screen by id.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (t *Terminal) KittyImage(imageID uint32) (KittyImage, bool, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Terminal.KittyImage receiver", t)
+	if err != nil {
+		return KittyImage{}, false, err
+	}
+	defer t.zigoRelease()
+	result, zigoHas, code := raw.TerminalKittyImage(ptr, imageID)
+	if code != 0 {
+		return KittyImage{}, false, zigoPoisonAfterPanic(errorForCode("Terminal.KittyImage", code), t)
+	}
+	return zigoKittyImageFromRaw(result), zigoHas, nil
+}
+
+// KittyImageData
+// Copy an image's pixels into `dst` and report how many bytes were written,
+// or zero if there is no such image.
+//
+// The bytes are as the program transmitted them, decompressed: a PNG is still
+// a PNG, and it is the renderer that decodes it. For an animated image these
+// are the current frame's, which is why the generation stamp moves when the
+// frame does.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (t *Terminal) KittyImageData(imageID uint32, dst []byte) (uint, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	ptr, err := zigoCheckedPointer("Terminal.KittyImageData receiver", t)
+	if err != nil {
+		return 0, err
+	}
+	defer t.zigoRelease()
+	result, code := raw.TerminalKittyImageData(ptr, imageID, dst)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(errorForCode("Terminal.KittyImageData", code), t)
+	}
+	return result, nil
 }

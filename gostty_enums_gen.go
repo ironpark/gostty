@@ -769,3 +769,59 @@ func (value CellWidth) String() string {
 		return "CellWidth(" + strconv.Itoa(int(value)) + ")"
 	}
 }
+
+// KittyFormat represents the corresponding Zig enum.
+type KittyFormat uint8
+
+const (
+	// KittyFormatRgb corresponds to the Zig tag rgb.
+	KittyFormatRgb KittyFormat = 0
+	// KittyFormatRgba corresponds to the Zig tag rgba.
+	KittyFormatRgba KittyFormat = 1
+	// KittyFormatPng corresponds to the Zig tag png.
+	KittyFormatPng KittyFormat = 2
+	// KittyFormatGrayAlpha corresponds to the Zig tag gray_alpha.
+	KittyFormatGrayAlpha KittyFormat = 3
+	// KittyFormatGray corresponds to the Zig tag gray.
+	KittyFormatGray KittyFormat = 4
+)
+
+// String returns the Zig tag name.
+func (value KittyFormat) String() string {
+	switch value {
+	case KittyFormatRgb:
+		return "rgb"
+	case KittyFormatRgba:
+		return "rgba"
+	case KittyFormatPng:
+		return "png"
+	case KittyFormatGrayAlpha:
+		return "gray_alpha"
+	case KittyFormatGray:
+		return "gray"
+	default:
+		return "KittyFormat(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// KittyCompression represents the corresponding Zig enum.
+type KittyCompression uint8
+
+const (
+	// KittyCompressionNone corresponds to the Zig tag none.
+	KittyCompressionNone KittyCompression = 0
+	// KittyCompressionZlibDeflate corresponds to the Zig tag zlib_deflate.
+	KittyCompressionZlibDeflate KittyCompression = 1
+)
+
+// String returns the Zig tag name.
+func (value KittyCompression) String() string {
+	switch value {
+	case KittyCompressionNone:
+		return "none"
+	case KittyCompressionZlibDeflate:
+		return "zlib_deflate"
+	default:
+		return "KittyCompression(" + strconv.Itoa(int(value)) + ")"
+	}
+}

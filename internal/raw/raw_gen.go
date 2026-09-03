@@ -5,7 +5,7 @@
 package raw
 
 /*
-#cgo CFLAGS: -I${SRCDIR}/../../zig/zig-out/include
+#cgo CFLAGS: -I${SRCDIR}/../../libs/include
 #include "zigo_gostty.h"
 */
 import "C"
@@ -556,6 +556,19 @@ func StreamDenyClipboard(self unsafe.Pointer, reason uint8) int32 {
 // StreamWriteContinuation calls the generated C ABI wrapper for zg_stream_write_continuation.
 func StreamWriteContinuation(self unsafe.Pointer, writerHandle uintptr) int32 {
 	code := int32(C.zg_stream_write_continuation((*C.zg_stream)(self), C.size_t(writerHandle)))
+	return code
+}
+
+// StreamHasReplies calls the generated C ABI wrapper for zg_stream_has_replies.
+func StreamHasReplies(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_stream_has_replies((*C.zg_stream)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// StreamWriteReplies calls the generated C ABI wrapper for zg_stream_write_replies.
+func StreamWriteReplies(self unsafe.Pointer, writerHandle uintptr) int32 {
+	code := int32(C.zg_stream_write_replies((*C.zg_stream)(self), C.size_t(writerHandle)))
 	return code
 }
 
@@ -1147,6 +1160,12 @@ func TerminalResize(self unsafe.Pointer, width uint16, height uint16) int32 {
 	return code
 }
 
+// TerminalResizeCells calls the generated C ABI wrapper for zg_terminal_resize_cells.
+func TerminalResizeCells(self unsafe.Pointer, width uint16, height uint16, cellWidth uint32, cellHeight uint32) int32 {
+	code := int32(C.zg_terminal_resize_cells((*C.zg_terminal)(self), C.uint16_t(width), C.uint16_t(height), C.uint32_t(cellWidth), C.uint32_t(cellHeight)))
+	return code
+}
+
 // NewRenderState calls the generated C ABI wrapper for zg_new_render_state.
 func NewRenderState() (unsafe.Pointer, int32) {
 	var outResult *C.zg_render_state
@@ -1243,6 +1262,79 @@ func RenderStateCursorStyle(self unsafe.Pointer) (uint8, int32) {
 	return uint8(outResult), code
 }
 
+// NewKittyImages calls the generated C ABI wrapper for zg_new_kitty_images.
+func NewKittyImages() (unsafe.Pointer, int32) {
+	var outResult *C.zg_kitty_images
+	code := int32(C.zg_new_kitty_images(&outResult))
+	return unsafe.Pointer(outResult), code
+}
+
+// KittyImagesFreeKittyImages calls the generated C ABI wrapper for zg_kitty_images_free_kitty_images.
+func KittyImagesFreeKittyImages(self unsafe.Pointer) int32 {
+	code := int32(C.zg_kitty_images_free_kitty_images((*C.zg_kitty_images)(self)))
+	return code
+}
+
+// KittyImagesUpdate calls the generated C ABI wrapper for zg_kitty_images_update.
+func KittyImagesUpdate(self unsafe.Pointer, term unsafe.Pointer) int32 {
+	code := int32(C.zg_kitty_images_update((*C.zg_kitty_images)(self), (*C.zg_terminal)(term)))
+	return code
+}
+
+// KittyImagesGeneration calls the generated C ABI wrapper for zg_kitty_images_generation.
+func KittyImagesGeneration(self unsafe.Pointer) (uint64, int32) {
+	var outResult C.uint64_t
+	code := int32(C.zg_kitty_images_generation((*C.zg_kitty_images)(self), &outResult))
+	return uint64(outResult), code
+}
+
+// KittyImagesPlacementCount calls the generated C ABI wrapper for zg_kitty_images_placement_count.
+func KittyImagesPlacementCount(self unsafe.Pointer) (uint, int32) {
+	var outResult C.size_t
+	code := int32(C.zg_kitty_images_placement_count((*C.zg_kitty_images)(self), &outResult))
+	return uint(outResult), code
+}
+
+// KittyImagesPlacements calls the generated C ABI wrapper for zg_kitty_images_placements.
+func KittyImagesPlacements(self unsafe.Pointer, dst []KittyPlacementData) (uint, int32) {
+	var dstZero C.zg_kitty_placement
+	dstPtr := &dstZero
+	if len(dst) != 0 {
+		dstPtr = (*C.zg_kitty_placement)(unsafe.Pointer(&dst[0]))
+	}
+	var outResult C.size_t
+	code := int32(C.zg_kitty_images_placements((*C.zg_kitty_images)(self), dstPtr, C.size_t(len(dst)), &outResult))
+	return uint(outResult), code
+}
+
+// TerminalKittyImage calls the generated C ABI wrapper for zg_terminal_kitty_image.
+func TerminalKittyImage(self unsafe.Pointer, imageID uint32) (KittyImageData, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.zg_kitty_image
+	code := int32(C.zg_terminal_kitty_image((*C.zg_terminal)(self), C.uint32_t(imageID), &outResultHas, &outResult))
+	return KittyImageData{
+		Generation:  uint64(outResult.generation),
+		DataLen:     uint64(outResult.data_len),
+		Width:       uint32(outResult.width),
+		Height:      uint32(outResult.height),
+		Format:      uint8(outResult.format),
+		Compression: uint8(outResult.compression),
+		Pad:         uint16(outResult._pad),
+	}, outResultHas != 0, code
+}
+
+// TerminalKittyImageData calls the generated C ABI wrapper for zg_terminal_kitty_image_data.
+func TerminalKittyImageData(self unsafe.Pointer, imageID uint32, dst []uint8) (uint, int32) {
+	var dstZero C.uint8_t
+	dstPtr := &dstZero
+	if len(dst) != 0 {
+		dstPtr = (*C.uint8_t)(unsafe.Pointer(&dst[0]))
+	}
+	var outResult C.size_t
+	code := int32(C.zg_terminal_kitty_image_data((*C.zg_terminal)(self), C.uint32_t(imageID), dstPtr, C.size_t(len(dst)), &outResult))
+	return uint(outResult), code
+}
+
 // RenderSizeData mirrors the zg_render_size layout, padding included.
 type RenderSizeData struct {
 	ScreenWidth   uint32
@@ -1263,6 +1355,37 @@ type RenderCellData struct {
 	Flags     uint32
 }
 
+// KittyPlacementData mirrors the zg_kitty_placement layout, padding included.
+type KittyPlacementData struct {
+	ImageID      uint32
+	PlacementID  uint32
+	ViewportCol  int32
+	ViewportRow  int32
+	XOffset      uint32
+	YOffset      uint32
+	PixelWidth   uint32
+	PixelHeight  uint32
+	GridCols     uint32
+	GridRows     uint32
+	SourceX      uint32
+	SourceY      uint32
+	SourceWidth  uint32
+	SourceHeight uint32
+	Z            int32
+}
+
+// KittyImageData mirrors the zg_kitty_image layout, padding included.
+type KittyImageData struct {
+	Generation  uint64
+	DataLen     uint64
+	Width       uint32
+	Height      uint32
+	Format      uint8
+	Compression uint8
+	Pad         uint16
+	_           [4]byte
+}
+
 // RenderSizeData crosses to C as a cast, so it must match zg_render_size byte for byte.
 var _ = [1]struct{}{}[unsafe.Sizeof(RenderSizeData{})-unsafe.Sizeof(C.zg_render_size{})]
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.ScreenWidth)-unsafe.Offsetof(C.zg_render_size{}.screen_width)]
@@ -1280,3 +1403,31 @@ var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Codepoint)-unsafe.Offseto
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Fg)-unsafe.Offsetof(C.zg_render_cell{}.fg)]
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Bg)-unsafe.Offsetof(C.zg_render_cell{}.bg)]
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Flags)-unsafe.Offsetof(C.zg_render_cell{}.flags)]
+
+// KittyPlacementData crosses to C as a cast, so it must match zg_kitty_placement byte for byte.
+var _ = [1]struct{}{}[unsafe.Sizeof(KittyPlacementData{})-unsafe.Sizeof(C.zg_kitty_placement{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.ImageID)-unsafe.Offsetof(C.zg_kitty_placement{}.image_id)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.PlacementID)-unsafe.Offsetof(C.zg_kitty_placement{}.placement_id)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.ViewportCol)-unsafe.Offsetof(C.zg_kitty_placement{}.viewport_col)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.ViewportRow)-unsafe.Offsetof(C.zg_kitty_placement{}.viewport_row)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.XOffset)-unsafe.Offsetof(C.zg_kitty_placement{}.x_offset)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.YOffset)-unsafe.Offsetof(C.zg_kitty_placement{}.y_offset)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.PixelWidth)-unsafe.Offsetof(C.zg_kitty_placement{}.pixel_width)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.PixelHeight)-unsafe.Offsetof(C.zg_kitty_placement{}.pixel_height)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.GridCols)-unsafe.Offsetof(C.zg_kitty_placement{}.grid_cols)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.GridRows)-unsafe.Offsetof(C.zg_kitty_placement{}.grid_rows)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.SourceX)-unsafe.Offsetof(C.zg_kitty_placement{}.source_x)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.SourceY)-unsafe.Offsetof(C.zg_kitty_placement{}.source_y)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.SourceWidth)-unsafe.Offsetof(C.zg_kitty_placement{}.source_width)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.SourceHeight)-unsafe.Offsetof(C.zg_kitty_placement{}.source_height)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.Z)-unsafe.Offsetof(C.zg_kitty_placement{}.z)]
+
+// KittyImageData crosses to C as a cast, so it must match zg_kitty_image byte for byte.
+var _ = [1]struct{}{}[unsafe.Sizeof(KittyImageData{})-unsafe.Sizeof(C.zg_kitty_image{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyImageData{}.Generation)-unsafe.Offsetof(C.zg_kitty_image{}.generation)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyImageData{}.DataLen)-unsafe.Offsetof(C.zg_kitty_image{}.data_len)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyImageData{}.Width)-unsafe.Offsetof(C.zg_kitty_image{}.width)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyImageData{}.Height)-unsafe.Offsetof(C.zg_kitty_image{}.height)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyImageData{}.Format)-unsafe.Offsetof(C.zg_kitty_image{}.format)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyImageData{}.Compression)-unsafe.Offsetof(C.zg_kitty_image{}.compression)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyImageData{}.Pad)-unsafe.Offsetof(C.zg_kitty_image{}._pad)]

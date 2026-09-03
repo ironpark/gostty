@@ -34,8 +34,14 @@ func (g *game) Draw(screen *ebiten.Image) {
 		screen.Fill(color.RGBA{R: 0x55, G: 0x55, B: 0x55, A: 0xff})
 	}
 	g.drawBackgrounds(screen)
+	// A placement's z decides whether it goes under the text or over it, which
+	// is the whole reason the protocol has one.
+	g.drawImages(screen, true)
 	g.drawGlyphs(screen)
+	g.drawImages(screen, false)
 	g.drawCursor(screen)
+	g.drawCat(screen)
+	g.drawUI(screen)
 }
 
 // drawBackgrounds fills the cells whose background is not the default, in runs.
@@ -63,9 +69,9 @@ func (g *game) drawBackgrounds(screen *ebiten.Image) {
 
 func (g *game) cellBackground(cell gostty.RenderCell) color.RGBA {
 	if gostty.CellFlagsFromBacking(cell.Flags).Selected {
-		return rgb(cell.Fg)
+		return g.themeColor(rgb(cell.Fg))
 	}
-	return rgb(cell.Bg)
+	return g.themeColor(rgb(cell.Bg))
 }
 
 func (g *game) drawGlyphs(screen *ebiten.Image) {
@@ -80,9 +86,9 @@ func (g *game) drawGlyphs(screen *ebiten.Image) {
 			continue
 		}
 
-		fg := rgb(cell.Fg)
+		fg := g.themeColor(rgb(cell.Fg))
 		if flags.Selected {
-			fg = rgb(cell.Bg)
+			fg = g.themeColor(rgb(cell.Bg))
 		}
 		if flags.Faint {
 			fg = color.RGBA{R: fg.R / 2, G: fg.G / 2, B: fg.B / 2, A: 0xff}
@@ -91,7 +97,7 @@ func (g *game) drawGlyphs(screen *ebiten.Image) {
 		wide := flags.Wide == gostty.CellWidthWide
 		x := float64(i%g.cols) * g.fonts.cellW
 		y := float64(i/g.cols) * g.fonts.cellH
-		g.glyph(screen, rune(cell.Codepoint), x, y, wide, fg)
+		g.glyph(screen, rune(cell.Codepoint), x, y, wide, flags.Bold, flags.Italic, fg)
 
 		if flags.Underline != gostty.UnderlineNone || flags.Strikethrough || flags.Overline {
 			width := g.fonts.cellW
@@ -127,14 +133,29 @@ func (g *game) decorate(screen *ebiten.Image, flags gostty.CellFlags, x, y, widt
 	}
 }
 
-// glyph draws one character at a cell's top-left corner, with the face chosen
-// by the width the terminal gave the cell rather than by which font happens to
-// have the glyph.
-func (g *game) glyph(screen *ebiten.Image, r rune, x, y float64, wide bool, fg color.RGBA) {
-	face, dx, dy := g.fonts.narrow, 0.0, 0.0
-	if wide {
-		face, dx, dy = g.fonts.wide, g.fonts.wideDX, g.fonts.wideDY
+// glyph draws one character at a cell's top-left corner.
+//
+// The face is chosen by the width the terminal gave the cell rather than by
+// which font happens to have the glyph, and then by the cell's own bold and
+// italic. A family that has no bold face is struck twice instead, a pixel
+// apart: losing the distinction entirely is worse than a thickened glyph, and
+// it is what terminals have always done.
+func (g *game) glyph(screen *ebiten.Image, r rune, x, y float64, wide, bold, italic bool, fg color.RGBA) {
+	// A two-column cell may be a picture rather than a character. Colour emoji
+	// are stored in their font as bitmaps, which the text renderer cannot draw
+	// at all, so they are fetched and drawn as images instead.
+	if wide && g.drawEmoji(screen, r, x, y) {
+		return
 	}
+
+	face, synthetic := g.fonts.face(bold, italic)
+	dx, dy := 0.0, 0.0
+	if wide {
+		// One wide face, at one weight: CJK text is drawn upright whatever the
+		// cell says, rather than shown in a face from another family.
+		face, synthetic, dx, dy = g.fonts.wide, false, g.fonts.wideDX, g.fonts.wideDY
+	}
+
 	op := &g.drawOp
 	op.GeoM.Reset()
 	if s := g.fonts.scale; s != 1 {
@@ -146,7 +167,12 @@ func (g *game) glyph(screen *ebiten.Image, r rune, x, y float64, wide bool, fg c
 	op.GeoM.Translate(x+dx, y+dy)
 	op.ColorScale.Reset()
 	op.ColorScale.ScaleWithColor(fg)
-	text.Draw(screen, glyphString(r), face, op)
+	str := glyphString(r)
+	text.Draw(screen, str, face, op)
+	if synthetic {
+		op.GeoM.Translate(g.fonts.lineH, 0)
+		text.Draw(screen, str, face, op)
+	}
 }
 
 // drawCursor paints the cursor from the state refresh() read. Nothing here
@@ -172,8 +198,9 @@ func (g *game) drawCursor(screen *ebiten.Image) {
 		if i := int(g.cursor.y)*g.cols + int(g.cursor.x); i < len(g.cells) {
 			cell := g.cells[i]
 			if r := rune(cell.Codepoint); r > ' ' {
-				wide := gostty.CellFlagsFromBacking(cell.Flags).Wide == gostty.CellWidthWide
-				g.glyph(screen, r, x, y, wide, g.bg)
+				flags := gostty.CellFlagsFromBacking(cell.Flags)
+				wide := flags.Wide == gostty.CellWidthWide
+				g.glyph(screen, r, x, y, wide, flags.Bold, flags.Italic, g.bg)
 			}
 		}
 	}

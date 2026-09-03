@@ -32,13 +32,20 @@ var wordBoundaries = []uint32{
 	'(', ')', '[', ']', '{', '}', '<', '>', '$', '\u2502',
 }
 
-// handleMouse turns a drag into a selection on the screen.
+// handleMouse gives the mouse to the running program if it has asked for it,
+// and otherwise turns a drag into a selection on the screen.
 //
 // The selection itself is ghostty's: we hand it two viewport positions and it
 // works out what that means for wrapped lines, wide characters and the
 // scrollback. What comes back is the selected text and, through the render
 // state, a per-cell flag to draw with.
 func (g *game) handleMouse(m mods) error {
+	// The program gets first refusal. When it has asked for the mouse, the
+	// pointer is its input device and not this window's selection tool.
+	if reported, err := g.reportMouse(m); err != nil || reported {
+		return err
+	}
+
 	pressed := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
 	switch {
 	case inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft):
