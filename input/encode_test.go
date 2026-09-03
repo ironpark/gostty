@@ -353,3 +353,20 @@ func TestMouseEventReset(t *testing.T) {
 		t.Errorf("after Reset encoded %q, want %q", got, want)
 	}
 }
+
+// Text that no physical key describes -- anything from an IME, and most
+// non-Latin layouts -- is encoded from the UTF-8 alone. An embedder that has a
+// composed string but no key code needs this to work.
+func TestEncodeTextWithoutKey(t *testing.T) {
+	term := newTerm(t, 20, 3)
+	ev := newKeyEv(t)
+	if err := ev.SetKey(input.KeyUnidentified); err != nil {
+		t.Fatalf("SetKey: %v", err)
+	}
+	if err := ev.SetUTF8([]byte("안")); err != nil {
+		t.Fatalf("SetUTF8: %v", err)
+	}
+	if got, want := encodeKey(t, term, ev), "안"; got != want {
+		t.Errorf("encoded %q, want %q", got, want)
+	}
+}

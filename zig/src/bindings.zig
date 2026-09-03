@@ -36,7 +36,13 @@ pub const bindings = zigo.define(.{
     },
 
     .types = .{
-        .{ .type = gostty.Terminal, .repr = .@"opaque" },
+        .{ .type = gostty.Terminal, .repr = .@"opaque", .fields = .{
+            .{ .path = "cols" },
+            .{ .path = "rows" },
+            .{ .path = "screens.active.cursor.x", .name = "cursorX" },
+            .{ .path = "screens.active.cursor.y", .name = "cursorY" },
+            .{ .path = "screens.active.cursor.cursor_style", .name = "cursorStyle" },
+        } },
         .{ .type = gostty.Stream, .repr = .@"opaque", .name = "Stream" },
         .{ .type = gostty.Screen, .repr = .@"opaque", .name = "Screen" },
         .{ .type = gostty.Search, .repr = .@"opaque", .name = "Search" },
@@ -72,6 +78,8 @@ pub const bindings = zigo.define(.{
         .{ .name = "CharsetActiveSlot", .type = gostty.CharsetActiveSlot, .repr = .enumeration },
         .{ .name = "DeccolmMode", .type = gostty.DeccolmMode, .repr = .enumeration },
         .{ .name = "ScrollViewport", .type = gostty.ScrollViewport, .repr = .tagged_union },
+        .{ .type = gostty.RenderState, .repr = .@"opaque", .name = "RenderState" },
+        .{ .type = gostty.RenderCell, .repr = .value, .name = "RenderCell" },
     },
     .functions = .{
         .{ .path = "root.unicode.codepointWidth" },
@@ -118,15 +126,27 @@ pub const bindings = zigo.define(.{
         .{ .path = "Stream.eventBody" },
         .{ .path = "Stream.eventProgressState" },
         .{ .path = "Stream.eventProgress" },
+        // A clipboard request runs while `feed` is on the stack, on the thread
+        // that called it, and the callback is expected to answer it by calling
+        // back into the same stream. Both facts are contracts a caller has to
+        // know, so they are declared rather than left to the prose.
         .{
             .path = "Stream.onClipboardWriteRequest",
             .params = .{ "callback", "userdata" },
-            .param_meta = .{ .callback = .{ .retention = .retained } },
+            .param_meta = .{ .callback = .{
+                .retention = .retained,
+                .reentrancy = .allowed,
+                .thread = .caller,
+            } },
         },
         .{
             .path = "Stream.onClipboardReadRequest",
             .params = .{ "callback", "userdata" },
-            .param_meta = .{ .callback = .{ .retention = .retained } },
+            .param_meta = .{ .callback = .{
+                .retention = .retained,
+                .reentrancy = .allowed,
+                .thread = .caller,
+            } },
         },
         .{ .path = "Stream.clipboardLocation" },
         .{ .path = "Stream.clipboardName" },
@@ -156,15 +176,30 @@ pub const bindings = zigo.define(.{
         .{ .path = "root.activeScreenKey" },
         .{ .path = "root.activeScreen", .returns = .borrowed },
         .{ .path = "root.screen", .returns = .borrowed, .params = .{"key"} },
-        .{ .path = "root.screenSelectAll", .name = "selectAll" },
-        .{ .path = "root.screenClearSelection", .name = "clearSelection" },
-        .{ .path = "root.screenHasSelection", .name = "hasSelection" },
+        // Screen is ghostty's own type, so these cannot be written as methods
+        // on it; the group attaches them and drops the shared `screen` prefix.
+        .{
+            .receiver = "Screen",
+            .strip_prefix = "screen",
+            .functions = .{
+                "root.screenSelectAll",
+                "root.screenClearSelection",
+                "root.screenHasSelection",
+                .{ .path = "root.screenSelectRange", .params = .{ "x1", "y1", "x2", "y2", "rectangle" } },
+                .{ .path = "root.screenSelectionString", .returns = .caller, .release = "root.freeString" },
+            },
+        },
         .{ .path = "root.newSearch", .constructs = "Search", .child_of_receiver = true, .params = .{"needle"} },
         .{ .path = "root.freeSearch", .destroys = "Search" },
         .{ .path = "Search.searchAll" },
-        .{ .path = "root.searchMatchCount", .name = "matchCount" },
-        .{ .path = "root.searchSelect", .name = "select", .params = .{"to"} },
-        .{ .path = "root.screenSelectionString", .name = "selectionString", .returns = .caller, .release = "root.freeString" },
+        .{
+            .receiver = "Search",
+            .strip_prefix = "search",
+            .functions = .{
+                "root.searchMatchCount",
+                .{ .path = "root.searchSelect", .params = .{"to"} },
+            },
+        },
         .{
             .path = "root.printAttributesInto",
             .params = .{"dst"},
@@ -230,11 +265,31 @@ pub const bindings = zigo.define(.{
         .{ .path = "Terminal.compressionActivity" },
         .{ .path = "root.resize", .params = .{ "width", "height" } },
 
-        // Field accessors: zigo binds functions, not fields.
-        .{ .path = "root.cols" },
-        .{ .path = "root.rows" },
-        .{ .path = "root.cursorX" },
-        .{ .path = "root.cursorY" },
-        .{ .path = "root.cursorStyle" },
+        // Rendering. `RenderState` is ghostty's own renderer-facing snapshot;
+        // a frame is one `update` plus one `cells` crossing.
+        .{ .path = "root.newRenderState", .constructs = "RenderState" },
+        .{ .path = "root.freeRenderState", .destroys = "RenderState" },
+        .{
+            .receiver = "RenderState",
+            .strip_prefix = "render",
+            .functions = .{
+                .{ .path = "root.renderUpdate", .params = .{"term"} },
+                "root.renderCellCount",
+                .{
+                    .path = "root.renderCells",
+                    .params = .{"dst"},
+                    .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
+                },
+                "root.renderRows",
+                "root.renderCols",
+                "root.renderBackground",
+                "root.renderForeground",
+                "root.renderCursorX",
+                "root.renderCursorY",
+                "root.renderCursorVisible",
+                "root.renderCursorStyle",
+            },
+        },
+
     },
 });

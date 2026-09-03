@@ -9,8 +9,10 @@
 //!   - a constructor and destructor, because `Terminal.init` takes a
 //!     `Terminal.Options` whose `Colors` field holds optionals and so cannot
 //!     cross the C ABI, and because it returns by value;
-//!   - accessors for fields, which zigo does not bind;
 //!   - a release function for the string `plainString` hands out.
+//!
+//! Plain field reads are not here: `.fields` in `bindings.zig` generates those
+//! accessors from the field path.
 //!
 //! Every `gpa` / `io_impl` parameter below is filled in by zigo's `.allocator`
 //! and `.io` injection and never appears in the C or Go signatures.
@@ -81,9 +83,7 @@ pub const ClipboardDenial = enum(u8) {
 /// The callback carries no payload: a zigo callback signature is a raw C
 /// signature, so slices would arrive as loose pointer and length pairs. It
 /// instead reads the pending request off the stream and answers it there.
-///
-/// The `i32` result is unused; zigo requires a scalar return.
-pub const ClipboardFn = *const fn (userdata: usize) callconv(.c) i32;
+pub const ClipboardFn = *const fn (userdata: usize) callconv(.c) void;
 
 /// A VT stream: parses escape sequences and applies them to a `Terminal`.
 ///
@@ -189,7 +189,7 @@ pub const Stream = struct {
         self.pending_write = write;
         self.answered = false;
         defer self.pending_write = null;
-        _ = callback(self.write_userdata);
+        callback(self.write_userdata);
         if (!self.answered) write.reply(.denied);
     }
 
@@ -205,7 +205,7 @@ pub const Stream = struct {
         self.pending_read = read;
         self.answered = false;
         defer self.pending_read = null;
-        _ = callback(self.read_userdata);
+        callback(self.read_userdata);
         if (!self.answered) read.reply(.denied);
     }
 
@@ -470,6 +470,25 @@ pub fn screenSelectAll(self: *Screen) !bool {
 /// Drop the current selection, if any.
 pub fn screenClearSelection(self: *Screen) void {
     self.clearSelection();
+}
+
+/// Select the cells between two viewport positions, inclusive of both ends.
+///
+/// `rectangle` selects the block between the two corners rather than the flow
+/// of text from one to the other. Returns false when either end is outside the
+/// viewport, which is what a drag that left the window looks like.
+pub fn screenSelectRange(
+    self: *Screen,
+    x1: u16,
+    y1: u16,
+    x2: u16,
+    y2: u16,
+    rectangle: bool,
+) !bool {
+    const start = self.pages.pin(.{ .viewport = .{ .x = x1, .y = y1 } }) orelse return false;
+    const end = self.pages.pin(.{ .viewport = .{ .x = x2, .y = y2 } }) orelse return false;
+    try self.select(vt.Selection.init(start, end, rectangle));
+    return true;
 }
 
 /// A text search over one screen, including its scrollback.
@@ -944,22 +963,184 @@ pub fn freeString(gpa: Allocator, str: []const u8) void {
     gpa.free(str);
 }
 
-pub fn cols(self: *Terminal) u16 {
-    return self.cols;
+
+// -- Rendering -------------------------------------------------------------
+//
+// ghostty ships `RenderState` for exactly this: a stateful, dirty-tracking
+// snapshot of the viewport built for renderers. It is bound as a handle, and
+// the viewport is handed to Go as one flat array of `RenderCell` so a frame
+// costs a single crossing.
+
+pub const RenderState = vt.RenderState;
+
+/// One cell of the viewport, flattened for the C ABI.
+///
+/// Colors are already resolved: palette indices are looked up in the render
+/// state's palette and defaults are filled in from the terminal's own
+/// foreground and background, so Go never has to carry a palette. `inverse`
+/// is applied here too, for the same reason.
+pub const RenderCell = extern struct {
+    /// The cell's codepoint, or 0 for an empty cell. Only the first codepoint
+    /// of a grapheme cluster; combining marks are not carried across.
+    codepoint: u32,
+    /// 0xRRGGBB.
+    fg: u32,
+    bg: u32,
+    /// bold, italic, faint, blink, inverse, invisible, strikethrough and
+    /// overline in bits 0..7; the underline style in bits 8..11; whether the
+    /// cell falls inside the screen's selection in bit 12.
+    flags: u16,
+    /// 0 narrow, 1 wide, 2 spacer_tail, 3 spacer_head. Skip the spacers.
+    wide: u8,
+    _pad: u8 = 0,
+};
+
+pub fn newRenderState(gpa: Allocator) !*RenderState {
+    const self = try gpa.create(RenderState);
+    errdefer gpa.destroy(self);
+    self.* = .empty;
+    return self;
 }
 
-pub fn rows(self: *Terminal) u16 {
+pub fn freeRenderState(gpa: Allocator, self: *RenderState) void {
+    self.deinit(gpa);
+    gpa.destroy(self);
+}
+
+/// Pull the latest viewport out of `term`. Resets the terminal's dirty state.
+pub fn renderUpdate(self: *RenderState, gpa: Allocator, term: *Terminal) !void {
+    try self.update(gpa, term);
+}
+
+/// How many `RenderCell`s `renderCells` needs: `rows * cols`.
+pub fn renderCellCount(self: *RenderState) usize {
+    return @as(usize, self.rows) * @as(usize, self.cols);
+}
+
+/// Flatten the viewport into `dst`, row-major from the top, and report how
+/// many cells were written.
+pub fn renderCells(self: *RenderState, dst: []RenderCell) !usize {
+    const width: usize = self.cols;
+    const total = @as(usize, self.rows) * width;
+    if (dst.len < total) return error.NoSpaceLeft;
+
+    const fg_default = packRgb(self.colors.foreground);
+    const bg_default = packRgb(self.colors.background);
+
+    const row_cells = self.row_data.items(.cells);
+    const row_sels = self.row_data.items(.selection);
+    for (row_cells, row_sels, 0..) |row, sel, y| {
+        if (y >= self.rows) break;
+        const raw = row.items(.raw);
+        const styles = row.items(.style);
+        for (raw, styles, 0..) |cell, style, x| {
+            if (x >= width) break;
+            const out = &dst[y * width + x];
+            out.* = .{
+                .codepoint = 0,
+                .fg = fg_default,
+                .bg = bg_default,
+                .flags = 0,
+                .wide = @intFromEnum(cell.wide),
+            };
+
+            switch (cell.content_tag) {
+                .codepoint, .codepoint_grapheme => out.codepoint = cell.content.codepoint.data,
+                // A cell with no text but a background color; the color is in
+                // the cell itself rather than the style map.
+                .bg_color_palette => out.bg = packRgb(self.colors.palette[cell.content.color_palette.data]),
+                .bg_color_rgb => out.bg = packRgb(.{
+                    .r = cell.content.color_rgb.r,
+                    .g = cell.content.color_rgb.g,
+                    .b = cell.content.color_rgb.b,
+                }),
+            }
+
+            // `style` is only meaningful when the cell carries a style id;
+            // the default-styled cells keep the defaults filled in above.
+            if (sel) |range| {
+                if (x >= range[0] and x <= range[1]) out.flags |= selected_flag;
+            }
+
+            if (cell.style_id != 0) {
+                if (resolveColor(self, style.fg_color)) |c| out.fg = c;
+                if (resolveColor(self, style.bg_color)) |c| out.bg = c;
+                out.flags = packFlags(style.flags);
+                if (style.flags.inverse) {
+                    const tmp = out.fg;
+                    out.fg = out.bg;
+                    out.bg = tmp;
+                }
+            }
+        }
+    }
+    return total;
+}
+
+/// Bit 12 of `RenderCell.flags`: the cell is inside the selection. It sits
+/// above the underline style, which occupies bits 8..11.
+const selected_flag: u16 = 1 << 12;
+
+fn packRgb(c: vt.color.RGB) u32 {
+    return (@as(u32, c.r) << 16) | (@as(u32, c.g) << 8) | @as(u32, c.b);
+}
+
+fn resolveColor(self: *RenderState, c: vt.Style.Color) ?u32 {
+    return switch (c) {
+        .none => null,
+        .palette => |i| packRgb(self.colors.palette[i]),
+        .rgb => |v| packRgb(v),
+    };
+}
+
+fn packFlags(f: anytype) u16 {
+    var out: u16 = 0;
+    if (f.bold) out |= 1 << 0;
+    if (f.italic) out |= 1 << 1;
+    if (f.faint) out |= 1 << 2;
+    if (f.blink) out |= 1 << 3;
+    if (f.inverse) out |= 1 << 4;
+    if (f.invisible) out |= 1 << 5;
+    if (f.strikethrough) out |= 1 << 6;
+    if (f.overline) out |= 1 << 7;
+    out |= @as(u16, @intFromEnum(f.underline)) << 8;
+    return out;
+}
+
+pub fn renderRows(self: *RenderState) u16 {
     return self.rows;
 }
 
-pub fn cursorX(self: *Terminal) u16 {
-    return self.screens.active.cursor.x;
+pub fn renderCols(self: *RenderState) u16 {
+    return self.cols;
 }
 
-pub fn cursorY(self: *Terminal) u16 {
-    return self.screens.active.cursor.y;
+/// The terminal's default background, 0xRRGGBB. Already reversed if the
+/// terminal is in reverse-video mode.
+pub fn renderBackground(self: *RenderState) u32 {
+    return packRgb(self.colors.background);
 }
 
-pub fn cursorStyle(self: *Terminal) CursorStyle {
-    return self.screens.active.cursor.cursor_style;
+pub fn renderForeground(self: *RenderState) u32 {
+    return packRgb(self.colors.foreground);
+}
+
+/// The cursor's column within the viewport, or false if it is scrolled out.
+pub fn renderCursorX(self: *RenderState) ?u16 {
+    const vp = self.cursor.viewport orelse return null;
+    return vp.x;
+}
+
+pub fn renderCursorY(self: *RenderState) ?u16 {
+    const vp = self.cursor.viewport orelse return null;
+    return vp.y;
+}
+
+/// Whether the terminal mode has the cursor shown at all.
+pub fn renderCursorVisible(self: *RenderState) bool {
+    return self.cursor.visible;
+}
+
+pub fn renderCursorStyle(self: *RenderState) CursorStyle {
+    return self.cursor.visual_style;
 }

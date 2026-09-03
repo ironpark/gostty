@@ -181,13 +181,30 @@ func (t *Terminal) zigoTakeLocked() (terminalCleanupState, bool) {
 
 // Stream is a caller-owned native handle. Call Close when it is no longer needed.
 type Stream struct {
-	ptr     unsafe.Pointer
-	mu      sync.Mutex
-	active  int
-	closed  bool
-	poison  *NativePanicError
-	parent  zigoChildHandle
-	cleanup runtime.Cleanup
+	ptr             unsafe.Pointer
+	mu              sync.Mutex
+	active          int
+	closed          bool
+	poison          *NativePanicError
+	parent          zigoChildHandle
+	callbackHandles []zigoCallbackHandle
+	cleanup         runtime.Cleanup
+}
+
+func (s *Stream) zigoCallbackHandle(slot int) zigoCallbackHandle {
+	s.mu.Lock()
+	handle := s.callbackHandles[slot]
+	s.mu.Unlock()
+	return handle
+}
+
+// zigoReplaceCallbackHandle swaps one generation-time callback slot under the handle lock.
+func (s *Stream) zigoReplaceCallbackHandle(slot int, handle zigoCallbackHandle) zigoCallbackHandle {
+	s.mu.Lock()
+	previous := s.callbackHandles[slot]
+	s.callbackHandles[slot] = handle
+	s.mu.Unlock()
+	return previous
 }
 
 // zigoAcquire pins s and its parent open for one native call.
@@ -272,13 +289,14 @@ func (s *Stream) ZigoRelease() { s.zigoRelease() }
 func (s *Stream) ZigoPoison(cause *NativePanicError) { s.zigoPoison(cause) }
 
 type streamCleanupState struct {
-	ptr    unsafe.Pointer
-	parent zigoChildHandle
+	ptr             unsafe.Pointer
+	parent          zigoChildHandle
+	callbackHandles []zigoCallbackHandle
 }
 
-func newStream(ptr unsafe.Pointer, parent zigoChildHandle) *Stream {
-	value := &Stream{ptr: ptr, parent: parent}
-	state := streamCleanupState{ptr: ptr, parent: parent}
+func newStream(ptr unsafe.Pointer, parent zigoChildHandle, callbackHandles []zigoCallbackHandle) *Stream {
+	value := &Stream{ptr: ptr, parent: parent, callbackHandles: callbackHandles}
+	state := streamCleanupState{ptr: ptr, parent: parent, callbackHandles: callbackHandles}
 	value.cleanup = runtime.AddCleanup(value, cleanupStream, state)
 	return value
 }
@@ -286,6 +304,9 @@ func newStream(ptr unsafe.Pointer, parent zigoChildHandle) *Stream {
 func cleanupStream(state streamCleanupState) {
 	if state.ptr != nil {
 		raw.StreamFreeStream(state.ptr)
+	}
+	for _, handle := range state.callbackHandles {
+		deleteCallbackHandle(handle)
 	}
 	if state.parent != nil {
 		state.parent.ZigoDropChild()
@@ -323,8 +344,9 @@ func (s *Stream) zigoTakeLocked() (streamCleanupState, bool) {
 	if !s.closed || s.active != 0 || s.ptr == nil {
 		return streamCleanupState{}, false
 	}
-	state := streamCleanupState{ptr: s.ptr, parent: s.parent}
+	state := streamCleanupState{ptr: s.ptr, callbackHandles: s.callbackHandles, parent: s.parent}
 	s.ptr = nil
+	s.callbackHandles = nil
 	s.parent = nil
 	if s.poison != nil {
 		state.ptr = nil
@@ -662,6 +684,128 @@ func (s *Search) zigoTakeLocked() (searchCleanupState, bool) {
 	s.ptr = nil
 	s.parent = nil
 	if s.poison != nil {
+		state.ptr = nil
+	}
+	return state, true
+}
+
+// RenderState is a caller-owned native handle. Call Close when it is no longer needed.
+type RenderState struct {
+	ptr     unsafe.Pointer
+	mu      sync.Mutex
+	active  int
+	closed  bool
+	poison  *NativePanicError
+	cleanup runtime.Cleanup
+}
+
+// zigoAcquire pins r open for one native call and hands back its pointer;
+// the call ends with zigoRelease. A nil, closed, or poisoned handle is the error.
+func (r *RenderState) zigoAcquire(operation string) (unsafe.Pointer, error) {
+	if r == nil {
+		return nil, &HandleError{Operation: operation}
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.closed || r.ptr == nil {
+		return nil, &HandleError{Operation: operation}
+	}
+	if r.poison != nil {
+		return nil, r.poison.Poisoned(operation)
+	}
+	r.active++
+	return r.ptr, nil
+}
+
+func (r *RenderState) zigoRelease() {
+	if r == nil {
+		return
+	}
+	r.mu.Lock()
+	r.active--
+	state, release := r.zigoTakeLocked()
+	r.mu.Unlock()
+	if release {
+		cleanupRenderState(state)
+	}
+}
+
+// zigoPoison marks r unusable: a Zig panic unwound through native frames
+// without running their defers, so the state behind it is unknown.
+func (r *RenderState) zigoPoison(cause *NativePanicError) {
+	if r == nil {
+		return
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.poison == nil {
+		r.poison = cause
+		r.cleanup.Stop()
+	}
+}
+
+// ZigoAcquire implements the shared lifecycle handle contract.
+func (r *RenderState) ZigoAcquire(operation string) (unsafe.Pointer, error) {
+	return r.zigoAcquire(operation)
+}
+
+// ZigoRelease implements the shared lifecycle handle contract.
+func (r *RenderState) ZigoRelease() { r.zigoRelease() }
+
+// ZigoPoison implements the shared lifecycle handle contract.
+func (r *RenderState) ZigoPoison(cause *NativePanicError) { r.zigoPoison(cause) }
+
+type renderStateCleanupState struct {
+	ptr unsafe.Pointer
+}
+
+func newRenderState(ptr unsafe.Pointer) *RenderState {
+	value := &RenderState{ptr: ptr}
+	state := renderStateCleanupState{ptr: ptr}
+	value.cleanup = runtime.AddCleanup(value, cleanupRenderState, state)
+	return value
+}
+
+func cleanupRenderState(state renderStateCleanupState) {
+	if state.ptr != nil {
+		raw.RenderStateFreeRenderState(state.ptr)
+	}
+}
+
+// Close releases the native RenderState resources. It is safe to call more than once.
+// The error result is always nil; it exists so RenderState satisfies io.Closer.
+// Close does not wait: a call still inside native keeps the resources until it
+// returns, and every call made after Close fails with *HandleError.
+func (r *RenderState) Close() error {
+	if r == nil {
+		return nil
+	}
+	r.mu.Lock()
+	if r.closed {
+		r.mu.Unlock()
+		return nil
+	}
+	r.closed = true
+	r.cleanup.Stop()
+	state, release := r.zigoTakeLocked()
+	r.mu.Unlock()
+	if release {
+		cleanupRenderState(state)
+	}
+	runtime.KeepAlive(r)
+	return nil
+}
+
+// zigoTakeLocked hands out what is left to release once r is closed and no
+// call is inside native; mu must be held. A poisoned handle keeps its native
+// object: releasing state a panic left half-changed could fault, so it leaks.
+func (r *RenderState) zigoTakeLocked() (renderStateCleanupState, bool) {
+	if !r.closed || r.active != 0 || r.ptr == nil {
+		return renderStateCleanupState{}, false
+	}
+	state := renderStateCleanupState{ptr: r.ptr}
+	r.ptr = nil
+	if r.poison != nil {
 		state.ptr = nil
 	}
 	return state, true

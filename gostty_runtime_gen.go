@@ -27,7 +27,9 @@ func zigoPoisonAfterPanic(err error, handles ...zigoHandle) error {
 }
 
 // ClipboardHandler is the Go callback signature accepted by the generated binding.
-type ClipboardHandler func() int32
+// Reentrancy: allowed; the callback may re-enter the binding while it is running.
+// Thread: caller; the callback runs on the thread that initiated the native call.
+type ClipboardHandler func()
 
 func boolToUint8(value bool) uint8 {
 	if value {
@@ -41,7 +43,7 @@ var activeCallbackHandles atomic.Int64
 type zigoCallbackHandle = cgo.Handle
 
 func newClipboardHandlerHandle(value ClipboardHandler) zigoCallbackHandle {
-	stored := (func() int32)(value)
+	stored := (func())(value)
 	handle := cgo.NewHandle(&raw.CallbackState{Fn: stored})
 	activeCallbackHandles.Add(1)
 	return handle
@@ -54,6 +56,9 @@ func newZigoWriterHandle(value io.Writer) zigoCallbackHandle {
 }
 
 func deleteCallbackHandle(handle zigoCallbackHandle) {
+	if handle == 0 {
+		return
+	}
 	handle.Delete()
 	activeCallbackHandles.Add(-1)
 }
@@ -64,6 +69,9 @@ func activeCallbackHandleCount() int64 { return activeCallbackHandles.Load() }
 // the native call that has just returned. The trampoline recovered it so the
 // native frames could unwind; the caller sees it as a *CallbackPanicError.
 func zigoRethrowCallbackPanic(operation string, handle zigoCallbackHandle) {
+	if handle == 0 {
+		return
+	}
 	if value, stack, ok := raw.TakeCallbackPanic(handle); ok {
 		panic(&CallbackPanicError{Operation: operation, Value: value, Stack: stack})
 	}

@@ -47,9 +47,10 @@ bench: build ## Run the benchmarks
 
 vet: build ## Run go vet
 	$(GO) vet ./...
+	cd example && $(GO) vet ./...
 
-example: build ## Run the example program
-	$(GO) run ./example
+example: build ## Run the example terminal emulator
+	cd example && $(GO) run .
 
 verify: ## Validate generated bindings, toolchain and native library
 	cd $(ZIG_DIR) && $(ZIG) build go-verify
@@ -59,6 +60,9 @@ check: ## Fail if the committed Go bindings are stale
 
 doctor: ## Check the Go binding toolchain prerequisites
 	cd $(ZIG_DIR) && $(ZIG) build go-doctor
+
+coverage: ## Report which public Zig declarations are bound
+	cd $(ZIG_DIR) && $(ZIG) build go-coverage
 
 report: ## Explain the effective Go binding contract
 	cd $(ZIG_DIR) && $(ZIG) build go-report

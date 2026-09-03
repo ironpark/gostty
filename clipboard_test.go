@@ -18,34 +18,33 @@ func TestClipboardWrite(t *testing.T) {
 	}
 	var got []capture
 
-	err := stream.OnClipboardWriteRequest(func() int32 {
+	err := stream.OnClipboardWriteRequest(func() {
 		loc, err := stream.ClipboardLocation()
 		if err != nil {
 			t.Errorf("ClipboardLocation: %v", err)
-			return 0
+			return
 		}
 		n, err := stream.ClipboardContentCount()
 		if err != nil {
 			t.Errorf("ClipboardContentCount: %v", err)
-			return 0
+			return
 		}
 		for i := uint(0); i < n; i++ {
 			mime, err := stream.ClipboardContentMime(i)
 			if err != nil {
 				t.Errorf("ClipboardContentMime: %v", err)
-				return 0
+				return
 			}
 			data, err := stream.ClipboardContentData(i)
 			if err != nil {
 				t.Errorf("ClipboardContentData: %v", err)
-				return 0
+				return
 			}
 			got = append(got, capture{loc, string(mime), string(data)})
 		}
 		if err := stream.AllowClipboard(false); err != nil {
 			t.Errorf("AllowClipboard: %v", err)
 		}
-		return 0
 	})
 	if err != nil {
 		t.Fatalf("OnClipboardWriteRequest: %v", err)
@@ -73,7 +72,7 @@ func TestClipboardRead(t *testing.T) {
 	term, stream := newStreamPair(t, 40, 3)
 
 	called := 0
-	err := stream.OnClipboardReadRequest(func() int32 {
+	err := stream.OnClipboardReadRequest(func() {
 		called++
 		if n, err := stream.ClipboardMimeCount(); err != nil || n == 0 {
 			t.Errorf("ClipboardMimeCount() = %d, %v; want at least one", n, err)
@@ -81,7 +80,6 @@ func TestClipboardRead(t *testing.T) {
 		if err := stream.ReplyClipboardText([]byte("from go"), false); err != nil {
 			t.Errorf("ReplyClipboardText: %v", err)
 		}
-		return 0
 	})
 	if err != nil {
 		t.Fatalf("OnClipboardReadRequest: %v", err)
@@ -113,7 +111,7 @@ func TestClipboardDenied(t *testing.T) {
 	}
 
 	silent := 0
-	if err := stream.OnClipboardWriteRequest(func() int32 { silent++; return 0 }); err != nil {
+	if err := stream.OnClipboardWriteRequest(func() { silent++ }); err != nil {
 		t.Fatalf("OnClipboardWriteRequest: %v", err)
 	}
 	feed(t, stream, "\x1b]52;c;"+payload+"\x07")
@@ -121,11 +119,10 @@ func TestClipboardDenied(t *testing.T) {
 		t.Errorf("callback ran %d times, want 1", silent)
 	}
 
-	if err := stream.OnClipboardWriteRequest(func() int32 {
+	if err := stream.OnClipboardWriteRequest(func() {
 		if err := stream.DenyClipboard(ClipboardDenialUnsupported); err != nil {
 			t.Errorf("DenyClipboard: %v", err)
 		}
-		return 0
 	}); err != nil {
 		t.Fatalf("OnClipboardWriteRequest: %v", err)
 	}
@@ -143,5 +140,45 @@ func TestClipboardAccessorsOutsideCallback(t *testing.T) {
 	}
 	if err := stream.AllowClipboard(false); err != nil {
 		t.Errorf("AllowClipboard() with nothing pending: %v", err)
+	}
+}
+
+// A retained callback is owned by the handle it was registered on: registering
+// again replaces it, and Close releases whatever is left. Without that, every
+// registration would strand a cgo.Handle and the Go closure behind it for the
+// life of the process.
+func TestClipboardCallbackHandlesAreReleased(t *testing.T) {
+	before := activeCallbackHandleCount()
+
+	func() {
+		term, err := NewTerminal(20, 3)
+		if err != nil {
+			t.Fatalf("NewTerminal: %v", err)
+		}
+		defer term.Close()
+		stream, err := term.NewStream(0)
+		if err != nil {
+			t.Fatalf("NewStream: %v", err)
+		}
+		defer stream.Close()
+
+		for i := 0; i < 5; i++ {
+			if err := stream.OnClipboardWriteRequest(func() {}); err != nil {
+				t.Fatalf("OnClipboardWriteRequest: %v", err)
+			}
+			if got, want := activeCallbackHandleCount(), before+1; got != want {
+				t.Fatalf("after %d registrations, %d handles live, want %d", i+1, got, want)
+			}
+		}
+		if err := stream.OnClipboardReadRequest(func() {}); err != nil {
+			t.Fatalf("OnClipboardReadRequest: %v", err)
+		}
+		if got, want := activeCallbackHandleCount(), before+2; got != want {
+			t.Fatalf("two slots live = %d, want %d", got, want)
+		}
+	}()
+
+	if got := activeCallbackHandleCount(); got != before {
+		t.Errorf("after Close, %d handles live, want %d", got, before)
 	}
 }

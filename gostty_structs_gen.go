@@ -2,6 +2,69 @@
 
 package gostty
 
+import (
+	"unsafe"
+
+	"github.com/ironpark/gostty/internal/raw"
+)
+
+// RenderCell mirrors the Zig `extern struct` of the same name.
+type RenderCell struct {
+	// Codepoint corresponds to the Zig field codepoint.
+	Codepoint uint32
+	// Fg corresponds to the Zig field fg.
+	Fg uint32
+	// Bg corresponds to the Zig field bg.
+	Bg uint32
+	// Flags corresponds to the Zig field flags.
+	Flags uint16
+	// Wide corresponds to the Zig field wide.
+	Wide uint8
+	// Pad corresponds to the Zig field _pad.
+	Pad uint8
+}
+
+// RenderCell is reinterpreted as raw.RenderCellData instead of copied, so the two
+// layouts must stay identical.
+var _ = [1]struct{}{}[unsafe.Sizeof(RenderCell{})-unsafe.Sizeof(raw.RenderCellData{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderCell{}.Codepoint)-unsafe.Offsetof(raw.RenderCellData{}.Codepoint)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderCell{}.Fg)-unsafe.Offsetof(raw.RenderCellData{}.Fg)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderCell{}.Bg)-unsafe.Offsetof(raw.RenderCellData{}.Bg)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderCell{}.Flags)-unsafe.Offsetof(raw.RenderCellData{}.Flags)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderCell{}.Wide)-unsafe.Offsetof(raw.RenderCellData{}.Wide)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderCell{}.Pad)-unsafe.Offsetof(raw.RenderCellData{}.Pad)]
+
+func zigoRenderCellToRaw(value RenderCell) raw.RenderCellData {
+	return raw.RenderCellData{
+		Codepoint: value.Codepoint,
+		Fg:        value.Fg,
+		Bg:        value.Bg,
+		Flags:     value.Flags,
+		Wide:      value.Wide,
+		Pad:       value.Pad,
+	}
+}
+
+func zigoRenderCellFromRaw(value raw.RenderCellData) RenderCell {
+	return RenderCell{
+		Codepoint: value.Codepoint,
+		Fg:        value.Fg,
+		Bg:        value.Bg,
+		Flags:     value.Flags,
+		Wide:      value.Wide,
+		Pad:       value.Pad,
+	}
+}
+
+// zigoRenderCellSliceView reinterprets a slice the raw layer already owns as
+// []RenderCell without copying it again.
+func zigoRenderCellSliceView(values []raw.RenderCellData) []RenderCell {
+	if len(values) == 0 {
+		return nil
+	}
+	return unsafe.Slice((*RenderCell)(unsafe.Pointer(&values[0])), len(values))
+}
+
 // Attribute is a tagged-union value passed to native code by copy.
 type Attribute struct {
 	tag               AttributeTag

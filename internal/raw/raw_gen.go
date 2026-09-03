@@ -102,29 +102,62 @@ func zg_zigo_stream_write(p0 *C.uint8_t, p1 C.size_t, p2 C.size_t) (result C.int
 }
 
 //export zg_stream_on_clipboard_write_request_go_callback_callback
-func zg_stream_on_clipboard_write_request_go_callback_callback(p0 C.size_t) (result C.int32_t) {
+func zg_stream_on_clipboard_write_request_go_callback_callback(p0 C.size_t) {
 	state := cgo.Handle(p0).Value().(*CallbackState)
 	defer func() {
 		if value := recover(); value != nil {
 			state.record(value)
-			result = C.int32_t(-3)
 		}
 	}()
-	callback := state.Fn.(func() int32)
-	return C.int32_t(callback())
+	callback := state.Fn.(func())
+	callback()
 }
 
 //export zg_stream_on_clipboard_read_request_go_callback_callback
-func zg_stream_on_clipboard_read_request_go_callback_callback(p0 C.size_t) (result C.int32_t) {
+func zg_stream_on_clipboard_read_request_go_callback_callback(p0 C.size_t) {
 	state := cgo.Handle(p0).Value().(*CallbackState)
 	defer func() {
 		if value := recover(); value != nil {
 			state.record(value)
-			result = C.int32_t(-3)
 		}
 	}()
-	callback := state.Fn.(func() int32)
-	return C.int32_t(callback())
+	callback := state.Fn.(func())
+	callback()
+}
+
+// TerminalCols calls the generated C ABI wrapper for zg_terminal_cols.
+func TerminalCols(self unsafe.Pointer) (uint16, int32) {
+	var outResult C.uint16_t
+	code := int32(C.zg_terminal_cols((*C.zg_terminal)(self), &outResult))
+	return uint16(outResult), code
+}
+
+// TerminalRows calls the generated C ABI wrapper for zg_terminal_rows.
+func TerminalRows(self unsafe.Pointer) (uint16, int32) {
+	var outResult C.uint16_t
+	code := int32(C.zg_terminal_rows((*C.zg_terminal)(self), &outResult))
+	return uint16(outResult), code
+}
+
+// TerminalCursorX calls the generated C ABI wrapper for zg_terminal_cursor_x.
+func TerminalCursorX(self unsafe.Pointer) (uint16, int32) {
+	var outResult C.uint16_t
+	code := int32(C.zg_terminal_cursor_x((*C.zg_terminal)(self), &outResult))
+	return uint16(outResult), code
+}
+
+// TerminalCursorY calls the generated C ABI wrapper for zg_terminal_cursor_y.
+func TerminalCursorY(self unsafe.Pointer) (uint16, int32) {
+	var outResult C.uint16_t
+	code := int32(C.zg_terminal_cursor_y((*C.zg_terminal)(self), &outResult))
+	return uint16(outResult), code
+}
+
+// TerminalCursorStyle calls the generated C ABI wrapper for zg_terminal_cursor_style.
+func TerminalCursorStyle(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_terminal_cursor_style((*C.zg_terminal)(self), &outResult))
+	return uint8(outResult), code
 }
 
 // UnicodeCodepointWidth calls the generated C ABI wrapper for zg_unicode_codepoint_width.
@@ -643,6 +676,32 @@ func ScreenHasSelection(self unsafe.Pointer) (uint8, int32) {
 	return uint8(outResult), code
 }
 
+// ScreenSelectRange calls the generated C ABI wrapper for zg_screen_select_range.
+func ScreenSelectRange(self unsafe.Pointer, x1 uint16, y1 uint16, x2 uint16, y2 uint16, rectangle uint8) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_screen_select_range((*C.zg_screen)(self), C.uint16_t(x1), C.uint16_t(y1), C.uint16_t(x2), C.uint16_t(y2), C.uint8_t(rectangle), &outResult))
+	return uint8(outResult), code
+}
+
+// ScreenSelectionString calls the generated C ABI wrapper for zg_screen_selection_string.
+func ScreenSelectionString(self unsafe.Pointer) ([]uint8, bool, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_screen_selection_string((*C.zg_screen)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return nil, false, code
+	}
+	if outResultPtr == nil {
+		return nil, false, code
+	}
+	var result []uint8
+	if outResultLen != 0 {
+		result = C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen))
+	}
+	C.zg_free_string(outResultPtr, outResultLen)
+	return result, true, code
+}
+
 // ScreenNewSearch calls the generated C ABI wrapper for zg_screen_new_search.
 func ScreenNewSearch(self unsafe.Pointer, needle []uint8) (unsafe.Pointer, int32) {
 	var needleZero C.uint8_t
@@ -679,25 +738,6 @@ func SearchSelect(self unsafe.Pointer, to uint8) (uint8, int32) {
 	var outResult C.uint8_t
 	code := int32(C.zg_search_select((*C.zg_search)(self), C.uint8_t(to), &outResult))
 	return uint8(outResult), code
-}
-
-// ScreenSelectionString calls the generated C ABI wrapper for zg_screen_selection_string.
-func ScreenSelectionString(self unsafe.Pointer) ([]uint8, bool, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_screen_selection_string((*C.zg_screen)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return nil, false, code
-	}
-	if outResultPtr == nil {
-		return nil, false, code
-	}
-	var result []uint8
-	if outResultLen != 0 {
-		result = C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen))
-	}
-	C.zg_free_string(outResultPtr, outResultLen)
-	return result, true, code
 }
 
 // TerminalPrintAttributesInto calls the generated C ABI wrapper for zg_terminal_print_attributes_into.
@@ -1074,38 +1114,99 @@ func TerminalResize(self unsafe.Pointer, width uint16, height uint16) int32 {
 	return code
 }
 
-// TerminalCols calls the generated C ABI wrapper for zg_terminal_cols.
-func TerminalCols(self unsafe.Pointer) (uint16, int32) {
+// NewRenderState calls the generated C ABI wrapper for zg_new_render_state.
+func NewRenderState() (unsafe.Pointer, int32) {
+	var outResult *C.zg_render_state
+	code := int32(C.zg_new_render_state(&outResult))
+	return unsafe.Pointer(outResult), code
+}
+
+// RenderStateFreeRenderState calls the generated C ABI wrapper for zg_render_state_free_render_state.
+func RenderStateFreeRenderState(self unsafe.Pointer) int32 {
+	code := int32(C.zg_render_state_free_render_state((*C.zg_render_state)(self)))
+	return code
+}
+
+// RenderStateUpdate calls the generated C ABI wrapper for zg_render_state_update.
+func RenderStateUpdate(self unsafe.Pointer, term unsafe.Pointer) int32 {
+	code := int32(C.zg_render_state_update((*C.zg_render_state)(self), (*C.zg_terminal)(term)))
+	return code
+}
+
+// RenderStateCellCount calls the generated C ABI wrapper for zg_render_state_cell_count.
+func RenderStateCellCount(self unsafe.Pointer) (uint, int32) {
+	var outResult C.size_t
+	code := int32(C.zg_render_state_cell_count((*C.zg_render_state)(self), &outResult))
+	return uint(outResult), code
+}
+
+// RenderStateCells calls the generated C ABI wrapper for zg_render_state_cells.
+func RenderStateCells(self unsafe.Pointer, dst []RenderCellData) (uint, int32) {
+	var dstZero C.zg_render_cell
+	dstPtr := &dstZero
+	if len(dst) != 0 {
+		dstPtr = (*C.zg_render_cell)(unsafe.Pointer(&dst[0]))
+	}
+	var outResult C.size_t
+	code := int32(C.zg_render_state_cells((*C.zg_render_state)(self), dstPtr, C.size_t(len(dst)), &outResult))
+	return uint(outResult), code
+}
+
+// RenderStateRows calls the generated C ABI wrapper for zg_render_state_rows.
+func RenderStateRows(self unsafe.Pointer) (uint16, int32) {
 	var outResult C.uint16_t
-	code := int32(C.zg_terminal_cols((*C.zg_terminal)(self), &outResult))
+	code := int32(C.zg_render_state_rows((*C.zg_render_state)(self), &outResult))
 	return uint16(outResult), code
 }
 
-// TerminalRows calls the generated C ABI wrapper for zg_terminal_rows.
-func TerminalRows(self unsafe.Pointer) (uint16, int32) {
+// RenderStateCols calls the generated C ABI wrapper for zg_render_state_cols.
+func RenderStateCols(self unsafe.Pointer) (uint16, int32) {
 	var outResult C.uint16_t
-	code := int32(C.zg_terminal_rows((*C.zg_terminal)(self), &outResult))
+	code := int32(C.zg_render_state_cols((*C.zg_render_state)(self), &outResult))
 	return uint16(outResult), code
 }
 
-// TerminalCursorX calls the generated C ABI wrapper for zg_terminal_cursor_x.
-func TerminalCursorX(self unsafe.Pointer) (uint16, int32) {
-	var outResult C.uint16_t
-	code := int32(C.zg_terminal_cursor_x((*C.zg_terminal)(self), &outResult))
-	return uint16(outResult), code
+// RenderStateBackground calls the generated C ABI wrapper for zg_render_state_background.
+func RenderStateBackground(self unsafe.Pointer) (uint32, int32) {
+	var outResult C.uint32_t
+	code := int32(C.zg_render_state_background((*C.zg_render_state)(self), &outResult))
+	return uint32(outResult), code
 }
 
-// TerminalCursorY calls the generated C ABI wrapper for zg_terminal_cursor_y.
-func TerminalCursorY(self unsafe.Pointer) (uint16, int32) {
-	var outResult C.uint16_t
-	code := int32(C.zg_terminal_cursor_y((*C.zg_terminal)(self), &outResult))
-	return uint16(outResult), code
+// RenderStateForeground calls the generated C ABI wrapper for zg_render_state_foreground.
+func RenderStateForeground(self unsafe.Pointer) (uint32, int32) {
+	var outResult C.uint32_t
+	code := int32(C.zg_render_state_foreground((*C.zg_render_state)(self), &outResult))
+	return uint32(outResult), code
 }
 
-// TerminalCursorStyle calls the generated C ABI wrapper for zg_terminal_cursor_style.
-func TerminalCursorStyle(self unsafe.Pointer) (uint8, int32) {
+// RenderStateCursorX calls the generated C ABI wrapper for zg_render_state_cursor_x.
+func RenderStateCursorX(self unsafe.Pointer) (uint16, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.uint16_t
+	code := int32(C.zg_render_state_cursor_x((*C.zg_render_state)(self), &outResultHas, &outResult))
+	return uint16(outResult), outResultHas != 0, code
+}
+
+// RenderStateCursorY calls the generated C ABI wrapper for zg_render_state_cursor_y.
+func RenderStateCursorY(self unsafe.Pointer) (uint16, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.uint16_t
+	code := int32(C.zg_render_state_cursor_y((*C.zg_render_state)(self), &outResultHas, &outResult))
+	return uint16(outResult), outResultHas != 0, code
+}
+
+// RenderStateCursorVisible calls the generated C ABI wrapper for zg_render_state_cursor_visible.
+func RenderStateCursorVisible(self unsafe.Pointer) (uint8, int32) {
 	var outResult C.uint8_t
-	code := int32(C.zg_terminal_cursor_style((*C.zg_terminal)(self), &outResult))
+	code := int32(C.zg_render_state_cursor_visible((*C.zg_render_state)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// RenderStateCursorStyle calls the generated C ABI wrapper for zg_render_state_cursor_style.
+func RenderStateCursorStyle(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_render_state_cursor_style((*C.zg_render_state)(self), &outResult))
 	return uint8(outResult), code
 }
 
@@ -1121,6 +1222,16 @@ type RenderSizeData struct {
 	PaddingLeft   uint32
 }
 
+// RenderCellData mirrors the zg_render_cell layout, padding included.
+type RenderCellData struct {
+	Codepoint uint32
+	Fg        uint32
+	Bg        uint32
+	Flags     uint16
+	Wide      uint8
+	Pad       uint8
+}
+
 // RenderSizeData crosses to C as a cast, so it must match zg_render_size byte for byte.
 var _ = [1]struct{}{}[unsafe.Sizeof(RenderSizeData{})-unsafe.Sizeof(C.zg_render_size{})]
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.ScreenWidth)-unsafe.Offsetof(C.zg_render_size{}.screen_width)]
@@ -1131,3 +1242,12 @@ var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.PaddingTop)-unsafe.Offset
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.PaddingBottom)-unsafe.Offsetof(C.zg_render_size{}.padding_bottom)]
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.PaddingRight)-unsafe.Offsetof(C.zg_render_size{}.padding_right)]
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.PaddingLeft)-unsafe.Offsetof(C.zg_render_size{}.padding_left)]
+
+// RenderCellData crosses to C as a cast, so it must match zg_render_cell byte for byte.
+var _ = [1]struct{}{}[unsafe.Sizeof(RenderCellData{})-unsafe.Sizeof(C.zg_render_cell{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Codepoint)-unsafe.Offsetof(C.zg_render_cell{}.codepoint)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Fg)-unsafe.Offsetof(C.zg_render_cell{}.fg)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Bg)-unsafe.Offsetof(C.zg_render_cell{}.bg)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Flags)-unsafe.Offsetof(C.zg_render_cell{}.flags)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Wide)-unsafe.Offsetof(C.zg_render_cell{}.wide)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Pad)-unsafe.Offsetof(C.zg_render_cell{}._pad)]
