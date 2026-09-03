@@ -53,17 +53,26 @@ input.EncodeKey(&buf, term, ev) // "\x1b[A", or "\x1bOA" under DECCKM
 
 ## Layout
 
-| Path | Contents |
-|---|---|
-| `*_gen.go` | The public Go package, at the module root. Generated; do not edit. |
-| `input/` | Key, mouse, focus and paste encoding. Generated. |
-| `internal/raw/` | Generated cgo call layer. Not part of the supported API. `zigo_link_inputs_gen.go` there is machine-local and not committed. |
-| `zig/build.zig` | Build definition: ghostty dependency, zigo wiring, link fixups. |
-| `zig/src/bindings.zig` | What is exposed to Go. |
-| `zig/src/root.zig` | The few declarations ghostty does not provide and zigo needs. |
-| `zig/zigo/` | Generated metadata (`semantic.json`, `errors.lock.json`). |
-| `docs/` | Working notes: zigo gaps found by building this, binding decisions, benchmarks. Not committed. |
-| `example/` | A GUI terminal emulator. Its own Go module, so the root stays dependency-free. |
+```text
+.
+├── gostty_*_gen.go       # Public functions, handles, enums, structs, errors
+├── *_test.go             # The module's only hand-written Go files
+├── input/                # Key, mouse, focus, and paste encoding package
+├── internal/
+│   ├── lifecycle/        # Handle and error contract shared by cgo and purego
+│   └── raw/              # Unsupported internal cgo call layer
+├── zig/
+│   ├── build.zig         # Ghostty dependency, zigo wiring, link fixups
+│   ├── src/
+│   │   ├── bindings.zig  # Exported Go API; edit this to change it
+│   │   └── root.zig      # Declarations Ghostty does not provide
+│   └── zigo/
+│       ├── semantic.json     # ABI description consumed by abi-diff
+│       └── errors.lock.json  # Stable numeric codes for Zig errors
+├── example/              # GUI terminal emulator in a separate Go module
+├── docs/                 # Ignored, uncommitted working notes
+└── Makefile              # Toolchain entry point; `make help` lists targets
+```
 
 The public package sits at the module root, so `gostty_*_gen.go` names are
 reserved for the generator: a hand-written file with one of those names would be
