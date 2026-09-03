@@ -24,6 +24,7 @@ import (
 
 	"github.com/creack/pty"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/ironpark/gostty"
 	"github.com/ironpark/gostty/input"
 	"golang.design/x/clipboard"
@@ -86,20 +87,36 @@ type game struct {
 	// The pixel side.
 	fonts      *fontSet
 	cols, rows int
-	bg         color.RGBA
+	bg, fg     color.RGBA
+	cursor     cursorState
 	bell       int
+	drawOp     text.DrawOptions
 
 	// The clipboard. The system one when it is available; otherwise a
 	// process-local buffer, which at least lets OSC 52 and paste agree.
 	clipboard       []byte
 	systemClipboard bool
 
-	sel  selection
-	keys keyState
-	out  []byte
+	sel selection
+
+	// Per-frame input scratch, reused so a keystroke allocates nothing.
+	chars   []rune
+	pressed []ebiten.Key
+	utf8    []byte
+	out     []byte
+	enc     outputWriter
+}
+
+// cursorState is what Draw needs to paint the cursor, read once per frame.
+type cursorState struct {
+	x, y    uint16
+	visible bool
+	style   gostty.CursorStyle
 }
 
 func (g *game) start() error {
+	g.enc = outputWriter{g: g}
+
 	var err error
 	if g.vt, err = gostty.NewTerminal(uint16(g.cols), uint16(g.rows)); err != nil {
 		return err
@@ -170,12 +187,12 @@ func (g *game) close() {
 	if g.ptmx != nil {
 		g.ptmx.Close()
 	}
-	// Reverse construction order; the stream is a child of the terminal.
-	for _, h := range []interface{ Close() error }{g.ev, g.state, g.stream, g.vt} {
-		if h != nil {
-			_ = h.Close()
-		}
-	}
+	// Reverse construction order; the stream is a child of the terminal, and
+	// closing the terminal first would be refused.
+	_ = g.ev.Close()
+	_ = g.state.Close()
+	_ = g.stream.Close()
+	_ = g.vt.Close()
 }
 
 // Update advances the emulator by one frame: bytes in from the shell, the
@@ -203,11 +220,13 @@ func (g *game) Update() error {
 		}
 	}
 	// Input before the refresh, so a selection made this frame is drawn this
-	// frame rather than one behind.
-	if err := g.handleMouse(); err != nil {
+	// frame rather than one behind. The modifier state is read once and shared:
+	// the mouse needs Alt for block selection and the keyboard needs all four.
+	m := currentMods()
+	if err := g.handleMouse(m); err != nil {
 		return err
 	}
-	if err := g.handleInput(); err != nil {
+	if err := g.handleInput(m); err != nil {
 		return err
 	}
 	return g.refresh()
@@ -259,6 +278,35 @@ func (g *game) refresh() error {
 		return err
 	}
 	g.bg = rgb(bg)
+	fg, err := g.state.Foreground()
+	if err != nil {
+		return err
+	}
+	g.fg = rgb(fg)
+	return g.refreshCursor()
+}
+
+// refreshCursor reads the cursor out of the render state, so Draw does not have
+// to reach across the boundary from a place that cannot report a failure.
+func (g *game) refreshCursor() error {
+	visible, err := g.state.CursorVisible()
+	if err != nil {
+		return err
+	}
+	x, onScreen, err := g.state.CursorX()
+	if err != nil {
+		return err
+	}
+	y, _, err := g.state.CursorY()
+	if err != nil {
+		return err
+	}
+	style, err := g.state.CursorStyle()
+	if err != nil {
+		return err
+	}
+	// `onScreen` is false when the viewport has been scrolled away from it.
+	g.cursor = cursorState{x: x, y: y, visible: visible && onScreen, style: style}
 	return nil
 }
 
@@ -267,13 +315,23 @@ func (g *game) Layout(outsideWidth, outsideHeight int) (int, int) {
 	cols := max(int(float64(outsideWidth)/g.fonts.cellW), 1)
 	rows := max(int(float64(outsideHeight)/g.fonts.cellH), 1)
 	if cols != g.cols || rows != g.rows {
-		g.cols, g.rows = cols, rows
-		if err := g.vt.Resize(uint16(cols), uint16(rows)); err != nil {
-			log.Printf("resize: %v", err)
+		if err := g.resize(cols, rows); err != nil {
+			// Layout cannot fail, and a terminal at the wrong size is better
+			// than no terminal, so this is reported and the frame goes on.
+			log.Printf("resize to %dx%d: %v", cols, rows, err)
 		}
-		_ = pty.Setsize(g.ptmx, &pty.Winsize{Cols: uint16(cols), Rows: uint16(rows)})
 	}
 	return outsideWidth, outsideHeight
+}
+
+// resize moves the emulated screen and the pty together. They have to agree:
+// the program asks the pty how big it is and writes for the terminal.
+func (g *game) resize(cols, rows int) error {
+	g.cols, g.rows = cols, rows
+	if err := g.vt.Resize(uint16(cols), uint16(rows)); err != nil {
+		return err
+	}
+	return pty.Setsize(g.ptmx, &pty.Winsize{Cols: uint16(cols), Rows: uint16(rows)})
 }
 
 func rgb(v uint32) color.RGBA {

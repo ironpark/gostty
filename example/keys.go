@@ -1,23 +1,20 @@
 package main
 
 import (
-	"time"
+	"unicode/utf8"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/ironpark/gostty/input"
 )
 
-// Key repeat, since Ebitengine reports state rather than repeats.
+// Key repeat, in ticks, since Ebitengine reports how long a key has been held
+// rather than repeats. The default tick rate is 60Hz, so this is 0.4s then 30
+// times a second.
 const (
-	repeatDelay    = 400 * time.Millisecond
-	repeatInterval = 33 * time.Millisecond
+	repeatDelayTicks    = 24
+	repeatIntervalTicks = 2
 )
-
-type keyState struct {
-	held map[ebiten.Key]time.Time
-	next map[ebiten.Key]time.Time
-}
 
 // handleInput turns this frame's keyboard state into bytes for the pty.
 //
@@ -25,18 +22,12 @@ type keyState struct {
 // wire depends on modes the running program has set (DECCKM, the Kitty keyboard
 // protocol, bracketed paste). `input.EncodeKey` reads those modes off the
 // terminal, so this only has to describe which key was pressed.
-func (g *game) handleInput() error {
-	if g.keys.held == nil {
-		g.keys.held = map[ebiten.Key]time.Time{}
-		g.keys.next = map[ebiten.Key]time.Time{}
-	}
-	now := time.Now()
-	mods := currentMods()
+func (g *game) handleInput(m mods) error {
 	g.out = g.out[:0]
 
 	// Copy and paste are the two bindings this emulator keeps for itself.
 	// Ctrl+Shift+C/V, or Cmd+C/V where that is the convention.
-	if (mods.ctrl && mods.shift) || mods.super {
+	if (m.ctrl && m.shift) || m.super {
 		switch {
 		case inpututil.IsKeyJustPressed(ebiten.KeyC):
 			return g.copySelection()
@@ -55,38 +46,33 @@ func (g *game) handleInput() error {
 	// Text first: a rune the platform produced already accounts for the layout,
 	// dead keys and IME. Only when a modifier makes it text-less do we fall
 	// back to describing the physical key.
-	if !mods.ctrl && !mods.alt && !mods.super {
-		for _, r := range ebiten.AppendInputChars(nil) {
-			if err := g.sendKey(input.KeyUnidentified, string(r), mods); err != nil {
+	if !m.ctrl && !m.alt && !m.super {
+		g.chars = ebiten.AppendInputChars(g.chars[:0])
+		for _, r := range g.chars {
+			g.utf8 = utf8.AppendRune(g.utf8[:0], r)
+			if err := g.sendKey(input.KeyUnidentified, g.utf8, m); err != nil {
 				return err
 			}
 		}
 	}
 
-	for key, code := range keyMap {
-		switch {
-		case inpututil.IsKeyJustPressed(key):
-			g.keys.held[key] = now
-			g.keys.next[key] = now.Add(repeatDelay)
-		case !ebiten.IsKeyPressed(key):
-			delete(g.keys.held, key)
+	g.pressed = inpututil.AppendPressedKeys(g.pressed[:0])
+	for _, key := range g.pressed {
+		held := inpututil.KeyPressDuration(key)
+		if code, ok := keyMap[key]; ok {
+			if repeating(held) {
+				if err := g.sendKey(code, nil, m); err != nil {
+					return err
+				}
+			}
 			continue
-		case now.Before(g.keys.next[key]):
-			continue
-		default:
-			g.keys.next[key] = now.Add(repeatInterval)
 		}
-		if err := g.sendKey(code, "", mods); err != nil {
-			return err
-		}
-	}
-
-	// Letters and digits produce text on their own, so they are only described
-	// as keys when a modifier swallowed the text.
-	if mods.ctrl || mods.alt || mods.super {
-		for key, code := range modifiedMap {
-			if inpututil.IsKeyJustPressed(key) {
-				if err := g.sendKey(code, "", mods); err != nil {
+		// Letters and digits produce text on their own, so they are only
+		// described as keys when a modifier swallowed the text. They do not
+		// repeat: Ctrl+C held down should interrupt once.
+		if held == 1 && (m.ctrl || m.alt || m.super) {
+			if code, ok := modifiedMap[key]; ok {
+				if err := g.sendKey(code, nil, m); err != nil {
 					return err
 				}
 			}
@@ -99,6 +85,17 @@ func (g *game) handleInput() error {
 		}
 	}
 	return nil
+}
+
+// repeating reports whether a key held for this many ticks should fire now.
+func repeating(held int) bool {
+	if held == 1 {
+		return true
+	}
+	if held <= repeatDelayTicks {
+		return false
+	}
+	return (held-repeatDelayTicks)%repeatIntervalTicks == 0
 }
 
 type mods struct{ shift, ctrl, alt, super bool }
@@ -114,7 +111,7 @@ func currentMods() mods {
 
 // sendKey describes one key press to the binding and appends whatever it
 // encodes to this frame's output.
-func (g *game) sendKey(key input.Key, text string, m mods) error {
+func (g *game) sendKey(key input.Key, text []byte, m mods) error {
 	if err := g.ev.Reset(); err != nil {
 		return err
 	}
@@ -124,38 +121,36 @@ func (g *game) sendKey(key input.Key, text string, m mods) error {
 	if err := g.ev.SetKey(key); err != nil {
 		return err
 	}
-	if text != "" {
-		if err := g.ev.SetUTF8([]byte(text)); err != nil {
+	if len(text) > 0 {
+		if err := g.ev.SetUTF8(text); err != nil {
 			return err
 		}
 	}
-	for mod, on := range map[input.KeyMod]bool{
-		input.KeyModShift: m.shift,
-		input.KeyModCtrl:  m.ctrl,
-		input.KeyModAlt:   m.alt,
-		input.KeyModSuper: m.super,
+	for _, set := range [...]struct {
+		mod input.KeyMod
+		on  bool
+	}{
+		{input.KeyModShift, m.shift},
+		{input.KeyModCtrl, m.ctrl},
+		{input.KeyModAlt, m.alt},
+		{input.KeyModSuper, m.super},
 	} {
-		if on {
-			if err := g.ev.SetMod(mod, true); err != nil {
+		if set.on {
+			if err := g.ev.SetMod(set.mod, true); err != nil {
 				return err
 			}
 		}
 	}
-
-	var buf appender
-	if err := input.EncodeKey(&buf, g.vt, g.ev); err != nil {
-		return err
-	}
-	g.out = append(g.out, buf...)
-	return nil
+	return input.EncodeKey(g.enc, g.vt, g.ev)
 }
 
-// appender is an io.Writer over a byte slice; EncodeKey writes at most a few
-// bytes and a bytes.Buffer per keystroke is more machinery than that deserves.
-type appender []byte
+// outputWriter appends to the frame's output buffer. EncodeKey writes at most a
+// few bytes and a bytes.Buffer per keystroke is more machinery than that
+// deserves; one of these lives on the game so nothing is allocated per key.
+type outputWriter struct{ g *game }
 
-func (a *appender) Write(p []byte) (int, error) {
-	*a = append(*a, p...)
+func (w outputWriter) Write(p []byte) (int, error) {
+	w.g.out = append(w.g.out, p...)
 	return len(p), nil
 }
 

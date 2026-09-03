@@ -10,11 +10,15 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
-// The size of the monospace face, in pixels. The cell is derived from it.
-const fontSize = 14
+const (
+	// The size of the monospace face, in pixels. The cell is derived from it.
+	fontSize = 14
+	// The bitmap fallback is drawn at this integer scale, unfiltered.
+	bitmapScale = 2
+)
 
-// fontSet is the pair of faces the grid is drawn with: one for the single-width
-// cells and one for the double-width ones.
+// fontSet is the pair of faces the grid is drawn with, plus every measurement
+// derived from them. The drawing code reads these fields; it does not measure.
 //
 // Two faces rather than a fallback chain because the terminal has already
 // decided how many columns each character gets. Picking the face from that
@@ -28,7 +32,13 @@ type fontSet struct {
 	// to sit centred in its two columns.
 	wideDX, wideDY float64
 
+	// Whole-number scale for the bitmap fallback; 1 for a scalable face.
+	scale float64
+
 	cellW, cellH float64
+
+	// Where the decorations the font does not draw go.
+	lineH, underlineY, underline2Y, strikeY float64
 }
 
 // loadFonts picks the system monospace font and a companion for the wide
@@ -44,50 +54,40 @@ func loadFonts() (*fontSet, error) {
 	}
 
 	narrow := &text.GoTextFace{Source: narrowSrc, Size: fontSize}
-	// A terminal grid wants whole pixels; a fractional advance would let the
-	// rounding error accumulate across a row.
-	cellW := math.Ceil(text.Advance("M", narrow))
-	nm := narrow.Metrics()
-	cellH := math.Ceil(nm.HAscent + nm.HDescent)
+	set := &fontSet{narrow: narrow, wide: narrow, scale: 1}
+	set.cellW, set.cellH = cellSize(narrow, 1)
 
-	set := &fontSet{narrow: narrow, cellW: cellW, cellH: cellH}
-	if wideSrc == nil {
-		// Better a wide character drawn from the monospace font, and probably
-		// missing, than a crash. The narrow face covers Latin either way.
-		set.wide = narrow
-		return set, nil
+	if wideSrc != nil {
+		// Both faces are drawn at the same em size, so a Hangul syllable looks
+		// like it belongs next to the Latin text rather than looming over it.
+		//
+		// Matching the advance to two cells instead -- the obvious thing, since
+		// the cell is two columns wide -- makes the wide face far too big: a
+		// monospace Latin advance is about 0.6em while a CJK one is near 1em,
+		// so forcing the wide advance to twice the narrow one inflates its em
+		// by half again, and a CJK glyph fills its em much more fully than a
+		// Latin one fills its own. Nothing here needs the advance anyway: every
+		// glyph is placed at its own cell's origin, so it only has to fit.
+		wide := &text.GoTextFace{Source: wideSrc, Size: fontSize}
+		span := 2 * set.cellW
+		adv := text.Advance("안", wide)
+		if adv > span {
+			// Too wide even at the shared size: shrink until it fits. Advance
+			// is linear in size, so one correction is exact.
+			wide.Size = fontSize * span / adv
+			adv = span
+		}
+		// Centre it in the two columns, and line it up on the narrow face's
+		// baseline. The monospace face defines the grid, its height included:
+		// sizing the row to whichever face is taller would leave the Latin text
+		// swimming in a cell far bigger than it needs, so the wide face is
+		// allowed to overflow the row a little instead.
+		set.wideDX = (span - adv) / 2
+		set.wideDY = narrow.Metrics().HAscent - wide.Metrics().HAscent
+		set.wide = wide
 	}
 
-	// Both faces are drawn at the same em size, so a Hangul syllable looks like
-	// it belongs next to the Latin text rather than looming over it.
-	//
-	// Matching the advance to two cells instead -- the obvious thing, since the
-	// cell is two columns wide -- makes the wide face far too big: a monospace
-	// Latin advance is about 0.6em while a CJK one is near 1em, so forcing the
-	// wide advance to twice the narrow one inflates its em by half again, and a
-	// CJK glyph fills its em much more fully than a Latin one fills its own.
-	// Nothing here needs the advance anyway: every glyph is placed at its own
-	// cell's origin, so the advance only has to fit.
-	wide := &text.GoTextFace{Source: wideSrc, Size: fontSize}
-	span := 2 * cellW
-	adv := text.Advance("안", wide)
-	if adv > span && adv > 0 {
-		// Too wide even at the shared size: shrink until it fits. Advance is
-		// linear in size, so one correction is exact.
-		wide.Size = fontSize * span / adv
-		adv = span
-	}
-	// Centre it in the two columns; a wide glyph is narrower than its span.
-	set.wideDX = (span - adv) / 2
-	set.wide = wide
-
-	// The monospace face defines the grid, including its height: sizing the
-	// row to whichever face is taller would leave the Latin text swimming in a
-	// cell far bigger than it needs. The wide face is aligned to the same
-	// baseline instead, and is allowed to overflow the row slightly, which is
-	// what it would do in any terminal that mixes two fonts.
-	wm := wide.Metrics()
-	set.wideDY = nm.HAscent - wm.HAscent
+	set.deriveDecorations()
 	return set, nil
 }
 
@@ -98,32 +98,36 @@ func bitmapFonts() *fontSet {
 	// ambiguous-width characters wide, but ghostty counts them as narrow, and
 	// the grid has to agree with the terminal that owns it.
 	face := text.NewGoXFace(bitmapfont.Face)
-	m := face.Metrics()
-	return &fontSet{
-		narrow: face,
-		wide:   face,
-		cellW:  text.Advance("M", face) * bitmapScale,
-		cellH:  math.Round(m.HAscent+m.HDescent) * bitmapScale,
-	}
+	set := &fontSet{narrow: face, wide: face, scale: bitmapScale}
+	set.cellW, set.cellH = cellSize(face, bitmapScale)
+	set.deriveDecorations()
+	return set
 }
 
-// The bitmap fallback is drawn at this integer scale, unfiltered.
-const bitmapScale = 2
+// cellSize is the grid a face implies. A terminal wants whole pixels; a
+// fractional advance would let the rounding error accumulate across a row.
+func cellSize(face text.Face, scale float64) (w, h float64) {
+	m := face.Metrics()
+	return math.Ceil(text.Advance("M", face) * scale), math.Ceil((m.HAscent + m.HDescent) * scale)
+}
 
-func (f *fontSet) scale() float64 {
-	if _, ok := f.narrow.(*text.GoXFace); ok {
-		return bitmapScale
-	}
-	return 1
+// deriveDecorations places the lines the font does not draw. They are font
+// metrics, so they are worked out once here rather than guessed at with a
+// literal offset at each drawing site.
+func (f *fontSet) deriveDecorations() {
+	f.lineH = math.Max(1, math.Round(f.cellH/16))
+	f.underlineY = f.cellH - 2*f.lineH
+	f.underline2Y = f.cellH - 4*f.lineH
+	f.strikeY = math.Round(f.cellH / 2)
 }
 
 func openFirst(override string, candidates []string) *text.GoTextFaceSource {
 	if override != "" {
-		if src, err := openFont(override); err == nil {
+		src, err := openFont(override)
+		if err == nil {
 			return src
-		} else {
-			fmt.Fprintf(os.Stderr, "gostty: %s: %v\n", override, err)
 		}
+		fmt.Fprintf(os.Stderr, "gostty: %s: %v\n", override, err)
 	}
 	for _, path := range candidates {
 		if src, err := openFont(path); err == nil {
