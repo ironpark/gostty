@@ -238,23 +238,31 @@ func (g *game) renderSize() input.RenderSize {
 // when they did not.
 func (g *game) reportFocus() error {
 	focused := ebiten.IsFocused()
-	if focused == g.focused {
-		return nil
+	if focused != g.focused {
+		g.focused = focused
+		if !focused {
+			g.focusedFrames = 0
+			g.sel.dragging = false
+			g.mouseGrabbed = false
+		}
+		event := input.FocusEventLost
+		if focused {
+			event = input.FocusEventGained
+		}
+		g.report = g.report[:0]
+		if err := input.EncodeFocus(reportWriter{g: g}, event); err != nil {
+			return err
+		}
+		if len(g.report) > 0 {
+			if _, err := g.ptmx.Write(g.report); err != nil {
+				return err
+			}
+		}
 	}
-	g.focused = focused
-	event := input.FocusEventLost
-	if focused {
-		event = input.FocusEventGained
+	if g.focused {
+		g.focusedFrames++
 	}
-	g.report = g.report[:0]
-	if err := input.EncodeFocus(reportWriter{g: g}, event); err != nil {
-		return err
-	}
-	if len(g.report) == 0 {
-		return nil
-	}
-	_, err := g.ptmx.Write(g.report)
-	return err
+	return nil
 }
 
 // reportWriter appends to the frame's report buffer, so an event that the

@@ -24,6 +24,9 @@ const (
 // protocol, bracketed paste). `input.EncodeKey` reads those modes off the
 // terminal, so this only has to describe which key was pressed.
 func (g *game) handleInput(m mods) error {
+	if !g.focused {
+		return nil
+	}
 	g.out = g.out[:0]
 
 	// Copy and paste are the two bindings this emulator keeps for itself.
@@ -59,7 +62,13 @@ func (g *game) handleInput(m mods) error {
 
 	g.pressed = inpututil.AppendPressedKeys(g.pressed[:0])
 	for _, key := range g.pressed {
+		if !isKeyPhysicallyPressed(key) {
+			continue
+		}
 		held := inpututil.KeyPressDuration(key)
+		if held > g.focusedFrames {
+			continue
+		}
 		if code, ok := keyMap[key]; ok {
 			if repeating(held) {
 				if err := g.sendKey(code, nil, m); err != nil {
@@ -106,15 +115,6 @@ func repeating(held int) bool {
 }
 
 type mods struct{ shift, ctrl, alt, super bool }
-
-func currentMods() mods {
-	return mods{
-		shift: ebiten.IsKeyPressed(ebiten.KeyShift),
-		ctrl:  ebiten.IsKeyPressed(ebiten.KeyControl),
-		alt:   ebiten.IsKeyPressed(ebiten.KeyAlt),
-		super: ebiten.IsKeyPressed(ebiten.KeyMeta),
-	}
-}
 
 // sendKey describes one key press to the binding and appends whatever it
 // encodes to this frame's output.

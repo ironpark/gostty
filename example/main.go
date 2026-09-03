@@ -160,6 +160,7 @@ type game struct {
 	wheel              float64
 	mouseGrabbed       bool
 	focused            bool
+	focusedFrames      int
 
 	// Per-frame input scratch, reused so a keystroke allocates nothing.
 	chars   []rune
@@ -202,6 +203,9 @@ func (g *game) start() error {
 		return err
 	}
 	g.focused = ebiten.IsFocused()
+	if g.focused {
+		g.focusedFrames = 1
+	}
 
 	// A clipboard write must be answered from inside the callback: it runs
 	// while Feed is still on the stack and the program is blocked on it.
@@ -317,32 +321,34 @@ func (g *game) Update() error {
 	if err := g.reportFocus(); err != nil {
 		return err
 	}
-	// A panel takes the keyboard while it is open, so nothing typed into the
-	// search bar reaches the shell. The mouse is left alone: a selection is
-	// still worth being able to make.
-	taken, err := g.handleUI(m)
-	if err != nil {
-		return err
-	}
-	// A click on the cat is the cat's, not the shell's: it must not also start
-	// a selection or be reported to the program.
-	if !g.pokeCat() {
-		if err := g.handleMouse(m); err != nil {
+	if g.focused {
+		// A panel takes the keyboard while it is open, so nothing typed into the
+		// search bar reaches the shell. The mouse is left alone: a selection is
+		// still worth being able to make.
+		taken, err := g.handleUI(m)
+		if err != nil {
 			return err
 		}
-	}
-	if err := g.handleWheel(m); err != nil {
-		return err
-	}
-	if !taken {
-		if err := g.handleInput(m); err != nil {
+		// A click on the cat is the cat's, not the shell's: it must not also start
+		// a selection or be reported to the program.
+		if !g.pokeCat() {
+			if err := g.handleMouse(m); err != nil {
+				return err
+			}
+		}
+		if err := g.handleWheel(m); err != nil {
 			return err
 		}
-	} else if fed && g.ui.mode == uiSearch {
-		// New output moves the scrollback the matches point into, so the
-		// search is rebuilt rather than left pointing at what has moved.
-		if err := g.runSearch(); err != nil {
-			return err
+		if !taken {
+			if err := g.handleInput(m); err != nil {
+				return err
+			}
+		} else if fed && g.ui.mode == uiSearch {
+			// New output moves the scrollback the matches point into, so the
+			// search is rebuilt rather than left pointing at what has moved.
+			if err := g.runSearch(); err != nil {
+				return err
+			}
 		}
 	}
 	if err := g.refresh(); err != nil {
