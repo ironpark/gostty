@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    name: build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      # The example is an ebiten app; its cgo build needs the X11/GL headers
+      # that the runner does not ship.
+      - name: Install example build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgl1-mesa-dev libxrandr-dev libxcursor-dev libxinerama-dev \
+            libxi-dev libxxf86vm-dev libasound2-dev
+
+      # The native archives are committed under libs/, so this links the same
+      # prebuilt libraries a consumer of the module would get.
+      - name: Build
+        run: go build ./...
+
+      - name: Test
+        run: go test ./...
+
+      - name: Build example
+        working-directory: example
+        run: go build ./...
