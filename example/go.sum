@@ -18,6 +18,8 @@ github.com/ironpark/gostty v0.0.0-20260903161024-9bf713c2d883 h1:xRfeOXUQiAoVtS/
 github.com/ironpark/gostty v0.0.0-20260903161024-9bf713c2d883/go.mod h1:oURVR1UKpcaWYk46QNr23zy7yjfJnZfgQPPu9n415qo=
 github.com/ironpark/gostty v0.0.0-20260905064539-e1d19bebc854 h1:tlJxqtz01vGb8wsjmAnUMgs1a+ATqVffOmC66gjbWk8=
 github.com/ironpark/gostty v0.0.0-20260905064539-e1d19bebc854/go.mod h1:oURVR1UKpcaWYk46QNr23zy7yjfJnZfgQPPu9n415qo=
+github.com/ironpark/gostty v0.0.0-20260905070431-472bd4b85d01 h1:7MOaKNnfxXLqq/8jnRF/iOUdS09pbguNXl5n4cLSzeU=
+github.com/ironpark/gostty v0.0.0-20260905070431-472bd4b85d01/go.mod h1:oURVR1UKpcaWYk46QNr23zy7yjfJnZfgQPPu9n415qo=
 github.com/jezek/xgb v1.1.1 h1:bE/r8ZZtSv7l9gk6nU0mYx51aXrvnyb44892TwSaqS4=
 github.com/jezek/xgb v1.1.1/go.mod h1:nrhwO0FX/enq75I7Y7G8iN1ubpSGZEiA3v9e9GyRFlk=
 github.com/pierrec/lz4/v4 v4.1.22 h1:cKFw6uJDK+/gfw5BcDL0JL5aBsAFdsIT18eRtLj7VIU=
