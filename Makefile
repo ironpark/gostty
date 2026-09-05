@@ -87,7 +87,26 @@ generate-one:
 		base=$${archive##*/}; \
 		mv "$$archive" "$(LIB_DIR)/$(TARGET)_$$base"; \
 	done
+	@case "$(TARGET)" in *-macos) \
+		$(MAKE) --no-print-directory align-macos-archives TARGET=$(TARGET) ;; \
+	esac
 	@touch $(LIB_DIR)/$(TARGET)_libgostty_zigo.a
+
+# Zig's archiver packs members on a 4-byte boundary, which Apple's linker
+# rejects ("not 8-byte aligned") on some toolchain versions. Repack the macOS
+# archives with libtool so any consumer's ld accepts them.
+align-macos-archives:
+	@test -n "$(TARGET)" || { echo "TARGET is required" >&2; exit 2; }
+	@tmp=$$(mktemp -d); \
+	for archive in $(LIB_DIR)/$(TARGET)_lib*.a; do \
+		[ -e "$$archive" ] || continue; \
+		rm -rf "$$tmp"/members && mkdir -p "$$tmp"/members; \
+		(cd "$$tmp"/members && $(ZIG) ar x "$(CURDIR)/$$archive") && \
+		chmod u+rw "$$tmp"/members/*.o && \
+		(cd "$$tmp"/members && libtool -static -o "$(CURDIR)/$$archive.aligned" *.o) && \
+		mv "$$archive.aligned" "$$archive"; \
+	done; \
+	rm -rf "$$tmp"
 
 # Some zigo inspection steps materialize an untagged link file and generic
 # archives as working inputs. Keep their exit status, but remove those volatile
