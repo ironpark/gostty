@@ -7,7 +7,6 @@ docs/
 .vscode/
 .zig-cache/
 internal/raw/zigo_link_inputs*_gen.go
-libs/
 zig-cache/
 zig-out/
 zig-pkg/
