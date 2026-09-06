@@ -65,8 +65,8 @@ func TestSearchNoMatches(t *testing.T) {
 	}
 }
 
-// Selecting a match puts it in the screen's selection, which is how the text
-// comes back out.
+// Select moves the search's position and nothing else; the match comes out
+// as a value the UI puts in the screen's selection itself.
 func TestSearchSelect(t *testing.T) {
 	term := newTerm(t, 20, 6)
 	writeLines(t, term, "one needle", "two", "three needle")
@@ -83,8 +83,15 @@ func TestSearchSelect(t *testing.T) {
 	if !ok {
 		t.Fatal("Select() = false with matches present")
 	}
-	if has, err := sc.HasSelection(); err != nil || !has {
-		t.Fatalf("HasSelection() after Select = %v, %v; want true, nil", has, err)
+	if has, err := sc.HasSelection(); err != nil || has {
+		t.Fatalf("HasSelection() after Select = %v, %v; want false: Select does not touch the screen", has, err)
+	}
+	match, ok, err := s.SelectedMatch()
+	if err != nil || !ok {
+		t.Fatalf("SelectedMatch() = ok %v, %v", ok, err)
+	}
+	if ok, err := sc.SetSelection(match); err != nil || !ok {
+		t.Fatalf("SetSelection(match) = %v, %v", ok, err)
 	}
 	text, ok, err := sc.SelectionString()
 	if err != nil || !ok {
@@ -220,14 +227,27 @@ func TestSearchScrollsToMatch(t *testing.T) {
 	} else if !ok {
 		t.Fatal("Select found nothing")
 	}
-
-	// The match scrolled off long ago, so the viewport had to move to it.
-	if bottom, err := screen.ViewportIsBottom(); err != nil {
-		t.Fatalf("ViewportIsBottom: %v", err)
-	} else if bottom {
-		t.Error("the viewport is still at the bottom, so the match is off screen")
+	// Select leaves the viewport where it was; showing the match is the
+	// caller's move, made from the match's screen row.
+	if bottom, err := screen.ViewportIsBottom(); err != nil || !bottom {
+		t.Fatalf("ViewportIsBottom() after Select = %v, %v; want true", bottom, err)
 	}
-	// And it is the screen's selection, so it draws as one.
+	match, ok, err := search.SelectedMatch()
+	if err != nil || !ok {
+		t.Fatalf("SelectedMatch() = ok %v, %v", ok, err)
+	}
+	if err := term.ScrollViewport(ScrollViewportRow(uint(match.StartY))); err != nil {
+		t.Fatalf("ScrollViewport: %v", err)
+	}
+	if bottom, _ := screen.ViewportIsBottom(); bottom {
+		t.Error("the viewport is still at the bottom after scrolling to the match")
+	}
+	if top, _ := screen.ViewportTop(); top != match.StartY {
+		t.Errorf("ViewportTop() = %d after ScrollViewportRow(%d); the row is a screen row", top, match.StartY)
+	}
+	if ok, err := screen.SetSelection(match); err != nil || !ok {
+		t.Fatalf("SetSelection(match) = %v, %v", ok, err)
+	}
 	text, ok, err := screen.SelectionString()
 	if err != nil {
 		t.Fatalf("SelectionString: %v", err)
@@ -304,6 +324,13 @@ func TestSearchDirectionOrder(t *testing.T) {
 		}
 		if !ok {
 			t.Fatal("Select found nothing")
+		}
+		match, ok, err := search.SelectedMatch()
+		if err != nil || !ok {
+			t.Fatalf("SelectedMatch() = ok %v, %v", ok, err)
+		}
+		if err := term.ScrollViewport(ScrollViewportRow(uint(match.StartY))); err != nil {
+			t.Fatalf("ScrollViewport: %v", err)
 		}
 		return at()
 	}

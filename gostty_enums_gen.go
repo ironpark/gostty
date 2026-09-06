@@ -794,36 +794,6 @@ func (value *SelectionAdjustment) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// SelectionOrder represents the corresponding Zig enum.
-type SelectionOrder uint8
-
-const (
-	// SelectionOrderForward corresponds to the Zig tag forward.
-	SelectionOrderForward SelectionOrder = 0
-	// SelectionOrderReverse corresponds to the Zig tag reverse.
-	SelectionOrderReverse SelectionOrder = 1
-	// SelectionOrderMirroredForward corresponds to the Zig tag mirrored_forward.
-	SelectionOrderMirroredForward SelectionOrder = 2
-	// SelectionOrderMirroredReverse corresponds to the Zig tag mirrored_reverse.
-	SelectionOrderMirroredReverse SelectionOrder = 3
-)
-
-// String returns the Zig tag name.
-func (value SelectionOrder) String() string {
-	switch value {
-	case SelectionOrderForward:
-		return "forward"
-	case SelectionOrderReverse:
-		return "reverse"
-	case SelectionOrderMirroredForward:
-		return "mirrored_forward"
-	case SelectionOrderMirroredReverse:
-		return "mirrored_reverse"
-	default:
-		return "SelectionOrder(" + strconv.Itoa(int(value)) + ")"
-	}
-}
-
 // StreamEvent represents the corresponding Zig enum.
 type StreamEvent uint8
 

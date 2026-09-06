@@ -1,7 +1,6 @@
 package input_test
 
 import (
-	"runtime"
 	"testing"
 
 	"github.com/ironpark/gostty/input"
@@ -17,24 +16,12 @@ func TestKeyHelpers(t *testing.T) {
 	if _, ok := input.KeyFromAscii(0x01); ok {
 		t.Error("KeyFromAscii(0x01) reported a key")
 	}
-	key, ok = input.KeyFromW3C("KeyA")
-	if !ok || key != input.KeyKeyA {
-		t.Errorf("KeyFromW3C(\"KeyA\") = %v, %v; want %v", key, ok, input.KeyKeyA)
-	}
-	if got := input.KeyW3C(input.KeyKeyA); got != "KeyA" {
-		t.Errorf("KeyW3C(KeyA) = %q, want %q", got, "KeyA")
-	}
 	cp, ok := input.KeyCodepoint(input.KeyKeyA)
 	if !ok || cp != 'a' {
 		t.Errorf("KeyCodepoint(KeyA) = %q, %v; want 'a'", cp, ok)
 	}
 	if _, ok := input.KeyCodepoint(input.KeyShiftLeft); ok {
 		t.Error("KeyCodepoint(KeyShiftLeft) reported a codepoint")
-	}
-	// The command modifier is super on macOS and control elsewhere.
-	commandKey := input.KeyControlLeft
-	if runtime.GOOS == "darwin" {
-		commandKey = input.KeyMetaLeft
 	}
 	checks := []struct {
 		name string
@@ -45,7 +32,6 @@ func TestKeyHelpers(t *testing.T) {
 		{"KeyPrintable", input.KeyPrintable, input.KeyKeyA, input.KeyShiftLeft},
 		{"KeyModifier", input.KeyModifier, input.KeyShiftLeft, input.KeyKeyA},
 		{"KeyKeypad", input.KeyKeypad, input.KeyNumpad1, input.KeyDigit1},
-		{"KeyCtrlOrSuper", input.KeyCtrlOrSuper, commandKey, input.KeyShiftLeft},
 		{"KeyLeftOrRightShift", input.KeyLeftOrRightShift, input.KeyShiftRight, input.KeyControlLeft},
 		{"KeyLeftOrRightAlt", input.KeyLeftOrRightAlt, input.KeyAltLeft, input.KeyShiftLeft},
 	}

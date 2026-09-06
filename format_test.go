@@ -6,6 +6,13 @@ import (
 	"testing"
 )
 
+// formatString runs Terminal.Format into a string.
+func formatString(term *Terminal, opts FormatOptions) (string, error) {
+	var buf bytes.Buffer
+	err := term.Format(opts, &buf)
+	return buf.String(), err
+}
+
 // Format emits the screen as plain text, VT or HTML; the zero options are
 // plain, trimmed, with styling where the format carries it.
 func TestFormat(t *testing.T) {

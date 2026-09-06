@@ -413,12 +413,6 @@ func TestRenderDirtyRows(t *testing.T) {
 	if err != nil || n != 2 || rows[0] != 1 || rows[1] != 2 {
 		t.Errorf("DirtyRows() = %v %v, %v; want [1 2]", n, rows[:n], err)
 	}
-	if dirty, _ := state.RowDirty(1); !dirty {
-		t.Error("RowDirty(1) = false")
-	}
-	if dirty, _ := state.RowDirty(0); dirty {
-		t.Error("RowDirty(0) = true")
-	}
 	cells := make([]RenderCell, 10)
 	if n, err := state.RowCells(1, cells); err != nil || n != 10 || cells[0].Codepoint != 'T' {
 		t.Errorf("RowCells(1) = %v, %v, first %q", n, err, cells[0].Codepoint)
@@ -428,12 +422,6 @@ func TestRenderDirtyRows(t *testing.T) {
 	}
 	if _, err := state.RowCells(1, cells[:3]); err == nil {
 		t.Error("RowCells with a short buffer returned no error")
-	}
-	if err := state.CleanRow(1); err != nil {
-		t.Fatal(err)
-	}
-	if n, _ := state.DirtyRows(rows); n != 1 || rows[0] != 2 {
-		t.Errorf("DirtyRows after CleanRow(1) = %v %v; want [2]", n, rows[:n])
 	}
 	if err := state.Clean(); err != nil {
 		t.Fatal(err)

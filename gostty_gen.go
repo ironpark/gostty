@@ -730,8 +730,7 @@ func (s *Stream) HasReplies() (bool, error) {
 
 // WriteSnapshot: Write a snapshot of the terminal this stream feeds, with the
 // stream's unfinished sequence so a restored stream can pick up
-// mid-sequence. Prefer this over `writeSnapshot` on the terminal while
-// a stream exists.
+// mid-sequence.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
@@ -1304,38 +1303,6 @@ func (s *Screen) SelectionAdjust(sel Selection, adjustment SelectionAdjustment) 
 	return zigoSelectionFromRaw(result), zigoHas, nil
 }
 
-// SelectionOrder calls the Zig function Screen.selectionOrder.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Screen) SelectionOrder(sel Selection) (SelectionOrder, bool, error) {
-	ptr, err := zigoCheckedPointer("Screen.SelectionOrder receiver", s)
-	if err != nil {
-		return 0, false, err
-	}
-	defer s.zigoRelease()
-	result, zigoHas, code := raw.ScreenSelectionOrder(ptr, zigoSelectionToRaw(sel))
-	if code != 0 {
-		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Screen.SelectionOrder", code), s)
-	}
-	return SelectionOrder(result), zigoHas, nil
-}
-
-// SelectionOrdered calls the Zig function Screen.selectionOrdered.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Screen) SelectionOrdered(sel Selection, desired SelectionOrder) (Selection, bool, error) {
-	ptr, err := zigoCheckedPointer("Screen.SelectionOrdered receiver", s)
-	if err != nil {
-		return Selection{}, false, err
-	}
-	defer s.zigoRelease()
-	result, zigoHas, code := raw.ScreenSelectionOrdered(ptr, zigoSelectionToRaw(sel), uint8(desired))
-	if code != 0 {
-		return Selection{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Screen.SelectionOrdered", code), s)
-	}
-	return zigoSelectionFromRaw(result), zigoHas, nil
-}
-
 // StartHyperlink calls the Zig function Screen.startHyperlink.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
@@ -1542,22 +1509,6 @@ func (te *Terminal) HistoryString() (string, error) {
 	result, code := raw.TerminalHistoryString(ptr)
 	if code != 0 {
 		return "", zigoPoisonAfterPanic(zigoErrorForCode("Terminal.HistoryString", code), te)
-	}
-	return result, nil
-}
-
-// ScreenString: The full screen: scrollback followed by the active area.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) ScreenString() (string, error) {
-	ptr, err := zigoCheckedPointer("Terminal.ScreenString receiver", te)
-	if err != nil {
-		return "", err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalScreenString(ptr)
-	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ScreenString", code), te)
 	}
 	return result, nil
 }
@@ -2083,22 +2034,6 @@ func (te *Terminal) PrintSlice(cps []rune) error {
 	return nil
 }
 
-// PlainStringUnwrapped calls the Zig function Terminal.plainStringUnwrapped.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) PlainStringUnwrapped() (string, error) {
-	ptr, err := zigoCheckedPointer("Terminal.PlainStringUnwrapped receiver", te)
-	if err != nil {
-		return "", err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalPlainStringUnwrapped(ptr)
-	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PlainStringUnwrapped", code), te)
-	}
-	return result, nil
-}
-
 // Format calls the Zig function Terminal.Format.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
@@ -2123,35 +2058,6 @@ func (te *Terminal) Format(opts FormatOptions, writer io.Writer) error {
 	}
 	if code != 0 {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Format", code), te)
-	}
-	return nil
-}
-
-// WriteSnapshot: Write a snapshot of the terminal. The stream state is recorded as
-// finished; use `Stream.writeSnapshot` to carry an unfinished sequence.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (te *Terminal) WriteSnapshot(writer io.Writer) error {
-	if writer == nil {
-		return &StreamError{Operation: "Terminal.WriteSnapshot", Parameter: "writer", Err: ErrNilStream}
-	}
-	ptr, err := zigoCheckedPointer("Terminal.WriteSnapshot receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	writerHandle := zigoNewWriterStreamHandle(writer)
-	defer zigoDeleteCallbackHandle(writerHandle)
-	code := raw.TerminalWriteSnapshot(ptr, uintptr(writerHandle))
-	if zigoCallbackPanicPending() {
-		zigoRethrowCallbackPanic("Terminal.WriteSnapshot", writerHandle)
-	}
-	if err := zigoStreamError("Terminal.WriteSnapshot", "writer", writerHandle); err != nil {
-		return err
-	}
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.WriteSnapshot", code), te)
 	}
 	return nil
 }
@@ -2217,22 +2123,6 @@ func (s *Snapshot) Continuation() ([]byte, error) {
 	return result, nil
 }
 
-// HistoryRows calls the Zig function Snapshot.historyRows.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Snapshot) HistoryRows(key ScreenKey) (uint64, error) {
-	ptr, err := zigoCheckedPointer("Snapshot.HistoryRows receiver", s)
-	if err != nil {
-		return 0, err
-	}
-	defer s.zigoRelease()
-	result, code := raw.SnapshotHistoryRows(ptr, uint8(key))
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Snapshot.HistoryRows", code), s)
-	}
-	return result, nil
-}
-
 // BackgroundColor: The current background color: what OSC 11 set, else the default.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
@@ -2280,22 +2170,6 @@ func (te *Terminal) CursorColor() (uint32, bool, error) {
 		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorColor", code), te)
 	}
 	return result, zigoHas, nil
-}
-
-// PaletteColor: The current color of palette entry `index`, after any OSC 4 change.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) PaletteColor(index uint8) (uint32, error) {
-	ptr, err := zigoCheckedPointer("Terminal.PaletteColor receiver", te)
-	if err != nil {
-		return 0, err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalPaletteColor(ptr, index)
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PaletteColor", code), te)
-	}
-	return result, nil
 }
 
 // PaletteColors: Copy the current 256-color palette into `dst` and return how many entries
@@ -2880,22 +2754,6 @@ func (r *RenderState) Dirty() (RenderDirty, error) {
 	return RenderDirty(result), nil
 }
 
-// RowDirty calls the Zig function RenderState.rowDirty.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (r *RenderState) RowDirty(y uint16) (bool, error) {
-	ptr, err := zigoCheckedPointer("RenderState.RowDirty receiver", r)
-	if err != nil {
-		return false, err
-	}
-	defer r.zigoRelease()
-	result, code := raw.RenderStateRowDirty(ptr, y)
-	if code != 0 {
-		return false, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.RowDirty", code), r)
-	}
-	return result != 0, nil
-}
-
 // DirtyRows calls the Zig function RenderState.dirtyRows.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
@@ -2942,22 +2800,6 @@ func (r *RenderState) Clean() error {
 	code := raw.RenderStateClean(ptr)
 	if code != 0 {
 		return zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Clean", code), r)
-	}
-	return nil
-}
-
-// CleanRow calls the Zig function RenderState.cleanRow.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (r *RenderState) CleanRow(y uint16) error {
-	ptr, err := zigoCheckedPointer("RenderState.CleanRow receiver", r)
-	if err != nil {
-		return err
-	}
-	defer r.zigoRelease()
-	code := raw.RenderStateCleanRow(ptr, y)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("RenderState.CleanRow", code), r)
 	}
 	return nil
 }

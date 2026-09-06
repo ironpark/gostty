@@ -24,16 +24,16 @@ func TestColors(t *testing.T) {
 	}
 
 	// Palette entry 1 is red by default; OSC 4 changes it.
-	before, err := term.PaletteColor(1)
-	if err != nil {
+	palette := make([]uint32, 256)
+	if _, err := term.PaletteColors(palette); err != nil {
 		t.Fatal(err)
 	}
+	before := palette[1]
 	feed(t, stream, "\x1b]4;1;rgb:12/34/56\x1b\\")
-	if c, _ := term.PaletteColor(1); c != 0x123456 || c == before {
-		t.Errorf("PaletteColor(1) = %#x; want 0x123456", c)
-	}
-	palette := make([]uint32, 256)
 	n, err := term.PaletteColors(palette)
+	if palette[1] != 0x123456 || palette[1] == before {
+		t.Errorf("palette[1] after OSC 4 = %#x; want 0x123456", palette[1])
+	}
 	if err != nil || n != 256 || palette[1] != 0x123456 {
 		t.Errorf("PaletteColors() = %d, %v, [1]=%#x", n, err, palette[1])
 	}

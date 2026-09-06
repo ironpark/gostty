@@ -17,11 +17,9 @@ import (
 // list. Both take the keyboard while they are open, so nothing typed into them
 // reaches the shell.
 //
-// The search itself is not here. `Screen.NewSearch` scans the scrollback,
-// `Search.Select` moves between matches and puts the current one in the
-// screen's selection -- which is the same selection a drag makes, so the match
-// is drawn highlighted and copied by the same Ctrl+Shift+C, and the viewport is
-// moved to it. All this owns is the query string.
+// The search itself is not here. `Screen.NewSearch` scans the scrollback and
+// `Search.Select` moves between matches; putting the current match in the
+// screen's selection and scrolling to it is this UI's choice, in moveMatch.
 
 type uiMode int
 
@@ -263,8 +261,34 @@ func (g *game) moveMatch(dir gostty.SearchDirection) error {
 	if g.ui.search == nil || g.ui.matches == 0 {
 		return nil
 	}
-	_, err := g.ui.search.Select(dir)
-	return err
+	ok, err := g.ui.search.Select(dir)
+	if err != nil || !ok {
+		return err
+	}
+	// The binding only moves the search's position. Showing the match is
+	// this UI's policy: it becomes the screen's selection, so it draws in the
+	// selection colours and copies with the usual gesture, and the viewport
+	// jumps to it only when it is off screen, so stepping between visible
+	// matches does not move the page under the user.
+	match, ok, err := g.ui.search.SelectedMatch()
+	if err != nil || !ok {
+		return err
+	}
+	screen, err := g.vt.ActiveScreen()
+	if err != nil {
+		return err
+	}
+	if _, err := screen.SetSelection(match); err != nil {
+		return err
+	}
+	top, err := screen.ViewportTop()
+	if err != nil {
+		return err
+	}
+	if match.StartY < top || match.StartY >= top+uint32(g.rows) {
+		return g.vt.ScrollViewport(gostty.ScrollViewportRow(uint(match.StartY)))
+	}
+	return nil
 }
 
 func (g *game) settingsKeys() error {

@@ -38,9 +38,6 @@ func TestSnapshotRoundTrip(t *testing.T) {
 	if cont, err := decoded.Continuation(); err != nil || string(cont) != "\x1b[3" {
 		t.Errorf("Continuation() = %q, %v; want the unfinished CSI", cont, err)
 	}
-	if rows, err := decoded.HistoryRows(ScreenKeyPrimary); err != nil || rows != 1 {
-		t.Errorf("HistoryRows(primary) = %d, %v; want 1", rows, err)
-	}
 
 	restored, err := NewTerminal(80, 24)
 	if err != nil {
@@ -79,19 +76,5 @@ func TestSnapshotRoundTrip(t *testing.T) {
 	}
 	if got, _ := restored.PlainString(); got != "two\nthXee" {
 		t.Errorf("after resume PlainString() = %q, want %q", got, "two\nthXee")
-	}
-
-	// A terminal-level snapshot records a finished stream.
-	snap.Reset()
-	if err := term.WriteSnapshot(&snap); err != nil {
-		t.Fatal(err)
-	}
-	plain, err := DecodeSnapshot(bytes.NewReader(snap.Bytes()), 1024)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer plain.Close()
-	if cont, _ := plain.Continuation(); len(cont) != 0 {
-		t.Errorf("Terminal.WriteSnapshot continuation = %q, want none", cont)
 	}
 }

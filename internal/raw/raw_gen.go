@@ -302,22 +302,6 @@ func KeyFromAscii(ch uint8) (int32, bool) {
 	return int32(outResult), outResultHas
 }
 
-// KeyFromW3C calls the generated C ABI wrapper for zg_key_from_w3_c.
-func KeyFromW3C(code_ string) (int32, bool) {
-	code_Ptr := (*C.uint8_t)(zigoStringPtr(code_))
-	var outResult C.int32_t
-	outResultHas := C.zg_key_from_w3_c(code_Ptr, C.size_t(len(code_)), &outResult) != 0
-	return int32(outResult), outResultHas
-}
-
-// KeyW3C calls the generated C ABI wrapper for zg_key_w3_c.
-func KeyW3C(key int32) string {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	C.zg_key_w3_c(C.int32_t(key), &outResultPtr, &outResultLen)
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
-}
-
 // KeyCodepoint calls the generated C ABI wrapper for zg_key_codepoint.
 func KeyCodepoint(key int32) (uint32, bool) {
 	var outResult C.uint32_t
@@ -338,11 +322,6 @@ func KeyModifier(key int32) uint8 {
 // KeyKeypad calls the generated C ABI wrapper for zg_key_keypad.
 func KeyKeypad(key int32) uint8 {
 	return uint8(C.zg_key_keypad(C.int32_t(key)))
-}
-
-// KeyCtrlOrSuper calls the generated C ABI wrapper for zg_key_ctrl_or_super.
-func KeyCtrlOrSuper(key int32) uint8 {
-	return uint8(C.zg_key_ctrl_or_super(C.int32_t(key)))
 }
 
 // KeyLeftOrRightShift calls the generated C ABI wrapper for zg_key_left_or_right_shift.
@@ -869,40 +848,6 @@ func ScreenSelectionAdjust(self unsafe.Pointer, sel SelectionData, adjustment ui
 	}, outResultHas != 0, code
 }
 
-// ScreenSelectionOrder calls the generated C ABI wrapper for zg_screen_selection_order.
-func ScreenSelectionOrder(self unsafe.Pointer, sel SelectionData) (uint8, bool, int32) {
-	var csel C.zg_selection
-	csel.start_x = C.uint16_t(sel.StartX)
-	csel.start_y = C.uint32_t(sel.StartY)
-	csel.end_x = C.uint16_t(sel.EndX)
-	csel.end_y = C.uint32_t(sel.EndY)
-	csel.rectangle = C.uint8_t(sel.Rectangle)
-	var outResultHas C.uint8_t
-	var outResult C.uint8_t
-	code := int32(C.zg_screen_selection_order((*C.zg_screen)(self), &csel, &outResultHas, &outResult))
-	return uint8(outResult), outResultHas != 0, code
-}
-
-// ScreenSelectionOrdered calls the generated C ABI wrapper for zg_screen_selection_ordered.
-func ScreenSelectionOrdered(self unsafe.Pointer, sel SelectionData, desired uint8) (SelectionData, bool, int32) {
-	var csel C.zg_selection
-	csel.start_x = C.uint16_t(sel.StartX)
-	csel.start_y = C.uint32_t(sel.StartY)
-	csel.end_x = C.uint16_t(sel.EndX)
-	csel.end_y = C.uint32_t(sel.EndY)
-	csel.rectangle = C.uint8_t(sel.Rectangle)
-	var outResultHas C.uint8_t
-	var outResult C.zg_selection
-	code := int32(C.zg_screen_selection_ordered((*C.zg_screen)(self), &csel, C.uint8_t(desired), &outResultHas, &outResult))
-	return SelectionData{
-		StartX:    uint16(outResult.start_x),
-		StartY:    uint32(outResult.start_y),
-		EndX:      uint16(outResult.end_x),
-		EndY:      uint32(outResult.end_y),
-		Rectangle: uint8(outResult.rectangle),
-	}, outResultHas != 0, code
-}
-
 // ScreenStartHyperlink calls the generated C ABI wrapper for zg_screen_start_hyperlink.
 func ScreenStartHyperlink(self unsafe.Pointer, uri string, id string) int32 {
 	uriPtr := (*C.uint8_t)(zigoStringPtr(uri))
@@ -1017,22 +962,6 @@ func TerminalHistoryString(self unsafe.Pointer) (string, int32) {
 	var outResultPtr *C.uint8_t
 	var outResultLen C.size_t
 	code := int32(C.zg_terminal_history_string((*C.zg_terminal)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
-	}
-	var result string
-	if outResultLen != 0 {
-		result = C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
-	}
-	C.zg_free_string(outResultPtr, outResultLen)
-	return result, code
-}
-
-// TerminalScreenString calls the generated C ABI wrapper for zg_terminal_screen_string.
-func TerminalScreenString(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_terminal_screen_string((*C.zg_terminal)(self), &outResultPtr, &outResultLen))
 	if code != 0 {
 		return "", code
 	}
@@ -1237,22 +1166,6 @@ func TerminalPrintSlice(self unsafe.Pointer, cps []uint32) int32 {
 	return code
 }
 
-// TerminalPlainStringUnwrapped calls the generated C ABI wrapper for zg_terminal_plain_string_unwrapped.
-func TerminalPlainStringUnwrapped(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_terminal_plain_string_unwrapped((*C.zg_terminal)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
-	}
-	var result string
-	if outResultLen != 0 {
-		result = C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
-	}
-	C.zg_free_string(outResultPtr, outResultLen)
-	return result, code
-}
-
 // TerminalFormat calls the generated C ABI wrapper for zg_terminal_format.
 func TerminalFormat(self unsafe.Pointer, opts FormatOptionsData, writerHandle uintptr) int32 {
 	var copts C.zg_format_options
@@ -1264,12 +1177,6 @@ func TerminalFormat(self unsafe.Pointer, opts FormatOptionsData, writerHandle ui
 	copts.no_hyperlinks = C.uint8_t(opts.NoHyperlinks)
 	copts.resolve_palette = C.uint8_t(opts.ResolvePalette)
 	code := int32(C.zg_terminal_format((*C.zg_terminal)(self), &copts, C.size_t(writerHandle)))
-	return code
-}
-
-// TerminalWriteSnapshot calls the generated C ABI wrapper for zg_terminal_write_snapshot.
-func TerminalWriteSnapshot(self unsafe.Pointer, writerHandle uintptr) int32 {
-	code := int32(C.zg_terminal_write_snapshot((*C.zg_terminal)(self), C.size_t(writerHandle)))
 	return code
 }
 
@@ -1311,13 +1218,6 @@ func SnapshotContinuation(self unsafe.Pointer) ([]uint8, int32) {
 	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
 }
 
-// SnapshotHistoryRows calls the generated C ABI wrapper for zg_snapshot_history_rows.
-func SnapshotHistoryRows(self unsafe.Pointer, key uint8) (uint64, int32) {
-	var outResult C.uint64_t
-	code := int32(C.zg_snapshot_history_rows((*C.zg_snapshot)(self), C.uint8_t(key), &outResult))
-	return uint64(outResult), code
-}
-
 // TerminalBackgroundColor calls the generated C ABI wrapper for zg_terminal_background_color.
 func TerminalBackgroundColor(self unsafe.Pointer) (uint32, bool, int32) {
 	var outResultHas C.uint8_t
@@ -1340,13 +1240,6 @@ func TerminalCursorColor(self unsafe.Pointer) (uint32, bool, int32) {
 	var outResult C.uint32_t
 	code := int32(C.zg_terminal_cursor_color((*C.zg_terminal)(self), &outResultHas, &outResult))
 	return uint32(outResult), outResultHas != 0, code
-}
-
-// TerminalPaletteColor calls the generated C ABI wrapper for zg_terminal_palette_color.
-func TerminalPaletteColor(self unsafe.Pointer, index uint8) (uint32, int32) {
-	var outResult C.uint32_t
-	code := int32(C.zg_terminal_palette_color((*C.zg_terminal)(self), C.uint8_t(index), &outResult))
-	return uint32(outResult), code
 }
 
 // TerminalPaletteColors calls the generated C ABI wrapper for zg_terminal_palette_colors.
@@ -1614,13 +1507,6 @@ func RenderStateDirty(self unsafe.Pointer) (uint8, int32) {
 	return uint8(outResult), code
 }
 
-// RenderStateRowDirty calls the generated C ABI wrapper for zg_render_state_row_dirty.
-func RenderStateRowDirty(self unsafe.Pointer, y uint16) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_render_state_row_dirty((*C.zg_render_state)(self), C.uint16_t(y), &outResult))
-	return uint8(outResult), code
-}
-
 // RenderStateDirtyRows calls the generated C ABI wrapper for zg_render_state_dirty_rows.
 func RenderStateDirtyRows(self unsafe.Pointer, dst []uint16) (uint, int32) {
 	dstPtr := (*C.uint16_t)(zigoSlicePtr(dst))
@@ -1652,12 +1538,6 @@ func RenderStateRowCells(self unsafe.Pointer, y uint16, dst []RenderCellData) (u
 // RenderStateClean calls the generated C ABI wrapper for zg_render_state_clean.
 func RenderStateClean(self unsafe.Pointer) int32 {
 	code := int32(C.zg_render_state_clean((*C.zg_render_state)(self)))
-	return code
-}
-
-// RenderStateCleanRow calls the generated C ABI wrapper for zg_render_state_clean_row.
-func RenderStateCleanRow(self unsafe.Pointer, y uint16) int32 {
-	code := int32(C.zg_render_state_clean_row((*C.zg_render_state)(self), C.uint16_t(y)))
 	return code
 }
 

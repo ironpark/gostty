@@ -1,6 +1,7 @@
 package gostty
 
 import (
+	"bytes"
 	"errors"
 	"strings"
 	"testing"
@@ -78,7 +79,7 @@ func TestPrintAttributesInto(t *testing.T) {
 	}
 }
 
-func TestHistoryAndScreenString(t *testing.T) {
+func TestHistoryStringAndFormat(t *testing.T) {
 	term := newTerm(t, 10, 2)
 	// Two rows fit on screen, so the first rows scroll into history.
 	for _, line := range []string{"one", "two", "three", "four"} {
@@ -104,14 +105,17 @@ func TestHistoryAndScreenString(t *testing.T) {
 		t.Errorf("HistoryString() = %q, should not contain the active area", history)
 	}
 
-	full, err := term.ScreenString()
+	// The screen formatter covers scrollback and the active area together.
+	screen, err := term.ActiveScreen()
 	if err != nil {
-		t.Fatalf("ScreenString: %v", err)
+		t.Fatal(err)
 	}
-	for _, want := range []string{"one", "four"} {
-		if !strings.Contains(full, want) {
-			t.Errorf("ScreenString() = %q, want it to contain %q", full, want)
-		}
+	var buf bytes.Buffer
+	if err := screen.Format(FormatOptions{}, &buf); err != nil {
+		t.Fatalf("Screen.Format: %v", err)
+	}
+	if got, want := buf.String(), "one\ntwo\nthree\nfour"; got != want {
+		t.Errorf("Screen.Format() = %q, want %q", got, want)
 	}
 }
 

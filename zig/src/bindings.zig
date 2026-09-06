@@ -35,13 +35,10 @@ pub const bindings = zigo.define(.{
                 "root.isSafePaste",
                 "root.encodePaste",
                 "root.keyFromASCII",
-                "root.keyFromW3C",
-                "root.keyW3C",
                 "root.keyCodepoint",
                 "root.keyPrintable",
                 "root.keyModifier",
                 "root.keyKeypad",
-                "root.keyCtrlOrSuper",
                 "root.keyLeftOrRightShift",
                 "root.keyLeftOrRightAlt",
             },
@@ -83,7 +80,6 @@ pub const bindings = zigo.define(.{
         .{ .name = "FormatterFormat", .type = gostty.FormatterFormat, .repr = .enumeration, .text = true },
         .{ .name = "FormatOptions", .type = gostty.FormatOptions, .repr = .value },
         .{ .name = "SelectionAdjustment", .type = gostty.SelectionAdjustment, .repr = .enumeration, .text = true },
-        .{ .name = "SelectionOrder", .type = gostty.SelectionOrder, .repr = .enumeration },
         .{ .name = "StreamEvent", .type = gostty.StreamEvent, .repr = .enumeration, .text = true },
         .{ .name = "ProgressState", .type = gostty.ProgressState, .repr = .enumeration, .text = true },
         .{ .name = "ClipboardLocation", .type = gostty.ClipboardLocation, .repr = .enumeration, .text = true, .exhaustive = false },
@@ -127,13 +123,10 @@ pub const bindings = zigo.define(.{
         // enum or deciding whether a press can carry text. Wrappers: `Key` is
         // an enum, and zigo binds functions on structs and opaque types only.
         .{ .path = "root.keyFromASCII", .params = .{"ch"} },
-        .{ .path = "root.keyFromW3C", .params = .{"code"}, .param_meta = .{ .code = .{ .semantic = .utf8_string } } },
-        .{ .path = "root.keyW3C", .params = .{"key"}, .semantic = .utf8_string },
         .{ .path = "root.keyCodepoint", .params = .{"key"} },
         .{ .path = "root.keyPrintable", .params = .{"key"} },
         .{ .path = "root.keyModifier", .params = .{"key"} },
         .{ .path = "root.keyKeypad", .params = .{"key"} },
-        .{ .path = "root.keyCtrlOrSuper", .params = .{"key"} },
         .{ .path = "root.keyLeftOrRightShift", .params = .{"key"} },
         .{ .path = "root.keyLeftOrRightAlt", .params = .{"key"} },
         .{ .path = "root.encodeFocus", .params = .{ "writer", "event" } },
@@ -243,8 +236,6 @@ pub const bindings = zigo.define(.{
                 .{ .path = "root.screenFormatSelection", .params = .{ "opts", "sel", "writer" } },
                 .{ .path = "root.screenSelectionContains", .params = .{ "sel", "x", "y" } },
                 .{ .path = "root.screenSelectionAdjust", .params = .{ "sel", "adjustment" } },
-                .{ .path = "root.screenSelectionOrder", .params = .{"sel"} },
-                .{ .path = "root.screenSelectionOrdered", .params = .{ "sel", "desired" } },
                 .{ .path = "root.screenStartHyperlink", .params = .{ "uri", "id" }, .param_meta = .{ .uri = .{ .semantic = .utf8_string }, .id = .{ .semantic = .utf8_string } }, .covers = "Screen.startHyperlink" },
             },
         },
@@ -261,14 +252,14 @@ pub const bindings = zigo.define(.{
             .strip_prefix = "search",
             .functions = .{
                 .{ .path = "root.searchMatchCount", .covers = "Search.matchesLen" },
-                .{ .path = "root.searchSelect", .params = .{"to"}, .covers = .{ "Search.select", "Search.selectedMatch" } },
+                .{ .path = "root.searchSelect", .params = .{"to"}, .covers = "Search.select" },
                 .{
                     .path = "root.searchMatches",
                     .params = .{"dst"},
                     .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
                     .covers = .{ "Search.matchAt", "Search.matches" },
                 },
-                "root.searchSelectedMatch",
+                .{ .path = "root.searchSelectedMatch", .covers = "Search.selectedMatch" },
             },
         },
         .{
@@ -278,7 +269,6 @@ pub const bindings = zigo.define(.{
             .covers = "Terminal.printAttributes",
         },
         .{ .path = "root.historyString", .returns = .caller, .release = "root.freeString", .semantic = .utf8_string, .covers = "Screen.dumpStringAlloc" },
-        .{ .path = "root.screenString", .returns = .caller, .release = "root.freeString", .semantic = .utf8_string, .covers = "Screen.dumpStringAllocUnwrapped" },
 
         // Cursor movement.
         .{ .path = "Terminal.cursorUp", .params = .{"count_req"} },
@@ -321,12 +311,10 @@ pub const bindings = zigo.define(.{
         .{ .path = "Terminal.print", .params = .{"c"} },
         .{ .path = "Terminal.printRepeat", .params = .{"count_req"} },
         .{ .path = "Terminal.printSlice", .params = .{"cps"}, .param_meta = .{ .cps = .{ .semantic = .codepoint } } },
-        .{ .path = "Terminal.plainStringUnwrapped", .returns = .caller, .release = "root.freeString", .semantic = .utf8_string },
 
         // Metadata the terminal tracks for the shell.
         .{ .path = "root.formatTerminal", .name = "Format", .params = .{ "opts", "writer" } },
         // Snapshots.
-        .{ .path = "root.writeSnapshot", .params = .{"writer"} },
         .{ .path = "root.decodeSnapshot", .name = "DecodeSnapshot", .constructs = "Snapshot", .params = .{ "reader", "max_continuation_bytes" } },
         .{ .path = "root.freeSnapshot", .destroys = "Snapshot" },
         .{
@@ -335,14 +323,12 @@ pub const bindings = zigo.define(.{
             .functions = .{
                 .{ .path = "root.snapshotRestoreInto", .params = .{"term"} },
                 "root.snapshotContinuation",
-                .{ .path = "root.snapshotHistoryRows", .params = .{"key"} },
             },
         },
         // Colors and modes.
         .{ .path = "root.backgroundColor" },
         .{ .path = "root.foregroundColor" },
         .{ .path = "root.cursorColor" },
-        .{ .path = "root.paletteColor", .params = .{"index"} },
         .{
             .path = "root.paletteColors",
             .params = .{"dst"},
@@ -396,7 +382,6 @@ pub const bindings = zigo.define(.{
                 // Partial redraw: which rows changed, one row's cells, and
                 // marking them drawn.
                 "root.renderDirty",
-                .{ .path = "root.renderRowDirty", .params = .{"y"} },
                 .{
                     .path = "root.renderDirtyRows",
                     .params = .{"dst"},
@@ -408,7 +393,6 @@ pub const bindings = zigo.define(.{
                     .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
                 },
                 .{ .path = "root.renderClean", .covers = "RenderState.clean" },
-                .{ .path = "root.renderCleanRow", .params = .{"y"} },
                 .{
                     .path = "root.renderGraphemes",
                     .params = .{ "x", "y", "dst" },

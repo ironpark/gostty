@@ -30,19 +30,6 @@ func TestSelectionOperations(t *testing.T) {
 		t.Errorf("SelectionAdjust(right) = %+v, %v, %v", moved, ok, err)
 	}
 
-	order, ok, err := screen.SelectionOrder(sel)
-	if err != nil || !ok || order != SelectionOrderForward {
-		t.Errorf("SelectionOrder = %v, %v, %v; want forward", order, ok, err)
-	}
-	backwards := Selection{StartX: 2, StartY: 1, EndX: 1, EndY: 0}
-	if order, _, _ := screen.SelectionOrder(backwards); order != SelectionOrderReverse {
-		t.Errorf("SelectionOrder(backwards) = %v; want reverse", order)
-	}
-	ordered, ok, err := screen.SelectionOrdered(backwards, SelectionOrderForward)
-	if err != nil || !ok || ordered != sel {
-		t.Errorf("SelectionOrdered(backwards, forward) = %+v, %v, %v; want %+v", ordered, ok, err, sel)
-	}
-
 	if _, ok, _ := screen.SelectionAdjust(Selection{StartY: 99, EndY: 99}, SelectionAdjustmentLeft); ok {
 		t.Error("SelectionAdjust outside the screen reported ok")
 	}

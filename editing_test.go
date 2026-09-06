@@ -160,7 +160,7 @@ func TestOptionalScalarParam(t *testing.T) {
 	}
 }
 
-func TestPlainStringUnwrapped(t *testing.T) {
+func TestFormatUnwrap(t *testing.T) {
 	term := newTerm(t, 4, 3)
 	// Longer than a row, so the text wraps.
 	if err := term.PrintString("abcdef"); err != nil {
@@ -170,15 +170,15 @@ func TestPlainStringUnwrapped(t *testing.T) {
 	if err != nil {
 		t.Fatalf("PlainString: %v", err)
 	}
-	unwrapped, err := term.PlainStringUnwrapped()
+	unwrapped, err := formatString(term, FormatOptions{Unwrap: true})
 	if err != nil {
-		t.Fatalf("PlainStringUnwrapped: %v", err)
+		t.Fatalf("Format(unwrap): %v", err)
 	}
 	if !strings.Contains(wrapped, "\n") {
 		t.Errorf("PlainString() = %q, expected a wrap newline", wrapped)
 	}
 	if got, want := strings.TrimRight(unwrapped, "\n"), "abcdef"; got != want {
-		t.Errorf("PlainStringUnwrapped() = %q, want %q", got, want)
+		t.Errorf("Format(unwrap) = %q, want %q", got, want)
 	}
 }
 

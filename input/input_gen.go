@@ -77,19 +77,6 @@ func KeyFromAscii(ch uint8) (Key, bool) {
 	return Key(zigoResult), zigoHas
 }
 
-// KeyFromW3C: The key for a W3C `KeyboardEvent.code` value such as "KeyA", or null if
-// none matches.
-func KeyFromW3C(code_ string) (Key, bool) {
-	zigoResult, zigoHas := raw.KeyFromW3C(code_)
-	return Key(zigoResult), zigoHas
-}
-
-// KeyW3C: The W3C `KeyboardEvent.code` value for `key`. Empty for keys the spec
-// does not name.
-func KeyW3C(key Key) string {
-	return raw.KeyW3C(int32(key))
-}
-
 // KeyCodepoint: The Unicode codepoint the key produces on a US layout, if it has one.
 func KeyCodepoint(key Key) (rune, bool) {
 	zigoResult, zigoHas := raw.KeyCodepoint(int32(key))
@@ -109,13 +96,6 @@ func KeyModifier(key Key) bool {
 // KeyKeypad: True for keys on the numeric keypad.
 func KeyKeypad(key Key) bool {
 	return raw.KeyKeypad(int32(key)) != 0
-}
-
-// KeyCtrlOrSuper: True for the platform's primary command modifier on either side: super
-// (command) on macOS, control elsewhere. The answer is fixed when the
-// native library is built, so it follows the platform the archive is for.
-func KeyCtrlOrSuper(key Key) bool {
-	return raw.KeyCtrlOrSuper(int32(key)) != 0
 }
 
 // KeyLeftOrRightShift: True for shift on either side.

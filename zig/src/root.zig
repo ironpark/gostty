@@ -287,8 +287,7 @@ pub const Stream = struct {
 
     /// Write a snapshot of the terminal this stream feeds, with the
     /// stream's unfinished sequence so a restored stream can pick up
-    /// mid-sequence. Prefer this over `writeSnapshot` on the terminal while
-    /// a stream exists.
+    /// mid-sequence.
     pub fn writeSnapshot(self: *Stream, writer: *std.Io.Writer) !void {
         var suffix: std.Io.Writer.Allocating = .init(self.gpa);
         defer suffix.deinit();
@@ -625,10 +624,6 @@ pub fn screenSetSelection(self: *Screen, sel: Selection) !bool {
 /// How `screenSelectionAdjust` moves the end of a selection.
 pub const SelectionAdjustment = vt.Selection.Adjustment;
 
-/// The direction a selection was made in. `mirrored_*` are rectangle
-/// selections whose corners are top-right and bottom-left.
-pub const SelectionOrder = vt.Selection.Order;
-
 fn selectionToPins(self: *Screen, sel: Selection) ?vt.Selection {
     const start = self.pages.pin(.{ .screen = .{ .x = sel.start_x, .y = sel.start_y } }) orelse return null;
     const end = self.pages.pin(.{ .screen = .{ .x = sel.end_x, .y = sel.end_y } }) orelse return null;
@@ -649,20 +644,6 @@ pub fn screenSelectionAdjust(self: *Screen, sel: Selection, adjustment: Selectio
     var inner = selectionToPins(self, sel) orelse return null;
     inner.adjust(self, adjustment);
     return Selection.fromPins(&self.pages, inner.start(), inner.end(), inner.rectangle);
-}
-
-/// The direction `sel` was made in. Null if `sel` is outside the screen.
-pub fn screenSelectionOrder(self: *Screen, sel: Selection) ?SelectionOrder {
-    const inner = selectionToPins(self, sel) orelse return null;
-    return inner.order(self);
-}
-
-/// `sel` with its ends swapped as needed to run in `desired` order. Null if
-/// `sel` is outside the screen.
-pub fn screenSelectionOrdered(self: *Screen, sel: Selection, desired: SelectionOrder) ?Selection {
-    const inner = selectionToPins(self, sel) orelse return null;
-    const result = inner.ordered(self, desired);
-    return Selection.fromPins(&self.pages, result.start(), result.end(), result.rectangle);
 }
 
 /// The screen row shown at the top of the viewport: subtract it from a
@@ -704,29 +685,13 @@ pub fn searchMatchCount(self: *Search) usize {
     return self.matchesLen();
 }
 
-/// Move to the next or previous match and put it in the screen's selection, so
-/// the text comes back out through `Screen.selectionString`.
-///
-/// ghostty tracks the search's current match separately from the screen's
-/// selection; joining the two is what a search UI wants and what this does.
-/// Returns false when there is no match to move to.
+/// Move to the next or previous match. Returns false when there is no match
+/// to move to. This changes only the search's own position: read the match
+/// with `searchSelectedMatch`, and let the UI decide whether to put it in
+/// the screen's selection (`screenSetSelection`) or scroll the viewport to
+/// it (`Terminal.scrollViewport` with the match row).
 pub fn searchSelect(self: *Search, to: SearchDirection) !bool {
-    if (!try self.select(to)) return false;
-    const match = self.selectedMatch() orelse return false;
-    const bounds = match.untracked();
-    try self.screen.select(vt.Selection.init(bounds.start, bounds.end, false));
-
-    // A match in the scrollback is no use to a UI that cannot see it, so the
-    // viewport is moved to it. Only when it is not already on screen: a search
-    // that jumps between matches on the visible page should not make the page
-    // move under them.
-    const pages = &self.screen.pages;
-    const top = pages.pointFromPin(.screen, pages.getTopLeft(.viewport)) orelse return true;
-    const at = pages.pointFromPin(.screen, bounds.start) orelse return true;
-    if (at.screen.y < top.screen.y or at.screen.y >= top.screen.y + pages.rows) {
-        pages.scroll(.{ .pin = bounds.start });
-    }
-    return true;
+    return try self.select(to);
 }
 
 /// Copy the matches found so far into `dst`, most recent screen content
@@ -833,11 +798,6 @@ pub fn historyString(self: *Terminal, gpa: Allocator) ![]const u8 {
     return try self.screens.active.dumpStringAlloc(gpa, .{ .history = .{} });
 }
 
-/// The full screen: scrollback followed by the active area.
-pub fn screenString(self: *Terminal, gpa: Allocator) ![]const u8 {
-    return try self.screens.active.dumpStringAlloc(gpa, .{ .screen = .{} });
-}
-
 /// What `formatTerminal` and `Screen.format` emit. Declared here rather than
 /// re-exported because ghostty's enum has a two-bit tag, which cannot sit in
 /// the extern `FormatOptions`.
@@ -893,8 +853,9 @@ pub const FormatOptions = extern struct {
     }
 };
 
-/// Format the active screen with the terminal's colors and, for styled
-/// output, its palette, modes and other state a replay needs.
+/// Format the active area -- the rows on screen, not the scrollback -- with
+/// the terminal's colors and, for styled output, its palette, modes and
+/// other state a replay needs. `Screen.format` covers the scrollback too.
 pub fn formatTerminal(self: *Terminal, opts: FormatOptions, writer: *std.Io.Writer) !void {
     var f = vt.formatter.TerminalFormatter.init(self, opts.toGhostty());
     f.opts.background = self.colors.background.get();
@@ -903,7 +864,8 @@ pub fn formatTerminal(self: *Terminal, opts: FormatOptions, writer: *std.Io.Writ
     try f.format(writer);
 }
 
-/// Format a whole screen, scrollback included.
+/// Format a whole screen, scrollback included. `Terminal.format` is the
+/// active area only.
 pub fn screenFormat(self: *Screen, opts: FormatOptions, writer: *std.Io.Writer) !void {
     var f = vt.formatter.ScreenFormatter.init(self, opts.toGhostty());
     f.extra = opts.screenExtra();
@@ -923,12 +885,8 @@ pub fn screenFormatSelection(self: *Screen, opts: FormatOptions, sel: Selection,
 
 // Snapshots: ghostty's binary representation of a whole terminal, active
 // state first so a restored terminal renders before its history arrives.
-
-/// Write a snapshot of the terminal. The stream state is recorded as
-/// finished; use `Stream.writeSnapshot` to carry an unfinished sequence.
-pub fn writeSnapshot(self: *Terminal, gpa: Allocator, writer: *std.Io.Writer) !void {
-    try vt.snapshot.encode(gpa, writer, self, .{ .continuation = .ground });
-}
+// Writing one is `Stream.writeSnapshot`, since the stream owns the
+// unfinished-sequence state a snapshot carries.
 
 /// A decoded snapshot. Restore it into a terminal with `restoreInto`, then
 /// feed `continuation` to a fresh stream on it to resume mid-sequence.
@@ -973,11 +931,6 @@ pub fn snapshotContinuation(self: *Snapshot) []const u8 {
         .ground => "",
         .bytes => |bytes| bytes,
     };
-}
-
-/// How many scrollback rows the snapshot restored for `key`.
-pub fn snapshotHistoryRows(self: *Snapshot, key: ScreenKey) u64 {
-    return self.decoded.history_rows.get(key) orelse 0;
 }
 
 /// The underline style an `Attribute` selects.
@@ -1154,11 +1107,6 @@ pub fn cursorColor(self: *const Terminal) ?u32 {
     return packColor(self.colors.cursor.get() orelse return null);
 }
 
-/// The current color of palette entry `index`, after any OSC 4 change.
-pub fn paletteColor(self: *const Terminal, index: u8) u32 {
-    return packColor(self.colors.palette.current[index]);
-}
-
 /// Copy the current 256-color palette into `dst` and return how many entries
 /// were written: 256, or `dst.len` if shorter.
 pub fn paletteColors(self: *const Terminal, dst: []u32) usize {
@@ -1235,18 +1183,6 @@ pub fn keyFromASCII(ch: u8) ?Key {
     return Key.fromASCII(ch);
 }
 
-/// The key for a W3C `KeyboardEvent.code` value such as "KeyA", or null if
-/// none matches.
-pub fn keyFromW3C(code: []const u8) ?Key {
-    return Key.fromW3C(code);
-}
-
-/// The W3C `KeyboardEvent.code` value for `key`. Empty for keys the spec
-/// does not name.
-pub fn keyW3C(key: Key) []const u8 {
-    return key.w3c();
-}
-
 /// The Unicode codepoint the key produces on a US layout, if it has one.
 pub fn keyCodepoint(key: Key) ?u21 {
     return key.codepoint();
@@ -1265,13 +1201,6 @@ pub fn keyModifier(key: Key) bool {
 /// True for keys on the numeric keypad.
 pub fn keyKeypad(key: Key) bool {
     return key.keypad();
-}
-
-/// True for the platform's primary command modifier on either side: super
-/// (command) on macOS, control elsewhere. The answer is fixed when the
-/// native library is built, so it follows the platform the archive is for.
-pub fn keyCtrlOrSuper(key: Key) bool {
-    return key.ctrlOrSuper();
 }
 
 /// True for shift on either side.
@@ -1638,19 +1567,13 @@ pub const RenderDirty = enum(u8) {
 };
 
 /// What changed since `renderClean`. `renderUpdate` raises this; nothing
-/// lowers it but `renderClean` and `renderCleanRow`.
+/// lowers it but `renderClean`.
 pub fn renderDirty(self: *RenderState) RenderDirty {
     return switch (self.dirty) {
         .false => .clean,
         .partial => .partial,
         .full => .full,
     };
-}
-
-/// Whether viewport row `y` changed since it was last cleaned.
-pub fn renderRowDirty(self: *RenderState, y: u16) bool {
-    if (y >= self.rows) return false;
-    return self.row_data.items(.dirty)[y];
 }
 
 /// Write the indexes of the dirty viewport rows into `dst`, top to bottom,
@@ -1668,15 +1591,9 @@ pub fn renderDirtyRows(self: *RenderState, dst: []u16) !usize {
 }
 
 /// Mark everything drawn: clears the frame state and every row flag.
+/// Call it once the frame's rows have been read.
 pub fn renderClean(self: *RenderState) void {
     self.clean();
-}
-
-/// Mark one row drawn. The frame state stays as it was, so a renderer that
-/// consumes rows one at a time calls `renderClean` once it has them all.
-pub fn renderCleanRow(self: *RenderState, y: u16) void {
-    if (y >= self.rows) return;
-    self.row_data.items(.dirty)[y] = false;
 }
 
 /// The codepoints of the cell at viewport `x`, `y`: the base codepoint
