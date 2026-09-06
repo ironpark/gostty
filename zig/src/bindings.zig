@@ -59,6 +59,7 @@ pub const bindings = zigo.define(.{
         .{ .type = gostty.Stream, .repr = .@"opaque", .name = "Stream" },
         .{ .type = gostty.Screen, .repr = .@"opaque", .name = "Screen" },
         .{ .type = gostty.Search, .repr = .@"opaque", .name = "Search" },
+        .{ .type = gostty.Snapshot, .repr = .@"opaque", .name = "Snapshot" },
         .{ .type = gostty.KeyEvent, .repr = .value, .name = "KeyEvent", .field_meta = .{ .unshifted_codepoint = .{ .semantic = .codepoint } } },
         .{ .type = gostty.MouseEvent, .repr = .value, .name = "MouseEvent" },
         .{ .type = gostty.KeyMods, .repr = .value, .name = "KeyMods" },
@@ -202,6 +203,7 @@ pub const bindings = zigo.define(.{
         .{ .path = "Stream.denyClipboard", .params = .{"reason"} },
         .{ .path = "Stream.writeContinuation", .params = .{"writer"} },
         .{ .path = "Stream.hasReplies" },
+        .{ .path = "Stream.writeSnapshot", .params = .{"writer"} },
         .{ .path = "Stream.writeReplies", .params = .{"writer"} },
 
         // ghostty's own methods, bound directly.
@@ -323,6 +325,19 @@ pub const bindings = zigo.define(.{
 
         // Metadata the terminal tracks for the shell.
         .{ .path = "root.formatTerminal", .name = "Format", .params = .{ "opts", "writer" } },
+        // Snapshots.
+        .{ .path = "root.writeSnapshot", .params = .{"writer"} },
+        .{ .path = "root.decodeSnapshot", .name = "DecodeSnapshot", .constructs = "Snapshot", .params = .{ "reader", "max_continuation_bytes" } },
+        .{ .path = "root.freeSnapshot", .destroys = "Snapshot" },
+        .{
+            .receiver = "Snapshot",
+            .strip_prefix = "snapshot",
+            .functions = .{
+                .{ .path = "root.snapshotRestoreInto", .params = .{"term"} },
+                "root.snapshotContinuation",
+                .{ .path = "root.snapshotHistoryRows", .params = .{"key"} },
+            },
+        },
         // Colors and modes.
         .{ .path = "root.backgroundColor" },
         .{ .path = "root.foregroundColor" },

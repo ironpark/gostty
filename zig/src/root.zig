@@ -285,6 +285,23 @@ pub const Stream = struct {
         try self.inner.writeContinuation(writer);
     }
 
+    /// Write a snapshot of the terminal this stream feeds, with the
+    /// stream's unfinished sequence so a restored stream can pick up
+    /// mid-sequence. Prefer this over `writeSnapshot` on the terminal while
+    /// a stream exists.
+    pub fn writeSnapshot(self: *Stream, writer: *std.Io.Writer) !void {
+        var suffix: std.Io.Writer.Allocating = .init(self.gpa);
+        defer suffix.deinit();
+        const cont: vt.snapshot.Continuation = if (self.inner.ground()) .ground else blk: {
+            self.inner.writeContinuation(&suffix.writer) catch |err| switch (err) {
+                error.ContinuationDisabled, error.ContinuationUnavailable => break :blk .ground,
+                else => |e| return e,
+            };
+            break :blk .{ .bytes = suffix.written() };
+        };
+        try vt.snapshot.encode(self.gpa, writer, self.inner.handler.terminal, .{ .continuation = cont });
+    }
+
     /// Take the next event a feed produced, absent when the queue is empty.
     ///
     /// The payload accessors below describe the event this returned, until the
@@ -902,6 +919,65 @@ pub fn screenFormatSelection(self: *Screen, opts: FormatOptions, sel: Selection,
     f.extra = opts.screenExtra();
     try f.format(writer);
     return true;
+}
+
+// Snapshots: ghostty's binary representation of a whole terminal, active
+// state first so a restored terminal renders before its history arrives.
+
+/// Write a snapshot of the terminal. The stream state is recorded as
+/// finished; use `Stream.writeSnapshot` to carry an unfinished sequence.
+pub fn writeSnapshot(self: *Terminal, gpa: Allocator, writer: *std.Io.Writer) !void {
+    try vt.snapshot.encode(gpa, writer, self, .{ .continuation = .ground });
+}
+
+/// A decoded snapshot. Restore it into a terminal with `restoreInto`, then
+/// feed `continuation` to a fresh stream on it to resume mid-sequence.
+pub const Snapshot = struct {
+    decoded: vt.snapshot.Decoded,
+};
+
+/// Decode a snapshot from `reader`. `max_continuation_bytes` bounds the
+/// unfinished-sequence suffix the snapshot may carry.
+pub fn decodeSnapshot(gpa: Allocator, reader: *std.Io.Reader, max_continuation_bytes: usize) !*Snapshot {
+    const self = try gpa.create(Snapshot);
+    errdefer gpa.destroy(self);
+    self.decoded = try vt.snapshot.decode(gpa, io, reader, .{ .max_continuation_bytes = max_continuation_bytes });
+    return self;
+}
+
+pub fn freeSnapshot(self: *Snapshot, gpa: Allocator) void {
+    self.decoded.deinit(gpa);
+    gpa.destroy(self);
+}
+
+/// Replace `term` with the terminal the snapshot holds: its size, screens,
+/// scrollback, modes and colors. The snapshot gives its terminal up once;
+/// a second call fails. Streams on `term` keep pointing at it, but their
+/// parser state belongs to the old contents, so open a new stream and feed
+/// it `continuation` before any new input.
+///
+/// zigo allows one constructor per handle and `newTerminal` is it, so a
+/// restore fills a terminal the caller made rather than returning one.
+pub fn snapshotRestoreInto(self: *Snapshot, gpa: Allocator, term: *Terminal) error{TerminalTaken}!void {
+    const restored = self.decoded.terminal orelse return error.TerminalTaken;
+    self.decoded.terminal = null;
+    term.deinit(gpa);
+    term.* = restored;
+}
+
+/// The bytes of the unfinished sequence the snapshot was taken in, empty
+/// when the stream was at ground. Feed them to the restored terminal's
+/// stream before any new input.
+pub fn snapshotContinuation(self: *Snapshot) []const u8 {
+    return switch (self.decoded.continuation) {
+        .ground => "",
+        .bytes => |bytes| bytes,
+    };
+}
+
+/// How many scrollback rows the snapshot restored for `key`.
+pub fn snapshotHistoryRows(self: *Snapshot, key: ScreenKey) u64 {
+    return self.decoded.history_rows.get(key) orelse 0;
 }
 
 /// The underline style an `Attribute` selects.

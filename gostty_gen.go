@@ -728,6 +728,40 @@ func (s *Stream) HasReplies() (bool, error) {
 	return result != 0, nil
 }
 
+// WriteSnapshot: Write a snapshot of the terminal this stream feeds, with the
+// stream's unfinished sequence so a restored stream can pick up
+// mid-sequence. Prefer this over `writeSnapshot` on the terminal while
+// a stream exists.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Stream) WriteSnapshot(writer io.Writer) error {
+	if writer == nil {
+		return &StreamError{Operation: "Stream.WriteSnapshot", Parameter: "writer", Err: ErrNilStream}
+	}
+	ptr, err := zigoCheckedPointer("Stream.WriteSnapshot receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	writerHandle := zigoNewWriterStreamHandle(writer)
+	defer zigoDeleteCallbackHandle(writerHandle)
+	code := raw.StreamWriteSnapshot(ptr, uintptr(writerHandle))
+	if zigoCallbackPanicPending() {
+		zigoRethrowCallbackPanic("Stream.WriteSnapshot", writerHandle)
+		for slot := range 2 {
+			zigoRethrowCallbackPanic("Stream.WriteSnapshot", s.zigoCallbackHandle(slot))
+		}
+	}
+	if err := zigoStreamError("Stream.WriteSnapshot", "writer", writerHandle); err != nil {
+		return err
+	}
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.WriteSnapshot", code), s)
+	}
+	return nil
+}
+
 // WriteReplies: Write everything the terminal has answered to `writer` and forget it.
 //
 // These are the terminal's own replies -- device status, Kitty graphics
@@ -2091,6 +2125,112 @@ func (te *Terminal) Format(opts FormatOptions, writer io.Writer) error {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Format", code), te)
 	}
 	return nil
+}
+
+// WriteSnapshot: Write a snapshot of the terminal. The stream state is recorded as
+// finished; use `Stream.writeSnapshot` to carry an unfinished sequence.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (te *Terminal) WriteSnapshot(writer io.Writer) error {
+	if writer == nil {
+		return &StreamError{Operation: "Terminal.WriteSnapshot", Parameter: "writer", Err: ErrNilStream}
+	}
+	ptr, err := zigoCheckedPointer("Terminal.WriteSnapshot receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	writerHandle := zigoNewWriterStreamHandle(writer)
+	defer zigoDeleteCallbackHandle(writerHandle)
+	code := raw.TerminalWriteSnapshot(ptr, uintptr(writerHandle))
+	if zigoCallbackPanicPending() {
+		zigoRethrowCallbackPanic("Terminal.WriteSnapshot", writerHandle)
+	}
+	if err := zigoStreamError("Terminal.WriteSnapshot", "writer", writerHandle); err != nil {
+		return err
+	}
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.WriteSnapshot", code), te)
+	}
+	return nil
+}
+
+// DecodeSnapshot creates a caller-owned Snapshot.
+// The caller must call Close on the returned handle.
+// Native failures are returned as generated error values.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func DecodeSnapshot(reader io.Reader, maxContinuationBytes uint) (*Snapshot, error) {
+	if reader == nil {
+		return nil, &StreamError{Operation: "DecodeSnapshot", Parameter: "reader", Err: ErrNilStream}
+	}
+	readerHandle := zigoNewReaderStreamHandle(reader)
+	defer zigoDeleteCallbackHandle(readerHandle)
+	readerData := zigoReaderBytes(reader)
+	result, code := raw.DecodeSnapshot(uintptr(readerHandle), readerData, maxContinuationBytes)
+	if zigoCallbackPanicPending() {
+		zigoRethrowCallbackPanic("DecodeSnapshot", readerHandle)
+	}
+	if err := zigoStreamError("DecodeSnapshot", "reader", readerHandle); err != nil {
+		return nil, err
+	}
+	if code != 0 {
+		return nil, zigoErrorForCode("DecodeSnapshot", code)
+	}
+	return zigoNewSnapshot(result), nil
+}
+
+// RestoreInto calls the Zig function Snapshot.restoreInto.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (s *Snapshot) RestoreInto(term *Terminal) error {
+	ptr, err := zigoCheckedPointer("Snapshot.RestoreInto receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	termPtr, err := zigoCheckedPointer("Snapshot.RestoreInto parameter term", term)
+	if err != nil {
+		return err
+	}
+	defer lifecycle.Release(term)
+	code := raw.SnapshotRestoreInto(ptr, termPtr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Snapshot.RestoreInto", code), s, term)
+	}
+	return nil
+}
+
+// Continuation calls the Zig function Snapshot.continuation.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Snapshot) Continuation() ([]byte, error) {
+	ptr, err := zigoCheckedPointer("Snapshot.Continuation receiver", s)
+	if err != nil {
+		return nil, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.SnapshotContinuation(ptr)
+	if code != 0 {
+		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Snapshot.Continuation", code), s)
+	}
+	return result, nil
+}
+
+// HistoryRows calls the Zig function Snapshot.historyRows.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Snapshot) HistoryRows(key ScreenKey) (uint64, error) {
+	ptr, err := zigoCheckedPointer("Snapshot.HistoryRows receiver", s)
+	if err != nil {
+		return 0, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.SnapshotHistoryRows(ptr, uint8(key))
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Snapshot.HistoryRows", code), s)
+	}
+	return result, nil
 }
 
 // BackgroundColor: The current background color: what OSC 11 set, else the default.

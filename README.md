@@ -47,6 +47,11 @@ are readable and settable by name (`ModeEnabled`, `SetMode`), and a selection
 is a value in screen coordinates (`Screen.Selection`, `Search.Matches`) that a
 renderer converts with `Screen.ViewportTop`.
 
+A terminal can be saved and restored: `Stream.WriteSnapshot` writes ghostty's
+binary snapshot, unfinished escape sequence included, and `DecodeSnapshot`
+reads one back into a `Snapshot` whose `RestoreInto` replaces an existing
+terminal's contents.
+
 Enums that a consumer names in text -- keys, mouse buttons, cursor styles,
 progress states -- implement `encoding.TextMarshaler` and `TextUnmarshaler` and have a
 `Parse<Enum>` function, so a keybinding like `{"key":"enter","mod":"ctrl"}`

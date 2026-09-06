@@ -9,6 +9,7 @@ typedef struct zg_terminal zg_terminal;
 typedef struct zg_stream zg_stream;
 typedef struct zg_screen zg_screen;
 typedef struct zg_search zg_search;
+typedef struct zg_snapshot zg_snapshot;
 typedef uint8_t zg_cursor_style;
 #define ZG_CURSOR_STYLE_BAR 0
 #define ZG_CURSOR_STYLE_BLOCK 1
@@ -609,6 +610,7 @@ ZIGO_EXPORT int32_t zg_stream_reply_clipboard_text(zg_stream * self, const uint8
 ZIGO_EXPORT int32_t zg_stream_deny_clipboard(zg_stream * self, uint8_t reason);
 ZIGO_EXPORT int32_t zg_stream_write_continuation(zg_stream * self, size_t writer_userdata);
 ZIGO_EXPORT int32_t zg_stream_has_replies(zg_stream * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_stream_write_snapshot(zg_stream * self, size_t writer_userdata);
 ZIGO_EXPORT int32_t zg_stream_write_replies(zg_stream * self, size_t writer_userdata);
 ZIGO_EXPORT int32_t zg_terminal_print_string(zg_terminal * self, const uint8_t * str_ptr, size_t str_len);
 ZIGO_EXPORT int32_t zg_terminal_plain_string(zg_terminal * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
@@ -689,6 +691,12 @@ ZIGO_EXPORT int32_t zg_terminal_print_repeat(zg_terminal * self, size_t count_re
 ZIGO_EXPORT int32_t zg_terminal_print_slice(zg_terminal * self, const uint32_t * cps_ptr, size_t cps_len);
 ZIGO_EXPORT int32_t zg_terminal_plain_string_unwrapped(zg_terminal * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
 ZIGO_EXPORT int32_t zg_terminal_format(zg_terminal * self, const zg_format_options * opts, size_t writer_userdata);
+ZIGO_EXPORT int32_t zg_terminal_write_snapshot(zg_terminal * self, size_t writer_userdata);
+ZIGO_EXPORT int32_t zg_decode_snapshot(const uint8_t * reader_data, size_t reader_data_len, size_t reader_userdata, size_t max_continuation_bytes, zg_snapshot * * out_result);
+ZIGO_EXPORT int32_t zg_snapshot_free_snapshot(zg_snapshot * self);
+ZIGO_EXPORT int32_t zg_snapshot_restore_into(zg_snapshot * self, zg_terminal * term);
+ZIGO_EXPORT int32_t zg_snapshot_continuation(zg_snapshot * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_snapshot_history_rows(zg_snapshot * self, uint8_t key, uint64_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_background_color(zg_terminal * self, uint8_t * out_result_has, uint32_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_foreground_color(zg_terminal * self, uint8_t * out_result_has, uint32_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_cursor_color(zg_terminal * self, uint8_t * out_result_has, uint32_t * out_result);

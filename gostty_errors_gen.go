@@ -82,6 +82,210 @@ var ErrInvalidValue = &Error{Code: 8, Name: "InvalidValue"}
 // ErrNoSpaceLeft represents Zig error.NoSpaceLeft.
 var ErrNoSpaceLeft = &Error{Code: 9, Name: "NoSpaceLeft"}
 
+// ErrOverflow represents Zig error.Overflow.
+var ErrOverflow = &Error{Code: 10, Name: "Overflow"}
+
+// ErrScrollbackLimitOverflow represents Zig error.ScrollbackLimitOverflow.
+var ErrScrollbackLimitOverflow = &Error{Code: 11, Name: "ScrollbackLimitOverflow"}
+
+// ErrInvalidDimensions represents Zig error.InvalidDimensions.
+var ErrInvalidDimensions = &Error{Code: 12, Name: "InvalidDimensions"}
+
+// ErrInvalidScrollingRegion represents Zig error.InvalidScrollingRegion.
+var ErrInvalidScrollingRegion = &Error{Code: 13, Name: "InvalidScrollingRegion"}
+
+// ErrInvalidScreenCount represents Zig error.InvalidScreenCount.
+var ErrInvalidScreenCount = &Error{Code: 14, Name: "InvalidScreenCount"}
+
+// ErrInvalidActiveScreenKey represents Zig error.InvalidActiveScreenKey.
+var ErrInvalidActiveScreenKey = &Error{Code: 15, Name: "InvalidActiveScreenKey"}
+
+// ErrInvalidPreviousCodepoint represents Zig error.InvalidPreviousCodepoint.
+var ErrInvalidPreviousCodepoint = &Error{Code: 16, Name: "InvalidPreviousCodepoint"}
+
+// ErrInvalidScrollbackLimit represents Zig error.InvalidScrollbackLimit.
+var ErrInvalidScrollbackLimit = &Error{Code: 17, Name: "InvalidScrollbackLimit"}
+
+// ErrInvalidTabStops represents Zig error.InvalidTabStops.
+var ErrInvalidTabStops = &Error{Code: 18, Name: "InvalidTabStops"}
+
+// ErrInvalidPalette represents Zig error.InvalidPalette.
+var ErrInvalidPalette = &Error{Code: 19, Name: "InvalidPalette"}
+
+// ErrStringTooLong represents Zig error.StringTooLong.
+var ErrStringTooLong = &Error{Code: 20, Name: "StringTooLong"}
+
+// ErrPayloadTooLarge represents Zig error.PayloadTooLarge.
+var ErrPayloadTooLarge = &Error{Code: 21, Name: "PayloadTooLarge"}
+
+// ErrInvalidUri represents Zig error.InvalidUri.
+var ErrInvalidUri = &Error{Code: 22, Name: "InvalidUri"}
+
+// ErrInvalidExplicitID represents Zig error.InvalidExplicitId.
+var ErrInvalidExplicitID = &Error{Code: 23, Name: "InvalidExplicitId"}
+
+// ErrInvalidCursorFlags represents Zig error.InvalidCursorFlags.
+var ErrInvalidCursorFlags = &Error{Code: 24, Name: "InvalidCursorFlags"}
+
+// ErrInvalidCharsetState represents Zig error.InvalidCharsetState.
+var ErrInvalidCharsetState = &Error{Code: 25, Name: "InvalidCharsetState"}
+
+// ErrInvalidKittyKeyboardIndex represents Zig error.InvalidKittyKeyboardIndex.
+var ErrInvalidKittyKeyboardIndex = &Error{Code: 26, Name: "InvalidKittyKeyboardIndex"}
+
+// ErrInvalidKittyKeyboardFlags represents Zig error.InvalidKittyKeyboardFlags.
+var ErrInvalidKittyKeyboardFlags = &Error{Code: 27, Name: "InvalidKittyKeyboardFlags"}
+
+// ErrInvalidSavedCursorFlags represents Zig error.InvalidSavedCursorFlags.
+var ErrInvalidSavedCursorFlags = &Error{Code: 28, Name: "InvalidSavedCursorFlags"}
+
+// ErrInvalidWideCell represents Zig error.InvalidWideCell.
+var ErrInvalidWideCell = &Error{Code: 29, Name: "InvalidWideCell"}
+
+// ErrTooManyGraphemes represents Zig error.TooManyGraphemes.
+var ErrTooManyGraphemes = &Error{Code: 30, Name: "TooManyGraphemes"}
+
+// ErrPageCountOverflow represents Zig error.PageCountOverflow.
+var ErrPageCountOverflow = &Error{Code: 31, Name: "PageCountOverflow"}
+
+// ErrNoPendingState represents Zig error.NoPendingState.
+var ErrNoPendingState = &Error{Code: 32, Name: "NoPendingState"}
+
+// ErrNonCanonicalContinuation represents Zig error.NonCanonicalContinuation.
+var ErrNonCanonicalContinuation = &Error{Code: 33, Name: "NonCanonicalContinuation"}
+
+// ErrReplayWouldCommit represents Zig error.ReplayWouldCommit.
+var ErrReplayWouldCommit = &Error{Code: 34, Name: "ReplayWouldCommit"}
+
+// ErrEndOfStream represents Zig error.EndOfStream.
+var ErrEndOfStream = &Error{Code: 35, Name: "EndOfStream"}
+
+// ErrReadFailed represents Zig error.ReadFailed.
+var ErrReadFailed = &Error{Code: 36, Name: "ReadFailed"}
+
+// ErrInvalidMagic represents Zig error.InvalidMagic.
+var ErrInvalidMagic = &Error{Code: 37, Name: "InvalidMagic"}
+
+// ErrUnsupportedVersion represents Zig error.UnsupportedVersion.
+var ErrUnsupportedVersion = &Error{Code: 38, Name: "UnsupportedVersion"}
+
+// ErrInvalidTag represents Zig error.InvalidTag.
+var ErrInvalidTag = &Error{Code: 39, Name: "InvalidTag"}
+
+// ErrInvalidChecksum represents Zig error.InvalidChecksum.
+var ErrInvalidChecksum = &Error{Code: 40, Name: "InvalidChecksum"}
+
+// ErrPayloadNotExhausted represents Zig error.PayloadNotExhausted.
+var ErrPayloadNotExhausted = &Error{Code: 41, Name: "PayloadNotExhausted"}
+
+// ErrUnexpectedRecordTag represents Zig error.UnexpectedRecordTag.
+var ErrUnexpectedRecordTag = &Error{Code: 42, Name: "UnexpectedRecordTag"}
+
+// ErrInvalidKey represents Zig error.InvalidKey.
+var ErrInvalidKey = &Error{Code: 43, Name: "InvalidKey"}
+
+// ErrInvalidRowCellCount represents Zig error.InvalidRowCellCount.
+var ErrInvalidRowCellCount = &Error{Code: 44, Name: "InvalidRowCellCount"}
+
+// ErrInvalidKind represents Zig error.InvalidKind.
+var ErrInvalidKind = &Error{Code: 45, Name: "InvalidKind"}
+
+// ErrInvalidDestinationCapacity represents Zig error.InvalidDestinationCapacity.
+var ErrInvalidDestinationCapacity = &Error{Code: 46, Name: "InvalidDestinationCapacity"}
+
+// ErrZeroRowCount represents Zig error.ZeroRowCount.
+var ErrZeroRowCount = &Error{Code: 47, Name: "ZeroRowCount"}
+
+// ErrZeroColCount represents Zig error.ZeroColCount.
+var ErrZeroColCount = &Error{Code: 48, Name: "ZeroColCount"}
+
+// ErrUnmarkedGraphemeRow represents Zig error.UnmarkedGraphemeRow.
+var ErrUnmarkedGraphemeRow = &Error{Code: 49, Name: "UnmarkedGraphemeRow"}
+
+// ErrMissingGraphemeData represents Zig error.MissingGraphemeData.
+var ErrMissingGraphemeData = &Error{Code: 50, Name: "MissingGraphemeData"}
+
+// ErrInvalidGraphemeCount represents Zig error.InvalidGraphemeCount.
+var ErrInvalidGraphemeCount = &Error{Code: 51, Name: "InvalidGraphemeCount"}
+
+// ErrUnmarkedGraphemeCell represents Zig error.UnmarkedGraphemeCell.
+var ErrUnmarkedGraphemeCell = &Error{Code: 52, Name: "UnmarkedGraphemeCell"}
+
+// ErrMissingStyle represents Zig error.MissingStyle.
+var ErrMissingStyle = &Error{Code: 53, Name: "MissingStyle"}
+
+// ErrUnmarkedStyleRow represents Zig error.UnmarkedStyleRow.
+var ErrUnmarkedStyleRow = &Error{Code: 54, Name: "UnmarkedStyleRow"}
+
+// ErrMismatchedStyleRef represents Zig error.MismatchedStyleRef.
+var ErrMismatchedStyleRef = &Error{Code: 55, Name: "MismatchedStyleRef"}
+
+// ErrInvalidStyleCount represents Zig error.InvalidStyleCount.
+var ErrInvalidStyleCount = &Error{Code: 56, Name: "InvalidStyleCount"}
+
+// ErrMissingHyperlinkData represents Zig error.MissingHyperlinkData.
+var ErrMissingHyperlinkData = &Error{Code: 57, Name: "MissingHyperlinkData"}
+
+// ErrMismatchedHyperlinkRef represents Zig error.MismatchedHyperlinkRef.
+var ErrMismatchedHyperlinkRef = &Error{Code: 58, Name: "MismatchedHyperlinkRef"}
+
+// ErrUnmarkedHyperlinkCell represents Zig error.UnmarkedHyperlinkCell.
+var ErrUnmarkedHyperlinkCell = &Error{Code: 59, Name: "UnmarkedHyperlinkCell"}
+
+// ErrUnmarkedHyperlinkRow represents Zig error.UnmarkedHyperlinkRow.
+var ErrUnmarkedHyperlinkRow = &Error{Code: 60, Name: "UnmarkedHyperlinkRow"}
+
+// ErrInvalidSpacerTailLocation represents Zig error.InvalidSpacerTailLocation.
+var ErrInvalidSpacerTailLocation = &Error{Code: 61, Name: "InvalidSpacerTailLocation"}
+
+// ErrInvalidSpacerHeadLocation represents Zig error.InvalidSpacerHeadLocation.
+var ErrInvalidSpacerHeadLocation = &Error{Code: 62, Name: "InvalidSpacerHeadLocation"}
+
+// ErrUnwrappedSpacerHead represents Zig error.UnwrappedSpacerHead.
+var ErrUnwrappedSpacerHead = &Error{Code: 63, Name: "UnwrappedSpacerHead"}
+
+// ErrInvalidPageDimensions represents Zig error.InvalidPageDimensions.
+var ErrInvalidPageDimensions = &Error{Code: 64, Name: "InvalidPageDimensions"}
+
+// ErrNoPages represents Zig error.NoPages.
+var ErrNoPages = &Error{Code: 65, Name: "NoPages"}
+
+// ErrInsufficientRows represents Zig error.InsufficientRows.
+var ErrInsufficientRows = &Error{Code: 66, Name: "InsufficientRows"}
+
+// ErrInvalidPageCount represents Zig error.InvalidPageCount.
+var ErrInvalidPageCount = &Error{Code: 67, Name: "InvalidPageCount"}
+
+// ErrContinuationLimitExceeded represents Zig error.ContinuationLimitExceeded.
+var ErrContinuationLimitExceeded = &Error{Code: 68, Name: "ContinuationLimitExceeded"}
+
+// ErrUnexpectedScreenKey represents Zig error.UnexpectedScreenKey.
+var ErrUnexpectedScreenKey = &Error{Code: 69, Name: "UnexpectedScreenKey"}
+
+// ErrDuplicateScreen represents Zig error.DuplicateScreen.
+var ErrDuplicateScreen = &Error{Code: 70, Name: "DuplicateScreen"}
+
+// ErrDecoderNotReady represents Zig error.DecoderNotReady.
+var ErrDecoderNotReady = &Error{Code: 71, Name: "DecoderNotReady"}
+
+// ErrDecoderFailed represents Zig error.DecoderFailed.
+var ErrDecoderFailed = &Error{Code: 72, Name: "DecoderFailed"}
+
+// ErrUnexpectedHistoryKey represents Zig error.UnexpectedHistoryKey.
+var ErrUnexpectedHistoryKey = &Error{Code: 73, Name: "UnexpectedHistoryKey"}
+
+// ErrDuplicateHistory represents Zig error.DuplicateHistory.
+var ErrDuplicateHistory = &Error{Code: 74, Name: "DuplicateHistory"}
+
+// ErrRowCountOverflow represents Zig error.RowCountOverflow.
+var ErrRowCountOverflow = &Error{Code: 75, Name: "RowCountOverflow"}
+
+// ErrPageSizeOverflow represents Zig error.PageSizeOverflow.
+var ErrPageSizeOverflow = &Error{Code: 76, Name: "PageSizeOverflow"}
+
+// ErrTerminalTaken represents Zig error.TerminalTaken.
+var ErrTerminalTaken = &Error{Code: 77, Name: "TerminalTaken"}
+
 func zigoErrorForCode(operation string, code int32) error {
 	if code <= -256 {
 		return &NativePanicError{Operation: operation, Message: raw.PanicMessage(code)}
@@ -105,6 +309,142 @@ func zigoErrorForCode(operation string, code int32) error {
 		return &Error{Code: 8, Name: "InvalidValue", Operation: operation}
 	case 9:
 		return &Error{Code: 9, Name: "NoSpaceLeft", Operation: operation}
+	case 10:
+		return &Error{Code: 10, Name: "Overflow", Operation: operation}
+	case 11:
+		return &Error{Code: 11, Name: "ScrollbackLimitOverflow", Operation: operation}
+	case 12:
+		return &Error{Code: 12, Name: "InvalidDimensions", Operation: operation}
+	case 13:
+		return &Error{Code: 13, Name: "InvalidScrollingRegion", Operation: operation}
+	case 14:
+		return &Error{Code: 14, Name: "InvalidScreenCount", Operation: operation}
+	case 15:
+		return &Error{Code: 15, Name: "InvalidActiveScreenKey", Operation: operation}
+	case 16:
+		return &Error{Code: 16, Name: "InvalidPreviousCodepoint", Operation: operation}
+	case 17:
+		return &Error{Code: 17, Name: "InvalidScrollbackLimit", Operation: operation}
+	case 18:
+		return &Error{Code: 18, Name: "InvalidTabStops", Operation: operation}
+	case 19:
+		return &Error{Code: 19, Name: "InvalidPalette", Operation: operation}
+	case 20:
+		return &Error{Code: 20, Name: "StringTooLong", Operation: operation}
+	case 21:
+		return &Error{Code: 21, Name: "PayloadTooLarge", Operation: operation}
+	case 22:
+		return &Error{Code: 22, Name: "InvalidUri", Operation: operation}
+	case 23:
+		return &Error{Code: 23, Name: "InvalidExplicitId", Operation: operation}
+	case 24:
+		return &Error{Code: 24, Name: "InvalidCursorFlags", Operation: operation}
+	case 25:
+		return &Error{Code: 25, Name: "InvalidCharsetState", Operation: operation}
+	case 26:
+		return &Error{Code: 26, Name: "InvalidKittyKeyboardIndex", Operation: operation}
+	case 27:
+		return &Error{Code: 27, Name: "InvalidKittyKeyboardFlags", Operation: operation}
+	case 28:
+		return &Error{Code: 28, Name: "InvalidSavedCursorFlags", Operation: operation}
+	case 29:
+		return &Error{Code: 29, Name: "InvalidWideCell", Operation: operation}
+	case 30:
+		return &Error{Code: 30, Name: "TooManyGraphemes", Operation: operation}
+	case 31:
+		return &Error{Code: 31, Name: "PageCountOverflow", Operation: operation}
+	case 32:
+		return &Error{Code: 32, Name: "NoPendingState", Operation: operation}
+	case 33:
+		return &Error{Code: 33, Name: "NonCanonicalContinuation", Operation: operation}
+	case 34:
+		return &Error{Code: 34, Name: "ReplayWouldCommit", Operation: operation}
+	case 35:
+		return &Error{Code: 35, Name: "EndOfStream", Operation: operation}
+	case 36:
+		return &Error{Code: 36, Name: "ReadFailed", Operation: operation}
+	case 37:
+		return &Error{Code: 37, Name: "InvalidMagic", Operation: operation}
+	case 38:
+		return &Error{Code: 38, Name: "UnsupportedVersion", Operation: operation}
+	case 39:
+		return &Error{Code: 39, Name: "InvalidTag", Operation: operation}
+	case 40:
+		return &Error{Code: 40, Name: "InvalidChecksum", Operation: operation}
+	case 41:
+		return &Error{Code: 41, Name: "PayloadNotExhausted", Operation: operation}
+	case 42:
+		return &Error{Code: 42, Name: "UnexpectedRecordTag", Operation: operation}
+	case 43:
+		return &Error{Code: 43, Name: "InvalidKey", Operation: operation}
+	case 44:
+		return &Error{Code: 44, Name: "InvalidRowCellCount", Operation: operation}
+	case 45:
+		return &Error{Code: 45, Name: "InvalidKind", Operation: operation}
+	case 46:
+		return &Error{Code: 46, Name: "InvalidDestinationCapacity", Operation: operation}
+	case 47:
+		return &Error{Code: 47, Name: "ZeroRowCount", Operation: operation}
+	case 48:
+		return &Error{Code: 48, Name: "ZeroColCount", Operation: operation}
+	case 49:
+		return &Error{Code: 49, Name: "UnmarkedGraphemeRow", Operation: operation}
+	case 50:
+		return &Error{Code: 50, Name: "MissingGraphemeData", Operation: operation}
+	case 51:
+		return &Error{Code: 51, Name: "InvalidGraphemeCount", Operation: operation}
+	case 52:
+		return &Error{Code: 52, Name: "UnmarkedGraphemeCell", Operation: operation}
+	case 53:
+		return &Error{Code: 53, Name: "MissingStyle", Operation: operation}
+	case 54:
+		return &Error{Code: 54, Name: "UnmarkedStyleRow", Operation: operation}
+	case 55:
+		return &Error{Code: 55, Name: "MismatchedStyleRef", Operation: operation}
+	case 56:
+		return &Error{Code: 56, Name: "InvalidStyleCount", Operation: operation}
+	case 57:
+		return &Error{Code: 57, Name: "MissingHyperlinkData", Operation: operation}
+	case 58:
+		return &Error{Code: 58, Name: "MismatchedHyperlinkRef", Operation: operation}
+	case 59:
+		return &Error{Code: 59, Name: "UnmarkedHyperlinkCell", Operation: operation}
+	case 60:
+		return &Error{Code: 60, Name: "UnmarkedHyperlinkRow", Operation: operation}
+	case 61:
+		return &Error{Code: 61, Name: "InvalidSpacerTailLocation", Operation: operation}
+	case 62:
+		return &Error{Code: 62, Name: "InvalidSpacerHeadLocation", Operation: operation}
+	case 63:
+		return &Error{Code: 63, Name: "UnwrappedSpacerHead", Operation: operation}
+	case 64:
+		return &Error{Code: 64, Name: "InvalidPageDimensions", Operation: operation}
+	case 65:
+		return &Error{Code: 65, Name: "NoPages", Operation: operation}
+	case 66:
+		return &Error{Code: 66, Name: "InsufficientRows", Operation: operation}
+	case 67:
+		return &Error{Code: 67, Name: "InvalidPageCount", Operation: operation}
+	case 68:
+		return &Error{Code: 68, Name: "ContinuationLimitExceeded", Operation: operation}
+	case 69:
+		return &Error{Code: 69, Name: "UnexpectedScreenKey", Operation: operation}
+	case 70:
+		return &Error{Code: 70, Name: "DuplicateScreen", Operation: operation}
+	case 71:
+		return &Error{Code: 71, Name: "DecoderNotReady", Operation: operation}
+	case 72:
+		return &Error{Code: 72, Name: "DecoderFailed", Operation: operation}
+	case 73:
+		return &Error{Code: 73, Name: "UnexpectedHistoryKey", Operation: operation}
+	case 74:
+		return &Error{Code: 74, Name: "DuplicateHistory", Operation: operation}
+	case 75:
+		return &Error{Code: 75, Name: "RowCountOverflow", Operation: operation}
+	case 76:
+		return &Error{Code: 76, Name: "PageSizeOverflow", Operation: operation}
+	case 77:
+		return &Error{Code: 77, Name: "TerminalTaken", Operation: operation}
 	default:
 		return &Error{Code: code, Name: "Unknown(" + strconv.Itoa(int(code)) + ")", Operation: operation}
 	}

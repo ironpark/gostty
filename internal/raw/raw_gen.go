@@ -24,6 +24,11 @@ func LastErrorMessage() string { return C.GoString(C.zg_last_error_message()) }
 // PanicMessage returns the message of the native panic a status code of -256 or below names.
 func PanicMessage(code int32) string { return C.GoString(C.zg_caught_panic_message(C.int32_t(code))) }
 
+// zigoEmptyStreamData is what a present but empty byte-slice reader points
+// at. The shim tells the fast path from the trampoline path by the pointer
+// being non-NULL, so an empty stream still needs an address.
+var zigoEmptyStreamData byte
+
 // zigoZeroSlot is what an empty slice or string points at instead of NULL, so
 // the native side always receives a valid address beside a zero length.
 var zigoZeroSlot uint64
@@ -50,14 +55,36 @@ func zigoStringPtr(value string) unsafe.Pointer {
 // the panic it raises there until the generated caller rethrows it. The
 // trampoline has to recover: a panic cannot unwind native frames.
 type CallbackState struct {
-	Fn       any
-	Writer   io.Writer
-	Reader   io.Reader
-	mu       sync.Mutex
-	value    any
-	stack    []byte
-	panicked bool
-	err      error
+	Fn           any
+	Writer       io.Writer
+	Reader       io.Reader
+	readTerminal error
+	mu           sync.Mutex
+	value        any
+	stack        []byte
+	panicked     bool
+	err          error
+}
+
+// readStream preserves terminal errors and bounds retries for empty reads.
+func readStream(reader io.Reader, buffer []byte, terminal *error) (int, error) {
+	if *terminal != nil {
+		return 0, *terminal
+	}
+	for attempt := 0; attempt < 100; attempt++ {
+		n, err := reader.Read(buffer)
+		if n < 0 || n > len(buffer) {
+			n, err = 0, io.ErrShortBuffer
+		}
+		if err != nil {
+			*terminal = err
+		}
+		if n != 0 || err != nil {
+			return n, err
+		}
+	}
+	*terminal = io.ErrNoProgress
+	return 0, *terminal
 }
 
 // pendingCallbackPanics counts recorded panics no caller has taken yet, so the
@@ -136,6 +163,28 @@ func zg_zigo_stream_write(p0 *C.uint8_t, p1 C.size_t, p2 C.size_t) (result C.int
 		return C.int32_t(-1)
 	}
 	return C.int32_t(0)
+}
+
+//export zg_zigo_stream_read
+func zg_zigo_stream_read(p0 *C.uint8_t, p1 C.size_t, p2 C.size_t) (result C.int32_t) {
+	state := cgo.Handle(p2).Value().(*CallbackState)
+	defer func() {
+		if value := recover(); value != nil {
+			state.record(value)
+			result = C.int32_t(-3)
+		}
+	}()
+	n, err := readStream(state.Reader, unsafe.Slice((*byte)(unsafe.Pointer(p0)), int(p1)), &state.readTerminal)
+	if err != nil && err != io.EOF {
+		state.recordErr(err)
+	}
+	if n > 0 {
+		return C.int32_t(n)
+	}
+	if err == io.EOF {
+		return C.int32_t(0)
+	}
+	return C.int32_t(-1)
 }
 
 //export zg_stream_on_clipboard_write_request_go_callback_callback
@@ -537,6 +586,12 @@ func StreamHasReplies(self unsafe.Pointer) (uint8, int32) {
 	var outResult C.uint8_t
 	code := int32(C.zg_stream_has_replies((*C.zg_stream)(self), &outResult))
 	return uint8(outResult), code
+}
+
+// StreamWriteSnapshot calls the generated C ABI wrapper for zg_stream_write_snapshot.
+func StreamWriteSnapshot(self unsafe.Pointer, writerHandle uintptr) int32 {
+	code := int32(C.zg_stream_write_snapshot((*C.zg_stream)(self), C.size_t(writerHandle)))
+	return code
 }
 
 // StreamWriteReplies calls the generated C ABI wrapper for zg_stream_write_replies.
@@ -1210,6 +1265,57 @@ func TerminalFormat(self unsafe.Pointer, opts FormatOptionsData, writerHandle ui
 	copts.resolve_palette = C.uint8_t(opts.ResolvePalette)
 	code := int32(C.zg_terminal_format((*C.zg_terminal)(self), &copts, C.size_t(writerHandle)))
 	return code
+}
+
+// TerminalWriteSnapshot calls the generated C ABI wrapper for zg_terminal_write_snapshot.
+func TerminalWriteSnapshot(self unsafe.Pointer, writerHandle uintptr) int32 {
+	code := int32(C.zg_terminal_write_snapshot((*C.zg_terminal)(self), C.size_t(writerHandle)))
+	return code
+}
+
+// DecodeSnapshot calls the generated C ABI wrapper for zg_decode_snapshot.
+func DecodeSnapshot(readerHandle uintptr, readerData []byte, maxContinuationBytes uint) (unsafe.Pointer, int32) {
+	var readerDataPtr *C.uint8_t
+	if readerData != nil {
+		if len(readerData) != 0 {
+			readerDataPtr = (*C.uint8_t)(unsafe.Pointer(&readerData[0]))
+		} else {
+			readerDataPtr = (*C.uint8_t)(unsafe.Pointer(&zigoEmptyStreamData))
+		}
+	}
+	var outResult *C.zg_snapshot
+	code := int32(C.zg_decode_snapshot(readerDataPtr, C.size_t(len(readerData)), C.size_t(readerHandle), C.size_t(maxContinuationBytes), &outResult))
+	return unsafe.Pointer(outResult), code
+}
+
+// SnapshotFreeSnapshot calls the generated C ABI wrapper for zg_snapshot_free_snapshot.
+func SnapshotFreeSnapshot(self unsafe.Pointer) int32 {
+	code := int32(C.zg_snapshot_free_snapshot((*C.zg_snapshot)(self)))
+	return code
+}
+
+// SnapshotRestoreInto calls the generated C ABI wrapper for zg_snapshot_restore_into.
+func SnapshotRestoreInto(self unsafe.Pointer, term unsafe.Pointer) int32 {
+	code := int32(C.zg_snapshot_restore_into((*C.zg_snapshot)(self), (*C.zg_terminal)(term)))
+	return code
+}
+
+// SnapshotContinuation calls the generated C ABI wrapper for zg_snapshot_continuation.
+func SnapshotContinuation(self unsafe.Pointer) ([]uint8, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_snapshot_continuation((*C.zg_snapshot)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return nil, code
+	}
+	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
+}
+
+// SnapshotHistoryRows calls the generated C ABI wrapper for zg_snapshot_history_rows.
+func SnapshotHistoryRows(self unsafe.Pointer, key uint8) (uint64, int32) {
+	var outResult C.uint64_t
+	code := int32(C.zg_snapshot_history_rows((*C.zg_snapshot)(self), C.uint8_t(key), &outResult))
+	return uint64(outResult), code
 }
 
 // TerminalBackgroundColor calls the generated C ABI wrapper for zg_terminal_background_color.
