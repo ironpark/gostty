@@ -14,7 +14,8 @@ import (
 	"github.com/ironpark/gostty/internal/raw"
 )
 
-// Cols returns the Zig field Terminal.cols.
+// Cols: Return the current column count without accessing page memory.
+// Zig field: Terminal.cols.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) Cols() (uint16, error) {
@@ -30,7 +31,8 @@ func (te *Terminal) Cols() (uint16, error) {
 	return result, nil
 }
 
-// Rows returns the Zig field Terminal.rows.
+// Rows: Return the number of populated rows without accessing page memory.
+// Zig field: Terminal.rows.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) Rows() (uint16, error) {
@@ -245,7 +247,8 @@ func (s *Stream) Failed() (bool, error) {
 	return result != 0, nil
 }
 
-// Rows returns the Zig field RenderState.rows.
+// Rows: Return the number of populated rows without accessing page memory.
+// Zig field: RenderState.rows.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (r *RenderState) Rows() (uint16, error) {
@@ -261,7 +264,8 @@ func (r *RenderState) Rows() (uint16, error) {
 	return result, nil
 }
 
-// Cols returns the Zig field RenderState.cols.
+// Cols: Return the current column count without accessing page memory.
+// Zig field: RenderState.cols.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (r *RenderState) Cols() (uint16, error) {
@@ -357,13 +361,26 @@ func (k *KittyImages) Generation() (uint64, error) {
 	return result, nil
 }
 
-// CodepointWidth calls the Zig function codepointWidth.
+// CodepointWidth: Returns the terminal display width of a codepoint in terminal
+// grid cells: 0, 1, or 2.
+//
+// This is the same width table the terminal uses when laying out
+// printed text: 0 for zero-width codepoints (controls, combining
+// marks, default-ignorables, surrogates), 2 for wide codepoints
+// (East Asian Wide/Fullwidth, regional indicators, clamped at 2),
+// and 1 otherwise.
+//
+// This operates on a single codepoint and cannot account for
+// grapheme-cluster-level width rules (VS16, combining sequences);
+// callers needing cluster-accurate widths should use graphemeWidth().
+// Summing per-codepoint widths is only correct when mode 2027 is
+// disabled.
 // A native panic is returned as *NativePanicError.
-func CodepointWidth(p0 rune) (uint8, error) {
-	if p0 < 0 || p0 > 1114111 {
-		return 0, &RangeError{Operation: "CodepointWidth", Parameter: "p0", Type: "codepoint"}
+func CodepointWidth(cp rune) (uint8, error) {
+	if cp < 0 || cp > 1114111 {
+		return 0, &RangeError{Operation: "CodepointWidth", Parameter: "cp", Type: "codepoint"}
 	}
-	result, code := raw.UnicodeCodepointWidth(uint32(p0))
+	result, code := raw.UnicodeCodepointWidth(uint32(cp))
 	if code != 0 {
 		return 0, zigoErrorForCode("CodepointWidth", code)
 	}
@@ -383,7 +400,7 @@ func GraphemeWidth(cps []rune) (uint8, error) {
 	return raw.GraphemeWidth(zigoRunesToUint32(cps)), nil
 }
 
-// NewTerminal creates a caller-owned Terminal.
+// NewTerminal: Begin a transaction from a type=write packet.
 // The caller must call Close on the returned handle.
 // Native failures are returned as generated error values.
 func NewTerminal(cols uint16, rows uint16) (*Terminal, error) {
@@ -1494,7 +1511,7 @@ func (s *Stream) WriteReplies(writer io.Writer) error {
 	return nil
 }
 
-// PrintString calls the Zig function Terminal.printString.
+// PrintString: Print UTF-8 encoded string to the terminal.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (te *Terminal) PrintString(str string) error {
@@ -1510,7 +1527,10 @@ func (te *Terminal) PrintString(str string) error {
 	return nil
 }
 
-// PlainString calls the Zig function Terminal.plainString.
+// PlainString: Return the current string value of the terminal. Newlines are
+// encoded as "\n". This omits any formatting such as fg/bg.
+//
+// The caller must free the string.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (te *Terminal) PlainString() (string, error) {
@@ -1526,7 +1546,11 @@ func (te *Terminal) PlainString() (string, error) {
 	return result, nil
 }
 
-// SetCursorStyle calls the Zig function Terminal.setCursorStyle.
+// SetCursorStyle: Change the cursor's current shape and blink behavior.
+//
+// The terminal parser uses this for DECSCUSR (`CSI Ps SP q`), but the behavior
+// is general: `.default` selects the configured defaults, while any other
+// value selects a concrete appearance until it is changed again or reset.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) SetCursorStyle(value CursorStyleReq) error {
@@ -1542,7 +1566,12 @@ func (te *Terminal) SetCursorStyle(value CursorStyleReq) error {
 	return nil
 }
 
-// SetCursorPos calls the Zig function Terminal.setCursorPos.
+// SetCursorPos: Set Cursor Position. Move cursor to the position indicated
+// by row and column (1-indexed). If column is 0, it is adjusted to 1.
+// If column is greater than the right-most column it is adjusted to
+// the right-most column. If row is 0, it is adjusted to 1. If row is
+// greater than the bottom-most row it is adjusted to the bottom-most
+// row.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) SetCursorPos(rowReq uint, colReq uint) error {
@@ -1558,7 +1587,7 @@ func (te *Terminal) SetCursorPos(rowReq uint, colReq uint) error {
 	return nil
 }
 
-// CarriageReturn calls the Zig function Terminal.carriageReturn.
+// CarriageReturn: Carriage return moves the cursor to the first column.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) CarriageReturn() error {
@@ -1574,7 +1603,7 @@ func (te *Terminal) CarriageReturn() error {
 	return nil
 }
 
-// Linefeed calls the Zig function Terminal.linefeed.
+// Linefeed moves the cursor to the next line.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (te *Terminal) Linefeed() error {
@@ -1590,7 +1619,7 @@ func (te *Terminal) Linefeed() error {
 	return nil
 }
 
-// Backspace calls the Zig function Terminal.backspace.
+// Backspace moves the cursor back a column (but not less than 0).
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) Backspace() error {
@@ -1606,7 +1635,11 @@ func (te *Terminal) Backspace() error {
 	return nil
 }
 
-// CursorIsAtPrompt calls the Zig function Terminal.cursorIsAtPrompt.
+// CursorIsAtPrompt: Returns true if the cursor is currently at a prompt. Another way to look
+// at this is it returns false if the shell is currently outputting something.
+// This requires shell integration (semantic prompt integration).
+//
+// If the shell integration doesn't exist, this will always return false.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) CursorIsAtPrompt() (bool, error) {
@@ -1622,7 +1655,11 @@ func (te *Terminal) CursorIsAtPrompt() (bool, error) {
 	return result != 0, nil
 }
 
-// FullReset calls the Zig function Terminal.fullReset.
+// FullReset: Full reset.
+//
+// This will attempt to free the existing screen memory but if that fails
+// this will reuse the existing memory. In the latter case, memory may
+// be wasted (since its unused) but it isn't leaked.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) FullReset() error {
@@ -1638,7 +1675,21 @@ func (te *Terminal) FullReset() error {
 	return nil
 }
 
-// SwitchScreen calls the Zig function Terminal.switchScreen.
+// SwitchScreen: Switch to the given screen type (alternate or primary).
+//
+// This does NOT handle behaviors such as clearing the screen,
+// copying the cursor, etc. This should be handled by downstream
+// callers.
+//
+// After calling this function, the `self.screen` field will point
+// to the current screen, and the returned value will be the previous
+// screen. If the return value is null, then the screen was not
+// switched because it was already the active screen.
+//
+// Note: This is written in a generic way so that we can support
+// more than two screens in the future if needed. There isn't
+// currently a spec for this, but it is something I think might
+// be useful in the future.
 // The returned reference remains valid only while its parent handle remains open.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
@@ -1658,7 +1709,15 @@ func (te *Terminal) SwitchScreen(key ScreenKey) (*Screen, bool, error) {
 	return zigoNewBorrowedScreen(result, te), true, nil
 }
 
-// SwitchScreenMode calls the Zig function Terminal.switchScreenMode.
+// SwitchScreenMode: Switch screen via a mode switch (e.g. mode 47, 1047, 1049).
+// This is a much more opinionated operation than `switchScreen`
+// since it also handles the behaviors of the specific mode,
+// such as clearing the screen, saving/restoring the cursor,
+// etc.
+//
+// This should be used for legacy compatibility with VT protocols,
+// but more modern usage should use `switchScreen` instead and handle
+// details like clearing the screen, cursor saving, etc. manually.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (te *Terminal) SwitchScreenMode(mode SwitchScreenMode, enabled bool) error {
@@ -1712,7 +1771,7 @@ func (te *Terminal) Screen(key ScreenKey) (*Screen, bool, error) {
 	return zigoNewBorrowedScreen(result, te), true, nil
 }
 
-// SelectAll calls the Zig function Screen.selectAll.
+// SelectAll: Select the whole screen. Returns false when there is nothing to select.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (s *Screen) SelectAll() (bool, error) {
@@ -1728,7 +1787,7 @@ func (s *Screen) SelectAll() (bool, error) {
 	return result != 0, nil
 }
 
-// HasSelection calls the Zig function Screen.hasSelection.
+// HasSelection: True when the screen has a selection.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *Screen) HasSelection() (bool, error) {
@@ -1744,7 +1803,11 @@ func (s *Screen) HasSelection() (bool, error) {
 	return result != 0, nil
 }
 
-// SelectRange calls the Zig function Screen.selectRange.
+// SelectRange: Select the cells between two viewport positions, inclusive of both ends.
+//
+// `rectangle` selects the block between the two corners rather than the flow
+// of text from one to the other. Returns false when either end is outside the
+// viewport, which is what a drag that left the window looks like.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (s *Screen) SelectRange(x1 uint16, y1 uint16, x2 uint16, y2 uint16, rectangle bool) (bool, error) {
@@ -1760,7 +1823,15 @@ func (s *Screen) SelectRange(x1 uint16, y1 uint16, x2 uint16, y2 uint16, rectang
 	return result != 0, nil
 }
 
-// SelectWord calls the Zig function Screen.selectWord.
+// SelectWord: Select the word under a viewport position -- what a double click does.
+//
+// `boundaries` are the codepoints that end a word. ghostty has no default for
+// them on purpose: its own UI reads the set from configuration, so the choice
+// belongs to the embedder.
+//
+// Wrapped because ghostty returns the `Selection` rather than applying it, and
+// a `Selection` holds page pins that cannot cross the C ABI. False when the
+// position is outside the viewport or there is no word under it.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (s *Screen) SelectWord(x uint16, y uint16, boundaries []rune) (bool, error) {
@@ -1781,7 +1852,10 @@ func (s *Screen) SelectWord(x uint16, y uint16, boundaries []rune) (bool, error)
 	return result != 0, nil
 }
 
-// SelectLine calls the Zig function Screen.selectLine.
+// SelectLine: Select the line under a viewport position -- what a triple click does.
+//
+// Soft-wrapped lines are followed as one line, leading and trailing whitespace
+// is trimmed, and a semantic prompt boundary ends the selection.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (s *Screen) SelectLine(x uint16, y uint16) (bool, error) {
@@ -1797,7 +1871,10 @@ func (s *Screen) SelectLine(x uint16, y uint16) (bool, error) {
 	return result != 0, nil
 }
 
-// SelectOutput calls the Zig function Screen.selectOutput.
+// SelectOutput: Select the command output the given position belongs to.
+//
+// Needs the shell to mark its prompts with OSC 133; without those marks there
+// is no output block to find and this returns false.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (s *Screen) SelectOutput(x uint16, y uint16) (bool, error) {
@@ -1813,7 +1890,7 @@ func (s *Screen) SelectOutput(x uint16, y uint16) (bool, error) {
 	return result != 0, nil
 }
 
-// SelectionString calls the Zig function Screen.selectionString.
+// SelectionString: The text of the current selection, absent when nothing is selected.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (s *Screen) SelectionString() (string, bool, error) {
@@ -1829,7 +1906,7 @@ func (s *Screen) SelectionString() (string, bool, error) {
 	return result, zigoHas, nil
 }
 
-// Selection calls the Zig function Screen.selection.
+// Selection: The screen's current selection, or null when there is none.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *Screen) Selection() (Selection, bool, error) {
@@ -1845,7 +1922,8 @@ func (s *Screen) Selection() (Selection, bool, error) {
 	return zigoSelectionFromRaw(result), zigoHas, nil
 }
 
-// SetSelection calls the Zig function Screen.setSelection.
+// SetSelection: Replace the screen's selection. Returns false, leaving the selection as it
+// was, if either end is outside the screen.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (s *Screen) SetSelection(sel Selection) (bool, error) {
@@ -1861,7 +1939,8 @@ func (s *Screen) SetSelection(sel Selection) (bool, error) {
 	return result != 0, nil
 }
 
-// ViewportTop calls the Zig function Screen.viewportTop.
+// ViewportTop: The screen row shown at the top of the viewport: subtract it from a
+// `Selection` row to get the viewport row a renderer draws at.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *Screen) ViewportTop() (uint32, error) {
@@ -1877,7 +1956,7 @@ func (s *Screen) ViewportTop() (uint32, error) {
 	return result, nil
 }
 
-// Scrollbar calls the Zig function Screen.scrollbar.
+// Scrollbar: The screen's scrollbar state.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *Screen) Scrollbar() (Scrollbar, error) {
@@ -1893,7 +1972,8 @@ func (s *Screen) Scrollbar() (Scrollbar, error) {
 	return zigoScrollbarFromRaw(result), nil
 }
 
-// Format calls the Zig function Screen.format.
+// Format a whole screen, scrollback included. `Terminal.format` is the
+// active area only.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
@@ -1921,7 +2001,8 @@ func (s *Screen) Format(opts FormatOptions, writer io.Writer) error {
 	return nil
 }
 
-// FormatSelection calls the Zig function Screen.formatSelection.
+// FormatSelection: Format the part of a screen inside `sel`. Returns false, writing
+// nothing, if `sel` is outside the screen.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
@@ -1949,7 +2030,8 @@ func (s *Screen) FormatSelection(opts FormatOptions, sel Selection, writer io.Wr
 	return result != 0, nil
 }
 
-// SelectionContains calls the Zig function Screen.selectionContains.
+// SelectionContains: Whether the screen cell at `x`, `y` (screen coordinates) is inside `sel`.
+// False when either is outside the screen.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *Screen) SelectionContains(sel Selection, x uint16, y uint32) (bool, error) {
@@ -1965,7 +2047,8 @@ func (s *Screen) SelectionContains(sel Selection, x uint16, y uint32) (bool, err
 	return result != 0, nil
 }
 
-// SelectionAdjust calls the Zig function Screen.selectionAdjust.
+// SelectionAdjust: Move the end of `sel` by `adjustment` -- what shift+arrow does to a
+// selection -- and return the result. Null if `sel` is outside the screen.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *Screen) SelectionAdjust(sel Selection, adjustment SelectionAdjustment) (Selection, bool, error) {
@@ -1981,7 +2064,9 @@ func (s *Screen) SelectionAdjust(sel Selection, adjustment SelectionAdjustment) 
 	return zigoSelectionFromRaw(result), zigoHas, nil
 }
 
-// StartHyperlink calls the Zig function Screen.startHyperlink.
+// StartHyperlink: Open a hyperlink on the screen; cells printed until `Screen.endHyperlink`
+// carry it. An empty `id` leaves the link without an explicit id, which is
+// what OSC 8 does when the parameter is absent.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (s *Screen) StartHyperlink(uri string, id string) error {
@@ -1997,7 +2082,7 @@ func (s *Screen) StartHyperlink(uri string, id string) error {
 	return nil
 }
 
-// ViewportIsBottom calls the Zig function Screen.viewportIsBottom.
+// ViewportIsBottom: Returns true if the viewport is scrolled to the bottom of the screen.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *Screen) ViewportIsBottom() (bool, error) {
@@ -2013,7 +2098,7 @@ func (s *Screen) ViewportIsBottom() (bool, error) {
 	return result != 0, nil
 }
 
-// ClearSelection calls the Zig function Screen.clearSelection.
+// ClearSelection: Same as select(null) but can't fail.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *Screen) ClearSelection() error {
@@ -2029,7 +2114,8 @@ func (s *Screen) ClearSelection() error {
 	return nil
 }
 
-// EndHyperlink calls the Zig function Screen.endHyperlink.
+// EndHyperlink: End the hyperlink state so that future cells aren't part of the
+// current hyperlink (if any). This is safe to call multiple times.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *Screen) EndHyperlink() error {
@@ -2073,7 +2159,7 @@ func (te *Terminal) NewSearch(needleUnowned string) (*Search, error) {
 	return zigoNewSearch(result, zigoChildParent), nil
 }
 
-// Needle calls the Zig function Search.needle.
+// Needle: The needle being searched for, borrowed.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *Search) Needle() (string, error) {
@@ -2089,7 +2175,7 @@ func (s *Search) Needle() (string, error) {
 	return result, nil
 }
 
-// Status calls the Zig function Search.status.
+// Status: How much of the terminal the search has covered so far.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *Search) Status() (SearchState, error) {
@@ -2105,7 +2191,12 @@ func (s *Search) Status() (SearchState, error) {
 	return SearchState(result), nil
 }
 
-// Tick calls the Zig function Search.tick.
+// Tick: Push the search forward as far as it can go without reading the terminal,
+// and report what that achieved. Safe to run beside terminal IO, so a UI can
+// spend a slice of each frame here rather than blocking on `searchAll`.
+//
+// `blocked` means the searcher has consumed everything the last `searchFeed`
+// gave it and needs another one.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *Search) Tick() (SearchProgress, error) {
@@ -2121,7 +2212,14 @@ func (s *Search) Tick() (SearchProgress, error) {
 	return SearchProgress(result), nil
 }
 
-// Feed bytes to the parser, applying them to the terminal.
+// Feed: Read the terminal into the search: reconcile its screens, hand the
+// searchers more scrollback, and notice whether the viewport moved.
+//
+// This is also the only way the search learns that the terminal changed, so
+// keep feeding it while it is in use, even after it reports complete.
+//
+// Pass `active_dirty` false only if you know the active area has not changed
+// since the last feed; true is always correct and the rescan is cheap.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *Search) Feed(activeDirty bool) error {
@@ -2137,7 +2235,11 @@ func (s *Search) Feed(activeDirty bool) error {
 	return nil
 }
 
-// All calls the Zig function Search.all.
+// All: Run the search to completion, feeding and ticking until nothing is left.
+//
+// The simple call, for a program that would rather block than drive the
+// search itself. A large scrollback can take a while; `searchTick` and
+// `searchFeed` are the way to spread that over frames instead.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *Search) All() error {
@@ -2153,7 +2255,10 @@ func (s *Search) All() error {
 	return nil
 }
 
-// Select calls the Zig function Search.select.
+// Select: Move to the next or previous match on the active screen, wrapping at the
+// ends, and select it on the screen. False if there is nothing to select.
+//
+// Feeds first, so it always works against current terminal state.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (s *Search) Select(to SearchDirection, scroll SearchScroll) (bool, error) {
@@ -2169,7 +2274,8 @@ func (s *Search) Select(to SearchDirection, scroll SearchScroll) (bool, error) {
 	return result != 0, nil
 }
 
-// MatchCount calls the Zig function Search.matchCount.
+// MatchCount: How many matches have been found on the active screen so far. Grows as the
+// search progresses, so it is only final once the status is `complete`.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *Search) MatchCount() (uint, error) {
@@ -2185,7 +2291,9 @@ func (s *Search) MatchCount() (uint, error) {
 	return result, nil
 }
 
-// Matches calls the Zig function Search.matches.
+// Matches: Copy the matches found on the active screen so far into `dst`, most recent
+// screen content first, and return how many were written. Matches are in
+// screen coordinates; size `dst` from `searchMatchCount`.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *Search) Matches(dst []Selection) (uint, error) {
@@ -2203,7 +2311,17 @@ func (s *Search) Matches(dst []Selection) (uint, error) {
 	return result, nil
 }
 
-// ViewportMatches calls the Zig function Search.viewportMatches.
+// ViewportMatches: The matches on the pages the viewport covers, in screen coordinates, for a
+// renderer highlighting what is on screen. Returns how many were written.
+//
+// This is the cheap way to draw highlights: the viewport is searched on its
+// own and the results are cached until it moves, so a frame does not pay for
+// the whole scrollback, and the answer is there before the scrollback search
+// has finished. It can include a few matches just off screen when they share
+// a page with the viewport, which a renderer clips anyway.
+//
+// The count is not known in advance, so size `dst` generously and treat a
+// full `dst` as "there may be more".
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (s *Search) ViewportMatches(dst []Selection) (uint, error) {
@@ -2221,7 +2339,7 @@ func (s *Search) ViewportMatches(dst []Selection) (uint, error) {
 	return result, nil
 }
 
-// SelectedMatch calls the Zig function Search.selectedMatch.
+// SelectedMatch: The match `searchSelect` last moved to, or null before the first move.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *Search) SelectedMatch() (Selection, bool, error) {
@@ -2237,7 +2355,8 @@ func (s *Search) SelectedMatch() (Selection, bool, error) {
 	return zigoSelectionFromRaw(result), zigoHas, nil
 }
 
-// SelectedIndex calls the Zig function Search.selectedIndex.
+// SelectedIndex: The index of the selected match in the list `searchMatches` writes, or null
+// before the first `searchSelect`. What a UI shows as "3 of 12".
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *Search) SelectedIndex() (uint, bool, error) {
@@ -2292,7 +2411,9 @@ func (te *Terminal) HistoryString() (string, error) {
 	return result, nil
 }
 
-// CursorUp calls the Zig function Terminal.cursorUp.
+// CursorUp: Move the cursor up amount lines. If amount is greater than the maximum
+// move distance then it is internally adjusted to the maximum. If amount is
+// 0, adjust it to 1.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) CursorUp(countReq uint) error {
@@ -2308,7 +2429,9 @@ func (te *Terminal) CursorUp(countReq uint) error {
 	return nil
 }
 
-// CursorDown calls the Zig function Terminal.cursorDown.
+// CursorDown: Move the cursor down amount lines. If amount is greater than the maximum
+// move distance then it is internally adjusted to the maximum. This sequence
+// will not scroll the screen or scroll region. If amount is 0, adjust it to 1.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) CursorDown(countReq uint) error {
@@ -2324,7 +2447,7 @@ func (te *Terminal) CursorDown(countReq uint) error {
 	return nil
 }
 
-// CursorLeft calls the Zig function Terminal.cursorLeft.
+// CursorLeft: Move the cursor to the left amount cells. If amount is 0, adjust it to 1.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) CursorLeft(countReq uint) error {
@@ -2340,7 +2463,10 @@ func (te *Terminal) CursorLeft(countReq uint) error {
 	return nil
 }
 
-// CursorRight calls the Zig function Terminal.cursorRight.
+// CursorRight: Move the cursor right amount columns. If amount is greater than the
+// maximum move distance then it is internally adjusted to the maximum.
+// This sequence will not scroll the screen or scroll region. If amount is
+// 0, adjust it to 1.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) CursorRight(countReq uint) error {
@@ -2356,7 +2482,11 @@ func (te *Terminal) CursorRight(countReq uint) error {
 	return nil
 }
 
-// SaveCursor calls the Zig function Terminal.saveCursor.
+// SaveCursor: Save cursor position and further state.
+//
+// The primary and alternate screen have distinct save state. One saved state
+// is kept per screen (main / alternative). If for the current screen state
+// was already saved it is overwritten.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) SaveCursor() error {
@@ -2372,7 +2502,10 @@ func (te *Terminal) SaveCursor() error {
 	return nil
 }
 
-// RestoreCursor calls the Zig function Terminal.restoreCursor.
+// RestoreCursor: Restore cursor position and other state.
+//
+// The primary and alternate screen have distinct save state.
+// If no save was done before values are reset to their initial values.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) RestoreCursor() error {
@@ -2388,7 +2521,18 @@ func (te *Terminal) RestoreCursor() error {
 	return nil
 }
 
-// Index calls the Zig function Terminal.index.
+// Index: Move the cursor to the next line in the scrolling region, possibly scrolling.
+//
+// If the cursor is outside of the scrolling region: move the cursor one line
+// down if it is not on the bottom-most line of the screen.
+//
+// If the cursor is inside the scrolling region:
+// If the cursor is on the bottom-most line of the scrolling region:
+// invoke scroll up with amount=1
+// If the cursor is not on the bottom-most line of the scrolling region:
+// move the cursor one line down
+//
+// This unsets the pending wrap state without wrapping.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (te *Terminal) Index() error {
@@ -2404,7 +2548,18 @@ func (te *Terminal) Index() error {
 	return nil
 }
 
-// ReverseIndex calls the Zig function Terminal.reverseIndex.
+// ReverseIndex: Move the cursor to the previous line in the scrolling region, possibly
+// scrolling.
+//
+// If the cursor is outside of the scrolling region, move the cursor one
+// line up if it is not on the top-most line of the screen.
+//
+// If the cursor is inside the scrolling region:
+//
+// * If the cursor is on the top-most line of the scrolling region:
+// invoke scroll down with amount=1
+// * If the cursor is not on the top-most line of the scrolling region:
+// move the cursor one line up
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) ReverseIndex() error {
@@ -2420,7 +2575,8 @@ func (te *Terminal) ReverseIndex() error {
 	return nil
 }
 
-// HorizontalTab calls the Zig function Terminal.horizontalTab.
+// HorizontalTab: Horizontal tab moves the cursor to the next tabstop, clearing
+// the screen to the left the tabstop.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) HorizontalTab() error {
@@ -2436,7 +2592,7 @@ func (te *Terminal) HorizontalTab() error {
 	return nil
 }
 
-// HorizontalTabBack calls the Zig function Terminal.horizontalTabBack.
+// HorizontalTabBack: Same as horizontalTab but moves to the previous tabstop instead of the next.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) HorizontalTabBack() error {
@@ -2452,7 +2608,8 @@ func (te *Terminal) HorizontalTabBack() error {
 	return nil
 }
 
-// TabSet calls the Zig function Terminal.tabSet.
+// TabSet: Set a tab stop on the current cursor.
+// TODO: test
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) TabSet() error {
@@ -2468,7 +2625,7 @@ func (te *Terminal) TabSet() error {
 	return nil
 }
 
-// TabReset calls the Zig function Terminal.tabReset.
+// TabReset: TODO: test
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) TabReset() error {
@@ -2484,7 +2641,7 @@ func (te *Terminal) TabReset() error {
 	return nil
 }
 
-// TabClear calls the Zig function Terminal.tabClear.
+// TabClear: Clear tab stops.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) TabClear(cmd TabClear) error {
@@ -2500,7 +2657,13 @@ func (te *Terminal) TabClear(cmd TabClear) error {
 	return nil
 }
 
-// ScrollUp calls the Zig function Terminal.scrollUp.
+// ScrollUp: Removes amount lines from the top of the scroll region. The remaining lines
+// to the bottom margin are shifted up and space from the bottom margin up
+// is filled with empty lines.
+//
+// The new lines are created according to the current SGR state.
+//
+// Does not change the (absolute) cursor position.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (te *Terminal) ScrollUp(count uint) error {
@@ -2516,7 +2679,7 @@ func (te *Terminal) ScrollUp(count uint) error {
 	return nil
 }
 
-// ScrollDown calls the Zig function Terminal.scrollDown.
+// ScrollDown: Scroll the text down by one row.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) ScrollDown(count uint) error {
@@ -2532,7 +2695,18 @@ func (te *Terminal) ScrollDown(count uint) error {
 	return nil
 }
 
-// SetTopAndBottomMargin calls the Zig function Terminal.setTopAndBottomMargin.
+// SetTopAndBottomMargin: Set Top and Bottom Margins If bottom is not specified, 0 or bigger than
+// the number of the bottom-most row, it is adjusted to the number of the
+// bottom most row.
+//
+// If top < bottom set the top and bottom row of the scroll region according
+// to top and bottom and move the cursor to the top-left cell of the display
+// (when in cursor origin mode is set to the top-left cell of the scroll region).
+//
+// Otherwise: Set the top and bottom row of the scroll region to the top-most
+// and bottom-most line of the screen.
+//
+// Top and bottom are 1-indexed.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) SetTopAndBottomMargin(topReq uint, bottomReq uint) error {
@@ -2548,7 +2722,7 @@ func (te *Terminal) SetTopAndBottomMargin(topReq uint, bottomReq uint) error {
 	return nil
 }
 
-// SetLeftAndRightMargin calls the Zig function Terminal.setLeftAndRightMargin.
+// SetLeftAndRightMargin: DECSLRM
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) SetLeftAndRightMargin(leftReq uint, rightReq uint) error {
@@ -2629,7 +2803,24 @@ func (te *Terminal) ClearScrollbackMaxLines() error {
 	return nil
 }
 
-// InsertLines calls the Zig function Terminal.insertLines.
+// InsertLines: Insert amount lines at the current cursor row. The contents of the line
+// at the current cursor row and below (to the bottom-most line in the
+// scrolling region) are shifted down by amount lines. The contents of the
+// amount bottom-most lines in the scroll region are lost.
+//
+// This unsets the pending wrap state without wrapping. If the current cursor
+// position is outside of the current scroll region it does nothing.
+//
+// If amount is greater than the remaining number of lines in the scrolling
+// region it is adjusted down (still allowing for scrolling out every remaining
+// line in the scrolling region)
+//
+// In left and right margin mode the margins are respected; lines are only
+// scrolled in the scroll region.
+//
+// All cleared space is colored according to the current SGR state.
+//
+// Moves the cursor to the left margin.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) InsertLines(count uint) error {
@@ -2645,7 +2836,22 @@ func (te *Terminal) InsertLines(count uint) error {
 	return nil
 }
 
-// DeleteLines calls the Zig function Terminal.deleteLines.
+// DeleteLines: Removes amount lines from the current cursor row down. The remaining lines
+// to the bottom margin are shifted up and space from the bottom margin up is
+// filled with empty lines.
+//
+// If the current cursor position is outside of the current scroll region it
+// does nothing. If amount is greater than the remaining number of lines in the
+// scrolling region it is adjusted down.
+//
+// In left and right margin mode the margins are respected; lines are only
+// scrolled in the scroll region.
+//
+// If the cell movement splits a multi cell character that character cleared,
+// by replacing it by spaces, keeping its current attributes. All other
+// cleared space is colored according to the current SGR state.
+//
+// Moves the cursor to the left margin.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) DeleteLines(count uint) error {
@@ -2661,7 +2867,13 @@ func (te *Terminal) DeleteLines(count uint) error {
 	return nil
 }
 
-// InsertBlanks calls the Zig function Terminal.insertBlanks.
+// InsertBlanks: Inserts spaces at current cursor position moving existing cell contents
+// to the right. The contents of the count right-most columns in the scroll
+// region are lost. The cursor position is not changed.
+//
+// This unsets the pending wrap state without wrapping.
+//
+// The inserted cells are colored according to the current SGR state.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) InsertBlanks(count uint) error {
@@ -2677,7 +2889,14 @@ func (te *Terminal) InsertBlanks(count uint) error {
 	return nil
 }
 
-// DeleteChars calls the Zig function Terminal.deleteChars.
+// DeleteChars: Removes amount characters from the current cursor position to the right.
+// The remaining characters are shifted to the left and space from the right
+// margin is filled with spaces.
+//
+// If amount is greater than the remaining number of characters in the
+// scrolling region, it is adjusted down.
+//
+// Does not change the cursor position.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) DeleteChars(countReq uint) error {
@@ -2709,7 +2928,7 @@ func (te *Terminal) EraseChars(countReq uint) error {
 	return nil
 }
 
-// EraseLine calls the Zig function Terminal.eraseLine.
+// EraseLine: Erase the line.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) EraseLine(mode EraseLine, protectedReq bool) error {
@@ -2725,7 +2944,7 @@ func (te *Terminal) EraseLine(mode EraseLine, protectedReq bool) error {
 	return nil
 }
 
-// EraseDisplay calls the Zig function Terminal.eraseDisplay.
+// EraseDisplay: Erase the display.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) EraseDisplay(mode EraseDisplay, protectedReq bool) error {
@@ -2741,7 +2960,9 @@ func (te *Terminal) EraseDisplay(mode EraseDisplay, protectedReq bool) error {
 	return nil
 }
 
-// Decaln calls the Zig function Terminal.decaln.
+// Decaln: Resets all margins and fills the whole screen with the character 'E'
+//
+// Sets the cursor to the top left corner.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (te *Terminal) Decaln() error {
@@ -2757,7 +2978,7 @@ func (te *Terminal) Decaln() error {
 	return nil
 }
 
-// Print calls the Zig function Terminal.print.
+// Print: Copy of testing.print (not public)
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (te *Terminal) Print(c rune) error {
@@ -2776,7 +2997,7 @@ func (te *Terminal) Print(c rune) error {
 	return nil
 }
 
-// PrintRepeat calls the Zig function Terminal.printRepeat.
+// PrintRepeat: Print the previous printed character a repeated amount of times.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (te *Terminal) PrintRepeat(countReq uint) error {
@@ -2792,7 +3013,21 @@ func (te *Terminal) PrintRepeat(countReq uint) error {
 	return nil
 }
 
-// PrintSlice calls the Zig function Terminal.printSlice.
+// PrintSlice: Print multiple codepoints to the terminal at once. This is
+// semantically identical to calling `print` for each codepoint in
+// order, but is much faster because it can batch cell writes and
+// hoist per-codepoint checks out of the hot loop.
+//
+// The codepoints must all be printable: it is illegal for any
+// codepoint in this slice to be a C0 control character. Therefore,
+// this should only be called as a result of a proper VT parser
+// (like our own).
+//
+// This is optimized for the common case: ASCII, soft-wrap, etc.
+// Sequences of codepoints that require special handling (e.g. wide characters,
+// grapheme clustering) are handled correctly but fall back to the
+// slower per-codepoint path. They're less common and this is optimized
+// for the aforementioned cases.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (te *Terminal) PrintSlice(cps []rune) error {
@@ -2813,7 +3048,9 @@ func (te *Terminal) PrintSlice(cps []rune) error {
 	return nil
 }
 
-// Format calls the Zig function Terminal.Format.
+// Format the active area -- the rows on screen, not the scrollback -- with
+// the terminal's colors and, for styled output, its palette, modes and
+// other state a replay needs. `Screen.format` covers the scrollback too.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
@@ -2841,7 +3078,11 @@ func (te *Terminal) Format(opts FormatOptions, writer io.Writer) error {
 	return nil
 }
 
-// DecodeSnapshot creates a caller-owned Snapshot.
+// DecodeSnapshot: Decode a snapshot from `reader`. `max_continuation_bytes` bounds the
+// unfinished-sequence suffix the snapshot may carry.
+//
+// Wrapped because ghostty's `decode` takes an options struct; returned by
+// value so zigo boxes it and `Snapshot.deinit` frees it.
 // The caller must call Close on the returned handle.
 // Native failures are returned as generated error values.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
@@ -2878,7 +3119,11 @@ func NewSnapshotDecoder(data []byte) (*SnapshotDecoder, error) {
 	return zigoNewSnapshotDecoder(result), nil
 }
 
-// Ready calls the Zig function SnapshotDecoder.ready.
+// Ready: Decode as far as the READY marker: everything a terminal needs to be drawn.
+//
+// `max_continuation_bytes` bounds the unfinished-sequence suffix. After this
+// the terminal can be taken with `restoreInto` and drawn, and the history
+// arrives through `next` at whatever pace suits.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (s *SnapshotDecoder) Ready(maxContinuationBytes uint) error {
@@ -2894,7 +3139,8 @@ func (s *SnapshotDecoder) Ready(maxContinuationBytes uint) error {
 	return nil
 }
 
-// RestoreInto calls the Zig function SnapshotDecoder.restoreInto.
+// RestoreInto: Replace `term` with the decoded terminal. See `snapshotRestoreInto`; the
+// same one-shot rule applies, and `next` wants the same terminal afterwards.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (s *SnapshotDecoder) RestoreInto(term *Terminal) error {
@@ -2915,7 +3161,7 @@ func (s *SnapshotDecoder) RestoreInto(term *Terminal) error {
 	return nil
 }
 
-// Continuation calls the Zig function SnapshotDecoder.continuation.
+// Continuation: The unfinished sequence the snapshot was taken in, empty at ground.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *SnapshotDecoder) Continuation() ([]byte, error) {
@@ -2931,7 +3177,13 @@ func (s *SnapshotDecoder) Continuation() ([]byte, error) {
 	return result, nil
 }
 
-// Next calls the Zig function SnapshotDecoder.next.
+// Next: Decode one page of history and prepend it to its screen in `term`, which
+// must be the one `restoreInto` filled.
+//
+// Returns null once the snapshot is complete. Wire errors are fatal -- the
+// position in the stream is lost -- but a page that cannot be applied is
+// reported as zero rows rather than failing, because the terminal is live
+// and may have moved on since `ready`.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (s *SnapshotDecoder) Next(term *Terminal) (SnapshotProgress, bool, error) {
@@ -2952,7 +3204,14 @@ func (s *SnapshotDecoder) Next(term *Terminal) (SnapshotProgress, bool, error) {
 	return zigoSnapshotProgressFromRaw(result), zigoHas, nil
 }
 
-// RestoreInto calls the Zig function Snapshot.restoreInto.
+// RestoreInto: Replace `term` with the terminal the snapshot holds: its size, screens,
+// scrollback, modes and colors. The snapshot gives its terminal up once;
+// a second call fails. Streams on `term` keep pointing at it, but their
+// parser state belongs to the old contents, so open a new stream and feed
+// it `continuation` before any new input.
+//
+// zigo allows one constructor per handle and `newTerminal` is it, so a
+// restore fills a terminal the caller made rather than returning one.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (s *Snapshot) RestoreInto(term *Terminal) error {
@@ -2973,7 +3232,9 @@ func (s *Snapshot) RestoreInto(term *Terminal) error {
 	return nil
 }
 
-// Continuation calls the Zig function Snapshot.continuation.
+// Continuation: The bytes of the unfinished sequence the snapshot was taken in, empty
+// when the stream was at ground. Feed them to the restored terminal's
+// stream before any new input.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *Snapshot) Continuation() ([]byte, error) {
@@ -3104,7 +3365,7 @@ func (te *Terminal) SetDefaultCursorColor(rgb uint32) error {
 	return nil
 }
 
-// ColorNameDefault: The color's default value as `0xRRGGBB`, or null when the name has none.
+// Default: The color's default value as `0xRRGGBB`, or null when the name has none.
 //
 // Only the sixteen named colors have one. The enum is open because every
 // other 256-color palette index is a valid value, and those take their
@@ -3113,8 +3374,8 @@ func (te *Terminal) SetDefaultCursorColor(rgb uint32) error {
 //
 // Wrapped because ghostty returns `color.RGB`, a `packed struct(u24)` with
 // no C representation, behind an error union.
-func ColorNameDefault(name ColorName) (uint32, bool) {
-	zigoResult, zigoHas := raw.ColorNameDefault(uint8(name))
+func (c ColorName) Default() (uint32, bool) {
+	zigoResult, zigoHas := raw.ColorNameDefault(uint8(c))
 	return zigoResult, zigoHas
 }
 
@@ -3153,7 +3414,7 @@ func (te *Terminal) SetMode(mode Mode, value bool) error {
 	return nil
 }
 
-// SetPwd calls the Zig function Terminal.setPwd.
+// SetPwd: Set the pwd for the terminal.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (te *Terminal) SetPwd(pwd string) error {
@@ -3169,7 +3430,8 @@ func (te *Terminal) SetPwd(pwd string) error {
 	return nil
 }
 
-// GetPwd calls the Zig function Terminal.getPwd.
+// GetPwd: Returns the pwd for the terminal, if any. The memory is owned by the
+// Terminal and is not copied. It is safe until a reset or setPwd.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) GetPwd() (string, bool, error) {
@@ -3185,7 +3447,8 @@ func (te *Terminal) GetPwd() (string, bool, error) {
 	return result, zigoHas, nil
 }
 
-// GetTitle calls the Zig function Terminal.getTitle.
+// GetTitle: Returns the title for the terminal, if any. The memory is owned by the
+// Terminal and is not copied. It is safe until a reset or setTitle.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) GetTitle() (string, bool, error) {
@@ -3201,7 +3464,7 @@ func (te *Terminal) GetTitle() (string, bool, error) {
 	return result, zigoHas, nil
 }
 
-// SetTitle calls the Zig function Terminal.setTitle.
+// SetTitle: Set the title for the terminal, as set by escape sequences (e.g. OSC 0/2).
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (te *Terminal) SetTitle(t string) error {
@@ -3234,7 +3497,7 @@ func (te *Terminal) SetAttribute(attr Attribute) error {
 	return nil
 }
 
-// SetProtectedMode calls the Zig function Terminal.setProtectedMode.
+// SetProtectedMode: Set the character protection mode for the terminal.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) SetProtectedMode(mode ProtectedMode) error {
@@ -3250,7 +3513,11 @@ func (te *Terminal) SetProtectedMode(mode ProtectedMode) error {
 	return nil
 }
 
-// SetDefaultCursorStyle calls the Zig function Terminal.setDefaultCursorStyle.
+// SetDefaultCursorStyle: Change the default cursor shape.
+//
+// If the cursor currently follows its defaults, the visible shape changes
+// immediately. Otherwise the new shape is saved for the next reset or default
+// selection, such as DECSCUSR `CSI 0 SP q`.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) SetDefaultCursorStyle(configuredStyle CursorStyle) error {
@@ -3299,7 +3566,7 @@ func (te *Terminal) ResetDefaultCursorBlink() error {
 	return nil
 }
 
-// ConfigureCharset calls the Zig function Terminal.configureCharset.
+// ConfigureCharset: Set the charset into the given slot.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) ConfigureCharset(slot CharsetSlot, set Charset) error {
@@ -3315,7 +3582,8 @@ func (te *Terminal) ConfigureCharset(slot CharsetSlot, set Charset) error {
 	return nil
 }
 
-// InvokeCharset calls the Zig function Terminal.invokeCharset.
+// InvokeCharset: Invoke the charset in slot into the active slot. If single is true,
+// then this will only be invoked for a single character.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) InvokeCharset(active CharsetActiveSlot, slot CharsetSlot, single bool) error {
@@ -3331,7 +3599,13 @@ func (te *Terminal) InvokeCharset(active CharsetActiveSlot, slot CharsetSlot, si
 	return nil
 }
 
-// Deccolm calls the Zig function Terminal.deccolm.
+// Deccolm changes the terminal width between 80 and 132 columns. This
+// function call will do NOTHING unless `setDeccolmSupported` has been
+// called with "true".
+//
+// This breaks the expectation around modern terminals that they resize
+// with the window. This will fix the grid at either 80 or 132 columns.
+// The rows will continue to be variable.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (te *Terminal) Deccolm(mode DeccolmMode) error {
@@ -3347,7 +3621,7 @@ func (te *Terminal) Deccolm(mode DeccolmMode) error {
 	return nil
 }
 
-// ScrollViewport calls the Zig function Terminal.scrollViewport.
+// ScrollViewport: Scroll the viewport of the terminal grid.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) ScrollViewport(behavior ScrollViewport) error {
@@ -3363,7 +3637,20 @@ func (te *Terminal) ScrollViewport(behavior ScrollViewport) error {
 	return nil
 }
 
-// CompressionActivity calls the Zig function Terminal.compressionActivity.
+// CompressionActivity: Return the current compression activity value.
+//
+// Callers should schedule a `compress` call whenever this value changes. The
+// direction of the change has no meaning; this is an opaque change token
+// rather than a monotonic sequence exposed by Terminal.
+//
+// It is up to the terminal what it decides to compress, but currently
+// we compress cold (non-viewed, non-editable) scrollback history on
+// the primary screen.
+//
+// Note that compression requires specific system features, namely
+// the ability to retain virtual memory allocations while discarding their
+// physical memory backings. Callers must still use `compress` to determine
+// whether compression is supported on the current target.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) CompressionActivity() (uint64, error) {
@@ -3433,7 +3720,8 @@ func NewRenderState() (*RenderState, error) {
 	return zigoNewRenderState(result), nil
 }
 
-// Update calls the Zig function RenderState.update.
+// Update the columns/rows for the grid based on the given screen and
+// cell size.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (r *RenderState) Update(t *Terminal) error {
@@ -3454,7 +3742,11 @@ func (r *RenderState) Update(t *Terminal) error {
 	return nil
 }
 
-// Clean calls the Zig function RenderState.clean.
+// Clean: Mark all render-state data as consumed by the renderer.
+//
+// This clears both the global dirty state and every per-row dirty flag.
+// Callers that only consume part of a frame should clear the two layers
+// individually instead.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (r *RenderState) Clean() error {
@@ -3470,7 +3762,7 @@ func (r *RenderState) Clean() error {
 	return nil
 }
 
-// CellCount calls the Zig function RenderState.cellCount.
+// CellCount: How many `RenderCell`s `renderCells` needs: `rows * cols`.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (r *RenderState) CellCount() (uint, error) {
@@ -3486,7 +3778,8 @@ func (r *RenderState) CellCount() (uint, error) {
 	return result, nil
 }
 
-// Cells calls the Zig function RenderState.cells.
+// Cells: Flatten the viewport into `dst`, row-major from the top, and report how
+// many cells were written.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (r *RenderState) Cells(dst []RenderCell) (uint, error) {
@@ -3504,7 +3797,8 @@ func (r *RenderState) Cells(dst []RenderCell) (uint, error) {
 	return result, nil
 }
 
-// Background calls the Zig function RenderState.background.
+// Background: The terminal's default background, 0xRRGGBB. Already reversed if the
+// terminal is in reverse-video mode.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (r *RenderState) Background() (uint32, error) {
@@ -3536,7 +3830,7 @@ func (r *RenderState) Foreground() (uint32, error) {
 	return result, nil
 }
 
-// CursorX calls the Zig function RenderState.cursorX.
+// CursorX: The cursor's column within the viewport, or false if it is scrolled out.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (r *RenderState) CursorX() (uint16, bool, error) {
@@ -3568,7 +3862,10 @@ func (r *RenderState) CursorY() (uint16, bool, error) {
 	return result, zigoHas, nil
 }
 
-// CursorWideTail calls the Zig function RenderState.cursorWideTail.
+// CursorWideTail: Whether the cursor sits on the tail of a wide character. A renderer that
+// draws a one-cell cursor may want to move it back one column so it covers
+// the character rather than half of it. Null when the cursor is scrolled out
+// of the viewport, the same as `renderCursorX`.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (r *RenderState) CursorWideTail() (bool, bool, error) {
@@ -3584,8 +3881,9 @@ func (r *RenderState) CursorWideTail() (bool, bool, error) {
 	return result != 0, zigoHas, nil
 }
 
-// CursorColor: The current cursor color, if one was set or configured. Null means the
-// cursor takes the foreground color.
+// CursorColor: The cursor color as of this frame, 0xRRGGBB, or null when the program has
+// not set one and the renderer should pick. Read from the snapshot rather
+// than the terminal so it matches the cells drawn beside it.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (r *RenderState) CursorColor() (uint32, bool, error) {
@@ -3601,7 +3899,8 @@ func (r *RenderState) CursorColor() (uint32, bool, error) {
 	return result, zigoHas, nil
 }
 
-// Dirty calls the Zig function RenderState.dirty.
+// Dirty: What changed since `RenderState.clean`. `RenderState.update` raises this;
+// nothing lowers it but `clean`.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (r *RenderState) Dirty() (RenderDirty, error) {
@@ -3617,7 +3916,9 @@ func (r *RenderState) Dirty() (RenderDirty, error) {
 	return RenderDirty(result), nil
 }
 
-// DirtyRows calls the Zig function RenderState.dirtyRows.
+// DirtyRows: Write the indexes of the dirty viewport rows into `dst`, top to bottom,
+// and report how many there are. `error.NoSpaceLeft` if `dst` is shorter
+// than that; size it to `rows`.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (r *RenderState) DirtyRows(dst []uint16) (uint, error) {
@@ -3633,7 +3934,9 @@ func (r *RenderState) DirtyRows(dst []uint16) (uint, error) {
 	return result, nil
 }
 
-// RowCells calls the Zig function RenderState.rowCells.
+// RowCells: Flatten one viewport row into `dst` and report how many cells were
+// written: `cols`, or zero for a row off the grid. For a renderer that
+// redraws only the rows `renderDirtyRows` names.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (r *RenderState) RowCells(y uint16, dst []RenderCell) (uint, error) {
@@ -3651,7 +3954,11 @@ func (r *RenderState) RowCells(y uint16, dst []RenderCell) (uint, error) {
 	return result, nil
 }
 
-// Graphemes calls the Zig function RenderState.graphemes.
+// Graphemes: The codepoints of the cell at viewport `x`, `y`: the base codepoint
+// followed by any combining marks or ZWJ sequence members, which
+// `RenderCell.codepoint` alone drops. Copies them into `dst` and returns
+// how many were written; zero for an empty cell or a position off the grid.
+// `error.NoSpaceLeft` if `dst` is shorter than the cluster.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (r *RenderState) Graphemes(x uint16, y uint16, dst []rune) (uint, error) {
@@ -3667,7 +3974,10 @@ func (r *RenderState) Graphemes(x uint16, y uint16, dst []rune) (uint, error) {
 	return result, nil
 }
 
-// HyperlinkAt calls the Zig function RenderState.hyperlinkAt.
+// HyperlinkAt: The OSC 8 hyperlink under viewport `x`, `y`, or null when the cell has
+// none. Valid only until the terminal changes: like ghostty's own
+// `linkCells`, this reads page memory through the pins `RenderState.update`
+// captured, so call it right after an update.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (r *RenderState) HyperlinkAt(x uint16, y uint16) (string, bool, error) {
@@ -3694,7 +4004,13 @@ func NewKittyImages() (*KittyImages, error) {
 	return zigoNewKittyImages(result), nil
 }
 
-// Update calls the Zig function KittyImages.update.
+// Update: Rebuild the snapshot from `term`'s active screen.
+//
+// Placements that cannot be drawn at all are left out: the ones scrolled off
+// the viewport, and the ones whose text has been pruned out of the scrollback.
+// Virtual (unicode placeholder) placements are kept, flagged and positionless,
+// since the cells that reference them are what place them; so are the ones
+// positioned relative to a virtual placement, for the same reason.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (k *KittyImages) Update(term *Terminal) error {
@@ -3715,7 +4031,7 @@ func (k *KittyImages) Update(term *Terminal) error {
 	return nil
 }
 
-// PlacementCount calls the Zig function KittyImages.placementCount.
+// PlacementCount: How many placements `kittyPlacements` will write.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (k *KittyImages) PlacementCount() (uint, error) {
@@ -3731,7 +4047,7 @@ func (k *KittyImages) PlacementCount() (uint, error) {
 	return result, nil
 }
 
-// Placements calls the Zig function KittyImages.placements.
+// Placements: Copy the placements into `dst`, back to front, and report how many.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (k *KittyImages) Placements(dst []KittyPlacement) (uint, error) {
@@ -3749,7 +4065,7 @@ func (k *KittyImages) Placements(dst []KittyPlacement) (uint, error) {
 	return result, nil
 }
 
-// SetKittyGraphicsSizeLimit calls the Zig function Terminal.setKittyGraphicsSizeLimit.
+// SetKittyGraphicsSizeLimit: Set the storage size limit for Kitty graphics across all screens.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (te *Terminal) SetKittyGraphicsSizeLimit(limit uint) error {
@@ -4254,7 +4570,12 @@ func (te *Terminal) NewGesture() (*Gesture, error) {
 	return zigoNewGesture(result, zigoChildParent), nil
 }
 
-// SetBehaviors calls the Zig function Gesture.setBehaviors.
+// SetBehaviors: What a single, double and triple click select.
+//
+// Defaults to ghostty's own mapping, so this is only for an emulator offering
+// something else -- selecting command output on triple click, say. Takes
+// effect on the next press; a gesture already in progress keeps the behavior
+// its press chose.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (g *Gesture) SetBehaviors(singleClick GestureBehavior, doubleClick GestureBehavior, tripleClick GestureBehavior) error {
@@ -4270,7 +4591,13 @@ func (g *Gesture) SetBehaviors(singleClick GestureBehavior, doubleClick GestureB
 	return nil
 }
 
-// SetWordBoundaries calls the Zig function Gesture.setWordBoundaries.
+// SetWordBoundaries: The codepoints that end a word, for double-click and deep-press selection.
+//
+// ghostty has no default on purpose -- its own UI reads the set from
+// configuration -- so this starts empty, and until it is set a "word" runs to
+// the end of the line. A space is the minimum worth setting. Copied, so the
+// caller's slice does not have to outlive the call; set it again on a config
+// reload.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (g *Gesture) SetWordBoundaries(boundaries []rune) error {
@@ -4291,7 +4618,9 @@ func (g *Gesture) SetWordBoundaries(boundaries []rune) error {
 	return nil
 }
 
-// SetGeometry calls the Zig function Gesture.setGeometry.
+// SetGeometry: The rendered geometry drags are measured against. Set it before the first
+// drag, and again on every resize; a zero `columns` or `cell_width` makes
+// cell-granular drags select nothing.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (g *Gesture) SetGeometry(geometry GestureGeometry) error {
@@ -4307,7 +4636,16 @@ func (g *Gesture) SetGeometry(geometry GestureGeometry) error {
 	return nil
 }
 
-// Press calls the Zig function Gesture.press.
+// Press: Record a press and return the selection it makes, if any.
+//
+// A press near the previous one and within `repeat_interval_ns` of it raises
+// the click count, up to three; anything else starts over at one. Nothing is
+// selected here: apply the result with `Screen.SetSelection` when there is one
+// and call `Screen.ClearSelection` when there is not, which is what makes a
+// single click clear the selection.
+//
+// Nothing is returned and no gesture starts if the cell is outside the
+// viewport.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (g *Gesture) Press(p GesturePressEvent) (Selection, bool, error) {
@@ -4323,7 +4661,17 @@ func (g *Gesture) Press(p GesturePressEvent) (Selection, bool, error) {
 	return zigoSelectionFromRaw(result), zigoHas, nil
 }
 
-// Drag calls the Zig function Gesture.drag.
+// Drag: Record a pointer movement while the button is down and return the selection
+// it now covers, if any.
+//
+// Null means there is nothing to change: no gesture is in progress, the press
+// it started from is no longer on the active screen, or the pointer has not
+// yet moved far enough to select the first cell. Word and line drags are
+// recomputed against the terminal as it is now, so output arriving mid-drag is
+// picked up.
+//
+// Check `Autoscroll` afterwards: a drag past the top or bottom edge asks for a
+// timer calling `AutoscrollTick`.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (g *Gesture) Drag(d GestureDragEvent) (Selection, bool, error) {
@@ -4339,7 +4687,8 @@ func (g *Gesture) Drag(d GestureDragEvent) (Selection, bool, error) {
 	return zigoSelectionFromRaw(result), zigoHas, nil
 }
 
-// Autoscroll calls the Zig function Gesture.autoscroll.
+// Autoscroll: Which way an active drag wants the viewport scrolled, `none` when it does
+// not. Read it after every `Drag` to start or stop the autoscroll timer.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (g *Gesture) Autoscroll() (GestureAutoscrollDirection, error) {
@@ -4355,7 +4704,13 @@ func (g *Gesture) Autoscroll() (GestureAutoscrollDirection, error) {
 	return GestureAutoscrollDirection(result), nil
 }
 
-// AutoscrollTick calls the Zig function Gesture.autoscrollTick.
+// AutoscrollTick: Scroll the viewport one row in the autoscroll direction and continue the
+// drag at the pointer's current position, which now names a different row.
+//
+// Call this from the timer `Autoscroll` asked for, passing the last position
+// the pointer was seen at. It scrolls exactly one row per call: tick faster to
+// scroll faster. A null result with `Autoscroll` back at `none` means the
+// gesture ended -- stop the timer and leave the selection alone.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (g *Gesture) AutoscrollTick(d GestureDragEvent) (Selection, bool, error) {
@@ -4371,7 +4726,11 @@ func (g *Gesture) AutoscrollTick(d GestureDragEvent) (Selection, bool, error) {
 	return zigoSelectionFromRaw(result), zigoHas, nil
 }
 
-// DeepPress calls the Zig function Gesture.deepPress.
+// DeepPress: Record a force click -- a pressure activation while the button is already
+// down, which is what macOS calls a deep click.
+//
+// Selects the word under the original press and ends the gesture, so further
+// movement does not drag it. Null when there is no valid gesture to deepen.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (g *Gesture) DeepPress() (Selection, bool, error) {
@@ -4387,7 +4746,12 @@ func (g *Gesture) DeepPress() (Selection, bool, error) {
 	return zigoSelectionFromRaw(result), zigoHas, nil
 }
 
-// Release calls the Zig function Gesture.release.
+// Release: Record the release of the primary button at a viewport cell.
+//
+// This ends the drag and stops autoscroll but deliberately keeps the click
+// count, which is what lets the next press become a double or triple click.
+// A cell outside the viewport is fine: the gesture then records that the
+// pointer moved away, which is the conservative answer for `Dragged`.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (g *Gesture) Release(x uint16, y uint16) error {
@@ -4403,7 +4767,11 @@ func (g *Gesture) Release(x uint16, y uint16) error {
 	return nil
 }
 
-// Reset: Discard the sequence in progress and the last command's payloads.
+// Reset: Abandon the gesture, click sequence included.
+//
+// For cancellation rather than the ordinary release: the program turned on
+// mouse reporting, the window lost the pointer, the surface is going away. The
+// next press is then a fresh single click.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (g *Gesture) Reset() error {
@@ -4419,7 +4787,8 @@ func (g *Gesture) Reset() error {
 	return nil
 }
 
-// ClickCount calls the Zig function Gesture.clickCount.
+// ClickCount: How many clicks the current sequence is at: 0 before any press, then 1, 2
+// or 3. What an emulator switches on to decide what a click means.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (g *Gesture) ClickCount() (uint8, error) {
@@ -4435,7 +4804,11 @@ func (g *Gesture) ClickCount() (uint8, error) {
 	return result, nil
 }
 
-// Dragged calls the Zig function Gesture.dragged.
+// Dragged: Whether the pointer has left the pressed cell during this gesture.
+//
+// Read it on release: a click that never dragged is the one that should follow
+// a hyperlink or move the shell cursor, rather than one that happened to end
+// where it started after a round trip.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (g *Gesture) Dragged() (bool, error) {

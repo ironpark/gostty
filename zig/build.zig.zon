@@ -9,8 +9,8 @@
             .hash = "ghostty-1.3.2-dev-5UdBCwlIZAXSZvXTiA3IbGysWSEnNfMAL8pLDMejwJxI",
         },
         .zigo = .{
-            .url = "https://github.com/ironpark/zigo/archive/refs/tags/0.13.1.tar.gz",
-            .hash = "zigo-0.13.1-iRIf5igjHwC-Qn7Y_Fl2DLa6iKYM88o_0SFUpM3dkjJ8",
+            .url = "https://github.com/ironpark/zigo/archive/refs/tags/0.14.2.tar.gz",
+            .hash = "zigo-0.14.2-iRIf5mwcIAD4Ljy53acILli02cc14pm2dUXBus5cuQ3m",
         },
     },
     .paths = .{

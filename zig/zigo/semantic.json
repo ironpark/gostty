@@ -56,6 +56,7 @@
         "path": "cols",
         "setter": false
       },
+      "doc": "Return the current column count without accessing page memory.",
       "name": "cols",
       "ownership": "borrowed",
       "params": [],
@@ -66,6 +67,11 @@
         "kind": "int",
         "signed": false
       },
+      "source": {
+        "path": "terminal/PageList.zig",
+        "line": 230,
+        "column": 19
+      },
       "symbol": "zg_terminal_cols"
     },
     {
@@ -73,6 +79,7 @@
         "path": "rows",
         "setter": false
       },
+      "doc": "Return the number of populated rows without accessing page memory.",
       "name": "rows",
       "ownership": "borrowed",
       "params": [],
@@ -82,6 +89,11 @@
         "is_usize": false,
         "kind": "int",
         "signed": false
+      },
+      "source": {
+        "path": "terminal/PageList.zig",
+        "line": 225,
+        "column": 19
       },
       "symbol": "zg_terminal_rows"
     },
@@ -273,6 +285,7 @@
         "path": "rows",
         "setter": false
       },
+      "doc": "Return the number of populated rows without accessing page memory.",
       "name": "rows",
       "ownership": "borrowed",
       "params": [],
@@ -283,6 +296,11 @@
         "kind": "int",
         "signed": false
       },
+      "source": {
+        "path": "terminal/PageList.zig",
+        "line": 225,
+        "column": 19
+      },
       "symbol": "zg_render_state_rows"
     },
     {
@@ -290,6 +308,7 @@
         "path": "cols",
         "setter": false
       },
+      "doc": "Return the current column count without accessing page memory.",
       "name": "cols",
       "ownership": "borrowed",
       "params": [],
@@ -299,6 +318,11 @@
         "is_usize": false,
         "kind": "int",
         "signed": false
+      },
+      "source": {
+        "path": "terminal/PageList.zig",
+        "line": 230,
+        "column": 19
       },
       "symbol": "zg_render_state_cols"
     },
@@ -377,16 +401,21 @@
       "symbol": "zg_kitty_images_generation"
     },
     {
+      "doc": "Returns the terminal display width of a codepoint in terminal\ngrid cells: 0, 1, or 2.\n\nThis is the same width table the terminal uses when laying out\nprinted text: 0 for zero-width codepoints (controls, combining\nmarks, default-ignorables, surrogates), 2 for wide codepoints\n(East Asian Wide/Fullwidth, regional indicators, clamped at 2),\nand 1 otherwise.\n\nThis operates on a single codepoint and cannot account for\ngrapheme-cluster-level width rules (VS16, combining sequences);\ncallers needing cluster-accurate widths should use graphemeWidth().\nSumming per-codepoint widths is only correct when mode 2027 is\ndisabled.",
       "name": "codepointWidth",
       "namespace": "unicode",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
-          "name": "p0",
-          "name_source": "fallback",
+          "name": "cp",
+          "name_source": "ast",
           "retention": "borrowed",
           "semantic": "codepoint",
+          "source": {
+            "line": 7,
+            "column": 23
+          },
           "type": {
             "bits": 21,
             "is_usize": false,
@@ -400,6 +429,11 @@
         "is_usize": false,
         "kind": "int",
         "signed": false
+      },
+      "source": {
+        "path": "simd/codepoint_width.zig",
+        "line": 7,
+        "column": 8
       },
       "symbol": "zg_unicode_codepoint_width"
     },
@@ -452,7 +486,7 @@
         {
           "direction": "in",
           "name": "writer",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 156,
@@ -465,7 +499,7 @@
         {
           "direction": "in",
           "name": "terminal",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 157,
@@ -481,7 +515,7 @@
         {
           "direction": "in",
           "name": "event",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 158,
@@ -495,7 +529,7 @@
         {
           "direction": "in",
           "name": "utf8",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
@@ -539,7 +573,7 @@
         {
           "direction": "in",
           "name": "writer",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 228,
@@ -552,7 +586,7 @@
         {
           "direction": "in",
           "name": "terminal",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 229,
@@ -568,7 +602,7 @@
         {
           "direction": "in",
           "name": "event",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 230,
@@ -582,7 +616,7 @@
         {
           "direction": "in",
           "name": "size",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 231,
@@ -596,7 +630,7 @@
         {
           "direction": "in",
           "name": "any_button_pressed",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 232,
@@ -625,6 +659,219 @@
     },
     {
       "covers": [
+        "Key.codepoint"
+      ],
+      "doc": "The Unicode codepoint the key produces on a US layout, if it has one.",
+      "name": "codepoint",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Key",
+      "receiver_kind": "value",
+      "return": {
+        "child": {
+          "bits": 21,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "optional"
+      },
+      "return_semantic": "codepoint",
+      "source": {
+        "path": "encode.zig",
+        "line": 49,
+        "column": 8
+      },
+      "zig_path": "keyCodepoint",
+      "symbol": "zg_key_codepoint"
+    },
+    {
+      "covers": [
+        "Key.printable"
+      ],
+      "doc": "True for keys that produce text on a US layout.",
+      "name": "printable",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Key",
+      "receiver_kind": "value",
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "encode.zig",
+        "line": 54,
+        "column": 8
+      },
+      "zig_path": "keyPrintable",
+      "symbol": "zg_key_printable"
+    },
+    {
+      "covers": [
+        "Key.modifier"
+      ],
+      "doc": "True for modifier keys such as shift, control and alt.",
+      "name": "modifier",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Key",
+      "receiver_kind": "value",
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "encode.zig",
+        "line": 59,
+        "column": 8
+      },
+      "zig_path": "keyModifier",
+      "symbol": "zg_key_modifier"
+    },
+    {
+      "covers": [
+        "Key.keypad"
+      ],
+      "doc": "True for keys on the numeric keypad.",
+      "name": "keypad",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Key",
+      "receiver_kind": "value",
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "encode.zig",
+        "line": 64,
+        "column": 8
+      },
+      "zig_path": "keyKeypad",
+      "symbol": "zg_key_keypad"
+    },
+    {
+      "covers": [
+        "Key.leftOrRightShift"
+      ],
+      "doc": "True for shift on either side.",
+      "name": "leftOrRightShift",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Key",
+      "receiver_kind": "value",
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "encode.zig",
+        "line": 69,
+        "column": 8
+      },
+      "zig_path": "keyLeftOrRightShift",
+      "symbol": "zg_key_left_or_right_shift"
+    },
+    {
+      "covers": [
+        "Key.leftOrRightAlt"
+      ],
+      "doc": "True for alt on either side.",
+      "name": "leftOrRightAlt",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Key",
+      "receiver_kind": "value",
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "encode.zig",
+        "line": 74,
+        "column": 8
+      },
+      "zig_path": "keyLeftOrRightAlt",
+      "symbol": "zg_key_left_or_right_alt"
+    },
+    {
+      "covers": [
+        "Key.ctrlOrSuper"
+      ],
+      "doc": "True for the platform's primary modifier: command on macOS, control\neverywhere else. Which one that is was decided when the native library\nfor this platform was built, so it needs no runtime check in Go.",
+      "name": "ctrlOrSuper",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Key",
+      "receiver_kind": "value",
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "encode.zig",
+        "line": 81,
+        "column": 8
+      },
+      "zig_path": "keyCtrlOrSuper",
+      "symbol": "zg_key_ctrl_or_super"
+    },
+    {
+      "covers": [
+        "Key.shouldBeRemappable"
+      ],
+      "doc": "True for keys a keybinding UI may remap by default.\n\nFalse for the W3C \"writing system\" keys -- the letters, digits and\npunctuation -- because what those produce is decided by the user's layout,\nso a binding on one is not the same key for everyone. Everything else,\nfunction and navigation keys included, is fair game.",
+      "name": "shouldBeRemappable",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Key",
+      "receiver_kind": "value",
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "encode.zig",
+        "line": 91,
+        "column": 8
+      },
+      "zig_path": "keyShouldBeRemappable",
+      "symbol": "zg_key_should_be_remappable"
+    },
+    {
+      "covers": [
+        "Key.w3c"
+      ],
+      "doc": "The W3C `KeyboardEvent.code` name for the key, such as \"KeyA\" or\n\"ArrowUp\", empty for a key with none. Static storage, so the string stays\nvalid for the life of the process.",
+      "name": "w3C",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Key",
+      "receiver_kind": "value",
+      "return": {
+        "const": true,
+        "element": {
+          "bits": 8,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "slice"
+      },
+      "return_semantic": "utf8_string",
+      "source": {
+        "path": "encode.zig",
+        "line": 98,
+        "column": 8
+      },
+      "zig_path": "keyW3C",
+      "symbol": "zg_key_w3_c"
+    },
+    {
+      "covers": [
         "Key.fromASCII"
       ],
       "doc": "The key for a printable ASCII byte, or null if none maps to it.",
@@ -635,7 +882,7 @@
         {
           "direction": "in",
           "name": "ch",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 44,
@@ -665,327 +912,6 @@
     },
     {
       "covers": [
-        "Key.codepoint"
-      ],
-      "doc": "The Unicode codepoint the key produces on a US layout, if it has one.",
-      "name": "keyCodepoint",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "key",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 49,
-            "column": 21
-          },
-          "type": {
-            "kind": "enum",
-            "ref": "Key"
-          }
-        }
-      ],
-      "return": {
-        "child": {
-          "bits": 21,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "optional"
-      },
-      "return_semantic": "codepoint",
-      "source": {
-        "path": "encode.zig",
-        "line": 49,
-        "column": 8
-      },
-      "symbol": "zg_key_codepoint"
-    },
-    {
-      "covers": [
-        "Key.printable"
-      ],
-      "doc": "True for keys that produce text on a US layout.",
-      "name": "keyPrintable",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "key",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 54,
-            "column": 21
-          },
-          "type": {
-            "kind": "enum",
-            "ref": "Key"
-          }
-        }
-      ],
-      "return": {
-        "kind": "bool"
-      },
-      "source": {
-        "path": "encode.zig",
-        "line": 54,
-        "column": 8
-      },
-      "symbol": "zg_key_printable"
-    },
-    {
-      "covers": [
-        "Key.modifier"
-      ],
-      "doc": "True for modifier keys such as shift, control and alt.",
-      "name": "keyModifier",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "key",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 59,
-            "column": 20
-          },
-          "type": {
-            "kind": "enum",
-            "ref": "Key"
-          }
-        }
-      ],
-      "return": {
-        "kind": "bool"
-      },
-      "source": {
-        "path": "encode.zig",
-        "line": 59,
-        "column": 8
-      },
-      "symbol": "zg_key_modifier"
-    },
-    {
-      "covers": [
-        "Key.keypad"
-      ],
-      "doc": "True for keys on the numeric keypad.",
-      "name": "keyKeypad",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "key",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 64,
-            "column": 18
-          },
-          "type": {
-            "kind": "enum",
-            "ref": "Key"
-          }
-        }
-      ],
-      "return": {
-        "kind": "bool"
-      },
-      "source": {
-        "path": "encode.zig",
-        "line": 64,
-        "column": 8
-      },
-      "symbol": "zg_key_keypad"
-    },
-    {
-      "covers": [
-        "Key.leftOrRightShift"
-      ],
-      "doc": "True for shift on either side.",
-      "name": "keyLeftOrRightShift",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "key",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 69,
-            "column": 28
-          },
-          "type": {
-            "kind": "enum",
-            "ref": "Key"
-          }
-        }
-      ],
-      "return": {
-        "kind": "bool"
-      },
-      "source": {
-        "path": "encode.zig",
-        "line": 69,
-        "column": 8
-      },
-      "symbol": "zg_key_left_or_right_shift"
-    },
-    {
-      "covers": [
-        "Key.leftOrRightAlt"
-      ],
-      "doc": "True for alt on either side.",
-      "name": "keyLeftOrRightAlt",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "key",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 74,
-            "column": 26
-          },
-          "type": {
-            "kind": "enum",
-            "ref": "Key"
-          }
-        }
-      ],
-      "return": {
-        "kind": "bool"
-      },
-      "source": {
-        "path": "encode.zig",
-        "line": 74,
-        "column": 8
-      },
-      "symbol": "zg_key_left_or_right_alt"
-    },
-    {
-      "covers": [
-        "Key.ctrlOrSuper"
-      ],
-      "doc": "True for the platform's primary modifier: command on macOS, control\neverywhere else. Which one that is was decided when the native library\nfor this platform was built, so it needs no runtime check in Go.",
-      "name": "keyCtrlOrSuper",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "key",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 81,
-            "column": 23
-          },
-          "type": {
-            "kind": "enum",
-            "ref": "Key"
-          }
-        }
-      ],
-      "return": {
-        "kind": "bool"
-      },
-      "source": {
-        "path": "encode.zig",
-        "line": 81,
-        "column": 8
-      },
-      "symbol": "zg_key_ctrl_or_super"
-    },
-    {
-      "covers": [
-        "Key.shouldBeRemappable"
-      ],
-      "doc": "True for keys a keybinding UI may remap by default.\n\nFalse for the W3C \"writing system\" keys -- the letters, digits and\npunctuation -- because what those produce is decided by the user's layout,\nso a binding on one is not the same key for everyone. Everything else,\nfunction and navigation keys included, is fair game.",
-      "name": "keyShouldBeRemappable",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "key",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 91,
-            "column": 30
-          },
-          "type": {
-            "kind": "enum",
-            "ref": "Key"
-          }
-        }
-      ],
-      "return": {
-        "kind": "bool"
-      },
-      "source": {
-        "path": "encode.zig",
-        "line": 91,
-        "column": 8
-      },
-      "symbol": "zg_key_should_be_remappable"
-    },
-    {
-      "covers": [
-        "Key.w3c"
-      ],
-      "doc": "The W3C `KeyboardEvent.code` name for the key, such as \"KeyA\" or\n\"ArrowUp\", empty for a key with none. Static storage, so the string stays\nvalid for the life of the process.",
-      "name": "keyW3C",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "key",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 98,
-            "column": 15
-          },
-          "type": {
-            "kind": "enum",
-            "ref": "Key"
-          }
-        }
-      ],
-      "return": {
-        "const": true,
-        "element": {
-          "bits": 8,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "slice"
-      },
-      "return_semantic": "utf8_string",
-      "source": {
-        "path": "encode.zig",
-        "line": 98,
-        "column": 8
-      },
-      "symbol": "zg_key_w3_c"
-    },
-    {
-      "covers": [
         "Key.fromW3C"
       ],
       "doc": "The key a W3C `KeyboardEvent.code` name selects, or null if none does.\nFor an embedder mapping browser or Electron key events onto the enum.",
@@ -996,7 +922,7 @@
         {
           "direction": "in",
           "name": "w3c_code",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
@@ -1168,6 +1094,7 @@
     },
     {
       "boxed": "create",
+      "doc": "Begin a transaction from a type=write packet.",
       "name": "newTerminal",
       "namespace": "Terminal",
       "ownership": "caller",
@@ -1175,9 +1102,13 @@
         {
           "direction": "in",
           "injected": "io",
-          "name": "io",
-          "name_source": "fallback",
+          "name": "alloc",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 81,
+            "column": 9
+          },
           "type": {
             "kind": "void"
           }
@@ -1185,9 +1116,13 @@
         {
           "direction": "in",
           "injected": "allocator",
-          "name": "allocator",
-          "name_source": "fallback",
+          "name": "meta",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 82,
+            "column": 9
+          },
           "type": {
             "kind": "void"
           }
@@ -1217,6 +1152,10 @@
           "name": "opts",
           "name_source": "sidecar",
           "retention": "borrowed",
+          "source": {
+            "line": 83,
+            "column": 9
+          },
           "type": {
             "kind": "value_struct",
             "ref": "Options"
@@ -1235,11 +1174,17 @@
           "ref": "Terminal"
         }
       },
+      "source": {
+        "path": "terminal/kitty/clipboard_write.zig",
+        "line": 80,
+        "column": 12
+      },
       "zig_path": "Terminal.init",
       "symbol": "zg_terminal_new_terminal"
     },
     {
       "boxed": "destroy",
+      "doc": "Deinit and deallocate all the pointers using the given\nallocator.\n\nWARNING: This should only be called if the hyperlink was\nheap-allocated. This DOES NOT need to be unconditionally\ncalled.",
       "name": "deinit",
       "ownership": "borrowed",
       "params": [
@@ -1291,8 +1236,9 @@
         {
           "direction": "in",
           "name": "str",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "semantic": "utf8_string",
           "source": {
             "line": 42,
             "column": 35
@@ -1343,7 +1289,7 @@
         {
           "direction": "in",
           "name": "continuation_max_bytes",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 673,
@@ -1588,7 +1534,7 @@
         {
           "direction": "in",
           "name": "max",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 447,
@@ -1621,7 +1567,7 @@
         {
           "direction": "in",
           "name": "name",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
@@ -1642,7 +1588,7 @@
         {
           "direction": "in",
           "name": "version",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
@@ -1680,7 +1626,7 @@
         {
           "direction": "in",
           "name": "reply",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
@@ -1718,7 +1664,7 @@
         {
           "direction": "in",
           "name": "scheme",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 493,
@@ -1767,7 +1713,7 @@
           "reentrancy": "allowed",
           "thread": "caller",
           "name": "callback",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "retained",
           "source": {
             "line": 143,
@@ -1794,7 +1740,7 @@
         {
           "direction": "in",
           "name": "userdata",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 143,
@@ -1930,7 +1876,7 @@
         {
           "direction": "in",
           "name": "ev",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 180,
@@ -1944,7 +1890,7 @@
         {
           "direction": "in",
           "name": "mimes",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
@@ -2080,7 +2026,7 @@
         {
           "direction": "in",
           "name": "ev",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 221,
@@ -2138,7 +2084,7 @@
           "reentrancy": "allowed",
           "thread": "caller",
           "name": "callback",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "retained",
           "source": {
             "line": 522,
@@ -2165,7 +2111,7 @@
         {
           "direction": "in",
           "name": "userdata",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 523,
@@ -2200,7 +2146,7 @@
           "reentrancy": "allowed",
           "thread": "caller",
           "name": "callback",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "retained",
           "source": {
             "line": 534,
@@ -2227,7 +2173,7 @@
         {
           "direction": "in",
           "name": "userdata",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 535,
@@ -2352,7 +2298,7 @@
         {
           "direction": "in",
           "name": "index",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 579,
@@ -2393,7 +2339,7 @@
         {
           "direction": "in",
           "name": "index",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 586,
@@ -2452,7 +2398,7 @@
         {
           "direction": "in",
           "name": "index",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 599,
@@ -2493,7 +2439,7 @@
         {
           "direction": "in",
           "name": "remember",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 606,
@@ -2523,7 +2469,7 @@
         {
           "direction": "in",
           "name": "text",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
@@ -2544,7 +2490,7 @@
         {
           "direction": "in",
           "name": "remember",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 623,
@@ -2574,7 +2520,7 @@
         {
           "direction": "in",
           "name": "reason",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 638,
@@ -2605,7 +2551,7 @@
         {
           "direction": "in",
           "name": "writer",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 378,
@@ -2659,7 +2605,7 @@
         {
           "direction": "in",
           "name": "writer",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 385,
@@ -2721,7 +2667,7 @@
         {
           "direction": "in",
           "name": "writer",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 370,
@@ -2750,15 +2696,20 @@
       "symbol": "zg_stream_write_replies"
     },
     {
+      "doc": "Print UTF-8 encoded string to the terminal.",
       "name": "printString",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "str",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "semantic": "utf8_string",
+          "source": {
+            "line": 484,
+            "column": 37
+          },
           "type": {
             "const": true,
             "element": {
@@ -2783,18 +2734,28 @@
           "kind": "void"
         }
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 484,
+        "column": 8
+      },
       "symbol": "zg_terminal_print_string"
     },
     {
+      "doc": "Return the current string value of the terminal. Newlines are\nencoded as \"\\n\". This omits any formatting such as fg/bg.\n\nThe caller must free the string.",
       "name": "plainString",
       "ownership": "caller",
       "params": [
         {
           "direction": "in",
           "injected": "allocator",
-          "name": "allocator",
-          "name_source": "fallback",
+          "name": "alloc",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 4896,
+            "column": 37
+          },
           "type": {
             "kind": "void"
           }
@@ -2821,17 +2782,27 @@
         }
       },
       "return_semantic": "utf8_string",
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 4896,
+        "column": 8
+      },
       "symbol": "zg_terminal_plain_string"
     },
     {
+      "doc": "Change the cursor's current shape and blink behavior.\n\nThe terminal parser uses this for DECSCUSR (`CSI Ps SP q`), but the behavior\nis general: `.default` selects the configured defaults, while any other\nvalue selects a concrete appearance until it is changed again or reset.",
       "name": "setCursorStyle",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "value",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 398,
+            "column": 40
+          },
           "type": {
             "kind": "enum",
             "ref": "CursorStyleReq"
@@ -2842,17 +2813,27 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 398,
+        "column": 8
+      },
       "symbol": "zg_terminal_set_cursor_style"
     },
     {
+      "doc": "Set Cursor Position. Move cursor to the position indicated\nby row and column (1-indexed). If column is 0, it is adjusted to 1.\nIf column is greater than the right-most column it is adjusted to\nthe right-most column. If row is 0, it is adjusted to 1. If row is\ngreater than the bottom-most row it is adjusted to the bottom-most\nrow.",
       "name": "setCursorPos",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "row_req",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 2535,
+            "column": 38
+          },
           "type": {
             "bits": 64,
             "is_usize": true,
@@ -2863,8 +2844,12 @@
         {
           "direction": "in",
           "name": "col_req",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 2535,
+            "column": 54
+          },
           "type": {
             "bits": 64,
             "is_usize": true,
@@ -2877,9 +2862,15 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 2535,
+        "column": 8
+      },
       "symbol": "zg_terminal_set_cursor_pos"
     },
     {
+      "doc": "Carriage return moves the cursor to the first column.",
       "name": "carriageReturn",
       "ownership": "borrowed",
       "params": [],
@@ -2887,9 +2878,15 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 1823,
+        "column": 8
+      },
       "symbol": "zg_terminal_carriage_return"
     },
     {
+      "doc": "Linefeed moves the cursor to the next line.",
       "name": "linefeed",
       "ownership": "borrowed",
       "params": [],
@@ -2903,9 +2900,15 @@
           "kind": "void"
         }
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 1837,
+        "column": 8
+      },
       "symbol": "zg_terminal_linefeed"
     },
     {
+      "doc": "Backspace moves the cursor back a column (but not less than 0).",
       "name": "backspace",
       "ownership": "borrowed",
       "params": [],
@@ -2913,9 +2916,15 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 1843,
+        "column": 8
+      },
       "symbol": "zg_terminal_backspace"
     },
     {
+      "doc": "Returns true if the cursor is currently at a prompt. Another way to look\nat this is it returns false if the shell is currently outputting something.\nThis requires shell integration (semantic prompt integration).\n\nIf the shell integration doesn't exist, this will always return false.",
       "name": "cursorIsAtPrompt",
       "ownership": "borrowed",
       "params": [],
@@ -2923,9 +2932,15 @@
       "return": {
         "kind": "bool"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 2241,
+        "column": 8
+      },
       "symbol": "zg_terminal_cursor_is_at_prompt"
     },
     {
+      "doc": "Full reset.\n\nThis will attempt to free the existing screen memory but if that fails\nthis will reuse the existing memory. In the latter case, memory may\nbe wasted (since its unused) but it isn't leaked.",
       "name": "fullReset",
       "ownership": "borrowed",
       "params": [],
@@ -2933,18 +2948,28 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 4910,
+        "column": 8
+      },
       "symbol": "zg_terminal_full_reset"
     },
     {
       "borrowed_return": true,
+      "doc": "Switch to the given screen type (alternate or primary).\n\nThis does NOT handle behaviors such as clearing the screen,\ncopying the cursor, etc. This should be handled by downstream\ncallers.\n\nAfter calling this function, the `self.screen` field will point\nto the current screen, and the returned value will be the previous\nscreen. If the return value is null, then the screen was not\nswitched because it was already the active screen.\n\nNote: This is written in a generic way so that we can support\nmore than two screens in the future if needed. There isn't\ncurrently a spec for this, but it is something I think might\nbe useful in the future.",
       "name": "switchScreen",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "key",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 4729,
+            "column": 38
+          },
           "type": {
             "kind": "enum",
             "ref": "ScreenKey"
@@ -2964,17 +2989,27 @@
           "ref": "Screen"
         }
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 4729,
+        "column": 8
+      },
       "symbol": "zg_terminal_switch_screen"
     },
     {
+      "doc": "Switch screen via a mode switch (e.g. mode 47, 1047, 1049).\nThis is a much more opinionated operation than `switchScreen`\nsince it also handles the behaviors of the specific mode,\nsuch as clearing the screen, saving/restoring the cursor,\netc.\n\nThis should be used for legacy compatibility with VT protocols,\nbut more modern usage should use `switchScreen` instead and handle\ndetails like clearing the screen, cursor saving, etc. manually.",
       "name": "switchScreenMode",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "mode",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 4802,
+            "column": 5
+          },
           "type": {
             "kind": "enum",
             "ref": "SwitchScreenMode"
@@ -2983,8 +3018,12 @@
         {
           "direction": "in",
           "name": "enabled",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 4803,
+            "column": 5
+          },
           "type": {
             "kind": "bool"
           }
@@ -2999,6 +3038,11 @@
         "payload": {
           "kind": "void"
         }
+      },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 4800,
+        "column": 8
       },
       "symbol": "zg_terminal_switch_screen_mode"
     },
@@ -3032,7 +3076,7 @@
         {
           "direction": "in",
           "name": "key",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 31,
@@ -3063,6 +3107,7 @@
       "covers": [
         "Screen.selectAll"
       ],
+      "doc": "Select the whole screen. Returns false when there is nothing to select.",
       "name": "selectAll",
       "ownership": "borrowed",
       "params": [],
@@ -3076,16 +3121,27 @@
           "kind": "bool"
         }
       },
+      "source": {
+        "path": "screen.zig",
+        "line": 36,
+        "column": 8
+      },
       "zig_path": "screenSelectAll",
       "symbol": "zg_screen_select_all"
     },
     {
+      "doc": "True when the screen has a selection.",
       "name": "hasSelection",
       "ownership": "borrowed",
       "params": [],
       "receiver": "Screen",
       "return": {
         "kind": "bool"
+      },
+      "source": {
+        "path": "screen.zig",
+        "line": 192,
+        "column": 8
       },
       "zig_path": "screenHasSelection",
       "symbol": "zg_screen_has_selection"
@@ -3094,14 +3150,19 @@
       "covers": [
         "Screen.select"
       ],
+      "doc": "Select the cells between two viewport positions, inclusive of both ends.\n\n`rectangle` selects the block between the two corners rather than the flow\nof text from one to the other. Returns false when either end is outside the\nviewport, which is what a drag that left the window looks like.",
       "name": "selectRange",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "x1",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 49,
+            "column": 5
+          },
           "type": {
             "bits": 16,
             "is_usize": false,
@@ -3112,8 +3173,12 @@
         {
           "direction": "in",
           "name": "y1",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 50,
+            "column": 5
+          },
           "type": {
             "bits": 16,
             "is_usize": false,
@@ -3124,8 +3189,12 @@
         {
           "direction": "in",
           "name": "x2",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 51,
+            "column": 5
+          },
           "type": {
             "bits": 16,
             "is_usize": false,
@@ -3136,8 +3205,12 @@
         {
           "direction": "in",
           "name": "y2",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 52,
+            "column": 5
+          },
           "type": {
             "bits": 16,
             "is_usize": false,
@@ -3148,8 +3221,12 @@
         {
           "direction": "in",
           "name": "rectangle",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 53,
+            "column": 5
+          },
           "type": {
             "kind": "bool"
           }
@@ -3165,6 +3242,11 @@
           "kind": "bool"
         }
       },
+      "source": {
+        "path": "screen.zig",
+        "line": 47,
+        "column": 8
+      },
       "zig_path": "screenSelectRange",
       "symbol": "zg_screen_select_range"
     },
@@ -3172,14 +3254,19 @@
       "covers": [
         "Screen.selectWord"
       ],
+      "doc": "Select the word under a viewport position -- what a double click does.\n\n`boundaries` are the codepoints that end a word. ghostty has no default for\nthem on purpose: its own UI reads the set from configuration, so the choice\nbelongs to the embedder.\n\nWrapped because ghostty returns the `Selection` rather than applying it, and\na `Selection` holds page pins that cannot cross the C ABI. False when the\nposition is outside the viewport or there is no word under it.",
       "name": "selectWord",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "x",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 162,
+            "column": 40
+          },
           "type": {
             "bits": 16,
             "is_usize": false,
@@ -3190,8 +3277,12 @@
         {
           "direction": "in",
           "name": "y",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 162,
+            "column": 48
+          },
           "type": {
             "bits": 16,
             "is_usize": false,
@@ -3202,9 +3293,13 @@
         {
           "direction": "in",
           "name": "boundaries",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "semantic": "codepoint",
+          "source": {
+            "line": 162,
+            "column": 56
+          },
           "type": {
             "const": true,
             "element": {
@@ -3227,6 +3322,11 @@
           "kind": "bool"
         }
       },
+      "source": {
+        "path": "screen.zig",
+        "line": 162,
+        "column": 8
+      },
       "zig_path": "screenSelectWord",
       "symbol": "zg_screen_select_word"
     },
@@ -3234,14 +3334,19 @@
       "covers": [
         "Screen.selectLine"
       ],
+      "doc": "Select the line under a viewport position -- what a triple click does.\n\nSoft-wrapped lines are followed as one line, leading and trailing whitespace\nis trimmed, and a semantic prompt boundary ends the selection.",
       "name": "selectLine",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "x",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 173,
+            "column": 40
+          },
           "type": {
             "bits": 16,
             "is_usize": false,
@@ -3252,8 +3357,12 @@
         {
           "direction": "in",
           "name": "y",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 173,
+            "column": 48
+          },
           "type": {
             "bits": 16,
             "is_usize": false,
@@ -3271,6 +3380,11 @@
         "payload": {
           "kind": "bool"
         }
+      },
+      "source": {
+        "path": "screen.zig",
+        "line": 173,
+        "column": 8
       },
       "zig_path": "screenSelectLine",
       "symbol": "zg_screen_select_line"
@@ -3279,14 +3393,19 @@
       "covers": [
         "Screen.selectOutput"
       ],
+      "doc": "Select the command output the given position belongs to.\n\nNeeds the shell to mark its prompts with OSC 133; without those marks there\nis no output block to find and this returns false.",
       "name": "selectOutput",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "x",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 184,
+            "column": 42
+          },
           "type": {
             "bits": 16,
             "is_usize": false,
@@ -3297,8 +3416,12 @@
         {
           "direction": "in",
           "name": "y",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 184,
+            "column": 50
+          },
           "type": {
             "bits": 16,
             "is_usize": false,
@@ -3317,6 +3440,11 @@
           "kind": "bool"
         }
       },
+      "source": {
+        "path": "screen.zig",
+        "line": 184,
+        "column": 8
+      },
       "zig_path": "screenSelectOutput",
       "symbol": "zg_screen_select_output"
     },
@@ -3324,15 +3452,20 @@
       "covers": [
         "Screen.selectionString"
       ],
+      "doc": "The text of the current selection, absent when nothing is selected.",
       "name": "selectionString",
       "ownership": "caller",
       "params": [
         {
           "direction": "in",
           "injected": "allocator",
-          "name": "allocator",
-          "name_source": "fallback",
+          "name": "gpa",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 197,
+            "column": 45
+          },
           "type": {
             "kind": "void"
           }
@@ -3360,10 +3493,16 @@
         }
       },
       "return_semantic": "utf8_string",
+      "source": {
+        "path": "screen.zig",
+        "line": 197,
+        "column": 8
+      },
       "zig_path": "screenSelectionString",
       "symbol": "zg_screen_selection_string"
     },
     {
+      "doc": "The screen's current selection, or null when there is none.",
       "name": "selection",
       "ownership": "borrowed",
       "params": [],
@@ -3375,18 +3514,28 @@
         },
         "kind": "optional"
       },
+      "source": {
+        "path": "screen.zig",
+        "line": 90,
+        "column": 8
+      },
       "zig_path": "screenSelection",
       "symbol": "zg_screen_selection"
     },
     {
+      "doc": "Replace the screen's selection. Returns false, leaving the selection as it\nwas, if either end is outside the screen.",
       "name": "setSelection",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "sel",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 97,
+            "column": 42
+          },
           "type": {
             "kind": "value_struct",
             "ref": "Selection"
@@ -3403,10 +3552,16 @@
           "kind": "bool"
         }
       },
+      "source": {
+        "path": "screen.zig",
+        "line": 97,
+        "column": 8
+      },
       "zig_path": "screenSetSelection",
       "symbol": "zg_screen_set_selection"
     },
     {
+      "doc": "The screen row shown at the top of the viewport: subtract it from a\n`Selection` row to get the viewport row a renderer draws at.",
       "name": "viewportTop",
       "ownership": "borrowed",
       "params": [],
@@ -3417,10 +3572,16 @@
         "kind": "int",
         "signed": false
       },
+      "source": {
+        "path": "screen.zig",
+        "line": 129,
+        "column": 8
+      },
       "zig_path": "screenViewportTop",
       "symbol": "zg_screen_viewport_top"
     },
     {
+      "doc": "The screen's scrollbar state.",
       "name": "scrollbar",
       "ownership": "borrowed",
       "params": [],
@@ -3429,18 +3590,28 @@
         "kind": "value_struct",
         "ref": "Scrollbar"
       },
+      "source": {
+        "path": "screen.zig",
+        "line": 148,
+        "column": 8
+      },
       "zig_path": "screenScrollbar",
       "symbol": "zg_screen_scrollbar"
     },
     {
+      "doc": "Format a whole screen, scrollback included. `Terminal.format` is the\nactive area only.",
       "name": "format",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "opts",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 85,
+            "column": 36
+          },
           "type": {
             "kind": "value_struct",
             "ref": "FormatOptions"
@@ -3449,8 +3620,12 @@
         {
           "direction": "in",
           "name": "writer",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 85,
+            "column": 57
+          },
           "type": {
             "kind": "io_writer"
           }
@@ -3466,18 +3641,28 @@
           "kind": "void"
         }
       },
+      "source": {
+        "path": "format.zig",
+        "line": 85,
+        "column": 8
+      },
       "zig_path": "screenFormat",
       "symbol": "zg_screen_format"
     },
     {
+      "doc": "Format the part of a screen inside `sel`. Returns false, writing\nnothing, if `sel` is outside the screen.",
       "name": "formatSelection",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "opts",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 93,
+            "column": 45
+          },
           "type": {
             "kind": "value_struct",
             "ref": "FormatOptions"
@@ -3486,8 +3671,12 @@
         {
           "direction": "in",
           "name": "sel",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 93,
+            "column": 66
+          },
           "type": {
             "kind": "value_struct",
             "ref": "Selection"
@@ -3496,8 +3685,12 @@
         {
           "direction": "in",
           "name": "writer",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 93,
+            "column": 82
+          },
           "type": {
             "kind": "io_writer"
           }
@@ -3513,18 +3706,28 @@
           "kind": "bool"
         }
       },
+      "source": {
+        "path": "format.zig",
+        "line": 93,
+        "column": 8
+      },
       "zig_path": "screenFormatSelection",
       "symbol": "zg_screen_format_selection"
     },
     {
+      "doc": "Whether the screen cell at `x`, `y` (screen coordinates) is inside `sel`.\nFalse when either is outside the screen.",
       "name": "selectionContains",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "sel",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 113,
+            "column": 47
+          },
           "type": {
             "kind": "value_struct",
             "ref": "Selection"
@@ -3533,8 +3736,12 @@
         {
           "direction": "in",
           "name": "x",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 113,
+            "column": 63
+          },
           "type": {
             "bits": 16,
             "is_usize": false,
@@ -3545,8 +3752,12 @@
         {
           "direction": "in",
           "name": "y",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 113,
+            "column": 71
+          },
           "type": {
             "bits": 32,
             "is_usize": false,
@@ -3559,18 +3770,28 @@
       "return": {
         "kind": "bool"
       },
+      "source": {
+        "path": "screen.zig",
+        "line": 113,
+        "column": 8
+      },
       "zig_path": "screenSelectionContains",
       "symbol": "zg_screen_selection_contains"
     },
     {
+      "doc": "Move the end of `sel` by `adjustment` -- what shift+arrow does to a\nselection -- and return the result. Null if `sel` is outside the screen.",
       "name": "selectionAdjust",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "sel",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 121,
+            "column": 45
+          },
           "type": {
             "kind": "value_struct",
             "ref": "Selection"
@@ -3579,8 +3800,12 @@
         {
           "direction": "in",
           "name": "adjustment",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 121,
+            "column": 61
+          },
           "type": {
             "kind": "enum",
             "ref": "SelectionAdjustment"
@@ -3595,6 +3820,11 @@
         },
         "kind": "optional"
       },
+      "source": {
+        "path": "screen.zig",
+        "line": 121,
+        "column": 8
+      },
       "zig_path": "screenSelectionAdjust",
       "symbol": "zg_screen_selection_adjust"
     },
@@ -3602,15 +3832,20 @@
       "covers": [
         "Screen.startHyperlink"
       ],
+      "doc": "Open a hyperlink on the screen; cells printed until `Screen.endHyperlink`\ncarry it. An empty `id` leaves the link without an explicit id, which is\nwhat OSC 8 does when the parameter is absent.",
       "name": "startHyperlink",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "uri",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "semantic": "utf8_string",
+          "source": {
+            "line": 205,
+            "column": 44
+          },
           "type": {
             "const": true,
             "element": {
@@ -3625,9 +3860,13 @@
         {
           "direction": "in",
           "name": "id",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "semantic": "utf8_string",
+          "source": {
+            "line": 205,
+            "column": 61
+          },
           "type": {
             "const": true,
             "element": {
@@ -3651,10 +3890,16 @@
           "kind": "void"
         }
       },
+      "source": {
+        "path": "screen.zig",
+        "line": 205,
+        "column": 8
+      },
       "zig_path": "screenStartHyperlink",
       "symbol": "zg_screen_start_hyperlink"
     },
     {
+      "doc": "Returns true if the viewport is scrolled to the bottom of the screen.",
       "name": "viewportIsBottom",
       "ownership": "borrowed",
       "params": [],
@@ -3663,9 +3908,15 @@
       "return": {
         "kind": "bool"
       },
+      "source": {
+        "path": "terminal/Screen.zig",
+        "line": 1663,
+        "column": 15
+      },
       "symbol": "zg_screen_viewport_is_bottom"
     },
     {
+      "doc": "Same as select(null) but can't fail.",
       "name": "clearSelection",
       "ownership": "borrowed",
       "params": [],
@@ -3673,15 +3924,26 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Screen.zig",
+        "line": 2916,
+        "column": 8
+      },
       "symbol": "zg_screen_clear_selection"
     },
     {
+      "doc": "End the hyperlink state so that future cells aren't part of the\ncurrent hyperlink (if any). This is safe to call multiple times.",
       "name": "endHyperlink",
       "ownership": "borrowed",
       "params": [],
       "receiver": "Screen",
       "return": {
         "kind": "void"
+      },
+      "source": {
+        "path": "terminal/Screen.zig",
+        "line": 2743,
+        "column": 8
       },
       "symbol": "zg_screen_end_hyperlink"
     },
@@ -3710,7 +3972,7 @@
         {
           "direction": "in",
           "name": "needle_unowned",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
@@ -3769,6 +4031,7 @@
       "symbol": "zg_search_search_close"
     },
     {
+      "doc": "The needle being searched for, borrowed.",
       "name": "needle",
       "ownership": "borrowed",
       "params": [],
@@ -3784,10 +4047,16 @@
         "kind": "slice"
       },
       "return_semantic": "utf8_string",
+      "source": {
+        "path": "search.zig",
+        "line": 74,
+        "column": 8
+      },
       "zig_path": "searchNeedle",
       "symbol": "zg_search_needle"
     },
     {
+      "doc": "How much of the terminal the search has covered so far.",
       "name": "status",
       "ownership": "borrowed",
       "params": [],
@@ -3796,10 +4065,16 @@
         "kind": "enum",
         "ref": "SearchState"
       },
+      "source": {
+        "path": "search.zig",
+        "line": 79,
+        "column": 8
+      },
       "zig_path": "searchStatus",
       "symbol": "zg_search_status"
     },
     {
+      "doc": "Push the search forward as far as it can go without reading the terminal,\nand report what that achieved. Safe to run beside terminal IO, so a UI can\nspend a slice of each frame here rather than blocking on `searchAll`.\n\n`blocked` means the searcher has consumed everything the last `searchFeed`\ngave it and needs another one.",
       "name": "tick",
       "ownership": "borrowed",
       "params": [],
@@ -3808,11 +4083,16 @@
         "kind": "enum",
         "ref": "SearchProgress"
       },
+      "source": {
+        "path": "search.zig",
+        "line": 89,
+        "column": 8
+      },
       "zig_path": "searchTick",
       "symbol": "zg_search_tick"
     },
     {
-      "doc": "Feed bytes to the parser, applying them to the terminal.",
+      "doc": "Read the terminal into the search: reconcile its screens, hand the\nsearchers more scrollback, and notice whether the viewport moved.\n\nThis is also the only way the search learns that the terminal changed, so\nkeep feeding it while it is in use, even after it reports complete.\n\nPass `active_dirty` false only if you know the active area has not changed\nsince the last feed; true is always correct and the rescan is cheap.",
       "name": "feed",
       "ownership": "borrowed",
       "params": [
@@ -3822,8 +4102,8 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 352,
-            "column": 32
+            "line": 101,
+            "column": 34
           },
           "type": {
             "kind": "bool"
@@ -3835,14 +4115,15 @@
         "kind": "void"
       },
       "source": {
-        "path": "stream.zig",
-        "line": 352,
-        "column": 12
+        "path": "search.zig",
+        "line": 101,
+        "column": 8
       },
       "zig_path": "searchFeed",
       "symbol": "zg_search_feed"
     },
     {
+      "doc": "Run the search to completion, feeding and ticking until nothing is left.\n\nThe simple call, for a program that would rather block than drive the\nsearch itself. A large scrollback can take a while; `searchTick` and\n`searchFeed` are the way to spread that over frames instead.",
       "name": "all",
       "ownership": "borrowed",
       "params": [],
@@ -3850,10 +4131,16 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "search.zig",
+        "line": 110,
+        "column": 8
+      },
       "zig_path": "searchAll",
       "symbol": "zg_search_all"
     },
     {
+      "doc": "Move to the next or previous match on the active screen, wrapping at the\nends, and select it on the screen. False if there is nothing to select.\n\nFeeds first, so it always works against current terminal state.",
       "name": "select",
       "ownership": "borrowed",
       "params": [
@@ -3862,6 +4149,10 @@
           "name": "to",
           "name_source": "sidecar",
           "retention": "borrowed",
+          "source": {
+            "line": 126,
+            "column": 36
+          },
           "type": {
             "kind": "enum",
             "ref": "SearchDirection"
@@ -3872,6 +4163,10 @@
           "name": "scroll",
           "name_source": "sidecar",
           "retention": "borrowed",
+          "source": {
+            "line": 126,
+            "column": 57
+          },
           "type": {
             "kind": "enum",
             "ref": "SearchScroll"
@@ -3888,10 +4183,16 @@
           "kind": "bool"
         }
       },
+      "source": {
+        "path": "search.zig",
+        "line": 126,
+        "column": 8
+      },
       "zig_path": "searchSelect",
       "symbol": "zg_search_select"
     },
     {
+      "doc": "How many matches have been found on the active screen so far. Grows as the\nsearch progresses, so it is only final once the status is `complete`.",
       "name": "matchCount",
       "ownership": "borrowed",
       "params": [],
@@ -3902,10 +4203,16 @@
         "kind": "int",
         "signed": false
       },
+      "source": {
+        "path": "search.zig",
+        "line": 132,
+        "column": 8
+      },
       "zig_path": "searchMatchCount",
       "symbol": "zg_search_match_count"
     },
     {
+      "doc": "Copy the matches found on the active screen so far into `dst`, most recent\nscreen content first, and return how many were written. Matches are in\nscreen coordinates; size `dst` from `searchMatchCount`.",
       "name": "matches",
       "ownership": "borrowed",
       "params": [
@@ -3914,6 +4221,10 @@
           "name": "dst",
           "name_source": "sidecar",
           "retention": "borrowed",
+          "source": {
+            "line": 140,
+            "column": 37
+          },
           "type": {
             "const": false,
             "element": {
@@ -3932,10 +4243,16 @@
         "kind": "int",
         "signed": false
       },
+      "source": {
+        "path": "search.zig",
+        "line": 140,
+        "column": 8
+      },
       "zig_path": "searchMatches",
       "symbol": "zg_search_matches"
     },
     {
+      "doc": "The matches on the pages the viewport covers, in screen coordinates, for a\nrenderer highlighting what is on screen. Returns how many were written.\n\nThis is the cheap way to draw highlights: the viewport is searched on its\nown and the results are cached until it moves, so a frame does not pay for\nthe whole scrollback, and the answer is there before the scrollback search\nhas finished. It can include a few matches just off screen when they share\na page with the viewport, which a renderer clips anyway.\n\nThe count is not known in advance, so size `dst` generously and treat a\nfull `dst` as \"there may be more\".",
       "name": "viewportMatches",
       "ownership": "borrowed",
       "params": [
@@ -3944,6 +4261,10 @@
           "name": "dst",
           "name_source": "sidecar",
           "retention": "borrowed",
+          "source": {
+            "line": 166,
+            "column": 45
+          },
           "type": {
             "const": false,
             "element": {
@@ -3968,10 +4289,16 @@
           "signed": false
         }
       },
+      "source": {
+        "path": "search.zig",
+        "line": 166,
+        "column": 8
+      },
       "zig_path": "searchViewportMatches",
       "symbol": "zg_search_viewport_matches"
     },
     {
+      "doc": "The match `searchSelect` last moved to, or null before the first move.",
       "name": "selectedMatch",
       "ownership": "borrowed",
       "params": [],
@@ -3983,10 +4310,16 @@
         },
         "kind": "optional"
       },
+      "source": {
+        "path": "search.zig",
+        "line": 179,
+        "column": 8
+      },
       "zig_path": "searchSelectedMatch",
       "symbol": "zg_search_selected_match"
     },
     {
+      "doc": "The index of the selected match in the list `searchMatches` writes, or null\nbefore the first `searchSelect`. What a UI shows as \"3 of 12\".",
       "name": "selectedIndex",
       "ownership": "borrowed",
       "params": [],
@@ -3999,6 +4332,11 @@
           "signed": false
         },
         "kind": "optional"
+      },
+      "source": {
+        "path": "search.zig",
+        "line": 188,
+        "column": 8
       },
       "zig_path": "searchSelectedIndex",
       "symbol": "zg_search_selected_index"
@@ -4107,14 +4445,19 @@
       "symbol": "zg_terminal_history_string"
     },
     {
+      "doc": "Move the cursor up amount lines. If amount is greater than the maximum\nmove distance then it is internally adjusted to the maximum. If amount is\n0, adjust it to 1.",
       "name": "cursorUp",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "count_req",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 1850,
+            "column": 34
+          },
           "type": {
             "bits": 64,
             "is_usize": true,
@@ -4127,17 +4470,27 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 1850,
+        "column": 8
+      },
       "symbol": "zg_terminal_cursor_up"
     },
     {
+      "doc": "Move the cursor down amount lines. If amount is greater than the maximum\nmove distance then it is internally adjusted to the maximum. This sequence\nwill not scroll the screen or scroll region. If amount is 0, adjust it to 1.",
       "name": "cursorDown",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "count_req",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 1868,
+            "column": 36
+          },
           "type": {
             "bits": 64,
             "is_usize": true,
@@ -4150,17 +4503,27 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 1868,
+        "column": 8
+      },
       "symbol": "zg_terminal_cursor_down"
     },
     {
+      "doc": "Move the cursor to the left amount cells. If amount is 0, adjust it to 1.",
       "name": "cursorLeft",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "count_req",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 1899,
+            "column": 36
+          },
           "type": {
             "bits": 64,
             "is_usize": true,
@@ -4173,17 +4536,27 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 1899,
+        "column": 8
+      },
       "symbol": "zg_terminal_cursor_left"
     },
     {
+      "doc": "Move the cursor right amount columns. If amount is greater than the\nmaximum move distance then it is internally adjusted to the maximum.\nThis sequence will not scroll the screen or scroll region. If amount is\n0, adjust it to 1.",
       "name": "cursorRight",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "count_req",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 1885,
+            "column": 37
+          },
           "type": {
             "bits": 64,
             "is_usize": true,
@@ -4196,9 +4569,15 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 1885,
+        "column": 8
+      },
       "symbol": "zg_terminal_cursor_right"
     },
     {
+      "doc": "Save cursor position and further state.\n\nThe primary and alternate screen have distinct save state. One saved state\nis kept per screen (main / alternative). If for the current screen state\nwas already saved it is overwritten.",
       "name": "saveCursor",
       "ownership": "borrowed",
       "params": [],
@@ -4206,9 +4585,15 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 2003,
+        "column": 8
+      },
       "symbol": "zg_terminal_save_cursor"
     },
     {
+      "doc": "Restore cursor position and other state.\n\nThe primary and alternate screen have distinct save state.\nIf no save was done before values are reset to their initial values.",
       "name": "restoreCursor",
       "ownership": "borrowed",
       "params": [],
@@ -4216,9 +4601,15 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 2019,
+        "column": 8
+      },
       "symbol": "zg_terminal_restore_cursor"
     },
     {
+      "doc": "Move the cursor to the next line in the scrolling region, possibly scrolling.\n\nIf the cursor is outside of the scrolling region: move the cursor one line\ndown if it is not on the bottom-most line of the screen.\n\nIf the cursor is inside the scrolling region:\nIf the cursor is on the bottom-most line of the scrolling region:\ninvoke scroll up with amount=1\nIf the cursor is not on the bottom-most line of the scrolling region:\nmove the cursor one line down\n\nThis unsets the pending wrap state without wrapping.",
       "name": "index",
       "ownership": "borrowed",
       "params": [],
@@ -4232,9 +4623,15 @@
           "kind": "void"
         }
       },
+      "source": {
+        "path": "terminal/kitty/graphics_command.zig",
+        "line": 35,
+        "column": 8
+      },
       "symbol": "zg_terminal_index"
     },
     {
+      "doc": "Move the cursor to the previous line in the scrolling region, possibly\nscrolling.\n\nIf the cursor is outside of the scrolling region, move the cursor one\nline up if it is not on the top-most line of the screen.\n\nIf the cursor is inside the scrolling region:\n\n* If the cursor is on the top-most line of the scrolling region:\ninvoke scroll down with amount=1\n* If the cursor is not on the top-most line of the scrolling region:\nmove the cursor one line up",
       "name": "reverseIndex",
       "ownership": "borrowed",
       "params": [],
@@ -4242,9 +4639,15 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 2517,
+        "column": 8
+      },
       "symbol": "zg_terminal_reverse_index"
     },
     {
+      "doc": "Horizontal tab moves the cursor to the next tabstop, clearing\nthe screen to the left the tabstop.",
       "name": "horizontalTab",
       "ownership": "borrowed",
       "params": [],
@@ -4252,9 +4655,15 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 2258,
+        "column": 8
+      },
       "symbol": "zg_terminal_horizontal_tab"
     },
     {
+      "doc": "Same as horizontalTab but moves to the previous tabstop instead of the next.",
       "name": "horizontalTabBack",
       "ownership": "borrowed",
       "params": [],
@@ -4262,9 +4671,15 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 2271,
+        "column": 8
+      },
       "symbol": "zg_terminal_horizontal_tab_back"
     },
     {
+      "doc": "Set a tab stop on the current cursor.\nTODO: test",
       "name": "tabSet",
       "ownership": "borrowed",
       "params": [],
@@ -4272,9 +4687,15 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 2296,
+        "column": 8
+      },
       "symbol": "zg_terminal_tab_set"
     },
     {
+      "doc": "TODO: test",
       "name": "tabReset",
       "ownership": "borrowed",
       "params": [],
@@ -4282,17 +4703,27 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 2301,
+        "column": 8
+      },
       "symbol": "zg_terminal_tab_reset"
     },
     {
+      "doc": "Clear tab stops.",
       "name": "tabClear",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "cmd",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 2286,
+            "column": 34
+          },
           "type": {
             "kind": "enum",
             "ref": "TabClear"
@@ -4303,17 +4734,27 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 2286,
+        "column": 8
+      },
       "symbol": "zg_terminal_tab_clear"
     },
     {
+      "doc": "Removes amount lines from the top of the scroll region. The remaining lines\nto the bottom margin are shifted up and space from the bottom margin up\nis filled with empty lines.\n\nThe new lines are created according to the current SGR state.\n\nDoes not change the (absolute) cursor position.",
       "name": "scrollUp",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "count",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 2660,
+            "column": 34
+          },
           "type": {
             "bits": 64,
             "is_usize": true,
@@ -4332,17 +4773,27 @@
           "kind": "void"
         }
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 2660,
+        "column": 8
+      },
       "symbol": "zg_terminal_scroll_up"
     },
     {
+      "doc": "Scroll the text down by one row.",
       "name": "scrollDown",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "count",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 2620,
+            "column": 36
+          },
           "type": {
             "bits": 64,
             "is_usize": true,
@@ -4355,17 +4806,27 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 2620,
+        "column": 8
+      },
       "symbol": "zg_terminal_scroll_down"
     },
     {
+      "doc": "Set Top and Bottom Margins If bottom is not specified, 0 or bigger than\nthe number of the bottom-most row, it is adjusted to the number of the\nbottom most row.\n\nIf top < bottom set the top and bottom row of the scroll region according\nto top and bottom and move the cursor to the top-left cell of the display\n(when in cursor origin mode is set to the top-left cell of the scroll region).\n\nOtherwise: Set the top and bottom row of the scroll region to the top-most\nand bottom-most line of the screen.\n\nTop and bottom are 1-indexed.",
       "name": "setTopAndBottomMargin",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "top_req",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 2595,
+            "column": 47
+          },
           "type": {
             "bits": 64,
             "is_usize": true,
@@ -4376,8 +4837,12 @@
         {
           "direction": "in",
           "name": "bottom_req",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 2595,
+            "column": 63
+          },
           "type": {
             "bits": 64,
             "is_usize": true,
@@ -4390,17 +4855,27 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 2595,
+        "column": 8
+      },
       "symbol": "zg_terminal_set_top_and_bottom_margin"
     },
     {
+      "doc": "DECSLRM",
       "name": "setLeftAndRightMargin",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "left_req",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 2606,
+            "column": 47
+          },
           "type": {
             "bits": 64,
             "is_usize": true,
@@ -4411,8 +4886,12 @@
         {
           "direction": "in",
           "name": "right_req",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 2606,
+            "column": 64
+          },
           "type": {
             "bits": 64,
             "is_usize": true,
@@ -4424,6 +4903,11 @@
       "receiver": "Terminal",
       "return": {
         "kind": "void"
+      },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 2606,
+        "column": 8
       },
       "symbol": "zg_terminal_set_left_and_right_margin"
     },
@@ -4438,7 +4922,7 @@
         {
           "direction": "in",
           "name": "max",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 236,
@@ -4492,7 +4976,7 @@
         {
           "direction": "in",
           "name": "max",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 246,
@@ -4536,14 +5020,19 @@
       "symbol": "zg_terminal_clear_scrollback_max_lines"
     },
     {
+      "doc": "Insert amount lines at the current cursor row. The contents of the line\nat the current cursor row and below (to the bottom-most line in the\nscrolling region) are shifted down by amount lines. The contents of the\namount bottom-most lines in the scroll region are lost.\n\nThis unsets the pending wrap state without wrapping. If the current cursor\nposition is outside of the current scroll region it does nothing.\n\nIf amount is greater than the remaining number of lines in the scrolling\nregion it is adjusted down (still allowing for scrolling out every remaining\nline in the scrolling region)\n\nIn left and right margin mode the margins are respected; lines are only\nscrolled in the scroll region.\n\nAll cleared space is colored according to the current SGR state.\n\nMoves the cursor to the left margin.",
       "name": "insertLines",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "count",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 2952,
+            "column": 37
+          },
           "type": {
             "bits": 64,
             "is_usize": true,
@@ -4556,17 +5045,27 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 2952,
+        "column": 8
+      },
       "symbol": "zg_terminal_insert_lines"
     },
     {
+      "doc": "Removes amount lines from the current cursor row down. The remaining lines\nto the bottom margin are shifted up and space from the bottom margin up is\nfilled with empty lines.\n\nIf the current cursor position is outside of the current scroll region it\ndoes nothing. If amount is greater than the remaining number of lines in the\nscrolling region it is adjusted down.\n\nIn left and right margin mode the margins are respected; lines are only\nscrolled in the scroll region.\n\nIf the cell movement splits a multi cell character that character cleared,\nby replacing it by spaces, keeping its current attributes. All other\ncleared space is colored according to the current SGR state.\n\nMoves the cursor to the left margin.",
       "name": "deleteLines",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "count",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 3126,
+            "column": 37
+          },
           "type": {
             "bits": 64,
             "is_usize": true,
@@ -4579,17 +5078,27 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 3126,
+        "column": 8
+      },
       "symbol": "zg_terminal_delete_lines"
     },
     {
+      "doc": "Inserts spaces at current cursor position moving existing cell contents\nto the right. The contents of the count right-most columns in the scroll\nregion are lost. The cursor position is not changed.\n\nThis unsets the pending wrap state without wrapping.\n\nThe inserted cells are colored according to the current SGR state.",
       "name": "insertBlanks",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "count",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 3285,
+            "column": 38
+          },
           "type": {
             "bits": 64,
             "is_usize": true,
@@ -4602,17 +5111,27 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 3285,
+        "column": 8
+      },
       "symbol": "zg_terminal_insert_blanks"
     },
     {
+      "doc": "Removes amount characters from the current cursor position to the right.\nThe remaining characters are shifted to the left and space from the right\nmargin is filled with spaces.\n\nIf amount is greater than the remaining number of characters in the\nscrolling region, it is adjusted down.\n\nDoes not change the cursor position.",
       "name": "deleteChars",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "count_req",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 3386,
+            "column": 37
+          },
           "type": {
             "bits": 64,
             "is_usize": true,
@@ -4624,6 +5143,11 @@
       "receiver": "Terminal",
       "return": {
         "kind": "void"
+      },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 3386,
+        "column": 8
       },
       "symbol": "zg_terminal_delete_chars"
     },
@@ -4634,8 +5158,12 @@
         {
           "direction": "in",
           "name": "count_req",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 3436,
+            "column": 36
+          },
           "type": {
             "bits": 64,
             "is_usize": true,
@@ -4648,17 +5176,27 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 3436,
+        "column": 8
+      },
       "symbol": "zg_terminal_erase_chars"
     },
     {
+      "doc": "Erase the line.",
       "name": "eraseLine",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "mode",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 3490,
+            "column": 5
+          },
           "type": {
             "kind": "enum",
             "ref": "EraseLine"
@@ -4667,8 +5205,12 @@
         {
           "direction": "in",
           "name": "protected_req",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 3491,
+            "column": 5
+          },
           "type": {
             "kind": "bool"
           }
@@ -4678,17 +5220,27 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 3488,
+        "column": 8
+      },
       "symbol": "zg_terminal_erase_line"
     },
     {
+      "doc": "Erase the display.",
       "name": "eraseDisplay",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "mode",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 3575,
+            "column": 5
+          },
           "type": {
             "kind": "enum",
             "ref": "EraseDisplay"
@@ -4697,8 +5249,12 @@
         {
           "direction": "in",
           "name": "protected_req",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 3576,
+            "column": 5
+          },
           "type": {
             "kind": "bool"
           }
@@ -4708,9 +5264,15 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 3573,
+        "column": 8
+      },
       "symbol": "zg_terminal_erase_display"
     },
     {
+      "doc": "Resets all margins and fills the whole screen with the character 'E'\n\nSets the cursor to the top left corner.",
       "name": "decaln",
       "ownership": "borrowed",
       "params": [],
@@ -4725,9 +5287,15 @@
           "kind": "void"
         }
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 3707,
+        "column": 8
+      },
       "symbol": "zg_terminal_decaln"
     },
     {
+      "doc": "Copy of testing.print (not public)",
       "name": "print",
       "ownership": "borrowed",
       "params": [
@@ -4737,6 +5305,10 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "semantic": "codepoint",
+          "source": {
+            "line": 193,
+            "column": 36
+          },
           "type": {
             "bits": 21,
             "is_usize": false,
@@ -4756,17 +5328,27 @@
           "kind": "void"
         }
       },
+      "source": {
+        "path": "datastruct/comparison.zig",
+        "line": 193,
+        "column": 4
+      },
       "symbol": "zg_terminal_print"
     },
     {
+      "doc": "Print the previous printed character a repeated amount of times.",
       "name": "printRepeat",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "count_req",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 500,
+            "column": 37
+          },
           "type": {
             "bits": 64,
             "is_usize": true,
@@ -4786,9 +5368,15 @@
           "kind": "void"
         }
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 500,
+        "column": 8
+      },
       "symbol": "zg_terminal_print_repeat"
     },
     {
+      "doc": "Print multiple codepoints to the terminal at once. This is\nsemantically identical to calling `print` for each codepoint in\norder, but is much faster because it can batch cell writes and\nhoist per-codepoint checks out of the hot loop.\n\nThe codepoints must all be printable: it is illegal for any\ncodepoint in this slice to be a C0 control character. Therefore,\nthis should only be called as a result of a proper VT parser\n(like our own).\n\nThis is optimized for the common case: ASCII, soft-wrap, etc.\nSequences of codepoints that require special handling (e.g. wide characters,\ngrapheme clustering) are handled correctly but fall back to the\nslower per-codepoint path. They're less common and this is optimized\nfor the aforementioned cases.",
       "name": "printSlice",
       "ownership": "borrowed",
       "params": [
@@ -4798,6 +5386,10 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "semantic": "codepoint",
+          "source": {
+            "line": 539,
+            "column": 36
+          },
           "type": {
             "const": true,
             "element": {
@@ -4821,17 +5413,27 @@
           "kind": "void"
         }
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 539,
+        "column": 8
+      },
       "symbol": "zg_terminal_print_slice"
     },
     {
+      "doc": "Format the active area -- the rows on screen, not the scrollback -- with\nthe terminal's colors and, for styled output, its palette, modes and\nother state a replay needs. `Screen.format` covers the scrollback too.",
       "name": "Format",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "opts",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 75,
+            "column": 40
+          },
           "type": {
             "kind": "value_struct",
             "ref": "FormatOptions"
@@ -4840,8 +5442,12 @@
         {
           "direction": "in",
           "name": "writer",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 75,
+            "column": 61
+          },
           "type": {
             "kind": "io_writer"
           }
@@ -4857,11 +5463,17 @@
           "kind": "void"
         }
       },
+      "source": {
+        "path": "format.zig",
+        "line": 75,
+        "column": 8
+      },
       "zig_path": "formatTerminal",
       "symbol": "zg_terminal_format"
     },
     {
       "boxed": "create",
+      "doc": "Decode a snapshot from `reader`. `max_continuation_bytes` bounds the\nunfinished-sequence suffix the snapshot may carry.\n\nWrapped because ghostty's `decode` takes an options struct; returned by\nvalue so zigo boxes it and `Snapshot.deinit` frees it.",
       "go_owner": "Snapshot",
       "name": "DecodeSnapshot",
       "ownership": "caller",
@@ -4869,9 +5481,13 @@
         {
           "direction": "in",
           "injected": "allocator",
-          "name": "allocator",
-          "name_source": "fallback",
+          "name": "gpa",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 34,
+            "column": 23
+          },
           "type": {
             "kind": "void"
           }
@@ -4879,8 +5495,12 @@
         {
           "direction": "in",
           "name": "reader",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 34,
+            "column": 39
+          },
           "type": {
             "kind": "io_reader"
           }
@@ -4888,8 +5508,12 @@
         {
           "direction": "in",
           "name": "max_continuation_bytes",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 34,
+            "column": 63
+          },
           "type": {
             "bits": 64,
             "is_usize": true,
@@ -4958,11 +5582,17 @@
           "ref": "Snapshot"
         }
       },
+      "source": {
+        "path": "snapshot.zig",
+        "line": 34,
+        "column": 8
+      },
       "zig_path": "decodeSnapshot",
       "symbol": "zg_decode_snapshot"
     },
     {
       "boxed": "destroy",
+      "doc": "Deinit and deallocate all the pointers using the given\nallocator.\n\nWARNING: This should only be called if the hyperlink was\nheap-allocated. This DOES NOT need to be unconditionally\ncalled.",
       "name": "deinit",
       "ownership": "borrowed",
       "params": [
@@ -5086,15 +5716,20 @@
       "symbol": "zg_snapshot_decoder_free_snapshot_decoder"
     },
     {
+      "doc": "Decode as far as the READY marker: everything a terminal needs to be drawn.\n\n`max_continuation_bytes` bounds the unfinished-sequence suffix. After this\nthe terminal can be taken with `restoreInto` and drawn, and the history\narrives through `next` at whatever pace suits.",
       "name": "ready",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "injected": "allocator",
-          "name": "allocator",
-          "name_source": "fallback",
+          "name": "gpa",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 137,
+            "column": 53
+          },
           "type": {
             "kind": "void"
           }
@@ -5102,8 +5737,12 @@
         {
           "direction": "in",
           "name": "max_continuation_bytes",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 137,
+            "column": 69
+          },
           "type": {
             "bits": 64,
             "is_usize": true,
@@ -5165,19 +5804,29 @@
           "kind": "void"
         }
       },
+      "source": {
+        "path": "snapshot.zig",
+        "line": 137,
+        "column": 8
+      },
       "zig_path": "snapshotDecoderReady",
       "symbol": "zg_snapshot_decoder_ready"
     },
     {
+      "doc": "Replace `term` with the decoded terminal. See `snapshotRestoreInto`; the\nsame one-shot rule applies, and `next` wants the same terminal afterwards.",
       "name": "restoreInto",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "injected": "allocator",
-          "name": "allocator",
-          "name_source": "fallback",
+          "name": "gpa",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 147,
+            "column": 59
+          },
           "type": {
             "kind": "void"
           }
@@ -5185,8 +5834,12 @@
         {
           "direction": "in",
           "name": "term",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 147,
+            "column": 75
+          },
           "type": {
             "const": false,
             "kind": "opaque_ptr",
@@ -5205,10 +5858,16 @@
           "kind": "void"
         }
       },
+      "source": {
+        "path": "snapshot.zig",
+        "line": 147,
+        "column": 8
+      },
       "zig_path": "snapshotDecoderRestoreInto",
       "symbol": "zg_snapshot_decoder_restore_into"
     },
     {
+      "doc": "The unfinished sequence the snapshot was taken in, empty at ground.",
       "name": "continuation",
       "ownership": "borrowed",
       "params": [],
@@ -5223,19 +5882,29 @@
         },
         "kind": "slice"
       },
+      "source": {
+        "path": "snapshot.zig",
+        "line": 156,
+        "column": 8
+      },
       "zig_path": "snapshotDecoderContinuation",
       "symbol": "zg_snapshot_decoder_continuation"
     },
     {
+      "doc": "Decode one page of history and prepend it to its screen in `term`, which\nmust be the one `restoreInto` filled.\n\nReturns null once the snapshot is complete. Wire errors are fatal -- the\nposition in the stream is lost -- but a page that cannot be applied is\nreported as zero rows rather than failing, because the terminal is live\nand may have moved on since `ready`.",
       "name": "next",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "injected": "allocator",
-          "name": "allocator",
-          "name_source": "fallback",
+          "name": "gpa",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 171,
+            "column": 52
+          },
           "type": {
             "kind": "void"
           }
@@ -5243,8 +5912,12 @@
         {
           "direction": "in",
           "name": "term",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 171,
+            "column": 68
+          },
           "type": {
             "const": false,
             "kind": "opaque_ptr",
@@ -5302,19 +5975,29 @@
           "kind": "optional"
         }
       },
+      "source": {
+        "path": "snapshot.zig",
+        "line": 171,
+        "column": 8
+      },
       "zig_path": "snapshotDecoderNext",
       "symbol": "zg_snapshot_decoder_next"
     },
     {
+      "doc": "Replace `term` with the terminal the snapshot holds: its size, screens,\nscrollback, modes and colors. The snapshot gives its terminal up once;\na second call fails. Streams on `term` keep pointing at it, but their\nparser state belongs to the old contents, so open a new stream and feed\nit `continuation` before any new input.\n\nzigo allows one constructor per handle and `newTerminal` is it, so a\nrestore fills a terminal the caller made rather than returning one.",
       "name": "restoreInto",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "injected": "allocator",
-          "name": "allocator",
-          "name_source": "fallback",
+          "name": "gpa",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 46,
+            "column": 45
+          },
           "type": {
             "kind": "void"
           }
@@ -5322,8 +6005,12 @@
         {
           "direction": "in",
           "name": "term",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 46,
+            "column": 61
+          },
           "type": {
             "const": false,
             "kind": "opaque_ptr",
@@ -5342,10 +6029,16 @@
           "kind": "void"
         }
       },
+      "source": {
+        "path": "snapshot.zig",
+        "line": 46,
+        "column": 8
+      },
       "zig_path": "snapshotRestoreInto",
       "symbol": "zg_snapshot_restore_into"
     },
     {
+      "doc": "The bytes of the unfinished sequence the snapshot was taken in, empty\nwhen the stream was at ground. Feed them to the restored terminal's\nstream before any new input.",
       "name": "continuation",
       "ownership": "borrowed",
       "params": [],
@@ -5359,6 +6052,11 @@
           "signed": false
         },
         "kind": "slice"
+      },
+      "source": {
+        "path": "snapshot.zig",
+        "line": 56,
+        "column": 8
       },
       "zig_path": "snapshotContinuation",
       "symbol": "zg_snapshot_continuation"
@@ -5482,7 +6180,7 @@
         {
           "direction": "in",
           "name": "rgb",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 284,
@@ -5516,7 +6214,7 @@
         {
           "direction": "in",
           "name": "rgb",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 289,
@@ -5550,7 +6248,7 @@
         {
           "direction": "in",
           "name": "rgb",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 294,
@@ -5581,24 +6279,11 @@
         "ColorName.default"
       ],
       "doc": "The color's default value as `0xRRGGBB`, or null when the name has none.\n\nOnly the sixteen named colors have one. The enum is open because every\nother 256-color palette index is a valid value, and those take their\ncolor from the palette rather than from a default; read them with\n`paletteColors`.\n\nWrapped because ghostty returns `color.RGB`, a `packed struct(u24)` with\nno C representation, behind an error union.",
-      "name": "colorNameDefault",
+      "name": "default",
       "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "name",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 91,
-            "column": 25
-          },
-          "type": {
-            "kind": "enum",
-            "ref": "ColorName"
-          }
-        }
-      ],
+      "params": [],
+      "receiver": "ColorName",
+      "receiver_kind": "value",
       "return": {
         "child": {
           "bits": 32,
@@ -5613,6 +6298,7 @@
         "line": 91,
         "column": 8
       },
+      "zig_path": "colorNameDefault",
       "symbol": "zg_color_name_default"
     },
     {
@@ -5623,7 +6309,7 @@
         {
           "direction": "in",
           "name": "mode",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 304,
@@ -5655,7 +6341,7 @@
         {
           "direction": "in",
           "name": "mode",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 312,
@@ -5669,7 +6355,7 @@
         {
           "direction": "in",
           "name": "value",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 312,
@@ -5693,15 +6379,20 @@
       "symbol": "zg_terminal_set_mode"
     },
     {
+      "doc": "Set the pwd for the terminal.",
       "name": "setPwd",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "pwd",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "semantic": "utf8_string",
+          "source": {
+            "line": 4625,
+            "column": 32
+          },
           "type": {
             "const": true,
             "element": {
@@ -5724,9 +6415,15 @@
           "kind": "void"
         }
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 4625,
+        "column": 8
+      },
       "symbol": "zg_terminal_set_pwd"
     },
     {
+      "doc": "Returns the pwd for the terminal, if any. The memory is owned by the\nTerminal and is not copied. It is safe until a reset or setPwd.",
       "name": "getPwd",
       "ownership": "borrowed",
       "params": [],
@@ -5746,9 +6443,15 @@
         "kind": "optional"
       },
       "return_semantic": "utf8_string",
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 4642,
+        "column": 8
+      },
       "symbol": "zg_terminal_get_pwd"
     },
     {
+      "doc": "Returns the title for the terminal, if any. The memory is owned by the\nTerminal and is not copied. It is safe until a reset or setTitle.",
       "name": "getTitle",
       "ownership": "borrowed",
       "params": [],
@@ -5768,18 +6471,28 @@
         "kind": "optional"
       },
       "return_semantic": "utf8_string",
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 4687,
+        "column": 8
+      },
       "symbol": "zg_terminal_get_title"
     },
     {
+      "doc": "Set the title for the terminal, as set by escape sequences (e.g. OSC 0/2).",
       "name": "setTitle",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "t",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "semantic": "utf8_string",
+          "source": {
+            "line": 4670,
+            "column": 34
+          },
           "type": {
             "const": true,
             "element": {
@@ -5802,6 +6515,11 @@
           "kind": "void"
         }
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 4670,
+        "column": 8
+      },
       "symbol": "zg_terminal_set_title"
     },
     {
@@ -5815,7 +6533,7 @@
         {
           "direction": "in",
           "name": "attr",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 215,
@@ -5847,14 +6565,19 @@
       "symbol": "zg_terminal_set_attribute"
     },
     {
+      "doc": "Set the character protection mode for the terminal.",
       "name": "setProtectedMode",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "mode",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 2057,
+            "column": 42
+          },
           "type": {
             "kind": "enum",
             "ref": "ProtectedMode"
@@ -5865,17 +6588,27 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 2057,
+        "column": 8
+      },
       "symbol": "zg_terminal_set_protected_mode"
     },
     {
+      "doc": "Change the default cursor shape.\n\nIf the cursor currently follows its defaults, the visible shape changes\nimmediately. Otherwise the new shape is saved for the next reset or default\nselection, such as DECSCUSR `CSI 0 SP q`.",
       "name": "setDefaultCursorStyle",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "configured_style",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 426,
+            "column": 5
+          },
           "type": {
             "kind": "enum",
             "ref": "CursorStyle"
@@ -5885,6 +6618,11 @@
       "receiver": "Terminal",
       "return": {
         "kind": "void"
+      },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 424,
+        "column": 8
       },
       "symbol": "zg_terminal_set_default_cursor_style"
     },
@@ -5899,7 +6637,7 @@
         {
           "direction": "in",
           "name": "blink",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 225,
@@ -5940,14 +6678,19 @@
       "symbol": "zg_terminal_reset_default_cursor_blink"
     },
     {
+      "doc": "Set the charset into the given slot.",
       "name": "configureCharset",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "slot",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 1798,
+            "column": 42
+          },
           "type": {
             "kind": "enum",
             "ref": "CharsetSlot"
@@ -5956,8 +6699,12 @@
         {
           "direction": "in",
           "name": "set",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 1798,
+            "column": 64
+          },
           "type": {
             "kind": "enum",
             "ref": "Charset"
@@ -5968,17 +6715,27 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 1798,
+        "column": 8
+      },
       "symbol": "zg_terminal_configure_charset"
     },
     {
+      "doc": "Invoke the charset in slot into the active slot. If single is true,\nthen this will only be invoked for a single character.",
       "name": "invokeCharset",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "active",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 1806,
+            "column": 5
+          },
           "type": {
             "kind": "enum",
             "ref": "CharsetActiveSlot"
@@ -5987,8 +6744,12 @@
         {
           "direction": "in",
           "name": "slot",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 1807,
+            "column": 5
+          },
           "type": {
             "kind": "enum",
             "ref": "CharsetSlot"
@@ -5997,8 +6758,12 @@
         {
           "direction": "in",
           "name": "single",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 1808,
+            "column": 5
+          },
           "type": {
             "kind": "bool"
           }
@@ -6008,18 +6773,28 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 1804,
+        "column": 8
+      },
       "symbol": "zg_terminal_invoke_charset"
     },
     {
+      "doc": "DECCOLM changes the terminal width between 80 and 132 columns. This\nfunction call will do NOTHING unless `setDeccolmSupported` has been\ncalled with \"true\".\n\nThis breaks the expectation around modern terminals that they resize\nwith the window. This will fix the grid at either 80 or 132 columns.\nThe rows will continue to be variable.",
       "name": "deccolm",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "injected": "allocator",
-          "name": "allocator",
-          "name_source": "fallback",
+          "name": "alloc",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 3951,
+            "column": 33
+          },
           "type": {
             "kind": "void"
           }
@@ -6027,8 +6802,12 @@
         {
           "direction": "in",
           "name": "mode",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 3951,
+            "column": 51
+          },
           "type": {
             "kind": "enum",
             "ref": "DeccolmMode"
@@ -6046,17 +6825,27 @@
           "kind": "void"
         }
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 3951,
+        "column": 8
+      },
       "symbol": "zg_terminal_deccolm"
     },
     {
+      "doc": "Scroll the viewport of the terminal grid.",
       "name": "scrollViewport",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "behavior",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 2776,
+            "column": 40
+          },
           "type": {
             "kind": "value_struct",
             "ref": "ScrollViewport"
@@ -6067,9 +6856,15 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 2776,
+        "column": 8
+      },
       "symbol": "zg_terminal_scroll_viewport"
     },
     {
+      "doc": "Return the current compression activity value.\n\nCallers should schedule a `compress` call whenever this value changes. The\ndirection of the change has no meaning; this is an opaque change token\nrather than a monotonic sequence exposed by Terminal.\n\nIt is up to the terminal what it decides to compress, but currently\nwe compress cold (non-viewed, non-editable) scrollback history on\nthe primary screen.\n\nNote that compression requires specific system features, namely\nthe ability to retain virtual memory allocations while discarding their\nphysical memory backings. Callers must still use `compress` to determine\nwhether compression is supported on the current target.",
       "name": "compressionActivity",
       "ownership": "borrowed",
       "params": [],
@@ -6079,6 +6874,11 @@
         "is_usize": false,
         "kind": "int",
         "signed": false
+      },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 2799,
+        "column": 8
       },
       "symbol": "zg_terminal_compression_activity"
     },
@@ -6107,7 +6907,7 @@
         {
           "direction": "in",
           "name": "width",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 35,
@@ -6123,7 +6923,7 @@
         {
           "direction": "in",
           "name": "height",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 35,
@@ -6178,7 +6978,7 @@
         {
           "direction": "in",
           "name": "width",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 49,
@@ -6194,7 +6994,7 @@
         {
           "direction": "in",
           "name": "height",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 50,
@@ -6210,7 +7010,7 @@
         {
           "direction": "in",
           "name": "cell_width",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 51,
@@ -6226,7 +7026,7 @@
         {
           "direction": "in",
           "name": "cell_height",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 52,
@@ -6288,15 +7088,20 @@
         "RenderState.beginUpdate",
         "RenderState.endUpdate"
       ],
+      "doc": "Update the columns/rows for the grid based on the given screen and\ncell size.",
       "name": "update",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "injected": "allocator",
-          "name": "allocator",
-          "name_source": "fallback",
+          "name": "screen",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 253,
+            "column": 36
+          },
           "type": {
             "kind": "void"
           }
@@ -6306,6 +7111,10 @@
           "name": "t",
           "name_source": "sidecar",
           "retention": "borrowed",
+          "source": {
+            "line": 253,
+            "column": 56
+          },
           "type": {
             "const": false,
             "kind": "opaque_ptr",
@@ -6324,9 +7133,15 @@
           "kind": "void"
         }
       },
+      "source": {
+        "path": "renderer/size.zig",
+        "line": 253,
+        "column": 12
+      },
       "symbol": "zg_render_state_update"
     },
     {
+      "doc": "Mark all render-state data as consumed by the renderer.\n\nThis clears both the global dirty state and every per-row dirty flag.\nCallers that only consume part of a frame should clear the two layers\nindividually instead.",
       "name": "clean",
       "ownership": "borrowed",
       "params": [],
@@ -6334,10 +7149,16 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "terminal/render.zig",
+        "line": 818,
+        "column": 12
+      },
       "symbol": "zg_render_state_clean"
     },
     {
       "boxed": "destroy",
+      "doc": "Deinit and deallocate all the pointers using the given\nallocator.\n\nWARNING: This should only be called if the hyperlink was\nheap-allocated. This DOES NOT need to be unconditionally\ncalled.",
       "name": "deinit",
       "ownership": "borrowed",
       "params": [
@@ -6368,6 +7189,7 @@
       "symbol": "zg_render_state_deinit"
     },
     {
+      "doc": "How many `RenderCell`s `renderCells` needs: `rows * cols`.",
       "name": "cellCount",
       "ownership": "borrowed",
       "params": [],
@@ -6378,10 +7200,16 @@
         "kind": "int",
         "signed": false
       },
+      "source": {
+        "path": "render.zig",
+        "line": 77,
+        "column": 8
+      },
       "zig_path": "renderCellCount",
       "symbol": "zg_render_state_cell_count"
     },
     {
+      "doc": "Flatten the viewport into `dst`, row-major from the top, and report how\nmany cells were written.",
       "name": "cells",
       "ownership": "borrowed",
       "params": [
@@ -6390,6 +7218,10 @@
           "name": "dst",
           "name_source": "sidecar",
           "retention": "borrowed",
+          "source": {
+            "line": 83,
+            "column": 40
+          },
           "type": {
             "const": false,
             "element": {
@@ -6414,10 +7246,16 @@
           "signed": false
         }
       },
+      "source": {
+        "path": "render.zig",
+        "line": 83,
+        "column": 8
+      },
       "zig_path": "renderCells",
       "symbol": "zg_render_state_cells"
     },
     {
+      "doc": "The terminal's default background, 0xRRGGBB. Already reversed if the\nterminal is in reverse-video mode.",
       "name": "background",
       "ownership": "borrowed",
       "params": [],
@@ -6427,6 +7265,11 @@
         "is_usize": false,
         "kind": "int",
         "signed": false
+      },
+      "source": {
+        "path": "render.zig",
+        "line": 256,
+        "column": 8
       },
       "zig_path": "renderBackground",
       "symbol": "zg_render_state_background"
@@ -6442,10 +7285,16 @@
         "kind": "int",
         "signed": false
       },
+      "source": {
+        "path": "render.zig",
+        "line": 260,
+        "column": 8
+      },
       "zig_path": "renderForeground",
       "symbol": "zg_render_state_foreground"
     },
     {
+      "doc": "The cursor's column within the viewport, or false if it is scrolled out.",
       "name": "cursorX",
       "ownership": "borrowed",
       "params": [],
@@ -6458,6 +7307,11 @@
           "signed": false
         },
         "kind": "optional"
+      },
+      "source": {
+        "path": "render.zig",
+        "line": 265,
+        "column": 8
       },
       "zig_path": "renderCursorX",
       "symbol": "zg_render_state_cursor_x"
@@ -6476,10 +7330,16 @@
         },
         "kind": "optional"
       },
+      "source": {
+        "path": "render.zig",
+        "line": 270,
+        "column": 8
+      },
       "zig_path": "renderCursorY",
       "symbol": "zg_render_state_cursor_y"
     },
     {
+      "doc": "Whether the cursor sits on the tail of a wide character. A renderer that\ndraws a one-cell cursor may want to move it back one column so it covers\nthe character rather than half of it. Null when the cursor is scrolled out\nof the viewport, the same as `renderCursorX`.",
       "name": "cursorWideTail",
       "ownership": "borrowed",
       "params": [],
@@ -6490,11 +7350,16 @@
         },
         "kind": "optional"
       },
+      "source": {
+        "path": "render.zig",
+        "line": 279,
+        "column": 8
+      },
       "zig_path": "renderCursorWideTail",
       "symbol": "zg_render_state_cursor_wide_tail"
     },
     {
-      "doc": "The current cursor color, if one was set or configured. Null means the\ncursor takes the foreground color.",
+      "doc": "The cursor color as of this frame, 0xRRGGBB, or null when the program has\nnot set one and the renderer should pick. Read from the snapshot rather\nthan the terminal so it matches the cells drawn beside it.",
       "name": "cursorColor",
       "ownership": "borrowed",
       "params": [],
@@ -6509,14 +7374,15 @@
         "kind": "optional"
       },
       "source": {
-        "path": "terminal.zig",
-        "line": 270,
+        "path": "render.zig",
+        "line": 287,
         "column": 8
       },
       "zig_path": "renderCursorColor",
       "symbol": "zg_render_state_cursor_color"
     },
     {
+      "doc": "What changed since `RenderState.clean`. `RenderState.update` raises this;\nnothing lowers it but `clean`.",
       "name": "dirty",
       "ownership": "borrowed",
       "params": [],
@@ -6525,10 +7391,16 @@
         "kind": "enum",
         "ref": "RenderDirty"
       },
+      "source": {
+        "path": "render.zig",
+        "line": 164,
+        "column": 8
+      },
       "zig_path": "renderDirty",
       "symbol": "zg_render_state_dirty"
     },
     {
+      "doc": "Write the indexes of the dirty viewport rows into `dst`, top to bottom,\nand report how many there are. `error.NoSpaceLeft` if `dst` is shorter\nthan that; size it to `rows`.",
       "name": "dirtyRows",
       "ownership": "borrowed",
       "params": [
@@ -6537,6 +7409,10 @@
           "name": "dst",
           "name_source": "sidecar",
           "retention": "borrowed",
+          "source": {
+            "line": 175,
+            "column": 44
+          },
           "type": {
             "const": false,
             "element": {
@@ -6563,10 +7439,16 @@
           "signed": false
         }
       },
+      "source": {
+        "path": "render.zig",
+        "line": 175,
+        "column": 8
+      },
       "zig_path": "renderDirtyRows",
       "symbol": "zg_render_state_dirty_rows"
     },
     {
+      "doc": "Flatten one viewport row into `dst` and report how many cells were\nwritten: `cols`, or zero for a row off the grid. For a renderer that\nredraws only the rows `renderDirtyRows` names.",
       "name": "rowCells",
       "ownership": "borrowed",
       "params": [
@@ -6575,6 +7457,10 @@
           "name": "y",
           "name_source": "sidecar",
           "retention": "borrowed",
+          "source": {
+            "line": 94,
+            "column": 43
+          },
           "type": {
             "bits": 16,
             "is_usize": false,
@@ -6587,6 +7473,10 @@
           "name": "dst",
           "name_source": "sidecar",
           "retention": "borrowed",
+          "source": {
+            "line": 94,
+            "column": 51
+          },
           "type": {
             "const": false,
             "element": {
@@ -6611,10 +7501,16 @@
           "signed": false
         }
       },
+      "source": {
+        "path": "render.zig",
+        "line": 94,
+        "column": 8
+      },
       "zig_path": "renderRowCells",
       "symbol": "zg_render_state_row_cells"
     },
     {
+      "doc": "The codepoints of the cell at viewport `x`, `y`: the base codepoint\nfollowed by any combining marks or ZWJ sequence members, which\n`RenderCell.codepoint` alone drops. Copies them into `dst` and returns\nhow many were written; zero for an empty cell or a position off the grid.\n`error.NoSpaceLeft` if `dst` is shorter than the cluster.",
       "name": "graphemes",
       "ownership": "borrowed",
       "params": [
@@ -6623,6 +7519,10 @@
           "name": "x",
           "name_source": "sidecar",
           "retention": "borrowed",
+          "source": {
+            "line": 191,
+            "column": 44
+          },
           "type": {
             "bits": 16,
             "is_usize": false,
@@ -6635,6 +7535,10 @@
           "name": "y",
           "name_source": "sidecar",
           "retention": "borrowed",
+          "source": {
+            "line": 191,
+            "column": 52
+          },
           "type": {
             "bits": 16,
             "is_usize": false,
@@ -6648,6 +7552,10 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "semantic": "codepoint",
+          "source": {
+            "line": 191,
+            "column": 60
+          },
           "type": {
             "const": false,
             "element": {
@@ -6674,6 +7582,11 @@
           "signed": false
         }
       },
+      "source": {
+        "path": "render.zig",
+        "line": 191,
+        "column": 8
+      },
       "zig_path": "renderGraphemes",
       "symbol": "zg_render_state_graphemes"
     },
@@ -6681,15 +7594,20 @@
       "covers": [
         "RenderState.linkCells"
       ],
+      "doc": "The OSC 8 hyperlink under viewport `x`, `y`, or null when the cell has\nnone. Valid only until the terminal changes: like ghostty's own\n`linkCells`, this reads page memory through the pins `RenderState.update`\ncaptured, so call it right after an update.",
       "name": "hyperlinkAt",
       "ownership": "caller",
       "params": [
         {
           "direction": "in",
           "injected": "allocator",
-          "name": "allocator",
-          "name_source": "fallback",
+          "name": "gpa",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 219,
+            "column": 46
+          },
           "type": {
             "kind": "void"
           }
@@ -6699,6 +7617,10 @@
           "name": "x",
           "name_source": "sidecar",
           "retention": "borrowed",
+          "source": {
+            "line": 219,
+            "column": 62
+          },
           "type": {
             "bits": 16,
             "is_usize": false,
@@ -6711,6 +7633,10 @@
           "name": "y",
           "name_source": "sidecar",
           "retention": "borrowed",
+          "source": {
+            "line": 219,
+            "column": 70
+          },
           "type": {
             "bits": 16,
             "is_usize": false,
@@ -6741,6 +7667,11 @@
         }
       },
       "return_semantic": "utf8_string",
+      "source": {
+        "path": "render.zig",
+        "line": 219,
+        "column": 8
+      },
       "zig_path": "renderHyperlinkAt",
       "symbol": "zg_render_state_hyperlink_at"
     },
@@ -6815,6 +7746,7 @@
       "symbol": "zg_kitty_images_free_kitty_images"
     },
     {
+      "doc": "Rebuild the snapshot from `term`'s active screen.\n\nPlacements that cannot be drawn at all are left out: the ones scrolled off\nthe viewport, and the ones whose text has been pruned out of the scrollback.\nVirtual (unicode placeholder) placements are kept, flagged and positionless,\nsince the cells that reference them are what place them; so are the ones\npositioned relative to a virtual placement, for the same reason.",
       "name": "update",
       "ownership": "borrowed",
       "params": [
@@ -6823,6 +7755,10 @@
           "name": "term",
           "name_source": "sidecar",
           "retention": "borrowed",
+          "source": {
+            "line": 190,
+            "column": 40
+          },
           "type": {
             "const": false,
             "kind": "opaque_ptr",
@@ -6841,10 +7777,16 @@
           "kind": "void"
         }
       },
+      "source": {
+        "path": "kitty.zig",
+        "line": 190,
+        "column": 8
+      },
       "zig_path": "kittyUpdate",
       "symbol": "zg_kitty_images_update"
     },
     {
+      "doc": "How many placements `kittyPlacements` will write.",
       "name": "placementCount",
       "ownership": "borrowed",
       "params": [],
@@ -6855,10 +7797,16 @@
         "kind": "int",
         "signed": false
       },
+      "source": {
+        "path": "kitty.zig",
+        "line": 324,
+        "column": 8
+      },
       "zig_path": "kittyPlacementCount",
       "symbol": "zg_kitty_images_placement_count"
     },
     {
+      "doc": "Copy the placements into `dst`, back to front, and report how many.",
       "name": "placements",
       "ownership": "borrowed",
       "params": [
@@ -6867,6 +7815,10 @@
           "name": "dst",
           "name_source": "sidecar",
           "retention": "borrowed",
+          "source": {
+            "line": 329,
+            "column": 44
+          },
           "type": {
             "const": false,
             "element": {
@@ -6891,19 +7843,29 @@
           "signed": false
         }
       },
+      "source": {
+        "path": "kitty.zig",
+        "line": 329,
+        "column": 8
+      },
       "zig_path": "kittyPlacements",
       "symbol": "zg_kitty_images_placements"
     },
     {
+      "doc": "Set the storage size limit for Kitty graphics across all screens.",
       "name": "setKittyGraphicsSizeLimit",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "injected": "allocator",
-          "name": "allocator",
-          "name_source": "fallback",
+          "name": "alloc",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 3812,
+            "column": 5
+          },
           "type": {
             "kind": "void"
           }
@@ -6911,8 +7873,12 @@
         {
           "direction": "in",
           "name": "limit",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 3813,
+            "column": 5
+          },
           "type": {
             "bits": 64,
             "is_usize": true,
@@ -6924,6 +7890,11 @@
       "receiver": "Terminal",
       "return": {
         "kind": "void"
+      },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 3810,
+        "column": 8
       },
       "symbol": "zg_terminal_set_kitty_graphics_size_limit"
     },
@@ -6952,7 +7923,7 @@
         {
           "direction": "in",
           "name": "file",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 132,
@@ -6965,7 +7936,7 @@
         {
           "direction": "in",
           "name": "temp_dir",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
@@ -6986,7 +7957,7 @@
         {
           "direction": "in",
           "name": "shared_memory",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 134,
@@ -7023,7 +7994,7 @@
         {
           "direction": "in",
           "name": "image_id",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 352,
@@ -7129,7 +8100,7 @@
           "reentrancy": "allowed",
           "thread": "caller",
           "name": "callback",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "retained",
           "source": {
             "line": 64,
@@ -7162,7 +8133,7 @@
         {
           "direction": "in",
           "name": "userdata",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 64,
@@ -7318,7 +8289,7 @@
           "reentrancy": "allowed",
           "thread": "caller",
           "name": "callback",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "retained",
           "source": {
             "line": 97,
@@ -7351,7 +8322,7 @@
         {
           "direction": "in",
           "name": "userdata",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 97,
@@ -7445,7 +8416,7 @@
         {
           "direction": "in",
           "name": "idx",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 32,
@@ -7482,7 +8453,7 @@
         {
           "direction": "in",
           "name": "idx",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 37,
@@ -7498,7 +8469,7 @@
         {
           "direction": "in",
           "name": "rgb",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 37,
@@ -7532,7 +8503,7 @@
         {
           "direction": "in",
           "name": "idx",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 42,
@@ -7597,7 +8568,7 @@
         {
           "direction": "in",
           "name": "idx",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 58,
@@ -7613,7 +8584,7 @@
         {
           "direction": "in",
           "name": "rgb",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 58,
@@ -7685,7 +8656,7 @@
         {
           "direction": "in",
           "name": "mode",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 71,
@@ -7699,7 +8670,7 @@
         {
           "direction": "in",
           "name": "value",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 71,
@@ -7747,7 +8718,7 @@
         {
           "direction": "in",
           "name": "mode",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 84,
@@ -7779,7 +8750,7 @@
         {
           "direction": "in",
           "name": "mode",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 92,
@@ -7811,7 +8782,7 @@
         {
           "direction": "in",
           "name": "col",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 100,
@@ -7845,7 +8816,7 @@
         {
           "direction": "in",
           "name": "col",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 105,
@@ -7879,7 +8850,7 @@
         {
           "direction": "in",
           "name": "interval",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 112,
@@ -7931,7 +8902,7 @@
         {
           "direction": "in",
           "name": "slot",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 34,
@@ -8092,7 +9063,7 @@
         {
           "direction": "in",
           "name": "mode",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 150,
@@ -8108,7 +9079,7 @@
         {
           "direction": "in",
           "name": "ansi",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 150,
@@ -8193,14 +9164,19 @@
       "symbol": "zg_gesture_gesture_close"
     },
     {
+      "doc": "What a single, double and triple click select.\n\nDefaults to ghostty's own mapping, so this is only for an emulator offering\nsomething else -- selecting command output on triple click, say. Takes\neffect on the next press; a gesture already in progress keeps the behavior\nits press chose.",
       "name": "setBehaviors",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "single_click",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 184,
+            "column": 5
+          },
           "type": {
             "kind": "enum",
             "ref": "GestureBehavior"
@@ -8209,8 +9185,12 @@
         {
           "direction": "in",
           "name": "double_click",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 185,
+            "column": 5
+          },
           "type": {
             "kind": "enum",
             "ref": "GestureBehavior"
@@ -8219,8 +9199,12 @@
         {
           "direction": "in",
           "name": "triple_click",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 186,
+            "column": 5
+          },
           "type": {
             "kind": "enum",
             "ref": "GestureBehavior"
@@ -8231,19 +9215,29 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "gesture.zig",
+        "line": 182,
+        "column": 8
+      },
       "zig_path": "gestureSetBehaviors",
       "symbol": "zg_gesture_set_behaviors"
     },
     {
+      "doc": "The codepoints that end a word, for double-click and deep-press selection.\n\nghostty has no default on purpose -- its own UI reads the set from\nconfiguration -- so this starts empty, and until it is set a \"word\" runs to\nthe end of the line. A space is the minimum worth setting. Copied, so the\ncaller's slice does not have to outlive the call; set it again on a config\nreload.",
       "name": "setWordBoundaries",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "boundaries",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "semantic": "codepoint",
+          "source": {
+            "line": 198,
+            "column": 49
+          },
           "type": {
             "const": true,
             "element": {
@@ -8266,18 +9260,28 @@
           "kind": "void"
         }
       },
+      "source": {
+        "path": "gesture.zig",
+        "line": 198,
+        "column": 8
+      },
       "zig_path": "gestureSetWordBoundaries",
       "symbol": "zg_gesture_set_word_boundaries"
     },
     {
+      "doc": "The rendered geometry drags are measured against. Set it before the first\ndrag, and again on every resize; a zero `columns` or `cell_width` makes\ncell-granular drags select nothing.",
       "name": "setGeometry",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "geometry",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 207,
+            "column": 43
+          },
           "type": {
             "kind": "value_struct",
             "ref": "GestureGeometry"
@@ -8288,18 +9292,28 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "gesture.zig",
+        "line": 207,
+        "column": 8
+      },
       "zig_path": "gestureSetGeometry",
       "symbol": "zg_gesture_set_geometry"
     },
     {
+      "doc": "Record a press and return the selection it makes, if any.\n\nA press near the previous one and within `repeat_interval_ns` of it raises\nthe click count, up to three; anything else starts over at one. Nothing is\nselected here: apply the result with `Screen.SetSelection` when there is one\nand call `Screen.ClearSelection` when there is not, which is what makes a\nsingle click clear the selection.\n\nNothing is returned and no gesture starts if the cell is outside the\nviewport.",
       "name": "press",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "p",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 221,
+            "column": 37
+          },
           "type": {
             "kind": "value_struct",
             "ref": "GesturePressEvent"
@@ -8320,18 +9334,28 @@
           "kind": "optional"
         }
       },
+      "source": {
+        "path": "gesture.zig",
+        "line": 221,
+        "column": 8
+      },
       "zig_path": "gesturePress",
       "symbol": "zg_gesture_press"
     },
     {
+      "doc": "Record a pointer movement while the button is down and return the selection\nit now covers, if any.\n\nNull means there is nothing to change: no gesture is in progress, the press\nit started from is no longer on the active screen, or the pointer has not\nyet moved far enough to select the first cell. Word and line drags are\nrecomputed against the terminal as it is now, so output arriving mid-drag is\npicked up.\n\nCheck `Autoscroll` afterwards: a drag past the top or bottom edge asks for a\ntimer calling `AutoscrollTick`.",
       "name": "drag",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "d",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 253,
+            "column": 36
+          },
           "type": {
             "kind": "value_struct",
             "ref": "GestureDragEvent"
@@ -8346,10 +9370,16 @@
         },
         "kind": "optional"
       },
+      "source": {
+        "path": "gesture.zig",
+        "line": 253,
+        "column": 8
+      },
       "zig_path": "gestureDrag",
       "symbol": "zg_gesture_drag"
     },
     {
+      "doc": "Which way an active drag wants the viewport scrolled, `none` when it does\nnot. Read it after every `Drag` to start or stop the autoscroll timer.",
       "name": "autoscroll",
       "ownership": "borrowed",
       "params": [],
@@ -8358,18 +9388,28 @@
         "kind": "enum",
         "ref": "GestureAutoscrollDirection"
       },
+      "source": {
+        "path": "gesture.zig",
+        "line": 271,
+        "column": 8
+      },
       "zig_path": "gestureAutoscroll",
       "symbol": "zg_gesture_autoscroll"
     },
     {
+      "doc": "Scroll the viewport one row in the autoscroll direction and continue the\ndrag at the pointer's current position, which now names a different row.\n\nCall this from the timer `Autoscroll` asked for, passing the last position\nthe pointer was seen at. It scrolls exactly one row per call: tick faster to\nscroll faster. A null result with `Autoscroll` back at `none` means the\ngesture ended -- stop the timer and leave the selection alone.",
       "name": "autoscrollTick",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "d",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 286,
+            "column": 46
+          },
           "type": {
             "kind": "value_struct",
             "ref": "GestureDragEvent"
@@ -8384,10 +9424,16 @@
         },
         "kind": "optional"
       },
+      "source": {
+        "path": "gesture.zig",
+        "line": 286,
+        "column": 8
+      },
       "zig_path": "gestureAutoscrollTick",
       "symbol": "zg_gesture_autoscroll_tick"
     },
     {
+      "doc": "Record a force click -- a pressure activation while the button is already\ndown, which is what macOS calls a deep click.\n\nSelects the word under the original press and ends the gesture, so further\nmovement does not drag it. Null when there is no valid gesture to deepen.",
       "name": "deepPress",
       "ownership": "borrowed",
       "params": [],
@@ -8399,18 +9445,28 @@
         },
         "kind": "optional"
       },
+      "source": {
+        "path": "gesture.zig",
+        "line": 304,
+        "column": 8
+      },
       "zig_path": "gestureDeepPress",
       "symbol": "zg_gesture_deep_press"
     },
     {
+      "doc": "Record the release of the primary button at a viewport cell.\n\nThis ends the drag and stops autoscroll but deliberately keeps the click\ncount, which is what lets the next press become a double or triple click.\nA cell outside the viewport is fine: the gesture then records that the\npointer moved away, which is the conservative answer for `Dragged`.",
       "name": "release",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "name": "x",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 318,
+            "column": 39
+          },
           "type": {
             "bits": 16,
             "is_usize": false,
@@ -8421,8 +9477,12 @@
         {
           "direction": "in",
           "name": "y",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
+          "source": {
+            "line": 318,
+            "column": 47
+          },
           "type": {
             "bits": 16,
             "is_usize": false,
@@ -8435,11 +9495,16 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "gesture.zig",
+        "line": 318,
+        "column": 8
+      },
       "zig_path": "gestureRelease",
       "symbol": "zg_gesture_release"
     },
     {
-      "doc": "Discard the sequence in progress and the last command's payloads.",
+      "doc": "Abandon the gesture, click sequence included.\n\nFor cancellation rather than the ordinary release: the program turned on\nmouse reporting, the window lost the pointer, the surface is going away. The\nnext press is then a fresh single click.",
       "name": "reset",
       "ownership": "borrowed",
       "params": [],
@@ -8448,14 +9513,15 @@
         "kind": "void"
       },
       "source": {
-        "path": "parser.zig",
-        "line": 123,
-        "column": 12
+        "path": "gesture.zig",
+        "line": 330,
+        "column": 8
       },
       "zig_path": "gestureReset",
       "symbol": "zg_gesture_reset"
     },
     {
+      "doc": "How many clicks the current sequence is at: 0 before any press, then 1, 2\nor 3. What an emulator switches on to decide what a click means.",
       "name": "clickCount",
       "ownership": "borrowed",
       "params": [],
@@ -8466,16 +9532,27 @@
         "kind": "int",
         "signed": false
       },
+      "source": {
+        "path": "gesture.zig",
+        "line": 336,
+        "column": 8
+      },
       "zig_path": "gestureClickCount",
       "symbol": "zg_gesture_click_count"
     },
     {
+      "doc": "Whether the pointer has left the pressed cell during this gesture.\n\nRead it on release: a click that never dragged is the one that should follow\na hyperlink or move the shell cursor, rather than one that happened to end\nwhere it started after a round trip.",
       "name": "dragged",
       "ownership": "borrowed",
       "params": [],
       "receiver": "Gesture",
       "return": {
         "kind": "bool"
+      },
+      "source": {
+        "path": "gesture.zig",
+        "line": 345,
+        "column": 8
       },
       "zig_path": "gestureDragged",
       "symbol": "zg_gesture_dragged"
@@ -8958,7 +10035,7 @@
         {
           "direction": "in",
           "name": "params",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 386,
@@ -8978,7 +10055,7 @@
         {
           "direction": "in",
           "name": "colon_mask",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 386,
@@ -9859,7 +10936,7 @@
         "signed": false
       },
       "text": true,
-      "zig_path": "terminal.modes.Mode__enum_28732"
+      "zig_path": "terminal.modes.Mode__enum_28717"
     },
     {
       "exhaustive": true,

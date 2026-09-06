@@ -395,9 +395,9 @@ func KittyImagesGeneration(self unsafe.Pointer) (uint64, int32) {
 }
 
 // UnicodeCodepointWidth calls the generated C ABI wrapper for zg_unicode_codepoint_width.
-func UnicodeCodepointWidth(p0 uint32) (uint8, int32) {
+func UnicodeCodepointWidth(cp uint32) (uint8, int32) {
 	var outResult C.uint8_t
-	code := int32(C.zg_unicode_codepoint_width(C.uint32_t(p0), &outResult))
+	code := int32(C.zg_unicode_codepoint_width(C.uint32_t(cp), &outResult))
 	return uint8(outResult), code
 }
 
@@ -443,61 +443,61 @@ func EncodeMouse(writerHandle uintptr, terminal unsafe.Pointer, event MouseEvent
 	return code
 }
 
+// KeyCodepoint calls the generated C ABI wrapper for zg_key_codepoint.
+func KeyCodepoint(self int32) (uint32, bool) {
+	var outResult C.uint32_t
+	outResultHas := C.zg_key_codepoint(C.int32_t(self), &outResult) != 0
+	return uint32(outResult), outResultHas
+}
+
+// KeyPrintable calls the generated C ABI wrapper for zg_key_printable.
+func KeyPrintable(self int32) uint8 {
+	return uint8(C.zg_key_printable(C.int32_t(self)))
+}
+
+// KeyModifier calls the generated C ABI wrapper for zg_key_modifier.
+func KeyModifier(self int32) uint8 {
+	return uint8(C.zg_key_modifier(C.int32_t(self)))
+}
+
+// KeyKeypad calls the generated C ABI wrapper for zg_key_keypad.
+func KeyKeypad(self int32) uint8 {
+	return uint8(C.zg_key_keypad(C.int32_t(self)))
+}
+
+// KeyLeftOrRightShift calls the generated C ABI wrapper for zg_key_left_or_right_shift.
+func KeyLeftOrRightShift(self int32) uint8 {
+	return uint8(C.zg_key_left_or_right_shift(C.int32_t(self)))
+}
+
+// KeyLeftOrRightAlt calls the generated C ABI wrapper for zg_key_left_or_right_alt.
+func KeyLeftOrRightAlt(self int32) uint8 {
+	return uint8(C.zg_key_left_or_right_alt(C.int32_t(self)))
+}
+
+// KeyCtrlOrSuper calls the generated C ABI wrapper for zg_key_ctrl_or_super.
+func KeyCtrlOrSuper(self int32) uint8 {
+	return uint8(C.zg_key_ctrl_or_super(C.int32_t(self)))
+}
+
+// KeyShouldBeRemappable calls the generated C ABI wrapper for zg_key_should_be_remappable.
+func KeyShouldBeRemappable(self int32) uint8 {
+	return uint8(C.zg_key_should_be_remappable(C.int32_t(self)))
+}
+
+// KeyW3C calls the generated C ABI wrapper for zg_key_w3_c.
+func KeyW3C(self int32) string {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	C.zg_key_w3_c(C.int32_t(self), &outResultPtr, &outResultLen)
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
+}
+
 // KeyFromAscii calls the generated C ABI wrapper for zg_key_from_ascii.
 func KeyFromAscii(ch uint8) (int32, bool) {
 	var outResult C.int32_t
 	outResultHas := C.zg_key_from_ascii(C.uint8_t(ch), &outResult) != 0
 	return int32(outResult), outResultHas
-}
-
-// KeyCodepoint calls the generated C ABI wrapper for zg_key_codepoint.
-func KeyCodepoint(key int32) (uint32, bool) {
-	var outResult C.uint32_t
-	outResultHas := C.zg_key_codepoint(C.int32_t(key), &outResult) != 0
-	return uint32(outResult), outResultHas
-}
-
-// KeyPrintable calls the generated C ABI wrapper for zg_key_printable.
-func KeyPrintable(key int32) uint8 {
-	return uint8(C.zg_key_printable(C.int32_t(key)))
-}
-
-// KeyModifier calls the generated C ABI wrapper for zg_key_modifier.
-func KeyModifier(key int32) uint8 {
-	return uint8(C.zg_key_modifier(C.int32_t(key)))
-}
-
-// KeyKeypad calls the generated C ABI wrapper for zg_key_keypad.
-func KeyKeypad(key int32) uint8 {
-	return uint8(C.zg_key_keypad(C.int32_t(key)))
-}
-
-// KeyLeftOrRightShift calls the generated C ABI wrapper for zg_key_left_or_right_shift.
-func KeyLeftOrRightShift(key int32) uint8 {
-	return uint8(C.zg_key_left_or_right_shift(C.int32_t(key)))
-}
-
-// KeyLeftOrRightAlt calls the generated C ABI wrapper for zg_key_left_or_right_alt.
-func KeyLeftOrRightAlt(key int32) uint8 {
-	return uint8(C.zg_key_left_or_right_alt(C.int32_t(key)))
-}
-
-// KeyCtrlOrSuper calls the generated C ABI wrapper for zg_key_ctrl_or_super.
-func KeyCtrlOrSuper(key int32) uint8 {
-	return uint8(C.zg_key_ctrl_or_super(C.int32_t(key)))
-}
-
-// KeyShouldBeRemappable calls the generated C ABI wrapper for zg_key_should_be_remappable.
-func KeyShouldBeRemappable(key int32) uint8 {
-	return uint8(C.zg_key_should_be_remappable(C.int32_t(key)))
-}
-
-// KeyW3C calls the generated C ABI wrapper for zg_key_w3_c.
-func KeyW3C(key int32) string {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	C.zg_key_w3_c(C.int32_t(key), &outResultPtr, &outResultLen)
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
 }
 
 // KeyFromW3C calls the generated C ABI wrapper for zg_key_from_w3_c.
@@ -541,8 +541,8 @@ func TerminalDeinit(self unsafe.Pointer) int32 {
 }
 
 // FreeString calls the generated C ABI wrapper for zg_free_string.
-func FreeString(str []uint8) {
-	strPtr := (*C.uint8_t)(zigoSlicePtr(str))
+func FreeString(str string) {
+	strPtr := (*C.uint8_t)(zigoStringPtr(str))
 	C.zg_free_string(strPtr, C.size_t(len(str)))
 }
 
@@ -1675,9 +1675,9 @@ func TerminalSetDefaultCursorColor(self unsafe.Pointer, rgb uint32) int32 {
 }
 
 // ColorNameDefault calls the generated C ABI wrapper for zg_color_name_default.
-func ColorNameDefault(name uint8) (uint32, bool) {
+func ColorNameDefault(self uint8) (uint32, bool) {
 	var outResult C.uint32_t
-	outResultHas := C.zg_color_name_default(C.uint8_t(name), &outResult) != 0
+	outResultHas := C.zg_color_name_default(C.uint8_t(self), &outResult) != 0
 	return uint32(outResult), outResultHas
 }
 

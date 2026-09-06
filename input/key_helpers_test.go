@@ -17,12 +17,12 @@ func TestKeyHelpers(t *testing.T) {
 	if _, ok := input.KeyFromAscii(0x01); ok {
 		t.Error("KeyFromAscii(0x01) reported a key")
 	}
-	cp, ok := input.KeyCodepoint(input.KeyKeyA)
+	cp, ok := input.KeyKeyA.Codepoint()
 	if !ok || cp != 'a' {
-		t.Errorf("KeyCodepoint(KeyA) = %q, %v; want 'a'", cp, ok)
+		t.Errorf("KeyA.Codepoint() = %q, %v; want 'a'", cp, ok)
 	}
-	if _, ok := input.KeyCodepoint(input.KeyShiftLeft); ok {
-		t.Error("KeyCodepoint(KeyShiftLeft) reported a codepoint")
+	if _, ok := input.KeyShiftLeft.Codepoint(); ok {
+		t.Error("KeyShiftLeft.Codepoint() reported a codepoint")
 	}
 	checks := []struct {
 		name string
@@ -30,13 +30,13 @@ func TestKeyHelpers(t *testing.T) {
 		yes  input.Key
 		no   input.Key
 	}{
-		{"KeyPrintable", input.KeyPrintable, input.KeyKeyA, input.KeyShiftLeft},
-		{"KeyModifier", input.KeyModifier, input.KeyShiftLeft, input.KeyKeyA},
-		{"KeyKeypad", input.KeyKeypad, input.KeyNumpad1, input.KeyDigit1},
-		{"KeyLeftOrRightShift", input.KeyLeftOrRightShift, input.KeyShiftRight, input.KeyControlLeft},
-		{"KeyLeftOrRightAlt", input.KeyLeftOrRightAlt, input.KeyAltLeft, input.KeyShiftLeft},
+		{"Printable", input.Key.Printable, input.KeyKeyA, input.KeyShiftLeft},
+		{"Modifier", input.Key.Modifier, input.KeyShiftLeft, input.KeyKeyA},
+		{"Keypad", input.Key.Keypad, input.KeyNumpad1, input.KeyDigit1},
+		{"LeftOrRightShift", input.Key.LeftOrRightShift, input.KeyShiftRight, input.KeyControlLeft},
+		{"LeftOrRightAlt", input.Key.LeftOrRightAlt, input.KeyAltLeft, input.KeyShiftLeft},
 		// False for the writing system keys, whose meaning a layout decides.
-		{"KeyShouldBeRemappable", input.KeyShouldBeRemappable, input.KeyF1, input.KeyKeyA},
+		{"ShouldBeRemappable", input.Key.ShouldBeRemappable, input.KeyF1, input.KeyKeyA},
 	}
 	for _, c := range checks {
 		if !c.fn(c.yes) {
@@ -52,9 +52,9 @@ func TestKeyHelpers(t *testing.T) {
 // `KeyboardEvent.code`, so the pair has to round-trip.
 func TestKeyW3C(t *testing.T) {
 	for _, key := range []input.Key{input.KeyKeyA, input.KeyArrowUp, input.KeyEnter, input.KeyF1} {
-		name := input.KeyW3C(key)
+		name := key.W3C()
 		if name == "" {
-			t.Errorf("KeyW3C(%v) = %q, want a name", key, name)
+			t.Errorf("%v.W3C() = %q, want a name", key, name)
 			continue
 		}
 		got, ok := input.KeyFromW3C(name)
@@ -74,10 +74,10 @@ func TestKeyCtrlOrSuper(t *testing.T) {
 	if runtime.GOOS == "darwin" {
 		primary, other = input.KeyMetaLeft, input.KeyControlLeft
 	}
-	if !input.KeyCtrlOrSuper(primary) {
-		t.Errorf("KeyCtrlOrSuper(%v) on %s = false, want true", primary, runtime.GOOS)
+	if !primary.CtrlOrSuper() {
+		t.Errorf("%v.CtrlOrSuper() on %s = false, want true", primary, runtime.GOOS)
 	}
-	if input.KeyCtrlOrSuper(other) {
-		t.Errorf("KeyCtrlOrSuper(%v) on %s = true, want false", other, runtime.GOOS)
+	if other.CtrlOrSuper() {
+		t.Errorf("%v.CtrlOrSuper() on %s = true, want false", other, runtime.GOOS)
 	}
 }

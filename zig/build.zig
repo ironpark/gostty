@@ -70,6 +70,11 @@ pub fn build(b: *std.Build) void {
         .name = "gostty",
         .module = gostty,
         .bindings = b.path("src/bindings.zig"),
+        // Parameter names and doc comments are read from source. Naming the
+        // root here lets zigo walk the imported module graph too, so ghostty's
+        // own declarations arrive with their real parameter names rather than
+        // `p0`.
+        .source_root = b.path("src/root.zig"),
         .go_dir = b.path(".."),
         .go_module = "github.com/ironpark/gostty",
         .go_package = "gostty",

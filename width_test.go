@@ -37,7 +37,7 @@ func TestCodepointWidthAboveUnicode(t *testing.T) {
 	if !errors.As(err, &rangeErr) {
 		t.Fatalf("error is not *RangeError: %v", err)
 	}
-	if rangeErr.Parameter != "p0" || rangeErr.Type != "codepoint" {
-		t.Errorf("RangeError = %+v; want Parameter p0, Type codepoint", rangeErr)
+	if rangeErr.Parameter != "cp" || rangeErr.Type != "codepoint" {
+		t.Errorf("RangeError = %+v; want Parameter cp, Type codepoint", rangeErr)
 	}
 }

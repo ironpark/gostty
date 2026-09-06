@@ -71,65 +71,65 @@ func EncodeMouse(writer io.Writer, terminal *zigo_default.Terminal, event MouseE
 	return nil
 }
 
-// KeyFromAscii: The key for a printable ASCII byte, or null if none maps to it.
-func KeyFromAscii(ch uint8) (Key, bool) {
-	zigoResult, zigoHas := raw.KeyFromAscii(ch)
-	return Key(zigoResult), zigoHas
-}
-
-// KeyCodepoint: The Unicode codepoint the key produces on a US layout, if it has one.
-func KeyCodepoint(key Key) (rune, bool) {
-	zigoResult, zigoHas := raw.KeyCodepoint(int32(key))
+// Codepoint: The Unicode codepoint the key produces on a US layout, if it has one.
+func (k Key) Codepoint() (rune, bool) {
+	zigoResult, zigoHas := raw.KeyCodepoint(int32(k))
 	return rune(zigoResult), zigoHas
 }
 
-// KeyPrintable: True for keys that produce text on a US layout.
-func KeyPrintable(key Key) bool {
-	return raw.KeyPrintable(int32(key)) != 0
+// Printable: True for keys that produce text on a US layout.
+func (k Key) Printable() bool {
+	return raw.KeyPrintable(int32(k)) != 0
 }
 
-// KeyModifier: True for modifier keys such as shift, control and alt.
-func KeyModifier(key Key) bool {
-	return raw.KeyModifier(int32(key)) != 0
+// Modifier: True for modifier keys such as shift, control and alt.
+func (k Key) Modifier() bool {
+	return raw.KeyModifier(int32(k)) != 0
 }
 
-// KeyKeypad: True for keys on the numeric keypad.
-func KeyKeypad(key Key) bool {
-	return raw.KeyKeypad(int32(key)) != 0
+// Keypad: True for keys on the numeric keypad.
+func (k Key) Keypad() bool {
+	return raw.KeyKeypad(int32(k)) != 0
 }
 
-// KeyLeftOrRightShift: True for shift on either side.
-func KeyLeftOrRightShift(key Key) bool {
-	return raw.KeyLeftOrRightShift(int32(key)) != 0
+// LeftOrRightShift: True for shift on either side.
+func (k Key) LeftOrRightShift() bool {
+	return raw.KeyLeftOrRightShift(int32(k)) != 0
 }
 
-// KeyLeftOrRightAlt: True for alt on either side.
-func KeyLeftOrRightAlt(key Key) bool {
-	return raw.KeyLeftOrRightAlt(int32(key)) != 0
+// LeftOrRightAlt: True for alt on either side.
+func (k Key) LeftOrRightAlt() bool {
+	return raw.KeyLeftOrRightAlt(int32(k)) != 0
 }
 
-// KeyCtrlOrSuper: True for the platform's primary modifier: command on macOS, control
+// CtrlOrSuper: True for the platform's primary modifier: command on macOS, control
 // everywhere else. Which one that is was decided when the native library
 // for this platform was built, so it needs no runtime check in Go.
-func KeyCtrlOrSuper(key Key) bool {
-	return raw.KeyCtrlOrSuper(int32(key)) != 0
+func (k Key) CtrlOrSuper() bool {
+	return raw.KeyCtrlOrSuper(int32(k)) != 0
 }
 
-// KeyShouldBeRemappable: True for keys a keybinding UI may remap by default.
+// ShouldBeRemappable: True for keys a keybinding UI may remap by default.
 //
 // False for the W3C "writing system" keys -- the letters, digits and
 // punctuation -- because what those produce is decided by the user's layout,
 // so a binding on one is not the same key for everyone. Everything else,
 // function and navigation keys included, is fair game.
-func KeyShouldBeRemappable(key Key) bool {
-	return raw.KeyShouldBeRemappable(int32(key)) != 0
+func (k Key) ShouldBeRemappable() bool {
+	return raw.KeyShouldBeRemappable(int32(k)) != 0
 }
 
-// KeyW3C: The W3C `KeyboardEvent.code` name for the key, such as "KeyA" or
+// W3C: The W3C `KeyboardEvent.code` name for the key, such as "KeyA" or
 // "ArrowUp", empty for a key with none. Static storage, so the string stays
 // valid for the life of the process.
-func KeyW3C(key Key) string {
-	return raw.KeyW3C(int32(key))
+func (k Key) W3C() string {
+	return raw.KeyW3C(int32(k))
+}
+
+// KeyFromAscii: The key for a printable ASCII byte, or null if none maps to it.
+func KeyFromAscii(ch uint8) (Key, bool) {
+	zigoResult, zigoHas := raw.KeyFromAscii(ch)
+	return Key(zigoResult), zigoHas
 }
 
 // KeyFromW3C: The key a W3C `KeyboardEvent.code` name selects, or null if none does.
