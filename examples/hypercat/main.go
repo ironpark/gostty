@@ -96,6 +96,9 @@ type game struct {
 	state  *gostty.RenderState
 	images *gostty.KittyImages
 	cells  []gostty.RenderCell
+	// Search matches in the viewport, one bool per cell, refreshed with the
+	// cells so the highlight never lags the text under it.
+	matchCells []bool
 
 	// The process side.
 	ptmx   *os.File
@@ -450,6 +453,9 @@ func (g *game) refresh() error {
 	g.cells = g.cells[:n]
 	if _, err := g.state.Cells(g.cells); err != nil {
 		return fmt.Errorf("render cells: %w", err)
+	}
+	if err := g.refreshMatches(); err != nil {
+		return err
 	}
 	if err := g.refreshImages(); err != nil {
 		return err

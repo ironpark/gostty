@@ -1182,6 +1182,126 @@ func (s *Screen) ViewportTop() (uint32, error) {
 	return result, nil
 }
 
+// Format calls the Zig function Screen.format.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Screen) Format(opts FormatOptions, writer io.Writer) error {
+	if writer == nil {
+		return &StreamError{Operation: "Screen.Format", Parameter: "writer", Err: ErrNilStream}
+	}
+	ptr, err := zigoCheckedPointer("Screen.Format receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	writerHandle := zigoNewWriterStreamHandle(writer)
+	defer zigoDeleteCallbackHandle(writerHandle)
+	code := raw.ScreenFormat(ptr, zigoFormatOptionsToRaw(opts), uintptr(writerHandle))
+	if zigoCallbackPanicPending() {
+		zigoRethrowCallbackPanic("Screen.Format", writerHandle)
+	}
+	if err := zigoStreamError("Screen.Format", "writer", writerHandle); err != nil {
+		return err
+	}
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Screen.Format", code), s)
+	}
+	return nil
+}
+
+// FormatSelection calls the Zig function Screen.formatSelection.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Screen) FormatSelection(opts FormatOptions, sel Selection, writer io.Writer) (bool, error) {
+	if writer == nil {
+		return false, &StreamError{Operation: "Screen.FormatSelection", Parameter: "writer", Err: ErrNilStream}
+	}
+	ptr, err := zigoCheckedPointer("Screen.FormatSelection receiver", s)
+	if err != nil {
+		return false, err
+	}
+	defer s.zigoRelease()
+	writerHandle := zigoNewWriterStreamHandle(writer)
+	defer zigoDeleteCallbackHandle(writerHandle)
+	result, code := raw.ScreenFormatSelection(ptr, zigoFormatOptionsToRaw(opts), zigoSelectionToRaw(sel), uintptr(writerHandle))
+	if zigoCallbackPanicPending() {
+		zigoRethrowCallbackPanic("Screen.FormatSelection", writerHandle)
+	}
+	if err := zigoStreamError("Screen.FormatSelection", "writer", writerHandle); err != nil {
+		return false, err
+	}
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Screen.FormatSelection", code), s)
+	}
+	return result != 0, nil
+}
+
+// SelectionContains calls the Zig function Screen.selectionContains.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Screen) SelectionContains(sel Selection, x uint16, y uint32) (bool, error) {
+	ptr, err := zigoCheckedPointer("Screen.SelectionContains receiver", s)
+	if err != nil {
+		return false, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.ScreenSelectionContains(ptr, zigoSelectionToRaw(sel), x, y)
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Screen.SelectionContains", code), s)
+	}
+	return result != 0, nil
+}
+
+// SelectionAdjust calls the Zig function Screen.selectionAdjust.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Screen) SelectionAdjust(sel Selection, adjustment SelectionAdjustment) (Selection, bool, error) {
+	ptr, err := zigoCheckedPointer("Screen.SelectionAdjust receiver", s)
+	if err != nil {
+		return Selection{}, false, err
+	}
+	defer s.zigoRelease()
+	result, zigoHas, code := raw.ScreenSelectionAdjust(ptr, zigoSelectionToRaw(sel), uint8(adjustment))
+	if code != 0 {
+		return Selection{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Screen.SelectionAdjust", code), s)
+	}
+	return zigoSelectionFromRaw(result), zigoHas, nil
+}
+
+// SelectionOrder calls the Zig function Screen.selectionOrder.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Screen) SelectionOrder(sel Selection) (SelectionOrder, bool, error) {
+	ptr, err := zigoCheckedPointer("Screen.SelectionOrder receiver", s)
+	if err != nil {
+		return 0, false, err
+	}
+	defer s.zigoRelease()
+	result, zigoHas, code := raw.ScreenSelectionOrder(ptr, zigoSelectionToRaw(sel))
+	if code != 0 {
+		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Screen.SelectionOrder", code), s)
+	}
+	return SelectionOrder(result), zigoHas, nil
+}
+
+// SelectionOrdered calls the Zig function Screen.selectionOrdered.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Screen) SelectionOrdered(sel Selection, desired SelectionOrder) (Selection, bool, error) {
+	ptr, err := zigoCheckedPointer("Screen.SelectionOrdered receiver", s)
+	if err != nil {
+		return Selection{}, false, err
+	}
+	defer s.zigoRelease()
+	result, zigoHas, code := raw.ScreenSelectionOrdered(ptr, zigoSelectionToRaw(sel), uint8(desired))
+	if code != 0 {
+		return Selection{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Screen.SelectionOrdered", code), s)
+	}
+	return zigoSelectionFromRaw(result), zigoHas, nil
+}
+
 // StartHyperlink calls the Zig function Screen.startHyperlink.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
@@ -1945,6 +2065,34 @@ func (te *Terminal) PlainStringUnwrapped() (string, error) {
 	return result, nil
 }
 
+// Format calls the Zig function Terminal.Format.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (te *Terminal) Format(opts FormatOptions, writer io.Writer) error {
+	if writer == nil {
+		return &StreamError{Operation: "Terminal.Format", Parameter: "writer", Err: ErrNilStream}
+	}
+	ptr, err := zigoCheckedPointer("Terminal.Format receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	writerHandle := zigoNewWriterStreamHandle(writer)
+	defer zigoDeleteCallbackHandle(writerHandle)
+	code := raw.TerminalFormat(ptr, zigoFormatOptionsToRaw(opts), uintptr(writerHandle))
+	if zigoCallbackPanicPending() {
+		zigoRethrowCallbackPanic("Terminal.Format", writerHandle)
+	}
+	if err := zigoStreamError("Terminal.Format", "writer", writerHandle); err != nil {
+		return err
+	}
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Format", code), te)
+	}
+	return nil
+}
+
 // BackgroundColor: The current background color: what OSC 11 set, else the default.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
@@ -2574,6 +2722,38 @@ func (r *RenderState) CursorStyle() (CursorStyle, error) {
 		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.CursorStyle", code), r)
 	}
 	return CursorStyle(result), nil
+}
+
+// Graphemes calls the Zig function RenderState.graphemes.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (r *RenderState) Graphemes(x uint16, y uint16, dst []rune) (uint, error) {
+	ptr, err := zigoCheckedPointer("RenderState.Graphemes receiver", r)
+	if err != nil {
+		return 0, err
+	}
+	defer r.zigoRelease()
+	result, code := raw.RenderStateGraphemes(ptr, x, y, zigoRunesToUint32(dst))
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Graphemes", code), r)
+	}
+	return result, nil
+}
+
+// HyperlinkAt calls the Zig function RenderState.hyperlinkAt.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (r *RenderState) HyperlinkAt(x uint16, y uint16) (string, bool, error) {
+	ptr, err := zigoCheckedPointer("RenderState.HyperlinkAt receiver", r)
+	if err != nil {
+		return "", false, err
+	}
+	defer r.zigoRelease()
+	result, zigoHas, code := raw.RenderStateHyperlinkAt(ptr, x, y)
+	if code != 0 {
+		return "", false, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.HyperlinkAt", code), r)
+	}
+	return result, zigoHas, nil
 }
 
 // NewKittyImages creates a caller-owned KittyImages.

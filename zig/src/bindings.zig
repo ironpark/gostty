@@ -79,6 +79,10 @@ pub const bindings = zigo.define(.{
         .{ .name = "SwitchScreenMode", .type = gostty.SwitchScreenMode, .repr = .enumeration },
         .{ .name = "Mode", .type = gostty.Mode, .repr = .enumeration, .text = true },
         .{ .name = "Selection", .type = gostty.Selection, .repr = .value },
+        .{ .name = "FormatterFormat", .type = gostty.FormatterFormat, .repr = .enumeration, .text = true },
+        .{ .name = "FormatOptions", .type = gostty.FormatOptions, .repr = .value },
+        .{ .name = "SelectionAdjustment", .type = gostty.SelectionAdjustment, .repr = .enumeration, .text = true },
+        .{ .name = "SelectionOrder", .type = gostty.SelectionOrder, .repr = .enumeration },
         .{ .name = "StreamEvent", .type = gostty.StreamEvent, .repr = .enumeration, .text = true },
         .{ .name = "ProgressState", .type = gostty.ProgressState, .repr = .enumeration, .text = true },
         .{ .name = "ClipboardLocation", .type = gostty.ClipboardLocation, .repr = .enumeration, .text = true, .exhaustive = false },
@@ -232,6 +236,12 @@ pub const bindings = zigo.define(.{
                 "root.screenSelection",
                 .{ .path = "root.screenSetSelection", .params = .{"sel"} },
                 "root.screenViewportTop",
+                .{ .path = "root.screenFormat", .params = .{ "opts", "writer" } },
+                .{ .path = "root.screenFormatSelection", .params = .{ "opts", "sel", "writer" } },
+                .{ .path = "root.screenSelectionContains", .params = .{ "sel", "x", "y" } },
+                .{ .path = "root.screenSelectionAdjust", .params = .{ "sel", "adjustment" } },
+                .{ .path = "root.screenSelectionOrder", .params = .{"sel"} },
+                .{ .path = "root.screenSelectionOrdered", .params = .{ "sel", "desired" } },
                 .{ .path = "root.screenStartHyperlink", .params = .{ "uri", "id" }, .param_meta = .{ .uri = .{ .semantic = .utf8_string }, .id = .{ .semantic = .utf8_string } }, .covers = "Screen.startHyperlink" },
             },
         },
@@ -311,6 +321,7 @@ pub const bindings = zigo.define(.{
         .{ .path = "Terminal.plainStringUnwrapped", .returns = .caller, .release = "root.freeString", .semantic = .utf8_string },
 
         // Metadata the terminal tracks for the shell.
+        .{ .path = "root.formatTerminal", .name = "Format", .params = .{ "opts", "writer" } },
         // Colors and modes.
         .{ .path = "root.backgroundColor" },
         .{ .path = "root.foregroundColor" },
@@ -366,6 +377,12 @@ pub const bindings = zigo.define(.{
                 "root.renderCursorY",
                 "root.renderCursorVisible",
                 "root.renderCursorStyle",
+                .{
+                    .path = "root.renderGraphemes",
+                    .params = .{ "x", "y", "dst" },
+                    .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return", .semantic = .codepoint } },
+                },
+                .{ .path = "root.renderHyperlinkAt", .params = .{ "x", "y" }, .returns = .caller, .release = "root.freeString", .semantic = .utf8_string, .covers = "RenderState.linkCells" },
             },
         },
 

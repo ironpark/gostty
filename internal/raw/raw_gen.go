@@ -746,6 +746,108 @@ func ScreenViewportTop(self unsafe.Pointer) (uint32, int32) {
 	return uint32(outResult), code
 }
 
+// ScreenFormat calls the generated C ABI wrapper for zg_screen_format.
+func ScreenFormat(self unsafe.Pointer, opts FormatOptionsData, writerHandle uintptr) int32 {
+	var copts C.zg_format_options
+	copts.format = C.uint8_t(opts.Format)
+	copts.unwrap = C.uint8_t(opts.Unwrap)
+	copts.keep_trailing_whitespace = C.uint8_t(opts.KeepTrailingWhitespace)
+	copts.cursor = C.uint8_t(opts.Cursor)
+	copts.no_styles = C.uint8_t(opts.NoStyles)
+	copts.no_hyperlinks = C.uint8_t(opts.NoHyperlinks)
+	copts.resolve_palette = C.uint8_t(opts.ResolvePalette)
+	code := int32(C.zg_screen_format((*C.zg_screen)(self), &copts, C.size_t(writerHandle)))
+	return code
+}
+
+// ScreenFormatSelection calls the generated C ABI wrapper for zg_screen_format_selection.
+func ScreenFormatSelection(self unsafe.Pointer, opts FormatOptionsData, sel SelectionData, writerHandle uintptr) (uint8, int32) {
+	var copts C.zg_format_options
+	copts.format = C.uint8_t(opts.Format)
+	copts.unwrap = C.uint8_t(opts.Unwrap)
+	copts.keep_trailing_whitespace = C.uint8_t(opts.KeepTrailingWhitespace)
+	copts.cursor = C.uint8_t(opts.Cursor)
+	copts.no_styles = C.uint8_t(opts.NoStyles)
+	copts.no_hyperlinks = C.uint8_t(opts.NoHyperlinks)
+	copts.resolve_palette = C.uint8_t(opts.ResolvePalette)
+	var csel C.zg_selection
+	csel.start_x = C.uint16_t(sel.StartX)
+	csel.start_y = C.uint32_t(sel.StartY)
+	csel.end_x = C.uint16_t(sel.EndX)
+	csel.end_y = C.uint32_t(sel.EndY)
+	csel.rectangle = C.uint8_t(sel.Rectangle)
+	var outResult C.uint8_t
+	code := int32(C.zg_screen_format_selection((*C.zg_screen)(self), &copts, &csel, C.size_t(writerHandle), &outResult))
+	return uint8(outResult), code
+}
+
+// ScreenSelectionContains calls the generated C ABI wrapper for zg_screen_selection_contains.
+func ScreenSelectionContains(self unsafe.Pointer, sel SelectionData, x uint16, y uint32) (uint8, int32) {
+	var csel C.zg_selection
+	csel.start_x = C.uint16_t(sel.StartX)
+	csel.start_y = C.uint32_t(sel.StartY)
+	csel.end_x = C.uint16_t(sel.EndX)
+	csel.end_y = C.uint32_t(sel.EndY)
+	csel.rectangle = C.uint8_t(sel.Rectangle)
+	var outResult C.uint8_t
+	code := int32(C.zg_screen_selection_contains((*C.zg_screen)(self), &csel, C.uint16_t(x), C.uint32_t(y), &outResult))
+	return uint8(outResult), code
+}
+
+// ScreenSelectionAdjust calls the generated C ABI wrapper for zg_screen_selection_adjust.
+func ScreenSelectionAdjust(self unsafe.Pointer, sel SelectionData, adjustment uint8) (SelectionData, bool, int32) {
+	var csel C.zg_selection
+	csel.start_x = C.uint16_t(sel.StartX)
+	csel.start_y = C.uint32_t(sel.StartY)
+	csel.end_x = C.uint16_t(sel.EndX)
+	csel.end_y = C.uint32_t(sel.EndY)
+	csel.rectangle = C.uint8_t(sel.Rectangle)
+	var outResultHas C.uint8_t
+	var outResult C.zg_selection
+	code := int32(C.zg_screen_selection_adjust((*C.zg_screen)(self), &csel, C.uint8_t(adjustment), &outResultHas, &outResult))
+	return SelectionData{
+		StartX:    uint16(outResult.start_x),
+		StartY:    uint32(outResult.start_y),
+		EndX:      uint16(outResult.end_x),
+		EndY:      uint32(outResult.end_y),
+		Rectangle: uint8(outResult.rectangle),
+	}, outResultHas != 0, code
+}
+
+// ScreenSelectionOrder calls the generated C ABI wrapper for zg_screen_selection_order.
+func ScreenSelectionOrder(self unsafe.Pointer, sel SelectionData) (uint8, bool, int32) {
+	var csel C.zg_selection
+	csel.start_x = C.uint16_t(sel.StartX)
+	csel.start_y = C.uint32_t(sel.StartY)
+	csel.end_x = C.uint16_t(sel.EndX)
+	csel.end_y = C.uint32_t(sel.EndY)
+	csel.rectangle = C.uint8_t(sel.Rectangle)
+	var outResultHas C.uint8_t
+	var outResult C.uint8_t
+	code := int32(C.zg_screen_selection_order((*C.zg_screen)(self), &csel, &outResultHas, &outResult))
+	return uint8(outResult), outResultHas != 0, code
+}
+
+// ScreenSelectionOrdered calls the generated C ABI wrapper for zg_screen_selection_ordered.
+func ScreenSelectionOrdered(self unsafe.Pointer, sel SelectionData, desired uint8) (SelectionData, bool, int32) {
+	var csel C.zg_selection
+	csel.start_x = C.uint16_t(sel.StartX)
+	csel.start_y = C.uint32_t(sel.StartY)
+	csel.end_x = C.uint16_t(sel.EndX)
+	csel.end_y = C.uint32_t(sel.EndY)
+	csel.rectangle = C.uint8_t(sel.Rectangle)
+	var outResultHas C.uint8_t
+	var outResult C.zg_selection
+	code := int32(C.zg_screen_selection_ordered((*C.zg_screen)(self), &csel, C.uint8_t(desired), &outResultHas, &outResult))
+	return SelectionData{
+		StartX:    uint16(outResult.start_x),
+		StartY:    uint32(outResult.start_y),
+		EndX:      uint16(outResult.end_x),
+		EndY:      uint32(outResult.end_y),
+		Rectangle: uint8(outResult.rectangle),
+	}, outResultHas != 0, code
+}
+
 // ScreenStartHyperlink calls the generated C ABI wrapper for zg_screen_start_hyperlink.
 func ScreenStartHyperlink(self unsafe.Pointer, uri string, id string) int32 {
 	uriPtr := (*C.uint8_t)(zigoStringPtr(uri))
@@ -1096,6 +1198,20 @@ func TerminalPlainStringUnwrapped(self unsafe.Pointer) (string, int32) {
 	return result, code
 }
 
+// TerminalFormat calls the generated C ABI wrapper for zg_terminal_format.
+func TerminalFormat(self unsafe.Pointer, opts FormatOptionsData, writerHandle uintptr) int32 {
+	var copts C.zg_format_options
+	copts.format = C.uint8_t(opts.Format)
+	copts.unwrap = C.uint8_t(opts.Unwrap)
+	copts.keep_trailing_whitespace = C.uint8_t(opts.KeepTrailingWhitespace)
+	copts.cursor = C.uint8_t(opts.Cursor)
+	copts.no_styles = C.uint8_t(opts.NoStyles)
+	copts.no_hyperlinks = C.uint8_t(opts.NoHyperlinks)
+	copts.resolve_palette = C.uint8_t(opts.ResolvePalette)
+	code := int32(C.zg_terminal_format((*C.zg_terminal)(self), &copts, C.size_t(writerHandle)))
+	return code
+}
+
 // TerminalBackgroundColor calls the generated C ABI wrapper for zg_terminal_background_color.
 func TerminalBackgroundColor(self unsafe.Pointer) (uint32, bool, int32) {
 	var outResultHas C.uint8_t
@@ -1385,6 +1501,33 @@ func RenderStateCursorStyle(self unsafe.Pointer) (uint8, int32) {
 	return uint8(outResult), code
 }
 
+// RenderStateGraphemes calls the generated C ABI wrapper for zg_render_state_graphemes.
+func RenderStateGraphemes(self unsafe.Pointer, x uint16, y uint16, dst []uint32) (uint, int32) {
+	dstPtr := (*C.uint32_t)(zigoSlicePtr(dst))
+	var outResult C.size_t
+	code := int32(C.zg_render_state_graphemes((*C.zg_render_state)(self), C.uint16_t(x), C.uint16_t(y), dstPtr, C.size_t(len(dst)), &outResult))
+	return uint(outResult), code
+}
+
+// RenderStateHyperlinkAt calls the generated C ABI wrapper for zg_render_state_hyperlink_at.
+func RenderStateHyperlinkAt(self unsafe.Pointer, x uint16, y uint16) (string, bool, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_render_state_hyperlink_at((*C.zg_render_state)(self), C.uint16_t(x), C.uint16_t(y), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return "", false, code
+	}
+	if outResultPtr == nil {
+		return "", false, code
+	}
+	var result string
+	if outResultLen != 0 {
+		result = C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
+	}
+	C.zg_free_string(outResultPtr, outResultLen)
+	return result, true, code
+}
+
 // NewKittyImages calls the generated C ABI wrapper for zg_new_kitty_images.
 func NewKittyImages() (unsafe.Pointer, int32) {
 	var outResult *C.zg_kitty_images
@@ -1503,6 +1646,17 @@ type SelectionData struct {
 	_         [3]byte
 }
 
+// FormatOptionsData mirrors the zg_format_options layout, padding included.
+type FormatOptionsData struct {
+	Format                 uint8
+	Unwrap                 uint8
+	KeepTrailingWhitespace uint8
+	Cursor                 uint8
+	NoStyles               uint8
+	NoHyperlinks           uint8
+	ResolvePalette         uint8
+}
+
 // RenderCellData mirrors the zg_render_cell layout, padding included.
 type RenderCellData struct {
 	Codepoint uint32
@@ -1578,6 +1732,16 @@ var _ = [1]struct{}{}[unsafe.Offsetof(SelectionData{}.StartY)-unsafe.Offsetof(C.
 var _ = [1]struct{}{}[unsafe.Offsetof(SelectionData{}.EndX)-unsafe.Offsetof(C.zg_selection{}.end_x)]
 var _ = [1]struct{}{}[unsafe.Offsetof(SelectionData{}.EndY)-unsafe.Offsetof(C.zg_selection{}.end_y)]
 var _ = [1]struct{}{}[unsafe.Offsetof(SelectionData{}.Rectangle)-unsafe.Offsetof(C.zg_selection{}.rectangle)]
+
+// FormatOptionsData slices are copied from C memory as one run, so it must match zg_format_options byte for byte.
+var _ = [1]struct{}{}[unsafe.Sizeof(FormatOptionsData{})-unsafe.Sizeof(C.zg_format_options{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.Format)-unsafe.Offsetof(C.zg_format_options{}.format)]
+var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.Unwrap)-unsafe.Offsetof(C.zg_format_options{}.unwrap)]
+var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.KeepTrailingWhitespace)-unsafe.Offsetof(C.zg_format_options{}.keep_trailing_whitespace)]
+var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.Cursor)-unsafe.Offsetof(C.zg_format_options{}.cursor)]
+var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.NoStyles)-unsafe.Offsetof(C.zg_format_options{}.no_styles)]
+var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.NoHyperlinks)-unsafe.Offsetof(C.zg_format_options{}.no_hyperlinks)]
+var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.ResolvePalette)-unsafe.Offsetof(C.zg_format_options{}.resolve_palette)]
 
 // RenderCellData slices are copied from C memory as one run, so it must match zg_render_cell byte for byte.
 var _ = [1]struct{}{}[unsafe.Sizeof(RenderCellData{})-unsafe.Sizeof(C.zg_render_cell{})]

@@ -51,9 +51,9 @@ func (g *game) drawBackgrounds(screen *ebiten.Image) {
 	for row := 0; row < g.rows; row++ {
 		line := g.cells[row*g.cols : (row+1)*g.cols]
 		for start := 0; start < len(line); {
-			bg := g.cellBackground(line[start])
+			bg := g.cellBackgroundAt(row*g.cols + start)
 			end := start + 1
-			for end < len(line) && g.cellBackground(line[end]) == bg {
+			for end < len(line) && g.cellBackgroundAt(row*g.cols+end) == bg {
 				end++
 			}
 			if bg != g.bg {
@@ -67,11 +67,22 @@ func (g *game) drawBackgrounds(screen *ebiten.Image) {
 	}
 }
 
+// matchHighlight tints every search match that is on screen; the current one
+// is the screen's selection, so it keeps the selection colours.
+var matchHighlight = color.RGBA{R: 0xb5, G: 0x89, B: 0x00, A: 0xff}
+
 func (g *game) cellBackground(cell gostty.RenderCell) color.RGBA {
 	if cell.Flags.Selected {
 		return g.themeColor(rgb(cell.Fg))
 	}
 	return g.themeColor(rgb(cell.Bg))
+}
+
+func (g *game) cellBackgroundAt(i int) color.RGBA {
+	if i < len(g.matchCells) && g.matchCells[i] && !g.cells[i].Flags.Selected {
+		return matchHighlight
+	}
+	return g.cellBackground(g.cells[i])
 }
 
 func (g *game) drawGlyphs(screen *ebiten.Image) {

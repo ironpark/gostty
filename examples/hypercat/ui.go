@@ -187,6 +187,52 @@ func (g *game) runSearch() error {
 	return err
 }
 
+// refreshMatches marks the viewport cells covered by a search match. Matches
+// are in screen coordinates; the viewport's top row turns them into cells.
+func (g *game) refreshMatches() error {
+	g.matchCells = g.matchCells[:0]
+	if g.ui.search == nil || g.ui.matches == 0 {
+		return nil
+	}
+	screen, err := g.vt.ActiveScreen()
+	if err != nil {
+		return err
+	}
+	top, err := screen.ViewportTop()
+	if err != nil {
+		return err
+	}
+	matches := make([]gostty.Selection, g.ui.matches)
+	n, err := g.ui.search.Matches(matches)
+	if err != nil {
+		return err
+	}
+	if cap(g.matchCells) < len(g.cells) {
+		g.matchCells = make([]bool, len(g.cells))
+	}
+	g.matchCells = g.matchCells[:len(g.cells)]
+	clear(g.matchCells)
+	for _, m := range matches[:n] {
+		if m.StartY < top || m.EndY >= top+uint32(g.rows) || m.StartY > m.EndY {
+			continue
+		}
+		for y := m.StartY; y <= m.EndY; y++ {
+			x0, x1 := 0, g.cols-1
+			if y == m.StartY {
+				x0 = int(m.StartX)
+			}
+			if y == m.EndY {
+				x1 = int(m.EndX)
+			}
+			row := int(y-top) * g.cols
+			for x := x0; x <= x1 && x < g.cols; x++ {
+				g.matchCells[row+x] = true
+			}
+		}
+	}
+	return nil
+}
+
 // moveMatch steps to the next or previous match. The binding puts it in the
 // screen's selection and brings the viewport to it.
 func (g *game) moveMatch(dir gostty.SearchDirection) error {

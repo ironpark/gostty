@@ -76,6 +76,24 @@ type Selection struct {
 	Rectangle bool
 }
 
+// FormatOptions mirrors the Zig `extern struct` of the same name.
+type FormatOptions struct {
+	// Format corresponds to the Zig field format.
+	Format FormatterFormat
+	// Unwrap corresponds to the Zig field unwrap.
+	Unwrap bool
+	// KeepTrailingWhitespace corresponds to the Zig field keep_trailing_whitespace.
+	KeepTrailingWhitespace bool
+	// Cursor corresponds to the Zig field cursor.
+	Cursor bool
+	// NoStyles corresponds to the Zig field no_styles.
+	NoStyles bool
+	// NoHyperlinks corresponds to the Zig field no_hyperlinks.
+	NoHyperlinks bool
+	// ResolvePalette corresponds to the Zig field resolve_palette.
+	ResolvePalette bool
+}
+
 // RenderCell mirrors the Zig `extern struct` of the same name.
 type RenderCell struct {
 	// Codepoint corresponds to the Zig field codepoint.
@@ -199,6 +217,18 @@ func zigoSelectionSliceCopyFromRaw(dst []Selection, values []raw.SelectionData, 
 	}
 	for i := 0; i < count; i++ {
 		dst[i] = zigoSelectionFromRaw(values[i])
+	}
+}
+
+func zigoFormatOptionsToRaw(value FormatOptions) raw.FormatOptionsData {
+	return raw.FormatOptionsData{
+		Format:                 uint8(value.Format),
+		Unwrap:                 zigoBoolToUint8(value.Unwrap),
+		KeepTrailingWhitespace: zigoBoolToUint8(value.KeepTrailingWhitespace),
+		Cursor:                 zigoBoolToUint8(value.Cursor),
+		NoStyles:               zigoBoolToUint8(value.NoStyles),
+		NoHyperlinks:           zigoBoolToUint8(value.NoHyperlinks),
+		ResolvePalette:         zigoBoolToUint8(value.ResolvePalette),
 	}
 }
 

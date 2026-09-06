@@ -151,7 +151,7 @@
           "retention": "borrowed",
           "semantic": "codepoint",
           "source": {
-            "line": 925,
+            "line": 1049,
             "column": 22
           },
           "type": {
@@ -174,7 +174,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 925,
+        "line": 1049,
         "column": 8
       },
       "symbol": "zg_grapheme_width"
@@ -191,7 +191,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1135,
+            "line": 1259,
             "column": 5
           },
           "type": {
@@ -204,7 +204,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1136,
+            "line": 1260,
             "column": 5
           },
           "type": {
@@ -220,7 +220,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1137,
+            "line": 1261,
             "column": 5
           },
           "type": {
@@ -235,7 +235,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 1138,
+            "line": 1262,
             "column": 5
           },
           "type": {
@@ -261,7 +261,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1134,
+        "line": 1258,
         "column": 8
       },
       "symbol": "zg_encode_key"
@@ -278,7 +278,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1207,
+            "line": 1331,
             "column": 5
           },
           "type": {
@@ -291,7 +291,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1208,
+            "line": 1332,
             "column": 5
           },
           "type": {
@@ -307,7 +307,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1209,
+            "line": 1333,
             "column": 5
           },
           "type": {
@@ -321,7 +321,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1210,
+            "line": 1334,
             "column": 5
           },
           "type": {
@@ -335,7 +335,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1211,
+            "line": 1335,
             "column": 5
           },
           "type": {
@@ -354,7 +354,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1206,
+        "line": 1330,
         "column": 8
       },
       "symbol": "zg_encode_mouse"
@@ -371,7 +371,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1034,
+            "line": 1158,
             "column": 21
           },
           "type": {
@@ -391,7 +391,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1034,
+        "line": 1158,
         "column": 8
       },
       "symbol": "zg_key_from_ascii"
@@ -409,7 +409,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 1040,
+            "line": 1164,
             "column": 19
           },
           "type": {
@@ -433,7 +433,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1040,
+        "line": 1164,
         "column": 8
       },
       "symbol": "zg_key_from_w3_c"
@@ -450,7 +450,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1046,
+            "line": 1170,
             "column": 15
           },
           "type": {
@@ -472,7 +472,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "root.zig",
-        "line": 1046,
+        "line": 1170,
         "column": 8
       },
       "symbol": "zg_key_w3_c"
@@ -489,7 +489,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1051,
+            "line": 1175,
             "column": 21
           },
           "type": {
@@ -510,7 +510,7 @@
       "return_semantic": "codepoint",
       "source": {
         "path": "root.zig",
-        "line": 1051,
+        "line": 1175,
         "column": 8
       },
       "symbol": "zg_key_codepoint"
@@ -527,7 +527,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1056,
+            "line": 1180,
             "column": 21
           },
           "type": {
@@ -541,7 +541,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1056,
+        "line": 1180,
         "column": 8
       },
       "symbol": "zg_key_printable"
@@ -558,7 +558,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1061,
+            "line": 1185,
             "column": 20
           },
           "type": {
@@ -572,7 +572,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1061,
+        "line": 1185,
         "column": 8
       },
       "symbol": "zg_key_modifier"
@@ -589,7 +589,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1066,
+            "line": 1190,
             "column": 18
           },
           "type": {
@@ -603,7 +603,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1066,
+        "line": 1190,
         "column": 8
       },
       "symbol": "zg_key_keypad"
@@ -620,7 +620,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1073,
+            "line": 1197,
             "column": 23
           },
           "type": {
@@ -634,7 +634,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1073,
+        "line": 1197,
         "column": 8
       },
       "symbol": "zg_key_ctrl_or_super"
@@ -651,7 +651,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1078,
+            "line": 1202,
             "column": 28
           },
           "type": {
@@ -665,7 +665,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1078,
+        "line": 1202,
         "column": 8
       },
       "symbol": "zg_key_left_or_right_shift"
@@ -682,7 +682,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1083,
+            "line": 1207,
             "column": 26
           },
           "type": {
@@ -696,7 +696,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1083,
+        "line": 1207,
         "column": 8
       },
       "symbol": "zg_key_left_or_right_alt"
@@ -713,7 +713,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1225,
+            "line": 1349,
             "column": 20
           },
           "type": {
@@ -726,7 +726,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1225,
+            "line": 1349,
             "column": 44
           },
           "type": {
@@ -746,7 +746,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1225,
+        "line": 1349,
         "column": 8
       },
       "symbol": "zg_encode_focus"
@@ -763,7 +763,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1231,
+            "line": 1355,
             "column": 20
           },
           "type": {
@@ -783,7 +783,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1231,
+        "line": 1355,
         "column": 8
       },
       "symbol": "zg_is_safe_paste"
@@ -800,7 +800,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1237,
+            "line": 1361,
             "column": 5
           },
           "type": {
@@ -813,7 +813,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1238,
+            "line": 1362,
             "column": 5
           },
           "type": {
@@ -829,7 +829,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1239,
+            "line": 1363,
             "column": 5
           },
           "type": {
@@ -855,7 +855,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1236,
+        "line": 1360,
         "column": 8
       },
       "symbol": "zg_encode_paste"
@@ -975,7 +975,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1277,
+            "line": 1401,
             "column": 19
           },
           "type": {
@@ -988,7 +988,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1277,
+            "line": 1401,
             "column": 35
           },
           "type": {
@@ -1008,7 +1008,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1277,
+        "line": 1401,
         "column": 8
       },
       "symbol": "zg_free_string"
@@ -1027,7 +1027,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1248,
+            "line": 1372,
             "column": 34
           },
           "type": {
@@ -1040,7 +1040,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1248,
+            "line": 1372,
             "column": 55
           },
           "type": {
@@ -1067,7 +1067,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1248,
+        "line": 1372,
         "column": 8
       },
       "zig_path": "newStream",
@@ -1085,7 +1085,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1267,
+            "line": 1391,
             "column": 34
           },
           "type": {
@@ -1099,7 +1099,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1267,
+        "line": 1391,
         "column": 8
       },
       "zig_path": "freeStream",
@@ -2026,7 +2026,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 751,
+            "line": 792,
             "column": 38
           },
           "type": {
@@ -2047,7 +2047,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 751,
+        "line": 792,
         "column": 8
       },
       "zig_path": "switchScreen",
@@ -2101,7 +2101,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 756,
+        "line": 797,
         "column": 8
       },
       "zig_path": "activeScreenKey",
@@ -2540,6 +2540,234 @@
       "symbol": "zg_screen_viewport_top"
     },
     {
+      "name": "format",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "opts",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "kind": "value_struct",
+            "ref": "FormatOptions"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "writer",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "kind": "io_writer"
+          }
+        }
+      ],
+      "receiver": "Screen",
+      "return": {
+        "error_set": [
+          "WriteFailed"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "void"
+        }
+      },
+      "zig_path": "screenFormat",
+      "symbol": "zg_screen_format"
+    },
+    {
+      "name": "formatSelection",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "opts",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "kind": "value_struct",
+            "ref": "FormatOptions"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "sel",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "kind": "value_struct",
+            "ref": "Selection"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "writer",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "kind": "io_writer"
+          }
+        }
+      ],
+      "receiver": "Screen",
+      "return": {
+        "error_set": [
+          "WriteFailed"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "bool"
+        }
+      },
+      "zig_path": "screenFormatSelection",
+      "symbol": "zg_screen_format_selection"
+    },
+    {
+      "name": "selectionContains",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "sel",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "kind": "value_struct",
+            "ref": "Selection"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "x",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "in",
+          "name": "y",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "bits": 32,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "receiver": "Screen",
+      "return": {
+        "kind": "bool"
+      },
+      "zig_path": "screenSelectionContains",
+      "symbol": "zg_screen_selection_contains"
+    },
+    {
+      "name": "selectionAdjust",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "sel",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "kind": "value_struct",
+            "ref": "Selection"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "adjustment",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "kind": "enum",
+            "ref": "SelectionAdjustment"
+          }
+        }
+      ],
+      "receiver": "Screen",
+      "return": {
+        "child": {
+          "kind": "value_struct",
+          "ref": "Selection"
+        },
+        "kind": "optional"
+      },
+      "zig_path": "screenSelectionAdjust",
+      "symbol": "zg_screen_selection_adjust"
+    },
+    {
+      "name": "selectionOrder",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "sel",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "kind": "value_struct",
+            "ref": "Selection"
+          }
+        }
+      ],
+      "receiver": "Screen",
+      "return": {
+        "child": {
+          "kind": "enum",
+          "ref": "SelectionOrder"
+        },
+        "kind": "optional"
+      },
+      "zig_path": "screenSelectionOrder",
+      "symbol": "zg_screen_selection_order"
+    },
+    {
+      "name": "selectionOrdered",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "sel",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "kind": "value_struct",
+            "ref": "Selection"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "desired",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "kind": "enum",
+            "ref": "SelectionOrder"
+          }
+        }
+      ],
+      "receiver": "Screen",
+      "return": {
+        "child": {
+          "kind": "value_struct",
+          "ref": "Selection"
+        },
+        "kind": "optional"
+      },
+      "zig_path": "screenSelectionOrdered",
+      "symbol": "zg_screen_selection_ordered"
+    },
+    {
       "covers": [
         "Screen.startHyperlink"
       ],
@@ -2633,7 +2861,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 632,
+            "line": 673,
             "column": 34
           },
           "type": {
@@ -2647,7 +2875,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 632,
+            "line": 673,
             "column": 51
           },
           "type": {
@@ -2678,7 +2906,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 632,
+        "line": 673,
         "column": 8
       },
       "zig_path": "newSearch",
@@ -2698,7 +2926,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 639,
+            "line": 680,
             "column": 34
           },
           "type": {
@@ -2712,7 +2940,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 639,
+        "line": 680,
         "column": 8
       },
       "zig_path": "freeSearch",
@@ -2864,7 +3092,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 765,
+            "line": 806,
             "column": 45
           },
           "type": {
@@ -2895,7 +3123,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 765,
+        "line": 806,
         "column": 8
       },
       "zig_path": "printAttributesInto",
@@ -2916,7 +3144,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 774,
+            "line": 815,
             "column": 39
           },
           "type": {
@@ -2947,7 +3175,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "root.zig",
-        "line": 774,
+        "line": 815,
         "column": 8
       },
       "zig_path": "historyString",
@@ -2968,7 +3196,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 779,
+            "line": 820,
             "column": 38
           },
           "type": {
@@ -2999,7 +3227,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "root.zig",
-        "line": 779,
+        "line": 820,
         "column": 8
       },
       "zig_path": "screenString",
@@ -3340,7 +3568,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 899,
+            "line": 1023,
             "column": 47
           },
           "type": {
@@ -3357,7 +3585,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 899,
+        "line": 1023,
         "column": 8
       },
       "zig_path": "setScrollbackMaxBytes",
@@ -3374,7 +3602,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 904,
+        "line": 1028,
         "column": 8
       },
       "zig_path": "clearScrollbackMaxBytes",
@@ -3394,7 +3622,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 909,
+            "line": 1033,
             "column": 47
           },
           "type": {
@@ -3411,7 +3639,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 909,
+        "line": 1033,
         "column": 8
       },
       "zig_path": "setScrollbackMaxLines",
@@ -3428,7 +3656,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 914,
+        "line": 1038,
         "column": 8
       },
       "zig_path": "clearScrollbackMaxLines",
@@ -3761,6 +3989,43 @@
       "symbol": "zg_terminal_plain_string_unwrapped"
     },
     {
+      "name": "Format",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "opts",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "kind": "value_struct",
+            "ref": "FormatOptions"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "writer",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "kind": "io_writer"
+          }
+        }
+      ],
+      "receiver": "Terminal",
+      "return": {
+        "error_set": [
+          "WriteFailed"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "void"
+        }
+      },
+      "zig_path": "formatTerminal",
+      "symbol": "zg_terminal_format"
+    },
+    {
       "doc": "The current background color: what OSC 11 set, else the default.",
       "name": "backgroundColor",
       "ownership": "borrowed",
@@ -3777,7 +4042,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 942,
+        "line": 1066,
         "column": 8
       },
       "zig_path": "backgroundColor",
@@ -3800,7 +4065,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 947,
+        "line": 1071,
         "column": 8
       },
       "zig_path": "foregroundColor",
@@ -3823,7 +4088,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 953,
+        "line": 1077,
         "column": 8
       },
       "zig_path": "cursorColor",
@@ -3840,7 +4105,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 958,
+            "line": 1082,
             "column": 44
           },
           "type": {
@@ -3860,7 +4125,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 958,
+        "line": 1082,
         "column": 8
       },
       "zig_path": "paletteColor",
@@ -3877,7 +4142,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 964,
+            "line": 1088,
             "column": 45
           },
           "type": {
@@ -3902,7 +4167,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 964,
+        "line": 1088,
         "column": 8
       },
       "zig_path": "paletteColors",
@@ -3919,7 +4184,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 972,
+            "line": 1096,
             "column": 51
           },
           "type": {
@@ -3936,7 +4201,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 972,
+        "line": 1096,
         "column": 8
       },
       "zig_path": "setDefaultBackgroundColor",
@@ -3953,7 +4218,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 977,
+            "line": 1101,
             "column": 51
           },
           "type": {
@@ -3970,7 +4235,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 977,
+        "line": 1101,
         "column": 8
       },
       "zig_path": "setDefaultForegroundColor",
@@ -3987,7 +4252,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 982,
+            "line": 1106,
             "column": 47
           },
           "type": {
@@ -4004,7 +4269,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 982,
+        "line": 1106,
         "column": 8
       },
       "zig_path": "setDefaultCursorColor",
@@ -4021,7 +4286,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 992,
+            "line": 1116,
             "column": 43
           },
           "type": {
@@ -4036,7 +4301,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 992,
+        "line": 1116,
         "column": 8
       },
       "zig_path": "modeEnabled",
@@ -4053,7 +4318,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1000,
+            "line": 1124,
             "column": 33
           },
           "type": {
@@ -4067,7 +4332,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1000,
+            "line": 1124,
             "column": 45
           },
           "type": {
@@ -4081,7 +4346,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1000,
+        "line": 1124,
         "column": 8
       },
       "zig_path": "setMode",
@@ -4213,7 +4478,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 874,
+            "line": 998,
             "column": 38
           },
           "type": {
@@ -4235,7 +4500,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 874,
+        "line": 998,
         "column": 8
       },
       "zig_path": "setAttribute",
@@ -4297,7 +4562,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 888,
+            "line": 1012,
             "column": 47
           },
           "type": {
@@ -4311,7 +4576,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 888,
+        "line": 1012,
         "column": 8
       },
       "zig_path": "setDefaultCursorBlink",
@@ -4328,7 +4593,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 893,
+        "line": 1017,
         "column": 8
       },
       "zig_path": "resetDefaultCursorBlink",
@@ -4666,7 +4931,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1337,
+            "line": 1461,
             "column": 23
           },
           "type": {
@@ -4688,7 +4953,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1337,
+        "line": 1461,
         "column": 8
       },
       "symbol": "zg_new_render_state"
@@ -4707,7 +4972,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1344,
+            "line": 1468,
             "column": 40
           },
           "type": {
@@ -4722,7 +4987,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1344,
+        "line": 1468,
         "column": 8
       },
       "zig_path": "freeRenderState",
@@ -4937,6 +5202,136 @@
       "symbol": "zg_render_state_cursor_style"
     },
     {
+      "name": "graphemes",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "x",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "in",
+          "name": "y",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "out",
+          "name": "dst",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "semantic": "codepoint",
+          "type": {
+            "const": false,
+            "element": {
+              "bits": 32,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          },
+          "written": "return"
+        }
+      ],
+      "receiver": "RenderState",
+      "return": {
+        "error_set": [
+          "NoSpaceLeft"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "bits": 64,
+          "is_usize": true,
+          "kind": "int",
+          "signed": false
+        }
+      },
+      "zig_path": "renderGraphemes",
+      "symbol": "zg_render_state_graphemes"
+    },
+    {
+      "covers": [
+        "RenderState.linkCells"
+      ],
+      "name": "hyperlinkAt",
+      "ownership": "caller",
+      "params": [
+        {
+          "direction": "in",
+          "injected": "allocator",
+          "name": "allocator",
+          "name_source": "fallback",
+          "retention": "borrowed",
+          "type": {
+            "kind": "void"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "x",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "in",
+          "name": "y",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "receiver": "RenderState",
+      "release": "freeString",
+      "return": {
+        "error_set": [
+          "OutOfMemory"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "child": {
+            "const": true,
+            "element": {
+              "bits": 8,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          },
+          "kind": "optional"
+        }
+      },
+      "return_semantic": "utf8_string",
+      "zig_path": "renderHyperlinkAt",
+      "symbol": "zg_render_state_hyperlink_at"
+    },
+    {
       "go_owner": "KittyImages",
       "name": "newKittyImages",
       "ownership": "caller",
@@ -4948,7 +5343,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1601,
+            "line": 1769,
             "column": 23
           },
           "type": {
@@ -4970,7 +5365,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1601,
+        "line": 1769,
         "column": 8
       },
       "symbol": "zg_new_kitty_images"
@@ -4986,7 +5381,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1607,
+            "line": 1775,
             "column": 44
           },
           "type": {
@@ -5000,7 +5395,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1607,
+        "line": 1775,
         "column": 8
       },
       "zig_path": "freeKittyImages",
@@ -5144,7 +5539,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1763,
+            "line": 1931,
             "column": 36
           },
           "type": {
@@ -5165,7 +5560,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1763,
+        "line": 1931,
         "column": 8
       },
       "zig_path": "kittyImage",
@@ -5182,7 +5577,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1782,
+            "line": 1950,
             "column": 40
           },
           "type": {
@@ -5198,7 +5593,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1782,
+            "line": 1950,
             "column": 55
           },
           "type": {
@@ -5229,7 +5624,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1782,
+        "line": 1950,
         "column": 8
       },
       "zig_path": "kittyImageData",
@@ -5999,6 +6394,170 @@
       "layout": "extern",
       "name": "Selection",
       "zig_path": "root.Selection"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "name": "plain",
+          "value": 0
+        },
+        {
+          "name": "vt",
+          "value": 1
+        },
+        {
+          "name": "html",
+          "value": 2
+        }
+      ],
+      "kind": "enum",
+      "name": "FormatterFormat",
+      "tag_type": {
+        "bits": 8,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "text": true,
+      "zig_path": "root.FormatterFormat"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "name": "format",
+          "type": {
+            "kind": "enum",
+            "ref": "FormatterFormat"
+          }
+        },
+        {
+          "name": "unwrap",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
+          "name": "keep_trailing_whitespace",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
+          "name": "cursor",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
+          "name": "no_styles",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
+          "name": "no_hyperlinks",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
+          "name": "resolve_palette",
+          "type": {
+            "kind": "bool"
+          }
+        }
+      ],
+      "kind": "value_struct",
+      "layout": "extern",
+      "name": "FormatOptions",
+      "zig_path": "root.FormatOptions"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "name": "left",
+          "value": 0
+        },
+        {
+          "name": "right",
+          "value": 1
+        },
+        {
+          "name": "up",
+          "value": 2
+        },
+        {
+          "name": "down",
+          "value": 3
+        },
+        {
+          "name": "home",
+          "value": 4
+        },
+        {
+          "name": "end",
+          "value": 5
+        },
+        {
+          "name": "page_up",
+          "value": 6
+        },
+        {
+          "name": "page_down",
+          "value": 7
+        },
+        {
+          "name": "beginning_of_line",
+          "value": 8
+        },
+        {
+          "name": "end_of_line",
+          "value": 9
+        }
+      ],
+      "kind": "enum",
+      "name": "SelectionAdjustment",
+      "tag_type": {
+        "bits": 4,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "text": true,
+      "zig_path": "lib.enum.Enum(.{ .zig = {} },&.{ &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)] }[0..10])"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "name": "forward",
+          "value": 0
+        },
+        {
+          "name": "reverse",
+          "value": 1
+        },
+        {
+          "name": "mirrored_forward",
+          "value": 2
+        },
+        {
+          "name": "mirrored_reverse",
+          "value": 3
+        }
+      ],
+      "kind": "enum",
+      "name": "SelectionOrder",
+      "tag_type": {
+        "bits": 2,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "zig_path": "lib.enum.Enum(.{ .zig = {} },&.{ &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)] }[0..4])#SelectionOrder"
     },
     {
       "exhaustive": true,

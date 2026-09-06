@@ -601,10 +601,51 @@ pub fn screenSelection(self: *Screen) ?Selection {
 /// Replace the screen's selection. Returns false, leaving the selection as it
 /// was, if either end is outside the screen.
 pub fn screenSetSelection(self: *Screen, sel: Selection) !bool {
-    const start = self.pages.pin(.{ .screen = .{ .x = sel.start_x, .y = sel.start_y } }) orelse return false;
-    const end = self.pages.pin(.{ .screen = .{ .x = sel.end_x, .y = sel.end_y } }) orelse return false;
-    try self.select(vt.Selection.init(start, end, sel.rectangle));
+    try self.select(selectionToPins(self, sel) orelse return false);
     return true;
+}
+
+/// How `screenSelectionAdjust` moves the end of a selection.
+pub const SelectionAdjustment = vt.Selection.Adjustment;
+
+/// The direction a selection was made in. `mirrored_*` are rectangle
+/// selections whose corners are top-right and bottom-left.
+pub const SelectionOrder = vt.Selection.Order;
+
+fn selectionToPins(self: *Screen, sel: Selection) ?vt.Selection {
+    const start = self.pages.pin(.{ .screen = .{ .x = sel.start_x, .y = sel.start_y } }) orelse return null;
+    const end = self.pages.pin(.{ .screen = .{ .x = sel.end_x, .y = sel.end_y } }) orelse return null;
+    return vt.Selection.init(start, end, sel.rectangle);
+}
+
+/// Whether the screen cell at `x`, `y` (screen coordinates) is inside `sel`.
+/// False when either is outside the screen.
+pub fn screenSelectionContains(self: *Screen, sel: Selection, x: u16, y: u32) bool {
+    const inner = selectionToPins(self, sel) orelse return false;
+    const pin = self.pages.pin(.{ .screen = .{ .x = x, .y = y } }) orelse return false;
+    return inner.contains(self, pin);
+}
+
+/// Move the end of `sel` by `adjustment` -- what shift+arrow does to a
+/// selection -- and return the result. Null if `sel` is outside the screen.
+pub fn screenSelectionAdjust(self: *Screen, sel: Selection, adjustment: SelectionAdjustment) ?Selection {
+    var inner = selectionToPins(self, sel) orelse return null;
+    inner.adjust(self, adjustment);
+    return Selection.fromPins(&self.pages, inner.start(), inner.end(), inner.rectangle);
+}
+
+/// The direction `sel` was made in. Null if `sel` is outside the screen.
+pub fn screenSelectionOrder(self: *Screen, sel: Selection) ?SelectionOrder {
+    const inner = selectionToPins(self, sel) orelse return null;
+    return inner.order(self);
+}
+
+/// `sel` with its ends swapped as needed to run in `desired` order. Null if
+/// `sel` is outside the screen.
+pub fn screenSelectionOrdered(self: *Screen, sel: Selection, desired: SelectionOrder) ?Selection {
+    const inner = selectionToPins(self, sel) orelse return null;
+    const result = inner.ordered(self, desired);
+    return Selection.fromPins(&self.pages, result.start(), result.end(), result.rectangle);
 }
 
 /// The screen row shown at the top of the viewport: subtract it from a
@@ -778,6 +819,89 @@ pub fn historyString(self: *Terminal, gpa: Allocator) ![]const u8 {
 /// The full screen: scrollback followed by the active area.
 pub fn screenString(self: *Terminal, gpa: Allocator) ![]const u8 {
     return try self.screens.active.dumpStringAlloc(gpa, .{ .screen = .{} });
+}
+
+/// What `formatTerminal` and `Screen.format` emit. Declared here rather than
+/// re-exported because ghostty's enum has a two-bit tag, which cannot sit in
+/// the extern `FormatOptions`.
+pub const FormatterFormat = enum(u8) {
+    /// Plain text.
+    plain,
+    /// VT sequences that replay colors, styles and links; lines end in CRLF.
+    vt,
+    /// HTML with inline styles; palette colors become CSS variables unless
+    /// `resolve_palette` is set.
+    html,
+
+    fn toGhostty(self: FormatterFormat) vt.formatter.Format {
+        return switch (self) {
+            .plain => .plain,
+            .vt => .vt,
+            .html => .html,
+        };
+    }
+};
+
+/// How the formatters render screen contents. Every field is off in its
+/// zero value, so a Go `FormatOptions{}` is plain text, trimmed, with styles
+/// and links included where the format can carry them.
+pub const FormatOptions = extern struct {
+    format: FormatterFormat = .plain,
+    /// Join soft-wrapped lines back into one instead of emitting them as
+    /// they are laid out at the current width.
+    unwrap: bool = false,
+    /// Keep trailing spaces on lines that have other text. Trailing blank
+    /// lines are always dropped.
+    keep_trailing_whitespace: bool = false,
+    /// Include the cursor position. Styled formats only.
+    cursor: bool = false,
+    /// Leave out text styles. Styled formats only.
+    no_styles: bool = false,
+    /// Leave out OSC 8 hyperlinks. Styled formats only.
+    no_hyperlinks: bool = false,
+    /// Resolve palette indices to the terminal's current RGB values rather
+    /// than emitting the index. Styled formats only.
+    resolve_palette: bool = false,
+
+    fn toGhostty(self: FormatOptions) vt.formatter.Options {
+        return .{ .emit = self.format.toGhostty(), .unwrap = self.unwrap, .trim = !self.keep_trailing_whitespace };
+    }
+
+    fn screenExtra(self: FormatOptions) vt.formatter.ScreenFormatter.Extra {
+        var extra: vt.formatter.ScreenFormatter.Extra = .none;
+        extra.cursor = self.cursor;
+        extra.style = !self.no_styles;
+        extra.hyperlink = !self.no_hyperlinks;
+        return extra;
+    }
+};
+
+/// Format the active screen with the terminal's colors and, for styled
+/// output, its palette, modes and other state a replay needs.
+pub fn formatTerminal(self: *Terminal, opts: FormatOptions, writer: *std.Io.Writer) !void {
+    var f = vt.formatter.TerminalFormatter.init(self, opts.toGhostty());
+    f.opts.background = self.colors.background.get();
+    f.opts.foreground = self.colors.foreground.get();
+    if (opts.resolve_palette) f.opts.palette = &self.colors.palette.current;
+    try f.format(writer);
+}
+
+/// Format a whole screen, scrollback included.
+pub fn screenFormat(self: *Screen, opts: FormatOptions, writer: *std.Io.Writer) !void {
+    var f = vt.formatter.ScreenFormatter.init(self, opts.toGhostty());
+    f.extra = opts.screenExtra();
+    try f.format(writer);
+}
+
+/// Format the part of a screen inside `sel`. Returns false, writing
+/// nothing, if `sel` is outside the screen.
+pub fn screenFormatSelection(self: *Screen, opts: FormatOptions, sel: Selection, writer: *std.Io.Writer) !bool {
+    const inner = selectionToPins(self, sel) orelse return false;
+    var f = vt.formatter.ScreenFormatter.init(self, opts.toGhostty());
+    f.content = .{ .selection = inner };
+    f.extra = opts.screenExtra();
+    try f.format(writer);
+    return true;
 }
 
 /// The underline style an `Attribute` selects.
@@ -1415,6 +1539,50 @@ pub fn renderCells(self: *RenderState, dst: []RenderCell) !usize {
         }
     }
     return total;
+}
+
+/// The codepoints of the cell at viewport `x`, `y`: the base codepoint
+/// followed by any combining marks or ZWJ sequence members, which
+/// `RenderCell.codepoint` alone drops. Copies them into `dst` and returns
+/// how many were written; zero for an empty cell or a position off the grid.
+/// `error.NoSpaceLeft` if `dst` is shorter than the cluster.
+pub fn renderGraphemes(self: *RenderState, x: u16, y: u16, dst: []u32) !usize {
+    if (x >= self.cols or y >= self.rows) return 0;
+    const cells = self.row_data.items(.cells)[y];
+    const cell = cells.items(.raw)[x];
+    switch (cell.content_tag) {
+        .codepoint => {
+            // A blank cell is a codepoint of zero, the same rule `renderCells`
+            // applies.
+            if (cell.content.codepoint.data == 0) return 0;
+            if (dst.len < 1) return error.NoSpaceLeft;
+            dst[0] = cell.content.codepoint.data;
+            return 1;
+        },
+        .codepoint_grapheme => {
+            const extra = cells.items(.grapheme)[x];
+            if (dst.len < 1 + extra.len) return error.NoSpaceLeft;
+            dst[0] = cell.content.codepoint.data;
+            for (dst[1 .. 1 + extra.len], extra) |*out, cp| out.* = cp;
+            return 1 + extra.len;
+        },
+        else => return 0,
+    }
+}
+
+/// The OSC 8 hyperlink under viewport `x`, `y`, or null when the cell has
+/// none. Valid only until the terminal changes: like ghostty's own
+/// `linkCells`, this reads page memory through the pins `renderUpdate`
+/// captured, so call it right after an update.
+pub fn renderHyperlinkAt(self: *RenderState, gpa: Allocator, x: u16, y: u16) !?[]const u8 {
+    if (x >= self.cols or y >= self.rows) return null;
+    const pin = self.row_data.items(.pin)[y];
+    const pg = pin.node.page();
+    const rac = pg.getRowAndCell(x, pin.y);
+    if (!rac.cell.hyperlink) return null;
+    const id = pg.lookupHyperlink(rac.cell) orelse return null;
+    const entry = pg.hyperlink_set.get(pg.memory, id);
+    return try gpa.dupe(u8, entry.uri.slice(pg.memory));
 }
 
 fn packRgb(c: vt.color.RGB) u32 {

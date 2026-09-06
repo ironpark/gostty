@@ -644,6 +644,186 @@ func (value *Mode) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// FormatterFormat represents the corresponding Zig enum.
+type FormatterFormat uint8
+
+const (
+	// FormatterFormatPlain corresponds to the Zig tag plain.
+	FormatterFormatPlain FormatterFormat = 0
+	// FormatterFormatVt corresponds to the Zig tag vt.
+	FormatterFormatVt FormatterFormat = 1
+	// FormatterFormatHtml corresponds to the Zig tag html.
+	FormatterFormatHtml FormatterFormat = 2
+)
+
+// String returns the Zig tag name.
+func (value FormatterFormat) String() string {
+	switch value {
+	case FormatterFormatPlain:
+		return "plain"
+	case FormatterFormatVt:
+		return "vt"
+	case FormatterFormatHtml:
+		return "html"
+	default:
+		return "FormatterFormat(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// ParseFormatterFormat returns the FormatterFormat named by text, which is a Zig tag name.
+func ParseFormatterFormat(text string) (FormatterFormat, error) {
+	switch text {
+	case "plain":
+		return FormatterFormatPlain, nil
+	case "vt":
+		return FormatterFormatVt, nil
+	case "html":
+		return FormatterFormatHtml, nil
+	}
+	return 0, &EnumParseError{Type: "FormatterFormat", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value FormatterFormat) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseFormatterFormat.
+func (value *FormatterFormat) UnmarshalText(text []byte) error {
+	parsed, err := ParseFormatterFormat(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// SelectionAdjustment represents the corresponding Zig enum.
+type SelectionAdjustment uint8
+
+const (
+	// SelectionAdjustmentLeft corresponds to the Zig tag left.
+	SelectionAdjustmentLeft SelectionAdjustment = 0
+	// SelectionAdjustmentRight corresponds to the Zig tag right.
+	SelectionAdjustmentRight SelectionAdjustment = 1
+	// SelectionAdjustmentUp corresponds to the Zig tag up.
+	SelectionAdjustmentUp SelectionAdjustment = 2
+	// SelectionAdjustmentDown corresponds to the Zig tag down.
+	SelectionAdjustmentDown SelectionAdjustment = 3
+	// SelectionAdjustmentHome corresponds to the Zig tag home.
+	SelectionAdjustmentHome SelectionAdjustment = 4
+	// SelectionAdjustmentEnd corresponds to the Zig tag end.
+	SelectionAdjustmentEnd SelectionAdjustment = 5
+	// SelectionAdjustmentPageUp corresponds to the Zig tag page_up.
+	SelectionAdjustmentPageUp SelectionAdjustment = 6
+	// SelectionAdjustmentPageDown corresponds to the Zig tag page_down.
+	SelectionAdjustmentPageDown SelectionAdjustment = 7
+	// SelectionAdjustmentBeginningOfLine corresponds to the Zig tag beginning_of_line.
+	SelectionAdjustmentBeginningOfLine SelectionAdjustment = 8
+	// SelectionAdjustmentEndOfLine corresponds to the Zig tag end_of_line.
+	SelectionAdjustmentEndOfLine SelectionAdjustment = 9
+)
+
+// String returns the Zig tag name.
+func (value SelectionAdjustment) String() string {
+	switch value {
+	case SelectionAdjustmentLeft:
+		return "left"
+	case SelectionAdjustmentRight:
+		return "right"
+	case SelectionAdjustmentUp:
+		return "up"
+	case SelectionAdjustmentDown:
+		return "down"
+	case SelectionAdjustmentHome:
+		return "home"
+	case SelectionAdjustmentEnd:
+		return "end"
+	case SelectionAdjustmentPageUp:
+		return "page_up"
+	case SelectionAdjustmentPageDown:
+		return "page_down"
+	case SelectionAdjustmentBeginningOfLine:
+		return "beginning_of_line"
+	case SelectionAdjustmentEndOfLine:
+		return "end_of_line"
+	default:
+		return "SelectionAdjustment(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// ParseSelectionAdjustment returns the SelectionAdjustment named by text, which is a Zig tag name.
+func ParseSelectionAdjustment(text string) (SelectionAdjustment, error) {
+	switch text {
+	case "left":
+		return SelectionAdjustmentLeft, nil
+	case "right":
+		return SelectionAdjustmentRight, nil
+	case "up":
+		return SelectionAdjustmentUp, nil
+	case "down":
+		return SelectionAdjustmentDown, nil
+	case "home":
+		return SelectionAdjustmentHome, nil
+	case "end":
+		return SelectionAdjustmentEnd, nil
+	case "page_up":
+		return SelectionAdjustmentPageUp, nil
+	case "page_down":
+		return SelectionAdjustmentPageDown, nil
+	case "beginning_of_line":
+		return SelectionAdjustmentBeginningOfLine, nil
+	case "end_of_line":
+		return SelectionAdjustmentEndOfLine, nil
+	}
+	return 0, &EnumParseError{Type: "SelectionAdjustment", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value SelectionAdjustment) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseSelectionAdjustment.
+func (value *SelectionAdjustment) UnmarshalText(text []byte) error {
+	parsed, err := ParseSelectionAdjustment(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// SelectionOrder represents the corresponding Zig enum.
+type SelectionOrder uint8
+
+const (
+	// SelectionOrderForward corresponds to the Zig tag forward.
+	SelectionOrderForward SelectionOrder = 0
+	// SelectionOrderReverse corresponds to the Zig tag reverse.
+	SelectionOrderReverse SelectionOrder = 1
+	// SelectionOrderMirroredForward corresponds to the Zig tag mirrored_forward.
+	SelectionOrderMirroredForward SelectionOrder = 2
+	// SelectionOrderMirroredReverse corresponds to the Zig tag mirrored_reverse.
+	SelectionOrderMirroredReverse SelectionOrder = 3
+)
+
+// String returns the Zig tag name.
+func (value SelectionOrder) String() string {
+	switch value {
+	case SelectionOrderForward:
+		return "forward"
+	case SelectionOrderReverse:
+		return "reverse"
+	case SelectionOrderMirroredForward:
+		return "mirrored_forward"
+	case SelectionOrderMirroredReverse:
+		return "mirrored_reverse"
+	default:
+		return "SelectionOrder(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
 // StreamEvent represents the corresponding Zig enum.
 type StreamEvent uint8
 

@@ -313,7 +313,7 @@ func zigoCleanupStream(state zigoStreamCleanupState) {
 }
 
 // Close releases the native Stream resources. It is safe to call more than once.
-// It returns *HandleInUseError while a call is still inside native; otherwise the error is nil.
+// The error result is always nil; it exists so Stream satisfies io.Closer.
 // Close does not wait: a call still inside native keeps the resources until it
 // returns, and every call made after Close fails with *HandleError.
 func (s *Stream) Close() error {
@@ -644,7 +644,7 @@ func zigoCleanupSearch(state zigoSearchCleanupState) {
 }
 
 // Close releases the native Search resources. It is safe to call more than once.
-// It returns *HandleInUseError while a call is still inside native; otherwise the error is nil.
+// The error result is always nil; it exists so Search satisfies io.Closer.
 // Close does not wait: a call still inside native keeps the resources until it
 // returns, and every call made after Close fails with *HandleError.
 func (s *Search) Close() error {
@@ -767,7 +767,7 @@ func zigoCleanupRenderState(state zigoRenderStateCleanupState) {
 }
 
 // Close releases the native RenderState resources. It is safe to call more than once.
-// It returns *HandleInUseError while a call is still inside native; otherwise the error is nil.
+// The error result is always nil; it exists so RenderState satisfies io.Closer.
 // Close does not wait: a call still inside native keeps the resources until it
 // returns, and every call made after Close fails with *HandleError.
 func (r *RenderState) Close() error {
@@ -889,7 +889,7 @@ func zigoCleanupKittyImages(state zigoKittyImagesCleanupState) {
 }
 
 // Close releases the native KittyImages resources. It is safe to call more than once.
-// It returns *HandleInUseError while a call is still inside native; otherwise the error is nil.
+// The error result is always nil; it exists so KittyImages satisfies io.Closer.
 // Close does not wait: a call still inside native keeps the resources until it
 // returns, and every call made after Close fails with *HandleError.
 func (k *KittyImages) Close() error {
