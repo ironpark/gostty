@@ -363,13 +363,9 @@ func (g *game) Update() error {
 // drainEvents acts on what the program asked of the emulator rather than of the
 // screen. libghostty-vt parses OSC; doing something about it is ours.
 func (g *game) drainEvents() error {
-	for {
-		event, ok, err := g.stream.NextEvent()
+	for event, err := range g.stream.Events() {
 		if err != nil {
 			return err
-		}
-		if !ok {
-			return nil
 		}
 		switch event {
 		case gostty.StreamEventBell:
@@ -406,6 +402,7 @@ func (g *game) drainEvents() error {
 			}
 		}
 	}
+	return nil
 }
 
 // progressReport reads OSC 9;4, which a long-running command uses to say how

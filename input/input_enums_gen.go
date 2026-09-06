@@ -4,6 +4,19 @@ package input
 
 import "strconv"
 
+// EnumParseError reports text that names no value of a generated enum.
+type EnumParseError struct {
+	// Type is the Go enum type name.
+	Type string
+	// Text is the rejected input.
+	Text string
+}
+
+// Error implements error.
+func (err *EnumParseError) Error() string {
+	return "zigo: " + err.Type + ": unknown value " + strconv.Quote(err.Text)
+}
+
 // Key represents the corresponding Zig enum.
 type Key int32
 
@@ -722,6 +735,380 @@ func (value Key) String() string {
 	}
 }
 
+// ParseKey returns the Key named by text, which is a Zig tag name.
+func ParseKey(text string) (Key, error) {
+	switch text {
+	case "unidentified":
+		return KeyUnidentified, nil
+	case "backquote":
+		return KeyBackquote, nil
+	case "backslash":
+		return KeyBackslash, nil
+	case "bracket_left":
+		return KeyBracketLeft, nil
+	case "bracket_right":
+		return KeyBracketRight, nil
+	case "comma":
+		return KeyComma, nil
+	case "digit_0":
+		return KeyDigit0, nil
+	case "digit_1":
+		return KeyDigit1, nil
+	case "digit_2":
+		return KeyDigit2, nil
+	case "digit_3":
+		return KeyDigit3, nil
+	case "digit_4":
+		return KeyDigit4, nil
+	case "digit_5":
+		return KeyDigit5, nil
+	case "digit_6":
+		return KeyDigit6, nil
+	case "digit_7":
+		return KeyDigit7, nil
+	case "digit_8":
+		return KeyDigit8, nil
+	case "digit_9":
+		return KeyDigit9, nil
+	case "equal":
+		return KeyEqual, nil
+	case "intl_backslash":
+		return KeyIntlBackslash, nil
+	case "intl_ro":
+		return KeyIntlRo, nil
+	case "intl_yen":
+		return KeyIntlYen, nil
+	case "key_a":
+		return KeyKeyA, nil
+	case "key_b":
+		return KeyKeyB, nil
+	case "key_c":
+		return KeyKeyC, nil
+	case "key_d":
+		return KeyKeyD, nil
+	case "key_e":
+		return KeyKeyE, nil
+	case "key_f":
+		return KeyKeyF, nil
+	case "key_g":
+		return KeyKeyG, nil
+	case "key_h":
+		return KeyKeyH, nil
+	case "key_i":
+		return KeyKeyI, nil
+	case "key_j":
+		return KeyKeyJ, nil
+	case "key_k":
+		return KeyKeyK, nil
+	case "key_l":
+		return KeyKeyL, nil
+	case "key_m":
+		return KeyKeyM, nil
+	case "key_n":
+		return KeyKeyN, nil
+	case "key_o":
+		return KeyKeyO, nil
+	case "key_p":
+		return KeyKeyP, nil
+	case "key_q":
+		return KeyKeyQ, nil
+	case "key_r":
+		return KeyKeyR, nil
+	case "key_s":
+		return KeyKeyS, nil
+	case "key_t":
+		return KeyKeyT, nil
+	case "key_u":
+		return KeyKeyU, nil
+	case "key_v":
+		return KeyKeyV, nil
+	case "key_w":
+		return KeyKeyW, nil
+	case "key_x":
+		return KeyKeyX, nil
+	case "key_y":
+		return KeyKeyY, nil
+	case "key_z":
+		return KeyKeyZ, nil
+	case "minus":
+		return KeyMinus, nil
+	case "period":
+		return KeyPeriod, nil
+	case "quote":
+		return KeyQuote, nil
+	case "semicolon":
+		return KeySemicolon, nil
+	case "slash":
+		return KeySlash, nil
+	case "alt_left":
+		return KeyAltLeft, nil
+	case "alt_right":
+		return KeyAltRight, nil
+	case "backspace":
+		return KeyBackspace, nil
+	case "caps_lock":
+		return KeyCapsLock, nil
+	case "context_menu":
+		return KeyContextMenu, nil
+	case "control_left":
+		return KeyControlLeft, nil
+	case "control_right":
+		return KeyControlRight, nil
+	case "enter":
+		return KeyEnter, nil
+	case "meta_left":
+		return KeyMetaLeft, nil
+	case "meta_right":
+		return KeyMetaRight, nil
+	case "shift_left":
+		return KeyShiftLeft, nil
+	case "shift_right":
+		return KeyShiftRight, nil
+	case "space":
+		return KeySpace, nil
+	case "tab":
+		return KeyTab, nil
+	case "convert":
+		return KeyConvert, nil
+	case "kana_mode":
+		return KeyKanaMode, nil
+	case "non_convert":
+		return KeyNonConvert, nil
+	case "delete":
+		return KeyDelete, nil
+	case "end":
+		return KeyEnd, nil
+	case "help":
+		return KeyHelp, nil
+	case "home":
+		return KeyHome, nil
+	case "insert":
+		return KeyInsert, nil
+	case "page_down":
+		return KeyPageDown, nil
+	case "page_up":
+		return KeyPageUp, nil
+	case "arrow_down":
+		return KeyArrowDown, nil
+	case "arrow_left":
+		return KeyArrowLeft, nil
+	case "arrow_right":
+		return KeyArrowRight, nil
+	case "arrow_up":
+		return KeyArrowUp, nil
+	case "num_lock":
+		return KeyNumLock, nil
+	case "numpad_0":
+		return KeyNumpad0, nil
+	case "numpad_1":
+		return KeyNumpad1, nil
+	case "numpad_2":
+		return KeyNumpad2, nil
+	case "numpad_3":
+		return KeyNumpad3, nil
+	case "numpad_4":
+		return KeyNumpad4, nil
+	case "numpad_5":
+		return KeyNumpad5, nil
+	case "numpad_6":
+		return KeyNumpad6, nil
+	case "numpad_7":
+		return KeyNumpad7, nil
+	case "numpad_8":
+		return KeyNumpad8, nil
+	case "numpad_9":
+		return KeyNumpad9, nil
+	case "numpad_add":
+		return KeyNumpadAdd, nil
+	case "numpad_backspace":
+		return KeyNumpadBackspace, nil
+	case "numpad_clear":
+		return KeyNumpadClear, nil
+	case "numpad_clear_entry":
+		return KeyNumpadClearEntry, nil
+	case "numpad_comma":
+		return KeyNumpadComma, nil
+	case "numpad_decimal":
+		return KeyNumpadDecimal, nil
+	case "numpad_divide":
+		return KeyNumpadDivide, nil
+	case "numpad_enter":
+		return KeyNumpadEnter, nil
+	case "numpad_equal":
+		return KeyNumpadEqual, nil
+	case "numpad_memory_add":
+		return KeyNumpadMemoryAdd, nil
+	case "numpad_memory_clear":
+		return KeyNumpadMemoryClear, nil
+	case "numpad_memory_recall":
+		return KeyNumpadMemoryRecall, nil
+	case "numpad_memory_store":
+		return KeyNumpadMemoryStore, nil
+	case "numpad_memory_subtract":
+		return KeyNumpadMemorySubtract, nil
+	case "numpad_multiply":
+		return KeyNumpadMultiply, nil
+	case "numpad_paren_left":
+		return KeyNumpadParenLeft, nil
+	case "numpad_paren_right":
+		return KeyNumpadParenRight, nil
+	case "numpad_subtract":
+		return KeyNumpadSubtract, nil
+	case "numpad_separator":
+		return KeyNumpadSeparator, nil
+	case "numpad_up":
+		return KeyNumpadUp, nil
+	case "numpad_down":
+		return KeyNumpadDown, nil
+	case "numpad_right":
+		return KeyNumpadRight, nil
+	case "numpad_left":
+		return KeyNumpadLeft, nil
+	case "numpad_begin":
+		return KeyNumpadBegin, nil
+	case "numpad_home":
+		return KeyNumpadHome, nil
+	case "numpad_end":
+		return KeyNumpadEnd, nil
+	case "numpad_insert":
+		return KeyNumpadInsert, nil
+	case "numpad_delete":
+		return KeyNumpadDelete, nil
+	case "numpad_page_up":
+		return KeyNumpadPageUp, nil
+	case "numpad_page_down":
+		return KeyNumpadPageDown, nil
+	case "escape":
+		return KeyEscape, nil
+	case "f1":
+		return KeyF1, nil
+	case "f2":
+		return KeyF2, nil
+	case "f3":
+		return KeyF3, nil
+	case "f4":
+		return KeyF4, nil
+	case "f5":
+		return KeyF5, nil
+	case "f6":
+		return KeyF6, nil
+	case "f7":
+		return KeyF7, nil
+	case "f8":
+		return KeyF8, nil
+	case "f9":
+		return KeyF9, nil
+	case "f10":
+		return KeyF10, nil
+	case "f11":
+		return KeyF11, nil
+	case "f12":
+		return KeyF12, nil
+	case "f13":
+		return KeyF13, nil
+	case "f14":
+		return KeyF14, nil
+	case "f15":
+		return KeyF15, nil
+	case "f16":
+		return KeyF16, nil
+	case "f17":
+		return KeyF17, nil
+	case "f18":
+		return KeyF18, nil
+	case "f19":
+		return KeyF19, nil
+	case "f20":
+		return KeyF20, nil
+	case "f21":
+		return KeyF21, nil
+	case "f22":
+		return KeyF22, nil
+	case "f23":
+		return KeyF23, nil
+	case "f24":
+		return KeyF24, nil
+	case "f25":
+		return KeyF25, nil
+	case "fn":
+		return KeyFn, nil
+	case "fn_lock":
+		return KeyFnLock, nil
+	case "print_screen":
+		return KeyPrintScreen, nil
+	case "scroll_lock":
+		return KeyScrollLock, nil
+	case "pause":
+		return KeyPause, nil
+	case "browser_back":
+		return KeyBrowserBack, nil
+	case "browser_favorites":
+		return KeyBrowserFavorites, nil
+	case "browser_forward":
+		return KeyBrowserForward, nil
+	case "browser_home":
+		return KeyBrowserHome, nil
+	case "browser_refresh":
+		return KeyBrowserRefresh, nil
+	case "browser_search":
+		return KeyBrowserSearch, nil
+	case "browser_stop":
+		return KeyBrowserStop, nil
+	case "eject":
+		return KeyEject, nil
+	case "launch_app_1":
+		return KeyLaunchApp1, nil
+	case "launch_app_2":
+		return KeyLaunchApp2, nil
+	case "launch_mail":
+		return KeyLaunchMail, nil
+	case "media_play_pause":
+		return KeyMediaPlayPause, nil
+	case "media_select":
+		return KeyMediaSelect, nil
+	case "media_stop":
+		return KeyMediaStop, nil
+	case "media_track_next":
+		return KeyMediaTrackNext, nil
+	case "media_track_previous":
+		return KeyMediaTrackPrevious, nil
+	case "power":
+		return KeyPower, nil
+	case "sleep":
+		return KeySleep, nil
+	case "audio_volume_down":
+		return KeyAudioVolumeDown, nil
+	case "audio_volume_mute":
+		return KeyAudioVolumeMute, nil
+	case "audio_volume_up":
+		return KeyAudioVolumeUp, nil
+	case "wake_up":
+		return KeyWakeUp, nil
+	case "copy":
+		return KeyCopy, nil
+	case "cut":
+		return KeyCut, nil
+	case "paste":
+		return KeyPaste, nil
+	}
+	return 0, &EnumParseError{Type: "Key", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value Key) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseKey.
+func (value *Key) UnmarshalText(text []byte) error {
+	parsed, err := ParseKey(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
 // KeyAction represents the corresponding Zig enum.
 type KeyAction int32
 
@@ -746,6 +1133,34 @@ func (value KeyAction) String() string {
 	default:
 		return "KeyAction(" + strconv.Itoa(int(value)) + ")"
 	}
+}
+
+// ParseKeyAction returns the KeyAction named by text, which is a Zig tag name.
+func ParseKeyAction(text string) (KeyAction, error) {
+	switch text {
+	case "release":
+		return KeyActionRelease, nil
+	case "press":
+		return KeyActionPress, nil
+	case "repeat":
+		return KeyActionRepeat, nil
+	}
+	return 0, &EnumParseError{Type: "KeyAction", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value KeyAction) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseKeyAction.
+func (value *KeyAction) UnmarshalText(text []byte) error {
+	parsed, err := ParseKeyAction(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
 }
 
 // KeyMod represents the corresponding Zig enum.
@@ -786,6 +1201,40 @@ func (value KeyMod) String() string {
 	}
 }
 
+// ParseKeyMod returns the KeyMod named by text, which is a Zig tag name.
+func ParseKeyMod(text string) (KeyMod, error) {
+	switch text {
+	case "shift":
+		return KeyModShift, nil
+	case "ctrl":
+		return KeyModCtrl, nil
+	case "alt":
+		return KeyModAlt, nil
+	case "super":
+		return KeyModSuper, nil
+	case "caps_lock":
+		return KeyModCapsLock, nil
+	case "num_lock":
+		return KeyModNumLock, nil
+	}
+	return 0, &EnumParseError{Type: "KeyMod", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value KeyMod) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseKeyMod.
+func (value *KeyMod) UnmarshalText(text []byte) error {
+	parsed, err := ParseKeyMod(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
 // FocusEvent represents the corresponding Zig enum.
 type FocusEvent uint8
 
@@ -806,6 +1255,32 @@ func (value FocusEvent) String() string {
 	default:
 		return "FocusEvent(" + strconv.Itoa(int(value)) + ")"
 	}
+}
+
+// ParseFocusEvent returns the FocusEvent named by text, which is a Zig tag name.
+func ParseFocusEvent(text string) (FocusEvent, error) {
+	switch text {
+	case "gained":
+		return FocusEventGained, nil
+	case "lost":
+		return FocusEventLost, nil
+	}
+	return 0, &EnumParseError{Type: "FocusEvent", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value FocusEvent) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseFocusEvent.
+func (value *FocusEvent) UnmarshalText(text []byte) error {
+	parsed, err := ParseFocusEvent(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
 }
 
 // MouseAction represents the corresponding Zig enum.
@@ -832,6 +1307,34 @@ func (value MouseAction) String() string {
 	default:
 		return "MouseAction(" + strconv.Itoa(int(value)) + ")"
 	}
+}
+
+// ParseMouseAction returns the MouseAction named by text, which is a Zig tag name.
+func ParseMouseAction(text string) (MouseAction, error) {
+	switch text {
+	case "press":
+		return MouseActionPress, nil
+	case "release":
+		return MouseActionRelease, nil
+	case "motion":
+		return MouseActionMotion, nil
+	}
+	return 0, &EnumParseError{Type: "MouseAction", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value MouseAction) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseMouseAction.
+func (value *MouseAction) UnmarshalText(text []byte) error {
+	parsed, err := ParseMouseAction(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
 }
 
 // MouseButton represents the corresponding Zig enum.
@@ -894,4 +1397,50 @@ func (value MouseButton) String() string {
 	default:
 		return "MouseButton(" + strconv.Itoa(int(value)) + ")"
 	}
+}
+
+// ParseMouseButton returns the MouseButton named by text, which is a Zig tag name.
+func ParseMouseButton(text string) (MouseButton, error) {
+	switch text {
+	case "unknown":
+		return MouseButtonUnknown, nil
+	case "left":
+		return MouseButtonLeft, nil
+	case "right":
+		return MouseButtonRight, nil
+	case "middle":
+		return MouseButtonMiddle, nil
+	case "four":
+		return MouseButtonFour, nil
+	case "five":
+		return MouseButtonFive, nil
+	case "six":
+		return MouseButtonSix, nil
+	case "seven":
+		return MouseButtonSeven, nil
+	case "eight":
+		return MouseButtonEight, nil
+	case "nine":
+		return MouseButtonNine, nil
+	case "ten":
+		return MouseButtonTen, nil
+	case "eleven":
+		return MouseButtonEleven, nil
+	}
+	return 0, &EnumParseError{Type: "MouseButton", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value MouseButton) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseMouseButton.
+func (value *MouseButton) UnmarshalText(text []byte) error {
+	parsed, err := ParseMouseButton(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
 }

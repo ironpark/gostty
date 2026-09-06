@@ -7,9 +7,50 @@ const zigo = @import("zigo");
 // what the Go build links, so they belong somewhere a Go developer would look.
 const libs_dir: std.Build.InstallDir = .{ .custom = "libs" };
 
+/// One platform the binding library ships for. The Go names are what zigo
+/// writes into the `#cgo <goos>,<goarch>` constraint and the `libs/`
+/// subdirectory the platform's archives install under.
+const Platform = struct {
+    triple: []const u8,
+    goos: []const u8,
+    goarch: []const u8,
+};
+
+// The release matrix. Every platform is built from the same source tree in
+// one `zig build go`, so the generated link directives always describe all
+// of them and never depend on the host that ran the generator. The order is
+// the order of the `#cgo` lines in the generated file; keep it stable so the
+// committed file does not churn.
+//
+// Linux comes first on purpose. zigo configures the ghostty dependency for
+// the first platform and clones its module graph for the rest, and ghostty
+// adds the Apple SDK include paths and libc++ macros to its vendored C++
+// (simdutf, highway) whenever the platform it is configured for is Darwin.
+// Those settings survive the clone and break every non-Darwin platform's
+// compile. Configured for Linux, the graph carries nothing platform-specific
+// and the macOS and Windows clones build with Zig's bundled headers.
+const platforms = [_]Platform{
+    .{ .triple = "aarch64-linux-gnu", .goos = "linux", .goarch = "arm64" },
+    .{ .triple = "x86_64-linux-gnu", .goos = "linux", .goarch = "amd64" },
+    .{ .triple = "aarch64-macos", .goos = "darwin", .goarch = "arm64" },
+    .{ .triple = "x86_64-macos", .goos = "darwin", .goarch = "amd64" },
+    .{ .triple = "aarch64-windows-gnu", .goos = "windows", .goarch = "arm64" },
+    .{ .triple = "x86_64-windows-gnu", .goos = "windows", .goarch = "amd64" },
+};
+
 pub fn build(b: *std.Build) void {
-    const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+
+    var resolved: [platforms.len]std.Build.ResolvedTarget = undefined;
+    for (&resolved, platforms) |*slot, platform| {
+        slot.* = b.resolveTargetQuery(std.Target.Query.parse(.{
+            .arch_os_abi = platform.triple,
+        }) catch @panic("invalid platform triple"));
+    }
+    // zigo builds `target` from the module as given and rebuilds the module
+    // graph for every entry of `targets`, so the first platform is the one the
+    // ghostty dependency is configured for.
+    const target = resolved[0];
 
     const ghostty = b.dependency("ghostty", .{
         .target = target,
@@ -29,9 +70,10 @@ pub fn build(b: *std.Build) void {
     // handlers live in Zig's ubsan_rt. Zig links that runtime when it produces
     // a final binary, but the binding library is a static archive, which Zig
     // does not link -- so nothing pulls the runtime in, and cgo is left with
-    // undefined `__ubsan_handle_*` symbols. zigo forwards the module's own
-    // static link inputs to cgo, but ubsan_rt is the compiler's, not the
-    // module's, so it has to be built here and added to the link line.
+    // undefined `__ubsan_handle_*` symbols. Linking it into the module makes
+    // it one of the module's static link inputs, which zigo installs beside
+    // the binding archive for every platform and names on that platform's
+    // cgo line after the archive, where ld needs it.
     //
     // ghostty guards the same problem for Windows only
     // (`src/build/SharedDeps.zig:986`); consuming the archive from cgo hits it
@@ -40,9 +82,8 @@ pub fn build(b: *std.Build) void {
     // Only in Debug: the release modes do not reference a single one of those
     // symbols, so shipping a three megabyte sanitizer runtime with them would
     // be dead weight on disk and a puzzle for whoever found it there.
-    const debug_ubsan = optimize == .Debug;
-    const ubsan_rt = if (debug_ubsan) rt: {
-        const lib = b.addLibrary(.{
+    if (optimize == .Debug) {
+        const ubsan_rt = b.addLibrary(.{
             .name = "ubsan_rt",
             .linkage = .static,
             .root_module = b.createModule(.{
@@ -53,10 +94,8 @@ pub fn build(b: *std.Build) void {
                 .optimize = optimize,
             }),
         });
-        // ubsan_rt itself calls into compiler_rt for soft-float conversions.
-        lib.bundle_compiler_rt = true;
-        break :rt lib;
-    } else null;
+        gostty.linkLibrary(ubsan_rt);
+    }
 
     const bindings = zigo.addGoBindings(b, .{
         .name = "gostty",
@@ -68,40 +107,23 @@ pub fn build(b: *std.Build) void {
         // Publish at the module root, so the import path is the module itself.
         .go_package_path = ".",
         .target = target,
+        .targets = resolved[1..],
         .optimize = optimize,
         // The archives are installed together under the repository's `libs`,
-        // which is where the generated cgo directives point.
+        // one `<goos>_<goarch>` subdirectory per platform, which is where the
+        // generated cgo directives point.
         .install = .{
             .library_dir = libs_dir,
             .header_dir = .{ .custom = "libs/include" },
         },
-        // Written into the generated cgo directives, so it follows the
-        // optimize mode: see the Makefile, which builds through the generator
-        // for that reason.
-        .cgo_flags = if (debug_ubsan) .{ .extra_ldflags = &.{
-            "${SRCDIR}/../../libs/libubsan_rt.a",
-        } } else null,
     });
 
+    _ = bindings.addStandardSteps(b, .{});
     // A static archive is linked later by cgo, so Zig does not get a final
     // executable link at which to add compiler-rt. Some targets (notably
     // x86_64) call helpers such as __zig_probe_stack from otherwise ordinary
-    // ReleaseSafe code; bundle those helpers into the binding archive so every
-    // cross target is self-contained.
-    bindings.lib.bundle_compiler_rt = true;
-
-    const steps = bindings.addStandardSteps(b, .{});
-    if (ubsan_rt) |lib| {
-        const install_ubsan = b.addInstallArtifact(lib, .{
-            .dest_dir = .{ .override = libs_dir },
-        });
-        b.getInstallStep().dependOn(&install_ubsan.step);
-        // The binding library is useless to cgo without the runtime beside it,
-        // so whatever step produces one produces the other. That includes
-        // generating, which builds the library to read its link inputs and
-        // would otherwise leave `libs/` one archive short.
-        steps.library.dependOn(&install_ubsan.step);
-        steps.update.dependOn(&install_ubsan.step);
-        steps.verify.dependOn(&install_ubsan.step);
-    }
+    // ReleaseSafe code, and ubsan_rt calls into it for soft-float conversions;
+    // bundle those helpers into the binding archive so every platform is
+    // self-contained.
+    for (bindings.native_libraries) |native| native.lib.bundle_compiler_rt = true;
 }

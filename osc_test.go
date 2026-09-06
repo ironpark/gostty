@@ -13,13 +13,9 @@ type event struct {
 func drain(t *testing.T, s *Stream) []event {
 	t.Helper()
 	var out []event
-	for {
-		kind, ok, err := s.NextEvent()
+	for kind, err := range s.Events() {
 		if err != nil {
-			t.Fatalf("NextEvent: %v", err)
-		}
-		if !ok {
-			return out
+			t.Fatalf("Events: %v", err)
 		}
 		ev := event{kind: kind, progress: -1}
 		title, err := s.EventTitle()
@@ -42,6 +38,7 @@ func drain(t *testing.T, s *Stream) []event {
 		}
 		out = append(out, ev)
 	}
+	return out
 }
 
 func TestNoEventsWithoutOSC(t *testing.T) {

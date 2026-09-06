@@ -270,9 +270,13 @@ pub const Stream = struct {
     /// acknowledgements, size reports -- and they go back to the program the
     /// same way a keystroke does. Nothing is written from inside a feed, so
     /// this belongs next to it: feed, then drain.
+    /// Replies are cleared only after the writer flushes successfully. On
+    /// failure the whole batch is kept; retrying a partially completed write
+    /// can repeat bytes the writer already accepted.
     pub fn writeReplies(self: *Stream, writer: *std.Io.Writer) !void {
         if (self.replies.items.len == 0) return;
         try writer.writeAll(self.replies.items);
+        try writer.flush();
         self.replies.clearRetainingCapacity();
     }
 

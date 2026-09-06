@@ -9,14 +9,42 @@ package raw
 #include "zigo_gostty.h"
 */
 import "C"
-import "io"
-import "runtime/cgo"
-import "runtime/debug"
-import "sync"
-import "unsafe"
+import (
+	"io"
+	"runtime/cgo"
+	"runtime/debug"
+	"sync"
+	"sync/atomic"
+	"unsafe"
+)
 
 // LastErrorMessage returns the most recent native panic message for this binding.
 func LastErrorMessage() string { return C.GoString(C.zg_last_error_message()) }
+
+// PanicMessage returns the message of the native panic a status code of -256 or below names.
+func PanicMessage(code int32) string { return C.GoString(C.zg_caught_panic_message(C.int32_t(code))) }
+
+// zigoZeroSlot is what an empty slice or string points at instead of NULL, so
+// the native side always receives a valid address beside a zero length.
+var zigoZeroSlot uint64
+
+// zigoSlicePtr is the address of a slice's first element, or of zigoZeroSlot
+// for an empty slice.
+func zigoSlicePtr[T any](values []T) unsafe.Pointer {
+	if len(values) == 0 {
+		return unsafe.Pointer(&zigoZeroSlot)
+	}
+	return unsafe.Pointer(&values[0])
+}
+
+// zigoStringPtr is the address of a string's bytes, read in place, or of
+// zigoZeroSlot for an empty string.
+func zigoStringPtr(value string) unsafe.Pointer {
+	if len(value) == 0 {
+		return unsafe.Pointer(&zigoZeroSlot)
+	}
+	return unsafe.Pointer(unsafe.StringData(value))
+}
 
 // CallbackState carries one Go callback across the native boundary, and
 // the panic it raises there until the generated caller rethrows it. The
@@ -32,6 +60,13 @@ type CallbackState struct {
 	err      error
 }
 
+// pendingCallbackPanics counts recorded panics no caller has taken yet, so the
+// generated caller can skip the per-slot sweep on the fast path.
+var pendingCallbackPanics atomic.Int64
+
+// PendingCallbackPanics reports how many recorded callback panics no caller has taken yet.
+func PendingCallbackPanics() int64 { return pendingCallbackPanics.Load() }
+
 func (state *CallbackState) record(value any) {
 	state.mu.Lock()
 	defer state.mu.Unlock()
@@ -41,6 +76,7 @@ func (state *CallbackState) record(value any) {
 	state.panicked = true
 	state.value = value
 	state.stack = debug.Stack()
+	pendingCallbackPanics.Add(1)
 }
 
 // TakeCallbackPanic returns and clears the panic the callback behind handle recorded.
@@ -53,6 +89,7 @@ func TakeCallbackPanic(handle cgo.Handle) (any, []byte, bool) {
 	}
 	value, stack := state.value, state.stack
 	state.value, state.stack, state.panicked = nil, nil, false
+	pendingCallbackPanics.Add(-1)
 	return value, stack, true
 }
 
@@ -169,11 +206,7 @@ func UnicodeCodepointWidth(p0 uint32) (uint8, int32) {
 
 // GraphemeWidth calls the generated C ABI wrapper for zg_grapheme_width.
 func GraphemeWidth(cps []uint32) uint8 {
-	var cpsZero C.uint32_t
-	cpsPtr := &cpsZero
-	if len(cps) != 0 {
-		cpsPtr = (*C.uint32_t)(unsafe.Pointer(&cps[0]))
-	}
+	cpsPtr := (*C.uint32_t)(zigoSlicePtr(cps))
 	return uint8(C.zg_grapheme_width(cpsPtr, C.size_t(len(cps))))
 }
 
@@ -228,11 +261,7 @@ func KeyEventSetComposing(self unsafe.Pointer, composing uint8) int32 {
 
 // KeyEventSetUTF8 calls the generated C ABI wrapper for zg_key_event_set_utf8.
 func KeyEventSetUTF8(self unsafe.Pointer, text []uint8) int32 {
-	var textZero C.uint8_t
-	textPtr := &textZero
-	if len(text) != 0 {
-		textPtr = (*C.uint8_t)(unsafe.Pointer(&text[0]))
-	}
+	textPtr := (*C.uint8_t)(zigoSlicePtr(text))
 	code := int32(C.zg_key_event_set_utf8((*C.zg_key_event)(self), textPtr, C.size_t(len(text))))
 	return code
 }
@@ -321,21 +350,13 @@ func EncodeFocus(writerHandle uintptr, event uint8) int32 {
 
 // IsSafePaste calls the generated C ABI wrapper for zg_is_safe_paste.
 func IsSafePaste(data []uint8) uint8 {
-	var dataZero C.uint8_t
-	dataPtr := &dataZero
-	if len(data) != 0 {
-		dataPtr = (*C.uint8_t)(unsafe.Pointer(&data[0]))
-	}
+	dataPtr := (*C.uint8_t)(zigoSlicePtr(data))
 	return uint8(C.zg_is_safe_paste(dataPtr, C.size_t(len(data))))
 }
 
 // EncodePaste calls the generated C ABI wrapper for zg_encode_paste.
 func EncodePaste(writerHandle uintptr, terminal unsafe.Pointer, data []uint8) int32 {
-	var dataZero C.uint8_t
-	dataPtr := &dataZero
-	if len(data) != 0 {
-		dataPtr = (*C.uint8_t)(unsafe.Pointer(&data[0]))
-	}
+	dataPtr := (*C.uint8_t)(zigoSlicePtr(data))
 	code := int32(C.zg_encode_paste(C.size_t(writerHandle), (*C.zg_terminal)(terminal), dataPtr, C.size_t(len(data))))
 	return code
 }
@@ -355,11 +376,7 @@ func TerminalDeinit(self unsafe.Pointer) int32 {
 
 // FreeString calls the generated C ABI wrapper for zg_free_string.
 func FreeString(str []uint8) {
-	var strZero C.uint8_t
-	strPtr := &strZero
-	if len(str) != 0 {
-		strPtr = (*C.uint8_t)(unsafe.Pointer(&str[0]))
-	}
+	strPtr := (*C.uint8_t)(zigoSlicePtr(str))
 	C.zg_free_string(strPtr, C.size_t(len(str)))
 }
 
@@ -378,11 +395,7 @@ func StreamFreeStream(self unsafe.Pointer) int32 {
 
 // StreamFeed calls the generated C ABI wrapper for zg_stream_feed.
 func StreamFeed(self unsafe.Pointer, bytes []uint8) int32 {
-	var bytesZero C.uint8_t
-	bytesPtr := &bytesZero
-	if len(bytes) != 0 {
-		bytesPtr = (*C.uint8_t)(unsafe.Pointer(&bytes[0]))
-	}
+	bytesPtr := (*C.uint8_t)(zigoSlicePtr(bytes))
 	code := int32(C.zg_stream_feed((*C.zg_stream)(self), bytesPtr, C.size_t(len(bytes))))
 	return code
 }
@@ -403,25 +416,25 @@ func StreamNextEvent(self unsafe.Pointer) (uint8, bool, int32) {
 }
 
 // StreamEventTitle calls the generated C ABI wrapper for zg_stream_event_title.
-func StreamEventTitle(self unsafe.Pointer) ([]uint8, int32) {
+func StreamEventTitle(self unsafe.Pointer) (string, int32) {
 	var outResultPtr *C.uint8_t
 	var outResultLen C.size_t
 	code := int32(C.zg_stream_event_title((*C.zg_stream)(self), &outResultPtr, &outResultLen))
 	if code != 0 {
-		return nil, code
+		return "", code
 	}
-	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
 }
 
 // StreamEventBody calls the generated C ABI wrapper for zg_stream_event_body.
-func StreamEventBody(self unsafe.Pointer) ([]uint8, int32) {
+func StreamEventBody(self unsafe.Pointer) (string, int32) {
 	var outResultPtr *C.uint8_t
 	var outResultLen C.size_t
 	code := int32(C.zg_stream_event_body((*C.zg_stream)(self), &outResultPtr, &outResultLen))
 	if code != 0 {
-		return nil, code
+		return "", code
 	}
-	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
 }
 
 // StreamEventProgressState calls the generated C ABI wrapper for zg_stream_event_progress_state.
@@ -459,14 +472,14 @@ func StreamClipboardLocation(self unsafe.Pointer) (int32, int32) {
 }
 
 // StreamClipboardName calls the generated C ABI wrapper for zg_stream_clipboard_name.
-func StreamClipboardName(self unsafe.Pointer) ([]uint8, int32) {
+func StreamClipboardName(self unsafe.Pointer) (string, int32) {
 	var outResultPtr *C.uint8_t
 	var outResultLen C.size_t
 	code := int32(C.zg_stream_clipboard_name((*C.zg_stream)(self), &outResultPtr, &outResultLen))
 	if code != 0 {
-		return nil, code
+		return "", code
 	}
-	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
 }
 
 // StreamClipboardGranted calls the generated C ABI wrapper for zg_stream_clipboard_granted.
@@ -491,14 +504,14 @@ func StreamClipboardContentCount(self unsafe.Pointer) (uint, int32) {
 }
 
 // StreamClipboardContentMime calls the generated C ABI wrapper for zg_stream_clipboard_content_mime.
-func StreamClipboardContentMime(self unsafe.Pointer, index uint) ([]uint8, int32) {
+func StreamClipboardContentMime(self unsafe.Pointer, index uint) (string, int32) {
 	var outResultPtr *C.uint8_t
 	var outResultLen C.size_t
 	code := int32(C.zg_stream_clipboard_content_mime((*C.zg_stream)(self), C.size_t(index), &outResultPtr, &outResultLen))
 	if code != 0 {
-		return nil, code
+		return "", code
 	}
-	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
 }
 
 // StreamClipboardContentData calls the generated C ABI wrapper for zg_stream_clipboard_content_data.
@@ -520,14 +533,14 @@ func StreamClipboardMimeCount(self unsafe.Pointer) (uint, int32) {
 }
 
 // StreamClipboardMime calls the generated C ABI wrapper for zg_stream_clipboard_mime.
-func StreamClipboardMime(self unsafe.Pointer, index uint) ([]uint8, int32) {
+func StreamClipboardMime(self unsafe.Pointer, index uint) (string, int32) {
 	var outResultPtr *C.uint8_t
 	var outResultLen C.size_t
 	code := int32(C.zg_stream_clipboard_mime((*C.zg_stream)(self), C.size_t(index), &outResultPtr, &outResultLen))
 	if code != 0 {
-		return nil, code
+		return "", code
 	}
-	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
 }
 
 // StreamAllowClipboard calls the generated C ABI wrapper for zg_stream_allow_clipboard.
@@ -537,12 +550,8 @@ func StreamAllowClipboard(self unsafe.Pointer, remember uint8) int32 {
 }
 
 // StreamReplyClipboardText calls the generated C ABI wrapper for zg_stream_reply_clipboard_text.
-func StreamReplyClipboardText(self unsafe.Pointer, text []uint8, remember uint8) int32 {
-	var textZero C.uint8_t
-	textPtr := &textZero
-	if len(text) != 0 {
-		textPtr = (*C.uint8_t)(unsafe.Pointer(&text[0]))
-	}
+func StreamReplyClipboardText(self unsafe.Pointer, text string, remember uint8) int32 {
+	textPtr := (*C.uint8_t)(zigoStringPtr(text))
 	code := int32(C.zg_stream_reply_clipboard_text((*C.zg_stream)(self), textPtr, C.size_t(len(text)), C.uint8_t(remember)))
 	return code
 }
@@ -573,27 +582,23 @@ func StreamWriteReplies(self unsafe.Pointer, writerHandle uintptr) int32 {
 }
 
 // TerminalPrintString calls the generated C ABI wrapper for zg_terminal_print_string.
-func TerminalPrintString(self unsafe.Pointer, str []uint8) int32 {
-	var strZero C.uint8_t
-	strPtr := &strZero
-	if len(str) != 0 {
-		strPtr = (*C.uint8_t)(unsafe.Pointer(&str[0]))
-	}
+func TerminalPrintString(self unsafe.Pointer, str string) int32 {
+	strPtr := (*C.uint8_t)(zigoStringPtr(str))
 	code := int32(C.zg_terminal_print_string((*C.zg_terminal)(self), strPtr, C.size_t(len(str))))
 	return code
 }
 
 // TerminalPlainString calls the generated C ABI wrapper for zg_terminal_plain_string.
-func TerminalPlainString(self unsafe.Pointer) ([]uint8, int32) {
+func TerminalPlainString(self unsafe.Pointer) (string, int32) {
 	var outResultPtr *C.uint8_t
 	var outResultLen C.size_t
 	code := int32(C.zg_terminal_plain_string((*C.zg_terminal)(self), &outResultPtr, &outResultLen))
 	if code != 0 {
-		return nil, code
+		return "", code
 	}
-	var result []uint8
+	var result string
 	if outResultLen != 0 {
-		result = C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen))
+		result = C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
 	}
 	C.zg_free_string(outResultPtr, outResultLen)
 	return result, code
@@ -698,11 +703,7 @@ func ScreenSelectRange(self unsafe.Pointer, x1 uint16, y1 uint16, x2 uint16, y2 
 
 // ScreenSelectWord calls the generated C ABI wrapper for zg_screen_select_word.
 func ScreenSelectWord(self unsafe.Pointer, x uint16, y uint16, boundaries []uint32) (uint8, int32) {
-	var boundariesZero C.uint32_t
-	boundariesPtr := &boundariesZero
-	if len(boundaries) != 0 {
-		boundariesPtr = (*C.uint32_t)(unsafe.Pointer(&boundaries[0]))
-	}
+	boundariesPtr := (*C.uint32_t)(zigoSlicePtr(boundaries))
 	var outResult C.uint8_t
 	code := int32(C.zg_screen_select_word((*C.zg_screen)(self), C.uint16_t(x), C.uint16_t(y), boundariesPtr, C.size_t(len(boundaries)), &outResult))
 	return uint8(outResult), code
@@ -723,19 +724,19 @@ func ScreenSelectOutput(self unsafe.Pointer, x uint16, y uint16) (uint8, int32) 
 }
 
 // ScreenSelectionString calls the generated C ABI wrapper for zg_screen_selection_string.
-func ScreenSelectionString(self unsafe.Pointer) ([]uint8, bool, int32) {
+func ScreenSelectionString(self unsafe.Pointer) (string, bool, int32) {
 	var outResultPtr *C.uint8_t
 	var outResultLen C.size_t
 	code := int32(C.zg_screen_selection_string((*C.zg_screen)(self), &outResultPtr, &outResultLen))
 	if code != 0 {
-		return nil, false, code
+		return "", false, code
 	}
 	if outResultPtr == nil {
-		return nil, false, code
+		return "", false, code
 	}
-	var result []uint8
+	var result string
 	if outResultLen != 0 {
-		result = C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen))
+		result = C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
 	}
 	C.zg_free_string(outResultPtr, outResultLen)
 	return result, true, code
@@ -749,12 +750,8 @@ func ScreenViewportIsBottom(self unsafe.Pointer) (uint8, int32) {
 }
 
 // ScreenNewSearch calls the generated C ABI wrapper for zg_screen_new_search.
-func ScreenNewSearch(self unsafe.Pointer, needle []uint8) (unsafe.Pointer, int32) {
-	var needleZero C.uint8_t
-	needlePtr := &needleZero
-	if len(needle) != 0 {
-		needlePtr = (*C.uint8_t)(unsafe.Pointer(&needle[0]))
-	}
+func ScreenNewSearch(self unsafe.Pointer, needle string) (unsafe.Pointer, int32) {
+	needlePtr := (*C.uint8_t)(zigoStringPtr(needle))
 	var outResult *C.zg_search
 	code := int32(C.zg_screen_new_search((*C.zg_screen)(self), needlePtr, C.size_t(len(needle)), &outResult))
 	return unsafe.Pointer(outResult), code
@@ -788,43 +785,39 @@ func SearchSelect(self unsafe.Pointer, to uint8) (uint8, int32) {
 
 // TerminalPrintAttributesInto calls the generated C ABI wrapper for zg_terminal_print_attributes_into.
 func TerminalPrintAttributesInto(self unsafe.Pointer, dst []uint8) (uint, int32) {
-	var dstZero C.uint8_t
-	dstPtr := &dstZero
-	if len(dst) != 0 {
-		dstPtr = (*C.uint8_t)(unsafe.Pointer(&dst[0]))
-	}
+	dstPtr := (*C.uint8_t)(zigoSlicePtr(dst))
 	var outResult C.size_t
 	code := int32(C.zg_terminal_print_attributes_into((*C.zg_terminal)(self), dstPtr, C.size_t(len(dst)), &outResult))
 	return uint(outResult), code
 }
 
 // TerminalHistoryString calls the generated C ABI wrapper for zg_terminal_history_string.
-func TerminalHistoryString(self unsafe.Pointer) ([]uint8, int32) {
+func TerminalHistoryString(self unsafe.Pointer) (string, int32) {
 	var outResultPtr *C.uint8_t
 	var outResultLen C.size_t
 	code := int32(C.zg_terminal_history_string((*C.zg_terminal)(self), &outResultPtr, &outResultLen))
 	if code != 0 {
-		return nil, code
+		return "", code
 	}
-	var result []uint8
+	var result string
 	if outResultLen != 0 {
-		result = C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen))
+		result = C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
 	}
 	C.zg_free_string(outResultPtr, outResultLen)
 	return result, code
 }
 
 // TerminalScreenString calls the generated C ABI wrapper for zg_terminal_screen_string.
-func TerminalScreenString(self unsafe.Pointer) ([]uint8, int32) {
+func TerminalScreenString(self unsafe.Pointer) (string, int32) {
 	var outResultPtr *C.uint8_t
 	var outResultLen C.size_t
 	code := int32(C.zg_terminal_screen_string((*C.zg_terminal)(self), &outResultPtr, &outResultLen))
 	if code != 0 {
-		return nil, code
+		return "", code
 	}
-	var result []uint8
+	var result string
 	if outResultLen != 0 {
-		result = C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen))
+		result = C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
 	}
 	C.zg_free_string(outResultPtr, outResultLen)
 	return result, code
@@ -1018,77 +1011,65 @@ func TerminalPrintRepeat(self unsafe.Pointer, countReq uint) int32 {
 
 // TerminalPrintSlice calls the generated C ABI wrapper for zg_terminal_print_slice.
 func TerminalPrintSlice(self unsafe.Pointer, cps []uint32) int32 {
-	var cpsZero C.uint32_t
-	cpsPtr := &cpsZero
-	if len(cps) != 0 {
-		cpsPtr = (*C.uint32_t)(unsafe.Pointer(&cps[0]))
-	}
+	cpsPtr := (*C.uint32_t)(zigoSlicePtr(cps))
 	code := int32(C.zg_terminal_print_slice((*C.zg_terminal)(self), cpsPtr, C.size_t(len(cps))))
 	return code
 }
 
 // TerminalPlainStringUnwrapped calls the generated C ABI wrapper for zg_terminal_plain_string_unwrapped.
-func TerminalPlainStringUnwrapped(self unsafe.Pointer) ([]uint8, int32) {
+func TerminalPlainStringUnwrapped(self unsafe.Pointer) (string, int32) {
 	var outResultPtr *C.uint8_t
 	var outResultLen C.size_t
 	code := int32(C.zg_terminal_plain_string_unwrapped((*C.zg_terminal)(self), &outResultPtr, &outResultLen))
 	if code != 0 {
-		return nil, code
+		return "", code
 	}
-	var result []uint8
+	var result string
 	if outResultLen != 0 {
-		result = C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen))
+		result = C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
 	}
 	C.zg_free_string(outResultPtr, outResultLen)
 	return result, code
 }
 
 // TerminalSetPwd calls the generated C ABI wrapper for zg_terminal_set_pwd.
-func TerminalSetPwd(self unsafe.Pointer, pwd []uint8) int32 {
-	var pwdZero C.uint8_t
-	pwdPtr := &pwdZero
-	if len(pwd) != 0 {
-		pwdPtr = (*C.uint8_t)(unsafe.Pointer(&pwd[0]))
-	}
+func TerminalSetPwd(self unsafe.Pointer, pwd string) int32 {
+	pwdPtr := (*C.uint8_t)(zigoStringPtr(pwd))
 	code := int32(C.zg_terminal_set_pwd((*C.zg_terminal)(self), pwdPtr, C.size_t(len(pwd))))
 	return code
 }
 
 // TerminalGetPwd calls the generated C ABI wrapper for zg_terminal_get_pwd.
-func TerminalGetPwd(self unsafe.Pointer) ([]uint8, bool, int32) {
+func TerminalGetPwd(self unsafe.Pointer) (string, bool, int32) {
 	var outResultPtr *C.uint8_t
 	var outResultLen C.size_t
 	code := int32(C.zg_terminal_get_pwd((*C.zg_terminal)(self), &outResultPtr, &outResultLen))
 	if code != 0 {
-		return nil, false, code
+		return "", false, code
 	}
 	if outResultPtr == nil {
-		return nil, false, code
+		return "", false, code
 	}
-	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), true, code
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), true, code
 }
 
 // TerminalGetTitle calls the generated C ABI wrapper for zg_terminal_get_title.
-func TerminalGetTitle(self unsafe.Pointer) ([]uint8, bool, int32) {
+func TerminalGetTitle(self unsafe.Pointer) (string, bool, int32) {
 	var outResultPtr *C.uint8_t
 	var outResultLen C.size_t
 	code := int32(C.zg_terminal_get_title((*C.zg_terminal)(self), &outResultPtr, &outResultLen))
 	if code != 0 {
-		return nil, false, code
+		return "", false, code
 	}
 	if outResultPtr == nil {
-		return nil, false, code
+		return "", false, code
 	}
-	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), true, code
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), true, code
 }
 
 // TerminalSetTitle calls the generated C ABI wrapper for zg_terminal_set_title.
-func TerminalSetTitle(self unsafe.Pointer, t []uint8) int32 {
-	var tZero C.uint8_t
-	tPtr := &tZero
-	if len(t) != 0 {
-		tPtr = (*C.uint8_t)(unsafe.Pointer(&t[0]))
-	}
+func TerminalSetTitle(self unsafe.Pointer, t string) int32 {
+	tPtr := (*C.uint8_t)(zigoStringPtr(t))
 	code := int32(C.zg_terminal_set_title((*C.zg_terminal)(self), tPtr, C.size_t(len(t))))
 	return code
 }
@@ -1194,11 +1175,7 @@ func RenderStateCellCount(self unsafe.Pointer) (uint, int32) {
 
 // RenderStateCells calls the generated C ABI wrapper for zg_render_state_cells.
 func RenderStateCells(self unsafe.Pointer, dst []RenderCellData) (uint, int32) {
-	var dstZero C.zg_render_cell
-	dstPtr := &dstZero
-	if len(dst) != 0 {
-		dstPtr = (*C.zg_render_cell)(unsafe.Pointer(&dst[0]))
-	}
+	dstPtr := (*C.zg_render_cell)(zigoSlicePtr(dst))
 	var outResult C.size_t
 	code := int32(C.zg_render_state_cells((*C.zg_render_state)(self), dstPtr, C.size_t(len(dst)), &outResult))
 	return uint(outResult), code
@@ -1297,11 +1274,7 @@ func KittyImagesPlacementCount(self unsafe.Pointer) (uint, int32) {
 
 // KittyImagesPlacements calls the generated C ABI wrapper for zg_kitty_images_placements.
 func KittyImagesPlacements(self unsafe.Pointer, dst []KittyPlacementData) (uint, int32) {
-	var dstZero C.zg_kitty_placement
-	dstPtr := &dstZero
-	if len(dst) != 0 {
-		dstPtr = (*C.zg_kitty_placement)(unsafe.Pointer(&dst[0]))
-	}
+	dstPtr := (*C.zg_kitty_placement)(zigoSlicePtr(dst))
 	var outResult C.size_t
 	code := int32(C.zg_kitty_images_placements((*C.zg_kitty_images)(self), dstPtr, C.size_t(len(dst)), &outResult))
 	return uint(outResult), code
@@ -1325,11 +1298,7 @@ func TerminalKittyImage(self unsafe.Pointer, imageID uint32) (KittyImageData, bo
 
 // TerminalKittyImageData calls the generated C ABI wrapper for zg_terminal_kitty_image_data.
 func TerminalKittyImageData(self unsafe.Pointer, imageID uint32, dst []uint8) (uint, int32) {
-	var dstZero C.uint8_t
-	dstPtr := &dstZero
-	if len(dst) != 0 {
-		dstPtr = (*C.uint8_t)(unsafe.Pointer(&dst[0]))
-	}
+	dstPtr := (*C.uint8_t)(zigoSlicePtr(dst))
 	var outResult C.size_t
 	code := int32(C.zg_terminal_kitty_image_data((*C.zg_terminal)(self), C.uint32_t(imageID), dstPtr, C.size_t(len(dst)), &outResult))
 	return uint(outResult), code
@@ -1386,7 +1355,7 @@ type KittyImageData struct {
 	_           [4]byte
 }
 
-// RenderSizeData crosses to C as a cast, so it must match zg_render_size byte for byte.
+// RenderSizeData slices are copied from C memory as one run, so it must match zg_render_size byte for byte.
 var _ = [1]struct{}{}[unsafe.Sizeof(RenderSizeData{})-unsafe.Sizeof(C.zg_render_size{})]
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.ScreenWidth)-unsafe.Offsetof(C.zg_render_size{}.screen_width)]
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.ScreenHeight)-unsafe.Offsetof(C.zg_render_size{}.screen_height)]
@@ -1397,14 +1366,14 @@ var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.PaddingBottom)-unsafe.Off
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.PaddingRight)-unsafe.Offsetof(C.zg_render_size{}.padding_right)]
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.PaddingLeft)-unsafe.Offsetof(C.zg_render_size{}.padding_left)]
 
-// RenderCellData crosses to C as a cast, so it must match zg_render_cell byte for byte.
+// RenderCellData slices are copied from C memory as one run, so it must match zg_render_cell byte for byte.
 var _ = [1]struct{}{}[unsafe.Sizeof(RenderCellData{})-unsafe.Sizeof(C.zg_render_cell{})]
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Codepoint)-unsafe.Offsetof(C.zg_render_cell{}.codepoint)]
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Fg)-unsafe.Offsetof(C.zg_render_cell{}.fg)]
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Bg)-unsafe.Offsetof(C.zg_render_cell{}.bg)]
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Flags)-unsafe.Offsetof(C.zg_render_cell{}.flags)]
 
-// KittyPlacementData crosses to C as a cast, so it must match zg_kitty_placement byte for byte.
+// KittyPlacementData slices are copied from C memory as one run, so it must match zg_kitty_placement byte for byte.
 var _ = [1]struct{}{}[unsafe.Sizeof(KittyPlacementData{})-unsafe.Sizeof(C.zg_kitty_placement{})]
 var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.ImageID)-unsafe.Offsetof(C.zg_kitty_placement{}.image_id)]
 var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.PlacementID)-unsafe.Offsetof(C.zg_kitty_placement{}.placement_id)]
@@ -1422,7 +1391,7 @@ var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.SourceWidth)-unsafe.O
 var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.SourceHeight)-unsafe.Offsetof(C.zg_kitty_placement{}.source_height)]
 var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.Z)-unsafe.Offsetof(C.zg_kitty_placement{}.z)]
 
-// KittyImageData crosses to C as a cast, so it must match zg_kitty_image byte for byte.
+// KittyImageData slices are copied from C memory as one run, so it must match zg_kitty_image byte for byte.
 var _ = [1]struct{}{}[unsafe.Sizeof(KittyImageData{})-unsafe.Sizeof(C.zg_kitty_image{})]
 var _ = [1]struct{}{}[unsafe.Offsetof(KittyImageData{}.Generation)-unsafe.Offsetof(C.zg_kitty_image{}.generation)]
 var _ = [1]struct{}{}[unsafe.Offsetof(KittyImageData{}.DataLen)-unsafe.Offsetof(C.zg_kitty_image{}.data_len)]

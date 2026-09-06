@@ -94,7 +94,7 @@ func cleanupKeyEvent(state keyEventCleanupState) {
 }
 
 // Close releases the native KeyEvent resources. It is safe to call more than once.
-// The error result is always nil; it exists so KeyEvent satisfies io.Closer.
+// It returns *HandleInUseError while a call is still inside native; otherwise the error is nil.
 // Close does not wait: a call still inside native keeps the resources until it
 // returns, and every call made after Close fails with *HandleError.
 func (k *KeyEvent) Close() error {
@@ -216,7 +216,7 @@ func cleanupMouseEvent(state mouseEventCleanupState) {
 }
 
 // Close releases the native MouseEvent resources. It is safe to call more than once.
-// The error result is always nil; it exists so MouseEvent satisfies io.Closer.
+// It returns *HandleInUseError while a call is still inside native; otherwise the error is nil.
 // Close does not wait: a call still inside native keeps the resources until it
 // returns, and every call made after Close fails with *HandleError.
 func (m *MouseEvent) Close() error {

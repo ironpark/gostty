@@ -2,7 +2,23 @@
 
 package gostty
 
-import "strconv"
+import (
+	"strconv"
+	"strings"
+)
+
+// EnumParseError reports text that names no value of a generated enum.
+type EnumParseError struct {
+	// Type is the Go enum type name.
+	Type string
+	// Text is the rejected input.
+	Text string
+}
+
+// Error implements error.
+func (err *EnumParseError) Error() string {
+	return "zigo: " + err.Type + ": unknown value " + strconv.Quote(err.Text)
+}
 
 // CursorStyle represents the corresponding Zig enum.
 type CursorStyle uint8
@@ -32,6 +48,36 @@ func (value CursorStyle) String() string {
 	default:
 		return "CursorStyle(" + strconv.Itoa(int(value)) + ")"
 	}
+}
+
+// ParseCursorStyle returns the CursorStyle named by text, which is a Zig tag name.
+func ParseCursorStyle(text string) (CursorStyle, error) {
+	switch text {
+	case "bar":
+		return CursorStyleBar, nil
+	case "block":
+		return CursorStyleBlock, nil
+	case "underline":
+		return CursorStyleUnderline, nil
+	case "block_hollow":
+		return CursorStyleBlockHollow, nil
+	}
+	return 0, &EnumParseError{Type: "CursorStyle", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value CursorStyle) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseCursorStyle.
+func (value *CursorStyle) UnmarshalText(text []byte) error {
+	parsed, err := ParseCursorStyle(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
 }
 
 // CursorStyleReq represents the corresponding Zig enum.
@@ -140,6 +186,42 @@ func (value EraseLine) String() string {
 	}
 }
 
+// ParseEraseLine returns the EraseLine named by text, which is a Zig tag name.
+// Values outside the named constants are accepted in the EraseLine(N) spelling String returns.
+func ParseEraseLine(text string) (EraseLine, error) {
+	switch text {
+	case "right":
+		return EraseLineRight, nil
+	case "left":
+		return EraseLineLeft, nil
+	case "complete":
+		return EraseLineComplete, nil
+	case "right_unless_pending_wrap":
+		return EraseLineRightUnlessPendingWrap, nil
+	}
+	if strings.HasPrefix(text, "EraseLine(") && strings.HasSuffix(text, ")") {
+		if number, err := strconv.ParseUint(text[len("EraseLine("):len(text)-1], 10, 8); err == nil {
+			return EraseLine(number), nil
+		}
+	}
+	return 0, &EnumParseError{Type: "EraseLine", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value EraseLine) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseEraseLine.
+func (value *EraseLine) UnmarshalText(text []byte) error {
+	parsed, err := ParseEraseLine(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
 // TabClear represents the corresponding Zig open enum; values outside the named constants are valid.
 type TabClear uint8
 
@@ -160,6 +242,38 @@ func (value TabClear) String() string {
 	default:
 		return "TabClear(" + strconv.Itoa(int(value)) + ")"
 	}
+}
+
+// ParseTabClear returns the TabClear named by text, which is a Zig tag name.
+// Values outside the named constants are accepted in the TabClear(N) spelling String returns.
+func ParseTabClear(text string) (TabClear, error) {
+	switch text {
+	case "current":
+		return TabClearCurrent, nil
+	case "all":
+		return TabClearAll, nil
+	}
+	if strings.HasPrefix(text, "TabClear(") && strings.HasSuffix(text, ")") {
+		if number, err := strconv.ParseUint(text[len("TabClear("):len(text)-1], 10, 8); err == nil {
+			return TabClear(number), nil
+		}
+	}
+	return 0, &EnumParseError{Type: "TabClear", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value TabClear) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseTabClear.
+func (value *TabClear) UnmarshalText(text []byte) error {
+	parsed, err := ParseTabClear(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
 }
 
 // ProtectedMode represents the corresponding Zig enum.
@@ -244,6 +358,38 @@ func (value StreamEvent) String() string {
 	}
 }
 
+// ParseStreamEvent returns the StreamEvent named by text, which is a Zig tag name.
+func ParseStreamEvent(text string) (StreamEvent, error) {
+	switch text {
+	case "bell":
+		return StreamEventBell, nil
+	case "title_changed":
+		return StreamEventTitleChanged, nil
+	case "pwd_changed":
+		return StreamEventPwdChanged, nil
+	case "desktop_notification":
+		return StreamEventDesktopNotification, nil
+	case "progress_report":
+		return StreamEventProgressReport, nil
+	}
+	return 0, &EnumParseError{Type: "StreamEvent", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value StreamEvent) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseStreamEvent.
+func (value *StreamEvent) UnmarshalText(text []byte) error {
+	parsed, err := ParseStreamEvent(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
 // ProgressState represents the corresponding Zig enum.
 type ProgressState uint8
 
@@ -278,6 +424,38 @@ func (value ProgressState) String() string {
 	}
 }
 
+// ParseProgressState returns the ProgressState named by text, which is a Zig tag name.
+func ParseProgressState(text string) (ProgressState, error) {
+	switch text {
+	case "remove":
+		return ProgressStateRemove, nil
+	case "set":
+		return ProgressStateSet, nil
+	case "error":
+		return ProgressStateError, nil
+	case "indeterminate":
+		return ProgressStateIndeterminate, nil
+	case "pause":
+		return ProgressStatePause, nil
+	}
+	return 0, &EnumParseError{Type: "ProgressState", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value ProgressState) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseProgressState.
+func (value *ProgressState) UnmarshalText(text []byte) error {
+	parsed, err := ParseProgressState(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
 // ClipboardLocation represents the corresponding Zig open enum; values outside the named constants are valid.
 type ClipboardLocation int32
 
@@ -302,6 +480,40 @@ func (value ClipboardLocation) String() string {
 	default:
 		return "ClipboardLocation(" + strconv.Itoa(int(value)) + ")"
 	}
+}
+
+// ParseClipboardLocation returns the ClipboardLocation named by text, which is a Zig tag name.
+// Values outside the named constants are accepted in the ClipboardLocation(N) spelling String returns.
+func ParseClipboardLocation(text string) (ClipboardLocation, error) {
+	switch text {
+	case "standard":
+		return ClipboardLocationStandard, nil
+	case "selection":
+		return ClipboardLocationSelection, nil
+	case "primary":
+		return ClipboardLocationPrimary, nil
+	}
+	if strings.HasPrefix(text, "ClipboardLocation(") && strings.HasSuffix(text, ")") {
+		if number, err := strconv.ParseInt(text[len("ClipboardLocation("):len(text)-1], 10, 32); err == nil {
+			return ClipboardLocation(number), nil
+		}
+	}
+	return 0, &EnumParseError{Type: "ClipboardLocation", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value ClipboardLocation) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseClipboardLocation.
+func (value *ClipboardLocation) UnmarshalText(text []byte) error {
+	parsed, err := ParseClipboardLocation(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
 }
 
 // ClipboardDenial represents the corresponding Zig enum.
@@ -448,6 +660,66 @@ func (value ColorName) String() string {
 	default:
 		return "ColorName(" + strconv.Itoa(int(value)) + ")"
 	}
+}
+
+// ParseColorName returns the ColorName named by text, which is a Zig tag name.
+// Values outside the named constants are accepted in the ColorName(N) spelling String returns.
+func ParseColorName(text string) (ColorName, error) {
+	switch text {
+	case "black":
+		return ColorNameBlack, nil
+	case "red":
+		return ColorNameRed, nil
+	case "green":
+		return ColorNameGreen, nil
+	case "yellow":
+		return ColorNameYellow, nil
+	case "blue":
+		return ColorNameBlue, nil
+	case "magenta":
+		return ColorNameMagenta, nil
+	case "cyan":
+		return ColorNameCyan, nil
+	case "white":
+		return ColorNameWhite, nil
+	case "bright_black":
+		return ColorNameBrightBlack, nil
+	case "bright_red":
+		return ColorNameBrightRed, nil
+	case "bright_green":
+		return ColorNameBrightGreen, nil
+	case "bright_yellow":
+		return ColorNameBrightYellow, nil
+	case "bright_blue":
+		return ColorNameBrightBlue, nil
+	case "bright_magenta":
+		return ColorNameBrightMagenta, nil
+	case "bright_cyan":
+		return ColorNameBrightCyan, nil
+	case "bright_white":
+		return ColorNameBrightWhite, nil
+	}
+	if strings.HasPrefix(text, "ColorName(") && strings.HasSuffix(text, ")") {
+		if number, err := strconv.ParseUint(text[len("ColorName("):len(text)-1], 10, 8); err == nil {
+			return ColorName(number), nil
+		}
+	}
+	return 0, &EnumParseError{Type: "ColorName", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value ColorName) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseColorName.
+func (value *ColorName) UnmarshalText(text []byte) error {
+	parsed, err := ParseColorName(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
 }
 
 // AttributeTag represents the corresponding Zig enum.

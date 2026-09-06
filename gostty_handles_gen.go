@@ -22,96 +22,96 @@ type Terminal struct {
 	cleanup  runtime.Cleanup
 }
 
-// zigoAcquire pins t open for one native call and hands back its pointer;
+// zigoAcquire pins te open for one native call and hands back its pointer;
 // the call ends with zigoRelease. A nil, closed, or poisoned handle is the error.
-func (t *Terminal) zigoAcquire(operation string) (unsafe.Pointer, error) {
-	if t == nil {
+func (te *Terminal) zigoAcquire(operation string) (unsafe.Pointer, error) {
+	if te == nil {
 		return nil, &HandleError{Operation: operation}
 	}
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	if t.closed || t.ptr == nil {
+	te.mu.Lock()
+	defer te.mu.Unlock()
+	if te.closed || te.ptr == nil {
 		return nil, &HandleError{Operation: operation}
 	}
-	if t.poison != nil {
-		return nil, t.poison.Poisoned(operation)
+	if te.poison != nil {
+		return nil, te.poison.Poisoned(operation)
 	}
-	t.active++
-	return t.ptr, nil
+	te.active++
+	return te.ptr, nil
 }
 
-func (t *Terminal) zigoRelease() {
-	if t == nil {
+func (te *Terminal) zigoRelease() {
+	if te == nil {
 		return
 	}
-	t.mu.Lock()
-	t.active--
-	state, release := t.zigoTakeLocked()
-	t.mu.Unlock()
+	te.mu.Lock()
+	te.active--
+	state, release := te.zigoTakeLocked()
+	te.mu.Unlock()
 	if release {
 		cleanupTerminal(state)
 	}
 }
 
-// zigoPoison marks t unusable: a Zig panic unwound through native frames
+// zigoPoison marks te unusable: a Zig panic unwound through native frames
 // without running their defers, so the state behind it is unknown.
-func (t *Terminal) zigoPoison(cause *NativePanicError) {
-	if t == nil {
+func (te *Terminal) zigoPoison(cause *NativePanicError) {
+	if te == nil {
 		return
 	}
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	if t.poison == nil {
-		t.poison = cause
-		t.cleanup.Stop()
+	te.mu.Lock()
+	defer te.mu.Unlock()
+	if te.poison == nil {
+		te.poison = cause
+		te.cleanup.Stop()
 	}
 }
 
 // ZigoAcquire implements the shared lifecycle handle contract.
-func (t *Terminal) ZigoAcquire(operation string) (unsafe.Pointer, error) {
-	return t.zigoAcquire(operation)
+func (te *Terminal) ZigoAcquire(operation string) (unsafe.Pointer, error) {
+	return te.zigoAcquire(operation)
 }
 
 // ZigoRelease implements the shared lifecycle handle contract.
-func (t *Terminal) ZigoRelease() { t.zigoRelease() }
+func (te *Terminal) ZigoRelease() { te.zigoRelease() }
 
 // ZigoPoison implements the shared lifecycle handle contract.
-func (t *Terminal) ZigoPoison(cause *NativePanicError) { t.zigoPoison(cause) }
+func (te *Terminal) ZigoPoison(cause *NativePanicError) { te.zigoPoison(cause) }
 
 // zigoAcquireChild reserves one dependent child atomically with the call pin.
-func (t *Terminal) zigoAcquireChild(operation string) (unsafe.Pointer, zigoChildHandle, error) {
-	if t == nil {
+func (te *Terminal) zigoAcquireChild(operation string) (unsafe.Pointer, zigoChildHandle, error) {
+	if te == nil {
 		return nil, nil, &HandleError{Operation: operation}
 	}
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	if t.closed || t.ptr == nil {
+	te.mu.Lock()
+	defer te.mu.Unlock()
+	if te.closed || te.ptr == nil {
 		return nil, nil, &HandleError{Operation: operation}
 	}
-	if t.poison != nil {
-		return nil, nil, t.poison.Poisoned(operation)
+	if te.poison != nil {
+		return nil, nil, te.poison.Poisoned(operation)
 	}
-	t.active++
-	t.children++
-	return t.ptr, t, nil
+	te.active++
+	te.children++
+	return te.ptr, te, nil
 }
 
-func (t *Terminal) zigoDropChild() {
-	if t == nil {
+func (te *Terminal) zigoDropChild() {
+	if te == nil {
 		return
 	}
-	t.mu.Lock()
-	t.children--
-	t.mu.Unlock()
+	te.mu.Lock()
+	te.children--
+	te.mu.Unlock()
 }
 
 // ZigoAcquireChild reserves a dependent child through the shared lifecycle contract.
-func (t *Terminal) ZigoAcquireChild(operation string) (unsafe.Pointer, lifecycle.ChildHandle, error) {
-	return t.zigoAcquireChild(operation)
+func (te *Terminal) ZigoAcquireChild(operation string) (unsafe.Pointer, lifecycle.ChildHandle, error) {
+	return te.zigoAcquireChild(operation)
 }
 
 // ZigoDropChild releases a dependent-child reservation.
-func (t *Terminal) ZigoDropChild() { t.zigoDropChild() }
+func (te *Terminal) ZigoDropChild() { te.zigoDropChild() }
 
 type terminalCleanupState struct {
 	ptr unsafe.Pointer
@@ -131,49 +131,49 @@ func cleanupTerminal(state terminalCleanupState) {
 }
 
 // Close releases the native Terminal resources. It is safe to call more than once.
-// It returns *HandleInUseError while dependent children remain open.
+// It returns *HandleInUseError while a call is still inside native or a dependent child remains open.
 // Close does not wait: a call still inside native keeps the resources until it
 // returns, and every call made after Close fails with *HandleError.
-func (t *Terminal) Close() error {
-	if t == nil {
+func (te *Terminal) Close() error {
+	if te == nil {
 		return nil
 	}
-	t.mu.Lock()
-	if t.closed {
-		t.mu.Unlock()
+	te.mu.Lock()
+	if te.closed {
+		te.mu.Unlock()
 		return nil
 	}
-	if t.children != 0 {
-		children := t.children
-		t.mu.Unlock()
+	if te.children != 0 {
+		children := te.children
+		te.mu.Unlock()
 		return &HandleInUseError{Operation: "Terminal.Close", Children: children}
 	}
-	if t.active != 0 {
-		active := t.active
-		t.mu.Unlock()
+	if te.active != 0 {
+		active := te.active
+		te.mu.Unlock()
 		return &HandleInUseError{Operation: "Terminal.Close", Children: active}
 	}
-	t.closed = true
-	t.cleanup.Stop()
-	state, release := t.zigoTakeLocked()
-	t.mu.Unlock()
+	te.closed = true
+	te.cleanup.Stop()
+	state, release := te.zigoTakeLocked()
+	te.mu.Unlock()
 	if release {
 		cleanupTerminal(state)
 	}
-	runtime.KeepAlive(t)
+	runtime.KeepAlive(te)
 	return nil
 }
 
-// zigoTakeLocked hands out what is left to release once t is closed and no
+// zigoTakeLocked hands out what is left to release once te is closed and no
 // call is inside native; mu must be held. A poisoned handle keeps its native
 // object: releasing state a panic left half-changed could fault, so it leaks.
-func (t *Terminal) zigoTakeLocked() (terminalCleanupState, bool) {
-	if !t.closed || t.active != 0 || t.ptr == nil {
+func (te *Terminal) zigoTakeLocked() (terminalCleanupState, bool) {
+	if !te.closed || te.active != 0 || te.ptr == nil {
 		return terminalCleanupState{}, false
 	}
-	state := terminalCleanupState{ptr: t.ptr}
-	t.ptr = nil
-	if t.poison != nil {
+	state := terminalCleanupState{ptr: te.ptr}
+	te.ptr = nil
+	if te.poison != nil {
 		state.ptr = nil
 	}
 	return state, true
@@ -221,24 +221,23 @@ func (s *Stream) zigoAcquire(operation string) (unsafe.Pointer, error) {
 		}
 	}
 	s.mu.Lock()
-	if s.closed || s.ptr == nil {
-		s.mu.Unlock()
-		if parent != nil {
-			parent.ZigoRelease()
-		}
-		return nil, &HandleError{Operation: operation}
+	var err error
+	switch {
+	case s.closed || s.ptr == nil:
+		err = &HandleError{Operation: operation}
+	case s.poison != nil:
+		err = s.poison.Poisoned(operation)
+	default:
+		s.active++
 	}
-	if s.poison != nil {
-		err := s.poison.Poisoned(operation)
-		s.mu.Unlock()
+	ptr := s.ptr
+	s.mu.Unlock()
+	if err != nil {
 		if parent != nil {
 			parent.ZigoRelease()
 		}
 		return nil, err
 	}
-	s.active++
-	ptr := s.ptr
-	s.mu.Unlock()
 	return ptr, nil
 }
 
@@ -314,7 +313,7 @@ func cleanupStream(state streamCleanupState) {
 }
 
 // Close releases the native Stream resources. It is safe to call more than once.
-// The error result is always nil; it exists so Stream satisfies io.Closer.
+// It returns *HandleInUseError while a call is still inside native; otherwise the error is nil.
 // Close does not wait: a call still inside native keeps the resources until it
 // returns, and every call made after Close fails with *HandleError.
 func (s *Stream) Close() error {
@@ -375,8 +374,7 @@ func (s *Screen) zigoAcquire(operation string) (unsafe.Pointer, error) {
 		return nil, &HandleError{Operation: operation}
 	}
 	s.mu.Lock()
-	var parent zigoHandle
-	parent = s.owner
+	parent := s.owner
 	s.mu.Unlock()
 	if parent != nil {
 		if _, err := parent.ZigoAcquire(operation); err != nil {
@@ -384,24 +382,23 @@ func (s *Screen) zigoAcquire(operation string) (unsafe.Pointer, error) {
 		}
 	}
 	s.mu.Lock()
-	if s.closed || s.ptr == nil {
-		s.mu.Unlock()
-		if parent != nil {
-			parent.ZigoRelease()
-		}
-		return nil, &HandleError{Operation: operation}
+	var err error
+	switch {
+	case s.closed || s.ptr == nil:
+		err = &HandleError{Operation: operation}
+	case s.poison != nil:
+		err = s.poison.Poisoned(operation)
+	default:
+		s.active++
 	}
-	if s.poison != nil {
-		err := s.poison.Poisoned(operation)
-		s.mu.Unlock()
+	ptr := s.ptr
+	s.mu.Unlock()
+	if err != nil {
 		if parent != nil {
 			parent.ZigoRelease()
 		}
 		return nil, err
 	}
-	s.active++
-	ptr := s.ptr
-	s.mu.Unlock()
 	return ptr, nil
 }
 
@@ -411,8 +408,7 @@ func (s *Screen) zigoRelease() {
 	}
 	s.mu.Lock()
 	s.active--
-	var parent zigoHandle
-	parent = s.owner
+	parent := s.owner
 	s.mu.Unlock()
 	if parent != nil {
 		parent.ZigoRelease()
@@ -426,8 +422,7 @@ func (s *Screen) zigoPoison(cause *NativePanicError) {
 		return
 	}
 	s.mu.Lock()
-	var parent zigoHandle
-	parent = s.owner
+	parent := s.owner
 	if s.poison == nil {
 		s.poison = cause
 	}
@@ -561,24 +556,23 @@ func (s *Search) zigoAcquire(operation string) (unsafe.Pointer, error) {
 		}
 	}
 	s.mu.Lock()
-	if s.closed || s.ptr == nil {
-		s.mu.Unlock()
-		if parent != nil {
-			parent.ZigoRelease()
-		}
-		return nil, &HandleError{Operation: operation}
+	var err error
+	switch {
+	case s.closed || s.ptr == nil:
+		err = &HandleError{Operation: operation}
+	case s.poison != nil:
+		err = s.poison.Poisoned(operation)
+	default:
+		s.active++
 	}
-	if s.poison != nil {
-		err := s.poison.Poisoned(operation)
-		s.mu.Unlock()
+	ptr := s.ptr
+	s.mu.Unlock()
+	if err != nil {
 		if parent != nil {
 			parent.ZigoRelease()
 		}
 		return nil, err
 	}
-	s.active++
-	ptr := s.ptr
-	s.mu.Unlock()
 	return ptr, nil
 }
 
@@ -650,7 +644,7 @@ func cleanupSearch(state searchCleanupState) {
 }
 
 // Close releases the native Search resources. It is safe to call more than once.
-// The error result is always nil; it exists so Search satisfies io.Closer.
+// It returns *HandleInUseError while a call is still inside native; otherwise the error is nil.
 // Close does not wait: a call still inside native keeps the resources until it
 // returns, and every call made after Close fails with *HandleError.
 func (s *Search) Close() error {
@@ -773,7 +767,7 @@ func cleanupRenderState(state renderStateCleanupState) {
 }
 
 // Close releases the native RenderState resources. It is safe to call more than once.
-// The error result is always nil; it exists so RenderState satisfies io.Closer.
+// It returns *HandleInUseError while a call is still inside native; otherwise the error is nil.
 // Close does not wait: a call still inside native keeps the resources until it
 // returns, and every call made after Close fails with *HandleError.
 func (r *RenderState) Close() error {
@@ -895,7 +889,7 @@ func cleanupKittyImages(state kittyImagesCleanupState) {
 }
 
 // Close releases the native KittyImages resources. It is safe to call more than once.
-// The error result is always nil; it exists so KittyImages satisfies io.Closer.
+// It returns *HandleInUseError while a call is still inside native; otherwise the error is nil.
 // Close does not wait: a call still inside native keeps the resources until it
 // returns, and every call made after Close fails with *HandleError.
 func (k *KittyImages) Close() error {

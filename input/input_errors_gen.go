@@ -83,9 +83,10 @@ var ErrInvalidValue = &Error{Code: 8, Name: "InvalidValue"}
 var ErrNoSpaceLeft = &Error{Code: 9, Name: "NoSpaceLeft"}
 
 func errorForCode(operation string, code int32) error {
+	if code <= -256 {
+		return &NativePanicError{Operation: operation, Message: raw.PanicMessage(code)}
+	}
 	switch code {
-	case -2:
-		return &NativePanicError{Operation: operation, Message: raw.LastErrorMessage()}
 	case 1:
 		return &Error{Code: 1, Name: "OutOfMemory", Operation: operation}
 	case 2:
