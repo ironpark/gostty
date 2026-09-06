@@ -498,6 +498,39 @@ typedef uint8_t zg_kitty_compression;
 #define ZG_KITTY_COMPRESSION_NONE 0
 #define ZG_KITTY_COMPRESSION_ZLIB_DEFLATE 1
 
+typedef uint8_t zg_mouse_tracking;
+#define ZG_MOUSE_TRACKING_NONE 0
+#define ZG_MOUSE_TRACKING_X10 1
+#define ZG_MOUSE_TRACKING_NORMAL 2
+#define ZG_MOUSE_TRACKING_BUTTON 3
+#define ZG_MOUSE_TRACKING_ANY 4
+
+typedef uint8_t zg_mouse_report_format;
+#define ZG_MOUSE_REPORT_FORMAT_X10 0
+#define ZG_MOUSE_REPORT_FORMAT_UTF8 1
+#define ZG_MOUSE_REPORT_FORMAT_SGR 2
+#define ZG_MOUSE_REPORT_FORMAT_URXVT 3
+#define ZG_MOUSE_REPORT_FORMAT_SGR_PIXELS 4
+
+typedef uint8_t zg_mode_report;
+#define ZG_MODE_REPORT_NOT_RECOGNIZED 0
+#define ZG_MODE_REPORT_SET 1
+#define ZG_MODE_REPORT_RESET 2
+#define ZG_MODE_REPORT_PERMANENTLY_SET 3
+#define ZG_MODE_REPORT_PERMANENTLY_RESET 4
+
+typedef struct zg_gesture zg_gesture;
+typedef uint8_t zg_gesture_behavior;
+#define ZG_GESTURE_BEHAVIOR_CELL 0
+#define ZG_GESTURE_BEHAVIOR_WORD 1
+#define ZG_GESTURE_BEHAVIOR_LINE 2
+#define ZG_GESTURE_BEHAVIOR_OUTPUT 3
+
+typedef uint8_t zg_gesture_autoscroll_direction;
+#define ZG_GESTURE_AUTOSCROLL_DIRECTION_NONE 0
+#define ZG_GESTURE_AUTOSCROLL_DIRECTION_UP 1
+#define ZG_GESTURE_AUTOSCROLL_DIRECTION_DOWN 2
+
 // ELF and Mach-O export every non-static symbol of a shared library;
 // COFF exports nothing without an explicit annotation, so a DLL built
 // without this would load and then resolve none of its entry points.
@@ -614,12 +647,51 @@ typedef struct zg_kitty_image {
     uint16_t _pad;
 } zg_kitty_image;
 
+typedef struct zg_scroll_region {
+    uint16_t top;
+    uint16_t bottom;
+    uint16_t left;
+    uint16_t right;
+} zg_scroll_region;
+
+typedef struct zg_gesture_geometry {
+    uint32_t columns;
+    uint32_t cell_width;
+    uint32_t padding_left;
+    uint32_t screen_height;
+} zg_gesture_geometry;
+
+typedef struct zg_gesture_press_event {
+    uint16_t x;
+    uint16_t y;
+    double xpos;
+    double ypos;
+    double max_distance;
+    uint64_t repeat_interval_ns;
+    int64_t time_ns;
+} zg_gesture_press_event;
+
+typedef struct zg_gesture_drag_event {
+    uint16_t x;
+    uint16_t y;
+    double xpos;
+    double ypos;
+    uint8_t rectangle;
+} zg_gesture_drag_event;
+
 ZIGO_EXPORT int32_t zg_terminal_cols(const zg_terminal * self, uint16_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_rows(const zg_terminal * self, uint16_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_cursor_x(const zg_terminal * self, uint16_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_cursor_y(const zg_terminal * self, uint16_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_cursor_style(const zg_terminal * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_active_screen_key(const zg_terminal * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_cursor_pending_wrap(const zg_terminal * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_cursor_protected(const zg_terminal * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_width_px(const zg_terminal * self, uint32_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_height_px(const zg_terminal * self, uint32_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_focused(const zg_terminal * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_visible(const zg_terminal * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_password_input(const zg_terminal * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_stream_failed(const zg_stream * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_render_state_rows(const zg_render_state * self, uint16_t * out_result);
 ZIGO_EXPORT int32_t zg_render_state_cols(const zg_render_state * self, uint16_t * out_result);
@@ -831,6 +903,7 @@ ZIGO_EXPORT int32_t zg_kitty_images_update(zg_kitty_images * self, zg_terminal *
 ZIGO_EXPORT int32_t zg_kitty_images_placement_count(zg_kitty_images * self, size_t * out_result);
 ZIGO_EXPORT int32_t zg_kitty_images_placements(zg_kitty_images * self, zg_kitty_placement * dst_ptr, size_t dst_len, size_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_set_kitty_graphics_size_limit(zg_terminal * self, size_t limit);
+ZIGO_EXPORT int32_t zg_terminal_set_kitty_graphics_loading_limits(zg_terminal * self, uint8_t file, const uint8_t * temp_dir_ptr, size_t temp_dir_len, uint8_t shared_memory);
 ZIGO_EXPORT int32_t zg_terminal_kitty_image(zg_terminal * self, uint32_t image_id, uint8_t * out_result_has, zg_kitty_image * out_result);
 ZIGO_EXPORT int32_t zg_terminal_kitty_image_data(zg_terminal * self, uint32_t image_id, uint8_t * dst_ptr, size_t dst_len, size_t * out_result);
 ZIGO_EXPORT void zg_sys_on_png_decode_request(size_t userdata);
@@ -839,6 +912,43 @@ ZIGO_EXPORT int32_t zg_sys_reply_png_image(uint32_t width, uint32_t height, cons
 ZIGO_EXPORT void zg_sys_on_secure_random_request(size_t userdata);
 ZIGO_EXPORT void zg_sys_clear(void);
 ZIGO_EXPORT int32_t zg_sys_reply_secure_random(const uint8_t * bytes_ptr, size_t bytes_len);
+ZIGO_EXPORT int32_t zg_terminal_palette_color(zg_terminal * self, uint8_t idx, uint32_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_set_palette_color(zg_terminal * self, uint8_t idx, uint32_t rgb);
+ZIGO_EXPORT int32_t zg_terminal_reset_palette_color(zg_terminal * self, uint8_t idx);
+ZIGO_EXPORT int32_t zg_terminal_reset_palette(zg_terminal * self);
+ZIGO_EXPORT int32_t zg_terminal_set_default_palette_color(zg_terminal * self, uint8_t idx, uint32_t rgb);
+ZIGO_EXPORT int32_t zg_terminal_reset_default_palette(zg_terminal * self);
+ZIGO_EXPORT int32_t zg_terminal_set_default_mode(zg_terminal * self, uint16_t mode, uint8_t value);
+ZIGO_EXPORT int32_t zg_terminal_reset_modes(zg_terminal * self);
+ZIGO_EXPORT int32_t zg_terminal_save_mode(zg_terminal * self, uint16_t mode);
+ZIGO_EXPORT int32_t zg_terminal_restore_mode(zg_terminal * self, uint16_t mode, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_set_tabstop(zg_terminal * self, size_t col);
+ZIGO_EXPORT int32_t zg_terminal_unset_tabstop(zg_terminal * self, size_t col);
+ZIGO_EXPORT int32_t zg_terminal_reset_tabstops(zg_terminal * self, size_t interval);
+ZIGO_EXPORT int32_t zg_terminal_scroll_region(zg_terminal * self, zg_scroll_region * out_result);
+ZIGO_EXPORT int32_t zg_terminal_charset(zg_terminal * self, uint8_t slot, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_charset_gl(zg_terminal * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_charset_gr(zg_terminal * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_charset_single_shift(zg_terminal * self, uint8_t * out_result_has, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_protected_mode(zg_terminal * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_mouse_tracking(zg_terminal * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_mouse_tracking_sends_motion(zg_terminal * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_mouse_report_format(zg_terminal * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_mode_report(zg_terminal * self, uint16_t mode, uint8_t ansi, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_new_gesture(zg_terminal * self, zg_gesture * * out_result);
+ZIGO_EXPORT int32_t zg_gesture_gesture_close(zg_gesture * self);
+ZIGO_EXPORT int32_t zg_gesture_set_behaviors(zg_gesture * self, uint8_t single_click, uint8_t double_click, uint8_t triple_click);
+ZIGO_EXPORT int32_t zg_gesture_set_word_boundaries(zg_gesture * self, const uint32_t * boundaries_ptr, size_t boundaries_len);
+ZIGO_EXPORT int32_t zg_gesture_set_geometry(zg_gesture * self, const zg_gesture_geometry * geometry);
+ZIGO_EXPORT int32_t zg_gesture_press(zg_gesture * self, const zg_gesture_press_event * p, uint8_t * out_result_has, zg_selection * out_result);
+ZIGO_EXPORT int32_t zg_gesture_drag(zg_gesture * self, const zg_gesture_drag_event * d, uint8_t * out_result_has, zg_selection * out_result);
+ZIGO_EXPORT int32_t zg_gesture_autoscroll(zg_gesture * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_gesture_autoscroll_tick(zg_gesture * self, const zg_gesture_drag_event * d, uint8_t * out_result_has, zg_selection * out_result);
+ZIGO_EXPORT int32_t zg_gesture_deep_press(zg_gesture * self, uint8_t * out_result_has, zg_selection * out_result);
+ZIGO_EXPORT int32_t zg_gesture_release(zg_gesture * self, uint16_t x, uint16_t y);
+ZIGO_EXPORT int32_t zg_gesture_reset(zg_gesture * self);
+ZIGO_EXPORT int32_t zg_gesture_click_count(zg_gesture * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_gesture_dragged(zg_gesture * self, uint8_t * out_result);
 ZIGO_EXPORT const char *zg_last_error_message(void);
 ZIGO_EXPORT const char *zg_caught_panic_message(int32_t code);
 

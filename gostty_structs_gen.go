@@ -250,6 +250,89 @@ var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Format)-unsafe.Offsetof(raw.K
 var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Compression)-unsafe.Offsetof(raw.KittyImageData{}.Compression)]
 var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Pad)-unsafe.Offsetof(raw.KittyImageData{}.Pad)]
 
+// ScrollRegion mirrors the Zig `extern struct` of the same name.
+type ScrollRegion struct {
+	// Top corresponds to the Zig field top.
+	Top uint16
+	// Bottom corresponds to the Zig field bottom.
+	Bottom uint16
+	// Left corresponds to the Zig field left.
+	Left uint16
+	// Right corresponds to the Zig field right.
+	Right uint16
+}
+
+// ScrollRegion is reinterpreted as raw.ScrollRegionData instead of copied, so the two
+// layouts must stay identical.
+var _ = [1]struct{}{}[unsafe.Sizeof(ScrollRegion{})-unsafe.Sizeof(raw.ScrollRegionData{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(ScrollRegion{}.Top)-unsafe.Offsetof(raw.ScrollRegionData{}.Top)]
+var _ = [1]struct{}{}[unsafe.Offsetof(ScrollRegion{}.Bottom)-unsafe.Offsetof(raw.ScrollRegionData{}.Bottom)]
+var _ = [1]struct{}{}[unsafe.Offsetof(ScrollRegion{}.Left)-unsafe.Offsetof(raw.ScrollRegionData{}.Left)]
+var _ = [1]struct{}{}[unsafe.Offsetof(ScrollRegion{}.Right)-unsafe.Offsetof(raw.ScrollRegionData{}.Right)]
+
+// GestureGeometry mirrors the Zig `extern struct` of the same name.
+type GestureGeometry struct {
+	// Columns corresponds to the Zig field columns.
+	Columns uint32
+	// CellWidth corresponds to the Zig field cell_width.
+	CellWidth uint32
+	// PaddingLeft corresponds to the Zig field padding_left.
+	PaddingLeft uint32
+	// ScreenHeight corresponds to the Zig field screen_height.
+	ScreenHeight uint32
+}
+
+// GestureGeometry is reinterpreted as raw.GestureGeometryData instead of copied, so the two
+// layouts must stay identical.
+var _ = [1]struct{}{}[unsafe.Sizeof(GestureGeometry{})-unsafe.Sizeof(raw.GestureGeometryData{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(GestureGeometry{}.Columns)-unsafe.Offsetof(raw.GestureGeometryData{}.Columns)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GestureGeometry{}.CellWidth)-unsafe.Offsetof(raw.GestureGeometryData{}.CellWidth)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GestureGeometry{}.PaddingLeft)-unsafe.Offsetof(raw.GestureGeometryData{}.PaddingLeft)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GestureGeometry{}.ScreenHeight)-unsafe.Offsetof(raw.GestureGeometryData{}.ScreenHeight)]
+
+// GesturePressEvent mirrors the Zig `extern struct` of the same name.
+type GesturePressEvent struct {
+	// X corresponds to the Zig field x.
+	X uint16
+	// Y corresponds to the Zig field y.
+	Y uint16
+	// Xpos corresponds to the Zig field xpos.
+	Xpos float64
+	// Ypos corresponds to the Zig field ypos.
+	Ypos float64
+	// MaxDistance corresponds to the Zig field max_distance.
+	MaxDistance float64
+	// RepeatIntervalNs corresponds to the Zig field repeat_interval_ns.
+	RepeatIntervalNs uint64
+	// TimeNs corresponds to the Zig field time_ns.
+	TimeNs int64
+}
+
+// GesturePressEvent is reinterpreted as raw.GesturePressEventData instead of copied, so the two
+// layouts must stay identical.
+var _ = [1]struct{}{}[unsafe.Sizeof(GesturePressEvent{})-unsafe.Sizeof(raw.GesturePressEventData{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(GesturePressEvent{}.X)-unsafe.Offsetof(raw.GesturePressEventData{}.X)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GesturePressEvent{}.Y)-unsafe.Offsetof(raw.GesturePressEventData{}.Y)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GesturePressEvent{}.Xpos)-unsafe.Offsetof(raw.GesturePressEventData{}.Xpos)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GesturePressEvent{}.Ypos)-unsafe.Offsetof(raw.GesturePressEventData{}.Ypos)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GesturePressEvent{}.MaxDistance)-unsafe.Offsetof(raw.GesturePressEventData{}.MaxDistance)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GesturePressEvent{}.RepeatIntervalNs)-unsafe.Offsetof(raw.GesturePressEventData{}.RepeatIntervalNs)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GesturePressEvent{}.TimeNs)-unsafe.Offsetof(raw.GesturePressEventData{}.TimeNs)]
+
+// GestureDragEvent mirrors the Zig `extern struct` of the same name.
+type GestureDragEvent struct {
+	// X corresponds to the Zig field x.
+	X uint16
+	// Y corresponds to the Zig field y.
+	Y uint16
+	// Xpos corresponds to the Zig field xpos.
+	Xpos float64
+	// Ypos corresponds to the Zig field ypos.
+	Ypos float64
+	// Rectangle corresponds to the Zig field rectangle.
+	Rectangle bool
+}
+
 func zigoSnapshotProgressFromRaw(value raw.SnapshotProgressData) SnapshotProgress {
 	return SnapshotProgress{
 		Rows:      value.Rows,
@@ -385,6 +468,46 @@ func zigoKittyImageFromRaw(value raw.KittyImageData) KittyImage {
 		Format:      KittyFormat(value.Format),
 		Compression: KittyCompression(value.Compression),
 		Pad:         value.Pad,
+	}
+}
+
+func zigoScrollRegionFromRaw(value raw.ScrollRegionData) ScrollRegion {
+	return ScrollRegion{
+		Top:    value.Top,
+		Bottom: value.Bottom,
+		Left:   value.Left,
+		Right:  value.Right,
+	}
+}
+
+func zigoGestureGeometryToRaw(value GestureGeometry) raw.GestureGeometryData {
+	return raw.GestureGeometryData{
+		Columns:      value.Columns,
+		CellWidth:    value.CellWidth,
+		PaddingLeft:  value.PaddingLeft,
+		ScreenHeight: value.ScreenHeight,
+	}
+}
+
+func zigoGesturePressEventToRaw(value GesturePressEvent) raw.GesturePressEventData {
+	return raw.GesturePressEventData{
+		X:                value.X,
+		Y:                value.Y,
+		Xpos:             value.Xpos,
+		Ypos:             value.Ypos,
+		MaxDistance:      value.MaxDistance,
+		RepeatIntervalNs: value.RepeatIntervalNs,
+		TimeNs:           value.TimeNs,
+	}
+}
+
+func zigoGestureDragEventToRaw(value GestureDragEvent) raw.GestureDragEventData {
+	return raw.GestureDragEventData{
+		X:         value.X,
+		Y:         value.Y,
+		Xpos:      value.Xpos,
+		Ypos:      value.Ypos,
+		Rectangle: zigoBoolToUint8(value.Rectangle),
 	}
 }
 

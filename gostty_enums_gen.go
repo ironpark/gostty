@@ -1895,3 +1895,315 @@ func (value KittyCompression) String() string {
 		return "KittyCompression(" + strconv.Itoa(int(value)) + ")"
 	}
 }
+
+// MouseTracking represents the corresponding Zig enum.
+type MouseTracking uint8
+
+const (
+	// MouseTrackingNone corresponds to the Zig tag none.
+	MouseTrackingNone MouseTracking = 0
+	// MouseTrackingX10 corresponds to the Zig tag x10.
+	MouseTrackingX10 MouseTracking = 1
+	// MouseTrackingNormal corresponds to the Zig tag normal.
+	MouseTrackingNormal MouseTracking = 2
+	// MouseTrackingButton corresponds to the Zig tag button.
+	MouseTrackingButton MouseTracking = 3
+	// MouseTrackingAny corresponds to the Zig tag any.
+	MouseTrackingAny MouseTracking = 4
+)
+
+// String returns the Zig tag name.
+func (value MouseTracking) String() string {
+	switch value {
+	case MouseTrackingNone:
+		return "none"
+	case MouseTrackingX10:
+		return "x10"
+	case MouseTrackingNormal:
+		return "normal"
+	case MouseTrackingButton:
+		return "button"
+	case MouseTrackingAny:
+		return "any"
+	default:
+		return "MouseTracking(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// ParseMouseTracking returns the MouseTracking named by text, which is a Zig tag name.
+func ParseMouseTracking(text string) (MouseTracking, error) {
+	switch text {
+	case "none":
+		return MouseTrackingNone, nil
+	case "x10":
+		return MouseTrackingX10, nil
+	case "normal":
+		return MouseTrackingNormal, nil
+	case "button":
+		return MouseTrackingButton, nil
+	case "any":
+		return MouseTrackingAny, nil
+	}
+	return 0, &EnumParseError{Type: "MouseTracking", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value MouseTracking) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseMouseTracking.
+func (value *MouseTracking) UnmarshalText(text []byte) error {
+	parsed, err := ParseMouseTracking(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// MouseReportFormat represents the corresponding Zig enum.
+type MouseReportFormat uint8
+
+const (
+	// MouseReportFormatX10 corresponds to the Zig tag x10.
+	MouseReportFormatX10 MouseReportFormat = 0
+	// MouseReportFormatUTF8 corresponds to the Zig tag utf8.
+	MouseReportFormatUTF8 MouseReportFormat = 1
+	// MouseReportFormatSgr corresponds to the Zig tag sgr.
+	MouseReportFormatSgr MouseReportFormat = 2
+	// MouseReportFormatUrxvt corresponds to the Zig tag urxvt.
+	MouseReportFormatUrxvt MouseReportFormat = 3
+	// MouseReportFormatSgrPixels corresponds to the Zig tag sgr_pixels.
+	MouseReportFormatSgrPixels MouseReportFormat = 4
+)
+
+// String returns the Zig tag name.
+func (value MouseReportFormat) String() string {
+	switch value {
+	case MouseReportFormatX10:
+		return "x10"
+	case MouseReportFormatUTF8:
+		return "utf8"
+	case MouseReportFormatSgr:
+		return "sgr"
+	case MouseReportFormatUrxvt:
+		return "urxvt"
+	case MouseReportFormatSgrPixels:
+		return "sgr_pixels"
+	default:
+		return "MouseReportFormat(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// ParseMouseReportFormat returns the MouseReportFormat named by text, which is a Zig tag name.
+func ParseMouseReportFormat(text string) (MouseReportFormat, error) {
+	switch text {
+	case "x10":
+		return MouseReportFormatX10, nil
+	case "utf8":
+		return MouseReportFormatUTF8, nil
+	case "sgr":
+		return MouseReportFormatSgr, nil
+	case "urxvt":
+		return MouseReportFormatUrxvt, nil
+	case "sgr_pixels":
+		return MouseReportFormatSgrPixels, nil
+	}
+	return 0, &EnumParseError{Type: "MouseReportFormat", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value MouseReportFormat) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseMouseReportFormat.
+func (value *MouseReportFormat) UnmarshalText(text []byte) error {
+	parsed, err := ParseMouseReportFormat(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// ModeReport represents the corresponding Zig enum.
+type ModeReport uint8
+
+const (
+	// ModeReportNotRecognized corresponds to the Zig tag not_recognized.
+	ModeReportNotRecognized ModeReport = 0
+	// ModeReportSet corresponds to the Zig tag set.
+	ModeReportSet ModeReport = 1
+	// ModeReportReset corresponds to the Zig tag reset.
+	ModeReportReset ModeReport = 2
+	// ModeReportPermanentlySet corresponds to the Zig tag permanently_set.
+	ModeReportPermanentlySet ModeReport = 3
+	// ModeReportPermanentlyReset corresponds to the Zig tag permanently_reset.
+	ModeReportPermanentlyReset ModeReport = 4
+)
+
+// String returns the Zig tag name.
+func (value ModeReport) String() string {
+	switch value {
+	case ModeReportNotRecognized:
+		return "not_recognized"
+	case ModeReportSet:
+		return "set"
+	case ModeReportReset:
+		return "reset"
+	case ModeReportPermanentlySet:
+		return "permanently_set"
+	case ModeReportPermanentlyReset:
+		return "permanently_reset"
+	default:
+		return "ModeReport(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// ParseModeReport returns the ModeReport named by text, which is a Zig tag name.
+func ParseModeReport(text string) (ModeReport, error) {
+	switch text {
+	case "not_recognized":
+		return ModeReportNotRecognized, nil
+	case "set":
+		return ModeReportSet, nil
+	case "reset":
+		return ModeReportReset, nil
+	case "permanently_set":
+		return ModeReportPermanentlySet, nil
+	case "permanently_reset":
+		return ModeReportPermanentlyReset, nil
+	}
+	return 0, &EnumParseError{Type: "ModeReport", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value ModeReport) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseModeReport.
+func (value *ModeReport) UnmarshalText(text []byte) error {
+	parsed, err := ParseModeReport(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// GestureBehavior represents the corresponding Zig enum.
+type GestureBehavior uint8
+
+const (
+	// GestureBehaviorCell corresponds to the Zig tag cell.
+	GestureBehaviorCell GestureBehavior = 0
+	// GestureBehaviorWord corresponds to the Zig tag word.
+	GestureBehaviorWord GestureBehavior = 1
+	// GestureBehaviorLine corresponds to the Zig tag line.
+	GestureBehaviorLine GestureBehavior = 2
+	// GestureBehaviorOutput corresponds to the Zig tag output.
+	GestureBehaviorOutput GestureBehavior = 3
+)
+
+// String returns the Zig tag name.
+func (value GestureBehavior) String() string {
+	switch value {
+	case GestureBehaviorCell:
+		return "cell"
+	case GestureBehaviorWord:
+		return "word"
+	case GestureBehaviorLine:
+		return "line"
+	case GestureBehaviorOutput:
+		return "output"
+	default:
+		return "GestureBehavior(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// ParseGestureBehavior returns the GestureBehavior named by text, which is a Zig tag name.
+func ParseGestureBehavior(text string) (GestureBehavior, error) {
+	switch text {
+	case "cell":
+		return GestureBehaviorCell, nil
+	case "word":
+		return GestureBehaviorWord, nil
+	case "line":
+		return GestureBehaviorLine, nil
+	case "output":
+		return GestureBehaviorOutput, nil
+	}
+	return 0, &EnumParseError{Type: "GestureBehavior", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value GestureBehavior) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseGestureBehavior.
+func (value *GestureBehavior) UnmarshalText(text []byte) error {
+	parsed, err := ParseGestureBehavior(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// GestureAutoscrollDirection represents the corresponding Zig enum.
+type GestureAutoscrollDirection uint8
+
+const (
+	// GestureAutoscrollDirectionNone corresponds to the Zig tag none.
+	GestureAutoscrollDirectionNone GestureAutoscrollDirection = 0
+	// GestureAutoscrollDirectionUp corresponds to the Zig tag up.
+	GestureAutoscrollDirectionUp GestureAutoscrollDirection = 1
+	// GestureAutoscrollDirectionDown corresponds to the Zig tag down.
+	GestureAutoscrollDirectionDown GestureAutoscrollDirection = 2
+)
+
+// String returns the Zig tag name.
+func (value GestureAutoscrollDirection) String() string {
+	switch value {
+	case GestureAutoscrollDirectionNone:
+		return "none"
+	case GestureAutoscrollDirectionUp:
+		return "up"
+	case GestureAutoscrollDirectionDown:
+		return "down"
+	default:
+		return "GestureAutoscrollDirection(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// ParseGestureAutoscrollDirection returns the GestureAutoscrollDirection named by text, which is a Zig tag name.
+func ParseGestureAutoscrollDirection(text string) (GestureAutoscrollDirection, error) {
+	switch text {
+	case "none":
+		return GestureAutoscrollDirectionNone, nil
+	case "up":
+		return GestureAutoscrollDirectionUp, nil
+	case "down":
+		return GestureAutoscrollDirectionDown, nil
+	}
+	return 0, &EnumParseError{Type: "GestureAutoscrollDirection", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value GestureAutoscrollDirection) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseGestureAutoscrollDirection.
+func (value *GestureAutoscrollDirection) UnmarshalText(text []byte) error {
+	parsed, err := ParseGestureAutoscrollDirection(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}

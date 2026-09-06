@@ -279,3 +279,64 @@ pub const kittyPlacements = kitty_.kittyPlacements;
 pub const KittyImage = kitty_.KittyImage;
 pub const kittyImage = kitty_.kittyImage;
 pub const kittyImageData = kitty_.kittyImageData;
+
+// Click, drag and autoscroll: the state machine behind text selection.
+const gesture_ = @import("gesture.zig");
+
+pub const Gesture = gesture_.Gesture;
+pub const GestureBehavior = gesture_.GestureBehavior;
+pub const GestureAutoscroll = gesture_.GestureAutoscroll;
+pub const GestureGeometry = gesture_.GestureGeometry;
+pub const GesturePressEvent = gesture_.GesturePressEvent;
+pub const GestureDragEvent = gesture_.GestureDragEvent;
+pub const newGesture = gesture_.newGesture;
+pub const gestureClose = gesture_.gestureClose;
+pub const gestureSetBehaviors = gesture_.gestureSetBehaviors;
+pub const gestureSetWordBoundaries = gesture_.gestureSetWordBoundaries;
+pub const gestureSetGeometry = gesture_.gestureSetGeometry;
+pub const gesturePress = gesture_.gesturePress;
+pub const gestureDrag = gesture_.gestureDrag;
+pub const gestureAutoscroll = gesture_.gestureAutoscroll;
+pub const gestureAutoscrollTick = gesture_.gestureAutoscrollTick;
+pub const gestureDeepPress = gesture_.gestureDeepPress;
+pub const gestureRelease = gesture_.gestureRelease;
+pub const gestureReset = gesture_.gestureReset;
+pub const gestureClickCount = gesture_.gestureClickCount;
+pub const gestureDragged = gesture_.gestureDragged;
+
+// Reads of terminal state the bindings could otherwise only write.
+const state_ = @import("state.zig");
+
+pub const ScrollRegion = state_.ScrollRegion;
+pub const scrollRegion = state_.scrollRegion;
+pub const charset = state_.charset;
+pub const charsetGL = state_.charsetGL;
+pub const charsetGR = state_.charsetGR;
+pub const charsetSingleShift = state_.charsetSingleShift;
+pub const protectedMode = state_.protectedMode;
+pub const MouseTracking = state_.MouseTracking;
+pub const mouseTracking = state_.mouseTracking;
+pub const mouseTrackingSendsMotion = state_.mouseTrackingSendsMotion;
+pub const MouseReportFormat = state_.MouseReportFormat;
+pub const mouseReportFormat = state_.mouseReportFormat;
+pub const ModeReport = state_.ModeReport;
+pub const modeReport = state_.modeReport;
+
+// Configuration the embedder owns: the palette, mode defaults, tabstops and
+// which mediums a Kitty image may arrive over.
+const config_ = @import("config.zig");
+
+pub const paletteColor = config_.paletteColor;
+pub const setPaletteColor = config_.setPaletteColor;
+pub const resetPaletteColor = config_.resetPaletteColor;
+pub const resetPalette = config_.resetPalette;
+pub const setDefaultPaletteColor = config_.setDefaultPaletteColor;
+pub const resetDefaultPalette = config_.resetDefaultPalette;
+pub const setDefaultMode = config_.setDefaultMode;
+pub const resetModes = config_.resetModes;
+pub const saveMode = config_.saveMode;
+pub const restoreMode = config_.restoreMode;
+pub const setTabstop = config_.setTabstop;
+pub const unsetTabstop = config_.unsetTabstop;
+pub const resetTabstops = config_.resetTabstops;
+pub const setKittyGraphicsLoadingLimits = config_.setKittyGraphicsLoadingLimits;

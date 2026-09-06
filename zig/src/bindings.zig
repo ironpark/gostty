@@ -27,10 +27,13 @@ pub const bindings = zigo.define(.{
         .{
             .path = "input",
             .doc = "Package input encodes key, mouse, focus and paste events into the bytes a program reading the pty expects.",
-            // A trailing `*` is a prefix pattern: `Key*` and `Mouse*` cover
-            // every key and mouse type, and nothing outside this package is
-            // named that way.
-            .types = .{ "Key*", "Mouse*", "FocusEvent", "RenderSize" },
+            // A trailing `*` is a prefix pattern: `Key*` covers every key
+            // type, and nothing outside this package is named that way. The
+            // mouse types are listed instead, because the terminal's own
+            // `MouseTracking` and `MouseReportFormat` are state reads that
+            // belong to the root package -- pulling them in here would make
+            // the two packages import each other.
+            .types = .{ "Key*", "MouseAction", "MouseButton", "MouseEvent", "FocusEvent", "RenderSize" },
             .functions = .{
                 "root.encodeKey",
                 "root.encodeMouse",
@@ -53,14 +56,27 @@ pub const bindings = zigo.define(.{
     },
 
     .types = .{
-        .{ .type = gostty.Terminal, .repr = .@"opaque", .fields = .{
-            .{ .path = "cols" },
-            .{ .path = "rows" },
-            .{ .path = "screens.active.cursor.x", .name = "cursorX" },
-            .{ .path = "screens.active.cursor.y", .name = "cursorY" },
-            .{ .path = "screens.active.cursor.cursor_style", .name = "cursorStyle" },
-            .{ .path = "screens.active_key", .name = "activeScreenKey" },
-        } },
+        .{
+            .type = gostty.Terminal,
+            .repr = .@"opaque",
+            .fields = .{
+                .{ .path = "cols" },
+                .{ .path = "rows" },
+                .{ .path = "screens.active.cursor.x", .name = "cursorX" },
+                .{ .path = "screens.active.cursor.y", .name = "cursorY" },
+                .{ .path = "screens.active.cursor.cursor_style", .name = "cursorStyle" },
+                .{ .path = "screens.active_key", .name = "activeScreenKey" },
+                // The LCF: set once printing has filled the last column, so the
+                // next print soft-wraps instead of overwriting.
+                .{ .path = "screens.active.cursor.pending_wrap", .name = "cursorPendingWrap" },
+                .{ .path = "screens.active.cursor.protected", .name = "cursorProtected" },
+                .{ .path = "width_px", .name = "widthPx" },
+                .{ .path = "height_px", .name = "heightPx" },
+                .{ .path = "flags.focused", .name = "focused" },
+                .{ .path = "flags.visible", .name = "visible" },
+                .{ .path = "flags.password_input", .name = "passwordInput" },
+            },
+        },
         .{ .type = gostty.Stream, .repr = .@"opaque", .fields = .{
             .{ .path = "inner.handler.semantic_failure", .name = "failed", .doc = "True once a sequence failed in a way the terminal could not absorb, such as an allocation failure. Streams are best-effort and keep going." },
         } },
@@ -144,6 +160,20 @@ pub const bindings = zigo.define(.{
         .{ .type = gostty.KittyImage, .repr = .value },
         .{ .type = gostty.KittyFormat, .repr = .enumeration, .name = "KittyFormat" },
         .{ .type = gostty.KittyCompression, .repr = .enumeration, .name = "KittyCompression" },
+
+        // Terminal configuration and state reads.
+        .{ .type = gostty.ScrollRegion, .repr = .value },
+        .{ .type = gostty.MouseTracking, .repr = .enumeration, .name = "MouseTracking", .text = true },
+        .{ .type = gostty.MouseReportFormat, .repr = .enumeration, .name = "MouseReportFormat", .text = true },
+        .{ .type = gostty.ModeReport, .repr = .enumeration, .name = "ModeReport", .text = true },
+
+        // Selection gestures.
+        .{ .type = gostty.Gesture, .repr = .@"opaque" },
+        .{ .type = gostty.GestureBehavior, .repr = .enumeration, .name = "GestureBehavior", .text = true },
+        .{ .type = gostty.GestureAutoscroll, .repr = .enumeration, .name = "GestureAutoscrollDirection", .text = true },
+        .{ .type = gostty.GestureGeometry, .repr = .value },
+        .{ .type = gostty.GesturePressEvent, .repr = .value },
+        .{ .type = gostty.GestureDragEvent, .repr = .value },
     },
     .functions = .{
         .{ .path = "root.unicode.codepointWidth" },
@@ -513,6 +543,12 @@ pub const bindings = zigo.define(.{
             },
         },
         .{ .path = "Terminal.setKittyGraphicsSizeLimit", .params = .{"limit"} },
+        .{
+            .path = "root.setKittyGraphicsLoadingLimits",
+            .params = .{ "file", "temp_dir", "shared_memory" },
+            .param_meta = .{ .temp_dir = .{ .semantic = .utf8_string } },
+            .covers = "Terminal.setKittyGraphicsLoadingLimits",
+        },
         .{ .path = "root.kittyImage", .params = .{"image_id"} },
         .{
             .path = "root.kittyImageData",
@@ -549,5 +585,58 @@ pub const bindings = zigo.define(.{
         },
         .{ .path = "root.sys.clear" },
         .{ .path = "root.sys.replySecureRandom", .params = .{"bytes"} },
+
+        // Terminal configuration: what the embedder sets underneath whatever
+        // a program on the pty asks for.
+        .{ .path = "root.paletteColor", .params = .{"idx"} },
+        .{ .path = "root.setPaletteColor", .params = .{ "idx", "rgb" } },
+        .{ .path = "root.resetPaletteColor", .params = .{"idx"} },
+        .{ .path = "root.resetPalette" },
+        .{ .path = "root.setDefaultPaletteColor", .params = .{ "idx", "rgb" } },
+        .{ .path = "root.resetDefaultPalette" },
+        .{ .path = "root.setDefaultMode", .params = .{ "mode", "value" } },
+        .{ .path = "root.resetModes" },
+        .{ .path = "root.saveMode", .params = .{"mode"} },
+        .{ .path = "root.restoreMode", .params = .{"mode"} },
+        .{ .path = "root.setTabstop", .params = .{"col"} },
+        .{ .path = "root.unsetTabstop", .params = .{"col"} },
+        .{ .path = "root.resetTabstops", .params = .{"interval"} },
+
+        // Terminal state reads: the gets for state the bindings could already
+        // set, plus the resolved values no single mode flag reports.
+        .{ .path = "root.scrollRegion" },
+        .{ .path = "root.charset", .params = .{"slot"} },
+        .{ .path = "root.charsetGL" },
+        .{ .path = "root.charsetGR" },
+        .{ .path = "root.charsetSingleShift" },
+        .{ .path = "root.protectedMode" },
+        .{ .path = "root.mouseTracking" },
+        .{ .path = "root.mouseTrackingSendsMotion" },
+        .{ .path = "root.mouseReportFormat" },
+        .{ .path = "root.modeReport", .params = .{ "mode", "ansi" } },
+
+        // Selection gestures. Like `Search`, a gesture borrows its terminal --
+        // it holds a tracked pin inside it and hands it back on every call --
+        // so it is a child handle and closes first.
+        .{ .path = "root.newGesture", .constructs = "Gesture", .child_of_receiver = true },
+        .{ .path = "root.gestureClose", .destroys = "Gesture" },
+        .{
+            .receiver = "Gesture",
+            .strip_prefix = "gesture",
+            .functions = .{
+                .{ .path = "root.gestureSetBehaviors", .params = .{ "single_click", "double_click", "triple_click" } },
+                .{ .path = "root.gestureSetWordBoundaries", .params = .{"boundaries"} },
+                .{ .path = "root.gestureSetGeometry", .params = .{"geometry"} },
+                .{ .path = "root.gesturePress", .params = .{"p"} },
+                .{ .path = "root.gestureDrag", .params = .{"d"} },
+                "root.gestureAutoscroll",
+                .{ .path = "root.gestureAutoscrollTick", .params = .{"d"} },
+                .{ .path = "root.gestureDeepPress" },
+                .{ .path = "root.gestureRelease", .params = .{ "x", "y" } },
+                .{ .path = "root.gestureReset" },
+                "root.gestureClickCount",
+                "root.gestureDragged",
+            },
+        },
     },
 });

@@ -289,6 +289,55 @@ func TerminalActiveScreenKey(self unsafe.Pointer) (uint8, int32) {
 	return uint8(outResult), code
 }
 
+// TerminalCursorPendingWrap calls the generated C ABI wrapper for zg_terminal_cursor_pending_wrap.
+func TerminalCursorPendingWrap(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_terminal_cursor_pending_wrap((*C.zg_terminal)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// TerminalCursorProtected calls the generated C ABI wrapper for zg_terminal_cursor_protected.
+func TerminalCursorProtected(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_terminal_cursor_protected((*C.zg_terminal)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// TerminalWidthPx calls the generated C ABI wrapper for zg_terminal_width_px.
+func TerminalWidthPx(self unsafe.Pointer) (uint32, int32) {
+	var outResult C.uint32_t
+	code := int32(C.zg_terminal_width_px((*C.zg_terminal)(self), &outResult))
+	return uint32(outResult), code
+}
+
+// TerminalHeightPx calls the generated C ABI wrapper for zg_terminal_height_px.
+func TerminalHeightPx(self unsafe.Pointer) (uint32, int32) {
+	var outResult C.uint32_t
+	code := int32(C.zg_terminal_height_px((*C.zg_terminal)(self), &outResult))
+	return uint32(outResult), code
+}
+
+// TerminalFocused calls the generated C ABI wrapper for zg_terminal_focused.
+func TerminalFocused(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_terminal_focused((*C.zg_terminal)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// TerminalVisible calls the generated C ABI wrapper for zg_terminal_visible.
+func TerminalVisible(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_terminal_visible((*C.zg_terminal)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// TerminalPasswordInput calls the generated C ABI wrapper for zg_terminal_password_input.
+func TerminalPasswordInput(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_terminal_password_input((*C.zg_terminal)(self), &outResult))
+	return uint8(outResult), code
+}
+
 // StreamFailed calls the generated C ABI wrapper for zg_stream_failed.
 func StreamFailed(self unsafe.Pointer) (uint8, int32) {
 	var outResult C.uint8_t
@@ -1986,6 +2035,13 @@ func TerminalSetKittyGraphicsSizeLimit(self unsafe.Pointer, limit uint) int32 {
 	return code
 }
 
+// TerminalSetKittyGraphicsLoadingLimits calls the generated C ABI wrapper for zg_terminal_set_kitty_graphics_loading_limits.
+func TerminalSetKittyGraphicsLoadingLimits(self unsafe.Pointer, file uint8, tempDir string, sharedMemory uint8) int32 {
+	tempDirPtr := (*C.uint8_t)(zigoStringPtr(tempDir))
+	code := int32(C.zg_terminal_set_kitty_graphics_loading_limits((*C.zg_terminal)(self), C.uint8_t(file), tempDirPtr, C.size_t(len(tempDir)), C.uint8_t(sharedMemory)))
+	return code
+}
+
 // TerminalKittyImage calls the generated C ABI wrapper for zg_terminal_kitty_image.
 func TerminalKittyImage(self unsafe.Pointer, imageID uint32) (KittyImageData, bool, int32) {
 	var outResultHas C.uint8_t
@@ -2043,6 +2099,308 @@ func SysReplySecureRandom(bytes []uint8) int32 {
 	bytesPtr := (*C.uint8_t)(zigoSlicePtr(bytes))
 	code := int32(C.zg_sys_reply_secure_random(bytesPtr, C.size_t(len(bytes))))
 	return code
+}
+
+// TerminalPaletteColor calls the generated C ABI wrapper for zg_terminal_palette_color.
+func TerminalPaletteColor(self unsafe.Pointer, idx uint8) (uint32, int32) {
+	var outResult C.uint32_t
+	code := int32(C.zg_terminal_palette_color((*C.zg_terminal)(self), C.uint8_t(idx), &outResult))
+	return uint32(outResult), code
+}
+
+// TerminalSetPaletteColor calls the generated C ABI wrapper for zg_terminal_set_palette_color.
+func TerminalSetPaletteColor(self unsafe.Pointer, idx uint8, rgb uint32) int32 {
+	code := int32(C.zg_terminal_set_palette_color((*C.zg_terminal)(self), C.uint8_t(idx), C.uint32_t(rgb)))
+	return code
+}
+
+// TerminalResetPaletteColor calls the generated C ABI wrapper for zg_terminal_reset_palette_color.
+func TerminalResetPaletteColor(self unsafe.Pointer, idx uint8) int32 {
+	code := int32(C.zg_terminal_reset_palette_color((*C.zg_terminal)(self), C.uint8_t(idx)))
+	return code
+}
+
+// TerminalResetPalette calls the generated C ABI wrapper for zg_terminal_reset_palette.
+func TerminalResetPalette(self unsafe.Pointer) int32 {
+	code := int32(C.zg_terminal_reset_palette((*C.zg_terminal)(self)))
+	return code
+}
+
+// TerminalSetDefaultPaletteColor calls the generated C ABI wrapper for zg_terminal_set_default_palette_color.
+func TerminalSetDefaultPaletteColor(self unsafe.Pointer, idx uint8, rgb uint32) int32 {
+	code := int32(C.zg_terminal_set_default_palette_color((*C.zg_terminal)(self), C.uint8_t(idx), C.uint32_t(rgb)))
+	return code
+}
+
+// TerminalResetDefaultPalette calls the generated C ABI wrapper for zg_terminal_reset_default_palette.
+func TerminalResetDefaultPalette(self unsafe.Pointer) int32 {
+	code := int32(C.zg_terminal_reset_default_palette((*C.zg_terminal)(self)))
+	return code
+}
+
+// TerminalSetDefaultMode calls the generated C ABI wrapper for zg_terminal_set_default_mode.
+func TerminalSetDefaultMode(self unsafe.Pointer, mode uint16, value uint8) int32 {
+	code := int32(C.zg_terminal_set_default_mode((*C.zg_terminal)(self), C.uint16_t(mode), C.uint8_t(value)))
+	return code
+}
+
+// TerminalResetModes calls the generated C ABI wrapper for zg_terminal_reset_modes.
+func TerminalResetModes(self unsafe.Pointer) int32 {
+	code := int32(C.zg_terminal_reset_modes((*C.zg_terminal)(self)))
+	return code
+}
+
+// TerminalSaveMode calls the generated C ABI wrapper for zg_terminal_save_mode.
+func TerminalSaveMode(self unsafe.Pointer, mode uint16) int32 {
+	code := int32(C.zg_terminal_save_mode((*C.zg_terminal)(self), C.uint16_t(mode)))
+	return code
+}
+
+// TerminalRestoreMode calls the generated C ABI wrapper for zg_terminal_restore_mode.
+func TerminalRestoreMode(self unsafe.Pointer, mode uint16) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_terminal_restore_mode((*C.zg_terminal)(self), C.uint16_t(mode), &outResult))
+	return uint8(outResult), code
+}
+
+// TerminalSetTabstop calls the generated C ABI wrapper for zg_terminal_set_tabstop.
+func TerminalSetTabstop(self unsafe.Pointer, col uint) int32 {
+	code := int32(C.zg_terminal_set_tabstop((*C.zg_terminal)(self), C.size_t(col)))
+	return code
+}
+
+// TerminalUnsetTabstop calls the generated C ABI wrapper for zg_terminal_unset_tabstop.
+func TerminalUnsetTabstop(self unsafe.Pointer, col uint) int32 {
+	code := int32(C.zg_terminal_unset_tabstop((*C.zg_terminal)(self), C.size_t(col)))
+	return code
+}
+
+// TerminalResetTabstops calls the generated C ABI wrapper for zg_terminal_reset_tabstops.
+func TerminalResetTabstops(self unsafe.Pointer, interval uint) int32 {
+	code := int32(C.zg_terminal_reset_tabstops((*C.zg_terminal)(self), C.size_t(interval)))
+	return code
+}
+
+// TerminalScrollRegion calls the generated C ABI wrapper for zg_terminal_scroll_region.
+func TerminalScrollRegion(self unsafe.Pointer) (ScrollRegionData, int32) {
+	var outResult C.zg_scroll_region
+	code := int32(C.zg_terminal_scroll_region((*C.zg_terminal)(self), &outResult))
+	return ScrollRegionData{
+		Top:    uint16(outResult.top),
+		Bottom: uint16(outResult.bottom),
+		Left:   uint16(outResult.left),
+		Right:  uint16(outResult.right),
+	}, code
+}
+
+// TerminalCharset calls the generated C ABI wrapper for zg_terminal_charset.
+func TerminalCharset(self unsafe.Pointer, slot uint8) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_terminal_charset((*C.zg_terminal)(self), C.uint8_t(slot), &outResult))
+	return uint8(outResult), code
+}
+
+// TerminalCharsetGl calls the generated C ABI wrapper for zg_terminal_charset_gl.
+func TerminalCharsetGl(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_terminal_charset_gl((*C.zg_terminal)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// TerminalCharsetGr calls the generated C ABI wrapper for zg_terminal_charset_gr.
+func TerminalCharsetGr(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_terminal_charset_gr((*C.zg_terminal)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// TerminalCharsetSingleShift calls the generated C ABI wrapper for zg_terminal_charset_single_shift.
+func TerminalCharsetSingleShift(self unsafe.Pointer) (uint8, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.uint8_t
+	code := int32(C.zg_terminal_charset_single_shift((*C.zg_terminal)(self), &outResultHas, &outResult))
+	return uint8(outResult), outResultHas != 0, code
+}
+
+// TerminalProtectedMode calls the generated C ABI wrapper for zg_terminal_protected_mode.
+func TerminalProtectedMode(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_terminal_protected_mode((*C.zg_terminal)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// TerminalMouseTracking calls the generated C ABI wrapper for zg_terminal_mouse_tracking.
+func TerminalMouseTracking(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_terminal_mouse_tracking((*C.zg_terminal)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// TerminalMouseTrackingSendsMotion calls the generated C ABI wrapper for zg_terminal_mouse_tracking_sends_motion.
+func TerminalMouseTrackingSendsMotion(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_terminal_mouse_tracking_sends_motion((*C.zg_terminal)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// TerminalMouseReportFormat calls the generated C ABI wrapper for zg_terminal_mouse_report_format.
+func TerminalMouseReportFormat(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_terminal_mouse_report_format((*C.zg_terminal)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// TerminalModeReport calls the generated C ABI wrapper for zg_terminal_mode_report.
+func TerminalModeReport(self unsafe.Pointer, mode uint16, ansi uint8) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_terminal_mode_report((*C.zg_terminal)(self), C.uint16_t(mode), C.uint8_t(ansi), &outResult))
+	return uint8(outResult), code
+}
+
+// TerminalNewGesture calls the generated C ABI wrapper for zg_terminal_new_gesture.
+func TerminalNewGesture(self unsafe.Pointer) (unsafe.Pointer, int32) {
+	var outResult *C.zg_gesture
+	code := int32(C.zg_terminal_new_gesture((*C.zg_terminal)(self), &outResult))
+	return unsafe.Pointer(outResult), code
+}
+
+// GestureGestureClose calls the generated C ABI wrapper for zg_gesture_gesture_close.
+func GestureGestureClose(self unsafe.Pointer) int32 {
+	code := int32(C.zg_gesture_gesture_close((*C.zg_gesture)(self)))
+	return code
+}
+
+// GestureSetBehaviors calls the generated C ABI wrapper for zg_gesture_set_behaviors.
+func GestureSetBehaviors(self unsafe.Pointer, singleClick uint8, doubleClick uint8, tripleClick uint8) int32 {
+	code := int32(C.zg_gesture_set_behaviors((*C.zg_gesture)(self), C.uint8_t(singleClick), C.uint8_t(doubleClick), C.uint8_t(tripleClick)))
+	return code
+}
+
+// GestureSetWordBoundaries calls the generated C ABI wrapper for zg_gesture_set_word_boundaries.
+func GestureSetWordBoundaries(self unsafe.Pointer, boundaries []uint32) int32 {
+	boundariesPtr := (*C.uint32_t)(zigoSlicePtr(boundaries))
+	code := int32(C.zg_gesture_set_word_boundaries((*C.zg_gesture)(self), boundariesPtr, C.size_t(len(boundaries))))
+	return code
+}
+
+// GestureSetGeometry calls the generated C ABI wrapper for zg_gesture_set_geometry.
+func GestureSetGeometry(self unsafe.Pointer, geometry GestureGeometryData) int32 {
+	var cgeometry C.zg_gesture_geometry
+	cgeometry.columns = C.uint32_t(geometry.Columns)
+	cgeometry.cell_width = C.uint32_t(geometry.CellWidth)
+	cgeometry.padding_left = C.uint32_t(geometry.PaddingLeft)
+	cgeometry.screen_height = C.uint32_t(geometry.ScreenHeight)
+	code := int32(C.zg_gesture_set_geometry((*C.zg_gesture)(self), &cgeometry))
+	return code
+}
+
+// GesturePress calls the generated C ABI wrapper for zg_gesture_press.
+func GesturePress(self unsafe.Pointer, p GesturePressEventData) (SelectionData, bool, int32) {
+	var cp C.zg_gesture_press_event
+	cp.x = C.uint16_t(p.X)
+	cp.y = C.uint16_t(p.Y)
+	cp.xpos = C.double(p.Xpos)
+	cp.ypos = C.double(p.Ypos)
+	cp.max_distance = C.double(p.MaxDistance)
+	cp.repeat_interval_ns = C.uint64_t(p.RepeatIntervalNs)
+	cp.time_ns = C.int64_t(p.TimeNs)
+	var outResultHas C.uint8_t
+	var outResult C.zg_selection
+	code := int32(C.zg_gesture_press((*C.zg_gesture)(self), &cp, &outResultHas, &outResult))
+	return SelectionData{
+		StartX:    uint16(outResult.start_x),
+		StartY:    uint32(outResult.start_y),
+		EndX:      uint16(outResult.end_x),
+		EndY:      uint32(outResult.end_y),
+		Rectangle: uint8(outResult.rectangle),
+	}, outResultHas != 0, code
+}
+
+// GestureDrag calls the generated C ABI wrapper for zg_gesture_drag.
+func GestureDrag(self unsafe.Pointer, d GestureDragEventData) (SelectionData, bool, int32) {
+	var cd C.zg_gesture_drag_event
+	cd.x = C.uint16_t(d.X)
+	cd.y = C.uint16_t(d.Y)
+	cd.xpos = C.double(d.Xpos)
+	cd.ypos = C.double(d.Ypos)
+	cd.rectangle = C.uint8_t(d.Rectangle)
+	var outResultHas C.uint8_t
+	var outResult C.zg_selection
+	code := int32(C.zg_gesture_drag((*C.zg_gesture)(self), &cd, &outResultHas, &outResult))
+	return SelectionData{
+		StartX:    uint16(outResult.start_x),
+		StartY:    uint32(outResult.start_y),
+		EndX:      uint16(outResult.end_x),
+		EndY:      uint32(outResult.end_y),
+		Rectangle: uint8(outResult.rectangle),
+	}, outResultHas != 0, code
+}
+
+// GestureAutoscroll calls the generated C ABI wrapper for zg_gesture_autoscroll.
+func GestureAutoscroll(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_gesture_autoscroll((*C.zg_gesture)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// GestureAutoscrollTick calls the generated C ABI wrapper for zg_gesture_autoscroll_tick.
+func GestureAutoscrollTick(self unsafe.Pointer, d GestureDragEventData) (SelectionData, bool, int32) {
+	var cd C.zg_gesture_drag_event
+	cd.x = C.uint16_t(d.X)
+	cd.y = C.uint16_t(d.Y)
+	cd.xpos = C.double(d.Xpos)
+	cd.ypos = C.double(d.Ypos)
+	cd.rectangle = C.uint8_t(d.Rectangle)
+	var outResultHas C.uint8_t
+	var outResult C.zg_selection
+	code := int32(C.zg_gesture_autoscroll_tick((*C.zg_gesture)(self), &cd, &outResultHas, &outResult))
+	return SelectionData{
+		StartX:    uint16(outResult.start_x),
+		StartY:    uint32(outResult.start_y),
+		EndX:      uint16(outResult.end_x),
+		EndY:      uint32(outResult.end_y),
+		Rectangle: uint8(outResult.rectangle),
+	}, outResultHas != 0, code
+}
+
+// GestureDeepPress calls the generated C ABI wrapper for zg_gesture_deep_press.
+func GestureDeepPress(self unsafe.Pointer) (SelectionData, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.zg_selection
+	code := int32(C.zg_gesture_deep_press((*C.zg_gesture)(self), &outResultHas, &outResult))
+	return SelectionData{
+		StartX:    uint16(outResult.start_x),
+		StartY:    uint32(outResult.start_y),
+		EndX:      uint16(outResult.end_x),
+		EndY:      uint32(outResult.end_y),
+		Rectangle: uint8(outResult.rectangle),
+	}, outResultHas != 0, code
+}
+
+// GestureRelease calls the generated C ABI wrapper for zg_gesture_release.
+func GestureRelease(self unsafe.Pointer, x uint16, y uint16) int32 {
+	code := int32(C.zg_gesture_release((*C.zg_gesture)(self), C.uint16_t(x), C.uint16_t(y)))
+	return code
+}
+
+// GestureReset calls the generated C ABI wrapper for zg_gesture_reset.
+func GestureReset(self unsafe.Pointer) int32 {
+	code := int32(C.zg_gesture_reset((*C.zg_gesture)(self)))
+	return code
+}
+
+// GestureClickCount calls the generated C ABI wrapper for zg_gesture_click_count.
+func GestureClickCount(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_gesture_click_count((*C.zg_gesture)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// GestureDragged calls the generated C ABI wrapper for zg_gesture_dragged.
+func GestureDragged(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_gesture_dragged((*C.zg_gesture)(self), &outResult))
+	return uint8(outResult), code
 }
 
 // SnapshotProgressData mirrors the zg_snapshot_progress layout, padding included.
@@ -2169,6 +2527,45 @@ type KittyImageData struct {
 	_           [4]byte
 }
 
+// ScrollRegionData mirrors the zg_scroll_region layout, padding included.
+type ScrollRegionData struct {
+	Top    uint16
+	Bottom uint16
+	Left   uint16
+	Right  uint16
+}
+
+// GestureGeometryData mirrors the zg_gesture_geometry layout, padding included.
+type GestureGeometryData struct {
+	Columns      uint32
+	CellWidth    uint32
+	PaddingLeft  uint32
+	ScreenHeight uint32
+}
+
+// GesturePressEventData mirrors the zg_gesture_press_event layout, padding included.
+type GesturePressEventData struct {
+	X                uint16
+	Y                uint16
+	_                [4]byte
+	Xpos             float64
+	Ypos             float64
+	MaxDistance      float64
+	RepeatIntervalNs uint64
+	TimeNs           int64
+}
+
+// GestureDragEventData mirrors the zg_gesture_drag_event layout, padding included.
+type GestureDragEventData struct {
+	X         uint16
+	Y         uint16
+	_         [4]byte
+	Xpos      float64
+	Ypos      float64
+	Rectangle uint8
+	_         [7]byte
+}
+
 // SnapshotProgressData slices are copied from C memory as one run, so it must match zg_snapshot_progress byte for byte.
 var _ = [1]struct{}{}[unsafe.Sizeof(SnapshotProgressData{})-unsafe.Sizeof(C.zg_snapshot_progress{})]
 var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgressData{}.Rows)-unsafe.Offsetof(C.zg_snapshot_progress{}.rows)]
@@ -2273,3 +2670,35 @@ var _ = [1]struct{}{}[unsafe.Offsetof(KittyImageData{}.Height)-unsafe.Offsetof(C
 var _ = [1]struct{}{}[unsafe.Offsetof(KittyImageData{}.Format)-unsafe.Offsetof(C.zg_kitty_image{}.format)]
 var _ = [1]struct{}{}[unsafe.Offsetof(KittyImageData{}.Compression)-unsafe.Offsetof(C.zg_kitty_image{}.compression)]
 var _ = [1]struct{}{}[unsafe.Offsetof(KittyImageData{}.Pad)-unsafe.Offsetof(C.zg_kitty_image{}._pad)]
+
+// ScrollRegionData slices are copied from C memory as one run, so it must match zg_scroll_region byte for byte.
+var _ = [1]struct{}{}[unsafe.Sizeof(ScrollRegionData{})-unsafe.Sizeof(C.zg_scroll_region{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(ScrollRegionData{}.Top)-unsafe.Offsetof(C.zg_scroll_region{}.top)]
+var _ = [1]struct{}{}[unsafe.Offsetof(ScrollRegionData{}.Bottom)-unsafe.Offsetof(C.zg_scroll_region{}.bottom)]
+var _ = [1]struct{}{}[unsafe.Offsetof(ScrollRegionData{}.Left)-unsafe.Offsetof(C.zg_scroll_region{}.left)]
+var _ = [1]struct{}{}[unsafe.Offsetof(ScrollRegionData{}.Right)-unsafe.Offsetof(C.zg_scroll_region{}.right)]
+
+// GestureGeometryData slices are copied from C memory as one run, so it must match zg_gesture_geometry byte for byte.
+var _ = [1]struct{}{}[unsafe.Sizeof(GestureGeometryData{})-unsafe.Sizeof(C.zg_gesture_geometry{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(GestureGeometryData{}.Columns)-unsafe.Offsetof(C.zg_gesture_geometry{}.columns)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GestureGeometryData{}.CellWidth)-unsafe.Offsetof(C.zg_gesture_geometry{}.cell_width)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GestureGeometryData{}.PaddingLeft)-unsafe.Offsetof(C.zg_gesture_geometry{}.padding_left)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GestureGeometryData{}.ScreenHeight)-unsafe.Offsetof(C.zg_gesture_geometry{}.screen_height)]
+
+// GesturePressEventData slices are copied from C memory as one run, so it must match zg_gesture_press_event byte for byte.
+var _ = [1]struct{}{}[unsafe.Sizeof(GesturePressEventData{})-unsafe.Sizeof(C.zg_gesture_press_event{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(GesturePressEventData{}.X)-unsafe.Offsetof(C.zg_gesture_press_event{}.x)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GesturePressEventData{}.Y)-unsafe.Offsetof(C.zg_gesture_press_event{}.y)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GesturePressEventData{}.Xpos)-unsafe.Offsetof(C.zg_gesture_press_event{}.xpos)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GesturePressEventData{}.Ypos)-unsafe.Offsetof(C.zg_gesture_press_event{}.ypos)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GesturePressEventData{}.MaxDistance)-unsafe.Offsetof(C.zg_gesture_press_event{}.max_distance)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GesturePressEventData{}.RepeatIntervalNs)-unsafe.Offsetof(C.zg_gesture_press_event{}.repeat_interval_ns)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GesturePressEventData{}.TimeNs)-unsafe.Offsetof(C.zg_gesture_press_event{}.time_ns)]
+
+// GestureDragEventData slices are copied from C memory as one run, so it must match zg_gesture_drag_event byte for byte.
+var _ = [1]struct{}{}[unsafe.Sizeof(GestureDragEventData{})-unsafe.Sizeof(C.zg_gesture_drag_event{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(GestureDragEventData{}.X)-unsafe.Offsetof(C.zg_gesture_drag_event{}.x)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GestureDragEventData{}.Y)-unsafe.Offsetof(C.zg_gesture_drag_event{}.y)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GestureDragEventData{}.Xpos)-unsafe.Offsetof(C.zg_gesture_drag_event{}.xpos)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GestureDragEventData{}.Ypos)-unsafe.Offsetof(C.zg_gesture_drag_event{}.ypos)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GestureDragEventData{}.Rectangle)-unsafe.Offsetof(C.zg_gesture_drag_event{}.rectangle)]

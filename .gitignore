@@ -9,3 +9,6 @@ docs/
 zig-cache/
 zig-out/
 zig-pkg/
+
+# Scratch git worktrees the agent harness creates.
+.claude/
