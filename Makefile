@@ -40,12 +40,9 @@ all: build test ## Build the native libraries and run the tests
 # only what changed is rebuilt.
 build: generate ## Regenerate bindings and build the native archives (alias of generate)
 
-# Through the generator rather than `go-lib`: a Debug build puts Zig's UBSan
-# runtime on the cgo link line and the release modes must not have it, and
-# that line is written when the bindings are generated. Generating is half a
-# second once Zig's cache is warm, and it produces the same committed files
-# every time, so paying it here is cheaper than a link that silently disagrees
-# with the mode it was built in.
+# Through the generator rather than `go-lib` so the committed link file and
+# the archives always come from the same run. Generating is half a second once
+# Zig's cache is warm, and it produces the same committed files every time.
 generate: ## Regenerate bindings and build native archives for every platform
 	cd $(ZIG_DIR) && $(ZIG) build go $(ZIG_FLAGS)
 	@$(MAKE) --no-print-directory align-macos-archives

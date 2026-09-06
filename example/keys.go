@@ -116,39 +116,15 @@ func repeating(held int) bool {
 
 type mods struct{ shift, ctrl, alt, super bool }
 
+func (m mods) keyMods() input.KeyMods {
+	return input.KeyMods{Shift: m.shift, Ctrl: m.ctrl, Alt: m.alt, Super: m.super}
+}
+
 // sendKey describes one key press to the binding and appends whatever it
 // encodes to this frame's output.
 func (g *game) sendKey(key input.Key, text []byte, m mods) error {
-	if err := g.ev.Reset(); err != nil {
-		return err
-	}
-	if err := g.ev.SetAction(input.KeyActionPress); err != nil {
-		return err
-	}
-	if err := g.ev.SetKey(key); err != nil {
-		return err
-	}
-	if len(text) > 0 {
-		if err := g.ev.SetUTF8(text); err != nil {
-			return err
-		}
-	}
-	for _, set := range [...]struct {
-		mod input.KeyMod
-		on  bool
-	}{
-		{input.KeyModShift, m.shift},
-		{input.KeyModCtrl, m.ctrl},
-		{input.KeyModAlt, m.alt},
-		{input.KeyModSuper, m.super},
-	} {
-		if set.on {
-			if err := g.ev.SetMod(set.mod, true); err != nil {
-				return err
-			}
-		}
-	}
-	return input.EncodeKey(g.enc, g.vt, g.ev)
+	ev := input.KeyEvent{Action: input.KeyActionPress, Key: key, Mods: m.keyMods()}
+	return input.EncodeKey(g.enc, g.vt, ev, string(text))
 }
 
 // outputWriter appends to the frame's output buffer. EncodeKey writes at most a

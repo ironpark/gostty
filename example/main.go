@@ -28,7 +28,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/ironpark/gostty"
 	"github.com/ironpark/gostty/example/thecat"
-	"github.com/ironpark/gostty/input"
 	"golang.design/x/clipboard"
 )
 
@@ -96,8 +95,6 @@ type game struct {
 	stream *gostty.Stream
 	state  *gostty.RenderState
 	images *gostty.KittyImages
-	ev     *input.KeyEvent
-	mev    *input.MouseEvent
 	cells  []gostty.RenderCell
 
 	// The process side.
@@ -196,12 +193,6 @@ func (g *game) start() error {
 		return err
 	}
 	g.textures = make(map[uint32]*texture)
-	if g.ev, err = input.NewKeyEvent(); err != nil {
-		return err
-	}
-	if g.mev, err = input.NewMouseEvent(); err != nil {
-		return err
-	}
 	g.focused = ebiten.IsFocused()
 	if g.focused {
 		g.focusedFrames = 1
@@ -276,8 +267,6 @@ func (g *game) close() {
 		}
 	}
 	_ = g.images.Close()
-	_ = g.mev.Close()
-	_ = g.ev.Close()
 	_ = g.state.Close()
 	_ = g.stream.Close()
 	_ = g.vt.Close()

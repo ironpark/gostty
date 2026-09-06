@@ -210,125 +210,29 @@ func GraphemeWidth(cps []uint32) uint8 {
 	return uint8(C.zg_grapheme_width(cpsPtr, C.size_t(len(cps))))
 }
 
-// NewKeyEvent calls the generated C ABI wrapper for zg_new_key_event.
-func NewKeyEvent() (unsafe.Pointer, int32) {
-	var outResult *C.zg_key_event
-	code := int32(C.zg_new_key_event(&outResult))
-	return unsafe.Pointer(outResult), code
-}
-
-// KeyEventFreeKeyEvent calls the generated C ABI wrapper for zg_key_event_free_key_event.
-func KeyEventFreeKeyEvent(self unsafe.Pointer) int32 {
-	code := int32(C.zg_key_event_free_key_event((*C.zg_key_event)(self)))
-	return code
-}
-
-// KeyEventReset calls the generated C ABI wrapper for zg_key_event_reset.
-func KeyEventReset(self unsafe.Pointer) int32 {
-	code := int32(C.zg_key_event_reset((*C.zg_key_event)(self)))
-	return code
-}
-
-// KeyEventSetAction calls the generated C ABI wrapper for zg_key_event_set_action.
-func KeyEventSetAction(self unsafe.Pointer, action int32) int32 {
-	code := int32(C.zg_key_event_set_action((*C.zg_key_event)(self), C.int32_t(action)))
-	return code
-}
-
-// KeyEventSetKey calls the generated C ABI wrapper for zg_key_event_set_key.
-func KeyEventSetKey(self unsafe.Pointer, key int32) int32 {
-	code := int32(C.zg_key_event_set_key((*C.zg_key_event)(self), C.int32_t(key)))
-	return code
-}
-
-// KeyEventSetMod calls the generated C ABI wrapper for zg_key_event_set_mod.
-func KeyEventSetMod(self unsafe.Pointer, mod uint8, value uint8) int32 {
-	code := int32(C.zg_key_event_set_mod((*C.zg_key_event)(self), C.uint8_t(mod), C.uint8_t(value)))
-	return code
-}
-
-// KeyEventSetConsumedMod calls the generated C ABI wrapper for zg_key_event_set_consumed_mod.
-func KeyEventSetConsumedMod(self unsafe.Pointer, mod uint8, value uint8) int32 {
-	code := int32(C.zg_key_event_set_consumed_mod((*C.zg_key_event)(self), C.uint8_t(mod), C.uint8_t(value)))
-	return code
-}
-
-// KeyEventSetComposing calls the generated C ABI wrapper for zg_key_event_set_composing.
-func KeyEventSetComposing(self unsafe.Pointer, composing uint8) int32 {
-	code := int32(C.zg_key_event_set_composing((*C.zg_key_event)(self), C.uint8_t(composing)))
-	return code
-}
-
-// KeyEventSetUTF8 calls the generated C ABI wrapper for zg_key_event_set_utf8.
-func KeyEventSetUTF8(self unsafe.Pointer, text []uint8) int32 {
-	textPtr := (*C.uint8_t)(zigoSlicePtr(text))
-	code := int32(C.zg_key_event_set_utf8((*C.zg_key_event)(self), textPtr, C.size_t(len(text))))
-	return code
-}
-
-// KeyEventSetUnshiftedCodepoint calls the generated C ABI wrapper for zg_key_event_set_unshifted_codepoint.
-func KeyEventSetUnshiftedCodepoint(self unsafe.Pointer, cp uint32) int32 {
-	code := int32(C.zg_key_event_set_unshifted_codepoint((*C.zg_key_event)(self), C.uint32_t(cp)))
-	return code
-}
-
 // EncodeKey calls the generated C ABI wrapper for zg_encode_key.
-func EncodeKey(writerHandle uintptr, terminal unsafe.Pointer, event unsafe.Pointer) int32 {
-	code := int32(C.zg_encode_key(C.size_t(writerHandle), (*C.zg_terminal)(terminal), (*C.zg_key_event)(event)))
-	return code
-}
-
-// NewMouseEvent calls the generated C ABI wrapper for zg_new_mouse_event.
-func NewMouseEvent() (unsafe.Pointer, int32) {
-	var outResult *C.zg_mouse_event
-	code := int32(C.zg_new_mouse_event(&outResult))
-	return unsafe.Pointer(outResult), code
-}
-
-// MouseEventFreeMouseEvent calls the generated C ABI wrapper for zg_mouse_event_free_mouse_event.
-func MouseEventFreeMouseEvent(self unsafe.Pointer) int32 {
-	code := int32(C.zg_mouse_event_free_mouse_event((*C.zg_mouse_event)(self)))
-	return code
-}
-
-// MouseEventReset calls the generated C ABI wrapper for zg_mouse_event_reset.
-func MouseEventReset(self unsafe.Pointer) int32 {
-	code := int32(C.zg_mouse_event_reset((*C.zg_mouse_event)(self)))
-	return code
-}
-
-// MouseEventSetAction calls the generated C ABI wrapper for zg_mouse_event_set_action.
-func MouseEventSetAction(self unsafe.Pointer, action int32) int32 {
-	code := int32(C.zg_mouse_event_set_action((*C.zg_mouse_event)(self), C.int32_t(action)))
-	return code
-}
-
-// MouseEventSetButton calls the generated C ABI wrapper for zg_mouse_event_set_button.
-func MouseEventSetButton(self unsafe.Pointer, button int32) int32 {
-	code := int32(C.zg_mouse_event_set_button((*C.zg_mouse_event)(self), C.int32_t(button)))
-	return code
-}
-
-// MouseEventClearButton calls the generated C ABI wrapper for zg_mouse_event_clear_button.
-func MouseEventClearButton(self unsafe.Pointer) int32 {
-	code := int32(C.zg_mouse_event_clear_button((*C.zg_mouse_event)(self)))
-	return code
-}
-
-// MouseEventSetMod calls the generated C ABI wrapper for zg_mouse_event_set_mod.
-func MouseEventSetMod(self unsafe.Pointer, mod uint8, value uint8) int32 {
-	code := int32(C.zg_mouse_event_set_mod((*C.zg_mouse_event)(self), C.uint8_t(mod), C.uint8_t(value)))
-	return code
-}
-
-// MouseEventSetPosition calls the generated C ABI wrapper for zg_mouse_event_set_position.
-func MouseEventSetPosition(self unsafe.Pointer, x float32, y float32) int32 {
-	code := int32(C.zg_mouse_event_set_position((*C.zg_mouse_event)(self), C.float(x), C.float(y)))
+func EncodeKey(writerHandle uintptr, terminal unsafe.Pointer, event KeyEventData, utf8 string) int32 {
+	var cevent C.zg_key_event
+	cevent.action = C.uint8_t(event.Action)
+	cevent.key = C.int32_t(event.Key)
+	cevent.mods = C.uint8_t(event.Mods)
+	cevent.consumed_mods = C.uint8_t(event.ConsumedMods)
+	cevent.composing = C.uint8_t(event.Composing)
+	cevent.unshifted_codepoint = C.uint32_t(event.UnshiftedCodepoint)
+	utf8Ptr := (*C.uint8_t)(zigoStringPtr(utf8))
+	code := int32(C.zg_encode_key(C.size_t(writerHandle), (*C.zg_terminal)(terminal), &cevent, utf8Ptr, C.size_t(len(utf8))))
 	return code
 }
 
 // EncodeMouse calls the generated C ABI wrapper for zg_encode_mouse.
-func EncodeMouse(writerHandle uintptr, terminal unsafe.Pointer, event unsafe.Pointer, size RenderSizeData, anyButtonPressed uint8) int32 {
+func EncodeMouse(writerHandle uintptr, terminal unsafe.Pointer, event MouseEventData, size RenderSizeData, anyButtonPressed uint8) int32 {
+	var cevent C.zg_mouse_event
+	cevent.action = C.int32_t(event.Action)
+	cevent.button = C.int32_t(event.Button)
+	cevent.has_button = C.uint8_t(event.HasButton)
+	cevent.mods = C.uint8_t(event.Mods)
+	cevent.x = C.float(event.X)
+	cevent.y = C.float(event.Y)
 	var csize C.zg_render_size
 	csize.screen_width = C.uint32_t(size.ScreenWidth)
 	csize.screen_height = C.uint32_t(size.ScreenHeight)
@@ -338,8 +242,68 @@ func EncodeMouse(writerHandle uintptr, terminal unsafe.Pointer, event unsafe.Poi
 	csize.padding_bottom = C.uint32_t(size.PaddingBottom)
 	csize.padding_right = C.uint32_t(size.PaddingRight)
 	csize.padding_left = C.uint32_t(size.PaddingLeft)
-	code := int32(C.zg_encode_mouse(C.size_t(writerHandle), (*C.zg_terminal)(terminal), (*C.zg_mouse_event)(event), &csize, C.uint8_t(anyButtonPressed)))
+	code := int32(C.zg_encode_mouse(C.size_t(writerHandle), (*C.zg_terminal)(terminal), &cevent, &csize, C.uint8_t(anyButtonPressed)))
 	return code
+}
+
+// KeyFromAscii calls the generated C ABI wrapper for zg_key_from_ascii.
+func KeyFromAscii(ch uint8) (int32, bool) {
+	var outResult C.int32_t
+	outResultHas := C.zg_key_from_ascii(C.uint8_t(ch), &outResult) != 0
+	return int32(outResult), outResultHas
+}
+
+// KeyFromW3C calls the generated C ABI wrapper for zg_key_from_w3_c.
+func KeyFromW3C(code_ string) (int32, bool) {
+	code_Ptr := (*C.uint8_t)(zigoStringPtr(code_))
+	var outResult C.int32_t
+	outResultHas := C.zg_key_from_w3_c(code_Ptr, C.size_t(len(code_)), &outResult) != 0
+	return int32(outResult), outResultHas
+}
+
+// KeyW3C calls the generated C ABI wrapper for zg_key_w3_c.
+func KeyW3C(key int32) string {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	C.zg_key_w3_c(C.int32_t(key), &outResultPtr, &outResultLen)
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
+}
+
+// KeyCodepoint calls the generated C ABI wrapper for zg_key_codepoint.
+func KeyCodepoint(key int32) (uint32, bool) {
+	var outResult C.uint32_t
+	outResultHas := C.zg_key_codepoint(C.int32_t(key), &outResult) != 0
+	return uint32(outResult), outResultHas
+}
+
+// KeyPrintable calls the generated C ABI wrapper for zg_key_printable.
+func KeyPrintable(key int32) uint8 {
+	return uint8(C.zg_key_printable(C.int32_t(key)))
+}
+
+// KeyModifier calls the generated C ABI wrapper for zg_key_modifier.
+func KeyModifier(key int32) uint8 {
+	return uint8(C.zg_key_modifier(C.int32_t(key)))
+}
+
+// KeyKeypad calls the generated C ABI wrapper for zg_key_keypad.
+func KeyKeypad(key int32) uint8 {
+	return uint8(C.zg_key_keypad(C.int32_t(key)))
+}
+
+// KeyCtrlOrSuper calls the generated C ABI wrapper for zg_key_ctrl_or_super.
+func KeyCtrlOrSuper(key int32) uint8 {
+	return uint8(C.zg_key_ctrl_or_super(C.int32_t(key)))
+}
+
+// KeyLeftOrRightShift calls the generated C ABI wrapper for zg_key_left_or_right_shift.
+func KeyLeftOrRightShift(key int32) uint8 {
+	return uint8(C.zg_key_left_or_right_shift(C.int32_t(key)))
+}
+
+// KeyLeftOrRightAlt calls the generated C ABI wrapper for zg_key_left_or_right_alt.
+func KeyLeftOrRightAlt(key int32) uint8 {
+	return uint8(C.zg_key_left_or_right_alt(C.int32_t(key)))
 }
 
 // EncodeFocus calls the generated C ABI wrapper for zg_encode_focus.
@@ -653,6 +617,12 @@ func TerminalSwitchScreen(self unsafe.Pointer, key uint8) int32 {
 	return code
 }
 
+// TerminalSwitchScreenMode calls the generated C ABI wrapper for zg_terminal_switch_screen_mode.
+func TerminalSwitchScreenMode(self unsafe.Pointer, mode uint8, enabled uint8) int32 {
+	code := int32(C.zg_terminal_switch_screen_mode((*C.zg_terminal)(self), C.uint8_t(mode), C.uint8_t(enabled)))
+	return code
+}
+
 // TerminalActiveScreenKey calls the generated C ABI wrapper for zg_terminal_active_screen_key.
 func TerminalActiveScreenKey(self unsafe.Pointer) (uint8, int32) {
 	var outResult C.uint8_t
@@ -742,11 +712,25 @@ func ScreenSelectionString(self unsafe.Pointer) (string, bool, int32) {
 	return result, true, code
 }
 
+// ScreenStartHyperlink calls the generated C ABI wrapper for zg_screen_start_hyperlink.
+func ScreenStartHyperlink(self unsafe.Pointer, uri string, id string) int32 {
+	uriPtr := (*C.uint8_t)(zigoStringPtr(uri))
+	idPtr := (*C.uint8_t)(zigoStringPtr(id))
+	code := int32(C.zg_screen_start_hyperlink((*C.zg_screen)(self), uriPtr, C.size_t(len(uri)), idPtr, C.size_t(len(id))))
+	return code
+}
+
 // ScreenViewportIsBottom calls the generated C ABI wrapper for zg_screen_viewport_is_bottom.
 func ScreenViewportIsBottom(self unsafe.Pointer) (uint8, int32) {
 	var outResult C.uint8_t
 	code := int32(C.zg_screen_viewport_is_bottom((*C.zg_screen)(self), &outResult))
 	return uint8(outResult), code
+}
+
+// ScreenEndHyperlink calls the generated C ABI wrapper for zg_screen_end_hyperlink.
+func ScreenEndHyperlink(self unsafe.Pointer) int32 {
+	code := int32(C.zg_screen_end_hyperlink((*C.zg_screen)(self)))
+	return code
 }
 
 // ScreenNewSearch calls the generated C ABI wrapper for zg_screen_new_search.
@@ -767,6 +751,17 @@ func SearchFreeSearch(self unsafe.Pointer) int32 {
 func SearchSearchAll(self unsafe.Pointer) int32 {
 	code := int32(C.zg_search_search_all((*C.zg_search)(self)))
 	return code
+}
+
+// SearchNeedle calls the generated C ABI wrapper for zg_search_needle.
+func SearchNeedle(self unsafe.Pointer) (string, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_search_needle((*C.zg_search)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return "", code
+	}
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
 }
 
 // SearchMatchCount calls the generated C ABI wrapper for zg_search_match_count.
@@ -926,26 +921,26 @@ func TerminalSetLeftAndRightMargin(self unsafe.Pointer, leftReq uint, rightReq u
 }
 
 // TerminalSetScrollbackMaxBytes calls the generated C ABI wrapper for zg_terminal_set_scrollback_max_bytes.
-func TerminalSetScrollbackMaxBytes(self unsafe.Pointer, max *uint) int32 {
-	var maxValue C.size_t
-	var maxPtr *C.size_t
-	if max != nil {
-		maxValue = C.size_t(*max)
-		maxPtr = &maxValue
-	}
-	code := int32(C.zg_terminal_set_scrollback_max_bytes((*C.zg_terminal)(self), maxPtr))
+func TerminalSetScrollbackMaxBytes(self unsafe.Pointer, max uint) int32 {
+	code := int32(C.zg_terminal_set_scrollback_max_bytes((*C.zg_terminal)(self), C.size_t(max)))
+	return code
+}
+
+// TerminalClearScrollbackMaxBytes calls the generated C ABI wrapper for zg_terminal_clear_scrollback_max_bytes.
+func TerminalClearScrollbackMaxBytes(self unsafe.Pointer) int32 {
+	code := int32(C.zg_terminal_clear_scrollback_max_bytes((*C.zg_terminal)(self)))
 	return code
 }
 
 // TerminalSetScrollbackMaxLines calls the generated C ABI wrapper for zg_terminal_set_scrollback_max_lines.
-func TerminalSetScrollbackMaxLines(self unsafe.Pointer, max *uint) int32 {
-	var maxValue C.size_t
-	var maxPtr *C.size_t
-	if max != nil {
-		maxValue = C.size_t(*max)
-		maxPtr = &maxValue
-	}
-	code := int32(C.zg_terminal_set_scrollback_max_lines((*C.zg_terminal)(self), maxPtr))
+func TerminalSetScrollbackMaxLines(self unsafe.Pointer, max uint) int32 {
+	code := int32(C.zg_terminal_set_scrollback_max_lines((*C.zg_terminal)(self), C.size_t(max)))
+	return code
+}
+
+// TerminalClearScrollbackMaxLines calls the generated C ABI wrapper for zg_terminal_clear_scrollback_max_lines.
+func TerminalClearScrollbackMaxLines(self unsafe.Pointer) int32 {
+	code := int32(C.zg_terminal_clear_scrollback_max_lines((*C.zg_terminal)(self)))
 	return code
 }
 
@@ -1093,14 +1088,14 @@ func TerminalSetDefaultCursorStyle(self unsafe.Pointer, configuredStyle uint8) i
 }
 
 // TerminalSetDefaultCursorBlink calls the generated C ABI wrapper for zg_terminal_set_default_cursor_blink.
-func TerminalSetDefaultCursorBlink(self unsafe.Pointer, blink *uint8) int32 {
-	var blinkValue C.uint8_t
-	var blinkPtr *C.uint8_t
-	if blink != nil {
-		blinkValue = C.uint8_t(*blink)
-		blinkPtr = &blinkValue
-	}
-	code := int32(C.zg_terminal_set_default_cursor_blink((*C.zg_terminal)(self), blinkPtr))
+func TerminalSetDefaultCursorBlink(self unsafe.Pointer, blink uint8) int32 {
+	code := int32(C.zg_terminal_set_default_cursor_blink((*C.zg_terminal)(self), C.uint8_t(blink)))
+	return code
+}
+
+// TerminalResetDefaultCursorBlink calls the generated C ABI wrapper for zg_terminal_reset_default_cursor_blink.
+func TerminalResetDefaultCursorBlink(self unsafe.Pointer) int32 {
+	code := int32(C.zg_terminal_reset_default_cursor_blink((*C.zg_terminal)(self)))
 	return code
 }
 
@@ -1175,9 +1170,21 @@ func RenderStateCellCount(self unsafe.Pointer) (uint, int32) {
 
 // RenderStateCells calls the generated C ABI wrapper for zg_render_state_cells.
 func RenderStateCells(self unsafe.Pointer, dst []RenderCellData) (uint, int32) {
-	dstPtr := (*C.zg_render_cell)(zigoSlicePtr(dst))
+	var dstValues []C.zg_render_cell
+	if len(dst) != 0 {
+		dstValues = make([]C.zg_render_cell, len(dst))
+	}
+	dstPtr := (*C.zg_render_cell)(zigoSlicePtr(dstValues))
 	var outResult C.size_t
 	code := int32(C.zg_render_state_cells((*C.zg_render_state)(self), dstPtr, C.size_t(len(dst)), &outResult))
+	for i := 0; i < int(outResult) && i < len(dst); i++ {
+		dst[i] = RenderCellData{
+			Codepoint: uint32(dstValues[i].codepoint),
+			Fg:        uint32(dstValues[i].fg),
+			Bg:        uint32(dstValues[i].bg),
+			Flags:     uint32(dstValues[i].flags),
+		}
+	}
 	return uint(outResult), code
 }
 
@@ -1280,6 +1287,12 @@ func KittyImagesPlacements(self unsafe.Pointer, dst []KittyPlacementData) (uint,
 	return uint(outResult), code
 }
 
+// TerminalSetKittyGraphicsSizeLimit calls the generated C ABI wrapper for zg_terminal_set_kitty_graphics_size_limit.
+func TerminalSetKittyGraphicsSizeLimit(self unsafe.Pointer, limit uint) int32 {
+	code := int32(C.zg_terminal_set_kitty_graphics_size_limit((*C.zg_terminal)(self), C.size_t(limit)))
+	return code
+}
+
 // TerminalKittyImage calls the generated C ABI wrapper for zg_terminal_kitty_image.
 func TerminalKittyImage(self unsafe.Pointer, imageID uint32) (KittyImageData, bool, int32) {
 	var outResultHas C.uint8_t
@@ -1302,6 +1315,29 @@ func TerminalKittyImageData(self unsafe.Pointer, imageID uint32, dst []uint8) (u
 	var outResult C.size_t
 	code := int32(C.zg_terminal_kitty_image_data((*C.zg_terminal)(self), C.uint32_t(imageID), dstPtr, C.size_t(len(dst)), &outResult))
 	return uint(outResult), code
+}
+
+// KeyEventData mirrors the zg_key_event layout, padding included.
+type KeyEventData struct {
+	Action             uint8
+	_                  [3]byte
+	Key                int32
+	Mods               uint8
+	ConsumedMods       uint8
+	Composing          uint8
+	_                  [1]byte
+	UnshiftedCodepoint uint32
+}
+
+// MouseEventData mirrors the zg_mouse_event layout, padding included.
+type MouseEventData struct {
+	Action    int32
+	Button    int32
+	HasButton uint8
+	Mods      uint8
+	_         [2]byte
+	X         float32
+	Y         float32
 }
 
 // RenderSizeData mirrors the zg_render_size layout, padding included.
@@ -1354,6 +1390,24 @@ type KittyImageData struct {
 	Pad         uint16
 	_           [4]byte
 }
+
+// KeyEventData slices are copied from C memory as one run, so it must match zg_key_event byte for byte.
+var _ = [1]struct{}{}[unsafe.Sizeof(KeyEventData{})-unsafe.Sizeof(C.zg_key_event{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(KeyEventData{}.Action)-unsafe.Offsetof(C.zg_key_event{}.action)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KeyEventData{}.Key)-unsafe.Offsetof(C.zg_key_event{}.key)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KeyEventData{}.Mods)-unsafe.Offsetof(C.zg_key_event{}.mods)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KeyEventData{}.ConsumedMods)-unsafe.Offsetof(C.zg_key_event{}.consumed_mods)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KeyEventData{}.Composing)-unsafe.Offsetof(C.zg_key_event{}.composing)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KeyEventData{}.UnshiftedCodepoint)-unsafe.Offsetof(C.zg_key_event{}.unshifted_codepoint)]
+
+// MouseEventData slices are copied from C memory as one run, so it must match zg_mouse_event byte for byte.
+var _ = [1]struct{}{}[unsafe.Sizeof(MouseEventData{})-unsafe.Sizeof(C.zg_mouse_event{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(MouseEventData{}.Action)-unsafe.Offsetof(C.zg_mouse_event{}.action)]
+var _ = [1]struct{}{}[unsafe.Offsetof(MouseEventData{}.Button)-unsafe.Offsetof(C.zg_mouse_event{}.button)]
+var _ = [1]struct{}{}[unsafe.Offsetof(MouseEventData{}.HasButton)-unsafe.Offsetof(C.zg_mouse_event{}.has_button)]
+var _ = [1]struct{}{}[unsafe.Offsetof(MouseEventData{}.Mods)-unsafe.Offsetof(C.zg_mouse_event{}.mods)]
+var _ = [1]struct{}{}[unsafe.Offsetof(MouseEventData{}.X)-unsafe.Offsetof(C.zg_mouse_event{}.x)]
+var _ = [1]struct{}{}[unsafe.Offsetof(MouseEventData{}.Y)-unsafe.Offsetof(C.zg_mouse_event{}.y)]
 
 // RenderSizeData slices are copied from C memory as one run, so it must match zg_render_size byte for byte.
 var _ = [1]struct{}{}[unsafe.Sizeof(RenderSizeData{})-unsafe.Sizeof(C.zg_render_size{})]

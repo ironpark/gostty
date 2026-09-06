@@ -212,6 +212,6 @@ func hasInk(cell gostty.RenderCell) bool {
 	if cell.Codepoint <= ' ' {
 		return false
 	}
-	flags := gostty.CellFlagsFromBacking(cell.Flags)
+	flags := cell.Flags
 	return !flags.Invisible
 }

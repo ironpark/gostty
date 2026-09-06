@@ -71,16 +71,8 @@ type RenderCell struct {
 	// Bg corresponds to the Zig field bg.
 	Bg uint32
 	// Flags corresponds to the Zig field flags.
-	Flags uint32
+	Flags CellFlags
 }
-
-// RenderCell is reinterpreted as raw.RenderCellData instead of copied, so the two
-// layouts must stay identical.
-var _ = [1]struct{}{}[unsafe.Sizeof(RenderCell{})-unsafe.Sizeof(raw.RenderCellData{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderCell{}.Codepoint)-unsafe.Offsetof(raw.RenderCellData{}.Codepoint)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderCell{}.Fg)-unsafe.Offsetof(raw.RenderCellData{}.Fg)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderCell{}.Bg)-unsafe.Offsetof(raw.RenderCellData{}.Bg)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderCell{}.Flags)-unsafe.Offsetof(raw.RenderCellData{}.Flags)]
 
 // KittyPlacement mirrors the Zig `extern struct` of the same name.
 type KittyPlacement struct {
@@ -146,9 +138,9 @@ type KittyImage struct {
 	// Height corresponds to the Zig field height.
 	Height uint32
 	// Format corresponds to the Zig field format.
-	Format uint8
+	Format KittyFormat
 	// Compression corresponds to the Zig field compression.
-	Compression uint8
+	Compression KittyCompression
 	// Pad corresponds to the Zig field _pad.
 	Pad uint16
 }
@@ -164,14 +156,35 @@ var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Format)-unsafe.Offsetof(raw.K
 var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Compression)-unsafe.Offsetof(raw.KittyImageData{}.Compression)]
 var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Pad)-unsafe.Offsetof(raw.KittyImageData{}.Pad)]
 
+func zigoRenderCellFromRaw(value raw.RenderCellData) RenderCell {
+	return RenderCell{
+		Codepoint: value.Codepoint,
+		Fg:        value.Fg,
+		Bg:        value.Bg,
+		Flags:     CellFlagsFromBacking(value.Flags),
+	}
+}
+
+func zigoRenderCellSliceCopyFromRaw(dst []RenderCell, values []raw.RenderCellData, count int) {
+	if count > len(dst) {
+		count = len(dst)
+	}
+	if count > len(values) {
+		count = len(values)
+	}
+	for i := 0; i < count; i++ {
+		dst[i] = zigoRenderCellFromRaw(values[i])
+	}
+}
+
 func zigoKittyImageFromRaw(value raw.KittyImageData) KittyImage {
 	return KittyImage{
 		Generation:  value.Generation,
 		DataLen:     value.DataLen,
 		Width:       value.Width,
 		Height:      value.Height,
-		Format:      value.Format,
-		Compression: value.Compression,
+		Format:      KittyFormat(value.Format),
+		Compression: KittyCompression(value.Compression),
 		Pad:         value.Pad,
 	}
 }

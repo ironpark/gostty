@@ -324,6 +324,32 @@ func (value ScreenKey) String() string {
 	}
 }
 
+// SwitchScreenMode represents the corresponding Zig enum.
+type SwitchScreenMode uint8
+
+const (
+	// SwitchScreenMode47 corresponds to the Zig tag 47.
+	SwitchScreenMode47 SwitchScreenMode = 0
+	// SwitchScreenMode1047 corresponds to the Zig tag 1047.
+	SwitchScreenMode1047 SwitchScreenMode = 1
+	// SwitchScreenMode1049 corresponds to the Zig tag 1049.
+	SwitchScreenMode1049 SwitchScreenMode = 2
+)
+
+// String returns the Zig tag name.
+func (value SwitchScreenMode) String() string {
+	switch value {
+	case SwitchScreenMode47:
+		return "47"
+	case SwitchScreenMode1047:
+		return "1047"
+	case SwitchScreenMode1049:
+		return "1049"
+	default:
+		return "SwitchScreenMode(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
 // StreamEvent represents the corresponding Zig enum.
 type StreamEvent uint8
 

@@ -110,7 +110,7 @@ func (g *game) decodeImage(id uint32, info gostty.KittyImage) (*ebiten.Image, er
 
 	// The bytes are as the program sent them, so the format says how to read
 	// them. Only PNG needs a decoder; the rest are raw samples.
-	switch gostty.KittyFormat(info.Format) {
+	switch info.Format {
 	case gostty.KittyFormatPng:
 		decoded, err := png.Decode(bytes.NewReader(data))
 		if err != nil {
@@ -124,14 +124,14 @@ func (g *game) decodeImage(id uint32, info gostty.KittyImage) (*ebiten.Image, er
 		}
 		return ebiten.NewImageFromImage(rgba), nil
 	default:
-		return nil, fmt.Errorf("image %d: unsupported format %v", id, gostty.KittyFormat(info.Format))
+		return nil, fmt.Errorf("image %d: unsupported format %v", id, info.Format)
 	}
 }
 
 // rawToRGBA widens the raw sample formats to the RGBA Ebitengine wants.
 func rawToRGBA(data []byte, info gostty.KittyImage) (*image.RGBA, error) {
 	var bpp int
-	switch gostty.KittyFormat(info.Format) {
+	switch info.Format {
 	case gostty.KittyFormatGray:
 		bpp = 1
 	case gostty.KittyFormatGrayAlpha:

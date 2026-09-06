@@ -53,8 +53,8 @@ func TestRenderCells(t *testing.T) {
 	}
 	// The flags word decodes into named fields, so nothing here has to know
 	// which bit ghostty put bold in.
-	if !CellFlagsFromBacking(cells[0].Flags).Bold {
-		t.Errorf("flags = %+v, want bold set", CellFlagsFromBacking(cells[0].Flags))
+	if !cells[0].Flags.Bold {
+		t.Errorf("flags = %+v, want bold set", cells[0].Flags)
 	}
 	// Palette index 1 is red; the render state resolves it for us.
 	if cells[0].Fg == cells[0].Bg {
@@ -148,7 +148,7 @@ func TestRenderSelection(t *testing.T) {
 	}
 
 	for x, want := range []bool{false, true, true, true, false, false} {
-		if got := CellFlagsFromBacking(cells[x].Flags).Selected; got != want {
+		if got := cells[x].Flags.Selected; got != want {
 			t.Errorf("cell %d selected = %v, want %v", x, got, want)
 		}
 	}
@@ -194,7 +194,7 @@ func TestRenderWideCells(t *testing.T) {
 		if got := rune(cells[i].Codepoint); got != w.codepoint {
 			t.Errorf("cell %d codepoint = %q, want %q", i, got, w.codepoint)
 		}
-		if got := CellFlagsFromBacking(cells[i].Flags).Wide; got != w.wide {
+		if got := cells[i].Flags.Wide; got != w.wide {
 			t.Errorf("cell %d wide = %v, want %v", i, got, w.wide)
 		}
 	}

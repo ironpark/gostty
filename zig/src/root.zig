@@ -513,6 +513,9 @@ pub fn resizeCells(
 /// Which of a terminal's screens is active.
 pub const ScreenKey = vt.ScreenSet.Key;
 
+/// Which xterm alternate-screen mode a DEC private mode switch selects.
+pub const SwitchScreenMode = vt.Terminal.SwitchScreenMode;
+
 /// One of a terminal's screens: its grid, scrollback and selection.
 ///
 /// A screen is owned by its terminal, so handles to one are borrowed. They stay
@@ -803,6 +806,49 @@ pub fn setAttribute(self: *Terminal, attr: Attribute) !void {
 ///
 /// Wrapped because `vt.unicode.graphemeWidth` is generic over the codepoint
 /// integer type, and a generic function has no signature to bind.
+// ghostty expresses "no limit" and "use the default" as null parameters. A Go
+// caller would have to pass a pointer for those, so each one is split into a
+// setter that takes the value and a reset that selects the null case.
+
+/// Set the default cursor blink. Applied immediately only when the cursor
+/// currently follows its defaults; otherwise saved for the next reset.
+pub fn setDefaultCursorBlink(self: *Terminal, blink: bool) void {
+    self.setDefaultCursorBlink(blink);
+}
+
+/// Return the default cursor blink to the emulator default (blinking).
+pub fn resetDefaultCursorBlink(self: *Terminal) void {
+    self.setDefaultCursorBlink(null);
+}
+
+/// Limit the primary screen's scrollback to `max` bytes. Zero disables
+/// scrollback and erases retained history.
+pub fn setScrollbackMaxBytes(self: *Terminal, max: usize) void {
+    self.setScrollbackMaxBytes(max);
+}
+
+/// Remove the primary screen's scrollback byte limit.
+pub fn clearScrollbackMaxBytes(self: *Terminal) void {
+    self.setScrollbackMaxBytes(null);
+}
+
+/// Limit the primary screen's scrollback to `max` physical lines.
+pub fn setScrollbackMaxLines(self: *Terminal, max: usize) void {
+    self.setScrollbackMaxLines(max);
+}
+
+/// Remove the primary screen's scrollback line limit.
+pub fn clearScrollbackMaxLines(self: *Terminal) void {
+    self.setScrollbackMaxLines(null);
+}
+
+/// Open a hyperlink on the screen; cells printed until `Screen.endHyperlink`
+/// carry it. An empty `id` leaves the link without an explicit id, which is
+/// what OSC 8 does when the parameter is absent.
+pub fn screenStartHyperlink(self: *Screen, uri: []const u8, id: []const u8) !void {
+    try self.startHyperlink(uri, if (id.len == 0) null else id);
+}
+
 pub fn graphemeWidth(cps: []const u32) u8 {
     return @intCast(vt.unicode.graphemeWidth(u32, cps).width);
 }
@@ -815,104 +861,145 @@ pub const unicode = vt.unicode;
 pub const input = vt.input;
 
 pub const Key = vt.input.Key;
-pub const KeyAction = vt.input.KeyAction;
+/// What happened to the key. Declared here rather than re-exported so that
+/// press is zero: `KeyEvent` is a value, and a Go literal that names only
+/// the key should describe a press, which is what ghostty's own default is.
+pub const KeyAction = enum(u8) {
+    press,
+    release,
+    repeat,
+
+    fn toGhostty(self: KeyAction) vt.input.KeyAction {
+        return switch (self) {
+            .press => .press,
+            .release => .release,
+            .repeat => .repeat,
+        };
+    }
+};
+
+// `Key` is an enum, and zigo binds functions on structs and opaque types only,
+// so its helpers are re-exported as free functions here. They are for a
+// caller mapping platform key codes onto the enum, or deciding whether a
+// press can carry text.
+
+/// The key for a printable ASCII byte, or null if none maps to it.
+pub fn keyFromASCII(ch: u8) ?Key {
+    return Key.fromASCII(ch);
+}
+
+/// The key for a W3C `KeyboardEvent.code` value such as "KeyA", or null if
+/// none matches.
+pub fn keyFromW3C(code: []const u8) ?Key {
+    return Key.fromW3C(code);
+}
+
+/// The W3C `KeyboardEvent.code` value for `key`. Empty for keys the spec
+/// does not name.
+pub fn keyW3C(key: Key) []const u8 {
+    return key.w3c();
+}
+
+/// The Unicode codepoint the key produces on a US layout, if it has one.
+pub fn keyCodepoint(key: Key) ?u21 {
+    return key.codepoint();
+}
+
+/// True for keys that produce text on a US layout.
+pub fn keyPrintable(key: Key) bool {
+    return key.printable();
+}
+
+/// True for modifier keys such as shift, control and alt.
+pub fn keyModifier(key: Key) bool {
+    return key.modifier();
+}
+
+/// True for keys on the numeric keypad.
+pub fn keyKeypad(key: Key) bool {
+    return key.keypad();
+}
+
+/// True for the platform's primary command modifier on either side: super
+/// (command) on macOS, control elsewhere. The answer is fixed when the
+/// native library is built, so it follows the platform the archive is for.
+pub fn keyCtrlOrSuper(key: Key) bool {
+    return key.ctrlOrSuper();
+}
+
+/// True for shift on either side.
+pub fn keyLeftOrRightShift(key: Key) bool {
+    return key.leftOrRightShift();
+}
+
+/// True for alt on either side.
+pub fn keyLeftOrRightAlt(key: Key) bool {
+    return key.leftOrRightAlt();
+}
 pub const FocusEvent = vt.input.FocusEvent;
 
-/// A single keyboard modifier.
+/// The modifiers held during a key or mouse event.
 ///
-/// ghostty stores modifiers as a `packed struct(u16)`, which has no C
-/// representation, so they are set one at a time instead of passed as a mask.
-pub const KeyMod = enum(u8) {
-    shift,
-    ctrl,
-    alt,
-    super,
-    caps_lock,
-    num_lock,
+/// ghostty's own `Mods` is a `packed struct(u16)` that also records which
+/// side each modifier was pressed on; the encoders do not read the sides, so
+/// this carries the six flags in one byte.
+pub const KeyMods = packed struct(u8) {
+    shift: bool = false,
+    ctrl: bool = false,
+    alt: bool = false,
+    super: bool = false,
+    caps_lock: bool = false,
+    num_lock: bool = false,
+    _padding: u2 = 0,
+
+    fn toGhostty(self: KeyMods) vt.input.KeyMods {
+        return .{
+            .shift = self.shift,
+            .ctrl = self.ctrl,
+            .alt = self.alt,
+            .super = self.super,
+            .caps_lock = self.caps_lock,
+            .num_lock = self.num_lock,
+        };
+    }
 };
 
-/// A key event being assembled for encoding.
+/// A key event to encode. A plain value: build one per press and pass it to
+/// `encodeKey` together with the text the key produced.
 ///
-/// ghostty's `KeyEvent` holds a borrowed `utf8` slice, so a Go caller could not
-/// keep one alive across calls. This owns the text instead, which is also the
-/// shape ghostty's own C API uses.
-pub const KeyEvent = struct {
-    /// Long enough for any single key event's text: a grapheme cluster with
-    /// combining marks, not arbitrary input.
-    const utf8_capacity = 64;
-
-    inner: vt.input.KeyEvent = .{},
-    utf8_buf: [utf8_capacity]u8 = undefined,
-
-    fn applyMod(mods: *vt.input.KeyMods, mod: KeyMod, value: bool) void {
-        switch (mod) {
-            .shift => mods.shift = value,
-            .ctrl => mods.ctrl = value,
-            .alt => mods.alt = value,
-            .super => mods.super = value,
-            .caps_lock => mods.caps_lock = value,
-            .num_lock => mods.num_lock = value,
-        }
-    }
-
-    /// Return the event to its defaults so one handle can encode many keys.
-    pub fn reset(self: *KeyEvent) void {
-        self.inner = .{};
-    }
-
-    pub fn setAction(self: *KeyEvent, action: KeyAction) void {
-        self.inner.action = action;
-    }
-
-    pub fn setKey(self: *KeyEvent, key: Key) void {
-        self.inner.key = key;
-    }
-
-    pub fn setMod(self: *KeyEvent, mod: KeyMod, value: bool) void {
-        applyMod(&self.inner.mods, mod, value);
-    }
-
-    /// Mark a modifier as consumed producing the event text. Effective
-    /// modifiers are the set modifiers minus the consumed ones.
-    pub fn setConsumedMod(self: *KeyEvent, mod: KeyMod, value: bool) void {
-        applyMod(&self.inner.consumed_mods, mod, value);
-    }
-
+/// ghostty's `KeyEvent` holds a borrowed `utf8` slice and modifiers with no C
+/// representation, so this is the flattened equivalent.
+pub const KeyEvent = extern struct {
+    action: KeyAction = .press,
+    key: Key = .unidentified,
+    mods: KeyMods = .{},
+    /// Modifiers that were consumed producing the event text. Effective
+    /// modifiers are `mods` minus these.
+    consumed_mods: KeyMods = .{},
     /// True while the event is part of an unfinished dead-key composition.
-    pub fn setComposing(self: *KeyEvent, composing: bool) void {
-        self.inner.composing = composing;
-    }
-
-    /// The text this key produced, if any. Copied into the event.
-    pub fn setUtf8(self: *KeyEvent, text: []const u8) error{NoSpaceLeft}!void {
-        if (text.len > utf8_capacity) return error.NoSpaceLeft;
-        @memcpy(self.utf8_buf[0..text.len], text);
-        self.inner.utf8 = self.utf8_buf[0..text.len];
-    }
-
-    /// The codepoint this key produces unshifted, or zero for none.
-    pub fn setUnshiftedCodepoint(self: *KeyEvent, cp: u32) void {
-        self.inner.unshifted_codepoint = @intCast(cp);
-    }
+    composing: bool = false,
+    /// The codepoint the key produces unshifted, or zero for none.
+    unshifted_codepoint: u32 = 0,
 };
 
-pub fn newKeyEvent(gpa: Allocator) !*KeyEvent {
-    const self = try gpa.create(KeyEvent);
-    self.* = .{};
-    return self;
-}
-
-pub fn freeKeyEvent(self: *KeyEvent, gpa: Allocator) void {
-    gpa.destroy(self);
-}
-
-/// Encode a key event for `terminal`, whose modes decide the encoding.
+/// Encode a key event for `terminal`, whose modes decide the encoding. `utf8`
+/// is the text the key produced, empty when it produced none.
 pub fn encodeKey(
     writer: *std.Io.Writer,
     terminal: *const Terminal,
-    event: *const KeyEvent,
+    event: KeyEvent,
+    utf8: []const u8,
 ) !void {
-    try vt.input.encodeKey(writer, event.inner, .fromTerminal(terminal));
+    const inner: vt.input.KeyEvent = .{
+        .action = event.action.toGhostty(),
+        .key = event.key,
+        .mods = event.mods.toGhostty(),
+        .consumed_mods = event.consumed_mods.toGhostty(),
+        .composing = event.composing,
+        .utf8 = utf8,
+        .unshifted_codepoint = @intCast(event.unshifted_codepoint),
+    };
+    try vt.input.encodeKey(writer, inner, .fromTerminal(terminal));
 }
 
 pub const MouseAction = vt.input.MouseAction;
@@ -951,50 +1038,19 @@ pub const RenderSize = extern struct {
     }
 };
 
-/// A mouse event being assembled for encoding.
-///
-/// A handle rather than a value because ghostty's event carries an optional
-/// button and packed modifiers, neither of which crosses as a struct field.
-pub const MouseEvent = struct {
-    inner: vt.input.MouseEncodeEvent = .{},
-
-    /// Return the event to its defaults so one handle can encode many events.
-    pub fn reset(self: *MouseEvent) void {
-        self.inner = .{};
-    }
-
-    pub fn setAction(self: *MouseEvent, action: MouseAction) void {
-        self.inner.action = action;
-    }
-
-    /// The button involved. Motion with no button held uses `clearButton`.
-    pub fn setButton(self: *MouseEvent, button: MouseButton) void {
-        self.inner.button = button;
-    }
-
-    pub fn clearButton(self: *MouseEvent) void {
-        self.inner.button = null;
-    }
-
-    pub fn setMod(self: *MouseEvent, mod: KeyMod, value: bool) void {
-        KeyEvent.applyMod(&self.inner.mods, mod, value);
-    }
-
-    /// The position in surface-space pixels, (0, 0) at the top left.
-    pub fn setPosition(self: *MouseEvent, x: f32, y: f32) void {
-        self.inner.pos = .{ .x = x, .y = y };
-    }
+/// A mouse event to encode. A plain value: build one per event and pass it
+/// to `encodeMouse`.
+pub const MouseEvent = extern struct {
+    action: MouseAction = .press,
+    /// The button the event is about. Ignored unless `has_button` is set,
+    /// which a motion event without a held button leaves clear.
+    button: MouseButton = .unknown,
+    has_button: bool = false,
+    mods: KeyMods = .{},
+    /// Position in already-DPI-scaled pixels, relative to the surface.
+    x: f32 = 0,
+    y: f32 = 0,
 };
-
-pub fn newMouseEvent(gpa: Allocator) !*MouseEvent {
-    const self = try gpa.create(MouseEvent);
-    self.* = .{};
-    return self;
-}
-
-pub fn freeMouseEvent(self: *MouseEvent, gpa: Allocator) void {
-    gpa.destroy(self);
-}
 
 /// Encode a mouse event for `terminal`, whose reporting mode and format decide
 /// whether anything is written at all.
@@ -1003,13 +1059,19 @@ pub fn freeMouseEvent(self: *MouseEvent, gpa: Allocator) void {
 pub fn encodeMouse(
     writer: *std.Io.Writer,
     terminal: *const Terminal,
-    event: *const MouseEvent,
+    event: MouseEvent,
     size: RenderSize,
     any_button_pressed: bool,
 ) !void {
     var opts: vt.input.MouseEncodeOptions = .fromTerminal(terminal, size.toRenderer());
     opts.any_button_pressed = any_button_pressed;
-    try vt.input.encodeMouse(writer, event.inner, opts);
+    const inner: vt.input.MouseEncodeEvent = .{
+        .action = event.action,
+        .button = if (event.has_button) event.button else null,
+        .mods = event.mods.toGhostty(),
+        .pos = .{ .x = event.x, .y = event.y },
+    };
+    try vt.input.encodeMouse(writer, inner, opts);
 }
 
 /// Encode a focus in/out report (CSI I / CSI O).
@@ -1122,10 +1184,7 @@ pub const RenderCell = extern struct {
     /// 0xRRGGBB.
     fg: u32,
     bg: u32,
-    /// `CellFlags` in its backing integer. Decode it with `CellFlagsFromBacking`
-    /// on the cells you actually draw: keeping the array element plain is what
-    /// lets a whole viewport cross the boundary without being copied.
-    flags: u32,
+    flags: CellFlags,
 };
 
 pub fn newRenderState(gpa: Allocator) !*RenderState {
@@ -1173,7 +1232,7 @@ pub fn renderCells(self: *RenderState, dst: []RenderCell) !usize {
                 .codepoint = 0,
                 .fg = fg_default,
                 .bg = bg_default,
-                .flags = packFlags(.{ .wide = cell.wide }),
+                .flags = .{ .wide = cell.wide },
             };
 
             switch (cell.content_tag) {
@@ -1192,16 +1251,14 @@ pub fn renderCells(self: *RenderState, dst: []RenderCell) !usize {
             // the default-styled cells keep the defaults filled in above.
             if (sel) |range| {
                 if (x >= range[0] and x <= range[1]) {
-                    var flags = unpackFlags(out.flags);
-                    flags.selected = true;
-                    out.flags = packFlags(flags);
+                    out.flags.selected = true;
                 }
             }
 
             if (cell.style_id != 0) {
                 if (resolveColor(self, style.fg_color)) |c| out.fg = c;
                 if (resolveColor(self, style.bg_color)) |c| out.bg = c;
-                out.flags = packFlags(mergeFlags(unpackFlags(out.flags), style.flags));
+                out.flags = mergeFlags(out.flags, style.flags);
                 if (style.flags.inverse) {
                     const tmp = out.fg;
                     out.fg = out.bg;
@@ -1223,14 +1280,6 @@ fn resolveColor(self: *RenderState, c: vt.Style.Color) ?u32 {
         .palette => |i| packRgb(self.colors.palette[i]),
         .rgb => |v| packRgb(v),
     };
-}
-
-fn packFlags(f: CellFlags) u32 {
-    return @bitCast(f);
-}
-
-fn unpackFlags(v: u32) CellFlags {
-    return @bitCast(v);
 }
 
 /// Fold ghostty's style flags into ours, leaving the fields this binding owns
@@ -1558,9 +1607,8 @@ pub const KittyImage = extern struct {
     /// indexes into. Not the size it is drawn at.
     width: u32,
     height: u32,
-    /// `KittyFormat` and `KittyCompression`, widened to fit the C ABI.
-    format: u8,
-    compression: u8,
+    format: KittyFormat,
+    compression: KittyCompression,
     _pad: u16 = 0,
 };
 
@@ -1572,8 +1620,8 @@ pub fn kittyImage(term: *Terminal, image_id: u32) ?KittyImage {
         .data_len = image.renderData().len(),
         .width = image.width,
         .height = image.height,
-        .format = @intFromEnum(kittyFormat(image.format)),
-        .compression = @intFromEnum(kittyCompression(image.compression)),
+        .format = kittyFormat(image.format),
+        .compression = kittyCompression(image.compression),
     };
 }
 

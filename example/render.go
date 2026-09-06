@@ -68,7 +68,7 @@ func (g *game) drawBackgrounds(screen *ebiten.Image) {
 }
 
 func (g *game) cellBackground(cell gostty.RenderCell) color.RGBA {
-	if gostty.CellFlagsFromBacking(cell.Flags).Selected {
+	if cell.Flags.Selected {
 		return g.themeColor(rgb(cell.Fg))
 	}
 	return g.themeColor(rgb(cell.Bg))
@@ -76,7 +76,7 @@ func (g *game) cellBackground(cell gostty.RenderCell) color.RGBA {
 
 func (g *game) drawGlyphs(screen *ebiten.Image) {
 	for i, cell := range g.cells {
-		flags := gostty.CellFlagsFromBacking(cell.Flags)
+		flags := cell.Flags
 		// The tail of a wide character is drawn by the head, and the head of a
 		// soft-wrap is not drawn at all.
 		if flags.Wide == gostty.CellWidthSpacerTail || flags.Wide == gostty.CellWidthSpacerHead {
@@ -198,7 +198,7 @@ func (g *game) drawCursor(screen *ebiten.Image) {
 		if i := int(g.cursor.y)*g.cols + int(g.cursor.x); i < len(g.cells) {
 			cell := g.cells[i]
 			if r := rune(cell.Codepoint); r > ' ' {
-				flags := gostty.CellFlagsFromBacking(cell.Flags)
+				flags := cell.Flags
 				wide := flags.Wide == gostty.CellWidthWide
 				g.glyph(screen, r, x, y, wide, flags.Bold, flags.Italic, g.bg)
 			}

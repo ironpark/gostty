@@ -2,16 +2,6 @@
   "allocator": "std.heap.smp_allocator",
   "constructors": [
     {
-      "deinit": "freeKeyEvent",
-      "init": "newKeyEvent",
-      "type": "KeyEvent"
-    },
-    {
-      "deinit": "freeMouseEvent",
-      "init": "newMouseEvent",
-      "type": "MouseEvent"
-    },
-    {
       "deinit": "deinit",
       "init": "newTerminal",
       "name": "newTerminal",
@@ -150,7 +140,6 @@
       "symbol": "zg_unicode_codepoint_width"
     },
     {
-      "doc": "The display width of a grapheme cluster given as codepoints.\n\nWrapped because `vt.unicode.graphemeWidth` is generic over the codepoint\ninteger type, and a generic function has no signature to bind.",
       "name": "graphemeWidth",
       "ownership": "borrowed",
       "params": [
@@ -160,7 +149,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 806,
+            "line": 852,
             "column": 22
           },
           "type": {
@@ -183,296 +172,69 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 806,
+        "line": 852,
         "column": 8
       },
       "symbol": "zg_grapheme_width"
     },
     {
-      "go_owner": "KeyEvent",
-      "name": "newKeyEvent",
-      "package": "input",
-      "ownership": "caller",
-      "params": [
-        {
-          "direction": "in",
-          "injected": "allocator",
-          "name": "gpa",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 899,
-            "column": 20
-          },
-          "type": {
-            "kind": "void"
-          }
-        }
-      ],
-      "return": {
-        "error_set": [
-          "OutOfMemory"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "const": false,
-          "kind": "opaque_ptr",
-          "nullable": false,
-          "ref": "KeyEvent"
-        }
-      },
-      "source": {
-        "path": "root.zig",
-        "line": 899,
-        "column": 8
-      },
-      "symbol": "zg_new_key_event"
-    },
-    {
-      "name": "freeKeyEvent",
+      "doc": "Encode a key event for `terminal`, whose modes decide the encoding. `utf8`\nis the text the key produced, empty when it produced none.",
+      "name": "encodeKey",
       "package": "input",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
-          "injected": "allocator",
-          "name": "gpa",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 905,
-            "column": 38
-          },
-          "type": {
-            "kind": "void"
-          }
-        }
-      ],
-      "receiver": "KeyEvent",
-      "return": {
-        "kind": "void"
-      },
-      "source": {
-        "path": "root.zig",
-        "line": 905,
-        "column": 8
-      },
-      "zig_path": "freeKeyEvent",
-      "symbol": "zg_key_event_free_key_event"
-    },
-    {
-      "doc": "Return the event to its defaults so one handle can encode many keys.",
-      "name": "reset",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "KeyEvent",
-      "return": {
-        "kind": "void"
-      },
-      "source": {
-        "path": "root.zig",
-        "line": 859,
-        "column": 12
-      },
-      "symbol": "zg_key_event_reset"
-    },
-    {
-      "name": "setAction",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "action",
+          "name": "writer",
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 863,
-            "column": 39
+            "line": 988,
+            "column": 5
           },
           "type": {
-            "kind": "enum",
-            "ref": "KeyAction"
-          }
-        }
-      ],
-      "receiver": "KeyEvent",
-      "return": {
-        "kind": "void"
-      },
-      "source": {
-        "path": "root.zig",
-        "line": 863,
-        "column": 12
-      },
-      "symbol": "zg_key_event_set_action"
-    },
-    {
-      "name": "setKey",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "key",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 867,
-            "column": 36
-          },
-          "type": {
-            "kind": "enum",
-            "ref": "Key"
-          }
-        }
-      ],
-      "receiver": "KeyEvent",
-      "return": {
-        "kind": "void"
-      },
-      "source": {
-        "path": "root.zig",
-        "line": 867,
-        "column": 12
-      },
-      "symbol": "zg_key_event_set_key"
-    },
-    {
-      "name": "setMod",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "mod",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 871,
-            "column": 36
-          },
-          "type": {
-            "kind": "enum",
-            "ref": "KeyMod"
+            "kind": "io_writer"
           }
         },
         {
           "direction": "in",
-          "name": "value",
+          "name": "terminal",
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 871,
-            "column": 49
+            "line": 989,
+            "column": 5
           },
           "type": {
-            "kind": "bool"
-          }
-        }
-      ],
-      "receiver": "KeyEvent",
-      "return": {
-        "kind": "void"
-      },
-      "source": {
-        "path": "root.zig",
-        "line": 871,
-        "column": 12
-      },
-      "symbol": "zg_key_event_set_mod"
-    },
-    {
-      "doc": "Mark a modifier as consumed producing the event text. Effective\nmodifiers are the set modifiers minus the consumed ones.",
-      "name": "setConsumedMod",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "mod",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 877,
-            "column": 44
-          },
-          "type": {
-            "kind": "enum",
-            "ref": "KeyMod"
+            "const": true,
+            "kind": "opaque_ptr",
+            "nullable": false,
+            "ref": "Terminal"
           }
         },
         {
           "direction": "in",
-          "name": "value",
+          "name": "event",
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 877,
-            "column": 57
+            "line": 990,
+            "column": 5
           },
           "type": {
-            "kind": "bool"
+            "kind": "value_struct",
+            "ref": "KeyEvent"
           }
-        }
-      ],
-      "receiver": "KeyEvent",
-      "return": {
-        "kind": "void"
-      },
-      "source": {
-        "path": "root.zig",
-        "line": 877,
-        "column": 12
-      },
-      "symbol": "zg_key_event_set_consumed_mod"
-    },
-    {
-      "doc": "True while the event is part of an unfinished dead-key composition.",
-      "name": "setComposing",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [
+        },
         {
           "direction": "in",
-          "name": "composing",
+          "name": "utf8",
           "name_source": "sidecar",
           "retention": "borrowed",
+          "semantic": "utf8_string",
           "source": {
-            "line": 882,
-            "column": 42
-          },
-          "type": {
-            "kind": "bool"
-          }
-        }
-      ],
-      "receiver": "KeyEvent",
-      "return": {
-        "kind": "void"
-      },
-      "source": {
-        "path": "root.zig",
-        "line": 882,
-        "column": 12
-      },
-      "symbol": "zg_key_event_set_composing"
-    },
-    {
-      "doc": "The text this key produced, if any. Copied into the event.",
-      "name": "setUtf8",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "text",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 887,
-            "column": 37
+            "line": 991,
+            "column": 5
           },
           "type": {
             "const": true,
@@ -486,109 +248,6 @@
           }
         }
       ],
-      "receiver": "KeyEvent",
-      "return": {
-        "error_set": [
-          "NoSpaceLeft"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "kind": "void"
-        }
-      },
-      "source": {
-        "path": "root.zig",
-        "line": 887,
-        "column": 12
-      },
-      "symbol": "zg_key_event_set_utf8"
-    },
-    {
-      "doc": "The codepoint this key produces unshifted, or zero for none.",
-      "name": "setUnshiftedCodepoint",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "cp",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 894,
-            "column": 51
-          },
-          "type": {
-            "bits": 32,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        }
-      ],
-      "receiver": "KeyEvent",
-      "return": {
-        "kind": "void"
-      },
-      "source": {
-        "path": "root.zig",
-        "line": 894,
-        "column": 12
-      },
-      "symbol": "zg_key_event_set_unshifted_codepoint"
-    },
-    {
-      "doc": "Encode a key event for `terminal`, whose modes decide the encoding.",
-      "name": "encodeKey",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "writer",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 911,
-            "column": 5
-          },
-          "type": {
-            "kind": "io_writer"
-          }
-        },
-        {
-          "direction": "in",
-          "name": "terminal",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 912,
-            "column": 5
-          },
-          "type": {
-            "const": true,
-            "kind": "opaque_ptr",
-            "nullable": false,
-            "ref": "Terminal"
-          }
-        },
-        {
-          "direction": "in",
-          "name": "event",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 913,
-            "column": 5
-          },
-          "type": {
-            "const": true,
-            "kind": "opaque_ptr",
-            "nullable": false,
-            "ref": "KeyEvent"
-          }
-        }
-      ],
       "return": {
         "error_set": [
           "WriteFailed"
@@ -600,268 +259,10 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 910,
+        "line": 987,
         "column": 8
       },
       "symbol": "zg_encode_key"
-    },
-    {
-      "go_owner": "MouseEvent",
-      "name": "newMouseEvent",
-      "package": "input",
-      "ownership": "caller",
-      "params": [
-        {
-          "direction": "in",
-          "injected": "allocator",
-          "name": "gpa",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 989,
-            "column": 22
-          },
-          "type": {
-            "kind": "void"
-          }
-        }
-      ],
-      "return": {
-        "error_set": [
-          "OutOfMemory"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "const": false,
-          "kind": "opaque_ptr",
-          "nullable": false,
-          "ref": "MouseEvent"
-        }
-      },
-      "source": {
-        "path": "root.zig",
-        "line": 989,
-        "column": 8
-      },
-      "symbol": "zg_new_mouse_event"
-    },
-    {
-      "name": "freeMouseEvent",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "injected": "allocator",
-          "name": "gpa",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 995,
-            "column": 42
-          },
-          "type": {
-            "kind": "void"
-          }
-        }
-      ],
-      "receiver": "MouseEvent",
-      "return": {
-        "kind": "void"
-      },
-      "source": {
-        "path": "root.zig",
-        "line": 995,
-        "column": 8
-      },
-      "zig_path": "freeMouseEvent",
-      "symbol": "zg_mouse_event_free_mouse_event"
-    },
-    {
-      "doc": "Return the event to its defaults so one handle can encode many events.",
-      "name": "reset",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "MouseEvent",
-      "return": {
-        "kind": "void"
-      },
-      "source": {
-        "path": "root.zig",
-        "line": 962,
-        "column": 12
-      },
-      "symbol": "zg_mouse_event_reset"
-    },
-    {
-      "name": "setAction",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "action",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 966,
-            "column": 41
-          },
-          "type": {
-            "kind": "enum",
-            "ref": "MouseAction"
-          }
-        }
-      ],
-      "receiver": "MouseEvent",
-      "return": {
-        "kind": "void"
-      },
-      "source": {
-        "path": "root.zig",
-        "line": 966,
-        "column": 12
-      },
-      "symbol": "zg_mouse_event_set_action"
-    },
-    {
-      "doc": "The button involved. Motion with no button held uses `clearButton`.",
-      "name": "setButton",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "button",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 971,
-            "column": 41
-          },
-          "type": {
-            "kind": "enum",
-            "ref": "MouseButton"
-          }
-        }
-      ],
-      "receiver": "MouseEvent",
-      "return": {
-        "kind": "void"
-      },
-      "source": {
-        "path": "root.zig",
-        "line": 971,
-        "column": 12
-      },
-      "symbol": "zg_mouse_event_set_button"
-    },
-    {
-      "name": "clearButton",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "MouseEvent",
-      "return": {
-        "kind": "void"
-      },
-      "source": {
-        "path": "root.zig",
-        "line": 975,
-        "column": 12
-      },
-      "symbol": "zg_mouse_event_clear_button"
-    },
-    {
-      "name": "setMod",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "mod",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 979,
-            "column": 38
-          },
-          "type": {
-            "kind": "enum",
-            "ref": "KeyMod"
-          }
-        },
-        {
-          "direction": "in",
-          "name": "value",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 979,
-            "column": 51
-          },
-          "type": {
-            "kind": "bool"
-          }
-        }
-      ],
-      "receiver": "MouseEvent",
-      "return": {
-        "kind": "void"
-      },
-      "source": {
-        "path": "root.zig",
-        "line": 979,
-        "column": 12
-      },
-      "symbol": "zg_mouse_event_set_mod"
-    },
-    {
-      "doc": "The position in surface-space pixels, (0, 0) at the top left.",
-      "name": "setPosition",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "x",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 984,
-            "column": 43
-          },
-          "type": {
-            "bits": 32,
-            "kind": "float"
-          }
-        },
-        {
-          "direction": "in",
-          "name": "y",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 984,
-            "column": 51
-          },
-          "type": {
-            "bits": 32,
-            "kind": "float"
-          }
-        }
-      ],
-      "receiver": "MouseEvent",
-      "return": {
-        "kind": "void"
-      },
-      "source": {
-        "path": "root.zig",
-        "line": 984,
-        "column": 12
-      },
-      "symbol": "zg_mouse_event_set_position"
     },
     {
       "doc": "Encode a mouse event for `terminal`, whose reporting mode and format decide\nwhether anything is written at all.\n\n`any_button_pressed` should include this event, so a press reports true.",
@@ -875,7 +276,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1004,
+            "line": 1060,
             "column": 5
           },
           "type": {
@@ -888,7 +289,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1005,
+            "line": 1061,
             "column": 5
           },
           "type": {
@@ -904,13 +305,11 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1006,
+            "line": 1062,
             "column": 5
           },
           "type": {
-            "const": true,
-            "kind": "opaque_ptr",
-            "nullable": false,
+            "kind": "value_struct",
             "ref": "MouseEvent"
           }
         },
@@ -920,7 +319,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1007,
+            "line": 1063,
             "column": 5
           },
           "type": {
@@ -934,7 +333,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1008,
+            "line": 1064,
             "column": 5
           },
           "type": {
@@ -953,10 +352,351 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1003,
+        "line": 1059,
         "column": 8
       },
       "symbol": "zg_encode_mouse"
+    },
+    {
+      "doc": "The key for a printable ASCII byte, or null if none maps to it.",
+      "name": "keyFromASCII",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "ch",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 887,
+            "column": 21
+          },
+          "type": {
+            "bits": 8,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "return": {
+        "child": {
+          "kind": "enum",
+          "ref": "Key"
+        },
+        "kind": "optional"
+      },
+      "source": {
+        "path": "root.zig",
+        "line": 887,
+        "column": 8
+      },
+      "symbol": "zg_key_from_ascii"
+    },
+    {
+      "doc": "The key for a W3C `KeyboardEvent.code` value such as \"KeyA\", or null if\nnone matches.",
+      "name": "keyFromW3C",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "code",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "semantic": "utf8_string",
+          "source": {
+            "line": 893,
+            "column": 19
+          },
+          "type": {
+            "const": true,
+            "element": {
+              "bits": 8,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          }
+        }
+      ],
+      "return": {
+        "child": {
+          "kind": "enum",
+          "ref": "Key"
+        },
+        "kind": "optional"
+      },
+      "source": {
+        "path": "root.zig",
+        "line": 893,
+        "column": 8
+      },
+      "symbol": "zg_key_from_w3_c"
+    },
+    {
+      "doc": "The W3C `KeyboardEvent.code` value for `key`. Empty for keys the spec\ndoes not name.",
+      "name": "keyW3C",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "key",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 899,
+            "column": 15
+          },
+          "type": {
+            "kind": "enum",
+            "ref": "Key"
+          }
+        }
+      ],
+      "return": {
+        "const": true,
+        "element": {
+          "bits": 8,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "slice"
+      },
+      "return_semantic": "utf8_string",
+      "source": {
+        "path": "root.zig",
+        "line": 899,
+        "column": 8
+      },
+      "symbol": "zg_key_w3_c"
+    },
+    {
+      "doc": "The Unicode codepoint the key produces on a US layout, if it has one.",
+      "name": "keyCodepoint",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "key",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 904,
+            "column": 21
+          },
+          "type": {
+            "kind": "enum",
+            "ref": "Key"
+          }
+        }
+      ],
+      "return": {
+        "child": {
+          "bits": 21,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "optional"
+      },
+      "source": {
+        "path": "root.zig",
+        "line": 904,
+        "column": 8
+      },
+      "symbol": "zg_key_codepoint"
+    },
+    {
+      "doc": "True for keys that produce text on a US layout.",
+      "name": "keyPrintable",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "key",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 909,
+            "column": 21
+          },
+          "type": {
+            "kind": "enum",
+            "ref": "Key"
+          }
+        }
+      ],
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "root.zig",
+        "line": 909,
+        "column": 8
+      },
+      "symbol": "zg_key_printable"
+    },
+    {
+      "doc": "True for modifier keys such as shift, control and alt.",
+      "name": "keyModifier",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "key",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 914,
+            "column": 20
+          },
+          "type": {
+            "kind": "enum",
+            "ref": "Key"
+          }
+        }
+      ],
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "root.zig",
+        "line": 914,
+        "column": 8
+      },
+      "symbol": "zg_key_modifier"
+    },
+    {
+      "doc": "True for keys on the numeric keypad.",
+      "name": "keyKeypad",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "key",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 919,
+            "column": 18
+          },
+          "type": {
+            "kind": "enum",
+            "ref": "Key"
+          }
+        }
+      ],
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "root.zig",
+        "line": 919,
+        "column": 8
+      },
+      "symbol": "zg_key_keypad"
+    },
+    {
+      "doc": "True for the platform's primary command modifier on either side: super\n(command) on macOS, control elsewhere. The answer is fixed when the\nnative library is built, so it follows the platform the archive is for.",
+      "name": "keyCtrlOrSuper",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "key",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 926,
+            "column": 23
+          },
+          "type": {
+            "kind": "enum",
+            "ref": "Key"
+          }
+        }
+      ],
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "root.zig",
+        "line": 926,
+        "column": 8
+      },
+      "symbol": "zg_key_ctrl_or_super"
+    },
+    {
+      "doc": "True for shift on either side.",
+      "name": "keyLeftOrRightShift",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "key",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 931,
+            "column": 28
+          },
+          "type": {
+            "kind": "enum",
+            "ref": "Key"
+          }
+        }
+      ],
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "root.zig",
+        "line": 931,
+        "column": 8
+      },
+      "symbol": "zg_key_left_or_right_shift"
+    },
+    {
+      "doc": "True for alt on either side.",
+      "name": "keyLeftOrRightAlt",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "key",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 936,
+            "column": 26
+          },
+          "type": {
+            "kind": "enum",
+            "ref": "Key"
+          }
+        }
+      ],
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "root.zig",
+        "line": 936,
+        "column": 8
+      },
+      "symbol": "zg_key_left_or_right_alt"
     },
     {
       "doc": "Encode a focus in/out report (CSI I / CSI O).",
@@ -970,7 +710,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1016,
+            "line": 1078,
             "column": 20
           },
           "type": {
@@ -983,7 +723,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1016,
+            "line": 1078,
             "column": 44
           },
           "type": {
@@ -1003,7 +743,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1016,
+        "line": 1078,
         "column": 8
       },
       "symbol": "zg_encode_focus"
@@ -1020,7 +760,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1022,
+            "line": 1084,
             "column": 20
           },
           "type": {
@@ -1040,7 +780,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1022,
+        "line": 1084,
         "column": 8
       },
       "symbol": "zg_is_safe_paste"
@@ -1057,7 +797,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1028,
+            "line": 1090,
             "column": 5
           },
           "type": {
@@ -1070,7 +810,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1029,
+            "line": 1091,
             "column": 5
           },
           "type": {
@@ -1086,7 +826,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1030,
+            "line": 1092,
             "column": 5
           },
           "type": {
@@ -1112,7 +852,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1027,
+        "line": 1089,
         "column": 8
       },
       "symbol": "zg_encode_paste"
@@ -1232,7 +972,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1068,
+            "line": 1130,
             "column": 19
           },
           "type": {
@@ -1245,7 +985,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1068,
+            "line": 1130,
             "column": 35
           },
           "type": {
@@ -1265,7 +1005,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1068,
+        "line": 1130,
         "column": 8
       },
       "symbol": "zg_free_string"
@@ -1284,7 +1024,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1039,
+            "line": 1101,
             "column": 34
           },
           "type": {
@@ -1297,7 +1037,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1039,
+            "line": 1101,
             "column": 55
           },
           "type": {
@@ -1324,7 +1064,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1039,
+        "line": 1101,
         "column": 8
       },
       "zig_path": "newStream",
@@ -1342,7 +1082,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1058,
+            "line": 1120,
             "column": 34
           },
           "type": {
@@ -1356,7 +1096,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1058,
+        "line": 1120,
         "column": 8
       },
       "zig_path": "freeStream",
@@ -2109,8 +1849,8 @@
       "return": {
         "error_set": [
           "OutOfMemory",
-          "InvalidUtf8",
-          "OutOfSpace"
+          "OutOfSpace",
+          "InvalidUtf8"
         ],
         "kind": "error_union",
         "payload": {
@@ -2283,7 +2023,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 675,
+            "line": 678,
             "column": 38
           },
           "type": {
@@ -2304,11 +2044,47 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 675,
+        "line": 678,
         "column": 8
       },
       "zig_path": "switchScreen",
       "symbol": "zg_terminal_switch_screen"
+    },
+    {
+      "name": "switchScreenMode",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "mode",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "kind": "enum",
+            "ref": "SwitchScreenMode"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "enabled",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "kind": "bool"
+          }
+        }
+      ],
+      "receiver": "Terminal",
+      "return": {
+        "error_set": [
+          "OutOfMemory"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "void"
+        }
+      },
+      "symbol": "zg_terminal_switch_screen_mode"
     },
     {
       "doc": "Which screen is currently active.",
@@ -2322,7 +2098,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 680,
+        "line": 683,
         "column": 8
       },
       "zig_path": "activeScreenKey",
@@ -2343,7 +2119,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 523,
+        "line": 526,
         "column": 8
       },
       "zig_path": "activeScreen",
@@ -2361,7 +2137,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 529,
+            "line": 532,
             "column": 32
           },
           "type": {
@@ -2379,7 +2155,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 529,
+        "line": 532,
         "column": 8
       },
       "zig_path": "screen",
@@ -2703,6 +2479,62 @@
       "symbol": "zg_screen_selection_string"
     },
     {
+      "covers": [
+        "Screen.startHyperlink"
+      ],
+      "name": "startHyperlink",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "uri",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "semantic": "utf8_string",
+          "type": {
+            "const": true,
+            "element": {
+              "bits": 8,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "id",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "semantic": "utf8_string",
+          "type": {
+            "const": true,
+            "element": {
+              "bits": 8,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          }
+        }
+      ],
+      "receiver": "Screen",
+      "return": {
+        "error_set": [
+          "OutOfMemory",
+          "OutOfSpace"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "void"
+        }
+      },
+      "zig_path": "screenStartHyperlink",
+      "symbol": "zg_screen_start_hyperlink"
+    },
+    {
       "name": "viewportIsBottom",
       "ownership": "borrowed",
       "params": [],
@@ -2712,6 +2544,16 @@
         "kind": "bool"
       },
       "symbol": "zg_screen_viewport_is_bottom"
+    },
+    {
+      "name": "endHyperlink",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Screen",
+      "return": {
+        "kind": "void"
+      },
+      "symbol": "zg_screen_end_hyperlink"
     },
     {
       "child_of_receiver": true,
@@ -2730,7 +2572,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 579,
+            "line": 582,
             "column": 34
           },
           "type": {
@@ -2744,7 +2586,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 579,
+            "line": 582,
             "column": 51
           },
           "type": {
@@ -2775,7 +2617,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 579,
+        "line": 582,
         "column": 8
       },
       "zig_path": "newSearch",
@@ -2795,7 +2637,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 586,
+            "line": 589,
             "column": 34
           },
           "type": {
@@ -2809,7 +2651,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 586,
+        "line": 589,
         "column": 8
       },
       "zig_path": "freeSearch",
@@ -2830,6 +2672,24 @@
         }
       },
       "symbol": "zg_search_search_all"
+    },
+    {
+      "name": "needle",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Search",
+      "return": {
+        "const": true,
+        "element": {
+          "bits": 8,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "slice"
+      },
+      "return_semantic": "utf8_string",
+      "symbol": "zg_search_needle"
     },
     {
       "covers": [
@@ -2894,7 +2754,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 689,
+            "line": 692,
             "column": 45
           },
           "type": {
@@ -2925,7 +2785,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 689,
+        "line": 692,
         "column": 8
       },
       "zig_path": "printAttributesInto",
@@ -2946,7 +2806,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 698,
+            "line": 701,
             "column": 39
           },
           "type": {
@@ -2977,7 +2837,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "root.zig",
-        "line": 698,
+        "line": 701,
         "column": 8
       },
       "zig_path": "historyString",
@@ -2998,7 +2858,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 703,
+            "line": 706,
             "column": 38
           },
           "type": {
@@ -3029,7 +2889,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "root.zig",
-        "line": 703,
+        "line": 706,
         "column": 8
       },
       "zig_path": "screenString",
@@ -3357,6 +3217,10 @@
       "symbol": "zg_terminal_set_left_and_right_margin"
     },
     {
+      "covers": [
+        "Terminal.setScrollbackMaxBytes"
+      ],
+      "doc": "Limit the primary screen's scrollback to `max` bytes. Zero disables\nscrollback and erases retained history.",
       "name": "setScrollbackMaxBytes",
       "ownership": "borrowed",
       "params": [
@@ -3365,14 +3229,15 @@
           "name": "max",
           "name_source": "sidecar",
           "retention": "borrowed",
+          "source": {
+            "line": 826,
+            "column": 47
+          },
           "type": {
-            "child": {
-              "bits": 64,
-              "is_usize": true,
-              "kind": "int",
-              "signed": false
-            },
-            "kind": "optional"
+            "bits": 64,
+            "is_usize": true,
+            "kind": "int",
+            "signed": false
           }
         }
       ],
@@ -3380,9 +3245,36 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "root.zig",
+        "line": 826,
+        "column": 8
+      },
+      "zig_path": "setScrollbackMaxBytes",
       "symbol": "zg_terminal_set_scrollback_max_bytes"
     },
     {
+      "doc": "Remove the primary screen's scrollback byte limit.",
+      "name": "clearScrollbackMaxBytes",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Terminal",
+      "return": {
+        "kind": "void"
+      },
+      "source": {
+        "path": "root.zig",
+        "line": 831,
+        "column": 8
+      },
+      "zig_path": "clearScrollbackMaxBytes",
+      "symbol": "zg_terminal_clear_scrollback_max_bytes"
+    },
+    {
+      "covers": [
+        "Terminal.setScrollbackMaxLines"
+      ],
+      "doc": "Limit the primary screen's scrollback to `max` physical lines.",
       "name": "setScrollbackMaxLines",
       "ownership": "borrowed",
       "params": [
@@ -3391,14 +3283,15 @@
           "name": "max",
           "name_source": "sidecar",
           "retention": "borrowed",
+          "source": {
+            "line": 836,
+            "column": 47
+          },
           "type": {
-            "child": {
-              "bits": 64,
-              "is_usize": true,
-              "kind": "int",
-              "signed": false
-            },
-            "kind": "optional"
+            "bits": 64,
+            "is_usize": true,
+            "kind": "int",
+            "signed": false
           }
         }
       ],
@@ -3406,7 +3299,30 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "root.zig",
+        "line": 836,
+        "column": 8
+      },
+      "zig_path": "setScrollbackMaxLines",
       "symbol": "zg_terminal_set_scrollback_max_lines"
+    },
+    {
+      "doc": "Remove the primary screen's scrollback line limit.",
+      "name": "clearScrollbackMaxLines",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Terminal",
+      "return": {
+        "kind": "void"
+      },
+      "source": {
+        "path": "root.zig",
+        "line": 841,
+        "column": 8
+      },
+      "zig_path": "clearScrollbackMaxLines",
+      "symbol": "zg_terminal_clear_scrollback_max_lines"
     },
     {
       "name": "insertLines",
@@ -3858,7 +3774,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 798,
+            "line": 801,
             "column": 38
           },
           "type": {
@@ -3880,7 +3796,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 798,
+        "line": 801,
         "column": 8
       },
       "zig_path": "setAttribute",
@@ -3929,6 +3845,10 @@
       "symbol": "zg_terminal_set_default_cursor_style"
     },
     {
+      "covers": [
+        "Terminal.setDefaultCursorBlink"
+      ],
+      "doc": "The display width of a grapheme cluster given as codepoints.\n\nWrapped because `vt.unicode.graphemeWidth` is generic over the codepoint\ninteger type, and a generic function has no signature to bind.\nSet the default cursor blink. Applied immediately only when the cursor\ncurrently follows its defaults; otherwise saved for the next reset.",
       "name": "setDefaultCursorBlink",
       "ownership": "borrowed",
       "params": [
@@ -3937,11 +3857,12 @@
           "name": "blink",
           "name_source": "sidecar",
           "retention": "borrowed",
+          "source": {
+            "line": 815,
+            "column": 47
+          },
           "type": {
-            "child": {
-              "kind": "bool"
-            },
-            "kind": "optional"
+            "kind": "bool"
           }
         }
       ],
@@ -3949,7 +3870,30 @@
       "return": {
         "kind": "void"
       },
+      "source": {
+        "path": "root.zig",
+        "line": 815,
+        "column": 8
+      },
+      "zig_path": "setDefaultCursorBlink",
       "symbol": "zg_terminal_set_default_cursor_blink"
+    },
+    {
+      "doc": "Return the default cursor blink to the emulator default (blinking).",
+      "name": "resetDefaultCursorBlink",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Terminal",
+      "return": {
+        "kind": "void"
+      },
+      "source": {
+        "path": "root.zig",
+        "line": 820,
+        "column": 8
+      },
+      "zig_path": "resetDefaultCursorBlink",
+      "symbol": "zg_terminal_reset_default_cursor_blink"
     },
     {
       "name": "configureCharset",
@@ -4283,7 +4227,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1131,
+            "line": 1190,
             "column": 23
           },
           "type": {
@@ -4305,7 +4249,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1131,
+        "line": 1190,
         "column": 8
       },
       "symbol": "zg_new_render_state"
@@ -4324,7 +4268,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1138,
+            "line": 1197,
             "column": 40
           },
           "type": {
@@ -4339,7 +4283,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1138,
+        "line": 1197,
         "column": 8
       },
       "zig_path": "freeRenderState",
@@ -4565,7 +4509,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1405,
+            "line": 1454,
             "column": 23
           },
           "type": {
@@ -4587,7 +4531,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1405,
+        "line": 1454,
         "column": 8
       },
       "symbol": "zg_new_kitty_images"
@@ -4603,7 +4547,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1411,
+            "line": 1460,
             "column": 44
           },
           "type": {
@@ -4617,7 +4561,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1411,
+        "line": 1460,
         "column": 8
       },
       "zig_path": "freeKittyImages",
@@ -4718,6 +4662,39 @@
       "symbol": "zg_kitty_images_placements"
     },
     {
+      "name": "setKittyGraphicsSizeLimit",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "injected": "allocator",
+          "name": "allocator",
+          "name_source": "fallback",
+          "retention": "borrowed",
+          "type": {
+            "kind": "void"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "limit",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "bits": 64,
+            "is_usize": true,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "receiver": "Terminal",
+      "return": {
+        "kind": "void"
+      },
+      "symbol": "zg_terminal_set_kitty_graphics_size_limit"
+    },
+    {
       "doc": "Look up an image on the active screen by id.",
       "name": "kittyImage",
       "ownership": "borrowed",
@@ -4728,7 +4705,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1568,
+            "line": 1616,
             "column": 36
           },
           "type": {
@@ -4749,7 +4726,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1568,
+        "line": 1616,
         "column": 8
       },
       "zig_path": "kittyImage",
@@ -4766,7 +4743,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1587,
+            "line": 1635,
             "column": 40
           },
           "type": {
@@ -4782,7 +4759,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1587,
+            "line": 1635,
             "column": 55
           },
           "type": {
@@ -4813,7 +4790,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1587,
+        "line": 1635,
         "column": 8
       },
       "zig_path": "kittyImageData",
@@ -4862,19 +4839,169 @@
     },
     {
       "exhaustive": true,
-      "fields": [],
-      "kind": "opaque",
+      "fields": [
+        {
+          "name": "action",
+          "type": {
+            "kind": "enum",
+            "ref": "KeyAction"
+          }
+        },
+        {
+          "name": "key",
+          "type": {
+            "kind": "enum",
+            "ref": "Key"
+          }
+        },
+        {
+          "name": "mods",
+          "type": {
+            "kind": "value_struct",
+            "ref": "KeyMods"
+          }
+        },
+        {
+          "name": "consumed_mods",
+          "type": {
+            "kind": "value_struct",
+            "ref": "KeyMods"
+          }
+        },
+        {
+          "name": "composing",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
+          "name": "unshifted_codepoint",
+          "type": {
+            "bits": 32,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "kind": "value_struct",
+      "layout": "extern",
       "name": "KeyEvent",
       "package": "input",
       "zig_path": "root.KeyEvent"
     },
     {
       "exhaustive": true,
-      "fields": [],
-      "kind": "opaque",
+      "fields": [
+        {
+          "name": "action",
+          "type": {
+            "kind": "enum",
+            "ref": "MouseAction"
+          }
+        },
+        {
+          "name": "button",
+          "type": {
+            "kind": "enum",
+            "ref": "MouseButton"
+          }
+        },
+        {
+          "name": "has_button",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
+          "name": "mods",
+          "type": {
+            "kind": "value_struct",
+            "ref": "KeyMods"
+          }
+        },
+        {
+          "name": "x",
+          "type": {
+            "bits": 32,
+            "kind": "float"
+          }
+        },
+        {
+          "name": "y",
+          "type": {
+            "bits": 32,
+            "kind": "float"
+          }
+        }
+      ],
+      "kind": "value_struct",
+      "layout": "extern",
       "name": "MouseEvent",
       "package": "input",
       "zig_path": "root.MouseEvent"
+    },
+    {
+      "backing_type": {
+        "bits": 8,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "exhaustive": true,
+      "fields": [
+        {
+          "name": "shift",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
+          "name": "ctrl",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
+          "name": "alt",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
+          "name": "super",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
+          "name": "caps_lock",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
+          "name": "num_lock",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
+          "name": "_padding",
+          "type": {
+            "bits": 2,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "kind": "value_struct",
+      "layout": "packed",
+      "name": "KeyMods",
+      "registered_value": true,
+      "package": "input",
+      "zig_path": "root.KeyMods"
     },
     {
       "exhaustive": true,
@@ -5168,6 +5295,32 @@
         "signed": false
       },
       "zig_path": "lib.enum.Enum(.{ .zig = {} },&.{ &.{ ... }[0..(...)], &.{ ... }[0..(...)] }[0..2])#ScreenKey"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "name": "47",
+          "value": 0
+        },
+        {
+          "name": "1047",
+          "value": 1
+        },
+        {
+          "name": "1049",
+          "value": 2
+        }
+      ],
+      "kind": "enum",
+      "name": "SwitchScreenMode",
+      "tag_type": {
+        "bits": 2,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "zig_path": "terminal.Terminal.SwitchScreenMode"
     },
     {
       "exhaustive": true,
@@ -6547,11 +6700,11 @@
       "exhaustive": true,
       "fields": [
         {
-          "name": "release",
+          "name": "press",
           "value": 0
         },
         {
-          "name": "press",
+          "name": "release",
           "value": 1
         },
         {
@@ -6563,53 +6716,13 @@
       "name": "KeyAction",
       "package": "input",
       "tag_type": {
-        "bits": 32,
-        "is_usize": false,
-        "kind": "int",
-        "signed": true
-      },
-      "text": true,
-      "zig_path": "input.key.Action"
-    },
-    {
-      "exhaustive": true,
-      "fields": [
-        {
-          "name": "shift",
-          "value": 0
-        },
-        {
-          "name": "ctrl",
-          "value": 1
-        },
-        {
-          "name": "alt",
-          "value": 2
-        },
-        {
-          "name": "super",
-          "value": 3
-        },
-        {
-          "name": "caps_lock",
-          "value": 4
-        },
-        {
-          "name": "num_lock",
-          "value": 5
-        }
-      ],
-      "kind": "enum",
-      "name": "KeyMod",
-      "package": "input",
-      "tag_type": {
         "bits": 8,
         "is_usize": false,
         "kind": "int",
         "signed": false
       },
       "text": true,
-      "zig_path": "root.KeyMod"
+      "zig_path": "root.KeyAction"
     },
     {
       "exhaustive": true,
@@ -6947,10 +7060,8 @@
         {
           "name": "flags",
           "type": {
-            "bits": 32,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
+            "kind": "value_struct",
+            "ref": "CellFlags"
           }
         }
       ],
@@ -7275,19 +7386,15 @@
         {
           "name": "format",
           "type": {
-            "bits": 8,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
+            "kind": "enum",
+            "ref": "KittyFormat"
           }
         },
         {
           "name": "compression",
           "type": {
-            "bits": 8,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
+            "kind": "enum",
+            "ref": "KittyCompression"
           }
         },
         {

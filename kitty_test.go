@@ -109,11 +109,11 @@ func TestKittyTransmitAndPlace(t *testing.T) {
 	if image.Width != 2 || image.Height != 2 {
 		t.Errorf("image size = %dx%d, want 2x2", image.Width, image.Height)
 	}
-	if KittyFormat(image.Format) != KittyFormatRgb {
-		t.Errorf("format = %v, want rgb", KittyFormat(image.Format))
+	if image.Format != KittyFormatRgb {
+		t.Errorf("format = %v, want rgb", image.Format)
 	}
-	if KittyCompression(image.Compression) != KittyCompressionNone {
-		t.Errorf("compression = %v, want none", KittyCompression(image.Compression))
+	if image.Compression != KittyCompressionNone {
+		t.Errorf("compression = %v, want none", image.Compression)
 	}
 	if image.DataLen != 12 {
 		t.Errorf("data len = %d, want 12 (2*2*3)", image.DataLen)

@@ -147,15 +147,15 @@ func TestTabStops(t *testing.T) {
 	}
 }
 
-// SetScrollbackMaxBytes takes ?usize; nil means unlimited.
+// ClearScrollbackMaxBytes removes the limit; SetScrollbackMaxBytes sets one.
 func TestOptionalScalarParam(t *testing.T) {
 	term := newTerm(t, 10, 2)
-	if err := term.SetScrollbackMaxBytes(nil); err != nil {
-		t.Fatalf("SetScrollbackMaxBytes(nil): %v", err)
+	if err := term.ClearScrollbackMaxBytes(); err != nil {
+		t.Fatalf("ClearScrollbackMaxBytes: %v", err)
 	}
 	limit := uint(4096)
-	if err := term.SetScrollbackMaxBytes(&limit); err != nil {
-		t.Fatalf("SetScrollbackMaxBytes(&4096): %v", err)
+	if err := term.SetScrollbackMaxBytes(limit); err != nil {
+		t.Fatalf("SetScrollbackMaxBytes(4096): %v", err)
 	}
 }
 
@@ -356,12 +356,12 @@ func TestSetDefaultCursor(t *testing.T) {
 	}
 
 	// ?bool: nil selects the emulator default.
-	if err := term.SetDefaultCursorBlink(nil); err != nil {
-		t.Fatalf("SetDefaultCursorBlink(nil): %v", err)
+	if err := term.ResetDefaultCursorBlink(); err != nil {
+		t.Fatalf("ResetDefaultCursorBlink: %v", err)
 	}
 	blink := true
-	if err := term.SetDefaultCursorBlink(&blink); err != nil {
-		t.Fatalf("SetDefaultCursorBlink(&true): %v", err)
+	if err := term.SetDefaultCursorBlink(blink); err != nil {
+		t.Fatalf("SetDefaultCursorBlink(true): %v", err)
 	}
 }
 

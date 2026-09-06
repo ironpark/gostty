@@ -8,6 +8,77 @@ import (
 	"github.com/ironpark/gostty/internal/raw"
 )
 
+// KeyMods mirrors the Zig packed struct of the same name.
+type KeyMods struct {
+	Shift    bool
+	Ctrl     bool
+	Alt      bool
+	Super    bool
+	CapsLock bool
+	NumLock  bool
+	Padding  uint8
+}
+
+func zigoKeyModsToBacking(value KeyMods) uint8 {
+	var result uint64
+	result |= (uint64(boolToUint8(value.Shift)) & 0x1) << 0
+	result |= (uint64(boolToUint8(value.Ctrl)) & 0x1) << 1
+	result |= (uint64(boolToUint8(value.Alt)) & 0x1) << 2
+	result |= (uint64(boolToUint8(value.Super)) & 0x1) << 3
+	result |= (uint64(boolToUint8(value.CapsLock)) & 0x1) << 4
+	result |= (uint64(boolToUint8(value.NumLock)) & 0x1) << 5
+	result |= (uint64(value.Padding) & 0x3) << 6
+	return uint8(result)
+}
+
+// Backing returns the integer representation used by Zig.
+func (value KeyMods) Backing() uint8 { return zigoKeyModsToBacking(value) }
+
+// KeyModsFromBacking reconstructs a KeyMods from its Zig integer representation.
+func KeyModsFromBacking(value uint8) KeyMods {
+	return KeyMods{
+		Shift:    ((uint64(value) >> 0) & 0x1) != 0,
+		Ctrl:     ((uint64(value) >> 1) & 0x1) != 0,
+		Alt:      ((uint64(value) >> 2) & 0x1) != 0,
+		Super:    ((uint64(value) >> 3) & 0x1) != 0,
+		CapsLock: ((uint64(value) >> 4) & 0x1) != 0,
+		NumLock:  ((uint64(value) >> 5) & 0x1) != 0,
+		Padding:  uint8(((uint64(value) >> 6) & 0x3)),
+	}
+}
+
+// KeyEvent mirrors the Zig `extern struct` of the same name.
+type KeyEvent struct {
+	// Action corresponds to the Zig field action.
+	Action KeyAction
+	// Key corresponds to the Zig field key.
+	Key Key
+	// Mods corresponds to the Zig field mods.
+	Mods KeyMods
+	// ConsumedMods corresponds to the Zig field consumed_mods.
+	ConsumedMods KeyMods
+	// Composing corresponds to the Zig field composing.
+	Composing bool
+	// UnshiftedCodepoint corresponds to the Zig field unshifted_codepoint.
+	UnshiftedCodepoint uint32
+}
+
+// MouseEvent mirrors the Zig `extern struct` of the same name.
+type MouseEvent struct {
+	// Action corresponds to the Zig field action.
+	Action MouseAction
+	// Button corresponds to the Zig field button.
+	Button MouseButton
+	// HasButton corresponds to the Zig field has_button.
+	HasButton bool
+	// Mods corresponds to the Zig field mods.
+	Mods KeyMods
+	// X corresponds to the Zig field x.
+	X float32
+	// Y corresponds to the Zig field y.
+	Y float32
+}
+
 // RenderSize mirrors the Zig `extern struct` of the same name.
 type RenderSize struct {
 	// ScreenWidth corresponds to the Zig field screen_width.
@@ -39,6 +110,28 @@ var _ = [1]struct{}{}[unsafe.Offsetof(RenderSize{}.PaddingTop)-unsafe.Offsetof(r
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderSize{}.PaddingBottom)-unsafe.Offsetof(raw.RenderSizeData{}.PaddingBottom)]
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderSize{}.PaddingRight)-unsafe.Offsetof(raw.RenderSizeData{}.PaddingRight)]
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderSize{}.PaddingLeft)-unsafe.Offsetof(raw.RenderSizeData{}.PaddingLeft)]
+
+func zigoKeyEventToRaw(value KeyEvent) raw.KeyEventData {
+	return raw.KeyEventData{
+		Action:             uint8(value.Action),
+		Key:                int32(value.Key),
+		Mods:               value.Mods.Backing(),
+		ConsumedMods:       value.ConsumedMods.Backing(),
+		Composing:          boolToUint8(value.Composing),
+		UnshiftedCodepoint: value.UnshiftedCodepoint,
+	}
+}
+
+func zigoMouseEventToRaw(value MouseEvent) raw.MouseEventData {
+	return raw.MouseEventData{
+		Action:    int32(value.Action),
+		Button:    int32(value.Button),
+		HasButton: boolToUint8(value.HasButton),
+		Mods:      value.Mods.Backing(),
+		X:         value.X,
+		Y:         value.Y,
+	}
+}
 
 func zigoRenderSizeToRaw(value RenderSize) raw.RenderSizeData {
 	return raw.RenderSizeData{

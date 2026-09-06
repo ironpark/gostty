@@ -187,38 +187,15 @@ func (g *game) wheelAsArrows(notches int) error {
 // encodeMouse describes one event to the binding and appends whatever it
 // encodes -- which may be nothing -- to this frame's report.
 func (g *game) encodeMouse(action input.MouseAction, button input.MouseButton, hasButton bool, px, py int, m mods, anyPressed bool) error {
-	if err := g.mev.Reset(); err != nil {
-		return err
+	ev := input.MouseEvent{
+		Action:    action,
+		Button:    button,
+		HasButton: hasButton,
+		Mods:      m.keyMods(),
+		X:         float32(px),
+		Y:         float32(py),
 	}
-	if err := g.mev.SetAction(action); err != nil {
-		return err
-	}
-	if hasButton {
-		if err := g.mev.SetButton(button); err != nil {
-			return err
-		}
-	} else if err := g.mev.ClearButton(); err != nil {
-		return err
-	}
-	for _, set := range [...]struct {
-		mod input.KeyMod
-		on  bool
-	}{
-		{input.KeyModShift, m.shift},
-		{input.KeyModCtrl, m.ctrl},
-		{input.KeyModAlt, m.alt},
-		{input.KeyModSuper, m.super},
-	} {
-		if set.on {
-			if err := g.mev.SetMod(set.mod, true); err != nil {
-				return err
-			}
-		}
-	}
-	if err := g.mev.SetPosition(float32(px), float32(py)); err != nil {
-		return err
-	}
-	return input.EncodeMouse(reportWriter{g: g}, g.vt, g.mev, g.renderSize(), anyPressed)
+	return input.EncodeMouse(reportWriter{g: g}, g.vt, ev, g.renderSize(), anyPressed)
 }
 
 // renderSize describes the window to the encoder, which needs it to turn a

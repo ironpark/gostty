@@ -107,10 +107,7 @@ func CodepointWidth(p0 uint32) (uint8, error) {
 	return result, nil
 }
 
-// GraphemeWidth: The display width of a grapheme cluster given as codepoints.
-//
-// Wrapped because `vt.unicode.graphemeWidth` is generic over the codepoint
-// integer type, and a generic function has no signature to bind.
+// GraphemeWidth calls the Zig function graphemeWidth.
 func GraphemeWidth(cps []uint32) uint8 {
 	return raw.GraphemeWidth(cps)
 }
@@ -929,6 +926,22 @@ func (te *Terminal) SwitchScreen(key ScreenKey) error {
 	return nil
 }
 
+// SwitchScreenMode calls the Zig function Terminal.switchScreenMode.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) SwitchScreenMode(mode SwitchScreenMode, enabled bool) error {
+	ptr, err := zigoCheckedPointer("Terminal.SwitchScreenMode receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSwitchScreenMode(ptr, uint8(mode), boolToUint8(enabled))
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Terminal.SwitchScreenMode", code), te)
+	}
+	return nil
+}
+
 // ActiveScreenKey: Which screen is currently active.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
@@ -1116,6 +1129,22 @@ func (s *Screen) SelectionString() (string, bool, error) {
 	return result, zigoHas, nil
 }
 
+// StartHyperlink calls the Zig function Screen.startHyperlink.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (s *Screen) StartHyperlink(uri string, id string) error {
+	ptr, err := zigoCheckedPointer("Screen.StartHyperlink receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	code := raw.ScreenStartHyperlink(ptr, uri, id)
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Screen.StartHyperlink", code), s)
+	}
+	return nil
+}
+
 // ViewportIsBottom calls the Zig function Screen.viewportIsBottom.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
@@ -1130,6 +1159,22 @@ func (s *Screen) ViewportIsBottom() (bool, error) {
 		return false, zigoPoisonAfterPanic(errorForCode("Screen.ViewportIsBottom", code), s)
 	}
 	return result != 0, nil
+}
+
+// EndHyperlink calls the Zig function Screen.endHyperlink.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Screen) EndHyperlink() error {
+	ptr, err := zigoCheckedPointer("Screen.EndHyperlink receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	code := raw.ScreenEndHyperlink(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Screen.EndHyperlink", code), s)
+	}
+	return nil
 }
 
 // NewSearch: Start searching `target` for `needle`. The search does not run until
@@ -1171,6 +1216,22 @@ func (s *Search) SearchAll() error {
 		return zigoPoisonAfterPanic(errorForCode("Search.SearchAll", code), s)
 	}
 	return nil
+}
+
+// Needle calls the Zig function Search.needle.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Search) Needle() (string, error) {
+	ptr, err := zigoCheckedPointer("Search.Needle receiver", s)
+	if err != nil {
+		return "", err
+	}
+	defer s.zigoRelease()
+	result, code := raw.SearchNeedle(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(errorForCode("Search.Needle", code), s)
+	}
+	return result, nil
 }
 
 // MatchCount calls the Zig function Search.matchCount.
@@ -1532,10 +1593,11 @@ func (te *Terminal) SetLeftAndRightMargin(leftReq uint, rightReq uint) error {
 	return nil
 }
 
-// SetScrollbackMaxBytes calls the Zig function Terminal.setScrollbackMaxBytes.
+// SetScrollbackMaxBytes: Limit the primary screen's scrollback to `max` bytes. Zero disables
+// scrollback and erases retained history.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-func (te *Terminal) SetScrollbackMaxBytes(max *uint) error {
+func (te *Terminal) SetScrollbackMaxBytes(max uint) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetScrollbackMaxBytes receiver", te)
 	if err != nil {
 		return err
@@ -1548,10 +1610,26 @@ func (te *Terminal) SetScrollbackMaxBytes(max *uint) error {
 	return nil
 }
 
-// SetScrollbackMaxLines calls the Zig function Terminal.setScrollbackMaxLines.
+// ClearScrollbackMaxBytes: Remove the primary screen's scrollback byte limit.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-func (te *Terminal) SetScrollbackMaxLines(max *uint) error {
+func (te *Terminal) ClearScrollbackMaxBytes() error {
+	ptr, err := zigoCheckedPointer("Terminal.ClearScrollbackMaxBytes receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalClearScrollbackMaxBytes(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Terminal.ClearScrollbackMaxBytes", code), te)
+	}
+	return nil
+}
+
+// SetScrollbackMaxLines: Limit the primary screen's scrollback to `max` physical lines.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SetScrollbackMaxLines(max uint) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetScrollbackMaxLines receiver", te)
 	if err != nil {
 		return err
@@ -1560,6 +1638,22 @@ func (te *Terminal) SetScrollbackMaxLines(max *uint) error {
 	code := raw.TerminalSetScrollbackMaxLines(ptr, max)
 	if code != 0 {
 		return zigoPoisonAfterPanic(errorForCode("Terminal.SetScrollbackMaxLines", code), te)
+	}
+	return nil
+}
+
+// ClearScrollbackMaxLines: Remove the primary screen's scrollback line limit.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) ClearScrollbackMaxLines() error {
+	ptr, err := zigoCheckedPointer("Terminal.ClearScrollbackMaxLines receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalClearScrollbackMaxLines(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Terminal.ClearScrollbackMaxLines", code), te)
 	}
 	return nil
 }
@@ -1872,23 +1966,39 @@ func (te *Terminal) SetDefaultCursorStyle(configuredStyle CursorStyle) error {
 	return nil
 }
 
-// SetDefaultCursorBlink calls the Zig function Terminal.setDefaultCursorBlink.
+// SetDefaultCursorBlink: The display width of a grapheme cluster given as codepoints.
+//
+// Wrapped because `vt.unicode.graphemeWidth` is generic over the codepoint
+// integer type, and a generic function has no signature to bind.
+// Set the default cursor blink. Applied immediately only when the cursor
+// currently follows its defaults; otherwise saved for the next reset.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-func (te *Terminal) SetDefaultCursorBlink(blink *bool) error {
+func (te *Terminal) SetDefaultCursorBlink(blink bool) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetDefaultCursorBlink receiver", te)
 	if err != nil {
 		return err
 	}
 	defer te.zigoRelease()
-	var blinkRaw *uint8
-	if blink != nil {
-		blinkRawValue := boolToUint8(*blink)
-		blinkRaw = &blinkRawValue
-	}
-	code := raw.TerminalSetDefaultCursorBlink(ptr, blinkRaw)
+	code := raw.TerminalSetDefaultCursorBlink(ptr, boolToUint8(blink))
 	if code != 0 {
 		return zigoPoisonAfterPanic(errorForCode("Terminal.SetDefaultCursorBlink", code), te)
+	}
+	return nil
+}
+
+// ResetDefaultCursorBlink: Return the default cursor blink to the emulator default (blinking).
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) ResetDefaultCursorBlink() error {
+	ptr, err := zigoCheckedPointer("Terminal.ResetDefaultCursorBlink receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalResetDefaultCursorBlink(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Terminal.ResetDefaultCursorBlink", code), te)
 	}
 	return nil
 }
@@ -2071,14 +2181,12 @@ func (r *RenderState) Cells(dst []RenderCell) (uint, error) {
 		return 0, err
 	}
 	defer r.zigoRelease()
-	var dstRaw []raw.RenderCellData
-	if len(dst) != 0 {
-		dstRaw = unsafe.Slice((*raw.RenderCellData)(unsafe.Pointer(&dst[0])), len(dst))
-	}
+	dstRaw := make([]raw.RenderCellData, len(dst))
 	result, code := raw.RenderStateCells(ptr, dstRaw)
 	if code != 0 {
 		return 0, zigoPoisonAfterPanic(errorForCode("RenderState.Cells", code), r)
 	}
+	zigoRenderCellSliceCopyFromRaw(dst, dstRaw, int(result))
 	return result, nil
 }
 
@@ -2292,6 +2400,22 @@ func (k *KittyImages) Placements(dst []KittyPlacement) (uint, error) {
 		return 0, zigoPoisonAfterPanic(errorForCode("KittyImages.Placements", code), k)
 	}
 	return result, nil
+}
+
+// SetKittyGraphicsSizeLimit calls the Zig function Terminal.setKittyGraphicsSizeLimit.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SetKittyGraphicsSizeLimit(limit uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetKittyGraphicsSizeLimit receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetKittyGraphicsSizeLimit(ptr, limit)
+	if code != 0 {
+		return zigoPoisonAfterPanic(errorForCode("Terminal.SetKittyGraphicsSizeLimit", code), te)
+	}
+	return nil
 }
 
 // KittyImage: Look up an image on the active screen by id.

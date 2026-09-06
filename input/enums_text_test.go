@@ -15,17 +15,17 @@ func TestKeyTextRoundTrip(t *testing.T) {
 		t.Errorf("ParseKey = %v, %v; want %v", key, err, input.KeyBracketLeft)
 	}
 	var binding struct {
-		Key input.Key    `json:"key"`
-		Mod input.KeyMod `json:"mod"`
+		Key    input.Key         `json:"key"`
+		Button input.MouseButton `json:"button"`
 	}
-	if err := json.Unmarshal([]byte(`{"key":"enter","mod":"ctrl"}`), &binding); err != nil {
+	if err := json.Unmarshal([]byte(`{"key":"enter","button":"left"}`), &binding); err != nil {
 		t.Fatalf("json.Unmarshal: %v", err)
 	}
-	if binding.Key != input.KeyEnter || binding.Mod != input.KeyModCtrl {
-		t.Errorf("decoded %+v, want enter/ctrl", binding)
+	if binding.Key != input.KeyEnter || binding.Button != input.MouseButtonLeft {
+		t.Errorf("decoded %+v, want enter/left", binding)
 	}
 	out, err := json.Marshal(binding)
-	if err != nil || string(out) != `{"key":"enter","mod":"ctrl"}` {
+	if err != nil || string(out) != `{"key":"enter","button":"left"}` {
 		t.Errorf("json.Marshal = %s, %v", out, err)
 	}
 }

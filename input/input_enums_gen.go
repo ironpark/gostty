@@ -1110,13 +1110,13 @@ func (value *Key) UnmarshalText(text []byte) error {
 }
 
 // KeyAction represents the corresponding Zig enum.
-type KeyAction int32
+type KeyAction uint8
 
 const (
-	// KeyActionRelease corresponds to the Zig tag release.
-	KeyActionRelease KeyAction = 0
 	// KeyActionPress corresponds to the Zig tag press.
-	KeyActionPress KeyAction = 1
+	KeyActionPress KeyAction = 0
+	// KeyActionRelease corresponds to the Zig tag release.
+	KeyActionRelease KeyAction = 1
 	// KeyActionRepeat corresponds to the Zig tag repeat.
 	KeyActionRepeat KeyAction = 2
 )
@@ -1124,10 +1124,10 @@ const (
 // String returns the Zig tag name.
 func (value KeyAction) String() string {
 	switch value {
-	case KeyActionRelease:
-		return "release"
 	case KeyActionPress:
 		return "press"
+	case KeyActionRelease:
+		return "release"
 	case KeyActionRepeat:
 		return "repeat"
 	default:
@@ -1138,10 +1138,10 @@ func (value KeyAction) String() string {
 // ParseKeyAction returns the KeyAction named by text, which is a Zig tag name.
 func ParseKeyAction(text string) (KeyAction, error) {
 	switch text {
-	case "release":
-		return KeyActionRelease, nil
 	case "press":
 		return KeyActionPress, nil
+	case "release":
+		return KeyActionRelease, nil
 	case "repeat":
 		return KeyActionRepeat, nil
 	}
@@ -1156,78 +1156,6 @@ func (value KeyAction) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler with ParseKeyAction.
 func (value *KeyAction) UnmarshalText(text []byte) error {
 	parsed, err := ParseKeyAction(string(text))
-	if err != nil {
-		return err
-	}
-	*value = parsed
-	return nil
-}
-
-// KeyMod represents the corresponding Zig enum.
-type KeyMod uint8
-
-const (
-	// KeyModShift corresponds to the Zig tag shift.
-	KeyModShift KeyMod = 0
-	// KeyModCtrl corresponds to the Zig tag ctrl.
-	KeyModCtrl KeyMod = 1
-	// KeyModAlt corresponds to the Zig tag alt.
-	KeyModAlt KeyMod = 2
-	// KeyModSuper corresponds to the Zig tag super.
-	KeyModSuper KeyMod = 3
-	// KeyModCapsLock corresponds to the Zig tag caps_lock.
-	KeyModCapsLock KeyMod = 4
-	// KeyModNumLock corresponds to the Zig tag num_lock.
-	KeyModNumLock KeyMod = 5
-)
-
-// String returns the Zig tag name.
-func (value KeyMod) String() string {
-	switch value {
-	case KeyModShift:
-		return "shift"
-	case KeyModCtrl:
-		return "ctrl"
-	case KeyModAlt:
-		return "alt"
-	case KeyModSuper:
-		return "super"
-	case KeyModCapsLock:
-		return "caps_lock"
-	case KeyModNumLock:
-		return "num_lock"
-	default:
-		return "KeyMod(" + strconv.Itoa(int(value)) + ")"
-	}
-}
-
-// ParseKeyMod returns the KeyMod named by text, which is a Zig tag name.
-func ParseKeyMod(text string) (KeyMod, error) {
-	switch text {
-	case "shift":
-		return KeyModShift, nil
-	case "ctrl":
-		return KeyModCtrl, nil
-	case "alt":
-		return KeyModAlt, nil
-	case "super":
-		return KeyModSuper, nil
-	case "caps_lock":
-		return KeyModCapsLock, nil
-	case "num_lock":
-		return KeyModNumLock, nil
-	}
-	return 0, &EnumParseError{Type: "KeyMod", Text: text}
-}
-
-// MarshalText implements encoding.TextMarshaler with the String spelling.
-func (value KeyMod) MarshalText() ([]byte, error) {
-	return []byte(value.String()), nil
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler with ParseKeyMod.
-func (value *KeyMod) UnmarshalText(text []byte) error {
-	parsed, err := ParseKeyMod(string(text))
 	if err != nil {
 		return err
 	}

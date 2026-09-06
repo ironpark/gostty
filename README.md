@@ -41,10 +41,10 @@ for kind, err := range stream.Events() {
 }
 ```
 
-Enums that a consumer names in text -- keys, modifiers, cursor styles, progress
-states -- implement `encoding.TextMarshaler` and `TextUnmarshaler` and have a
+Enums that a consumer names in text -- keys, mouse buttons, cursor styles,
+progress states -- implement `encoding.TextMarshaler` and `TextUnmarshaler` and have a
 `Parse<Enum>` function, so a keybinding like `{"key":"enter","mod":"ctrl"}`
-decodes straight into `input.Key` and `input.KeyMod`.
+decodes straight into `input.Key` and `input.MouseButton`.
 
 Input goes the other way: build a key event and encode it for whatever the
 program on the pty currently expects. Key, mouse, focus, and paste encoding live
@@ -52,12 +52,10 @@ in `github.com/ironpark/gostty/input`, which is completely decoupled from the
 terminal state.
 
 ```go
-ev, _ := input.NewKeyEvent()
-defer ev.Close()
-ev.SetKey(input.KeyArrowUp)
+ev := input.KeyEvent{Key: input.KeyArrowUp}
 
 var buf bytes.Buffer
-input.EncodeKey(&buf, term, ev) // "\x1b[A", or "\x1bOA" under DECCKM
+input.EncodeKey(&buf, term, ev, "") // "\x1b[A", or "\x1bOA" under DECCKM
 ```
 
 ### Clipboard

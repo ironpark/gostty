@@ -55,20 +55,10 @@ func screen(t *testing.T, term *gostty.Terminal) string {
 	return strings.TrimRight(string(got), "\n")
 }
 
-func newKeyEv(t *testing.T) *input.KeyEvent {
-	t.Helper()
-	ev, err := input.NewKeyEvent()
-	if err != nil {
-		t.Fatalf("input.NewKeyEvent: %v", err)
-	}
-	t.Cleanup(func() { ev.Close() })
-	return ev
-}
-
-func encodeKey(t *testing.T, term *gostty.Terminal, ev *input.KeyEvent) string {
+func encodeKey(t *testing.T, term *gostty.Terminal, ev input.KeyEvent, utf8 string) string {
 	t.Helper()
 	var buf bytes.Buffer
-	if err := input.EncodeKey(&buf, term, ev); err != nil {
+	if err := input.EncodeKey(&buf, term, ev, utf8); err != nil {
 		t.Fatalf("input.EncodeKey: %v", err)
 	}
 	return buf.String()
@@ -76,40 +66,24 @@ func encodeKey(t *testing.T, term *gostty.Terminal, ev *input.KeyEvent) string {
 
 func TestEncodePlainText(t *testing.T) {
 	term := newTerm(t, 20, 3)
-	ev := newKeyEv(t)
-	if err := ev.SetKey(input.KeyKeyA); err != nil {
-		t.Fatalf("SetKey: %v", err)
-	}
-	if err := ev.SetUTF8([]byte("a")); err != nil {
-		t.Fatalf("SetUTF8: %v", err)
-	}
-	if got, want := encodeKey(t, term, ev), "a"; got != want {
+	ev := input.KeyEvent{Key: input.KeyKeyA}
+	if got, want := encodeKey(t, term, ev, "a"), "a"; got != want {
 		t.Errorf("encoded %q, want %q", got, want)
 	}
 }
 
 func TestEncodeCtrlKey(t *testing.T) {
 	term := newTerm(t, 20, 3)
-	ev := newKeyEv(t)
-	if err := ev.SetKey(input.KeyKeyC); err != nil {
-		t.Fatalf("SetKey: %v", err)
-	}
-	if err := ev.SetMod(input.KeyModCtrl, true); err != nil {
-		t.Fatalf("SetMod: %v", err)
-	}
+	ev := input.KeyEvent{Key: input.KeyKeyC, Mods: input.KeyMods{Ctrl: true}}
 	// ctrl+c is 0x03.
-	if got, want := encodeKey(t, term, ev), "\x03"; got != want {
+	if got, want := encodeKey(t, term, ev, ""), "\x03"; got != want {
 		t.Errorf("encoded %q, want %q", got, want)
 	}
 }
 
 func TestEncodeEnter(t *testing.T) {
 	term := newTerm(t, 20, 3)
-	ev := newKeyEv(t)
-	if err := ev.SetKey(input.KeyEnter); err != nil {
-		t.Fatalf("SetKey: %v", err)
-	}
-	if got, want := encodeKey(t, term, ev), "\r"; got != want {
+	if got, want := encodeKey(t, term, input.KeyEvent{Key: input.KeyEnter}, ""), "\r"; got != want {
 		t.Errorf("encoded %q, want %q", got, want)
 	}
 }
@@ -118,42 +92,27 @@ func TestEncodeEnter(t *testing.T) {
 // encoding has to follow the terminal's current state.
 func TestEncodeArrowFollowsCursorKeyMode(t *testing.T) {
 	term, stream := newStreamPair(t, 20, 3)
-	ev := newKeyEv(t)
-	if err := ev.SetKey(input.KeyArrowUp); err != nil {
-		t.Fatalf("SetKey: %v", err)
-	}
+	ev := input.KeyEvent{Key: input.KeyArrowUp}
 
-	if got, want := encodeKey(t, term, ev), "\x1b[A"; got != want {
+	if got, want := encodeKey(t, term, ev, ""), "\x1b[A"; got != want {
 		t.Errorf("normal mode encoded %q, want %q", got, want)
 	}
 
 	feed(t, stream, "\x1b[?1h") // DECCKM on
-	if got, want := encodeKey(t, term, ev), "\x1bOA"; got != want {
+	if got, want := encodeKey(t, term, ev, ""), "\x1bOA"; got != want {
 		t.Errorf("application mode encoded %q, want %q", got, want)
 	}
 }
 
-func TestKeyEventReset(t *testing.T) {
+// The zero KeyEvent is a press of no key: the event is a value, so a caller
+// builds a fresh one per press instead of resetting a handle.
+func TestKeyEventZeroValue(t *testing.T) {
 	term := newTerm(t, 20, 3)
-	ev := newKeyEv(t)
-	if err := ev.SetKey(input.KeyKeyC); err != nil {
-		t.Fatalf("SetKey: %v", err)
+	if got := encodeKey(t, term, input.KeyEvent{}, ""); got != "" {
+		t.Errorf("zero event encoded %q, want nothing", got)
 	}
-	if err := ev.SetMod(input.KeyModCtrl, true); err != nil {
-		t.Fatalf("SetMod: %v", err)
-	}
-	if got := encodeKey(t, term, ev); got != "\x03" {
-		t.Fatalf("setup encoded %q, want %q", got, "\x03")
-	}
-
-	if err := ev.Reset(); err != nil {
-		t.Fatalf("Reset: %v", err)
-	}
-	if err := ev.SetKey(input.KeyEnter); err != nil {
-		t.Fatalf("SetKey: %v", err)
-	}
-	if got, want := encodeKey(t, term, ev), "\r"; got != want {
-		t.Errorf("after Reset encoded %q, want %q", got, want)
+	if got, want := encodeKey(t, term, input.KeyEvent{Key: input.KeyEnter}, ""), "\r"; got != want {
+		t.Errorf("encoded %q, want %q", got, want)
 	}
 }
 
@@ -213,16 +172,8 @@ func TestEncodePasteFollowsBracketedMode(t *testing.T) {
 // A key event round-trips through the terminal it targets.
 func TestKeyEventThroughStream(t *testing.T) {
 	term, stream := newStreamPair(t, 20, 3)
-	ev := newKeyEv(t)
-	if err := ev.SetKey(input.KeyKeyH); err != nil {
-		t.Fatalf("SetKey: %v", err)
-	}
-	if err := ev.SetUTF8([]byte("h")); err != nil {
-		t.Fatalf("SetUTF8: %v", err)
-	}
-
 	var buf bytes.Buffer
-	if err := input.EncodeKey(&buf, term, ev); err != nil {
+	if err := input.EncodeKey(&buf, term, input.KeyEvent{Key: input.KeyKeyH}, "h"); err != nil {
 		t.Fatalf("input.EncodeKey: %v", err)
 	}
 	feed(t, stream, buf.String())
@@ -230,16 +181,6 @@ func TestKeyEventThroughStream(t *testing.T) {
 	if got, want := screen(t, term), "h"; got != want {
 		t.Errorf("screen = %q, want %q", got, want)
 	}
-}
-
-func newMouseEv(t *testing.T) *input.MouseEvent {
-	t.Helper()
-	ev, err := input.NewMouseEvent()
-	if err != nil {
-		t.Fatalf("input.NewMouseEvent: %v", err)
-	}
-	t.Cleanup(func() { ev.Close() })
-	return ev
 }
 
 // A 10x20 pixel cell with no padding, so pixel (x, y) is cell (x/10, y/20).
@@ -250,7 +191,7 @@ var testSize = input.RenderSize{
 	CellHeight:   20,
 }
 
-func encodeMouse(t *testing.T, term *gostty.Terminal, ev *input.MouseEvent, pressed bool) string {
+func encodeMouse(t *testing.T, term *gostty.Terminal, ev input.MouseEvent, pressed bool) string {
 	t.Helper()
 	var buf bytes.Buffer
 	if err := input.EncodeMouse(&buf, term, ev, testSize, pressed); err != nil {
@@ -262,16 +203,7 @@ func encodeMouse(t *testing.T, term *gostty.Terminal, ev *input.MouseEvent, pres
 // Nothing is reported until the program turns mouse tracking on.
 func TestEncodeMouseSilentWithoutTracking(t *testing.T) {
 	term, _ := newStreamPair(t, 80, 24)
-	ev := newMouseEv(t)
-	if err := ev.SetAction(input.MouseActionPress); err != nil {
-		t.Fatalf("SetAction: %v", err)
-	}
-	if err := ev.SetButton(input.MouseButtonLeft); err != nil {
-		t.Fatalf("SetButton: %v", err)
-	}
-	if err := ev.SetPosition(0, 0); err != nil {
-		t.Fatalf("SetPosition: %v", err)
-	}
+	ev := input.MouseEvent{Action: input.MouseActionPress, Button: input.MouseButtonLeft, HasButton: true}
 	if got := encodeMouse(t, term, ev, true); got != "" {
 		t.Errorf("encoded %q with tracking off, want nothing", got)
 	}
@@ -282,24 +214,13 @@ func TestEncodeMouseSGR(t *testing.T) {
 	term, stream := newStreamPair(t, 80, 24)
 	feed(t, stream, "\x1b[?1000h\x1b[?1006h")
 
-	ev := newMouseEv(t)
-	if err := ev.SetAction(input.MouseActionPress); err != nil {
-		t.Fatalf("SetAction: %v", err)
-	}
-	if err := ev.SetButton(input.MouseButtonLeft); err != nil {
-		t.Fatalf("SetButton: %v", err)
-	}
 	// Pixel (25, 45) with a 10x20 cell is column 3, row 3 one-based.
-	if err := ev.SetPosition(25, 45); err != nil {
-		t.Fatalf("SetPosition: %v", err)
-	}
+	ev := input.MouseEvent{Action: input.MouseActionPress, Button: input.MouseButtonLeft, HasButton: true, X: 25, Y: 45}
 	if got, want := encodeMouse(t, term, ev, true), "\x1b[<0;3;3M"; got != want {
 		t.Errorf("press encoded %q, want %q", got, want)
 	}
 
-	if err := ev.SetAction(input.MouseActionRelease); err != nil {
-		t.Fatalf("SetAction: %v", err)
-	}
+	ev.Action = input.MouseActionRelease
 	if got, want := encodeMouse(t, term, ev, false), "\x1b[<0;3;3m"; got != want {
 		t.Errorf("release encoded %q, want %q", got, want)
 	}
@@ -310,18 +231,11 @@ func TestEncodeMouseModifiers(t *testing.T) {
 	term, stream := newStreamPair(t, 80, 24)
 	feed(t, stream, "\x1b[?1000h\x1b[?1006h")
 
-	ev := newMouseEv(t)
-	if err := ev.SetAction(input.MouseActionPress); err != nil {
-		t.Fatalf("SetAction: %v", err)
-	}
-	if err := ev.SetButton(input.MouseButtonRight); err != nil {
-		t.Fatalf("SetButton: %v", err)
-	}
-	if err := ev.SetMod(input.KeyModShift, true); err != nil {
-		t.Fatalf("SetMod: %v", err)
-	}
-	if err := ev.SetPosition(0, 0); err != nil {
-		t.Fatalf("SetPosition: %v", err)
+	ev := input.MouseEvent{
+		Action:    input.MouseActionPress,
+		Button:    input.MouseButtonRight,
+		HasButton: true,
+		Mods:      input.KeyMods{Shift: true},
 	}
 	// Right button is 2, shift adds 4.
 	if got, want := encodeMouse(t, term, ev, true), "\x1b[<6;1;1M"; got != want {
@@ -329,28 +243,16 @@ func TestEncodeMouseModifiers(t *testing.T) {
 	}
 }
 
-func TestMouseEventReset(t *testing.T) {
+// A motion event with no held button leaves HasButton clear; the button
+// field is then ignored.
+func TestEncodeMouseMotionWithoutButton(t *testing.T) {
 	term, stream := newStreamPair(t, 80, 24)
-	feed(t, stream, "\x1b[?1000h\x1b[?1006h")
+	feed(t, stream, "\x1b[?1003h\x1b[?1006h")
 
-	ev := newMouseEv(t)
-	if err := ev.SetButton(input.MouseButtonRight); err != nil {
-		t.Fatalf("SetButton: %v", err)
-	}
-	if err := ev.SetMod(input.KeyModShift, true); err != nil {
-		t.Fatalf("SetMod: %v", err)
-	}
-	if err := ev.Reset(); err != nil {
-		t.Fatalf("Reset: %v", err)
-	}
-	if err := ev.SetButton(input.MouseButtonLeft); err != nil {
-		t.Fatalf("SetButton: %v", err)
-	}
-	if err := ev.SetPosition(0, 0); err != nil {
-		t.Fatalf("SetPosition: %v", err)
-	}
-	if got, want := encodeMouse(t, term, ev, true), "\x1b[<0;1;1M"; got != want {
-		t.Errorf("after Reset encoded %q, want %q", got, want)
+	ev := input.MouseEvent{Action: input.MouseActionMotion, Button: input.MouseButtonRight, X: 25, Y: 45}
+	// Motion with no button is 35 in the SGR encoding.
+	if got, want := encodeMouse(t, term, ev, false), "\x1b[<35;3;3M"; got != want {
+		t.Errorf("encoded %q, want %q", got, want)
 	}
 }
 
@@ -359,14 +261,8 @@ func TestMouseEventReset(t *testing.T) {
 // composed string but no key code needs this to work.
 func TestEncodeTextWithoutKey(t *testing.T) {
 	term := newTerm(t, 20, 3)
-	ev := newKeyEv(t)
-	if err := ev.SetKey(input.KeyUnidentified); err != nil {
-		t.Fatalf("SetKey: %v", err)
-	}
-	if err := ev.SetUTF8([]byte("안")); err != nil {
-		t.Fatalf("SetUTF8: %v", err)
-	}
-	if got, want := encodeKey(t, term, ev), "안"; got != want {
+	ev := input.KeyEvent{Key: input.KeyUnidentified}
+	if got, want := encodeKey(t, term, ev, "안"), "안"; got != want {
 		t.Errorf("encoded %q, want %q", got, want)
 	}
 }
