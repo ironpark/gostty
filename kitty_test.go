@@ -295,3 +295,72 @@ func TestSizeReport(t *testing.T) {
 		t.Errorf("size report = %q, want %q", buf.String(), want)
 	}
 }
+
+// A virtual placement (`U=1`) is positioned by the cells that reference it
+// through unicode placeholders, not by the cursor. It has no viewport position
+// of its own, so it is handed over flagged rather than dropped: a renderer that
+// scans cells for placeholders finds it by id and needs its size and source
+// rectangle.
+func TestKittyVirtualPlacement(t *testing.T) {
+	term, stream := newStreamPair(t, 20, 5)
+	images := kittyImages(t)
+
+	pixels := base64.StdEncoding.EncodeToString([]byte{
+		0xff, 0x00, 0x00, 0x00, 0xff, 0x00,
+		0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
+	})
+	feed(t, stream, fmt.Sprintf("\x1b_Ga=T,U=1,f=24,s=2,v=2,t=d,i=9,c=4,r=2;%s\x1b\\", pixels))
+
+	got := placements(t, images, term)
+	if len(got) != 1 {
+		t.Fatalf("placements = %d, want 1", len(got))
+	}
+	p := got[0]
+	if !p.Virtual {
+		t.Error("Virtual = false, want true for a U=1 placement")
+	}
+	if p.ImageID != 9 {
+		t.Errorf("image id = %d, want 9", p.ImageID)
+	}
+	// The position is meaningless for a virtual placement and reported as zero,
+	// but everything a placeholder renderer needs is filled in.
+	if p.ViewportCol != 0 || p.ViewportRow != 0 {
+		t.Errorf("viewport = (%d,%d), want (0,0)", p.ViewportCol, p.ViewportRow)
+	}
+	if p.GridCols != 4 || p.GridRows != 2 {
+		t.Errorf("grid = %dx%d, want 4x2", p.GridCols, p.GridRows)
+	}
+	if p.SourceWidth != 2 || p.SourceHeight != 2 {
+		t.Errorf("source = %dx%d, want 2x2", p.SourceWidth, p.SourceHeight)
+	}
+}
+
+// A placement's layer is its z split into the three bands a renderer draws in:
+// under the cell backgrounds, between them and the text, and over the text.
+func TestKittyPlacementLayer(t *testing.T) {
+	term, stream := newStreamPair(t, 20, 5)
+	images := kittyImages(t)
+
+	// The band boundaries are ghostty's: below -2^30, below zero, and the rest.
+	const belowBg = -(1 << 30) - 1
+	for i, z := range []int{belowBg, -1, 0} {
+		feed(t, stream, "\x1b[1;1H")
+		pixels := base64.StdEncoding.EncodeToString([]byte{0xff, 0x00, 0x00})
+		feed(t, stream, fmt.Sprintf("\x1b_Ga=T,f=24,s=1,v=1,t=d,i=%d,z=%d;%s\x1b\\", i+1, z, pixels))
+	}
+
+	got := placements(t, images, term)
+	if len(got) != 3 {
+		t.Fatalf("placements = %d, want 3", len(got))
+	}
+	// The snapshot is sorted by z, so the bands come out in drawing order.
+	want := []KittyLayer{KittyLayerBelowBg, KittyLayerBelowText, KittyLayerAboveText}
+	for i, p := range got {
+		if p.Layer != want[i] {
+			t.Errorf("placement %d (z=%d) layer = %v, want %v", i, p.Z, p.Layer, want[i])
+		}
+		if p.Virtual {
+			t.Errorf("placement %d reported virtual", i)
+		}
+	}
+}

@@ -5549,7 +5549,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 131,
+            "line": 172,
             "column": 23
           },
           "type": {
@@ -5571,7 +5571,7 @@
       },
       "source": {
         "path": "kitty.zig",
-        "line": 131,
+        "line": 172,
         "column": 8
       },
       "symbol": "zg_new_kitty_images"
@@ -5587,7 +5587,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 137,
+            "line": 178,
             "column": 44
           },
           "type": {
@@ -5601,7 +5601,7 @@
       },
       "source": {
         "path": "kitty.zig",
-        "line": 137,
+        "line": 178,
         "column": 8
       },
       "zig_path": "freeKittyImages",
@@ -6051,7 +6051,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 283,
+            "line": 352,
             "column": 36
           },
           "type": {
@@ -6072,7 +6072,7 @@
       },
       "source": {
         "path": "kitty.zig",
-        "line": 283,
+        "line": 352,
         "column": 8
       },
       "zig_path": "kittyImage",
@@ -6089,7 +6089,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 302,
+            "line": 371,
             "column": 40
           },
           "type": {
@@ -6105,7 +6105,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 302,
+            "line": 371,
             "column": 55
           },
           "type": {
@@ -6136,7 +6136,7 @@
       },
       "source": {
         "path": "kitty.zig",
-        "line": 302,
+        "line": 371,
         "column": 8
       },
       "zig_path": "kittyImageData",
@@ -8970,6 +8970,33 @@
       "exhaustive": true,
       "fields": [
         {
+          "name": "below_bg",
+          "value": 0
+        },
+        {
+          "name": "below_text",
+          "value": 1
+        },
+        {
+          "name": "above_text",
+          "value": 2
+        }
+      ],
+      "kind": "enum",
+      "name": "KittyLayer",
+      "tag_type": {
+        "bits": 8,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "text": true,
+      "zig_path": "kitty.KittyLayer"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
           "name": "image_id",
           "type": {
             "bits": 32,
@@ -9102,6 +9129,28 @@
             "is_usize": false,
             "kind": "int",
             "signed": true
+          }
+        },
+        {
+          "name": "layer",
+          "type": {
+            "kind": "enum",
+            "ref": "KittyLayer"
+          }
+        },
+        {
+          "name": "virtual",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
+          "name": "_pad",
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
           }
         }
       ],

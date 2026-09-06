@@ -93,6 +93,32 @@ sys.OnPngDecodeRequest(func(n uint) {
 With a decoder installed the image reaches `KittyImage` already decoded, as
 `KittyFormatRgba`.
 
+### Kitty graphics
+
+`KittyImages` is the same kind of per-frame snapshot as `RenderState`, for
+images rather than cells: one `Update` and one `Placements` hands over a flat
+list of "this image, this part of it, at this cell, this many pixels wide",
+already resolved against the viewport and sorted back to front.
+
+Each placement carries a `Layer` — the protocol's `z` split into the three
+bands a renderer draws in — so the frame is three passes over one slice:
+
+```go
+images.Update(term)
+images.Placements(dst)
+
+draw(dst, gostty.KittyLayerBelowBg)
+drawCellBackgrounds()
+draw(dst, gostty.KittyLayerBelowText)
+drawText()
+draw(dst, gostty.KittyLayerAboveText)
+```
+
+A placement with `Virtual` set is positioned by the cells that reference it
+through unicode placeholders rather than by the cursor, so its `ViewportCol`
+and `ViewportRow` mean nothing; a renderer that does not scan cells for
+placeholders should skip those.
+
 ### Clipboard
 
 Clipboard write requests cannot wait for a drain: the program blocks until they

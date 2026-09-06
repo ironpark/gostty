@@ -2923,14 +2923,12 @@ func (k *KittyImages) Placements(dst []KittyPlacement) (uint, error) {
 		return 0, err
 	}
 	defer k.zigoRelease()
-	var dstRaw []raw.KittyPlacementData
-	if len(dst) != 0 {
-		dstRaw = unsafe.Slice((*raw.KittyPlacementData)(unsafe.Pointer(&dst[0])), len(dst))
-	}
+	dstRaw := make([]raw.KittyPlacementData, len(dst))
 	result, code := raw.KittyImagesPlacements(ptr, dstRaw)
 	if code != 0 {
 		return 0, zigoPoisonAfterPanic(zigoErrorForCode("KittyImages.Placements", code), k)
 	}
+	zigoKittyPlacementSliceCopyFromRaw(dst, dstRaw, int(result))
 	return result, nil
 }
 

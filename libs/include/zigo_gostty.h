@@ -450,6 +450,11 @@ typedef uint8_t zg_render_dirty;
 #define ZG_RENDER_DIRTY_FULL 2
 
 typedef struct zg_kitty_images zg_kitty_images;
+typedef uint8_t zg_kitty_layer;
+#define ZG_KITTY_LAYER_BELOW_BG 0
+#define ZG_KITTY_LAYER_BELOW_TEXT 1
+#define ZG_KITTY_LAYER_ABOVE_TEXT 2
+
 typedef uint8_t zg_kitty_format;
 #define ZG_KITTY_FORMAT_RGB 0
 #define ZG_KITTY_FORMAT_RGBA 1
@@ -542,6 +547,9 @@ typedef struct zg_kitty_placement {
     uint32_t source_width;
     uint32_t source_height;
     int32_t z;
+    zg_kitty_layer layer;
+    uint8_t virtual;
+    uint16_t _pad;
 } zg_kitty_placement;
 
 typedef struct zg_kitty_image {

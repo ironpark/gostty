@@ -35,16 +35,18 @@ func (g *game) Draw(screen *ebiten.Image) {
 		g.bell--
 		screen.Fill(color.RGBA{R: 0x55, G: 0x55, B: 0x55, A: 0xff})
 	}
+	// A placement's layer says where in the stack it belongs, which is the
+	// whole reason the protocol gives it a z: under the cell backgrounds,
+	// between them and the text, or over the text.
+	g.drawImages(screen, gostty.KittyLayerBelowBg)
 	if g.bgLayer != nil {
 		screen.DrawImage(g.bgLayer, nil)
 	}
-	// A placement's z decides whether it goes under the text or over it, which
-	// is the whole reason the protocol has one.
-	g.drawImages(screen, true)
+	g.drawImages(screen, gostty.KittyLayerBelowText)
 	if g.textLayer != nil {
 		screen.DrawImage(g.textLayer, nil)
 	}
-	g.drawImages(screen, false)
+	g.drawImages(screen, gostty.KittyLayerAboveText)
 	g.drawCursor(screen)
 	g.drawCat(screen)
 	g.drawUI(screen)

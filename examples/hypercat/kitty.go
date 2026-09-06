@@ -81,6 +81,9 @@ func (g *game) uploadImages() error {
 		g.textures[id].live = false
 	}
 	for _, p := range g.placements {
+		if p.Virtual {
+			continue
+		}
 		info, ok, err := g.vt.KittyImage(p.ImageID)
 		if err != nil {
 			return err
@@ -181,12 +184,15 @@ func rawToRGBA(data []byte, info gostty.KittyImage) (*image.RGBA, error) {
 	return out, nil
 }
 
-// drawImages draws the placements in one z range. The snapshot is already
-// sorted, so this is a slice of it: the negative z placements go under the
-// text, the rest over it.
-func (g *game) drawImages(screen *ebiten.Image, underText bool) {
+// drawImages draws the placements of one layer. The snapshot is already sorted
+// by z, so each layer is a slice of it, drawn in order.
+//
+// Virtual placements are skipped: they are positioned by the cells that
+// reference them through unicode placeholders, and this example does not scan
+// for those, so it has nowhere to put them.
+func (g *game) drawImages(screen *ebiten.Image, layer gostty.KittyLayer) {
 	for _, p := range g.placements {
-		if (p.Z < 0) != underText {
+		if p.Layer != layer || p.Virtual {
 			continue
 		}
 		tex, ok := g.textures[p.ImageID]

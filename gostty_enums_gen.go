@@ -1538,6 +1538,60 @@ func (value RenderDirty) String() string {
 	}
 }
 
+// KittyLayer represents the corresponding Zig enum.
+type KittyLayer uint8
+
+const (
+	// KittyLayerBelowBg corresponds to the Zig tag below_bg.
+	KittyLayerBelowBg KittyLayer = 0
+	// KittyLayerBelowText corresponds to the Zig tag below_text.
+	KittyLayerBelowText KittyLayer = 1
+	// KittyLayerAboveText corresponds to the Zig tag above_text.
+	KittyLayerAboveText KittyLayer = 2
+)
+
+// String returns the Zig tag name.
+func (value KittyLayer) String() string {
+	switch value {
+	case KittyLayerBelowBg:
+		return "below_bg"
+	case KittyLayerBelowText:
+		return "below_text"
+	case KittyLayerAboveText:
+		return "above_text"
+	default:
+		return "KittyLayer(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// ParseKittyLayer returns the KittyLayer named by text, which is a Zig tag name.
+func ParseKittyLayer(text string) (KittyLayer, error) {
+	switch text {
+	case "below_bg":
+		return KittyLayerBelowBg, nil
+	case "below_text":
+		return KittyLayerBelowText, nil
+	case "above_text":
+		return KittyLayerAboveText, nil
+	}
+	return 0, &EnumParseError{Type: "KittyLayer", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value KittyLayer) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseKittyLayer.
+func (value *KittyLayer) UnmarshalText(text []byte) error {
+	parsed, err := ParseKittyLayer(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
 // KittyFormat represents the corresponding Zig enum.
 type KittyFormat uint8
 

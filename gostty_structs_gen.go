@@ -138,26 +138,13 @@ type KittyPlacement struct {
 	SourceHeight uint32
 	// Z corresponds to the Zig field z.
 	Z int32
+	// Layer corresponds to the Zig field layer.
+	Layer KittyLayer
+	// Virtual corresponds to the Zig field virtual.
+	Virtual bool
+	// Pad corresponds to the Zig field _pad.
+	Pad uint16
 }
-
-// KittyPlacement is reinterpreted as raw.KittyPlacementData instead of copied, so the two
-// layouts must stay identical.
-var _ = [1]struct{}{}[unsafe.Sizeof(KittyPlacement{})-unsafe.Sizeof(raw.KittyPlacementData{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.ImageID)-unsafe.Offsetof(raw.KittyPlacementData{}.ImageID)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.PlacementID)-unsafe.Offsetof(raw.KittyPlacementData{}.PlacementID)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.ViewportCol)-unsafe.Offsetof(raw.KittyPlacementData{}.ViewportCol)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.ViewportRow)-unsafe.Offsetof(raw.KittyPlacementData{}.ViewportRow)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.XOffset)-unsafe.Offsetof(raw.KittyPlacementData{}.XOffset)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.YOffset)-unsafe.Offsetof(raw.KittyPlacementData{}.YOffset)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.PixelWidth)-unsafe.Offsetof(raw.KittyPlacementData{}.PixelWidth)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.PixelHeight)-unsafe.Offsetof(raw.KittyPlacementData{}.PixelHeight)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.GridCols)-unsafe.Offsetof(raw.KittyPlacementData{}.GridCols)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.GridRows)-unsafe.Offsetof(raw.KittyPlacementData{}.GridRows)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.SourceX)-unsafe.Offsetof(raw.KittyPlacementData{}.SourceX)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.SourceY)-unsafe.Offsetof(raw.KittyPlacementData{}.SourceY)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.SourceWidth)-unsafe.Offsetof(raw.KittyPlacementData{}.SourceWidth)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.SourceHeight)-unsafe.Offsetof(raw.KittyPlacementData{}.SourceHeight)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacement{}.Z)-unsafe.Offsetof(raw.KittyPlacementData{}.Z)]
 
 // KittyImage mirrors the Zig `extern struct` of the same name.
 type KittyImage struct {
@@ -250,6 +237,41 @@ func zigoRenderCellSliceCopyFromRaw(dst []RenderCell, values []raw.RenderCellDat
 	}
 	for i := 0; i < count; i++ {
 		dst[i] = zigoRenderCellFromRaw(values[i])
+	}
+}
+
+func zigoKittyPlacementFromRaw(value raw.KittyPlacementData) KittyPlacement {
+	return KittyPlacement{
+		ImageID:      value.ImageID,
+		PlacementID:  value.PlacementID,
+		ViewportCol:  value.ViewportCol,
+		ViewportRow:  value.ViewportRow,
+		XOffset:      value.XOffset,
+		YOffset:      value.YOffset,
+		PixelWidth:   value.PixelWidth,
+		PixelHeight:  value.PixelHeight,
+		GridCols:     value.GridCols,
+		GridRows:     value.GridRows,
+		SourceX:      value.SourceX,
+		SourceY:      value.SourceY,
+		SourceWidth:  value.SourceWidth,
+		SourceHeight: value.SourceHeight,
+		Z:            value.Z,
+		Layer:        KittyLayer(value.Layer),
+		Virtual:      value.Virtual != 0,
+		Pad:          value.Pad,
+	}
+}
+
+func zigoKittyPlacementSliceCopyFromRaw(dst []KittyPlacement, values []raw.KittyPlacementData, count int) {
+	if count > len(dst) {
+		count = len(dst)
+	}
+	if count > len(values) {
+		count = len(values)
+	}
+	for i := 0; i < count; i++ {
+		dst[i] = zigoKittyPlacementFromRaw(values[i])
 	}
 }
 

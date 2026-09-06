@@ -1661,9 +1661,35 @@ func KittyImagesPlacementCount(self unsafe.Pointer) (uint, int32) {
 
 // KittyImagesPlacements calls the generated C ABI wrapper for zg_kitty_images_placements.
 func KittyImagesPlacements(self unsafe.Pointer, dst []KittyPlacementData) (uint, int32) {
-	dstPtr := (*C.zg_kitty_placement)(zigoSlicePtr(dst))
+	var dstValues []C.zg_kitty_placement
+	if len(dst) != 0 {
+		dstValues = make([]C.zg_kitty_placement, len(dst))
+	}
+	dstPtr := (*C.zg_kitty_placement)(zigoSlicePtr(dstValues))
 	var outResult C.size_t
 	code := int32(C.zg_kitty_images_placements((*C.zg_kitty_images)(self), dstPtr, C.size_t(len(dst)), &outResult))
+	for i := 0; i < int(outResult) && i < len(dst); i++ {
+		dst[i] = KittyPlacementData{
+			ImageID:      uint32(dstValues[i].image_id),
+			PlacementID:  uint32(dstValues[i].placement_id),
+			ViewportCol:  int32(dstValues[i].viewport_col),
+			ViewportRow:  int32(dstValues[i].viewport_row),
+			XOffset:      uint32(dstValues[i].x_offset),
+			YOffset:      uint32(dstValues[i].y_offset),
+			PixelWidth:   uint32(dstValues[i].pixel_width),
+			PixelHeight:  uint32(dstValues[i].pixel_height),
+			GridCols:     uint32(dstValues[i].grid_cols),
+			GridRows:     uint32(dstValues[i].grid_rows),
+			SourceX:      uint32(dstValues[i].source_x),
+			SourceY:      uint32(dstValues[i].source_y),
+			SourceWidth:  uint32(dstValues[i].source_width),
+			SourceHeight: uint32(dstValues[i].source_height),
+			Z:            int32(dstValues[i].z),
+			Layer:        uint8(dstValues[i].layer),
+			Virtual:      uint8(dstValues[i].virtual),
+			Pad:          uint16(dstValues[i]._pad),
+		}
+	}
 	return uint(outResult), code
 }
 
@@ -1815,6 +1841,9 @@ type KittyPlacementData struct {
 	SourceWidth  uint32
 	SourceHeight uint32
 	Z            int32
+	Layer        uint8
+	Virtual      uint8
+	Pad          uint16
 }
 
 // KittyImageData mirrors the zg_kitty_image layout, padding included.
@@ -1900,6 +1929,9 @@ var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.SourceY)-unsafe.Offse
 var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.SourceWidth)-unsafe.Offsetof(C.zg_kitty_placement{}.source_width)]
 var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.SourceHeight)-unsafe.Offsetof(C.zg_kitty_placement{}.source_height)]
 var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.Z)-unsafe.Offsetof(C.zg_kitty_placement{}.z)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.Layer)-unsafe.Offsetof(C.zg_kitty_placement{}.layer)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.Virtual)-unsafe.Offsetof(C.zg_kitty_placement{}.virtual)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.Pad)-unsafe.Offsetof(C.zg_kitty_placement{}._pad)]
 
 // KittyImageData slices are copied from C memory as one run, so it must match zg_kitty_image byte for byte.
 var _ = [1]struct{}{}[unsafe.Sizeof(KittyImageData{})-unsafe.Sizeof(C.zg_kitty_image{})]

@@ -132,6 +132,7 @@ pub const bindings = zigo.define(.{
         .{ .type = gostty.KittyImages, .repr = .@"opaque", .name = "KittyImages", .fields = .{
             .{ .path = "generation" },
         } },
+        .{ .type = gostty.KittyLayer, .repr = .enumeration, .name = "KittyLayer", .text = true },
         .{ .type = gostty.KittyPlacement, .repr = .value, .name = "KittyPlacement" },
         .{ .type = gostty.KittyImage, .repr = .value, .name = "KittyImage" },
         .{ .type = gostty.KittyFormat, .repr = .enumeration, .name = "KittyFormat" },

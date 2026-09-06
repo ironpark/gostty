@@ -68,6 +68,34 @@ fn kittyCompression(c: @FieldType(kitty.Image, "compression")) KittyCompression 
     };
 }
 
+/// Where a placement is drawn relative to the cell background and the text.
+///
+/// The protocol gives a placement a signed `z` and splits the range into three
+/// bands, which is what a renderer actually needs: it draws one band, then the
+/// cell backgrounds, then another, then the text, then the last.
+///
+/// The thresholds are ghostty's own, from the `PlacementLayer` its C API
+/// filters on. They are copied rather than imported: that enum lives in
+/// ghostty's C ABI layer, which `lib_vt.zig` keeps private and only `@export`s
+/// symbols from, so a Zig consumer cannot name it. Being a copy of numbers
+/// rather than a `switch` over tags, an upstream change to the bands would go
+/// unnoticed here instead of failing to compile.
+pub const KittyLayer = enum(u8) {
+    /// Under the cell backgrounds: `z < -2^30`.
+    below_bg,
+    /// Over the backgrounds but under the text: `-2^30 <= z < 0`.
+    below_text,
+    /// Over the text: `z >= 0`.
+    above_text,
+
+    fn fromZ(z: i32) KittyLayer {
+        const floor = std.math.minInt(i32) / 2;
+        if (z < floor) return .below_bg;
+        if (z < 0) return .below_text;
+        return .above_text;
+    }
+};
+
 /// One image drawn at one place, flattened for the C ABI.
 ///
 /// Everything a renderer needs for one draw call, in the coordinates it works
@@ -107,9 +135,22 @@ pub const KittyPlacement = extern struct {
     source_height: u32,
 
     /// Stacking order. The snapshot is sorted by it, so drawing the array in
-    /// order is correct; it is here for the one decision it still leaves, which
-    /// is whether a placement goes under the text (negative) or over it.
+    /// order is correct; `layer` is the same value split into the three bands
+    /// a renderer draws in.
     z: i32,
+    /// Which band `z` falls in.
+    layer: KittyLayer,
+    /// True for a placement the program positioned with unicode placeholders
+    /// rather than at a cursor position.
+    ///
+    /// It has no position of its own -- the cells that reference it decide
+    /// where it goes -- so `viewport_col` and `viewport_row` are zero and mean
+    /// nothing. Everything else is filled in, because a renderer that scans
+    /// cells for placeholders finds the placement by `image_id` and
+    /// `placement_id` and needs its source rectangle and size. A renderer that
+    /// does not do that scan should skip these.
+    virtual: bool,
+    _pad: u16 = 0,
 };
 
 /// A snapshot of where the images on the active screen are drawn.
@@ -141,10 +182,11 @@ pub fn freeKittyImages(self: *KittyImages, gpa: Allocator) void {
 
 /// Rebuild the snapshot from `term`'s active screen.
 ///
-/// Placements that cannot be drawn are left out: the ones scrolled off the
-/// viewport, the ones whose text has been pruned out of the scrollback, and the
-/// virtual (unicode placeholder) ones, which have no position of their own
-/// because they are laid out by the cells that reference them.
+/// Placements that cannot be drawn at all are left out: the ones scrolled off
+/// the viewport, and the ones whose text has been pruned out of the scrollback.
+/// Virtual (unicode placeholder) placements are kept, flagged and positionless,
+/// since the cells that reference them are what place them; so are the ones
+/// positioned relative to a virtual placement, for the same reason.
 pub fn kittyUpdate(self: *KittyImages, term: *Terminal) !void {
     self.items.clearRetainingCapacity();
 
@@ -157,7 +199,18 @@ pub fn kittyUpdate(self: *KittyImages, term: *Terminal) !void {
         const placement = entry.value_ptr;
         const image = storage.images.getPtr(key.image_id) orelse continue;
 
-        const pos = kittyViewportPos(storage, placement, image, term) orelse continue;
+        // A virtual placement is laid out by the cells that reference it, so
+        // there is no position to resolve and nothing to clip against.
+        const resolved = kittyViewportPos(storage, placement, image, term);
+        const virtual = switch (resolved) {
+            .virtual => true,
+            .offscreen => continue,
+            .at => false,
+        };
+        const pos: KittyPos.Coord = switch (resolved) {
+            .at => |value| value,
+            else => .{ .col = 0, .row = 0 },
+        };
 
         const size = placement.pixelSize(image.*, term);
         const grid = placement.gridSize(image.*, term);
@@ -179,6 +232,8 @@ pub fn kittyUpdate(self: *KittyImages, term: *Terminal) !void {
             .source_width = source.width,
             .source_height = source.height,
             .z = placement.z,
+            .layer = .fromZ(placement.z),
+            .virtual = virtual,
         });
     }
 
@@ -194,8 +249,19 @@ pub fn kittyUpdate(self: *KittyImages, term: *Terminal) !void {
     }.lessThan);
 }
 
-/// Where a placement's top-left corner is, relative to the viewport, or absent
-/// if it is not on screen at all.
+/// What resolving a placement's position against the viewport produced.
+const KittyPos = union(enum) {
+    /// The top-left corner, in viewport cells.
+    at: Coord,
+    /// Placed by the cells that reference it, so there is no position here.
+    virtual,
+    /// Off the viewport, or anchored to text the scrollback has dropped.
+    offscreen,
+
+    const Coord = struct { col: i32, row: i32 };
+};
+
+/// Where a placement's top-left corner is, relative to the viewport.
 ///
 /// A placement is anchored to a pin -- a tracked position in the scrollback --
 /// rather than to a row number, so it follows its text as the screen scrolls.
@@ -207,7 +273,7 @@ fn kittyViewportPos(
     placement: *const kitty.ImageStorage.Placement,
     image: *const kitty.Image,
     term: *Terminal,
-) ?struct { col: i32, row: i32 } {
+) KittyPos {
     // A placement positioned relative to another one has no pin of its own: it
     // hangs off its parent's, at an accumulated offset. A chain that ends at a
     // virtual placement has no resolvable position, since only a renderer
@@ -216,22 +282,25 @@ fn kittyViewportPos(
     var row_offset: i32 = 0;
     const pin = switch (placement.location) {
         .pin => |p| p,
-        .virtual => return null,
+        .virtual => return .virtual,
         .relative => |rel| pin: {
-            const chain = storage.resolveChain(rel) orelse return null;
+            const chain = storage.resolveChain(rel) orelse return .offscreen;
             col_offset = chain.horizontal_offset;
             row_offset = chain.vertical_offset;
             break :pin switch (chain.root.location) {
                 .pin => |p| p,
-                .virtual, .relative => return null,
+                // Anchored, through however many links, to a placeholder: the
+                // cells decide where the whole chain lands.
+                .virtual => return .virtual,
+                .relative => return .offscreen,
             };
         },
     };
-    if (pin.garbage) return null;
+    if (pin.garbage) return .offscreen;
 
     const pages = &term.screens.active.pages;
-    const pin_point = pages.pointFromPin(.screen, pin.*) orelse return null;
-    const top_left = pages.pointFromPin(.screen, pages.getTopLeft(.viewport)) orelse return null;
+    const pin_point = pages.pointFromPin(.screen, pin.*) orelse return .offscreen;
+    const top_left = pages.pointFromPin(.screen, pages.getTopLeft(.viewport)) orelse return .offscreen;
 
     const row: i32 = (@as(i32, @intCast(pin_point.screen.y)) -
         @as(i32, @intCast(top_left.screen.y))) +| row_offset;
@@ -245,10 +314,10 @@ fn kittyViewportPos(
     const grid = placement.gridSize(image.*, term);
     const height: i64 = @max(grid.rows, 1);
     const width: i64 = @max(grid.cols, 1);
-    if (@as(i64, row) + height <= 0 or row >= @as(i32, term.rows)) return null;
-    if (@as(i64, col) + width <= 0 or col >= @as(i32, term.cols)) return null;
+    if (@as(i64, row) + height <= 0 or row >= @as(i32, term.rows)) return .offscreen;
+    if (@as(i64, col) + width <= 0 or col >= @as(i32, term.cols)) return .offscreen;
 
-    return .{ .col = col, .row = row };
+    return .{ .at = .{ .col = col, .row = row } };
 }
 
 /// How many placements `kittyPlacements` will write.

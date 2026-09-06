@@ -217,6 +217,7 @@ const kitty_ = @import("kitty.zig");
 
 pub const KittyFormat = kitty_.KittyFormat;
 pub const KittyCompression = kitty_.KittyCompression;
+pub const KittyLayer = kitty_.KittyLayer;
 pub const KittyPlacement = kitty_.KittyPlacement;
 pub const KittyImages = kitty_.KittyImages;
 pub const newKittyImages = kitty_.newKittyImages;
