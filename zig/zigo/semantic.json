@@ -269,7 +269,7 @@
           "retention": "borrowed",
           "semantic": "codepoint",
           "source": {
-            "line": 1013,
+            "line": 1026,
             "column": 22
           },
           "type": {
@@ -292,7 +292,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1013,
+        "line": 1026,
         "column": 8
       },
       "symbol": "zg_grapheme_width"
@@ -309,7 +309,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1201,
+            "line": 1244,
             "column": 5
           },
           "type": {
@@ -322,7 +322,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1202,
+            "line": 1245,
             "column": 5
           },
           "type": {
@@ -338,7 +338,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1203,
+            "line": 1246,
             "column": 5
           },
           "type": {
@@ -353,7 +353,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 1204,
+            "line": 1247,
             "column": 5
           },
           "type": {
@@ -379,7 +379,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1200,
+        "line": 1243,
         "column": 8
       },
       "symbol": "zg_encode_key"
@@ -396,7 +396,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1273,
+            "line": 1316,
             "column": 5
           },
           "type": {
@@ -409,7 +409,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1274,
+            "line": 1317,
             "column": 5
           },
           "type": {
@@ -425,7 +425,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1275,
+            "line": 1318,
             "column": 5
           },
           "type": {
@@ -439,7 +439,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1276,
+            "line": 1319,
             "column": 5
           },
           "type": {
@@ -453,7 +453,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1277,
+            "line": 1320,
             "column": 5
           },
           "type": {
@@ -472,12 +472,15 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1272,
+        "line": 1315,
         "column": 8
       },
       "symbol": "zg_encode_mouse"
     },
     {
+      "covers": [
+        "Key.fromASCII"
+      ],
       "doc": "The key for a printable ASCII byte, or null if none maps to it.",
       "name": "keyFromASCII",
       "package": "input",
@@ -489,7 +492,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1119,
+            "line": 1132,
             "column": 21
           },
           "type": {
@@ -509,12 +512,15 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1119,
+        "line": 1132,
         "column": 8
       },
       "symbol": "zg_key_from_ascii"
     },
     {
+      "covers": [
+        "Key.codepoint"
+      ],
       "doc": "The Unicode codepoint the key produces on a US layout, if it has one.",
       "name": "keyCodepoint",
       "package": "input",
@@ -526,7 +532,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1124,
+            "line": 1137,
             "column": 21
           },
           "type": {
@@ -547,12 +553,15 @@
       "return_semantic": "codepoint",
       "source": {
         "path": "root.zig",
-        "line": 1124,
+        "line": 1137,
         "column": 8
       },
       "symbol": "zg_key_codepoint"
     },
     {
+      "covers": [
+        "Key.printable"
+      ],
       "doc": "True for keys that produce text on a US layout.",
       "name": "keyPrintable",
       "package": "input",
@@ -564,7 +573,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1129,
+            "line": 1142,
             "column": 21
           },
           "type": {
@@ -578,12 +587,15 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1129,
+        "line": 1142,
         "column": 8
       },
       "symbol": "zg_key_printable"
     },
     {
+      "covers": [
+        "Key.modifier"
+      ],
       "doc": "True for modifier keys such as shift, control and alt.",
       "name": "keyModifier",
       "package": "input",
@@ -595,7 +607,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1134,
+            "line": 1147,
             "column": 20
           },
           "type": {
@@ -609,12 +621,15 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1134,
+        "line": 1147,
         "column": 8
       },
       "symbol": "zg_key_modifier"
     },
     {
+      "covers": [
+        "Key.keypad"
+      ],
       "doc": "True for keys on the numeric keypad.",
       "name": "keyKeypad",
       "package": "input",
@@ -626,7 +641,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1139,
+            "line": 1152,
             "column": 18
           },
           "type": {
@@ -640,12 +655,15 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1139,
+        "line": 1152,
         "column": 8
       },
       "symbol": "zg_key_keypad"
     },
     {
+      "covers": [
+        "Key.leftOrRightShift"
+      ],
       "doc": "True for shift on either side.",
       "name": "keyLeftOrRightShift",
       "package": "input",
@@ -657,7 +675,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1144,
+            "line": 1157,
             "column": 28
           },
           "type": {
@@ -671,12 +689,15 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1144,
+        "line": 1157,
         "column": 8
       },
       "symbol": "zg_key_left_or_right_shift"
     },
     {
+      "covers": [
+        "Key.leftOrRightAlt"
+      ],
       "doc": "True for alt on either side.",
       "name": "keyLeftOrRightAlt",
       "package": "input",
@@ -688,7 +709,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1149,
+            "line": 1162,
             "column": 26
           },
           "type": {
@@ -702,10 +723,165 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1149,
+        "line": 1162,
         "column": 8
       },
       "symbol": "zg_key_left_or_right_alt"
+    },
+    {
+      "covers": [
+        "Key.ctrlOrSuper"
+      ],
+      "doc": "True for the platform's primary modifier: command on macOS, control\neverywhere else. Which one that is was decided when the native library\nfor this platform was built, so it needs no runtime check in Go.",
+      "name": "keyCtrlOrSuper",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "key",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 1169,
+            "column": 23
+          },
+          "type": {
+            "kind": "enum",
+            "ref": "Key"
+          }
+        }
+      ],
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "root.zig",
+        "line": 1169,
+        "column": 8
+      },
+      "symbol": "zg_key_ctrl_or_super"
+    },
+    {
+      "covers": [
+        "Key.shouldBeRemappable"
+      ],
+      "doc": "True for keys a keybinding UI may remap by default.\n\nFalse for the W3C \"writing system\" keys -- the letters, digits and\npunctuation -- because what those produce is decided by the user's layout,\nso a binding on one is not the same key for everyone. Everything else,\nfunction and navigation keys included, is fair game.",
+      "name": "keyShouldBeRemappable",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "key",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 1179,
+            "column": 30
+          },
+          "type": {
+            "kind": "enum",
+            "ref": "Key"
+          }
+        }
+      ],
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "root.zig",
+        "line": 1179,
+        "column": 8
+      },
+      "symbol": "zg_key_should_be_remappable"
+    },
+    {
+      "covers": [
+        "Key.w3c"
+      ],
+      "doc": "The W3C `KeyboardEvent.code` name for the key, such as \"KeyA\" or\n\"ArrowUp\", empty for a key with none. Static storage, so the string stays\nvalid for the life of the process.",
+      "name": "keyW3C",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "key",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 1186,
+            "column": 15
+          },
+          "type": {
+            "kind": "enum",
+            "ref": "Key"
+          }
+        }
+      ],
+      "return": {
+        "const": true,
+        "element": {
+          "bits": 8,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "slice"
+      },
+      "return_semantic": "utf8_string",
+      "source": {
+        "path": "root.zig",
+        "line": 1186,
+        "column": 8
+      },
+      "symbol": "zg_key_w3_c"
+    },
+    {
+      "covers": [
+        "Key.fromW3C"
+      ],
+      "doc": "The key a W3C `KeyboardEvent.code` name selects, or null if none does.\nFor an embedder mapping browser or Electron key events onto the enum.",
+      "name": "keyFromW3C",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "w3c_code",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "semantic": "utf8_string",
+          "source": {
+            "line": 1192,
+            "column": 19
+          },
+          "type": {
+            "const": true,
+            "element": {
+              "bits": 8,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          }
+        }
+      ],
+      "return": {
+        "child": {
+          "kind": "enum",
+          "ref": "Key"
+        },
+        "kind": "optional"
+      },
+      "source": {
+        "path": "root.zig",
+        "line": 1192,
+        "column": 8
+      },
+      "symbol": "zg_key_from_w3_c"
     },
     {
       "name": "encodeFocus",
@@ -784,7 +960,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1292,
+            "line": 1335,
             "column": 5
           },
           "type": {
@@ -797,7 +973,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1293,
+            "line": 1336,
             "column": 5
           },
           "type": {
@@ -813,7 +989,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1294,
+            "line": 1337,
             "column": 5
           },
           "type": {
@@ -839,7 +1015,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1291,
+        "line": 1334,
         "column": 8
       },
       "symbol": "zg_encode_paste"
@@ -959,7 +1135,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1333,
+            "line": 1376,
             "column": 19
           },
           "type": {
@@ -972,7 +1148,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1333,
+            "line": 1376,
             "column": 35
           },
           "type": {
@@ -992,7 +1168,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1333,
+        "line": 1376,
         "column": 8
       },
       "symbol": "zg_free_string"
@@ -1011,7 +1187,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1303,
+            "line": 1346,
             "column": 34
           },
           "type": {
@@ -1024,7 +1200,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1303,
+            "line": 1346,
             "column": 55
           },
           "type": {
@@ -1051,7 +1227,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1303,
+        "line": 1346,
         "column": 8
       },
       "zig_path": "newStream",
@@ -1069,7 +1245,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1322,
+            "line": 1365,
             "column": 34
           },
           "type": {
@@ -1083,7 +1259,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1322,
+        "line": 1365,
         "column": 8
       },
       "zig_path": "freeStream",
@@ -3408,7 +3584,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 983,
+            "line": 996,
             "column": 47
           },
           "type": {
@@ -3425,7 +3601,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 983,
+        "line": 996,
         "column": 8
       },
       "zig_path": "setScrollbackMaxBytes",
@@ -3442,7 +3618,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 988,
+        "line": 1001,
         "column": 8
       },
       "zig_path": "clearScrollbackMaxBytes",
@@ -3462,7 +3638,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 993,
+            "line": 1006,
             "column": 47
           },
           "type": {
@@ -3479,7 +3655,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 993,
+        "line": 1006,
         "column": 8
       },
       "zig_path": "setScrollbackMaxLines",
@@ -3496,7 +3672,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 998,
+        "line": 1011,
         "column": 8
       },
       "zig_path": "clearScrollbackMaxLines",
@@ -4034,7 +4210,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1029,
+        "line": 1042,
         "column": 8
       },
       "zig_path": "backgroundColor",
@@ -4057,7 +4233,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1034,
+        "line": 1047,
         "column": 8
       },
       "zig_path": "foregroundColor",
@@ -4080,7 +4256,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1040,
+        "line": 1053,
         "column": 8
       },
       "zig_path": "cursorColor",
@@ -4097,7 +4273,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1046,
+            "line": 1059,
             "column": 45
           },
           "type": {
@@ -4122,7 +4298,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1046,
+        "line": 1059,
         "column": 8
       },
       "zig_path": "paletteColors",
@@ -4139,7 +4315,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1054,
+            "line": 1067,
             "column": 51
           },
           "type": {
@@ -4156,7 +4332,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1054,
+        "line": 1067,
         "column": 8
       },
       "zig_path": "setDefaultBackgroundColor",
@@ -4173,7 +4349,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1059,
+            "line": 1072,
             "column": 51
           },
           "type": {
@@ -4190,7 +4366,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1059,
+        "line": 1072,
         "column": 8
       },
       "zig_path": "setDefaultForegroundColor",
@@ -4207,7 +4383,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1064,
+            "line": 1077,
             "column": 47
           },
           "type": {
@@ -4224,11 +4400,50 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1064,
+        "line": 1077,
         "column": 8
       },
       "zig_path": "setDefaultCursorColor",
       "symbol": "zg_terminal_set_default_cursor_color"
+    },
+    {
+      "covers": [
+        "ColorName.default"
+      ],
+      "doc": "The color's default value as `0xRRGGBB`, or null when the name has none.\n\nOnly the sixteen named colors have one. The enum is open because every\nother 256-color palette index is a valid value, and those take their\ncolor from the palette rather than from a default; read them with\n`paletteColors`.\n\nWrapped because ghostty returns `color.RGB`, a `packed struct(u24)` with\nno C representation, behind an error union.",
+      "name": "colorNameDefault",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "name",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 894,
+            "column": 25
+          },
+          "type": {
+            "kind": "enum",
+            "ref": "ColorName"
+          }
+        }
+      ],
+      "return": {
+        "child": {
+          "bits": 32,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "optional"
+      },
+      "source": {
+        "path": "root.zig",
+        "line": 894,
+        "column": 8
+      },
+      "symbol": "zg_color_name_default"
     },
     {
       "doc": "Whether `mode` is currently on.",
@@ -4241,7 +4456,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1074,
+            "line": 1087,
             "column": 43
           },
           "type": {
@@ -4256,7 +4471,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1074,
+        "line": 1087,
         "column": 8
       },
       "zig_path": "modeEnabled",
@@ -4273,7 +4488,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1082,
+            "line": 1095,
             "column": 33
           },
           "type": {
@@ -4287,7 +4502,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1082,
+            "line": 1095,
             "column": 45
           },
           "type": {
@@ -4301,7 +4516,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1082,
+        "line": 1095,
         "column": 8
       },
       "zig_path": "setMode",
@@ -4433,7 +4648,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 962,
+            "line": 975,
             "column": 38
           },
           "type": {
@@ -4455,7 +4670,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 962,
+        "line": 975,
         "column": 8
       },
       "zig_path": "setAttribute",
@@ -4517,7 +4732,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 972,
+            "line": 985,
             "column": 47
           },
           "type": {
@@ -4531,7 +4746,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 972,
+        "line": 985,
         "column": 8
       },
       "zig_path": "setDefaultCursorBlink",
@@ -4548,7 +4763,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 977,
+        "line": 990,
         "column": 8
       },
       "zig_path": "resetDefaultCursorBlink",
@@ -4893,7 +5108,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1390,
+        "line": 1433,
         "column": 8
       },
       "symbol": "zg_new_render_state"
@@ -5334,7 +5549,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1840,
+            "line": 1883,
             "column": 23
           },
           "type": {
@@ -5356,7 +5571,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1840,
+        "line": 1883,
         "column": 8
       },
       "symbol": "zg_new_kitty_images"
@@ -5372,7 +5587,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1846,
+            "line": 1889,
             "column": 44
           },
           "type": {
@@ -5386,7 +5601,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1846,
+        "line": 1889,
         "column": 8
       },
       "zig_path": "freeKittyImages",
@@ -5520,7 +5735,7 @@
           "name_source": "sidecar",
           "retention": "retained",
           "source": {
-            "line": 1658,
+            "line": 1701,
             "column": 31
           },
           "type": {
@@ -5553,7 +5768,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1658,
+            "line": 1701,
             "column": 48
           },
           "type": {
@@ -5569,7 +5784,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1658,
+        "line": 1701,
         "column": 12
       },
       "symbol": "zg_sys_on_png_decode_request"
@@ -5587,7 +5802,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1666,
+            "line": 1709,
             "column": 27
           },
           "type": {
@@ -5611,7 +5826,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1666,
+        "line": 1709,
         "column": 12
       },
       "symbol": "zg_sys_png_request_data"
@@ -5629,7 +5844,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1674,
+            "line": 1717,
             "column": 26
           },
           "type": {
@@ -5645,7 +5860,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1674,
+            "line": 1717,
             "column": 38
           },
           "type": {
@@ -5661,7 +5876,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1674,
+            "line": 1717,
             "column": 51
           },
           "type": {
@@ -5689,7 +5904,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1674,
+        "line": 1717,
         "column": 12
       },
       "symbol": "zg_sys_reply_png_image"
@@ -5709,7 +5924,7 @@
           "name_source": "sidecar",
           "retention": "retained",
           "source": {
-            "line": 1691,
+            "line": 1734,
             "column": 34
           },
           "type": {
@@ -5742,7 +5957,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1691,
+            "line": 1734,
             "column": 51
           },
           "type": {
@@ -5758,7 +5973,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1691,
+        "line": 1734,
         "column": 12
       },
       "symbol": "zg_sys_on_secure_random_request"
@@ -5775,7 +5990,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1708,
+        "line": 1751,
         "column": 12
       },
       "symbol": "zg_sys_clear"
@@ -5793,7 +6008,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1699,
+            "line": 1742,
             "column": 30
           },
           "type": {
@@ -5820,7 +6035,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1699,
+        "line": 1742,
         "column": 12
       },
       "symbol": "zg_sys_reply_secure_random"
@@ -5836,7 +6051,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1992,
+            "line": 2035,
             "column": 36
           },
           "type": {
@@ -5857,7 +6072,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1992,
+        "line": 2035,
         "column": 8
       },
       "zig_path": "kittyImage",
@@ -5874,7 +6089,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 2011,
+            "line": 2054,
             "column": 40
           },
           "type": {
@@ -5890,7 +6105,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 2011,
+            "line": 2054,
             "column": 55
           },
           "type": {
@@ -5921,7 +6136,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 2011,
+        "line": 2054,
         "column": 8
       },
       "zig_path": "kittyImageData",
@@ -6651,7 +6866,7 @@
         "signed": false
       },
       "text": true,
-      "zig_path": "terminal.modes.Mode__enum_28659"
+      "zig_path": "terminal.modes.Mode__enum_28667"
     },
     {
       "exhaustive": true,

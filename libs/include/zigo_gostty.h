@@ -577,6 +577,10 @@ ZIGO_EXPORT uint8_t zg_key_modifier(int32_t key);
 ZIGO_EXPORT uint8_t zg_key_keypad(int32_t key);
 ZIGO_EXPORT uint8_t zg_key_left_or_right_shift(int32_t key);
 ZIGO_EXPORT uint8_t zg_key_left_or_right_alt(int32_t key);
+ZIGO_EXPORT uint8_t zg_key_ctrl_or_super(int32_t key);
+ZIGO_EXPORT uint8_t zg_key_should_be_remappable(int32_t key);
+ZIGO_EXPORT void zg_key_w3_c(int32_t key, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT uint8_t zg_key_from_w3_c(const uint8_t * w3c_code_ptr, size_t w3c_code_len, int32_t * out_result);
 ZIGO_EXPORT int32_t zg_input_encode_focus(size_t writer_userdata, uint8_t event);
 ZIGO_EXPORT uint8_t zg_input_is_safe_paste(const uint8_t * data_ptr, size_t data_len);
 ZIGO_EXPORT int32_t zg_encode_paste(size_t writer_userdata, const zg_terminal * terminal, const uint8_t * data_ptr, size_t data_len);
@@ -694,6 +698,7 @@ ZIGO_EXPORT int32_t zg_terminal_palette_colors(zg_terminal * self, uint32_t * ds
 ZIGO_EXPORT int32_t zg_terminal_set_default_background_color(zg_terminal * self, uint32_t rgb);
 ZIGO_EXPORT int32_t zg_terminal_set_default_foreground_color(zg_terminal * self, uint32_t rgb);
 ZIGO_EXPORT int32_t zg_terminal_set_default_cursor_color(zg_terminal * self, uint32_t rgb);
+ZIGO_EXPORT uint8_t zg_color_name_default(uint8_t name, uint32_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_mode_enabled(zg_terminal * self, uint16_t mode, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_set_mode(zg_terminal * self, uint16_t mode, uint8_t value);
 ZIGO_EXPORT int32_t zg_terminal_set_pwd(zg_terminal * self, const uint8_t * pwd_ptr, size_t pwd_len);

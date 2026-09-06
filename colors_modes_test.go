@@ -136,3 +136,23 @@ func TestSearchMatches(t *testing.T) {
 		t.Errorf("SelectedMatch() = %+v, %v, %v", sel, ok, err)
 	}
 }
+
+// A named color's default is what the terminal shows before a program or the
+// embedder overrides it, so a palette editor can offer "reset to default".
+func TestColorNameDefault(t *testing.T) {
+	rgb, ok := ColorNameDefault(ColorNameRed)
+	if !ok {
+		t.Fatal("ColorNameDefault(red) reported no default")
+	}
+	if rgb != 0xCC6666 {
+		t.Errorf("ColorNameDefault(red) = %#06x, want 0xcc6666", rgb)
+	}
+	if rgb, ok := ColorNameDefault(ColorNameBrightWhite); !ok || rgb != 0xEAEAEA {
+		t.Errorf("ColorNameDefault(bright white) = %#06x, %v; want 0xeaeaea, true", rgb, ok)
+	}
+	// The enum is open: every other palette index is a valid value, and those
+	// take their color from the palette rather than from a default.
+	if got, ok := ColorNameDefault(ColorName(200)); ok {
+		t.Errorf("ColorNameDefault(200) = %#06x, true; want false", got)
+	}
+}

@@ -882,6 +882,19 @@ pub const Underline = vt.Attribute.Underline;
 /// One of the 16 named ANSI colors.
 pub const ColorName = vt.color.Name;
 
+/// The color's default value as `0xRRGGBB`, or null when the name has none.
+///
+/// Only the sixteen named colors have one. The enum is open because every
+/// other 256-color palette index is a valid value, and those take their
+/// color from the palette rather than from a default; read them with
+/// `paletteColors`.
+///
+/// Wrapped because ghostty returns `color.RGB`, a `packed struct(u24)` with
+/// no C representation, behind an error union.
+pub fn colorNameDefault(name: ColorName) ?u32 {
+    return packColor(name.default() catch return null);
+}
+
 /// A single SGR attribute to apply to the cursor's pen.
 ///
 /// A curated mirror of ghostty's `sgr.Attribute`. Two things keep the original
@@ -1148,6 +1161,36 @@ pub fn keyLeftOrRightShift(key: Key) bool {
 /// True for alt on either side.
 pub fn keyLeftOrRightAlt(key: Key) bool {
     return key.leftOrRightAlt();
+}
+
+/// True for the platform's primary modifier: command on macOS, control
+/// everywhere else. Which one that is was decided when the native library
+/// for this platform was built, so it needs no runtime check in Go.
+pub fn keyCtrlOrSuper(key: Key) bool {
+    return key.ctrlOrSuper();
+}
+
+/// True for keys a keybinding UI may remap by default.
+///
+/// False for the W3C "writing system" keys -- the letters, digits and
+/// punctuation -- because what those produce is decided by the user's layout,
+/// so a binding on one is not the same key for everyone. Everything else,
+/// function and navigation keys included, is fair game.
+pub fn keyShouldBeRemappable(key: Key) bool {
+    return key.shouldBeRemappable();
+}
+
+/// The W3C `KeyboardEvent.code` name for the key, such as "KeyA" or
+/// "ArrowUp", empty for a key with none. Static storage, so the string stays
+/// valid for the life of the process.
+pub fn keyW3C(key: Key) []const u8 {
+    return key.w3c();
+}
+
+/// The key a W3C `KeyboardEvent.code` name selects, or null if none does.
+/// For an embedder mapping browser or Electron key events onto the enum.
+pub fn keyFromW3C(w3c_code: []const u8) ?Key {
+    return Key.fromW3C(w3c_code);
 }
 pub const FocusEvent = vt.input.FocusEvent;
 

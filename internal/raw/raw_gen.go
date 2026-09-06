@@ -407,6 +407,32 @@ func KeyLeftOrRightAlt(key int32) uint8 {
 	return uint8(C.zg_key_left_or_right_alt(C.int32_t(key)))
 }
 
+// KeyCtrlOrSuper calls the generated C ABI wrapper for zg_key_ctrl_or_super.
+func KeyCtrlOrSuper(key int32) uint8 {
+	return uint8(C.zg_key_ctrl_or_super(C.int32_t(key)))
+}
+
+// KeyShouldBeRemappable calls the generated C ABI wrapper for zg_key_should_be_remappable.
+func KeyShouldBeRemappable(key int32) uint8 {
+	return uint8(C.zg_key_should_be_remappable(C.int32_t(key)))
+}
+
+// KeyW3C calls the generated C ABI wrapper for zg_key_w3_c.
+func KeyW3C(key int32) string {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	C.zg_key_w3_c(C.int32_t(key), &outResultPtr, &outResultLen)
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
+}
+
+// KeyFromW3C calls the generated C ABI wrapper for zg_key_from_w3_c.
+func KeyFromW3C(w3cCode string) (int32, bool) {
+	w3cCodePtr := (*C.uint8_t)(zigoStringPtr(w3cCode))
+	var outResult C.int32_t
+	outResultHas := C.zg_key_from_w3_c(w3cCodePtr, C.size_t(len(w3cCode)), &outResult) != 0
+	return int32(outResult), outResultHas
+}
+
 // InputEncodeFocus calls the generated C ABI wrapper for zg_input_encode_focus.
 func InputEncodeFocus(writerHandle uintptr, event uint8) int32 {
 	code := int32(C.zg_input_encode_focus(C.size_t(writerHandle), C.uint8_t(event)))
@@ -1326,6 +1352,13 @@ func TerminalSetDefaultForegroundColor(self unsafe.Pointer, rgb uint32) int32 {
 func TerminalSetDefaultCursorColor(self unsafe.Pointer, rgb uint32) int32 {
 	code := int32(C.zg_terminal_set_default_cursor_color((*C.zg_terminal)(self), C.uint32_t(rgb)))
 	return code
+}
+
+// ColorNameDefault calls the generated C ABI wrapper for zg_color_name_default.
+func ColorNameDefault(name uint8) (uint32, bool) {
+	var outResult C.uint32_t
+	outResultHas := C.zg_color_name_default(C.uint8_t(name), &outResult) != 0
+	return uint32(outResult), outResultHas
 }
 
 // TerminalModeEnabled calls the generated C ABI wrapper for zg_terminal_mode_enabled.

@@ -2320,6 +2320,20 @@ func (te *Terminal) SetDefaultCursorColor(rgb uint32) error {
 	return nil
 }
 
+// ColorNameDefault: The color's default value as `0xRRGGBB`, or null when the name has none.
+//
+// Only the sixteen named colors have one. The enum is open because every
+// other 256-color palette index is a valid value, and those take their
+// color from the palette rather than from a default; read them with
+// `paletteColors`.
+//
+// Wrapped because ghostty returns `color.RGB`, a `packed struct(u24)` with
+// no C representation, behind an error union.
+func ColorNameDefault(name ColorName) (uint32, bool) {
+	zigoResult, zigoHas := raw.ColorNameDefault(uint8(name))
+	return zigoResult, zigoHas
+}
+
 // ModeEnabled: Whether `mode` is currently on.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.

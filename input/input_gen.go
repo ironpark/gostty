@@ -108,6 +108,37 @@ func KeyLeftOrRightAlt(key Key) bool {
 	return raw.KeyLeftOrRightAlt(int32(key)) != 0
 }
 
+// KeyCtrlOrSuper: True for the platform's primary modifier: command on macOS, control
+// everywhere else. Which one that is was decided when the native library
+// for this platform was built, so it needs no runtime check in Go.
+func KeyCtrlOrSuper(key Key) bool {
+	return raw.KeyCtrlOrSuper(int32(key)) != 0
+}
+
+// KeyShouldBeRemappable: True for keys a keybinding UI may remap by default.
+//
+// False for the W3C "writing system" keys -- the letters, digits and
+// punctuation -- because what those produce is decided by the user's layout,
+// so a binding on one is not the same key for everyone. Everything else,
+// function and navigation keys included, is fair game.
+func KeyShouldBeRemappable(key Key) bool {
+	return raw.KeyShouldBeRemappable(int32(key)) != 0
+}
+
+// KeyW3C: The W3C `KeyboardEvent.code` name for the key, such as "KeyA" or
+// "ArrowUp", empty for a key with none. Static storage, so the string stays
+// valid for the life of the process.
+func KeyW3C(key Key) string {
+	return raw.KeyW3C(int32(key))
+}
+
+// KeyFromW3C: The key a W3C `KeyboardEvent.code` name selects, or null if none does.
+// For an embedder mapping browser or Electron key events onto the enum.
+func KeyFromW3C(w3cCode string) (Key, bool) {
+	zigoResult, zigoHas := raw.KeyFromW3C(w3cCode)
+	return Key(zigoResult), zigoHas
+}
+
 // EncodeFocus calls the Zig function encodeFocus.
 // Native failures are returned as generated error values.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
