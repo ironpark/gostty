@@ -31,8 +31,8 @@ pub const bindings = zigo.define(.{
             .functions = .{
                 "root.encodeKey",
                 "root.encodeMouse",
-                "root.encodeFocus",
-                "root.isSafePaste",
+                "root.input.encodeFocus",
+                "root.input.isSafePaste",
                 "root.encodePaste",
                 "root.keyFromASCII",
                 "root.keyCodepoint",
@@ -52,6 +52,7 @@ pub const bindings = zigo.define(.{
             .{ .path = "screens.active.cursor.x", .name = "cursorX" },
             .{ .path = "screens.active.cursor.y", .name = "cursorY" },
             .{ .path = "screens.active.cursor.cursor_style", .name = "cursorStyle" },
+            .{ .path = "screens.active_key", .name = "activeScreenKey" },
         } },
         .{ .type = gostty.Stream, .repr = .@"opaque", .name = "Stream" },
         .{ .type = gostty.Screen, .repr = .@"opaque", .name = "Screen" },
@@ -99,14 +100,21 @@ pub const bindings = zigo.define(.{
         .{ .name = "CharsetActiveSlot", .type = gostty.CharsetActiveSlot, .repr = .enumeration },
         .{ .name = "DeccolmMode", .type = gostty.DeccolmMode, .repr = .enumeration },
         .{ .name = "ScrollViewport", .type = gostty.ScrollViewport, .repr = .tagged_union },
-        .{ .type = gostty.RenderState, .repr = .@"opaque", .name = "RenderState" },
+        .{ .type = gostty.RenderState, .repr = .@"opaque", .name = "RenderState", .fields = .{
+            .{ .path = "rows" },
+            .{ .path = "cols" },
+            .{ .path = "cursor.visible", .name = "cursorVisible" },
+            .{ .path = "cursor.visual_style", .name = "cursorStyle" },
+        } },
         .{ .type = gostty.RenderCell, .repr = .value, .name = "RenderCell", .field_meta = .{ .codepoint = .{ .semantic = .codepoint } } },
         // An integer-backed packed struct: Go sees named fields, the C ABI sees
         // one u32.
         .{ .type = gostty.CellFlags, .repr = .value, .name = "CellFlags" },
         .{ .type = gostty.CellWidth, .repr = .enumeration, .name = "CellWidth" },
         .{ .type = gostty.RenderDirty, .repr = .enumeration, .name = "RenderDirty" },
-        .{ .type = gostty.KittyImages, .repr = .@"opaque", .name = "KittyImages" },
+        .{ .type = gostty.KittyImages, .repr = .@"opaque", .name = "KittyImages", .fields = .{
+            .{ .path = "generation" },
+        } },
         .{ .type = gostty.KittyPlacement, .repr = .value, .name = "KittyPlacement" },
         .{ .type = gostty.KittyImage, .repr = .value, .name = "KittyImage" },
         .{ .type = gostty.KittyFormat, .repr = .enumeration, .name = "KittyFormat" },
@@ -129,8 +137,9 @@ pub const bindings = zigo.define(.{
         .{ .path = "root.keyKeypad", .params = .{"key"} },
         .{ .path = "root.keyLeftOrRightShift", .params = .{"key"} },
         .{ .path = "root.keyLeftOrRightAlt", .params = .{"key"} },
-        .{ .path = "root.encodeFocus", .params = .{ "writer", "event" } },
-        .{ .path = "root.isSafePaste", .params = .{"data"} },
+        // ghostty's own encoders, reached through the `input` namespace.
+        .{ .path = "root.input.encodeFocus", .params = .{ "writer", "event" } },
+        .{ .path = "root.input.isSafePaste", .params = .{"data"} },
         .{ .path = "root.encodePaste", .params = .{ "writer", "terminal", "data" } },
 
         // Lifecycle. `Terminal.init` returns by value and takes an `Options`
@@ -209,9 +218,10 @@ pub const bindings = zigo.define(.{
         .{ .path = "Terminal.backspace" },
         .{ .path = "Terminal.cursorIsAtPrompt" },
         .{ .path = "Terminal.fullReset" },
-        .{ .path = "root.switchScreen", .params = .{"key"}, .covers = "Terminal.switchScreen" },
+        // Returns the screen being left, borrowed, or absent when `key` was
+        // already active.
+        .{ .path = "Terminal.switchScreen", .params = .{"key"}, .returns = .borrowed },
         .{ .path = "Terminal.switchScreenMode", .params = .{ "mode", "enabled" } },
-        .{ .path = "root.activeScreenKey" },
         .{ .path = "root.activeScreen", .returns = .borrowed },
         .{ .path = "root.screen", .returns = .borrowed, .params = .{"key"} },
         // Screen is ghostty's own type, so these cannot be written as methods
@@ -221,7 +231,6 @@ pub const bindings = zigo.define(.{
             .strip_prefix = "screen",
             .functions = .{
                 .{ .path = "root.screenSelectAll", .covers = "Screen.selectAll" },
-                .{ .path = "root.screenClearSelection", .covers = "Screen.clearSelection" },
                 "root.screenHasSelection",
                 .{ .path = "root.screenSelectRange", .params = .{ "x1", "y1", "x2", "y2", "rectangle" }, .covers = "Screen.select" },
 
@@ -242,17 +251,18 @@ pub const bindings = zigo.define(.{
         // ghostty takes the screen by value here; zigo 0.8.0 passes the handle and
         // the shim copies, so no wrapper is needed.
         .{ .path = "Screen.viewportIsBottom" },
+        .{ .path = "Screen.clearSelection" },
         .{ .path = "Screen.endHyperlink" },
         .{ .path = "root.newSearch", .constructs = "Search", .child_of_receiver = true, .params = .{"needle"}, .param_meta = .{ .needle = .{ .semantic = .utf8_string } }, .covers = "Search.init" },
         .{ .path = "root.freeSearch", .destroys = "Search", .covers = "Search.deinit" },
         .{ .path = "Search.searchAll" },
+        .{ .path = "Search.matchesLen", .name = "MatchCount" },
+        .{ .path = "Search.select", .params = .{"to"} },
         .{ .path = "Search.needle", .semantic = .utf8_string },
         .{
             .receiver = "Search",
             .strip_prefix = "search",
             .functions = .{
-                .{ .path = "root.searchMatchCount", .covers = "Search.matchesLen" },
-                .{ .path = "root.searchSelect", .params = .{"to"}, .covers = "Search.select" },
                 .{
                     .path = "root.searchMatches",
                     .params = .{"dst"},
@@ -359,26 +369,23 @@ pub const bindings = zigo.define(.{
         // Rendering. `RenderState` is ghostty's own renderer-facing snapshot;
         // a frame is one `update` plus one `cells` crossing.
         .{ .path = "root.newRenderState", .constructs = "RenderState" },
+        .{ .path = "RenderState.update", .params = .{"t"}, .covers = .{ "RenderState.beginUpdate", "RenderState.endUpdate" } },
+        .{ .path = "RenderState.clean" },
         .{ .path = "root.freeRenderState", .destroys = "RenderState", .covers = "RenderState.deinit" },
         .{
             .receiver = "RenderState",
             .strip_prefix = "render",
             .functions = .{
-                .{ .path = "root.renderUpdate", .params = .{"term"}, .covers = .{ "RenderState.update", "RenderState.beginUpdate", "RenderState.endUpdate" } },
                 "root.renderCellCount",
                 .{
                     .path = "root.renderCells",
                     .params = .{"dst"},
                     .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
                 },
-                "root.renderRows",
-                "root.renderCols",
                 "root.renderBackground",
                 "root.renderForeground",
                 "root.renderCursorX",
                 "root.renderCursorY",
-                "root.renderCursorVisible",
-                "root.renderCursorStyle",
                 // Partial redraw: which rows changed, one row's cells, and
                 // marking them drawn.
                 "root.renderDirty",
@@ -392,7 +399,6 @@ pub const bindings = zigo.define(.{
                     .params = .{ "y", "dst" },
                     .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
                 },
-                .{ .path = "root.renderClean", .covers = "RenderState.clean" },
                 .{
                     .path = "root.renderGraphemes",
                     .params = .{ "x", "y", "dst" },
@@ -413,7 +419,6 @@ pub const bindings = zigo.define(.{
             .strip_prefix = "kitty",
             .functions = .{
                 .{ .path = "root.kittyUpdate", .params = .{"term"} },
-                "root.kittyGeneration",
                 "root.kittyPlacementCount",
                 .{
                     .path = "root.kittyPlacements",

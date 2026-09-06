@@ -246,6 +246,48 @@ func TerminalCursorStyle(self unsafe.Pointer) (uint8, int32) {
 	return uint8(outResult), code
 }
 
+// TerminalActiveScreenKey calls the generated C ABI wrapper for zg_terminal_active_screen_key.
+func TerminalActiveScreenKey(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_terminal_active_screen_key((*C.zg_terminal)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// RenderStateRows calls the generated C ABI wrapper for zg_render_state_rows.
+func RenderStateRows(self unsafe.Pointer) (uint16, int32) {
+	var outResult C.uint16_t
+	code := int32(C.zg_render_state_rows((*C.zg_render_state)(self), &outResult))
+	return uint16(outResult), code
+}
+
+// RenderStateCols calls the generated C ABI wrapper for zg_render_state_cols.
+func RenderStateCols(self unsafe.Pointer) (uint16, int32) {
+	var outResult C.uint16_t
+	code := int32(C.zg_render_state_cols((*C.zg_render_state)(self), &outResult))
+	return uint16(outResult), code
+}
+
+// RenderStateCursorVisible calls the generated C ABI wrapper for zg_render_state_cursor_visible.
+func RenderStateCursorVisible(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_render_state_cursor_visible((*C.zg_render_state)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// RenderStateCursorStyle calls the generated C ABI wrapper for zg_render_state_cursor_style.
+func RenderStateCursorStyle(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_render_state_cursor_style((*C.zg_render_state)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// KittyImagesGeneration calls the generated C ABI wrapper for zg_kitty_images_generation.
+func KittyImagesGeneration(self unsafe.Pointer) (uint64, int32) {
+	var outResult C.uint64_t
+	code := int32(C.zg_kitty_images_generation((*C.zg_kitty_images)(self), &outResult))
+	return uint64(outResult), code
+}
+
 // UnicodeCodepointWidth calls the generated C ABI wrapper for zg_unicode_codepoint_width.
 func UnicodeCodepointWidth(p0 uint32) (uint8, int32) {
 	var outResult C.uint8_t
@@ -334,16 +376,16 @@ func KeyLeftOrRightAlt(key int32) uint8 {
 	return uint8(C.zg_key_left_or_right_alt(C.int32_t(key)))
 }
 
-// EncodeFocus calls the generated C ABI wrapper for zg_encode_focus.
-func EncodeFocus(writerHandle uintptr, event uint8) int32 {
-	code := int32(C.zg_encode_focus(C.size_t(writerHandle), C.uint8_t(event)))
+// InputEncodeFocus calls the generated C ABI wrapper for zg_input_encode_focus.
+func InputEncodeFocus(writerHandle uintptr, event uint8) int32 {
+	code := int32(C.zg_input_encode_focus(C.size_t(writerHandle), C.uint8_t(event)))
 	return code
 }
 
-// IsSafePaste calls the generated C ABI wrapper for zg_is_safe_paste.
-func IsSafePaste(data []uint8) uint8 {
+// InputIsSafePaste calls the generated C ABI wrapper for zg_input_is_safe_paste.
+func InputIsSafePaste(data []uint8) uint8 {
 	dataPtr := (*C.uint8_t)(zigoSlicePtr(data))
-	return uint8(C.zg_is_safe_paste(dataPtr, C.size_t(len(data))))
+	return uint8(C.zg_input_is_safe_paste(dataPtr, C.size_t(len(data))))
 }
 
 // EncodePaste calls the generated C ABI wrapper for zg_encode_paste.
@@ -646,22 +688,16 @@ func TerminalFullReset(self unsafe.Pointer) int32 {
 }
 
 // TerminalSwitchScreen calls the generated C ABI wrapper for zg_terminal_switch_screen.
-func TerminalSwitchScreen(self unsafe.Pointer, key uint8) int32 {
-	code := int32(C.zg_terminal_switch_screen((*C.zg_terminal)(self), C.uint8_t(key)))
-	return code
+func TerminalSwitchScreen(self unsafe.Pointer, key uint8) (unsafe.Pointer, int32) {
+	var outResult *C.zg_screen
+	code := int32(C.zg_terminal_switch_screen((*C.zg_terminal)(self), C.uint8_t(key), &outResult))
+	return unsafe.Pointer(outResult), code
 }
 
 // TerminalSwitchScreenMode calls the generated C ABI wrapper for zg_terminal_switch_screen_mode.
 func TerminalSwitchScreenMode(self unsafe.Pointer, mode uint8, enabled uint8) int32 {
 	code := int32(C.zg_terminal_switch_screen_mode((*C.zg_terminal)(self), C.uint8_t(mode), C.uint8_t(enabled)))
 	return code
-}
-
-// TerminalActiveScreenKey calls the generated C ABI wrapper for zg_terminal_active_screen_key.
-func TerminalActiveScreenKey(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_terminal_active_screen_key((*C.zg_terminal)(self), &outResult))
-	return uint8(outResult), code
 }
 
 // TerminalActiveScreen calls the generated C ABI wrapper for zg_terminal_active_screen.
@@ -683,12 +719,6 @@ func ScreenSelectAll(self unsafe.Pointer) (uint8, int32) {
 	var outResult C.uint8_t
 	code := int32(C.zg_screen_select_all((*C.zg_screen)(self), &outResult))
 	return uint8(outResult), code
-}
-
-// ScreenClearSelection calls the generated C ABI wrapper for zg_screen_clear_selection.
-func ScreenClearSelection(self unsafe.Pointer) int32 {
-	code := int32(C.zg_screen_clear_selection((*C.zg_screen)(self)))
-	return code
 }
 
 // ScreenHasSelection calls the generated C ABI wrapper for zg_screen_has_selection.
@@ -863,6 +893,12 @@ func ScreenViewportIsBottom(self unsafe.Pointer) (uint8, int32) {
 	return uint8(outResult), code
 }
 
+// ScreenClearSelection calls the generated C ABI wrapper for zg_screen_clear_selection.
+func ScreenClearSelection(self unsafe.Pointer) int32 {
+	code := int32(C.zg_screen_clear_selection((*C.zg_screen)(self)))
+	return code
+}
+
 // ScreenEndHyperlink calls the generated C ABI wrapper for zg_screen_end_hyperlink.
 func ScreenEndHyperlink(self unsafe.Pointer) int32 {
 	code := int32(C.zg_screen_end_hyperlink((*C.zg_screen)(self)))
@@ -889,17 +925,6 @@ func SearchSearchAll(self unsafe.Pointer) int32 {
 	return code
 }
 
-// SearchNeedle calls the generated C ABI wrapper for zg_search_needle.
-func SearchNeedle(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_search_needle((*C.zg_search)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
-	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
 // SearchMatchCount calls the generated C ABI wrapper for zg_search_match_count.
 func SearchMatchCount(self unsafe.Pointer) (uint, int32) {
 	var outResult C.size_t
@@ -912,6 +937,17 @@ func SearchSelect(self unsafe.Pointer, to uint8) (uint8, int32) {
 	var outResult C.uint8_t
 	code := int32(C.zg_search_select((*C.zg_search)(self), C.uint8_t(to), &outResult))
 	return uint8(outResult), code
+}
+
+// SearchNeedle calls the generated C ABI wrapper for zg_search_needle.
+func SearchNeedle(self unsafe.Pointer) (string, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_search_needle((*C.zg_search)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return "", code
+	}
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
 }
 
 // SearchMatches calls the generated C ABI wrapper for zg_search_matches.
@@ -1403,15 +1439,21 @@ func NewRenderState() (unsafe.Pointer, int32) {
 	return unsafe.Pointer(outResult), code
 }
 
-// RenderStateFreeRenderState calls the generated C ABI wrapper for zg_render_state_free_render_state.
-func RenderStateFreeRenderState(self unsafe.Pointer) int32 {
-	code := int32(C.zg_render_state_free_render_state((*C.zg_render_state)(self)))
+// RenderStateUpdate calls the generated C ABI wrapper for zg_render_state_update.
+func RenderStateUpdate(self unsafe.Pointer, t unsafe.Pointer) int32 {
+	code := int32(C.zg_render_state_update((*C.zg_render_state)(self), (*C.zg_terminal)(t)))
 	return code
 }
 
-// RenderStateUpdate calls the generated C ABI wrapper for zg_render_state_update.
-func RenderStateUpdate(self unsafe.Pointer, term unsafe.Pointer) int32 {
-	code := int32(C.zg_render_state_update((*C.zg_render_state)(self), (*C.zg_terminal)(term)))
+// RenderStateClean calls the generated C ABI wrapper for zg_render_state_clean.
+func RenderStateClean(self unsafe.Pointer) int32 {
+	code := int32(C.zg_render_state_clean((*C.zg_render_state)(self)))
+	return code
+}
+
+// RenderStateFreeRenderState calls the generated C ABI wrapper for zg_render_state_free_render_state.
+func RenderStateFreeRenderState(self unsafe.Pointer) int32 {
+	code := int32(C.zg_render_state_free_render_state((*C.zg_render_state)(self)))
 	return code
 }
 
@@ -1442,20 +1484,6 @@ func RenderStateCells(self unsafe.Pointer, dst []RenderCellData) (uint, int32) {
 	return uint(outResult), code
 }
 
-// RenderStateRows calls the generated C ABI wrapper for zg_render_state_rows.
-func RenderStateRows(self unsafe.Pointer) (uint16, int32) {
-	var outResult C.uint16_t
-	code := int32(C.zg_render_state_rows((*C.zg_render_state)(self), &outResult))
-	return uint16(outResult), code
-}
-
-// RenderStateCols calls the generated C ABI wrapper for zg_render_state_cols.
-func RenderStateCols(self unsafe.Pointer) (uint16, int32) {
-	var outResult C.uint16_t
-	code := int32(C.zg_render_state_cols((*C.zg_render_state)(self), &outResult))
-	return uint16(outResult), code
-}
-
 // RenderStateBackground calls the generated C ABI wrapper for zg_render_state_background.
 func RenderStateBackground(self unsafe.Pointer) (uint32, int32) {
 	var outResult C.uint32_t
@@ -1484,20 +1512,6 @@ func RenderStateCursorY(self unsafe.Pointer) (uint16, bool, int32) {
 	var outResult C.uint16_t
 	code := int32(C.zg_render_state_cursor_y((*C.zg_render_state)(self), &outResultHas, &outResult))
 	return uint16(outResult), outResultHas != 0, code
-}
-
-// RenderStateCursorVisible calls the generated C ABI wrapper for zg_render_state_cursor_visible.
-func RenderStateCursorVisible(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_render_state_cursor_visible((*C.zg_render_state)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// RenderStateCursorStyle calls the generated C ABI wrapper for zg_render_state_cursor_style.
-func RenderStateCursorStyle(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_render_state_cursor_style((*C.zg_render_state)(self), &outResult))
-	return uint8(outResult), code
 }
 
 // RenderStateDirty calls the generated C ABI wrapper for zg_render_state_dirty.
@@ -1533,12 +1547,6 @@ func RenderStateRowCells(self unsafe.Pointer, y uint16, dst []RenderCellData) (u
 		}
 	}
 	return uint(outResult), code
-}
-
-// RenderStateClean calls the generated C ABI wrapper for zg_render_state_clean.
-func RenderStateClean(self unsafe.Pointer) int32 {
-	code := int32(C.zg_render_state_clean((*C.zg_render_state)(self)))
-	return code
 }
 
 // RenderStateGraphemes calls the generated C ABI wrapper for zg_render_state_graphemes.
@@ -1585,13 +1593,6 @@ func KittyImagesFreeKittyImages(self unsafe.Pointer) int32 {
 func KittyImagesUpdate(self unsafe.Pointer, term unsafe.Pointer) int32 {
 	code := int32(C.zg_kitty_images_update((*C.zg_kitty_images)(self), (*C.zg_terminal)(term)))
 	return code
-}
-
-// KittyImagesGeneration calls the generated C ABI wrapper for zg_kitty_images_generation.
-func KittyImagesGeneration(self unsafe.Pointer) (uint64, int32) {
-	var outResult C.uint64_t
-	code := int32(C.zg_kitty_images_generation((*C.zg_kitty_images)(self), &outResult))
-	return uint64(outResult), code
 }
 
 // KittyImagesPlacementCount calls the generated C ABI wrapper for zg_kitty_images_placement_count.

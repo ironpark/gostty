@@ -108,7 +108,7 @@ func KeyLeftOrRightAlt(key Key) bool {
 	return raw.KeyLeftOrRightAlt(int32(key)) != 0
 }
 
-// EncodeFocus: Encode a focus in/out report (CSI I / CSI O).
+// EncodeFocus calls the Zig function encodeFocus.
 // Native failures are returned as generated error values.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
 func EncodeFocus(writer io.Writer, event FocusEvent) error {
@@ -117,7 +117,7 @@ func EncodeFocus(writer io.Writer, event FocusEvent) error {
 	}
 	writerHandle := zigoNewWriterStreamHandle(writer)
 	defer zigoDeleteCallbackHandle(writerHandle)
-	code := raw.EncodeFocus(uintptr(writerHandle), uint8(event))
+	code := raw.InputEncodeFocus(uintptr(writerHandle), uint8(event))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("EncodeFocus", writerHandle)
 	}
@@ -130,10 +130,9 @@ func EncodeFocus(writer io.Writer, event FocusEvent) error {
 	return nil
 }
 
-// IsSafePaste: True if `data` can be pasted without the receiving program seeing it as
-// something other than literal text.
+// IsSafePaste calls the Zig function isSafePaste.
 func IsSafePaste(data []byte) bool {
-	return raw.IsSafePaste(data) != 0
+	return raw.InputIsSafePaste(data) != 0
 }
 
 // EncodePaste: Encode `data` for pasting into `terminal`, respecting bracketed paste mode.

@@ -94,6 +94,102 @@ func (te *Terminal) CursorStyle() (CursorStyle, error) {
 	return CursorStyle(result), nil
 }
 
+// ActiveScreenKey returns the Zig field Terminal.screens.active_key.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) ActiveScreenKey() (ScreenKey, error) {
+	ptr, err := zigoCheckedPointer("Terminal.ActiveScreenKey receiver", te)
+	if err != nil {
+		return 0, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalActiveScreenKey(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ActiveScreenKey", code), te)
+	}
+	return ScreenKey(result), nil
+}
+
+// Rows returns the Zig field RenderState.rows.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (r *RenderState) Rows() (uint16, error) {
+	ptr, err := zigoCheckedPointer("RenderState.Rows receiver", r)
+	if err != nil {
+		return 0, err
+	}
+	defer r.zigoRelease()
+	result, code := raw.RenderStateRows(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Rows", code), r)
+	}
+	return result, nil
+}
+
+// Cols returns the Zig field RenderState.cols.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (r *RenderState) Cols() (uint16, error) {
+	ptr, err := zigoCheckedPointer("RenderState.Cols receiver", r)
+	if err != nil {
+		return 0, err
+	}
+	defer r.zigoRelease()
+	result, code := raw.RenderStateCols(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Cols", code), r)
+	}
+	return result, nil
+}
+
+// CursorVisible returns the Zig field RenderState.cursor.visible.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (r *RenderState) CursorVisible() (bool, error) {
+	ptr, err := zigoCheckedPointer("RenderState.CursorVisible receiver", r)
+	if err != nil {
+		return false, err
+	}
+	defer r.zigoRelease()
+	result, code := raw.RenderStateCursorVisible(ptr)
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.CursorVisible", code), r)
+	}
+	return result != 0, nil
+}
+
+// CursorStyle returns the Zig field RenderState.cursor.visual_style.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (r *RenderState) CursorStyle() (CursorStyle, error) {
+	ptr, err := zigoCheckedPointer("RenderState.CursorStyle receiver", r)
+	if err != nil {
+		return 0, err
+	}
+	defer r.zigoRelease()
+	result, code := raw.RenderStateCursorStyle(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.CursorStyle", code), r)
+	}
+	return CursorStyle(result), nil
+}
+
+// Generation returns the Zig field KittyImages.generation.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (k *KittyImages) Generation() (uint64, error) {
+	ptr, err := zigoCheckedPointer("KittyImages.Generation receiver", k)
+	if err != nil {
+		return 0, err
+	}
+	defer k.zigoRelease()
+	result, code := raw.KittyImagesGeneration(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("KittyImages.Generation", code), k)
+	}
+	return result, nil
+}
+
 // CodepointWidth calls the Zig function codepointWidth.
 // A native panic is returned as *NativePanicError.
 func CodepointWidth(p0 rune) (uint8, error) {
@@ -107,7 +203,10 @@ func CodepointWidth(p0 rune) (uint8, error) {
 	return result, nil
 }
 
-// GraphemeWidth calls the Zig function graphemeWidth.
+// GraphemeWidth: The display width of a grapheme cluster given as codepoints.
+//
+// Wrapped because `vt.unicode.graphemeWidth` is generic over the codepoint
+// integer type, and a generic function has no signature to bind.
 func GraphemeWidth(cps []rune) (uint8, error) {
 	for _, zigoValue := range cps {
 		if zigoValue < 0 || zigoValue > 1114111 {
@@ -944,24 +1043,24 @@ func (te *Terminal) FullReset() error {
 	return nil
 }
 
-// SwitchScreen: Switch between the primary and alternate screens.
-//
-// Wrapped because ghostty returns the screen being left, and a handle borrowed
-// from its receiver has no representation in zigo -- only tagged-union
-// projections produce one.
+// SwitchScreen calls the Zig function Terminal.switchScreen.
+// The returned reference remains valid only while its parent handle remains open.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
-func (te *Terminal) SwitchScreen(key ScreenKey) error {
+func (te *Terminal) SwitchScreen(key ScreenKey) (*Screen, bool, error) {
 	ptr, err := zigoCheckedPointer("Terminal.SwitchScreen receiver", te)
 	if err != nil {
-		return err
+		return nil, false, err
 	}
 	defer te.zigoRelease()
-	code := raw.TerminalSwitchScreen(ptr, uint8(key))
+	result, code := raw.TerminalSwitchScreen(ptr, uint8(key))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SwitchScreen", code), te)
+		return nil, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SwitchScreen", code), te)
 	}
-	return nil
+	if result == nil {
+		return nil, false, nil
+	}
+	return zigoNewBorrowedScreen(result, te), true, nil
 }
 
 // SwitchScreenMode calls the Zig function Terminal.switchScreenMode.
@@ -978,22 +1077,6 @@ func (te *Terminal) SwitchScreenMode(mode SwitchScreenMode, enabled bool) error 
 		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SwitchScreenMode", code), te)
 	}
 	return nil
-}
-
-// ActiveScreenKey: Which screen is currently active.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ActiveScreenKey() (ScreenKey, error) {
-	ptr, err := zigoCheckedPointer("Terminal.ActiveScreenKey receiver", te)
-	if err != nil {
-		return 0, err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalActiveScreenKey(ptr)
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ActiveScreenKey", code), te)
-	}
-	return ScreenKey(result), nil
 }
 
 // ActiveScreen: The screen the terminal is currently writing to.
@@ -1048,22 +1131,6 @@ func (s *Screen) SelectAll() (bool, error) {
 		return false, zigoPoisonAfterPanic(zigoErrorForCode("Screen.SelectAll", code), s)
 	}
 	return result != 0, nil
-}
-
-// ClearSelection calls the Zig function Screen.clearSelection.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Screen) ClearSelection() error {
-	ptr, err := zigoCheckedPointer("Screen.ClearSelection receiver", s)
-	if err != nil {
-		return err
-	}
-	defer s.zigoRelease()
-	code := raw.ScreenClearSelection(ptr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Screen.ClearSelection", code), s)
-	}
-	return nil
 }
 
 // HasSelection calls the Zig function Screen.hasSelection.
@@ -1335,6 +1402,22 @@ func (s *Screen) ViewportIsBottom() (bool, error) {
 	return result != 0, nil
 }
 
+// ClearSelection calls the Zig function Screen.clearSelection.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Screen) ClearSelection() error {
+	ptr, err := zigoCheckedPointer("Screen.ClearSelection receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	code := raw.ScreenClearSelection(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Screen.ClearSelection", code), s)
+	}
+	return nil
+}
+
 // EndHyperlink calls the Zig function Screen.endHyperlink.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
@@ -1392,23 +1475,7 @@ func (s *Search) SearchAll() error {
 	return nil
 }
 
-// Needle calls the Zig function Search.needle.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Search) Needle() (string, error) {
-	ptr, err := zigoCheckedPointer("Search.Needle receiver", s)
-	if err != nil {
-		return "", err
-	}
-	defer s.zigoRelease()
-	result, code := raw.SearchNeedle(ptr)
-	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("Search.Needle", code), s)
-	}
-	return result, nil
-}
-
-// MatchCount calls the Zig function Search.matchCount.
+// MatchCount calls the Zig function Search.MatchCount.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *Search) MatchCount() (uint, error) {
@@ -1438,6 +1505,22 @@ func (s *Search) Select(to SearchDirection) (bool, error) {
 		return false, zigoPoisonAfterPanic(zigoErrorForCode("Search.Select", code), s)
 	}
 	return result != 0, nil
+}
+
+// Needle calls the Zig function Search.needle.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Search) Needle() (string, error) {
+	ptr, err := zigoCheckedPointer("Search.Needle receiver", s)
+	if err != nil {
+		return "", err
+	}
+	defer s.zigoRelease()
+	result, code := raw.SearchNeedle(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("Search.Needle", code), s)
+	}
+	return result, nil
 }
 
 // Matches calls the Zig function Search.matches.
@@ -2386,11 +2469,7 @@ func (te *Terminal) SetDefaultCursorStyle(configuredStyle CursorStyle) error {
 	return nil
 }
 
-// SetDefaultCursorBlink: The display width of a grapheme cluster given as codepoints.
-//
-// Wrapped because `vt.unicode.graphemeWidth` is generic over the codepoint
-// integer type, and a generic function has no signature to bind.
-// Set the default cursor blink. Applied immediately only when the cursor
+// SetDefaultCursorBlink: Set the default cursor blink. Applied immediately only when the cursor
 // currently follows its defaults; otherwise saved for the next reset.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
@@ -2558,20 +2637,36 @@ func NewRenderState() (*RenderState, error) {
 // Update calls the Zig function RenderState.update.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
-func (r *RenderState) Update(term *Terminal) error {
+func (r *RenderState) Update(t *Terminal) error {
 	ptr, err := zigoCheckedPointer("RenderState.Update receiver", r)
 	if err != nil {
 		return err
 	}
 	defer r.zigoRelease()
-	termPtr, err := zigoCheckedPointer("RenderState.Update parameter term", term)
+	tPtr, err := zigoCheckedPointer("RenderState.Update parameter t", t)
 	if err != nil {
 		return err
 	}
-	defer lifecycle.Release(term)
-	code := raw.RenderStateUpdate(ptr, termPtr)
+	defer lifecycle.Release(t)
+	code := raw.RenderStateUpdate(ptr, tPtr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Update", code), r, term)
+		return zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Update", code), r, t)
+	}
+	return nil
+}
+
+// Clean calls the Zig function RenderState.clean.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (r *RenderState) Clean() error {
+	ptr, err := zigoCheckedPointer("RenderState.Clean receiver", r)
+	if err != nil {
+		return err
+	}
+	defer r.zigoRelease()
+	code := raw.RenderStateClean(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Clean", code), r)
 	}
 	return nil
 }
@@ -2607,38 +2702,6 @@ func (r *RenderState) Cells(dst []RenderCell) (uint, error) {
 		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Cells", code), r)
 	}
 	zigoRenderCellSliceCopyFromRaw(dst, dstRaw, int(result))
-	return result, nil
-}
-
-// Rows calls the Zig function RenderState.rows.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (r *RenderState) Rows() (uint16, error) {
-	ptr, err := zigoCheckedPointer("RenderState.Rows receiver", r)
-	if err != nil {
-		return 0, err
-	}
-	defer r.zigoRelease()
-	result, code := raw.RenderStateRows(ptr)
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Rows", code), r)
-	}
-	return result, nil
-}
-
-// Cols calls the Zig function RenderState.cols.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (r *RenderState) Cols() (uint16, error) {
-	ptr, err := zigoCheckedPointer("RenderState.Cols receiver", r)
-	if err != nil {
-		return 0, err
-	}
-	defer r.zigoRelease()
-	result, code := raw.RenderStateCols(ptr)
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Cols", code), r)
-	}
 	return result, nil
 }
 
@@ -2706,38 +2769,6 @@ func (r *RenderState) CursorY() (uint16, bool, error) {
 	return result, zigoHas, nil
 }
 
-// CursorVisible calls the Zig function RenderState.cursorVisible.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (r *RenderState) CursorVisible() (bool, error) {
-	ptr, err := zigoCheckedPointer("RenderState.CursorVisible receiver", r)
-	if err != nil {
-		return false, err
-	}
-	defer r.zigoRelease()
-	result, code := raw.RenderStateCursorVisible(ptr)
-	if code != 0 {
-		return false, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.CursorVisible", code), r)
-	}
-	return result != 0, nil
-}
-
-// CursorStyle calls the Zig function RenderState.cursorStyle.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (r *RenderState) CursorStyle() (CursorStyle, error) {
-	ptr, err := zigoCheckedPointer("RenderState.CursorStyle receiver", r)
-	if err != nil {
-		return 0, err
-	}
-	defer r.zigoRelease()
-	result, code := raw.RenderStateCursorStyle(ptr)
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.CursorStyle", code), r)
-	}
-	return CursorStyle(result), nil
-}
-
 // Dirty calls the Zig function RenderState.dirty.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
@@ -2786,22 +2817,6 @@ func (r *RenderState) RowCells(y uint16, dst []RenderCell) (uint, error) {
 	}
 	zigoRenderCellSliceCopyFromRaw(dst, dstRaw, int(result))
 	return result, nil
-}
-
-// Clean calls the Zig function RenderState.clean.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (r *RenderState) Clean() error {
-	ptr, err := zigoCheckedPointer("RenderState.Clean receiver", r)
-	if err != nil {
-		return err
-	}
-	defer r.zigoRelease()
-	code := raw.RenderStateClean(ptr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Clean", code), r)
-	}
-	return nil
 }
 
 // Graphemes calls the Zig function RenderState.graphemes.
@@ -2866,22 +2881,6 @@ func (k *KittyImages) Update(term *Terminal) error {
 		return zigoPoisonAfterPanic(zigoErrorForCode("KittyImages.Update", code), k, term)
 	}
 	return nil
-}
-
-// Generation calls the Zig function KittyImages.generation.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (k *KittyImages) Generation() (uint64, error) {
-	ptr, err := zigoCheckedPointer("KittyImages.Generation receiver", k)
-	if err != nil {
-		return 0, err
-	}
-	defer k.zigoRelease()
-	result, code := raw.KittyImagesGeneration(ptr)
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("KittyImages.Generation", code), k)
-	}
-	return result, nil
 }
 
 // PlacementCount calls the Zig function KittyImages.placementCount.

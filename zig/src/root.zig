@@ -1,12 +1,14 @@
 //! The libghostty-vt surface exposed to Go.
 //!
-//! `Terminal` is ghostty's own type, bound directly: its methods become Go
-//! methods without any wrapper. This module only adds what ghostty does not
-//! provide and zigo needs:
+//! `Terminal`, `Screen`, `Search` and `RenderState` are ghostty's own types,
+//! bound directly: their methods become Go methods without any wrapper. This
+//! module adds only what ghostty does not provide and zigo needs:
 //!
 //!   - an `std.Io` value for `.io` injection (ghostty ships `TinyIo` as a type,
 //!     not as a ready-made `Io` declaration);
-//!   - a release function for the string `plainString` hands out.
+//!   - a release function for the strings bound with `.returns = .caller`;
+//!   - wrappers where ghostty's signature cannot cross the C ABI (page pins,
+//!     nested optional structs, generic functions), each saying why.
 //!
 //! Plain field reads are not here: `.fields` in `bindings.zig` generates those
 //! accessors from the field path.
@@ -556,11 +558,6 @@ pub fn screenSelectAll(self: *Screen) !bool {
     return true;
 }
 
-/// Drop the current selection, if any.
-pub fn screenClearSelection(self: *Screen) void {
-    self.clearSelection();
-}
-
 /// Select the cells between two viewport positions, inclusive of both ends.
 ///
 /// `rectangle` selects the block between the two corners rather than the flow
@@ -680,23 +677,9 @@ pub fn freeSearch(self: *Search, gpa: Allocator) void {
     gpa.destroy(self);
 }
 
-/// The number of matches found so far.
-pub fn searchMatchCount(self: *Search) usize {
-    return self.matchesLen();
-}
-
-/// Move to the next or previous match. Returns false when there is no match
-/// to move to. This changes only the search's own position: read the match
-/// with `searchSelectedMatch`, and let the UI decide whether to put it in
-/// the screen's selection (`screenSetSelection`) or scroll the viewport to
-/// it (`Terminal.scrollViewport` with the match row).
-pub fn searchSelect(self: *Search, to: SearchDirection) !bool {
-    return try self.select(to);
-}
-
 /// Copy the matches found so far into `dst`, most recent screen content
 /// first, and return how many were written. Matches are in screen
-/// coordinates; size `dst` from `searchMatchCount`.
+/// coordinates; size `dst` from `Search.matchesLen`.
 pub fn searchMatches(self: *Search, dst: []Selection) usize {
     var written: usize = 0;
     const total = self.matchesLen();
@@ -710,7 +693,7 @@ pub fn searchMatches(self: *Search, dst: []Selection) usize {
     return written;
 }
 
-/// The match `searchSelect` last moved to, or null before the first move.
+/// The match `Search.select` last moved to, or null before the first move.
 pub fn searchSelectedMatch(self: *Search) ?Selection {
     const match = self.selectedMatch() orelse return null;
     const bounds = match.untracked();
@@ -764,20 +747,6 @@ pub fn screenHasSelection(self: *Screen) bool {
 pub fn screenSelectionString(self: *Screen, gpa: Allocator) !?[]const u8 {
     const selection = self.selection orelse return null;
     return try self.selectionString(gpa, .{ .sel = selection });
-}
-
-/// Switch between the primary and alternate screens.
-///
-/// Wrapped because ghostty returns the screen being left, and a handle borrowed
-/// from its receiver has no representation in zigo -- only tagged-union
-/// projections produce one.
-pub fn switchScreen(self: *Terminal, key: ScreenKey) !void {
-    _ = try self.switchScreen(key);
-}
-
-/// Which screen is currently active.
-pub fn activeScreenKey(self: *Terminal) ScreenKey {
-    return self.screens.active_key;
 }
 
 /// Write the cursor's current SGR attributes into `dst` as a DECRPSS response
@@ -978,14 +947,6 @@ pub const Attribute = union(enum) {
     reset_fg,
     reset_bg,
 
-    fn rgb(value: u32) vt.color.RGB {
-        return .{
-            .r = @truncate(value >> 16),
-            .g = @truncate(value >> 8),
-            .b = @truncate(value),
-        };
-    }
-
     fn toVt(self: Attribute) vt.Attribute {
         return switch (self) {
             .unset => .unset,
@@ -995,7 +956,7 @@ pub const Attribute = union(enum) {
             .reset_italic => .reset_italic,
             .faint => .faint,
             .underline => |v| .{ .underline = v },
-            .underline_color_rgb => |v| .{ .underline_color = rgb(v) },
+            .underline_color_rgb => |v| .{ .underline_color = unpackColor(v) },
             .underline_color_256 => |v| .{ .@"256_underline_color" = v },
             .reset_underline_color => .reset_underline_color,
             .overline => .overline,
@@ -1008,8 +969,8 @@ pub const Attribute = union(enum) {
             .reset_invisible => .reset_invisible,
             .strikethrough => .strikethrough,
             .reset_strikethrough => .reset_strikethrough,
-            .direct_color_fg => |v| .{ .direct_color_fg = rgb(v) },
-            .direct_color_bg => |v| .{ .direct_color_bg = rgb(v) },
+            .direct_color_fg => |v| .{ .direct_color_fg = unpackColor(v) },
+            .direct_color_bg => |v| .{ .direct_color_bg = unpackColor(v) },
             .color_256_fg => |v| .{ .@"256_fg" = v },
             .color_256_bg => |v| .{ .@"256_bg" = v },
             .named_fg => |v| .{ .@"8_fg" = v },
@@ -1028,10 +989,6 @@ pub fn setAttribute(self: *Terminal, attr: Attribute) !void {
     try self.setAttribute(attr.toVt());
 }
 
-/// The display width of a grapheme cluster given as codepoints.
-///
-/// Wrapped because `vt.unicode.graphemeWidth` is generic over the codepoint
-/// integer type, and a generic function has no signature to bind.
 // ghostty expresses "no limit" and "use the default" as null parameters. A Go
 // caller would have to pass a pointer for those, so each one is split into a
 // setter that takes the value and a reset that selects the null case.
@@ -1075,11 +1032,14 @@ pub fn screenStartHyperlink(self: *Screen, uri: []const u8, id: []const u8) !voi
     try self.startHyperlink(uri, if (id.len == 0) null else id);
 }
 
+/// The display width of a grapheme cluster given as codepoints.
+///
+/// Wrapped because `vt.unicode.graphemeWidth` is generic over the codepoint
+/// integer type, and a generic function has no signature to bind.
 pub fn graphemeWidth(cps: []const u32) u8 {
     return @intCast(vt.unicode.graphemeWidth(u32, cps).width);
 }
 
-/// Unicode helpers, re-exported as-is.
 // Colors. Everything is `0xRRGGBB`, the same packing `RenderCell` uses, so a
 // renderer keeps one color representation.
 
@@ -1149,10 +1109,13 @@ pub fn setMode(self: *Terminal, mode: Mode, value: bool) void {
     self.modes.set(mode, value);
 }
 
+/// Unicode helpers, re-exported as-is.
 pub const unicode = vt.unicode;
 
 /// Input encoding: turning key, mouse and focus events into the bytes a
-/// program reading the pty expects.
+/// program reading the pty expects. `encodeFocus` and `isSafePaste` are
+/// bound straight out of here; the others take a `Terminal` and need the
+/// wrappers below.
 pub const input = vt.input;
 
 pub const Key = vt.input.Key;
@@ -1350,17 +1313,6 @@ pub fn encodeMouse(
     try vt.input.encodeMouse(writer, inner, opts);
 }
 
-/// Encode a focus in/out report (CSI I / CSI O).
-pub fn encodeFocus(writer: *std.Io.Writer, event: FocusEvent) !void {
-    try vt.input.encodeFocus(writer, event);
-}
-
-/// True if `data` can be pasted without the receiving program seeing it as
-/// something other than literal text.
-pub fn isSafePaste(data: []const u8) bool {
-    return vt.input.isSafePaste(data);
-}
-
 /// Encode `data` for pasting into `terminal`, respecting bracketed paste mode.
 pub fn encodePaste(
     writer: *std.Io.Writer,
@@ -1402,7 +1354,8 @@ pub fn freeStream(self: *Stream, gpa: Allocator) void {
     gpa.destroy(self);
 }
 
-/// Releases a string handed out by `plainString`.
+/// Releases a string a bound function handed out with `.returns = .caller`:
+/// `plainString`, `selectionString`, `historyString`, `renderHyperlinkAt`.
 pub fn freeString(gpa: Allocator, str: []const u8) void {
     gpa.free(str);
 }
@@ -1416,12 +1369,6 @@ pub fn freeString(gpa: Allocator, str: []const u8) void {
 
 pub const RenderState = vt.RenderState;
 
-/// One cell of the viewport, flattened for the C ABI.
-///
-/// Colors are already resolved: palette indices are looked up in the render
-/// state's palette and defaults are filled in from the terminal's own
-/// foreground and background, so Go never has to carry a palette. `inverse`
-/// is applied here too, for the same reason.
 /// How wide a cell is, and whether it is a spacer another cell owns.
 pub const CellWidth = vt.page.Cell.Wide;
 
@@ -1470,14 +1417,9 @@ pub fn newRenderState(gpa: Allocator) !*RenderState {
     return self;
 }
 
-pub fn freeRenderState(gpa: Allocator, self: *RenderState) void {
+pub fn freeRenderState(self: *RenderState, gpa: Allocator) void {
     self.deinit(gpa);
     gpa.destroy(self);
-}
-
-/// Pull the latest viewport out of `term`. Resets the terminal's dirty state.
-pub fn renderUpdate(self: *RenderState, gpa: Allocator, term: *Terminal) !void {
-    try self.update(gpa, term);
 }
 
 /// How many `RenderCell`s `renderCells` needs: `rows * cols`.
@@ -1507,8 +1449,8 @@ pub fn renderRowCells(self: *RenderState, y: u16, dst: []RenderCell) !usize {
 }
 
 fn fillRow(self: *RenderState, y: usize, dst: []RenderCell) void {
-    const fg_default = packRgb(self.colors.foreground);
-    const bg_default = packRgb(self.colors.background);
+    const fg_default = packColor(self.colors.foreground);
+    const bg_default = packColor(self.colors.background);
     const row = self.row_data.items(.cells)[y];
     const sel = self.row_data.items(.selection)[y];
     const raw = row.items(.raw);
@@ -1527,8 +1469,8 @@ fn fillRow(self: *RenderState, y: usize, dst: []RenderCell) void {
             .codepoint, .codepoint_grapheme => out.codepoint = cell.content.codepoint.data,
             // A cell with no text but a background color; the color is in
             // the cell itself rather than the style map.
-            .bg_color_palette => out.bg = packRgb(self.colors.palette[cell.content.color_palette.data]),
-            .bg_color_rgb => out.bg = packRgb(.{
+            .bg_color_palette => out.bg = packColor(self.colors.palette[cell.content.color_palette.data]),
+            .bg_color_rgb => out.bg = packColor(.{
                 .r = cell.content.color_rgb.r,
                 .g = cell.content.color_rgb.g,
                 .b = cell.content.color_rgb.b,
@@ -1566,8 +1508,8 @@ pub const RenderDirty = enum(u8) {
     full,
 };
 
-/// What changed since `renderClean`. `renderUpdate` raises this; nothing
-/// lowers it but `renderClean`.
+/// What changed since `RenderState.clean`. `RenderState.update` raises this;
+/// nothing lowers it but `clean`.
 pub fn renderDirty(self: *RenderState) RenderDirty {
     return switch (self.dirty) {
         .false => .clean,
@@ -1588,12 +1530,6 @@ pub fn renderDirtyRows(self: *RenderState, dst: []u16) !usize {
         n += 1;
     }
     return n;
-}
-
-/// Mark everything drawn: clears the frame state and every row flag.
-/// Call it once the frame's rows have been read.
-pub fn renderClean(self: *RenderState) void {
-    self.clean();
 }
 
 /// The codepoints of the cell at viewport `x`, `y`: the base codepoint
@@ -1627,7 +1563,7 @@ pub fn renderGraphemes(self: *RenderState, x: u16, y: u16, dst: []u32) !usize {
 
 /// The OSC 8 hyperlink under viewport `x`, `y`, or null when the cell has
 /// none. Valid only until the terminal changes: like ghostty's own
-/// `linkCells`, this reads page memory through the pins `renderUpdate`
+/// `linkCells`, this reads page memory through the pins `RenderState.update`
 /// captured, so call it right after an update.
 pub fn renderHyperlinkAt(self: *RenderState, gpa: Allocator, x: u16, y: u16) !?[]const u8 {
     if (x >= self.cols or y >= self.rows) return null;
@@ -1640,15 +1576,11 @@ pub fn renderHyperlinkAt(self: *RenderState, gpa: Allocator, x: u16, y: u16) !?[
     return try gpa.dupe(u8, entry.uri.slice(pg.memory));
 }
 
-fn packRgb(c: vt.color.RGB) u32 {
-    return (@as(u32, c.r) << 16) | (@as(u32, c.g) << 8) | @as(u32, c.b);
-}
-
 fn resolveColor(self: *RenderState, c: vt.Style.Color) ?u32 {
     return switch (c) {
         .none => null,
-        .palette => |i| packRgb(self.colors.palette[i]),
-        .rgb => |v| packRgb(v),
+        .palette => |i| packColor(self.colors.palette[i]),
+        .rgb => |v| packColor(v),
     };
 }
 
@@ -1668,22 +1600,14 @@ fn mergeFlags(out: CellFlags, f: anytype) CellFlags {
     return merged;
 }
 
-pub fn renderRows(self: *RenderState) u16 {
-    return self.rows;
-}
-
-pub fn renderCols(self: *RenderState) u16 {
-    return self.cols;
-}
-
 /// The terminal's default background, 0xRRGGBB. Already reversed if the
 /// terminal is in reverse-video mode.
 pub fn renderBackground(self: *RenderState) u32 {
-    return packRgb(self.colors.background);
+    return packColor(self.colors.background);
 }
 
 pub fn renderForeground(self: *RenderState) u32 {
-    return packRgb(self.colors.foreground);
+    return packColor(self.colors.foreground);
 }
 
 /// The cursor's column within the viewport, or false if it is scrolled out.
@@ -1695,15 +1619,6 @@ pub fn renderCursorX(self: *RenderState) ?u16 {
 pub fn renderCursorY(self: *RenderState) ?u16 {
     const vp = self.cursor.viewport orelse return null;
     return vp.y;
-}
-
-/// Whether the terminal mode has the cursor shown at all.
-pub fn renderCursorVisible(self: *RenderState) bool {
-    return self.cursor.visible;
-}
-
-pub fn renderCursorStyle(self: *RenderState) CursorStyle {
-    return self.cursor.visual_style;
 }
 
 // -- Kitty graphics ---------------------------------------------------------
@@ -1818,6 +1733,12 @@ pub const KittyPlacement = extern struct {
 pub const KittyImages = struct {
     gpa: Allocator,
     items: std.ArrayList(KittyPlacement) = .empty,
+    /// The storage's generation stamp as of the last `kittyUpdate`.
+    ///
+    /// Bumped whenever an image or a placement is added, replaced or removed,
+    /// and not by scrolling or resizing. An unchanged stamp means every
+    /// image's bytes are the ones already fetched, so it is what a texture
+    /// cache should be keyed on to decide whether to look at all.
     generation: u64 = 0,
 };
 
@@ -1942,16 +1863,6 @@ fn kittyViewportPos(
     if (@as(i64, col) + width <= 0 or col >= @as(i32, term.cols)) return null;
 
     return .{ .col = col, .row = row };
-}
-
-/// The storage's generation stamp as of the last `kittyUpdate`.
-///
-/// Bumped whenever an image or a placement is added, replaced or removed, and
-/// not by scrolling or resizing. An unchanged stamp means every image's bytes
-/// are the ones already fetched, so it is what a texture cache should be keyed
-/// on to decide whether to look at all.
-pub fn kittyGeneration(self: *KittyImages) u64 {
-    return self.generation;
 }
 
 /// How many placements `kittyPlacements` will write.

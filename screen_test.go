@@ -20,8 +20,11 @@ func TestSwitchScreen(t *testing.T) {
 		t.Fatalf("ActiveScreenKey() = %v, %v; want primary, nil", key, err)
 	}
 
-	if err := term.SwitchScreen(ScreenKeyAlternate); err != nil {
-		t.Fatalf("SwitchScreen(alternate): %v", err)
+	// The screen being left comes back, so a caller can keep a handle to the
+	// primary screen without asking for it again.
+	primary, ok, err := term.SwitchScreen(ScreenKeyAlternate)
+	if err != nil || !ok || primary == nil {
+		t.Fatalf("SwitchScreen(alternate) = %v, %v, %v; want screen, true, nil", primary, ok, err)
 	}
 	if key, err := term.ActiveScreenKey(); err != nil || key != ScreenKeyAlternate {
 		t.Fatalf("ActiveScreenKey() = %v, %v; want alternate, nil", key, err)
@@ -37,16 +40,17 @@ func TestSwitchScreen(t *testing.T) {
 		t.Errorf("alternate screen = %q, want %q", got, want)
 	}
 
-	if err := term.SwitchScreen(ScreenKeyPrimary); err != nil {
-		t.Fatalf("SwitchScreen(primary): %v", err)
+	if _, ok, err := term.SwitchScreen(ScreenKeyPrimary); err != nil || !ok {
+		t.Fatalf("SwitchScreen(primary) = ok %v, err %v; want true, nil", ok, err)
 	}
 	if got, want := screen(t, term), "primary"; got != want {
 		t.Errorf("primary screen after switching back = %q, want %q", got, want)
 	}
 
-	// Switching to the screen already active is a no-op, not an error.
-	if err := term.SwitchScreen(ScreenKeyPrimary); err != nil {
-		t.Errorf("SwitchScreen to the active screen: %v", err)
+	// Switching to the screen already active is a no-op: no screen is left,
+	// and it is not an error.
+	if left, ok, err := term.SwitchScreen(ScreenKeyPrimary); err != nil || ok || left != nil {
+		t.Errorf("SwitchScreen to the active screen = %v, %v, %v; want nil, false, nil", left, ok, err)
 	}
 }
 
@@ -183,7 +187,7 @@ func TestOptionalScreen(t *testing.T) {
 		t.Errorf("Screen(primary) = ok %v, err %v; want true, nil", ok, err)
 	}
 
-	if err := term.SwitchScreen(ScreenKeyAlternate); err != nil {
+	if _, _, err := term.SwitchScreen(ScreenKeyAlternate); err != nil {
 		t.Fatalf("SwitchScreen: %v", err)
 	}
 	alt, ok, err := term.Screen(ScreenKeyAlternate)
