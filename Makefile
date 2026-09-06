@@ -21,12 +21,15 @@ LIB_DIR := libs
 #
 #   make build OPTIMIZE=ReleaseFast
 OPTIMIZE ?= ReleaseSafe
+# The example emulator is its own Go module (see go.work), so `./...` from the
+# root does not reach it; every Go target names both.
+GO_PKGS := ./... ./examples/hypercat/...
 # The install prefix is the repository root, so `libs/` lands beside the Go
 # package. The generated cgo directives point at it, so it has to match.
 ZIG_FLAGS := -Doptimize=$(OPTIMIZE) --prefix $(CURDIR)
 
 .DEFAULT_GOAL := help
-.PHONY: help all build generate align-macos-archives test race bench vet example verify check doctor coverage report fmt clean distclean
+.PHONY: help all build generate align-macos-archives test race bench vet example example-sync verify check doctor coverage report fmt clean distclean
 
 help: ## Show this help
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -70,19 +73,29 @@ define run-zig-tool
 endef
 
 test: build ## Run the Go tests
-	$(GO) test ./...
+	$(GO) test $(GO_PKGS)
 
 race: build ## Run the Go tests under the race detector
-	$(GO) test -race -count=2 ./...
+	$(GO) test -race -count=2 $(GO_PKGS)
 
 bench: build ## Run the benchmarks
-	$(GO) test -bench . -benchmem -run '^$$' ./...
+	$(GO) test -bench . -benchmem -run '^$$' $(GO_PKGS)
 
 vet: build ## Run go vet
-	$(GO) vet ./...
+	$(GO) vet $(GO_PKGS)
 
 example: build ## Run the HyperCat example terminal emulator
 	$(GO) run ./examples/hypercat
+
+# The example's go.mod pins a published gostty so `go install .../examples/hypercat@latest`
+# works outside this checkout. go.work replaces exactly that pinned version with
+# the checkout, so the two move together: run this after pushing bindings the
+# example needs, then commit go.work and the example's go.mod and go.sum.
+example-sync: ## Re-pin the example to the pushed gostty main and update go.work
+	cd examples/hypercat && GOWORK=off $(GO) get github.com/ironpark/gostty@main && GOWORK=off $(GO) mod tidy
+	@ver=$$(cd examples/hypercat && GOWORK=off $(GO) list -m -f '{{.Version}}' github.com/ironpark/gostty); \
+	sed -i.bak '/^replace github.com\/ironpark\/gostty /d' go.work && rm -f go.work.bak; \
+	$(GO) work edit -replace=github.com/ironpark/gostty@$$ver=./ && echo "example pinned to gostty $$ver"
 
 verify: ## Validate generated bindings, toolchain and native library
 	$(call run-zig-tool,go-verify)

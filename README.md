@@ -111,28 +111,30 @@ user's clipboard, so ensure user consent before calling `ReplyClipboardText`.
 │       ├── semantic.json     # ABI description consumed by abi-diff
 │       └── errors.lock.json  # Stable numeric codes for Zig errors
 ├── examples/
-│   └── hypercat/         # GUI terminal emulator built on these bindings
+│   └── hypercat/         # GUI terminal emulator; its own module, see go.work
+├── go.work               # Builds the example against this checkout
 └── Makefile              # Toolchain entry point; `make help` lists targets
 ```
 
-About three quarters of the Go code is generated: 7,600 lines from `bindings.zig`
-against 2,400 lines of tests. Everything named `*_gen.go`, along with
+About three quarters of the Go code is generated: 10,900 lines from `bindings.zig`
+against 3,600 lines of tests. Everything named `*_gen.go`, along with
 `internal/lifecycle/` and `zig/zigo/`, is produced by `make generate` and should
 not be edited manually. Unexported generator helpers (`newTerminal`, `newStream`,
 `newKeyEvent`, etc.) share the package namespace as well.
 
 ### What `root.zig` is for
 
-Most of libghostty-vt is bound directly: `Terminal` is ghostty's own type and its
-methods become Go methods with nothing in between, while `.fields` and
-`.flatten` in `bindings.zig` cover plain field reads and `Terminal.init`. What is
-left in `root.zig` is the shapes that cannot cross a C ABI directly:
+Most of libghostty-vt is bound directly: `Terminal`, `Screen`, `Search`,
+`RenderState` and `Snapshot` are ghostty's own types and their methods become Go
+methods with nothing in between, including their `init`/`deinit` lifecycles,
+while `.fields` and `.flatten` in `bindings.zig` cover plain field reads and
+`Terminal.init`. What is left in `root.zig` is the shapes that cannot cross a C
+ABI directly:
 
 - an `std.Io` value, because ghostty ships `TinyIo` as a type rather than a
   ready-made declaration;
 - `Stream`, which owns the event queue and the clipboard callbacks that
   ghostty's handler reaches back for through `@fieldParentPtr`;
-- lifecycles for `Search` and `RenderState`, which need more than a `create`;
 - wrappers for calls that return a value holding page pins — `SelectWord`,
   `SelectLine`, `SelectOutput` — which apply the selection instead of handing it
   back;

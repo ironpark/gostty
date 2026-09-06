@@ -1,0 +1,13 @@
+// The example emulator is its own module so that consumers of gostty do not
+// inherit its GUI dependencies. Its go.mod pins a published gostty for
+// `go install`; this workspace points it at the checkout instead. The replace
+// lives here rather than in the example's go.mod because `go install
+// pkg@version` ignores go.work but would honour a replace in go.mod.
+go 1.25.0
+
+use (
+	.
+	./examples/hypercat
+)
+
+replace github.com/ironpark/gostty v0.0.0-20260906052917-08c29bbcb8bf => ./

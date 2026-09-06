@@ -88,6 +88,14 @@ font fallback chain, ligatures, tabs, splits, or persistent settings. OSC 52
 clipboard reads are accepted without confirmation, which is unsafe for a
 general-purpose terminal.
 
-The example is part of the root module, so its UI, PTY, and clipboard packages
-appear in the module's `go.mod`. Go only downloads them for builds that import
-the example, so a consumer of the bindings pays nothing for them.
+The example is its own Go module, so its UI, PTY, and clipboard dependencies
+stay out of the bindings' `go.mod`. The repository's `go.work` builds it against
+the checkout; its own `go.mod` pins a published gostty so that
+
+```sh
+go install github.com/ironpark/gostty/examples/hypercat@latest
+```
+
+works outside the repository. After pushing bindings the example needs, run
+`make example-sync` and commit the updated pin in `go.mod`, `go.sum` and
+`go.work`.

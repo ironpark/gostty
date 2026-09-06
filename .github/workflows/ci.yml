@@ -38,7 +38,9 @@ jobs:
       - name: Test
         run: go test ./...
 
-      # The example lives in the root module, so `go build ./...` above already
-      # compiled it against this checkout; run its own tests too.
-      - name: Test example
-        run: go test ./examples/...
+      # The example is its own module; go.work builds it against this checkout
+      # rather than the gostty version its go.mod pins.
+      - name: Build and test example
+        run: |
+          go vet ./examples/hypercat/...
+          go test ./examples/hypercat/...
