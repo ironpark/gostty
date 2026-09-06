@@ -1986,6 +1986,30 @@ func TerminalSetKittyGraphicsSizeLimit(self unsafe.Pointer, limit uint) int32 {
 	return code
 }
 
+// TerminalKittyImage calls the generated C ABI wrapper for zg_terminal_kitty_image.
+func TerminalKittyImage(self unsafe.Pointer, imageID uint32) (KittyImageData, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.zg_kitty_image
+	code := int32(C.zg_terminal_kitty_image((*C.zg_terminal)(self), C.uint32_t(imageID), &outResultHas, &outResult))
+	return KittyImageData{
+		Generation:  uint64(outResult.generation),
+		DataLen:     uint64(outResult.data_len),
+		Width:       uint32(outResult.width),
+		Height:      uint32(outResult.height),
+		Format:      uint8(outResult.format),
+		Compression: uint8(outResult.compression),
+		Pad:         uint16(outResult._pad),
+	}, outResultHas != 0, code
+}
+
+// TerminalKittyImageData calls the generated C ABI wrapper for zg_terminal_kitty_image_data.
+func TerminalKittyImageData(self unsafe.Pointer, imageID uint32, dst []uint8) (uint, int32) {
+	dstPtr := (*C.uint8_t)(zigoSlicePtr(dst))
+	var outResult C.size_t
+	code := int32(C.zg_terminal_kitty_image_data((*C.zg_terminal)(self), C.uint32_t(imageID), dstPtr, C.size_t(len(dst)), &outResult))
+	return uint(outResult), code
+}
+
 // SysOnPngDecodeRequest calls the generated C ABI wrapper for zg_sys_on_png_decode_request.
 func SysOnPngDecodeRequest(callbackHandle uintptr) {
 	C.zg_sys_on_png_decode_request(C.size_t(callbackHandle))
@@ -2019,30 +2043,6 @@ func SysReplySecureRandom(bytes []uint8) int32 {
 	bytesPtr := (*C.uint8_t)(zigoSlicePtr(bytes))
 	code := int32(C.zg_sys_reply_secure_random(bytesPtr, C.size_t(len(bytes))))
 	return code
-}
-
-// TerminalKittyImage calls the generated C ABI wrapper for zg_terminal_kitty_image.
-func TerminalKittyImage(self unsafe.Pointer, imageID uint32) (KittyImageData, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.zg_kitty_image
-	code := int32(C.zg_terminal_kitty_image((*C.zg_terminal)(self), C.uint32_t(imageID), &outResultHas, &outResult))
-	return KittyImageData{
-		Generation:  uint64(outResult.generation),
-		DataLen:     uint64(outResult.data_len),
-		Width:       uint32(outResult.width),
-		Height:      uint32(outResult.height),
-		Format:      uint8(outResult.format),
-		Compression: uint8(outResult.compression),
-		Pad:         uint16(outResult._pad),
-	}, outResultHas != 0, code
-}
-
-// TerminalKittyImageData calls the generated C ABI wrapper for zg_terminal_kitty_image_data.
-func TerminalKittyImageData(self unsafe.Pointer, imageID uint32, dst []uint8) (uint, int32) {
-	dstPtr := (*C.uint8_t)(zigoSlicePtr(dst))
-	var outResult C.size_t
-	code := int32(C.zg_terminal_kitty_image_data((*C.zg_terminal)(self), C.uint32_t(imageID), dstPtr, C.size_t(len(dst)), &outResult))
-	return uint(outResult), code
 }
 
 // SnapshotProgressData mirrors the zg_snapshot_progress layout, padding included.

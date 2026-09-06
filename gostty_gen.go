@@ -2057,7 +2057,7 @@ func (s *Search) Select(to SearchDirection, scroll SearchScroll) (bool, error) {
 	return result != 0, nil
 }
 
-// MatchCount calls the Zig function Search.MatchCount.
+// MatchCount calls the Zig function Search.matchCount.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *Search) MatchCount() (uint, error) {

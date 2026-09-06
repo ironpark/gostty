@@ -3778,7 +3778,7 @@
       "symbol": "zg_search_select"
     },
     {
-      "name": "MatchCount",
+      "name": "matchCount",
       "ownership": "borrowed",
       "params": [],
       "receiver": "Search",
@@ -6814,6 +6814,108 @@
       "symbol": "zg_terminal_set_kitty_graphics_size_limit"
     },
     {
+      "doc": "Look up an image on the active screen by id.",
+      "name": "kittyImage",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "image_id",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 352,
+            "column": 36
+          },
+          "type": {
+            "bits": 32,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "receiver": "Terminal",
+      "return": {
+        "child": {
+          "kind": "value_struct",
+          "ref": "KittyImage"
+        },
+        "kind": "optional"
+      },
+      "source": {
+        "path": "kitty.zig",
+        "line": 352,
+        "column": 8
+      },
+      "zig_path": "kittyImage",
+      "symbol": "zg_terminal_kitty_image"
+    },
+    {
+      "doc": "Copy an image's pixels into `dst` and report how many bytes were written,\nor zero if there is no such image.\n\nThe bytes are as the program transmitted them, decompressed: a PNG is still\na PNG, and it is the renderer that decodes it. For an animated image these\nare the current frame's, which is why the generation stamp moves when the\nframe does.",
+      "name": "kittyImageData",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "image_id",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 371,
+            "column": 40
+          },
+          "type": {
+            "bits": 32,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "out",
+          "name": "dst",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 371,
+            "column": 55
+          },
+          "type": {
+            "const": false,
+            "element": {
+              "bits": 8,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          },
+          "written": "return"
+        }
+      ],
+      "receiver": "Terminal",
+      "return": {
+        "error_set": [
+          "NoSpaceLeft"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "bits": 64,
+          "is_usize": true,
+          "kind": "int",
+          "signed": false
+        }
+      },
+      "source": {
+        "path": "kitty.zig",
+        "line": 371,
+        "column": 8
+      },
+      "zig_path": "kittyImageData",
+      "symbol": "zg_terminal_kitty_image_data"
+    },
+    {
       "doc": "Install the PNG decoder. Until one is installed ghostty refuses PNG\nKitty transmissions outright; with one, the image is decoded as it\narrives and reaches `kittyImage` as `rgba`. Process-global, and read\nfrom whichever thread feeds a stream, so install it at startup.",
       "name": "onPngDecodeRequest",
       "package": "sys",
@@ -7132,108 +7234,6 @@
         "column": 8
       },
       "symbol": "zg_sys_reply_secure_random"
-    },
-    {
-      "doc": "Look up an image on the active screen by id.",
-      "name": "kittyImage",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "image_id",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 352,
-            "column": 36
-          },
-          "type": {
-            "bits": 32,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        }
-      ],
-      "receiver": "Terminal",
-      "return": {
-        "child": {
-          "kind": "value_struct",
-          "ref": "KittyImage"
-        },
-        "kind": "optional"
-      },
-      "source": {
-        "path": "kitty.zig",
-        "line": 352,
-        "column": 8
-      },
-      "zig_path": "kittyImage",
-      "symbol": "zg_terminal_kitty_image"
-    },
-    {
-      "doc": "Copy an image's pixels into `dst` and report how many bytes were written,\nor zero if there is no such image.\n\nThe bytes are as the program transmitted them, decompressed: a PNG is still\na PNG, and it is the renderer that decodes it. For an animated image these\nare the current frame's, which is why the generation stamp moves when the\nframe does.",
-      "name": "kittyImageData",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "image_id",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 371,
-            "column": 40
-          },
-          "type": {
-            "bits": 32,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        },
-        {
-          "direction": "out",
-          "name": "dst",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 371,
-            "column": 55
-          },
-          "type": {
-            "const": false,
-            "element": {
-              "bits": 8,
-              "is_usize": false,
-              "kind": "int",
-              "signed": false
-            },
-            "kind": "slice"
-          },
-          "written": "return"
-        }
-      ],
-      "receiver": "Terminal",
-      "return": {
-        "error_set": [
-          "NoSpaceLeft"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "bits": 64,
-          "is_usize": true,
-          "kind": "int",
-          "signed": false
-        }
-      },
-      "source": {
-        "path": "kitty.zig",
-        "line": 371,
-        "column": 8
-      },
-      "zig_path": "kittyImageData",
-      "symbol": "zg_terminal_kitty_image_data"
     }
   ],
   "io": "target.io",
@@ -8002,7 +8002,7 @@
         "signed": false
       },
       "text": true,
-      "zig_path": "terminal.modes.Mode__enum_28708"
+      "zig_path": "terminal.modes.Mode__enum_28686"
     },
     {
       "exhaustive": true,
