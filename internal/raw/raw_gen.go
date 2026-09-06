@@ -1501,6 +1501,60 @@ func RenderStateCursorStyle(self unsafe.Pointer) (uint8, int32) {
 	return uint8(outResult), code
 }
 
+// RenderStateDirty calls the generated C ABI wrapper for zg_render_state_dirty.
+func RenderStateDirty(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_render_state_dirty((*C.zg_render_state)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// RenderStateRowDirty calls the generated C ABI wrapper for zg_render_state_row_dirty.
+func RenderStateRowDirty(self unsafe.Pointer, y uint16) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_render_state_row_dirty((*C.zg_render_state)(self), C.uint16_t(y), &outResult))
+	return uint8(outResult), code
+}
+
+// RenderStateDirtyRows calls the generated C ABI wrapper for zg_render_state_dirty_rows.
+func RenderStateDirtyRows(self unsafe.Pointer, dst []uint16) (uint, int32) {
+	dstPtr := (*C.uint16_t)(zigoSlicePtr(dst))
+	var outResult C.size_t
+	code := int32(C.zg_render_state_dirty_rows((*C.zg_render_state)(self), dstPtr, C.size_t(len(dst)), &outResult))
+	return uint(outResult), code
+}
+
+// RenderStateRowCells calls the generated C ABI wrapper for zg_render_state_row_cells.
+func RenderStateRowCells(self unsafe.Pointer, y uint16, dst []RenderCellData) (uint, int32) {
+	var dstValues []C.zg_render_cell
+	if len(dst) != 0 {
+		dstValues = make([]C.zg_render_cell, len(dst))
+	}
+	dstPtr := (*C.zg_render_cell)(zigoSlicePtr(dstValues))
+	var outResult C.size_t
+	code := int32(C.zg_render_state_row_cells((*C.zg_render_state)(self), C.uint16_t(y), dstPtr, C.size_t(len(dst)), &outResult))
+	for i := 0; i < int(outResult) && i < len(dst); i++ {
+		dst[i] = RenderCellData{
+			Codepoint: uint32(dstValues[i].codepoint),
+			Fg:        uint32(dstValues[i].fg),
+			Bg:        uint32(dstValues[i].bg),
+			Flags:     uint32(dstValues[i].flags),
+		}
+	}
+	return uint(outResult), code
+}
+
+// RenderStateClean calls the generated C ABI wrapper for zg_render_state_clean.
+func RenderStateClean(self unsafe.Pointer) int32 {
+	code := int32(C.zg_render_state_clean((*C.zg_render_state)(self)))
+	return code
+}
+
+// RenderStateCleanRow calls the generated C ABI wrapper for zg_render_state_clean_row.
+func RenderStateCleanRow(self unsafe.Pointer, y uint16) int32 {
+	code := int32(C.zg_render_state_clean_row((*C.zg_render_state)(self), C.uint16_t(y)))
+	return code
+}
+
 // RenderStateGraphemes calls the generated C ABI wrapper for zg_render_state_graphemes.
 func RenderStateGraphemes(self unsafe.Pointer, x uint16, y uint16, dst []uint32) (uint, int32) {
 	dstPtr := (*C.uint32_t)(zigoSlicePtr(dst))

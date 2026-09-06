@@ -449,6 +449,11 @@ typedef uint8_t zg_cell_width;
 #define ZG_CELL_WIDTH_SPACER_TAIL 2
 #define ZG_CELL_WIDTH_SPACER_HEAD 3
 
+typedef uint8_t zg_render_dirty;
+#define ZG_RENDER_DIRTY_CLEAN 0
+#define ZG_RENDER_DIRTY_PARTIAL 1
+#define ZG_RENDER_DIRTY_FULL 2
+
 typedef struct zg_kitty_images zg_kitty_images;
 typedef uint8_t zg_kitty_format;
 #define ZG_KITTY_FORMAT_RGB 0
@@ -723,6 +728,12 @@ ZIGO_EXPORT int32_t zg_render_state_cursor_x(zg_render_state * self, uint8_t * o
 ZIGO_EXPORT int32_t zg_render_state_cursor_y(zg_render_state * self, uint8_t * out_result_has, uint16_t * out_result);
 ZIGO_EXPORT int32_t zg_render_state_cursor_visible(zg_render_state * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_render_state_cursor_style(zg_render_state * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_render_state_dirty(zg_render_state * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_render_state_row_dirty(zg_render_state * self, uint16_t y, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_render_state_dirty_rows(zg_render_state * self, uint16_t * dst_ptr, size_t dst_len, size_t * out_result);
+ZIGO_EXPORT int32_t zg_render_state_row_cells(zg_render_state * self, uint16_t y, zg_render_cell * dst_ptr, size_t dst_len, size_t * out_result);
+ZIGO_EXPORT int32_t zg_render_state_clean(zg_render_state * self);
+ZIGO_EXPORT int32_t zg_render_state_clean_row(zg_render_state * self, uint16_t y);
 ZIGO_EXPORT int32_t zg_render_state_graphemes(zg_render_state * self, uint16_t x, uint16_t y, uint32_t * dst_ptr, size_t dst_len, size_t * out_result);
 ZIGO_EXPORT int32_t zg_render_state_hyperlink_at(zg_render_state * self, uint16_t x, uint16_t y, const uint8_t * * out_result_ptr, size_t * out_result_len);
 ZIGO_EXPORT int32_t zg_new_kitty_images(zg_kitty_images * * out_result);

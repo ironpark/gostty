@@ -5202,6 +5202,166 @@
       "symbol": "zg_render_state_cursor_style"
     },
     {
+      "name": "dirty",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "RenderState",
+      "return": {
+        "kind": "enum",
+        "ref": "RenderDirty"
+      },
+      "zig_path": "renderDirty",
+      "symbol": "zg_render_state_dirty"
+    },
+    {
+      "name": "rowDirty",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "y",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "receiver": "RenderState",
+      "return": {
+        "kind": "bool"
+      },
+      "zig_path": "renderRowDirty",
+      "symbol": "zg_render_state_row_dirty"
+    },
+    {
+      "name": "dirtyRows",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "out",
+          "name": "dst",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "const": false,
+            "element": {
+              "bits": 16,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          },
+          "written": "return"
+        }
+      ],
+      "receiver": "RenderState",
+      "return": {
+        "error_set": [
+          "NoSpaceLeft"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "bits": 64,
+          "is_usize": true,
+          "kind": "int",
+          "signed": false
+        }
+      },
+      "zig_path": "renderDirtyRows",
+      "symbol": "zg_render_state_dirty_rows"
+    },
+    {
+      "name": "rowCells",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "y",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "out",
+          "name": "dst",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "const": false,
+            "element": {
+              "kind": "value_struct",
+              "ref": "RenderCell"
+            },
+            "kind": "slice"
+          },
+          "written": "return"
+        }
+      ],
+      "receiver": "RenderState",
+      "return": {
+        "error_set": [
+          "NoSpaceLeft"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "bits": 64,
+          "is_usize": true,
+          "kind": "int",
+          "signed": false
+        }
+      },
+      "zig_path": "renderRowCells",
+      "symbol": "zg_render_state_row_cells"
+    },
+    {
+      "covers": [
+        "RenderState.clean"
+      ],
+      "name": "clean",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "RenderState",
+      "return": {
+        "kind": "void"
+      },
+      "zig_path": "renderClean",
+      "symbol": "zg_render_state_clean"
+    },
+    {
+      "name": "cleanRow",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "y",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "receiver": "RenderState",
+      "return": {
+        "kind": "void"
+      },
+      "zig_path": "renderCleanRow",
+      "symbol": "zg_render_state_clean_row"
+    },
+    {
       "name": "graphemes",
       "ownership": "borrowed",
       "params": [
@@ -5343,7 +5503,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1769,
+            "line": 1831,
             "column": 23
           },
           "type": {
@@ -5365,7 +5525,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1769,
+        "line": 1831,
         "column": 8
       },
       "symbol": "zg_new_kitty_images"
@@ -5381,7 +5541,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1775,
+            "line": 1837,
             "column": 44
           },
           "type": {
@@ -5395,7 +5555,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1775,
+        "line": 1837,
         "column": 8
       },
       "zig_path": "freeKittyImages",
@@ -5539,7 +5699,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1931,
+            "line": 1993,
             "column": 36
           },
           "type": {
@@ -5560,7 +5720,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1931,
+        "line": 1993,
         "column": 8
       },
       "zig_path": "kittyImage",
@@ -5577,7 +5737,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1950,
+            "line": 2012,
             "column": 40
           },
           "type": {
@@ -5593,7 +5753,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1950,
+            "line": 2012,
             "column": 55
           },
           "type": {
@@ -5624,7 +5784,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1950,
+        "line": 2012,
         "column": 8
       },
       "zig_path": "kittyImageData",
@@ -8430,6 +8590,32 @@
         "signed": false
       },
       "zig_path": "terminal.page.Cell.Wide"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "name": "clean",
+          "value": 0
+        },
+        {
+          "name": "partial",
+          "value": 1
+        },
+        {
+          "name": "full",
+          "value": 2
+        }
+      ],
+      "kind": "enum",
+      "name": "RenderDirty",
+      "tag_type": {
+        "bits": 8,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "zig_path": "root.RenderDirty"
     },
     {
       "exhaustive": true,

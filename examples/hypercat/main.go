@@ -100,6 +100,15 @@ type game struct {
 	// cells so the highlight never lags the text under it.
 	matchCells []bool
 
+	// Partial redraw. The grid is drawn into two layers, backgrounds and
+	// glyphs, so Kitty images can sit between them; a row is redrawn only
+	// when the render state says it changed, or when something drawn from
+	// this side -- theme, font, match highlight -- did.
+	bgLayer, textLayer *ebiten.Image
+	rowDirty           []bool
+	dirtyRows          []uint16
+	redrawAll          bool
+
 	// The process side.
 	ptmx   *os.File
 	output chan []byte
@@ -457,9 +466,13 @@ func (g *game) refresh() error {
 	if err := g.refreshMatches(); err != nil {
 		return err
 	}
+	if err := g.refreshDirty(); err != nil {
+		return err
+	}
 	if err := g.refreshImages(); err != nil {
 		return err
 	}
+	prevBg, prevFg := g.bg, g.fg
 	bg, err := g.state.Background()
 	if err != nil {
 		return err
@@ -476,7 +489,38 @@ func (g *game) refresh() error {
 	} else {
 		g.bg, g.fg = theme.background, theme.foreground
 	}
+	if g.bg != prevBg || g.fg != prevFg {
+		g.redrawAll = true
+	}
 	return g.refreshCursor()
+}
+
+// refreshDirty takes the render state's dirty rows into the redraw set and
+// marks the state clean, so the next Update reports only what changes from
+// here. Full dirt -- colors or size changed -- redraws every row.
+func (g *game) refreshDirty() error {
+	if len(g.rowDirty) != g.rows {
+		g.rowDirty = make([]bool, g.rows)
+		g.dirtyRows = make([]uint16, g.rows)
+		g.redrawAll = true
+	}
+	dirty, err := g.state.Dirty()
+	if err != nil {
+		return err
+	}
+	if dirty == gostty.RenderDirtyFull {
+		g.redrawAll = true
+	}
+	n, err := g.state.DirtyRows(g.dirtyRows)
+	if err != nil {
+		return err
+	}
+	for _, y := range g.dirtyRows[:n] {
+		if int(y) < len(g.rowDirty) {
+			g.rowDirty[y] = true
+		}
+	}
+	return g.state.Clean()
 }
 
 // refreshCursor reads the cursor out of the render state, so Draw does not have

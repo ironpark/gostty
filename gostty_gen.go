@@ -2724,6 +2724,104 @@ func (r *RenderState) CursorStyle() (CursorStyle, error) {
 	return CursorStyle(result), nil
 }
 
+// Dirty calls the Zig function RenderState.dirty.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (r *RenderState) Dirty() (RenderDirty, error) {
+	ptr, err := zigoCheckedPointer("RenderState.Dirty receiver", r)
+	if err != nil {
+		return 0, err
+	}
+	defer r.zigoRelease()
+	result, code := raw.RenderStateDirty(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Dirty", code), r)
+	}
+	return RenderDirty(result), nil
+}
+
+// RowDirty calls the Zig function RenderState.rowDirty.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (r *RenderState) RowDirty(y uint16) (bool, error) {
+	ptr, err := zigoCheckedPointer("RenderState.RowDirty receiver", r)
+	if err != nil {
+		return false, err
+	}
+	defer r.zigoRelease()
+	result, code := raw.RenderStateRowDirty(ptr, y)
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.RowDirty", code), r)
+	}
+	return result != 0, nil
+}
+
+// DirtyRows calls the Zig function RenderState.dirtyRows.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (r *RenderState) DirtyRows(dst []uint16) (uint, error) {
+	ptr, err := zigoCheckedPointer("RenderState.DirtyRows receiver", r)
+	if err != nil {
+		return 0, err
+	}
+	defer r.zigoRelease()
+	result, code := raw.RenderStateDirtyRows(ptr, dst)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.DirtyRows", code), r)
+	}
+	return result, nil
+}
+
+// RowCells calls the Zig function RenderState.rowCells.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (r *RenderState) RowCells(y uint16, dst []RenderCell) (uint, error) {
+	ptr, err := zigoCheckedPointer("RenderState.RowCells receiver", r)
+	if err != nil {
+		return 0, err
+	}
+	defer r.zigoRelease()
+	dstRaw := make([]raw.RenderCellData, len(dst))
+	result, code := raw.RenderStateRowCells(ptr, y, dstRaw)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.RowCells", code), r)
+	}
+	zigoRenderCellSliceCopyFromRaw(dst, dstRaw, int(result))
+	return result, nil
+}
+
+// Clean calls the Zig function RenderState.clean.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (r *RenderState) Clean() error {
+	ptr, err := zigoCheckedPointer("RenderState.Clean receiver", r)
+	if err != nil {
+		return err
+	}
+	defer r.zigoRelease()
+	code := raw.RenderStateClean(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Clean", code), r)
+	}
+	return nil
+}
+
+// CleanRow calls the Zig function RenderState.cleanRow.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (r *RenderState) CleanRow(y uint16) error {
+	ptr, err := zigoCheckedPointer("RenderState.CleanRow receiver", r)
+	if err != nil {
+		return err
+	}
+	defer r.zigoRelease()
+	code := raw.RenderStateCleanRow(ptr, y)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("RenderState.CleanRow", code), r)
+	}
+	return nil
+}
+
 // Graphemes calls the Zig function RenderState.graphemes.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -27,43 +28,87 @@ func glyphString(r rune) string {
 }
 
 func (g *game) Draw(screen *ebiten.Image) {
+	g.drawGrid()
 	screen.Fill(g.bg)
 	if g.bell > 0 {
 		// A visual bell: the GUI answer to \a.
 		g.bell--
 		screen.Fill(color.RGBA{R: 0x55, G: 0x55, B: 0x55, A: 0xff})
 	}
-	g.drawBackgrounds(screen)
+	if g.bgLayer != nil {
+		screen.DrawImage(g.bgLayer, nil)
+	}
 	// A placement's z decides whether it goes under the text or over it, which
 	// is the whole reason the protocol has one.
 	g.drawImages(screen, true)
-	g.drawGlyphs(screen)
+	if g.textLayer != nil {
+		screen.DrawImage(g.textLayer, nil)
+	}
 	g.drawImages(screen, false)
 	g.drawCursor(screen)
 	g.drawCat(screen)
 	g.drawUI(screen)
 }
 
-// drawBackgrounds fills the cells whose background is not the default, in runs.
-// A row is usually one colour, so filling per cell would be a few thousand
-// draws a frame to say what a few dozen say.
-func (g *game) drawBackgrounds(screen *ebiten.Image) {
-	for row := 0; row < g.rows; row++ {
-		line := g.cells[row*g.cols : (row+1)*g.cols]
-		for start := 0; start < len(line); {
-			bg := g.cellBackgroundAt(row*g.cols + start)
-			end := start + 1
-			for end < len(line) && g.cellBackgroundAt(row*g.cols+end) == bg {
-				end++
-			}
-			if bg != g.bg {
-				vector.DrawFilledRect(screen,
-					float32(float64(start)*g.fonts.cellW), float32(float64(row)*g.fonts.cellH),
-					float32(float64(end-start)*g.fonts.cellW), float32(g.fonts.cellH),
-					bg, false)
-			}
-			start = end
+// drawGrid brings the two grid layers up to date, redrawing only the rows
+// marked dirty since the last frame. Cells with the default background stay
+// transparent so the fill and the bell show through.
+func (g *game) drawGrid() {
+	if g.cols == 0 || g.rows == 0 || len(g.cells) < g.rows*g.cols {
+		return
+	}
+	w := int(float64(g.cols)*g.fonts.cellW) + 1
+	h := int(float64(g.rows)*g.fonts.cellH) + 1
+	if g.bgLayer == nil || g.bgLayer.Bounds().Dx() != w || g.bgLayer.Bounds().Dy() != h {
+		g.bgLayer = ebiten.NewImage(w, h)
+		g.textLayer = ebiten.NewImage(w, h)
+		g.redrawAll = true
+	}
+	if g.redrawAll {
+		g.bgLayer.Clear()
+		g.textLayer.Clear()
+		for row := 0; row < g.rows; row++ {
+			g.drawRow(row)
 		}
+		g.redrawAll = false
+		clear(g.rowDirty)
+		return
+	}
+	for row, dirty := range g.rowDirty {
+		if !dirty || row >= g.rows {
+			continue
+		}
+		rect := image.Rect(0, int(float64(row)*g.fonts.cellH), w, int(float64(row+1)*g.fonts.cellH)+1)
+		g.bgLayer.SubImage(rect).(*ebiten.Image).Clear()
+		g.textLayer.SubImage(rect).(*ebiten.Image).Clear()
+		g.drawRow(row)
+		g.rowDirty[row] = false
+	}
+}
+
+func (g *game) drawRow(row int) {
+	g.drawRowBackground(g.bgLayer, row)
+	g.drawRowGlyphs(g.textLayer, row)
+}
+
+// drawRowBackground fills the cells whose background is not the default, in
+// runs. A row is usually one colour, so filling per cell would be a few
+// thousand draws a frame to say what a few dozen say.
+func (g *game) drawRowBackground(dst *ebiten.Image, row int) {
+	line := g.cells[row*g.cols : (row+1)*g.cols]
+	for start := 0; start < len(line); {
+		bg := g.cellBackgroundAt(row*g.cols + start)
+		end := start + 1
+		for end < len(line) && g.cellBackgroundAt(row*g.cols+end) == bg {
+			end++
+		}
+		if bg != g.bg {
+			vector.DrawFilledRect(dst,
+				float32(float64(start)*g.fonts.cellW), float32(float64(row)*g.fonts.cellH),
+				float32(float64(end-start)*g.fonts.cellW), float32(g.fonts.cellH),
+				bg, false)
+		}
+		start = end
 	}
 }
 
@@ -85,8 +130,9 @@ func (g *game) cellBackgroundAt(i int) color.RGBA {
 	return g.cellBackground(g.cells[i])
 }
 
-func (g *game) drawGlyphs(screen *ebiten.Image) {
-	for i, cell := range g.cells {
+func (g *game) drawRowGlyphs(dst *ebiten.Image, row int) {
+	for col := 0; col < g.cols; col++ {
+		cell := g.cells[row*g.cols+col]
 		flags := cell.Flags
 		// The tail of a wide character is drawn by the head, and the head of a
 		// soft-wrap is not drawn at all.
@@ -106,16 +152,16 @@ func (g *game) drawGlyphs(screen *ebiten.Image) {
 		}
 
 		wide := flags.Wide == gostty.CellWidthWide
-		x := float64(i%g.cols) * g.fonts.cellW
-		y := float64(i/g.cols) * g.fonts.cellH
-		g.glyph(screen, cell.Codepoint, x, y, wide, flags.Bold, flags.Italic, fg)
+		x := float64(col) * g.fonts.cellW
+		y := float64(row) * g.fonts.cellH
+		g.glyph(dst, cell.Codepoint, x, y, wide, flags.Bold, flags.Italic, fg)
 
 		if flags.Underline != gostty.UnderlineNone || flags.Strikethrough || flags.Overline {
 			width := g.fonts.cellW
 			if wide {
 				width *= 2
 			}
-			g.decorate(screen, flags, x, y, width, fg)
+			g.decorate(dst, flags, x, y, width, fg)
 		}
 	}
 }

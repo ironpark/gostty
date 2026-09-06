@@ -1486,59 +1486,121 @@ pub fn renderCells(self: *RenderState, dst: []RenderCell) !usize {
     const width: usize = self.cols;
     const total = @as(usize, self.rows) * width;
     if (dst.len < total) return error.NoSpaceLeft;
+    for (0..self.rows) |y| fillRow(self, y, dst[y * width .. (y + 1) * width]);
+    return total;
+}
 
+/// Flatten one viewport row into `dst` and report how many cells were
+/// written: `cols`, or zero for a row off the grid. For a renderer that
+/// redraws only the rows `renderDirtyRows` names.
+pub fn renderRowCells(self: *RenderState, y: u16, dst: []RenderCell) !usize {
+    if (y >= self.rows) return 0;
+    const width: usize = self.cols;
+    if (dst.len < width) return error.NoSpaceLeft;
+    fillRow(self, y, dst[0..width]);
+    return width;
+}
+
+fn fillRow(self: *RenderState, y: usize, dst: []RenderCell) void {
     const fg_default = packRgb(self.colors.foreground);
     const bg_default = packRgb(self.colors.background);
+    const row = self.row_data.items(.cells)[y];
+    const sel = self.row_data.items(.selection)[y];
+    const raw = row.items(.raw);
+    const styles = row.items(.style);
+    for (raw, styles, 0..) |cell, style, x| {
+        if (x >= dst.len) break;
+        const out = &dst[x];
+        out.* = .{
+            .codepoint = 0,
+            .fg = fg_default,
+            .bg = bg_default,
+            .flags = .{ .wide = cell.wide },
+        };
 
-    const row_cells = self.row_data.items(.cells);
-    const row_sels = self.row_data.items(.selection);
-    for (row_cells, row_sels, 0..) |row, sel, y| {
-        if (y >= self.rows) break;
-        const raw = row.items(.raw);
-        const styles = row.items(.style);
-        for (raw, styles, 0..) |cell, style, x| {
-            if (x >= width) break;
-            const out = &dst[y * width + x];
-            out.* = .{
-                .codepoint = 0,
-                .fg = fg_default,
-                .bg = bg_default,
-                .flags = .{ .wide = cell.wide },
-            };
+        switch (cell.content_tag) {
+            .codepoint, .codepoint_grapheme => out.codepoint = cell.content.codepoint.data,
+            // A cell with no text but a background color; the color is in
+            // the cell itself rather than the style map.
+            .bg_color_palette => out.bg = packRgb(self.colors.palette[cell.content.color_palette.data]),
+            .bg_color_rgb => out.bg = packRgb(.{
+                .r = cell.content.color_rgb.r,
+                .g = cell.content.color_rgb.g,
+                .b = cell.content.color_rgb.b,
+            }),
+        }
 
-            switch (cell.content_tag) {
-                .codepoint, .codepoint_grapheme => out.codepoint = cell.content.codepoint.data,
-                // A cell with no text but a background color; the color is in
-                // the cell itself rather than the style map.
-                .bg_color_palette => out.bg = packRgb(self.colors.palette[cell.content.color_palette.data]),
-                .bg_color_rgb => out.bg = packRgb(.{
-                    .r = cell.content.color_rgb.r,
-                    .g = cell.content.color_rgb.g,
-                    .b = cell.content.color_rgb.b,
-                }),
+        if (sel) |range| {
+            if (x >= range[0] and x <= range[1]) {
+                out.flags.selected = true;
             }
+        }
 
-            // `style` is only meaningful when the cell carries a style id;
-            // the default-styled cells keep the defaults filled in above.
-            if (sel) |range| {
-                if (x >= range[0] and x <= range[1]) {
-                    out.flags.selected = true;
-                }
-            }
-
-            if (cell.style_id != 0) {
-                if (resolveColor(self, style.fg_color)) |c| out.fg = c;
-                if (resolveColor(self, style.bg_color)) |c| out.bg = c;
-                out.flags = mergeFlags(out.flags, style.flags);
-                if (style.flags.inverse) {
-                    const tmp = out.fg;
-                    out.fg = out.bg;
-                    out.bg = tmp;
-                }
+        // `style` is only meaningful when the cell carries a style id;
+        // the default-styled cells keep the defaults filled in above.
+        if (cell.style_id != 0) {
+            if (resolveColor(self, style.fg_color)) |c| out.fg = c;
+            if (resolveColor(self, style.bg_color)) |c| out.bg = c;
+            out.flags = mergeFlags(out.flags, style.flags);
+            if (style.flags.inverse) {
+                const tmp = out.fg;
+                out.fg = out.bg;
+                out.bg = tmp;
             }
         }
     }
-    return total;
+}
+
+/// How much of the render state changed since it was last cleaned.
+pub const RenderDirty = enum(u8) {
+    /// Nothing: a renderer can skip the frame.
+    clean,
+    /// Some rows; `renderDirtyRows` names them.
+    partial,
+    /// Everything: colors or dimensions changed, so every row needs drawing.
+    full,
+};
+
+/// What changed since `renderClean`. `renderUpdate` raises this; nothing
+/// lowers it but `renderClean` and `renderCleanRow`.
+pub fn renderDirty(self: *RenderState) RenderDirty {
+    return switch (self.dirty) {
+        .false => .clean,
+        .partial => .partial,
+        .full => .full,
+    };
+}
+
+/// Whether viewport row `y` changed since it was last cleaned.
+pub fn renderRowDirty(self: *RenderState, y: u16) bool {
+    if (y >= self.rows) return false;
+    return self.row_data.items(.dirty)[y];
+}
+
+/// Write the indexes of the dirty viewport rows into `dst`, top to bottom,
+/// and report how many there are. `error.NoSpaceLeft` if `dst` is shorter
+/// than that; size it to `rows`.
+pub fn renderDirtyRows(self: *RenderState, dst: []u16) !usize {
+    var n: usize = 0;
+    for (self.row_data.items(.dirty)[0..self.rows], 0..) |dirty, y| {
+        if (!dirty) continue;
+        if (n >= dst.len) return error.NoSpaceLeft;
+        dst[n] = @intCast(y);
+        n += 1;
+    }
+    return n;
+}
+
+/// Mark everything drawn: clears the frame state and every row flag.
+pub fn renderClean(self: *RenderState) void {
+    self.clean();
+}
+
+/// Mark one row drawn. The frame state stays as it was, so a renderer that
+/// consumes rows one at a time calls `renderClean` once it has them all.
+pub fn renderCleanRow(self: *RenderState, y: u16) void {
+    if (y >= self.rows) return;
+    self.row_data.items(.dirty)[y] = false;
 }
 
 /// The codepoints of the cell at viewport `x`, `y`: the base codepoint

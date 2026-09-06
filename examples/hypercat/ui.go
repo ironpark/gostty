@@ -190,8 +190,10 @@ func (g *game) runSearch() error {
 // refreshMatches marks the viewport cells covered by a search match. Matches
 // are in screen coordinates; the viewport's top row turns them into cells.
 func (g *game) refreshMatches() error {
-	g.matchCells = g.matchCells[:0]
 	if g.ui.search == nil || g.ui.matches == 0 {
+		prev := g.matchCells
+		g.matchCells = g.matchCells[:0]
+		g.markMatchChanges(prev)
 		return nil
 	}
 	screen, err := g.vt.ActiveScreen()
@@ -207,11 +209,13 @@ func (g *game) refreshMatches() error {
 	if err != nil {
 		return err
 	}
+	prev := append([]bool(nil), g.matchCells...)
 	if cap(g.matchCells) < len(g.cells) {
 		g.matchCells = make([]bool, len(g.cells))
 	}
 	g.matchCells = g.matchCells[:len(g.cells)]
 	clear(g.matchCells)
+	defer g.markMatchChanges(prev)
 	for _, m := range matches[:n] {
 		if m.StartY < top || m.EndY >= top+uint32(g.rows) || m.StartY > m.EndY {
 			continue
@@ -231,6 +235,26 @@ func (g *game) refreshMatches() error {
 		}
 	}
 	return nil
+}
+
+// markMatchChanges redraws the rows whose highlight differs from the last
+// frame. The highlight is drawn here, not by the terminal, so the render
+// state's own dirty flags do not know about it.
+func (g *game) markMatchChanges(prev []bool) {
+	for i := range g.matchCells {
+		was := i < len(prev) && prev[i]
+		if was != g.matchCells[i] && g.cols > 0 {
+			row := i / g.cols
+			if row < len(g.rowDirty) {
+				g.rowDirty[row] = true
+			}
+		}
+	}
+	for i := len(g.matchCells); i < len(prev); i++ {
+		if prev[i] && g.cols > 0 && i/g.cols < len(g.rowDirty) {
+			g.rowDirty[i/g.cols] = true
+		}
+	}
 }
 
 // moveMatch steps to the next or previous match. The binding puts it in the
@@ -273,6 +297,7 @@ func (g *game) settingsAdjust(delta int) error {
 		return g.setFont(next, g.ui.size)
 	case settingsRowTheme:
 		g.ui.theme = (g.ui.theme + delta + len(themes)) % len(themes)
+		g.redrawAll = true
 		return nil
 	case settingsRowCat:
 		if g.cat == nil {
@@ -324,6 +349,7 @@ func (g *game) setFont(family int, size float64) error {
 // scale factor. This is also called when the window moves to a display with a
 // different one.
 func (g *game) applyFont() {
+	g.redrawAll = true
 	var family *fontFamily
 	if len(g.ui.families) > 0 {
 		family = g.ui.families[min(g.ui.family, len(g.ui.families)-1)]

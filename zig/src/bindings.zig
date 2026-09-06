@@ -108,6 +108,7 @@ pub const bindings = zigo.define(.{
         // one u32.
         .{ .type = gostty.CellFlags, .repr = .value, .name = "CellFlags" },
         .{ .type = gostty.CellWidth, .repr = .enumeration, .name = "CellWidth" },
+        .{ .type = gostty.RenderDirty, .repr = .enumeration, .name = "RenderDirty" },
         .{ .type = gostty.KittyImages, .repr = .@"opaque", .name = "KittyImages" },
         .{ .type = gostty.KittyPlacement, .repr = .value, .name = "KittyPlacement" },
         .{ .type = gostty.KittyImage, .repr = .value, .name = "KittyImage" },
@@ -377,6 +378,22 @@ pub const bindings = zigo.define(.{
                 "root.renderCursorY",
                 "root.renderCursorVisible",
                 "root.renderCursorStyle",
+                // Partial redraw: which rows changed, one row's cells, and
+                // marking them drawn.
+                "root.renderDirty",
+                .{ .path = "root.renderRowDirty", .params = .{"y"} },
+                .{
+                    .path = "root.renderDirtyRows",
+                    .params = .{"dst"},
+                    .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
+                },
+                .{
+                    .path = "root.renderRowCells",
+                    .params = .{ "y", "dst" },
+                    .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
+                },
+                .{ .path = "root.renderClean", .covers = "RenderState.clean" },
+                .{ .path = "root.renderCleanRow", .params = .{"y"} },
                 .{
                     .path = "root.renderGraphemes",
                     .params = .{ "x", "y", "dst" },

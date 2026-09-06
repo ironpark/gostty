@@ -1542,6 +1542,32 @@ func (value CellWidth) String() string {
 	}
 }
 
+// RenderDirty represents the corresponding Zig enum.
+type RenderDirty uint8
+
+const (
+	// RenderDirtyClean corresponds to the Zig tag clean.
+	RenderDirtyClean RenderDirty = 0
+	// RenderDirtyPartial corresponds to the Zig tag partial.
+	RenderDirtyPartial RenderDirty = 1
+	// RenderDirtyFull corresponds to the Zig tag full.
+	RenderDirtyFull RenderDirty = 2
+)
+
+// String returns the Zig tag name.
+func (value RenderDirty) String() string {
+	switch value {
+	case RenderDirtyClean:
+		return "clean"
+	case RenderDirtyPartial:
+		return "partial"
+	case RenderDirtyFull:
+		return "full"
+	default:
+		return "RenderDirty(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
 // KittyFormat represents the corresponding Zig enum.
 type KittyFormat uint8
 

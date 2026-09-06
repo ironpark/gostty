@@ -376,3 +376,69 @@ func TestRenderStateFollowsViewport(t *testing.T) {
 		t.Errorf("top row after scrolling back to the bottom = %q, want %q", got, "four")
 	}
 }
+
+// Dirty tracking: Update raises the flags, Clean lowers them, and a change
+// to one row dirties that row alone.
+func TestRenderDirtyRows(t *testing.T) {
+	term, stream := newStreamPair(t, 10, 4)
+	feed(t, stream, "one\r\ntwo\r\nthree")
+	state, err := NewRenderState()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer state.Close()
+	if err := state.Update(term); err != nil {
+		t.Fatal(err)
+	}
+	if d, _ := state.Dirty(); d != RenderDirtyFull {
+		t.Errorf("first Update Dirty() = %v, want full", d)
+	}
+	if err := state.Clean(); err != nil {
+		t.Fatal(err)
+	}
+	if d, _ := state.Dirty(); d != RenderDirtyClean {
+		t.Errorf("after Clean Dirty() = %v", d)
+	}
+
+	feed(t, stream, "\x1b[2;1HTWO")
+	if err := state.Update(term); err != nil {
+		t.Fatal(err)
+	}
+	if d, _ := state.Dirty(); d != RenderDirtyPartial {
+		t.Errorf("Dirty() after one row changed = %v, want partial", d)
+	}
+	// Row 1 changed, and row 2 lost the cursor, which ghostty also counts.
+	rows := make([]uint16, 4)
+	n, err := state.DirtyRows(rows)
+	if err != nil || n != 2 || rows[0] != 1 || rows[1] != 2 {
+		t.Errorf("DirtyRows() = %v %v, %v; want [1 2]", n, rows[:n], err)
+	}
+	if dirty, _ := state.RowDirty(1); !dirty {
+		t.Error("RowDirty(1) = false")
+	}
+	if dirty, _ := state.RowDirty(0); dirty {
+		t.Error("RowDirty(0) = true")
+	}
+	cells := make([]RenderCell, 10)
+	if n, err := state.RowCells(1, cells); err != nil || n != 10 || cells[0].Codepoint != 'T' {
+		t.Errorf("RowCells(1) = %v, %v, first %q", n, err, cells[0].Codepoint)
+	}
+	if n, err := state.RowCells(9, cells); err != nil || n != 0 {
+		t.Errorf("RowCells off grid = %v, %v", n, err)
+	}
+	if _, err := state.RowCells(1, cells[:3]); err == nil {
+		t.Error("RowCells with a short buffer returned no error")
+	}
+	if err := state.CleanRow(1); err != nil {
+		t.Fatal(err)
+	}
+	if n, _ := state.DirtyRows(rows); n != 1 || rows[0] != 2 {
+		t.Errorf("DirtyRows after CleanRow(1) = %v %v; want [2]", n, rows[:n])
+	}
+	if err := state.Clean(); err != nil {
+		t.Fatal(err)
+	}
+	if n, _ := state.DirtyRows(rows); n != 0 {
+		t.Errorf("DirtyRows after Clean = %d", n)
+	}
+}
