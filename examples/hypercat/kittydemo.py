@@ -22,13 +22,17 @@ the tail of it back ("Gi=1;OK") as if it had been typed. --reply turns the
 suppression off, which is the way to see that replies work at all.
 
 The image is generated rather than read from a file because the pixels go over
-the wire raw (f=24/f=32). PNG (f=100) is not sent: libghostty-vt ships library
-builds with no PNG decoder, so the terminal rejects it. See the example README.
+the wire raw (f=24/f=32). --png wraps the same pixels in a PNG (f=100), which
+library builds of libghostty-vt cannot decode on their own: HyperCat installs
+Go's image/png through gostty/sys at startup, and a terminal without a decoder
+rejects the transmission. See the example README.
 """
 
 import argparse
 import base64
+import struct
 import sys
+import zlib
 
 # The protocol wants the payload split into chunks of at most 4096 base64
 # characters, each carrying m=1 until the last, which carries m=0.
@@ -70,6 +74,21 @@ def gradient(width: int, height: int, alpha: bool) -> bytes:
     return bytes(out)
 
 
+def png_encode(width: int, height: int, pixels: bytes, alpha: bool) -> bytes:
+    """Wrap raw RGB/RGBA rows in a PNG: one IDAT, no filtering, no palette."""
+    stride = width * (4 if alpha else 3)
+    raw = b"".join(b"\x00" + pixels[y * stride:(y + 1) * stride]
+                   for y in range(height))
+
+    def chunk(kind: bytes, body: bytes) -> bytes:
+        return (struct.pack(">I", len(body)) + kind + body
+                + struct.pack(">I", zlib.crc32(kind + body) & 0xFFFFFFFF))
+
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 6 if alpha else 2, 0, 0, 0)
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr)
+            + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -78,6 +97,8 @@ def main() -> int:
     ap.add_argument("--cells", metavar="COLSxROWS",
                     help="scale the image into this many cells")
     ap.add_argument("--rgba", action="store_true", help="send RGBA instead of RGB")
+    ap.add_argument("--png", action="store_true",
+                    help="send the image as a PNG (f=100) instead of raw samples")
     ap.add_argument("--id", type=int, default=1, help="image id (default 1)")
     ap.add_argument("--z", type=int, help="stacking order; negative is behind the text")
     ap.add_argument("--query", action="store_true",
@@ -105,12 +126,18 @@ def main() -> int:
         cols, rows = (int(v) for v in args.cells.lower().split("x"))
 
     width, height = (int(v) for v in args.size.lower().split("x"))
-    # The raw formats carry no dimensions of their own, so the command does:
-    # f=24 is RGB, f=32 is RGBA, s and v are the width and height.
-    emit(gradient(width, height, args.rgba),
-         a="T", f=32 if args.rgba else 24, s=width, v=height, t="d",
-         i=args.id, c=cols, r=rows, z=args.z,
-         q=None if args.reply else 2)
+    pixels = gradient(width, height, args.rgba)
+    if args.png:
+        # A PNG carries its own dimensions, so s and v are left out.
+        emit(png_encode(width, height, pixels, args.rgba),
+             a="T", f=100, t="d", i=args.id, c=cols, r=rows, z=args.z,
+             q=None if args.reply else 2)
+    else:
+        # The raw formats carry no dimensions of their own, so the command
+        # does: f=24 is RGB, f=32 is RGBA, s and v are the width and height.
+        emit(pixels, a="T", f=32 if args.rgba else 24, s=width, v=height, t="d",
+             i=args.id, c=cols, r=rows, z=args.z,
+             q=None if args.reply else 2)
 
     sys.stdout.flush()
     # The image is drawn at the cursor and the cursor does not move, so leave

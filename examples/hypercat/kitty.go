@@ -4,11 +4,29 @@ import (
 	"bytes"
 	"fmt"
 	"image"
+	"image/draw"
 	"image/png"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/ironpark/gostty"
+	"github.com/ironpark/gostty/sys"
 )
+
+// decodePNG answers ghostty's request to decode a PNG transmission. The bytes
+// are read off the pending request, and the reply is copied by the terminal,
+// so nothing here outlives the call.
+func decodePNG(n uint) {
+	data := make([]byte, n)
+	sys.PngRequestData(data)
+	decoded, err := png.Decode(bytes.NewReader(data))
+	if err != nil {
+		return // no reply: the transmission fails, as it would without a decoder
+	}
+	b := decoded.Bounds()
+	rgba := image.NewNRGBA(b)
+	draw.Draw(rgba, b, decoded, b.Min, draw.Src)
+	_ = sys.ReplyPngImage(uint32(b.Dx()), uint32(b.Dy()), rgba.Pix)
+}
 
 // The Kitty graphics protocol: programs transmit images over the pty and say
 // where to put them, and the terminal draws them over the grid.
@@ -108,15 +126,10 @@ func (g *game) decodeImage(id uint32, info gostty.KittyImage) (*ebiten.Image, er
 	}
 	data := g.imageBuf[:n]
 
-	// The bytes are as the program sent them, so the format says how to read
-	// them. Only PNG needs a decoder; the rest are raw samples.
+	// The bytes are raw samples in the format ghostty stored them in. A PNG
+	// never gets here: the decoder installed at startup (`decodePNG`) turns
+	// it into RGBA as it arrives.
 	switch info.Format {
-	case gostty.KittyFormatPng:
-		decoded, err := png.Decode(bytes.NewReader(data))
-		if err != nil {
-			return nil, err
-		}
-		return ebiten.NewImageFromImage(decoded), nil
 	case gostty.KittyFormatRgb, gostty.KittyFormatRgba, gostty.KittyFormatGray, gostty.KittyFormatGrayAlpha:
 		rgba, err := rawToRGBA(data, info)
 		if err != nil {

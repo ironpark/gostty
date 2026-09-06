@@ -286,6 +286,12 @@ var ErrPageSizeOverflow = &Error{Code: 76, Name: "PageSizeOverflow"}
 // ErrTerminalTaken represents Zig error.TerminalTaken.
 var ErrTerminalTaken = &Error{Code: 77, Name: "TerminalTaken"}
 
+// ErrNoPendingRequest represents Zig error.NoPendingRequest.
+var ErrNoPendingRequest = &Error{Code: 78, Name: "NoPendingRequest"}
+
+// ErrSizeMismatch represents Zig error.SizeMismatch.
+var ErrSizeMismatch = &Error{Code: 79, Name: "SizeMismatch"}
+
 func zigoErrorForCode(operation string, code int32) error {
 	if code <= -256 {
 		return &NativePanicError{Operation: operation, Message: raw.PanicMessage(code)}
@@ -445,6 +451,10 @@ func zigoErrorForCode(operation string, code int32) error {
 		return &Error{Code: 76, Name: "PageSizeOverflow", Operation: operation}
 	case 77:
 		return &Error{Code: 77, Name: "TerminalTaken", Operation: operation}
+	case 78:
+		return &Error{Code: 78, Name: "NoPendingRequest", Operation: operation}
+	case 79:
+		return &Error{Code: 79, Name: "SizeMismatch", Operation: operation}
 	default:
 		return &Error{Code: code, Name: "Unknown(" + strconv.Itoa(int(code)) + ")", Operation: operation}
 	}

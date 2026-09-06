@@ -211,6 +211,30 @@ func zg_stream_on_clipboard_read_request_go_callback_callback(p0 C.size_t) {
 	callback()
 }
 
+//export zg_sys_on_png_decode_request_go_callback_callback
+func zg_sys_on_png_decode_request_go_callback_callback(p0 C.size_t, p1 C.size_t) {
+	state := cgo.Handle(p1).Value().(*CallbackState)
+	defer func() {
+		if value := recover(); value != nil {
+			state.record(value)
+		}
+	}()
+	callback := state.Fn.(func(uint))
+	callback(uint(p0))
+}
+
+//export zg_sys_on_secure_random_request_go_callback_callback
+func zg_sys_on_secure_random_request_go_callback_callback(p0 C.size_t, p1 C.size_t) {
+	state := cgo.Handle(p1).Value().(*CallbackState)
+	defer func() {
+		if value := recover(); value != nil {
+			state.record(value)
+		}
+	}()
+	callback := state.Fn.(func(uint))
+	callback(uint(p0))
+}
+
 // TerminalCols calls the generated C ABI wrapper for zg_terminal_cols.
 func TerminalCols(self unsafe.Pointer) (uint16, int32) {
 	var outResult C.uint16_t
@@ -1613,6 +1637,41 @@ func KittyImagesPlacements(self unsafe.Pointer, dst []KittyPlacementData) (uint,
 // TerminalSetKittyGraphicsSizeLimit calls the generated C ABI wrapper for zg_terminal_set_kitty_graphics_size_limit.
 func TerminalSetKittyGraphicsSizeLimit(self unsafe.Pointer, limit uint) int32 {
 	code := int32(C.zg_terminal_set_kitty_graphics_size_limit((*C.zg_terminal)(self), C.size_t(limit)))
+	return code
+}
+
+// SysOnPngDecodeRequest calls the generated C ABI wrapper for zg_sys_on_png_decode_request.
+func SysOnPngDecodeRequest(callbackHandle uintptr) {
+	C.zg_sys_on_png_decode_request(C.size_t(callbackHandle))
+}
+
+// SysPngRequestData calls the generated C ABI wrapper for zg_sys_png_request_data.
+func SysPngRequestData(dst []uint8) uint {
+	dstPtr := (*C.uint8_t)(zigoSlicePtr(dst))
+	return uint(C.zg_sys_png_request_data(dstPtr, C.size_t(len(dst))))
+}
+
+// SysReplyPngImage calls the generated C ABI wrapper for zg_sys_reply_png_image.
+func SysReplyPngImage(width uint32, height uint32, rgba []uint8) int32 {
+	rgbaPtr := (*C.uint8_t)(zigoSlicePtr(rgba))
+	code := int32(C.zg_sys_reply_png_image(C.uint32_t(width), C.uint32_t(height), rgbaPtr, C.size_t(len(rgba))))
+	return code
+}
+
+// SysOnSecureRandomRequest calls the generated C ABI wrapper for zg_sys_on_secure_random_request.
+func SysOnSecureRandomRequest(callbackHandle uintptr) {
+	C.zg_sys_on_secure_random_request(C.size_t(callbackHandle))
+}
+
+// SysClear calls the generated C ABI wrapper for zg_sys_clear.
+func SysClear() {
+	C.zg_sys_clear()
+}
+
+// SysReplySecureRandom calls the generated C ABI wrapper for zg_sys_reply_secure_random.
+func SysReplySecureRandom(bytes []uint8) int32 {
+	bytesPtr := (*C.uint8_t)(zigoSlicePtr(bytes))
+	code := int32(C.zg_sys_reply_secure_random(bytesPtr, C.size_t(len(bytes))))
 	return code
 }
 

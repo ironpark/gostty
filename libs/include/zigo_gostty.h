@@ -733,6 +733,12 @@ ZIGO_EXPORT int32_t zg_kitty_images_update(zg_kitty_images * self, zg_terminal *
 ZIGO_EXPORT int32_t zg_kitty_images_placement_count(zg_kitty_images * self, size_t * out_result);
 ZIGO_EXPORT int32_t zg_kitty_images_placements(zg_kitty_images * self, zg_kitty_placement * dst_ptr, size_t dst_len, size_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_set_kitty_graphics_size_limit(zg_terminal * self, size_t limit);
+ZIGO_EXPORT void zg_sys_on_png_decode_request(size_t userdata);
+ZIGO_EXPORT size_t zg_sys_png_request_data(uint8_t * dst_ptr, size_t dst_len);
+ZIGO_EXPORT int32_t zg_sys_reply_png_image(uint32_t width, uint32_t height, const uint8_t * rgba_ptr, size_t rgba_len);
+ZIGO_EXPORT void zg_sys_on_secure_random_request(size_t userdata);
+ZIGO_EXPORT void zg_sys_clear(void);
+ZIGO_EXPORT int32_t zg_sys_reply_secure_random(const uint8_t * bytes_ptr, size_t bytes_len);
 ZIGO_EXPORT int32_t zg_terminal_kitty_image(zg_terminal * self, uint32_t image_id, uint8_t * out_result_has, zg_kitty_image * out_result);
 ZIGO_EXPORT int32_t zg_terminal_kitty_image_data(zg_terminal * self, uint32_t image_id, uint8_t * dst_ptr, size_t dst_len, size_t * out_result);
 ZIGO_EXPORT const char *zg_last_error_message(void);

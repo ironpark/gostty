@@ -69,6 +69,30 @@ var buf bytes.Buffer
 input.EncodeKey(&buf, term, ev, "") // "\x1b[A", or "\x1bOA" under DECCKM
 ```
 
+### System hooks
+
+Two things libghostty-vt cannot do on its own in a library build live in
+`github.com/ironpark/gostty/sys`: decoding PNG bytes, which a Kitty graphics
+`f=100` transmission needs and is refused without, and drawing secure entropy.
+Both are process-global and answered from inside the callback, the way a
+clipboard request is:
+
+```go
+sys.OnPngDecodeRequest(func(n uint) {
+	data := make([]byte, n)
+	sys.PngRequestData(data)
+	img, err := png.Decode(bytes.NewReader(data))
+	if err != nil {
+		return // no reply fails the transmission
+	}
+	rgba := toNRGBA(img)
+	sys.ReplyPngImage(uint32(rgba.Rect.Dx()), uint32(rgba.Rect.Dy()), rgba.Pix)
+})
+```
+
+With a decoder installed the image reaches `KittyImage` already decoded, as
+`KittyFormatRgba`.
+
 ### Clipboard
 
 Clipboard write requests cannot wait for a drain: the program blocks until they
@@ -98,6 +122,7 @@ user's clipboard, so ensure user consent before calling `ReplyClipboardText`.
 ├── gostty_*_gen.go       # Public functions, handles, enums, structs, errors
 ├── *_test.go             # The module's only hand-written Go files
 ├── input/                # Key, mouse, focus, and paste encoding package
+├── sys/                  # Process-global hooks: PNG decoder, secure entropy
 ├── internal/
 │   ├── lifecycle/        # Handle and error contract shared by cgo and purego
 │   └── raw/              # Unsupported internal cgo call layer

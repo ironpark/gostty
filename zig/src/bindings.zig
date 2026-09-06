@@ -14,6 +14,16 @@ pub const bindings = zigo.define(.{
     // gets its own package. The dependency runs one way: `input` names
     // `*Terminal`, the root package names nothing from `input`.
     .packages = .{
+        // Process-global hooks ghostty needs the embedder for. Their own
+        // package so that `sys.Clear` reads as what it is, and because a
+        // renderer that never shows images or a program that trusts the
+        // platform's entropy never needs to name them.
+        .{
+            .path = "sys",
+            .doc = "Package sys installs the process-global hooks libghostty-vt cannot provide in a library build: a PNG decoder for Kitty graphics and a secure entropy source for Kitty clipboard grants.",
+            .types = .{"Handler"},
+            .namespaces = .{"sys"},
+        },
         .{
             .path = "input",
             .doc = "Package input encodes key, mouse, focus and paste events into the bytes a program reading the pty expects.",
@@ -88,6 +98,7 @@ pub const bindings = zigo.define(.{
         .{ .name = "ClipboardLocation", .type = gostty.ClipboardLocation, .repr = .enumeration, .text = true, .exhaustive = false },
         .{ .name = "ClipboardDenial", .type = gostty.ClipboardDenial, .repr = .enumeration },
         .{ .name = "ClipboardHandler", .type = gostty.ClipboardFn, .repr = .callback },
+        .{ .name = "Handler", .type = gostty.SysFn, .repr = .callback },
         .{ .name = "Underline", .type = gostty.Underline, .repr = .enumeration },
         .{ .name = "ColorName", .type = gostty.ColorName, .repr = .enumeration, .text = true, .exhaustive = false },
         .{ .name = "Attribute", .type = gostty.Attribute, .repr = .tagged_union },
@@ -431,6 +442,36 @@ pub const bindings = zigo.define(.{
             },
         },
         .{ .path = "Terminal.setKittyGraphicsSizeLimit", .params = .{"limit"} },
+
+        // System hooks: process-global, answered from inside the callback the
+        // same way a clipboard request is. They live in a namespace so that one
+        // `clear` is the release zigo requires for the retained callbacks.
+        .{
+            .path = "root.sys.onPngDecodeRequest",
+            .params = .{ "callback", "userdata" },
+            .param_meta = .{ .callback = .{
+                .retention = .retained,
+                .reentrancy = .allowed,
+                .thread = .caller,
+            } },
+        },
+        .{
+            .path = "root.sys.pngRequestData",
+            .params = .{"dst"},
+            .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
+        },
+        .{ .path = "root.sys.replyPngImage", .params = .{ "width", "height", "rgba" } },
+        .{
+            .path = "root.sys.onSecureRandomRequest",
+            .params = .{ "callback", "userdata" },
+            .param_meta = .{ .callback = .{
+                .retention = .retained,
+                .reentrancy = .allowed,
+                .thread = .caller,
+            } },
+        },
+        .{ .path = "root.sys.clear" },
+        .{ .path = "root.sys.replySecureRandom", .params = .{"bytes"} },
         .{ .path = "root.kittyImage", .params = .{"image_id"} },
         .{
             .path = "root.kittyImageData",

@@ -28,6 +28,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/ironpark/gostty"
 	"github.com/ironpark/gostty/examples/hypercat/thecat"
+	"github.com/ironpark/gostty/sys"
 	"golang.design/x/clipboard"
 )
 
@@ -43,6 +44,12 @@ func main() {
 }
 
 func run() error {
+	// libghostty-vt has no PNG decoder of its own, so without this a Kitty
+	// `f=100` transmission is refused. With it, PNGs are decoded as they
+	// arrive and reach the renderer as RGBA like every other format.
+	sys.OnPngDecodeRequest(decodePNG)
+	defer sys.Clear()
+
 	// The families are found once, at startup: the settings panel offers this
 	// list, and one of them is what the window opens with.
 	families := discoverFonts()

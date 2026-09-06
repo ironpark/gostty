@@ -5334,7 +5334,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1714,
+            "line": 1840,
             "column": 23
           },
           "type": {
@@ -5356,7 +5356,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1714,
+        "line": 1840,
         "column": 8
       },
       "symbol": "zg_new_kitty_images"
@@ -5372,7 +5372,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1720,
+            "line": 1846,
             "column": 44
           },
           "type": {
@@ -5386,7 +5386,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1720,
+        "line": 1846,
         "column": 8
       },
       "zig_path": "freeKittyImages",
@@ -5506,6 +5506,326 @@
       "symbol": "zg_terminal_set_kitty_graphics_size_limit"
     },
     {
+      "doc": "Install the PNG decoder. Until one is installed ghostty refuses PNG\nKitty transmissions outright; with one, the image is decoded as it\narrives and reaches `kittyImage` as `rgba`. Process-global, and read\nfrom whichever thread feeds a stream, so install it at startup.",
+      "name": "onPngDecodeRequest",
+      "package": "sys",
+      "namespace": "sys",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "reentrancy": "allowed",
+          "thread": "caller",
+          "name": "callback",
+          "name_source": "sidecar",
+          "retention": "retained",
+          "source": {
+            "line": 1658,
+            "column": 31
+          },
+          "type": {
+            "c_callconv": true,
+            "has_userdata": true,
+            "kind": "callback",
+            "params": [
+              {
+                "bits": 64,
+                "is_usize": true,
+                "kind": "int",
+                "signed": false
+              },
+              {
+                "bits": 64,
+                "is_usize": true,
+                "kind": "int",
+                "signed": false
+              }
+            ],
+            "ref": "Handler",
+            "return": {
+              "kind": "void"
+            }
+          }
+        },
+        {
+          "direction": "in",
+          "name": "userdata",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 1658,
+            "column": 48
+          },
+          "type": {
+            "bits": 64,
+            "is_usize": true,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "return": {
+        "kind": "void"
+      },
+      "source": {
+        "path": "root.zig",
+        "line": 1658,
+        "column": 12
+      },
+      "symbol": "zg_sys_on_png_decode_request"
+    },
+    {
+      "doc": "Copy the PNG bytes of the pending request into `dst` and return how many\nwere written: all of them, or `dst.len` if shorter.",
+      "name": "pngRequestData",
+      "package": "sys",
+      "namespace": "sys",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "out",
+          "name": "dst",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 1666,
+            "column": 27
+          },
+          "type": {
+            "const": false,
+            "element": {
+              "bits": 8,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          },
+          "written": "return"
+        }
+      ],
+      "return": {
+        "bits": 64,
+        "is_usize": true,
+        "kind": "int",
+        "signed": false
+      },
+      "source": {
+        "path": "root.zig",
+        "line": 1666,
+        "column": 12
+      },
+      "symbol": "zg_sys_png_request_data"
+    },
+    {
+      "doc": "Answer the pending PNG request with decoded pixels, four bytes per pixel,\nrow-major. `rgba` is copied; it must be exactly `width * height * 4` bytes.",
+      "name": "replyPngImage",
+      "package": "sys",
+      "namespace": "sys",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "width",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 1674,
+            "column": 26
+          },
+          "type": {
+            "bits": 32,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "in",
+          "name": "height",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 1674,
+            "column": 38
+          },
+          "type": {
+            "bits": 32,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "in",
+          "name": "rgba",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 1674,
+            "column": 51
+          },
+          "type": {
+            "const": true,
+            "element": {
+              "bits": 8,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          }
+        }
+      ],
+      "return": {
+        "error_set": [
+          "OutOfMemory",
+          "NoPendingRequest",
+          "SizeMismatch"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "void"
+        }
+      },
+      "source": {
+        "path": "root.zig",
+        "line": 1674,
+        "column": 12
+      },
+      "symbol": "zg_sys_reply_png_image"
+    },
+    {
+      "doc": "Install the secure entropy source. ghostty uses it for secrets, so it\nmust be a real CSPRNG; on failure the operation that needed the bytes\nfails rather than falling back to weaker randomness. Without one,\nghostty draws from the platform through its own `std.Io`, so this is\nfor embedders that want to control the source.",
+      "name": "onSecureRandomRequest",
+      "package": "sys",
+      "namespace": "sys",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "reentrancy": "allowed",
+          "thread": "caller",
+          "name": "callback",
+          "name_source": "sidecar",
+          "retention": "retained",
+          "source": {
+            "line": 1691,
+            "column": 34
+          },
+          "type": {
+            "c_callconv": true,
+            "has_userdata": true,
+            "kind": "callback",
+            "params": [
+              {
+                "bits": 64,
+                "is_usize": true,
+                "kind": "int",
+                "signed": false
+              },
+              {
+                "bits": 64,
+                "is_usize": true,
+                "kind": "int",
+                "signed": false
+              }
+            ],
+            "ref": "Handler",
+            "return": {
+              "kind": "void"
+            }
+          }
+        },
+        {
+          "direction": "in",
+          "name": "userdata",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 1691,
+            "column": 51
+          },
+          "type": {
+            "bits": 64,
+            "is_usize": true,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "return": {
+        "kind": "void"
+      },
+      "source": {
+        "path": "root.zig",
+        "line": 1691,
+        "column": 12
+      },
+      "symbol": "zg_sys_on_secure_random_request"
+    },
+    {
+      "doc": "Remove both hooks: PNG transmissions are refused again and entropy\ncomes from the platform. Releases the Go callbacks.",
+      "name": "clear",
+      "package": "sys",
+      "namespace": "sys",
+      "ownership": "borrowed",
+      "params": [],
+      "return": {
+        "kind": "void"
+      },
+      "source": {
+        "path": "root.zig",
+        "line": 1708,
+        "column": 12
+      },
+      "symbol": "zg_sys_clear"
+    },
+    {
+      "doc": "Answer the pending request. `bytes` is copied and must be exactly as\nlong as the callback's `len`.",
+      "name": "replySecureRandom",
+      "package": "sys",
+      "namespace": "sys",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "bytes",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 1699,
+            "column": 30
+          },
+          "type": {
+            "const": true,
+            "element": {
+              "bits": 8,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          }
+        }
+      ],
+      "return": {
+        "error_set": [
+          "NoPendingRequest",
+          "SizeMismatch"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "void"
+        }
+      },
+      "source": {
+        "path": "root.zig",
+        "line": 1699,
+        "column": 12
+      },
+      "symbol": "zg_sys_reply_secure_random"
+    },
+    {
       "doc": "Look up an image on the active screen by id.",
       "name": "kittyImage",
       "ownership": "borrowed",
@@ -5516,7 +5836,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1866,
+            "line": 1992,
             "column": 36
           },
           "type": {
@@ -5537,7 +5857,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1866,
+        "line": 1992,
         "column": 8
       },
       "zig_path": "kittyImage",
@@ -5554,7 +5874,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1885,
+            "line": 2011,
             "column": 40
           },
           "type": {
@@ -5570,7 +5890,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 1885,
+            "line": 2011,
             "column": 55
           },
           "type": {
@@ -5601,7 +5921,7 @@
       },
       "source": {
         "path": "root.zig",
-        "line": 1885,
+        "line": 2011,
         "column": 8
       },
       "zig_path": "kittyImageData",
@@ -5612,6 +5932,11 @@
   "ir_version": 1,
   "package": "gostty",
   "packages": [
+    {
+      "doc": "Package sys installs the process-global hooks libghostty-vt cannot provide in a library build: a PNG decoder for Kitty graphics and a secure entropy source for Kitty clipboard grants.",
+      "name": "sys",
+      "path": "sys"
+    },
     {
       "doc": "Package input encodes key, mouse, focus and paste events into the bytes a program reading the pty expects.",
       "name": "input",
@@ -6326,7 +6651,7 @@
         "signed": false
       },
       "text": true,
-      "zig_path": "terminal.modes.Mode__enum_28645"
+      "zig_path": "terminal.modes.Mode__enum_28659"
     },
     {
       "exhaustive": true,
@@ -6647,6 +6972,14 @@
       "kind": "callback",
       "name": "ClipboardHandler",
       "zig_path": "*const fn (usize) callconv(.c) void"
+    },
+    {
+      "exhaustive": true,
+      "fields": [],
+      "kind": "callback",
+      "name": "Handler",
+      "package": "sys",
+      "zig_path": "*const fn (usize, usize) callconv(.c) void"
     },
     {
       "exhaustive": true,

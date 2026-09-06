@@ -45,13 +45,15 @@ Run these commands inside HyperCat Term, Ghostty, or Kitty:
 ./kittydemo.py
 ./kittydemo.py --cells 20x10
 ./kittydemo.py --rgba
+./kittydemo.py --png
 ./kittydemo.py --z -1
 ./kittydemo.py --query
 ```
 
-The demo supports raw RGB, RGBA, and grayscale images. PNG transmission is not
-supported because library builds of libghostty-vt do not provide a PNG decoder.
-Use `--reply` to request and inspect terminal replies.
+The demo sends raw RGB and RGBA by default and a PNG with `--png`. Library
+builds of libghostty-vt carry no PNG decoder, so the example installs Go's
+`image/png` through `gostty/sys` at startup; without that the terminal refuses
+`f=100` transmissions. Use `--reply` to request and inspect terminal replies.
 
 ## Fonts and the cat
 

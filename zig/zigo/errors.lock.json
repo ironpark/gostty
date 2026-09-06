@@ -46,6 +46,7 @@
     "MissingHyperlinkData": 57,
     "MissingStyle": 53,
     "NoPages": 65,
+    "NoPendingRequest": 78,
     "NoPendingState": 32,
     "NoSpaceLeft": 9,
     "NonCanonicalContinuation": 33,
@@ -60,6 +61,7 @@
     "ReplayWouldCommit": 34,
     "RowCountOverflow": 75,
     "ScrollbackLimitOverflow": 11,
+    "SizeMismatch": 79,
     "StringTooLong": 20,
     "TerminalTaken": 77,
     "TooManyGraphemes": 30,
@@ -79,7 +81,7 @@
     "ZeroRowCount": 47
   },
   "ir_version": 1,
-  "next_code": 78,
+  "next_code": 80,
   "reserved": {
     "-1": "Unknown",
     "-2": "PanicCaught",
