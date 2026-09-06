@@ -130,6 +130,11 @@ pub const Attribute = union(enum) {
     bright_named_bg: ColorName,
     reset_fg,
     reset_bg,
+    /// An SGR code ghostty does not implement. Added last so the tag values Go
+    /// already knows do not move. ghostty's own variant carries the raw
+    /// parameters that stumped it; those are a parser detail, so only the fact
+    /// crosses. Applying it is a no-op, which is what ghostty does with it too.
+    unknown,
 
     fn toVt(self: Attribute) vt.Attribute {
         return switch (self) {
@@ -161,6 +166,44 @@ pub const Attribute = union(enum) {
             .named_bg => |v| .{ .@"8_bg" = v },
             .bright_named_fg => |v| .{ .@"8_bright_fg" = v },
             .bright_named_bg => |v| .{ .@"8_bright_bg" = v },
+            .reset_fg => .reset_fg,
+            .reset_bg => .reset_bg,
+            .unknown => .{ .unknown = .{ .full = &.{}, .partial = &.{} } },
+        };
+    }
+
+    /// The inverse of `toVt`, for the standalone SGR parser in `parser.zig`.
+    pub fn fromVt(attr: vt.Attribute) Attribute {
+        return switch (attr) {
+            .unset => .unset,
+            .unknown => .unknown,
+            .bold => .bold,
+            .reset_bold => .reset_bold,
+            .italic => .italic,
+            .reset_italic => .reset_italic,
+            .faint => .faint,
+            .underline => |v| .{ .underline = v },
+            .underline_color => |v| .{ .underline_color_rgb = packColor(v) },
+            .@"256_underline_color" => |v| .{ .underline_color_256 = v },
+            .reset_underline_color => .reset_underline_color,
+            .overline => .overline,
+            .reset_overline => .reset_overline,
+            .blink => .blink,
+            .reset_blink => .reset_blink,
+            .inverse => .inverse,
+            .reset_inverse => .reset_inverse,
+            .invisible => .invisible,
+            .reset_invisible => .reset_invisible,
+            .strikethrough => .strikethrough,
+            .reset_strikethrough => .reset_strikethrough,
+            .direct_color_fg => |v| .{ .direct_color_fg = packColor(v) },
+            .direct_color_bg => |v| .{ .direct_color_bg = packColor(v) },
+            .@"256_fg" => |v| .{ .color_256_fg = v },
+            .@"256_bg" => |v| .{ .color_256_bg = v },
+            .@"8_fg" => |v| .{ .named_fg = v },
+            .@"8_bg" => |v| .{ .named_bg = v },
+            .@"8_bright_fg" => |v| .{ .bright_named_fg = v },
+            .@"8_bright_bg" => |v| .{ .bright_named_bg = v },
             .reset_fg => .reset_fg,
             .reset_bg => .reset_bg,
         };

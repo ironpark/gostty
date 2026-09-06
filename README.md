@@ -209,6 +209,47 @@ parameter as its wire scalar and a registered enum cannot ride in the
 signature. They are captured when the effect fires, not read live, so a second
 event in the same feed cannot overwrite the first one's answer.
 
+### Parsers without a terminal
+
+A program that only wants to read one kind of sequence has no terminal to feed.
+`OSCParser` and the SGR functions are ghostty's two parsers on their own: bytes
+in, what the sequence said out.
+
+```go
+p, _ := gostty.NewOSCParser()
+defer p.Close()
+
+p.Feed([]byte("8;id=42;https://example.com/")) // between ESC ] and the terminator
+if ok, _ := p.End(gostty.OSCTerminatorSt); ok {
+	kind, _ := p.Command() // OSCCommandHyperlinkStart
+	uri, _ := p.HyperlinkUri()
+	id, _ := p.HyperlinkID()
+}
+```
+
+Every string payload has its own accessor -- `WindowTitle`, `Pwd`,
+`NotificationBody`, `ClipboardData`, `MouseShape` and the rest -- and `Command`
+covers the whole OSC set, so a command with no accessor is still identifiable.
+The strings stay valid until the next `Feed`, `End` or `Reset`.
+
+SGR is a parameter list rather than a byte stream: the parameters of a
+`CSI ... m` with the `m` dropped, plus a mask saying which of them were followed
+by a colon rather than a semicolon, since `4;3` is underline then italic while
+`4:3` is a curly underline.
+
+```go
+params := []uint16{38, 2, 0, 255, 136, 0} // CSI 38:2::255:136:0 m
+n, _ := gostty.SgrAttributeCount(params, 0b011111)
+attrs := make([]gostty.SgrAttribute, n)
+gostty.SgrAttributes(params, 0b011111, attrs)
+// attrs[0] is {SgrAttributeTagDirectColorFg, 0xFF8800}
+```
+
+An attribute comes back as a tag and a scalar rather than as an `Attribute`,
+because zigo can pass a tagged union into native code but cannot hand a usable
+one back. The tags are `Attribute`'s own, in its order, so `AttributeDirectColorFg`
+and the rest rebuild what the parser saw.
+
 ### Unimplemented sequences
 
 `SetUnknownMaxBytes` captures the sequences this library does not implement —

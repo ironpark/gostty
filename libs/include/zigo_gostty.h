@@ -218,6 +218,7 @@ typedef uint8_t zg_attribute_tag;
 #define ZG_ATTRIBUTE_TAG_BRIGHT_NAMED_BG 27
 #define ZG_ATTRIBUTE_TAG_RESET_FG 28
 #define ZG_ATTRIBUTE_TAG_RESET_BG 29
+#define ZG_ATTRIBUTE_TAG_UNKNOWN 30
 
 typedef uint8_t zg_search_direction;
 #define ZG_SEARCH_DIRECTION_NEXT 0
@@ -531,6 +532,83 @@ typedef uint8_t zg_gesture_autoscroll_direction;
 #define ZG_GESTURE_AUTOSCROLL_DIRECTION_UP 1
 #define ZG_GESTURE_AUTOSCROLL_DIRECTION_DOWN 2
 
+typedef struct zg_osc_parser zg_osc_parser;
+typedef uint8_t zg_osc_command;
+#define ZG_OSC_COMMAND_INVALID 0
+#define ZG_OSC_COMMAND_CHANGE_WINDOW_TITLE 1
+#define ZG_OSC_COMMAND_CHANGE_WINDOW_ICON 2
+#define ZG_OSC_COMMAND_SEMANTIC_PROMPT 3
+#define ZG_OSC_COMMAND_CLIPBOARD_CONTENTS 4
+#define ZG_OSC_COMMAND_REPORT_PWD 5
+#define ZG_OSC_COMMAND_MOUSE_SHAPE 6
+#define ZG_OSC_COMMAND_COLOR_OPERATION 7
+#define ZG_OSC_COMMAND_KITTY_COLOR_PROTOCOL 8
+#define ZG_OSC_COMMAND_SHOW_DESKTOP_NOTIFICATION 9
+#define ZG_OSC_COMMAND_HYPERLINK_START 10
+#define ZG_OSC_COMMAND_HYPERLINK_END 11
+#define ZG_OSC_COMMAND_CONEMU_SLEEP 12
+#define ZG_OSC_COMMAND_CONEMU_SHOW_MESSAGE_BOX 13
+#define ZG_OSC_COMMAND_CONEMU_CHANGE_TAB_TITLE 14
+#define ZG_OSC_COMMAND_CONEMU_PROGRESS_REPORT 15
+#define ZG_OSC_COMMAND_CONEMU_WAIT_INPUT 16
+#define ZG_OSC_COMMAND_CONEMU_GUIMACRO 17
+#define ZG_OSC_COMMAND_CONEMU_RUN_PROCESS 18
+#define ZG_OSC_COMMAND_CONEMU_OUTPUT_ENVIRONMENT_VARIABLE 19
+#define ZG_OSC_COMMAND_CONEMU_XTERM_EMULATION 20
+#define ZG_OSC_COMMAND_CONEMU_COMMENT 21
+#define ZG_OSC_COMMAND_KITTY_TEXT_SIZING 22
+#define ZG_OSC_COMMAND_KITTY_CLIPBOARD_PROTOCOL 23
+#define ZG_OSC_COMMAND_KITTY_DND_PROTOCOL 24
+#define ZG_OSC_COMMAND_CONTEXT_SIGNAL 25
+#define ZG_OSC_COMMAND_KITTY_DESKTOP_NOTIFICATION 26
+
+typedef uint8_t zg_osc_terminator;
+#define ZG_OSC_TERMINATOR_ST 0
+#define ZG_OSC_TERMINATOR_BEL 1
+
+typedef uint8_t zg_semantic_prompt_action;
+#define ZG_SEMANTIC_PROMPT_ACTION_FRESH_LINE 0
+#define ZG_SEMANTIC_PROMPT_ACTION_FRESH_LINE_NEW_PROMPT 1
+#define ZG_SEMANTIC_PROMPT_ACTION_NEW_COMMAND 2
+#define ZG_SEMANTIC_PROMPT_ACTION_PROMPT_START 3
+#define ZG_SEMANTIC_PROMPT_ACTION_END_PROMPT_START_INPUT 4
+#define ZG_SEMANTIC_PROMPT_ACTION_END_PROMPT_START_INPUT_TERMINATE_EOL 5
+#define ZG_SEMANTIC_PROMPT_ACTION_END_INPUT_START_OUTPUT 6
+#define ZG_SEMANTIC_PROMPT_ACTION_END_COMMAND 7
+
+typedef uint8_t zg_sgr_attribute_tag;
+#define ZG_SGR_ATTRIBUTE_TAG_UNSET 0
+#define ZG_SGR_ATTRIBUTE_TAG_BOLD 1
+#define ZG_SGR_ATTRIBUTE_TAG_RESET_BOLD 2
+#define ZG_SGR_ATTRIBUTE_TAG_ITALIC 3
+#define ZG_SGR_ATTRIBUTE_TAG_RESET_ITALIC 4
+#define ZG_SGR_ATTRIBUTE_TAG_FAINT 5
+#define ZG_SGR_ATTRIBUTE_TAG_UNDERLINE 6
+#define ZG_SGR_ATTRIBUTE_TAG_UNDERLINE_COLOR_RGB 7
+#define ZG_SGR_ATTRIBUTE_TAG_UNDERLINE_COLOR_256 8
+#define ZG_SGR_ATTRIBUTE_TAG_RESET_UNDERLINE_COLOR 9
+#define ZG_SGR_ATTRIBUTE_TAG_OVERLINE 10
+#define ZG_SGR_ATTRIBUTE_TAG_RESET_OVERLINE 11
+#define ZG_SGR_ATTRIBUTE_TAG_BLINK 12
+#define ZG_SGR_ATTRIBUTE_TAG_RESET_BLINK 13
+#define ZG_SGR_ATTRIBUTE_TAG_INVERSE 14
+#define ZG_SGR_ATTRIBUTE_TAG_RESET_INVERSE 15
+#define ZG_SGR_ATTRIBUTE_TAG_INVISIBLE 16
+#define ZG_SGR_ATTRIBUTE_TAG_RESET_INVISIBLE 17
+#define ZG_SGR_ATTRIBUTE_TAG_STRIKETHROUGH 18
+#define ZG_SGR_ATTRIBUTE_TAG_RESET_STRIKETHROUGH 19
+#define ZG_SGR_ATTRIBUTE_TAG_DIRECT_COLOR_FG 20
+#define ZG_SGR_ATTRIBUTE_TAG_DIRECT_COLOR_BG 21
+#define ZG_SGR_ATTRIBUTE_TAG_COLOR_256_FG 22
+#define ZG_SGR_ATTRIBUTE_TAG_COLOR_256_BG 23
+#define ZG_SGR_ATTRIBUTE_TAG_NAMED_FG 24
+#define ZG_SGR_ATTRIBUTE_TAG_NAMED_BG 25
+#define ZG_SGR_ATTRIBUTE_TAG_BRIGHT_NAMED_FG 26
+#define ZG_SGR_ATTRIBUTE_TAG_BRIGHT_NAMED_BG 27
+#define ZG_SGR_ATTRIBUTE_TAG_RESET_FG 28
+#define ZG_SGR_ATTRIBUTE_TAG_RESET_BG 29
+#define ZG_SGR_ATTRIBUTE_TAG_UNKNOWN 30
+
 // ELF and Mach-O export every non-static symbol of a shared library;
 // COFF exports nothing without an explicit annotation, so a DLL built
 // without this would load and then resolve none of its entry points.
@@ -678,6 +756,11 @@ typedef struct zg_gesture_drag_event {
     double ypos;
     uint8_t rectangle;
 } zg_gesture_drag_event;
+
+typedef struct zg_sgr_attribute {
+    zg_sgr_attribute_tag tag;
+    uint32_t value;
+} zg_sgr_attribute;
 
 ZIGO_EXPORT int32_t zg_terminal_cols(const zg_terminal * self, uint16_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_rows(const zg_terminal * self, uint16_t * out_result);
@@ -949,6 +1032,28 @@ ZIGO_EXPORT int32_t zg_gesture_release(zg_gesture * self, uint16_t x, uint16_t y
 ZIGO_EXPORT int32_t zg_gesture_reset(zg_gesture * self);
 ZIGO_EXPORT int32_t zg_gesture_click_count(zg_gesture * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_gesture_dragged(zg_gesture * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_new_osc_parser(zg_osc_parser * * out_result);
+ZIGO_EXPORT int32_t zg_osc_parser_free_osc_parser(zg_osc_parser * self);
+ZIGO_EXPORT int32_t zg_osc_parser_feed(zg_osc_parser * self, const uint8_t * bytes_ptr, size_t bytes_len);
+ZIGO_EXPORT int32_t zg_osc_parser_end(zg_osc_parser * self, uint8_t terminator, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_osc_parser_reset(zg_osc_parser * self);
+ZIGO_EXPORT int32_t zg_osc_parser_command(zg_osc_parser * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_osc_parser_window_title(zg_osc_parser * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_osc_parser_icon(zg_osc_parser * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_osc_parser_pwd(zg_osc_parser * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_osc_parser_hyperlink_uri(zg_osc_parser * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_osc_parser_hyperlink_id(zg_osc_parser * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_osc_parser_notification_title(zg_osc_parser * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_osc_parser_notification_body(zg_osc_parser * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_osc_parser_clipboard_data(zg_osc_parser * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_osc_parser_clipboard_selection(zg_osc_parser * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_osc_parser_mouse_shape(zg_osc_parser * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_osc_parser_semantic_prompt_action(zg_osc_parser * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_osc_parser_semantic_prompt_options(zg_osc_parser * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_osc_parser_progress_state(zg_osc_parser * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_osc_parser_progress_value(zg_osc_parser * self, int16_t * out_result);
+ZIGO_EXPORT int32_t zg_sgr_attribute_count(const uint16_t * params_ptr, size_t params_len, uint32_t colon_mask, size_t * out_result);
+ZIGO_EXPORT int32_t zg_sgr_attributes(const uint16_t * params_ptr, size_t params_len, uint32_t colon_mask, zg_sgr_attribute * dst_ptr, size_t dst_len, size_t * out_result);
 ZIGO_EXPORT const char *zg_last_error_message(void);
 ZIGO_EXPORT const char *zg_caught_panic_message(int32_t code);
 

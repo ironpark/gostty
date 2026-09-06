@@ -340,3 +340,25 @@ pub const setTabstop = config_.setTabstop;
 pub const unsetTabstop = config_.unsetTabstop;
 pub const resetTabstops = config_.resetTabstops;
 pub const setKittyGraphicsLoadingLimits = config_.setKittyGraphicsLoadingLimits;
+
+// The standalone OSC and SGR parsers: a sequence in, what it said out, with no
+// terminal behind them.
+//
+// `OSCParser`'s own methods are bound as `root.OSCParser.<name>` rather than
+// through one alias each. zigo checks every public declaration in this file
+// against every binding entry at comptime, so the cost of the surface grows
+// with the product of the two, and eighteen more names here is enough to
+// exhaust Zig's branch budget inside the generator. Reaching the methods
+// through the type they already live on costs nothing.
+const parser_ = @import("parser.zig");
+
+pub const OSCParser = parser_.OSCParser;
+pub const OSCCommand = parser_.OSCCommand;
+pub const OSCTerminator = parser_.OSCTerminator;
+pub const SemanticPromptAction = parser_.SemanticPromptAction;
+pub const newOSCParser = parser_.newOSCParser;
+pub const freeOSCParser = parser_.freeOSCParser;
+pub const SgrAttributeTag = parser_.SgrAttributeTag;
+pub const SgrAttribute = parser_.SgrAttribute;
+pub const sgrAttributeCount = parser_.sgrAttributeCount;
+pub const sgrAttributes = parser_.sgrAttributes;

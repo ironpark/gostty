@@ -61,6 +61,7 @@
     "ReadFailed": 36,
     "ReplayWouldCommit": 34,
     "RowCountOverflow": 75,
+    "SGRTooManyParams": 81,
     "ScrollbackLimitOverflow": 11,
     "SizeMismatch": 79,
     "StringTooLong": 20,
@@ -82,7 +83,7 @@
     "ZeroRowCount": 47
   },
   "ir_version": 1,
-  "next_code": 81,
+  "next_code": 82,
   "reserved": {
     "-1": "Unknown",
     "-2": "PanicCaught",

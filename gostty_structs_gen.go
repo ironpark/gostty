@@ -333,6 +333,20 @@ type GestureDragEvent struct {
 	Rectangle bool
 }
 
+// SgrAttribute mirrors the Zig `extern struct` of the same name.
+type SgrAttribute struct {
+	// Tag corresponds to the Zig field tag.
+	Tag SgrAttributeTag
+	// Value corresponds to the Zig field value.
+	Value uint32
+}
+
+// SgrAttribute is reinterpreted as raw.SgrAttributeData instead of copied, so the two
+// layouts must stay identical.
+var _ = [1]struct{}{}[unsafe.Sizeof(SgrAttribute{})-unsafe.Sizeof(raw.SgrAttributeData{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(SgrAttribute{}.Tag)-unsafe.Offsetof(raw.SgrAttributeData{}.Tag)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SgrAttribute{}.Value)-unsafe.Offsetof(raw.SgrAttributeData{}.Value)]
+
 func zigoSnapshotProgressFromRaw(value raw.SnapshotProgressData) SnapshotProgress {
 	return SnapshotProgress{
 		Rows:      value.Rows,
@@ -678,6 +692,11 @@ func AttributeResetFg() Attribute {
 // AttributeResetBg constructs the reset_bg variant.
 func AttributeResetBg() Attribute {
 	return Attribute{tag: AttributeTagResetBg}
+}
+
+// AttributeUnknown constructs the unknown variant.
+func AttributeUnknown() Attribute {
+	return Attribute{tag: AttributeTagUnknown}
 }
 
 // ScrollViewport is a tagged-union value passed to native code by copy.

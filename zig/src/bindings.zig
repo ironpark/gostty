@@ -174,6 +174,14 @@ pub const bindings = zigo.define(.{
         .{ .type = gostty.GestureGeometry, .repr = .value },
         .{ .type = gostty.GesturePressEvent, .repr = .value },
         .{ .type = gostty.GestureDragEvent, .repr = .value },
+
+        // The standalone parsers.
+        .{ .type = gostty.OSCParser, .repr = .@"opaque", .name = "OSCParser" },
+        .{ .type = gostty.OSCCommand, .repr = .enumeration, .name = "OSCCommand", .text = true },
+        .{ .type = gostty.OSCTerminator, .repr = .enumeration, .name = "OSCTerminator", .text = true },
+        .{ .type = gostty.SemanticPromptAction, .repr = .enumeration, .name = "SemanticPromptAction", .text = true },
+        .{ .type = gostty.SgrAttributeTag, .repr = .enumeration, .name = "SgrAttributeTag", .text = true },
+        .{ .type = gostty.SgrAttribute, .repr = .value },
     },
     .functions = .{
         .{ .path = "root.unicode.codepointWidth" },
@@ -637,6 +645,45 @@ pub const bindings = zigo.define(.{
                 "root.gestureClickCount",
                 "root.gestureDragged",
             },
+        },
+
+        // The standalone parsers. `Stream` needs a `Terminal` behind it; these
+        // two parse a sequence and hand back what it said, with no terminal
+        // state involved at all.
+        .{ .path = "root.newOSCParser", .constructs = "OSCParser" },
+        .{ .path = "root.freeOSCParser", .destroys = "OSCParser" },
+        .{
+            .receiver = "OSCParser",
+            .strip_prefix = "",
+            .functions = .{
+                .{ .path = "root.OSCParser.feed", .params = .{"bytes"} },
+                .{ .path = "root.OSCParser.end", .params = .{"terminator"} },
+                "root.OSCParser.reset",
+                "root.OSCParser.command",
+                // The strings below are borrowed from the parser and stay valid
+                // only until the next feed, end or reset, which is why none of
+                // them declare a release function.
+                .{ .path = "root.OSCParser.windowTitle", .semantic = .utf8_string },
+                .{ .path = "root.OSCParser.icon", .semantic = .utf8_string },
+                .{ .path = "root.OSCParser.pwd", .semantic = .utf8_string },
+                .{ .path = "root.OSCParser.hyperlinkURI", .semantic = .utf8_string },
+                .{ .path = "root.OSCParser.hyperlinkID", .semantic = .utf8_string },
+                .{ .path = "root.OSCParser.notificationTitle", .semantic = .utf8_string },
+                .{ .path = "root.OSCParser.notificationBody", .semantic = .utf8_string },
+                .{ .path = "root.OSCParser.clipboardData", .semantic = .utf8_string },
+                "root.OSCParser.clipboardSelection",
+                .{ .path = "root.OSCParser.mouseShape", .semantic = .utf8_string },
+                "root.OSCParser.semanticPromptAction",
+                .{ .path = "root.OSCParser.semanticPromptOptions", .semantic = .utf8_string },
+                "root.OSCParser.progressState",
+                "root.OSCParser.progressValue",
+            },
+        },
+        .{ .path = "root.sgrAttributeCount", .params = .{ "params", "colon_mask" } },
+        .{
+            .path = "root.sgrAttributes",
+            .params = .{ "params", "colon_mask", "dst" },
+            .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
         },
     },
 });

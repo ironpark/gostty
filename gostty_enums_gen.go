@@ -1430,6 +1430,8 @@ const (
 	AttributeTagResetFg AttributeTag = 28
 	// AttributeTagResetBg corresponds to the Zig tag reset_bg.
 	AttributeTagResetBg AttributeTag = 29
+	// AttributeTagUnknown corresponds to the Zig tag unknown.
+	AttributeTagUnknown AttributeTag = 30
 )
 
 // String returns the Zig tag name.
@@ -1495,6 +1497,8 @@ func (value AttributeTag) String() string {
 		return "reset_fg"
 	case AttributeTagResetBg:
 		return "reset_bg"
+	case AttributeTagUnknown:
+		return "unknown"
 	default:
 		return "AttributeTag(" + strconv.Itoa(int(value)) + ")"
 	}
@@ -2201,6 +2205,558 @@ func (value GestureAutoscrollDirection) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler with ParseGestureAutoscrollDirection.
 func (value *GestureAutoscrollDirection) UnmarshalText(text []byte) error {
 	parsed, err := ParseGestureAutoscrollDirection(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// OSCCommand represents the corresponding Zig enum.
+type OSCCommand uint8
+
+const (
+	// OSCCommandInvalid corresponds to the Zig tag invalid.
+	OSCCommandInvalid OSCCommand = 0
+	// OSCCommandChangeWindowTitle corresponds to the Zig tag change_window_title.
+	OSCCommandChangeWindowTitle OSCCommand = 1
+	// OSCCommandChangeWindowIcon corresponds to the Zig tag change_window_icon.
+	OSCCommandChangeWindowIcon OSCCommand = 2
+	// OSCCommandSemanticPrompt corresponds to the Zig tag semantic_prompt.
+	OSCCommandSemanticPrompt OSCCommand = 3
+	// OSCCommandClipboardContents corresponds to the Zig tag clipboard_contents.
+	OSCCommandClipboardContents OSCCommand = 4
+	// OSCCommandReportPwd corresponds to the Zig tag report_pwd.
+	OSCCommandReportPwd OSCCommand = 5
+	// OSCCommandMouseShape corresponds to the Zig tag mouse_shape.
+	OSCCommandMouseShape OSCCommand = 6
+	// OSCCommandColorOperation corresponds to the Zig tag color_operation.
+	OSCCommandColorOperation OSCCommand = 7
+	// OSCCommandKittyColorProtocol corresponds to the Zig tag kitty_color_protocol.
+	OSCCommandKittyColorProtocol OSCCommand = 8
+	// OSCCommandShowDesktopNotification corresponds to the Zig tag show_desktop_notification.
+	OSCCommandShowDesktopNotification OSCCommand = 9
+	// OSCCommandHyperlinkStart corresponds to the Zig tag hyperlink_start.
+	OSCCommandHyperlinkStart OSCCommand = 10
+	// OSCCommandHyperlinkEnd corresponds to the Zig tag hyperlink_end.
+	OSCCommandHyperlinkEnd OSCCommand = 11
+	// OSCCommandConemuSleep corresponds to the Zig tag conemu_sleep.
+	OSCCommandConemuSleep OSCCommand = 12
+	// OSCCommandConemuShowMessageBox corresponds to the Zig tag conemu_show_message_box.
+	OSCCommandConemuShowMessageBox OSCCommand = 13
+	// OSCCommandConemuChangeTabTitle corresponds to the Zig tag conemu_change_tab_title.
+	OSCCommandConemuChangeTabTitle OSCCommand = 14
+	// OSCCommandConemuProgressReport corresponds to the Zig tag conemu_progress_report.
+	OSCCommandConemuProgressReport OSCCommand = 15
+	// OSCCommandConemuWaitInput corresponds to the Zig tag conemu_wait_input.
+	OSCCommandConemuWaitInput OSCCommand = 16
+	// OSCCommandConemuGuimacro corresponds to the Zig tag conemu_guimacro.
+	OSCCommandConemuGuimacro OSCCommand = 17
+	// OSCCommandConemuRunProcess corresponds to the Zig tag conemu_run_process.
+	OSCCommandConemuRunProcess OSCCommand = 18
+	// OSCCommandConemuOutputEnvironmentVariable corresponds to the Zig tag conemu_output_environment_variable.
+	OSCCommandConemuOutputEnvironmentVariable OSCCommand = 19
+	// OSCCommandConemuXtermEmulation corresponds to the Zig tag conemu_xterm_emulation.
+	OSCCommandConemuXtermEmulation OSCCommand = 20
+	// OSCCommandConemuComment corresponds to the Zig tag conemu_comment.
+	OSCCommandConemuComment OSCCommand = 21
+	// OSCCommandKittyTextSizing corresponds to the Zig tag kitty_text_sizing.
+	OSCCommandKittyTextSizing OSCCommand = 22
+	// OSCCommandKittyClipboardProtocol corresponds to the Zig tag kitty_clipboard_protocol.
+	OSCCommandKittyClipboardProtocol OSCCommand = 23
+	// OSCCommandKittyDndProtocol corresponds to the Zig tag kitty_dnd_protocol.
+	OSCCommandKittyDndProtocol OSCCommand = 24
+	// OSCCommandContextSignal corresponds to the Zig tag context_signal.
+	OSCCommandContextSignal OSCCommand = 25
+	// OSCCommandKittyDesktopNotification corresponds to the Zig tag kitty_desktop_notification.
+	OSCCommandKittyDesktopNotification OSCCommand = 26
+)
+
+// String returns the Zig tag name.
+func (value OSCCommand) String() string {
+	switch value {
+	case OSCCommandInvalid:
+		return "invalid"
+	case OSCCommandChangeWindowTitle:
+		return "change_window_title"
+	case OSCCommandChangeWindowIcon:
+		return "change_window_icon"
+	case OSCCommandSemanticPrompt:
+		return "semantic_prompt"
+	case OSCCommandClipboardContents:
+		return "clipboard_contents"
+	case OSCCommandReportPwd:
+		return "report_pwd"
+	case OSCCommandMouseShape:
+		return "mouse_shape"
+	case OSCCommandColorOperation:
+		return "color_operation"
+	case OSCCommandKittyColorProtocol:
+		return "kitty_color_protocol"
+	case OSCCommandShowDesktopNotification:
+		return "show_desktop_notification"
+	case OSCCommandHyperlinkStart:
+		return "hyperlink_start"
+	case OSCCommandHyperlinkEnd:
+		return "hyperlink_end"
+	case OSCCommandConemuSleep:
+		return "conemu_sleep"
+	case OSCCommandConemuShowMessageBox:
+		return "conemu_show_message_box"
+	case OSCCommandConemuChangeTabTitle:
+		return "conemu_change_tab_title"
+	case OSCCommandConemuProgressReport:
+		return "conemu_progress_report"
+	case OSCCommandConemuWaitInput:
+		return "conemu_wait_input"
+	case OSCCommandConemuGuimacro:
+		return "conemu_guimacro"
+	case OSCCommandConemuRunProcess:
+		return "conemu_run_process"
+	case OSCCommandConemuOutputEnvironmentVariable:
+		return "conemu_output_environment_variable"
+	case OSCCommandConemuXtermEmulation:
+		return "conemu_xterm_emulation"
+	case OSCCommandConemuComment:
+		return "conemu_comment"
+	case OSCCommandKittyTextSizing:
+		return "kitty_text_sizing"
+	case OSCCommandKittyClipboardProtocol:
+		return "kitty_clipboard_protocol"
+	case OSCCommandKittyDndProtocol:
+		return "kitty_dnd_protocol"
+	case OSCCommandContextSignal:
+		return "context_signal"
+	case OSCCommandKittyDesktopNotification:
+		return "kitty_desktop_notification"
+	default:
+		return "OSCCommand(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// ParseOSCCommand returns the OSCCommand named by text, which is a Zig tag name.
+func ParseOSCCommand(text string) (OSCCommand, error) {
+	switch text {
+	case "invalid":
+		return OSCCommandInvalid, nil
+	case "change_window_title":
+		return OSCCommandChangeWindowTitle, nil
+	case "change_window_icon":
+		return OSCCommandChangeWindowIcon, nil
+	case "semantic_prompt":
+		return OSCCommandSemanticPrompt, nil
+	case "clipboard_contents":
+		return OSCCommandClipboardContents, nil
+	case "report_pwd":
+		return OSCCommandReportPwd, nil
+	case "mouse_shape":
+		return OSCCommandMouseShape, nil
+	case "color_operation":
+		return OSCCommandColorOperation, nil
+	case "kitty_color_protocol":
+		return OSCCommandKittyColorProtocol, nil
+	case "show_desktop_notification":
+		return OSCCommandShowDesktopNotification, nil
+	case "hyperlink_start":
+		return OSCCommandHyperlinkStart, nil
+	case "hyperlink_end":
+		return OSCCommandHyperlinkEnd, nil
+	case "conemu_sleep":
+		return OSCCommandConemuSleep, nil
+	case "conemu_show_message_box":
+		return OSCCommandConemuShowMessageBox, nil
+	case "conemu_change_tab_title":
+		return OSCCommandConemuChangeTabTitle, nil
+	case "conemu_progress_report":
+		return OSCCommandConemuProgressReport, nil
+	case "conemu_wait_input":
+		return OSCCommandConemuWaitInput, nil
+	case "conemu_guimacro":
+		return OSCCommandConemuGuimacro, nil
+	case "conemu_run_process":
+		return OSCCommandConemuRunProcess, nil
+	case "conemu_output_environment_variable":
+		return OSCCommandConemuOutputEnvironmentVariable, nil
+	case "conemu_xterm_emulation":
+		return OSCCommandConemuXtermEmulation, nil
+	case "conemu_comment":
+		return OSCCommandConemuComment, nil
+	case "kitty_text_sizing":
+		return OSCCommandKittyTextSizing, nil
+	case "kitty_clipboard_protocol":
+		return OSCCommandKittyClipboardProtocol, nil
+	case "kitty_dnd_protocol":
+		return OSCCommandKittyDndProtocol, nil
+	case "context_signal":
+		return OSCCommandContextSignal, nil
+	case "kitty_desktop_notification":
+		return OSCCommandKittyDesktopNotification, nil
+	}
+	return 0, &EnumParseError{Type: "OSCCommand", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value OSCCommand) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseOSCCommand.
+func (value *OSCCommand) UnmarshalText(text []byte) error {
+	parsed, err := ParseOSCCommand(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// OSCTerminator represents the corresponding Zig enum.
+type OSCTerminator uint8
+
+const (
+	// OSCTerminatorSt corresponds to the Zig tag st.
+	OSCTerminatorSt OSCTerminator = 0
+	// OSCTerminatorBel corresponds to the Zig tag bel.
+	OSCTerminatorBel OSCTerminator = 1
+)
+
+// String returns the Zig tag name.
+func (value OSCTerminator) String() string {
+	switch value {
+	case OSCTerminatorSt:
+		return "st"
+	case OSCTerminatorBel:
+		return "bel"
+	default:
+		return "OSCTerminator(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// ParseOSCTerminator returns the OSCTerminator named by text, which is a Zig tag name.
+func ParseOSCTerminator(text string) (OSCTerminator, error) {
+	switch text {
+	case "st":
+		return OSCTerminatorSt, nil
+	case "bel":
+		return OSCTerminatorBel, nil
+	}
+	return 0, &EnumParseError{Type: "OSCTerminator", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value OSCTerminator) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseOSCTerminator.
+func (value *OSCTerminator) UnmarshalText(text []byte) error {
+	parsed, err := ParseOSCTerminator(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// SemanticPromptAction represents the corresponding Zig enum.
+type SemanticPromptAction uint8
+
+const (
+	// SemanticPromptActionFreshLine corresponds to the Zig tag fresh_line.
+	SemanticPromptActionFreshLine SemanticPromptAction = 0
+	// SemanticPromptActionFreshLineNewPrompt corresponds to the Zig tag fresh_line_new_prompt.
+	SemanticPromptActionFreshLineNewPrompt SemanticPromptAction = 1
+	// SemanticPromptActionNewCommand corresponds to the Zig tag new_command.
+	SemanticPromptActionNewCommand SemanticPromptAction = 2
+	// SemanticPromptActionPromptStart corresponds to the Zig tag prompt_start.
+	SemanticPromptActionPromptStart SemanticPromptAction = 3
+	// SemanticPromptActionEndPromptStartInput corresponds to the Zig tag end_prompt_start_input.
+	SemanticPromptActionEndPromptStartInput SemanticPromptAction = 4
+	// SemanticPromptActionEndPromptStartInputTerminateEol corresponds to the Zig tag end_prompt_start_input_terminate_eol.
+	SemanticPromptActionEndPromptStartInputTerminateEol SemanticPromptAction = 5
+	// SemanticPromptActionEndInputStartOutput corresponds to the Zig tag end_input_start_output.
+	SemanticPromptActionEndInputStartOutput SemanticPromptAction = 6
+	// SemanticPromptActionEndCommand corresponds to the Zig tag end_command.
+	SemanticPromptActionEndCommand SemanticPromptAction = 7
+)
+
+// String returns the Zig tag name.
+func (value SemanticPromptAction) String() string {
+	switch value {
+	case SemanticPromptActionFreshLine:
+		return "fresh_line"
+	case SemanticPromptActionFreshLineNewPrompt:
+		return "fresh_line_new_prompt"
+	case SemanticPromptActionNewCommand:
+		return "new_command"
+	case SemanticPromptActionPromptStart:
+		return "prompt_start"
+	case SemanticPromptActionEndPromptStartInput:
+		return "end_prompt_start_input"
+	case SemanticPromptActionEndPromptStartInputTerminateEol:
+		return "end_prompt_start_input_terminate_eol"
+	case SemanticPromptActionEndInputStartOutput:
+		return "end_input_start_output"
+	case SemanticPromptActionEndCommand:
+		return "end_command"
+	default:
+		return "SemanticPromptAction(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// ParseSemanticPromptAction returns the SemanticPromptAction named by text, which is a Zig tag name.
+func ParseSemanticPromptAction(text string) (SemanticPromptAction, error) {
+	switch text {
+	case "fresh_line":
+		return SemanticPromptActionFreshLine, nil
+	case "fresh_line_new_prompt":
+		return SemanticPromptActionFreshLineNewPrompt, nil
+	case "new_command":
+		return SemanticPromptActionNewCommand, nil
+	case "prompt_start":
+		return SemanticPromptActionPromptStart, nil
+	case "end_prompt_start_input":
+		return SemanticPromptActionEndPromptStartInput, nil
+	case "end_prompt_start_input_terminate_eol":
+		return SemanticPromptActionEndPromptStartInputTerminateEol, nil
+	case "end_input_start_output":
+		return SemanticPromptActionEndInputStartOutput, nil
+	case "end_command":
+		return SemanticPromptActionEndCommand, nil
+	}
+	return 0, &EnumParseError{Type: "SemanticPromptAction", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value SemanticPromptAction) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseSemanticPromptAction.
+func (value *SemanticPromptAction) UnmarshalText(text []byte) error {
+	parsed, err := ParseSemanticPromptAction(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// SgrAttributeTag represents the corresponding Zig enum.
+type SgrAttributeTag uint8
+
+const (
+	// SgrAttributeTagUnset corresponds to the Zig tag unset.
+	SgrAttributeTagUnset SgrAttributeTag = 0
+	// SgrAttributeTagBold corresponds to the Zig tag bold.
+	SgrAttributeTagBold SgrAttributeTag = 1
+	// SgrAttributeTagResetBold corresponds to the Zig tag reset_bold.
+	SgrAttributeTagResetBold SgrAttributeTag = 2
+	// SgrAttributeTagItalic corresponds to the Zig tag italic.
+	SgrAttributeTagItalic SgrAttributeTag = 3
+	// SgrAttributeTagResetItalic corresponds to the Zig tag reset_italic.
+	SgrAttributeTagResetItalic SgrAttributeTag = 4
+	// SgrAttributeTagFaint corresponds to the Zig tag faint.
+	SgrAttributeTagFaint SgrAttributeTag = 5
+	// SgrAttributeTagUnderline corresponds to the Zig tag underline.
+	SgrAttributeTagUnderline SgrAttributeTag = 6
+	// SgrAttributeTagUnderlineColorRgb corresponds to the Zig tag underline_color_rgb.
+	SgrAttributeTagUnderlineColorRgb SgrAttributeTag = 7
+	// SgrAttributeTagUnderlineColor256 corresponds to the Zig tag underline_color_256.
+	SgrAttributeTagUnderlineColor256 SgrAttributeTag = 8
+	// SgrAttributeTagResetUnderlineColor corresponds to the Zig tag reset_underline_color.
+	SgrAttributeTagResetUnderlineColor SgrAttributeTag = 9
+	// SgrAttributeTagOverline corresponds to the Zig tag overline.
+	SgrAttributeTagOverline SgrAttributeTag = 10
+	// SgrAttributeTagResetOverline corresponds to the Zig tag reset_overline.
+	SgrAttributeTagResetOverline SgrAttributeTag = 11
+	// SgrAttributeTagBlink corresponds to the Zig tag blink.
+	SgrAttributeTagBlink SgrAttributeTag = 12
+	// SgrAttributeTagResetBlink corresponds to the Zig tag reset_blink.
+	SgrAttributeTagResetBlink SgrAttributeTag = 13
+	// SgrAttributeTagInverse corresponds to the Zig tag inverse.
+	SgrAttributeTagInverse SgrAttributeTag = 14
+	// SgrAttributeTagResetInverse corresponds to the Zig tag reset_inverse.
+	SgrAttributeTagResetInverse SgrAttributeTag = 15
+	// SgrAttributeTagInvisible corresponds to the Zig tag invisible.
+	SgrAttributeTagInvisible SgrAttributeTag = 16
+	// SgrAttributeTagResetInvisible corresponds to the Zig tag reset_invisible.
+	SgrAttributeTagResetInvisible SgrAttributeTag = 17
+	// SgrAttributeTagStrikethrough corresponds to the Zig tag strikethrough.
+	SgrAttributeTagStrikethrough SgrAttributeTag = 18
+	// SgrAttributeTagResetStrikethrough corresponds to the Zig tag reset_strikethrough.
+	SgrAttributeTagResetStrikethrough SgrAttributeTag = 19
+	// SgrAttributeTagDirectColorFg corresponds to the Zig tag direct_color_fg.
+	SgrAttributeTagDirectColorFg SgrAttributeTag = 20
+	// SgrAttributeTagDirectColorBg corresponds to the Zig tag direct_color_bg.
+	SgrAttributeTagDirectColorBg SgrAttributeTag = 21
+	// SgrAttributeTagColor256Fg corresponds to the Zig tag color_256_fg.
+	SgrAttributeTagColor256Fg SgrAttributeTag = 22
+	// SgrAttributeTagColor256Bg corresponds to the Zig tag color_256_bg.
+	SgrAttributeTagColor256Bg SgrAttributeTag = 23
+	// SgrAttributeTagNamedFg corresponds to the Zig tag named_fg.
+	SgrAttributeTagNamedFg SgrAttributeTag = 24
+	// SgrAttributeTagNamedBg corresponds to the Zig tag named_bg.
+	SgrAttributeTagNamedBg SgrAttributeTag = 25
+	// SgrAttributeTagBrightNamedFg corresponds to the Zig tag bright_named_fg.
+	SgrAttributeTagBrightNamedFg SgrAttributeTag = 26
+	// SgrAttributeTagBrightNamedBg corresponds to the Zig tag bright_named_bg.
+	SgrAttributeTagBrightNamedBg SgrAttributeTag = 27
+	// SgrAttributeTagResetFg corresponds to the Zig tag reset_fg.
+	SgrAttributeTagResetFg SgrAttributeTag = 28
+	// SgrAttributeTagResetBg corresponds to the Zig tag reset_bg.
+	SgrAttributeTagResetBg SgrAttributeTag = 29
+	// SgrAttributeTagUnknown corresponds to the Zig tag unknown.
+	SgrAttributeTagUnknown SgrAttributeTag = 30
+)
+
+// String returns the Zig tag name.
+func (value SgrAttributeTag) String() string {
+	switch value {
+	case SgrAttributeTagUnset:
+		return "unset"
+	case SgrAttributeTagBold:
+		return "bold"
+	case SgrAttributeTagResetBold:
+		return "reset_bold"
+	case SgrAttributeTagItalic:
+		return "italic"
+	case SgrAttributeTagResetItalic:
+		return "reset_italic"
+	case SgrAttributeTagFaint:
+		return "faint"
+	case SgrAttributeTagUnderline:
+		return "underline"
+	case SgrAttributeTagUnderlineColorRgb:
+		return "underline_color_rgb"
+	case SgrAttributeTagUnderlineColor256:
+		return "underline_color_256"
+	case SgrAttributeTagResetUnderlineColor:
+		return "reset_underline_color"
+	case SgrAttributeTagOverline:
+		return "overline"
+	case SgrAttributeTagResetOverline:
+		return "reset_overline"
+	case SgrAttributeTagBlink:
+		return "blink"
+	case SgrAttributeTagResetBlink:
+		return "reset_blink"
+	case SgrAttributeTagInverse:
+		return "inverse"
+	case SgrAttributeTagResetInverse:
+		return "reset_inverse"
+	case SgrAttributeTagInvisible:
+		return "invisible"
+	case SgrAttributeTagResetInvisible:
+		return "reset_invisible"
+	case SgrAttributeTagStrikethrough:
+		return "strikethrough"
+	case SgrAttributeTagResetStrikethrough:
+		return "reset_strikethrough"
+	case SgrAttributeTagDirectColorFg:
+		return "direct_color_fg"
+	case SgrAttributeTagDirectColorBg:
+		return "direct_color_bg"
+	case SgrAttributeTagColor256Fg:
+		return "color_256_fg"
+	case SgrAttributeTagColor256Bg:
+		return "color_256_bg"
+	case SgrAttributeTagNamedFg:
+		return "named_fg"
+	case SgrAttributeTagNamedBg:
+		return "named_bg"
+	case SgrAttributeTagBrightNamedFg:
+		return "bright_named_fg"
+	case SgrAttributeTagBrightNamedBg:
+		return "bright_named_bg"
+	case SgrAttributeTagResetFg:
+		return "reset_fg"
+	case SgrAttributeTagResetBg:
+		return "reset_bg"
+	case SgrAttributeTagUnknown:
+		return "unknown"
+	default:
+		return "SgrAttributeTag(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// ParseSgrAttributeTag returns the SgrAttributeTag named by text, which is a Zig tag name.
+func ParseSgrAttributeTag(text string) (SgrAttributeTag, error) {
+	switch text {
+	case "unset":
+		return SgrAttributeTagUnset, nil
+	case "bold":
+		return SgrAttributeTagBold, nil
+	case "reset_bold":
+		return SgrAttributeTagResetBold, nil
+	case "italic":
+		return SgrAttributeTagItalic, nil
+	case "reset_italic":
+		return SgrAttributeTagResetItalic, nil
+	case "faint":
+		return SgrAttributeTagFaint, nil
+	case "underline":
+		return SgrAttributeTagUnderline, nil
+	case "underline_color_rgb":
+		return SgrAttributeTagUnderlineColorRgb, nil
+	case "underline_color_256":
+		return SgrAttributeTagUnderlineColor256, nil
+	case "reset_underline_color":
+		return SgrAttributeTagResetUnderlineColor, nil
+	case "overline":
+		return SgrAttributeTagOverline, nil
+	case "reset_overline":
+		return SgrAttributeTagResetOverline, nil
+	case "blink":
+		return SgrAttributeTagBlink, nil
+	case "reset_blink":
+		return SgrAttributeTagResetBlink, nil
+	case "inverse":
+		return SgrAttributeTagInverse, nil
+	case "reset_inverse":
+		return SgrAttributeTagResetInverse, nil
+	case "invisible":
+		return SgrAttributeTagInvisible, nil
+	case "reset_invisible":
+		return SgrAttributeTagResetInvisible, nil
+	case "strikethrough":
+		return SgrAttributeTagStrikethrough, nil
+	case "reset_strikethrough":
+		return SgrAttributeTagResetStrikethrough, nil
+	case "direct_color_fg":
+		return SgrAttributeTagDirectColorFg, nil
+	case "direct_color_bg":
+		return SgrAttributeTagDirectColorBg, nil
+	case "color_256_fg":
+		return SgrAttributeTagColor256Fg, nil
+	case "color_256_bg":
+		return SgrAttributeTagColor256Bg, nil
+	case "named_fg":
+		return SgrAttributeTagNamedFg, nil
+	case "named_bg":
+		return SgrAttributeTagNamedBg, nil
+	case "bright_named_fg":
+		return SgrAttributeTagBrightNamedFg, nil
+	case "bright_named_bg":
+		return SgrAttributeTagBrightNamedBg, nil
+	case "reset_fg":
+		return SgrAttributeTagResetFg, nil
+	case "reset_bg":
+		return SgrAttributeTagResetBg, nil
+	case "unknown":
+		return SgrAttributeTagUnknown, nil
+	}
+	return 0, &EnumParseError{Type: "SgrAttributeTag", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value SgrAttributeTag) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseSgrAttributeTag.
+func (value *SgrAttributeTag) UnmarshalText(text []byte) error {
+	parsed, err := ParseSgrAttributeTag(string(text))
 	if err != nil {
 		return err
 	}

@@ -4403,7 +4403,7 @@ func (g *Gesture) Release(x uint16, y uint16) error {
 	return nil
 }
 
-// Reset calls the Zig function Gesture.reset.
+// Reset: Discard the sequence in progress and the last command's payloads.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (g *Gesture) Reset() error {
@@ -4449,6 +4449,360 @@ func (g *Gesture) Dragged() (bool, error) {
 		return false, zigoPoisonAfterPanic(zigoErrorForCode("Gesture.Dragged", code), g)
 	}
 	return result != 0, nil
+}
+
+// NewOSCParser: Create a standalone OSC parser.
+//
+// The parser is given an allocator, so the sequences that are allowed to grow
+// past ghostty's 2 KiB inline buffer -- OSC 52 clipboard writes, mainly -- are
+// parsed rather than dropped.
+// The caller must call Close on the returned handle.
+// Native failures are returned as generated error values.
+func NewOSCParser() (*OSCParser, error) {
+	result, code := raw.NewOscParser()
+	if code != 0 {
+		return nil, zigoErrorForCode("NewOSCParser", code)
+	}
+	return zigoNewOSCParser(result), nil
+}
+
+// Feed bytes to the parser, applying them to the terminal.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) Feed(bytes []byte) error {
+	ptr, err := zigoCheckedPointer("OSCParser.Feed receiver", o)
+	if err != nil {
+		return err
+	}
+	defer o.zigoRelease()
+	code := raw.OscParserFeed(ptr, bytes)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.Feed", code), o)
+	}
+	return nil
+}
+
+// End: Finish the sequence and report whether it named a command.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) End(terminator OSCTerminator) (bool, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.End receiver", o)
+	if err != nil {
+		return false, err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserEnd(ptr, uint8(terminator))
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.End", code), o)
+	}
+	return result != 0, nil
+}
+
+// Reset: Discard the sequence in progress and the last command's payloads.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) Reset() error {
+	ptr, err := zigoCheckedPointer("OSCParser.Reset receiver", o)
+	if err != nil {
+		return err
+	}
+	defer o.zigoRelease()
+	code := raw.OscParserReset(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.Reset", code), o)
+	}
+	return nil
+}
+
+// Command: The last command parsed, or `invalid` if `end` has not said yes.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) Command() (OSCCommand, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.Command receiver", o)
+	if err != nil {
+		return 0, err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserCommand(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.Command", code), o)
+	}
+	return OSCCommand(result), nil
+}
+
+// WindowTitle: OSC 0 and OSC 2: the window title.
+//
+// ghostty does not decode it. Under title mode 0 the bytes are hex, and
+// otherwise they are UTF-8 or latin1 depending on how the terminal was
+// set up, which only the embedder knows.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) WindowTitle() (string, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.WindowTitle receiver", o)
+	if err != nil {
+		return "", err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserWindowTitle(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.WindowTitle", code), o)
+	}
+	return result, nil
+}
+
+// Icon: OSC 1: the icon name. Not well defined by any specification, and
+// ghostty itself ignores it.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) Icon() (string, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.Icon receiver", o)
+	if err != nil {
+		return "", err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserIcon(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.Icon", code), o)
+	}
+	return result, nil
+}
+
+// Pwd: OSC 7: the shell's working directory, as a `file://` URL. ghostty does
+// not check that it is one, and neither does this.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) Pwd() (string, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.Pwd receiver", o)
+	if err != nil {
+		return "", err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserPwd(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.Pwd", code), o)
+	}
+	return result, nil
+}
+
+// HyperlinkUri: OSC 8: the link target.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) HyperlinkUri() (string, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.HyperlinkUri receiver", o)
+	if err != nil {
+		return "", err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserHyperlinkUri(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.HyperlinkUri", code), o)
+	}
+	return result, nil
+}
+
+// HyperlinkID: OSC 8: the link's `id=` parameter, empty when it carried none. Two runs
+// sharing an id are one link even when they are not adjacent.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) HyperlinkID() (string, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.HyperlinkID receiver", o)
+	if err != nil {
+		return "", err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserHyperlinkID(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.HyperlinkID", code), o)
+	}
+	return result, nil
+}
+
+// NotificationTitle: OSC 9 and OSC 777: the notification title.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) NotificationTitle() (string, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.NotificationTitle receiver", o)
+	if err != nil {
+		return "", err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserNotificationTitle(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.NotificationTitle", code), o)
+	}
+	return result, nil
+}
+
+// NotificationBody: OSC 9 and OSC 777: the notification body.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) NotificationBody() (string, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.NotificationBody receiver", o)
+	if err != nil {
+		return "", err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserNotificationBody(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.NotificationBody", code), o)
+	}
+	return result, nil
+}
+
+// ClipboardData: OSC 52: the base64 payload to put on the clipboard, or a bare `?` when
+// the program is asking to read the clipboard rather than to write it.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) ClipboardData() (string, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.ClipboardData receiver", o)
+	if err != nil {
+		return "", err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserClipboardData(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.ClipboardData", code), o)
+	}
+	return result, nil
+}
+
+// ClipboardSelection: OSC 52: which selection the request names, as the protocol's own
+// character (`c` for clipboard, `p` for primary, `s` for the configured
+// default), or zero for any other command.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) ClipboardSelection() (uint8, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.ClipboardSelection receiver", o)
+	if err != nil {
+		return 0, err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserClipboardSelection(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.ClipboardSelection", code), o)
+	}
+	return result, nil
+}
+
+// MouseShape: OSC 22: the pointer shape, usually a W3C CSS cursor name. ghostty
+// parses whatever string is given without validating it.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) MouseShape() (string, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.MouseShape receiver", o)
+	if err != nil {
+		return "", err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserMouseShape(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.MouseShape", code), o)
+	}
+	return result, nil
+}
+
+// SemanticPromptAction: OSC 133: which prompt boundary this sequence marks.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) SemanticPromptAction() (SemanticPromptAction, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.SemanticPromptAction receiver", o)
+	if err != nil {
+		return 0, err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserSemanticPromptAction(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.SemanticPromptAction", code), o)
+	}
+	return SemanticPromptAction(result), nil
+}
+
+// SemanticPromptOptions: OSC 133: the raw, unvalidated option string that followed the action.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) SemanticPromptOptions() (string, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.SemanticPromptOptions receiver", o)
+	if err != nil {
+		return "", err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserSemanticPromptOptions(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.SemanticPromptOptions", code), o)
+	}
+	return result, nil
+}
+
+// ProgressState: OSC 9;4: what the program says about its progress.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) ProgressState() (ProgressState, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.ProgressState receiver", o)
+	if err != nil {
+		return 0, err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserProgressState(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.ProgressState", code), o)
+	}
+	return ProgressState(result), nil
+}
+
+// ProgressValue: OSC 9;4: percent complete, or -1 when the report carried no percentage.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) ProgressValue() (int16, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.ProgressValue receiver", o)
+	if err != nil {
+		return 0, err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserProgressValue(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.ProgressValue", code), o)
+	}
+	return result, nil
+}
+
+// SgrAttributeCount: How many attributes a CSI SGR parameter list yields, for sizing the slice
+// `sgrAttributes` fills. An empty list is the SGR reset, so it yields one.
+//
+// See `sgrAttributes` for what `colon_mask` means.
+// Native failures are returned as generated error values.
+func SgrAttributeCount(params []uint16, colonMask uint32) (uint, error) {
+	result, code := raw.SgrAttributeCount(params, colonMask)
+	if code != 0 {
+		return 0, zigoErrorForCode("SgrAttributeCount", code)
+	}
+	return result, nil
+}
+
+// SgrAttributes: Parse a CSI SGR parameter list into `dst`, in order, and report how many
+// attributes were written.
+//
+// `params` is the parameter list of a `CSI ... m` sequence with the `m`
+// dropped, and `colon_mask` says how the parameters were separated: bit `i`
+// set means parameter `i` was followed by a colon rather than a semicolon,
+// which is ghostty's own convention for the bitset. That distinction is not
+// cosmetic -- `4;3` is underline then italic while `4:3` is a curly underline,
+// and `38;2;r;g;b` and `38:2::r:g:b` are both truecolor -- so it has to be
+// carried explicitly. A mask is used rather than ghostty's own
+// `std.StaticBitSet` because a bitset has no C representation.
+//
+// A parameter ghostty does not implement yields `unknown` rather than being
+// skipped, so the attributes line up with the sequence as written.
+// Native failures are returned as generated error values.
+func SgrAttributes(params []uint16, colonMask uint32, dst []SgrAttribute) (uint, error) {
+	var dstRaw []raw.SgrAttributeData
+	if len(dst) != 0 {
+		dstRaw = unsafe.Slice((*raw.SgrAttributeData)(unsafe.Pointer(&dst[0])), len(dst))
+	}
+	result, code := raw.SgrAttributes(params, colonMask, dstRaw)
+	if code != 0 {
+		return 0, zigoErrorForCode("SgrAttributes", code)
+	}
+	return result, nil
 }
 
 // zigoRunesToUint32 views a []rune as the []uint32 the raw layer takes, without copying.

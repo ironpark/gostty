@@ -1255,3 +1255,125 @@ func (g *Gesture) zigoTakeLocked() (zigoGestureCleanupState, bool) {
 	}
 	return state, true
 }
+
+// OSCParser is a caller-owned native handle. Call Close when it is no longer needed.
+type OSCParser struct {
+	ptr     unsafe.Pointer
+	mu      sync.Mutex
+	active  int
+	closed  bool
+	poison  *NativePanicError
+	cleanup runtime.Cleanup
+}
+
+// zigoAcquire pins o open for one native call and hands back its pointer;
+// the call ends with zigoRelease. A nil, closed, or poisoned handle is the error.
+func (o *OSCParser) zigoAcquire(operation string) (unsafe.Pointer, error) {
+	if o == nil {
+		return nil, &HandleError{Operation: operation}
+	}
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if o.closed || o.ptr == nil {
+		return nil, &HandleError{Operation: operation}
+	}
+	if o.poison != nil {
+		return nil, o.poison.Poisoned(operation)
+	}
+	o.active++
+	return o.ptr, nil
+}
+
+func (o *OSCParser) zigoRelease() {
+	if o == nil {
+		return
+	}
+	o.mu.Lock()
+	o.active--
+	state, release := o.zigoTakeLocked()
+	o.mu.Unlock()
+	if release {
+		zigoCleanupOSCParser(state)
+	}
+}
+
+// zigoPoison marks o unusable: a Zig panic unwound through native frames
+// without running their defers, so the state behind it is unknown.
+func (o *OSCParser) zigoPoison(cause *NativePanicError) {
+	if o == nil {
+		return
+	}
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if o.poison == nil {
+		o.poison = cause
+		o.cleanup.Stop()
+	}
+}
+
+// ZigoAcquire implements the shared lifecycle handle contract.
+func (o *OSCParser) ZigoAcquire(operation string) (unsafe.Pointer, error) {
+	return o.zigoAcquire(operation)
+}
+
+// ZigoRelease implements the shared lifecycle handle contract.
+func (o *OSCParser) ZigoRelease() { o.zigoRelease() }
+
+// ZigoPoison implements the shared lifecycle handle contract.
+func (o *OSCParser) ZigoPoison(cause *NativePanicError) { o.zigoPoison(cause) }
+
+type zigoOSCParserCleanupState struct {
+	ptr unsafe.Pointer
+}
+
+func zigoNewOSCParser(ptr unsafe.Pointer) *OSCParser {
+	value := &OSCParser{ptr: ptr}
+	state := zigoOSCParserCleanupState{ptr: ptr}
+	value.cleanup = runtime.AddCleanup(value, zigoCleanupOSCParser, state)
+	return value
+}
+
+func zigoCleanupOSCParser(state zigoOSCParserCleanupState) {
+	if state.ptr != nil {
+		raw.OscParserFreeOscParser(state.ptr)
+	}
+}
+
+// Close releases the native OSCParser resources. It is safe to call more than once.
+// The error result is always nil; it exists so OSCParser satisfies io.Closer.
+// Close does not wait: a call still inside native keeps the resources until it
+// returns, and every call made after Close fails with *HandleError.
+func (o *OSCParser) Close() error {
+	if o == nil {
+		return nil
+	}
+	o.mu.Lock()
+	if o.closed {
+		o.mu.Unlock()
+		return nil
+	}
+	o.closed = true
+	o.cleanup.Stop()
+	state, release := o.zigoTakeLocked()
+	o.mu.Unlock()
+	if release {
+		zigoCleanupOSCParser(state)
+	}
+	runtime.KeepAlive(o)
+	return nil
+}
+
+// zigoTakeLocked hands out what is left to release once o is closed and no
+// call is inside native; mu must be held. A poisoned handle keeps its native
+// object: releasing state a panic left half-changed could fault, so it leaks.
+func (o *OSCParser) zigoTakeLocked() (zigoOSCParserCleanupState, bool) {
+	if !o.closed || o.active != 0 || o.ptr == nil {
+		return zigoOSCParserCleanupState{}, false
+	}
+	state := zigoOSCParserCleanupState{ptr: o.ptr}
+	o.ptr = nil
+	if o.poison != nil {
+		state.ptr = nil
+	}
+	return state, true
+}
