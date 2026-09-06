@@ -88,5 +88,6 @@ font fallback chain, ligatures, tabs, splits, or persistent settings. OSC 52
 clipboard reads are accepted without confirmation, which is unsafe for a
 general-purpose terminal.
 
-The example is a separate Go module because its UI, PTY, and clipboard packages
-are intentionally not dependencies of the binding module.
+The example is part of the root module, so its UI, PTY, and clipboard packages
+appear in the module's `go.mod`. Go only downloads them for builds that import
+the example, so a consumer of the bindings pays nothing for them.

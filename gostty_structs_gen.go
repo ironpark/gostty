@@ -26,17 +26,17 @@ type CellFlags struct {
 
 func zigoCellFlagsToBacking(value CellFlags) uint32 {
 	var result uint64
-	result |= (uint64(boolToUint8(value.Bold)) & 0x1) << 0
-	result |= (uint64(boolToUint8(value.Italic)) & 0x1) << 1
-	result |= (uint64(boolToUint8(value.Faint)) & 0x1) << 2
-	result |= (uint64(boolToUint8(value.Blink)) & 0x1) << 3
-	result |= (uint64(boolToUint8(value.Inverse)) & 0x1) << 4
-	result |= (uint64(boolToUint8(value.Invisible)) & 0x1) << 5
-	result |= (uint64(boolToUint8(value.Strikethrough)) & 0x1) << 6
-	result |= (uint64(boolToUint8(value.Overline)) & 0x1) << 7
+	result |= (uint64(zigoBoolToUint8(value.Bold)) & 0x1) << 0
+	result |= (uint64(zigoBoolToUint8(value.Italic)) & 0x1) << 1
+	result |= (uint64(zigoBoolToUint8(value.Faint)) & 0x1) << 2
+	result |= (uint64(zigoBoolToUint8(value.Blink)) & 0x1) << 3
+	result |= (uint64(zigoBoolToUint8(value.Inverse)) & 0x1) << 4
+	result |= (uint64(zigoBoolToUint8(value.Invisible)) & 0x1) << 5
+	result |= (uint64(zigoBoolToUint8(value.Strikethrough)) & 0x1) << 6
+	result |= (uint64(zigoBoolToUint8(value.Overline)) & 0x1) << 7
 	result |= (uint64(value.Underline) & 0x7) << 8
 	result |= (uint64(value.Wide) & 0x3) << 11
-	result |= (uint64(boolToUint8(value.Selected)) & 0x1) << 13
+	result |= (uint64(zigoBoolToUint8(value.Selected)) & 0x1) << 13
 	result |= (uint64(value.Pad) & 0x3ffff) << 14
 	return uint32(result)
 }
@@ -62,10 +62,24 @@ func CellFlagsFromBacking(value uint32) CellFlags {
 	}
 }
 
+// Selection mirrors the Zig `extern struct` of the same name.
+type Selection struct {
+	// StartX corresponds to the Zig field start_x.
+	StartX uint16
+	// StartY corresponds to the Zig field start_y.
+	StartY uint32
+	// EndX corresponds to the Zig field end_x.
+	EndX uint16
+	// EndY corresponds to the Zig field end_y.
+	EndY uint32
+	// Rectangle corresponds to the Zig field rectangle.
+	Rectangle bool
+}
+
 // RenderCell mirrors the Zig `extern struct` of the same name.
 type RenderCell struct {
 	// Codepoint corresponds to the Zig field codepoint.
-	Codepoint uint32
+	Codepoint rune
 	// Fg corresponds to the Zig field fg.
 	Fg uint32
 	// Bg corresponds to the Zig field bg.
@@ -156,9 +170,41 @@ var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Format)-unsafe.Offsetof(raw.K
 var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Compression)-unsafe.Offsetof(raw.KittyImageData{}.Compression)]
 var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Pad)-unsafe.Offsetof(raw.KittyImageData{}.Pad)]
 
+func zigoSelectionToRaw(value Selection) raw.SelectionData {
+	return raw.SelectionData{
+		StartX:    value.StartX,
+		StartY:    value.StartY,
+		EndX:      value.EndX,
+		EndY:      value.EndY,
+		Rectangle: zigoBoolToUint8(value.Rectangle),
+	}
+}
+
+func zigoSelectionFromRaw(value raw.SelectionData) Selection {
+	return Selection{
+		StartX:    value.StartX,
+		StartY:    value.StartY,
+		EndX:      value.EndX,
+		EndY:      value.EndY,
+		Rectangle: value.Rectangle != 0,
+	}
+}
+
+func zigoSelectionSliceCopyFromRaw(dst []Selection, values []raw.SelectionData, count int) {
+	if count > len(dst) {
+		count = len(dst)
+	}
+	if count > len(values) {
+		count = len(values)
+	}
+	for i := 0; i < count; i++ {
+		dst[i] = zigoSelectionFromRaw(values[i])
+	}
+}
+
 func zigoRenderCellFromRaw(value raw.RenderCellData) RenderCell {
 	return RenderCell{
-		Codepoint: value.Codepoint,
+		Codepoint: rune(value.Codepoint),
 		Fg:        value.Fg,
 		Bg:        value.Bg,
 		Flags:     CellFlagsFromBacking(value.Flags),

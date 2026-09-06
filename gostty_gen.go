@@ -25,7 +25,7 @@ func (te *Terminal) Cols() (uint16, error) {
 	defer te.zigoRelease()
 	result, code := raw.TerminalCols(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("Terminal.Cols", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Cols", code), te)
 	}
 	return result, nil
 }
@@ -41,7 +41,7 @@ func (te *Terminal) Rows() (uint16, error) {
 	defer te.zigoRelease()
 	result, code := raw.TerminalRows(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("Terminal.Rows", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Rows", code), te)
 	}
 	return result, nil
 }
@@ -57,7 +57,7 @@ func (te *Terminal) CursorX() (uint16, error) {
 	defer te.zigoRelease()
 	result, code := raw.TerminalCursorX(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("Terminal.CursorX", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorX", code), te)
 	}
 	return result, nil
 }
@@ -73,7 +73,7 @@ func (te *Terminal) CursorY() (uint16, error) {
 	defer te.zigoRelease()
 	result, code := raw.TerminalCursorY(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("Terminal.CursorY", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorY", code), te)
 	}
 	return result, nil
 }
@@ -89,27 +89,32 @@ func (te *Terminal) CursorStyle() (CursorStyle, error) {
 	defer te.zigoRelease()
 	result, code := raw.TerminalCursorStyle(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("Terminal.CursorStyle", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorStyle", code), te)
 	}
 	return CursorStyle(result), nil
 }
 
 // CodepointWidth calls the Zig function codepointWidth.
 // A native panic is returned as *NativePanicError.
-func CodepointWidth(p0 uint32) (uint8, error) {
-	if p0 > 2097151 {
-		return 0, &RangeError{Operation: "CodepointWidth", Parameter: "p0", Type: "u21"}
+func CodepointWidth(p0 rune) (uint8, error) {
+	if p0 < 0 || p0 > 1114111 {
+		return 0, &RangeError{Operation: "CodepointWidth", Parameter: "p0", Type: "codepoint"}
 	}
-	result, code := raw.UnicodeCodepointWidth(p0)
+	result, code := raw.UnicodeCodepointWidth(uint32(p0))
 	if code != 0 {
-		return 0, errorForCode("CodepointWidth", code)
+		return 0, zigoErrorForCode("CodepointWidth", code)
 	}
 	return result, nil
 }
 
 // GraphemeWidth calls the Zig function graphemeWidth.
-func GraphemeWidth(cps []uint32) uint8 {
-	return raw.GraphemeWidth(cps)
+func GraphemeWidth(cps []rune) (uint8, error) {
+	for _, zigoValue := range cps {
+		if zigoValue < 0 || zigoValue > 1114111 {
+			return 0, &RangeError{Operation: "GraphemeWidth", Parameter: "cps", Type: "codepoint"}
+		}
+	}
+	return raw.GraphemeWidth(zigoRunesToUint32(cps)), nil
 }
 
 // NewTerminal creates a caller-owned Terminal.
@@ -118,9 +123,9 @@ func GraphemeWidth(cps []uint32) uint8 {
 func NewTerminal(cols uint16, rows uint16) (*Terminal, error) {
 	result, code := raw.TerminalNewTerminal(cols, rows)
 	if code != 0 {
-		return nil, errorForCode("NewTerminal", code)
+		return nil, zigoErrorForCode("NewTerminal", code)
 	}
-	return newTerminal(result), nil
+	return zigoNewTerminal(result), nil
 }
 
 // NewStream: Create a VT stream that applies escape sequences to `terminal`.
@@ -144,10 +149,10 @@ func (te *Terminal) NewStream(continuationMaxBytes uint) (*Stream, error) {
 	}()
 	result, code := raw.TerminalNewStream(ptr, continuationMaxBytes)
 	if code != 0 {
-		return nil, zigoPoisonAfterPanic(errorForCode("Terminal.NewStream", code), te)
+		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.NewStream", code), te)
 	}
 	zigoChildCreated = true
-	return newStream(result, zigoChildParent, []zigoCallbackHandle{0, 0}), nil
+	return zigoNewStream(result, zigoChildParent, []zigoCallbackHandle{0, 0}), nil
 }
 
 // Feed bytes to the parser, applying them to the terminal.
@@ -167,7 +172,7 @@ func (s *Stream) Feed(bytes []byte) error {
 		}
 	}
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Stream.Feed", code), s)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.Feed", code), s)
 	}
 	return nil
 }
@@ -190,7 +195,7 @@ func (s *Stream) Failed() (bool, error) {
 		}
 	}
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(errorForCode("Stream.Failed", code), s)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Stream.Failed", code), s)
 	}
 	return result != 0, nil
 }
@@ -215,7 +220,7 @@ func (s *Stream) NextEvent() (StreamEvent, bool, error) {
 		}
 	}
 	if code != 0 {
-		return 0, false, zigoPoisonAfterPanic(errorForCode("Stream.NextEvent", code), s)
+		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Stream.NextEvent", code), s)
 	}
 	return StreamEvent(result), zigoHas, nil
 }
@@ -255,7 +260,7 @@ func (s *Stream) EventTitle() (string, error) {
 		}
 	}
 	if code != 0 {
-		return "", zigoPoisonAfterPanic(errorForCode("Stream.EventTitle", code), s)
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("Stream.EventTitle", code), s)
 	}
 	return result, nil
 }
@@ -277,7 +282,7 @@ func (s *Stream) EventBody() (string, error) {
 		}
 	}
 	if code != 0 {
-		return "", zigoPoisonAfterPanic(errorForCode("Stream.EventBody", code), s)
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("Stream.EventBody", code), s)
 	}
 	return result, nil
 }
@@ -299,7 +304,7 @@ func (s *Stream) EventProgressState() (ProgressState, error) {
 		}
 	}
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("Stream.EventProgressState", code), s)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Stream.EventProgressState", code), s)
 	}
 	return ProgressState(result), nil
 }
@@ -322,7 +327,7 @@ func (s *Stream) EventProgress() (uint8, bool, error) {
 		}
 	}
 	if code != 0 {
-		return 0, false, zigoPoisonAfterPanic(errorForCode("Stream.EventProgress", code), s)
+		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Stream.EventProgress", code), s)
 	}
 	return result, zigoHas, nil
 }
@@ -340,11 +345,11 @@ func (s *Stream) OnClipboardWriteRequest(callback ClipboardHandler) error {
 		return err
 	}
 	defer s.zigoRelease()
-	callbackHandle := newClipboardHandlerHandle(callback)
+	callbackHandle := zigoNewClipboardHandlerHandle(callback)
 	callbackHandleAdopted := false
 	defer func() {
 		if !callbackHandleAdopted {
-			deleteCallbackHandle(callbackHandle)
+			zigoDeleteCallbackHandle(callbackHandle)
 		}
 	}()
 	code := raw.StreamOnClipboardWriteRequest(ptr, uintptr(callbackHandle))
@@ -355,11 +360,11 @@ func (s *Stream) OnClipboardWriteRequest(callback ClipboardHandler) error {
 		}
 	}
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Stream.OnClipboardWriteRequest", code), s)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.OnClipboardWriteRequest", code), s)
 	}
 	callbackPreviousHandle := s.zigoReplaceCallbackHandle(0, callbackHandle)
 	callbackHandleAdopted = true
-	deleteCallbackHandle(callbackPreviousHandle)
+	zigoDeleteCallbackHandle(callbackPreviousHandle)
 	return nil
 }
 
@@ -377,11 +382,11 @@ func (s *Stream) OnClipboardReadRequest(callback ClipboardHandler) error {
 		return err
 	}
 	defer s.zigoRelease()
-	callbackHandle := newClipboardHandlerHandle(callback)
+	callbackHandle := zigoNewClipboardHandlerHandle(callback)
 	callbackHandleAdopted := false
 	defer func() {
 		if !callbackHandleAdopted {
-			deleteCallbackHandle(callbackHandle)
+			zigoDeleteCallbackHandle(callbackHandle)
 		}
 	}()
 	code := raw.StreamOnClipboardReadRequest(ptr, uintptr(callbackHandle))
@@ -392,11 +397,11 @@ func (s *Stream) OnClipboardReadRequest(callback ClipboardHandler) error {
 		}
 	}
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Stream.OnClipboardReadRequest", code), s)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.OnClipboardReadRequest", code), s)
 	}
 	callbackPreviousHandle := s.zigoReplaceCallbackHandle(1, callbackHandle)
 	callbackHandleAdopted = true
-	deleteCallbackHandle(callbackPreviousHandle)
+	zigoDeleteCallbackHandle(callbackPreviousHandle)
 	return nil
 }
 
@@ -417,7 +422,7 @@ func (s *Stream) ClipboardLocation() (ClipboardLocation, error) {
 		}
 	}
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("Stream.ClipboardLocation", code), s)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Stream.ClipboardLocation", code), s)
 	}
 	return ClipboardLocation(result), nil
 }
@@ -439,7 +444,7 @@ func (s *Stream) ClipboardName() (string, error) {
 		}
 	}
 	if code != 0 {
-		return "", zigoPoisonAfterPanic(errorForCode("Stream.ClipboardName", code), s)
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("Stream.ClipboardName", code), s)
 	}
 	return result, nil
 }
@@ -462,7 +467,7 @@ func (s *Stream) ClipboardGranted() (bool, error) {
 		}
 	}
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(errorForCode("Stream.ClipboardGranted", code), s)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Stream.ClipboardGranted", code), s)
 	}
 	return result != 0, nil
 }
@@ -485,7 +490,7 @@ func (s *Stream) ClipboardCanRemember() (bool, error) {
 		}
 	}
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(errorForCode("Stream.ClipboardCanRemember", code), s)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Stream.ClipboardCanRemember", code), s)
 	}
 	return result != 0, nil
 }
@@ -508,7 +513,7 @@ func (s *Stream) ClipboardContentCount() (uint, error) {
 		}
 	}
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("Stream.ClipboardContentCount", code), s)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Stream.ClipboardContentCount", code), s)
 	}
 	return result, nil
 }
@@ -530,7 +535,7 @@ func (s *Stream) ClipboardContentMime(index uint) (string, error) {
 		}
 	}
 	if code != 0 {
-		return "", zigoPoisonAfterPanic(errorForCode("Stream.ClipboardContentMime", code), s)
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("Stream.ClipboardContentMime", code), s)
 	}
 	return result, nil
 }
@@ -552,7 +557,7 @@ func (s *Stream) ClipboardContentData(index uint) ([]byte, error) {
 		}
 	}
 	if code != 0 {
-		return nil, zigoPoisonAfterPanic(errorForCode("Stream.ClipboardContentData", code), s)
+		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Stream.ClipboardContentData", code), s)
 	}
 	return result, nil
 }
@@ -574,7 +579,7 @@ func (s *Stream) ClipboardMimeCount() (uint, error) {
 		}
 	}
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("Stream.ClipboardMimeCount", code), s)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Stream.ClipboardMimeCount", code), s)
 	}
 	return result, nil
 }
@@ -596,7 +601,7 @@ func (s *Stream) ClipboardMime(index uint) (string, error) {
 		}
 	}
 	if code != 0 {
-		return "", zigoPoisonAfterPanic(errorForCode("Stream.ClipboardMime", code), s)
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("Stream.ClipboardMime", code), s)
 	}
 	return result, nil
 }
@@ -611,14 +616,14 @@ func (s *Stream) AllowClipboard(remember bool) error {
 		return err
 	}
 	defer s.zigoRelease()
-	code := raw.StreamAllowClipboard(ptr, boolToUint8(remember))
+	code := raw.StreamAllowClipboard(ptr, zigoBoolToUint8(remember))
 	if zigoCallbackPanicPending() {
 		for slot := range 2 {
 			zigoRethrowCallbackPanic("Stream.AllowClipboard", s.zigoCallbackHandle(slot))
 		}
 	}
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Stream.AllowClipboard", code), s)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.AllowClipboard", code), s)
 	}
 	return nil
 }
@@ -636,14 +641,14 @@ func (s *Stream) ReplyClipboardText(text string, remember bool) error {
 		return err
 	}
 	defer s.zigoRelease()
-	code := raw.StreamReplyClipboardText(ptr, text, boolToUint8(remember))
+	code := raw.StreamReplyClipboardText(ptr, text, zigoBoolToUint8(remember))
 	if zigoCallbackPanicPending() {
 		for slot := range 2 {
 			zigoRethrowCallbackPanic("Stream.ReplyClipboardText", s.zigoCallbackHandle(slot))
 		}
 	}
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Stream.ReplyClipboardText", code), s)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.ReplyClipboardText", code), s)
 	}
 	return nil
 }
@@ -665,7 +670,7 @@ func (s *Stream) DenyClipboard(reason ClipboardDenial) error {
 		}
 	}
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Stream.DenyClipboard", code), s)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.DenyClipboard", code), s)
 	}
 	return nil
 }
@@ -683,8 +688,8 @@ func (s *Stream) WriteContinuation(writer io.Writer) error {
 		return err
 	}
 	defer s.zigoRelease()
-	writerHandle := newZigoWriterHandle(writer)
-	defer deleteCallbackHandle(writerHandle)
+	writerHandle := zigoNewWriterStreamHandle(writer)
+	defer zigoDeleteCallbackHandle(writerHandle)
 	code := raw.StreamWriteContinuation(ptr, uintptr(writerHandle))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("Stream.WriteContinuation", writerHandle)
@@ -696,7 +701,7 @@ func (s *Stream) WriteContinuation(writer io.Writer) error {
 		return err
 	}
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Stream.WriteContinuation", code), s)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.WriteContinuation", code), s)
 	}
 	return nil
 }
@@ -718,7 +723,7 @@ func (s *Stream) HasReplies() (bool, error) {
 		}
 	}
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(errorForCode("Stream.HasReplies", code), s)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Stream.HasReplies", code), s)
 	}
 	return result != 0, nil
 }
@@ -744,8 +749,8 @@ func (s *Stream) WriteReplies(writer io.Writer) error {
 		return err
 	}
 	defer s.zigoRelease()
-	writerHandle := newZigoWriterHandle(writer)
-	defer deleteCallbackHandle(writerHandle)
+	writerHandle := zigoNewWriterStreamHandle(writer)
+	defer zigoDeleteCallbackHandle(writerHandle)
 	code := raw.StreamWriteReplies(ptr, uintptr(writerHandle))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("Stream.WriteReplies", writerHandle)
@@ -757,7 +762,7 @@ func (s *Stream) WriteReplies(writer io.Writer) error {
 		return err
 	}
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Stream.WriteReplies", code), s)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.WriteReplies", code), s)
 	}
 	return nil
 }
@@ -773,7 +778,7 @@ func (te *Terminal) PrintString(str string) error {
 	defer te.zigoRelease()
 	code := raw.TerminalPrintString(ptr, str)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.PrintString", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PrintString", code), te)
 	}
 	return nil
 }
@@ -789,7 +794,7 @@ func (te *Terminal) PlainString() (string, error) {
 	defer te.zigoRelease()
 	result, code := raw.TerminalPlainString(ptr)
 	if code != 0 {
-		return "", zigoPoisonAfterPanic(errorForCode("Terminal.PlainString", code), te)
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PlainString", code), te)
 	}
 	return result, nil
 }
@@ -805,7 +810,7 @@ func (te *Terminal) SetCursorStyle(value CursorStyleReq) error {
 	defer te.zigoRelease()
 	code := raw.TerminalSetCursorStyle(ptr, uint8(value))
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.SetCursorStyle", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetCursorStyle", code), te)
 	}
 	return nil
 }
@@ -821,7 +826,7 @@ func (te *Terminal) SetCursorPos(rowReq uint, colReq uint) error {
 	defer te.zigoRelease()
 	code := raw.TerminalSetCursorPos(ptr, rowReq, colReq)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.SetCursorPos", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetCursorPos", code), te)
 	}
 	return nil
 }
@@ -837,7 +842,7 @@ func (te *Terminal) CarriageReturn() error {
 	defer te.zigoRelease()
 	code := raw.TerminalCarriageReturn(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.CarriageReturn", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CarriageReturn", code), te)
 	}
 	return nil
 }
@@ -853,7 +858,7 @@ func (te *Terminal) Linefeed() error {
 	defer te.zigoRelease()
 	code := raw.TerminalLinefeed(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.Linefeed", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Linefeed", code), te)
 	}
 	return nil
 }
@@ -869,7 +874,7 @@ func (te *Terminal) Backspace() error {
 	defer te.zigoRelease()
 	code := raw.TerminalBackspace(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.Backspace", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Backspace", code), te)
 	}
 	return nil
 }
@@ -885,7 +890,7 @@ func (te *Terminal) CursorIsAtPrompt() (bool, error) {
 	defer te.zigoRelease()
 	result, code := raw.TerminalCursorIsAtPrompt(ptr)
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(errorForCode("Terminal.CursorIsAtPrompt", code), te)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorIsAtPrompt", code), te)
 	}
 	return result != 0, nil
 }
@@ -901,7 +906,7 @@ func (te *Terminal) FullReset() error {
 	defer te.zigoRelease()
 	code := raw.TerminalFullReset(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.FullReset", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.FullReset", code), te)
 	}
 	return nil
 }
@@ -921,7 +926,7 @@ func (te *Terminal) SwitchScreen(key ScreenKey) error {
 	defer te.zigoRelease()
 	code := raw.TerminalSwitchScreen(ptr, uint8(key))
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.SwitchScreen", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SwitchScreen", code), te)
 	}
 	return nil
 }
@@ -935,9 +940,9 @@ func (te *Terminal) SwitchScreenMode(mode SwitchScreenMode, enabled bool) error 
 		return err
 	}
 	defer te.zigoRelease()
-	code := raw.TerminalSwitchScreenMode(ptr, uint8(mode), boolToUint8(enabled))
+	code := raw.TerminalSwitchScreenMode(ptr, uint8(mode), zigoBoolToUint8(enabled))
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.SwitchScreenMode", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SwitchScreenMode", code), te)
 	}
 	return nil
 }
@@ -953,7 +958,7 @@ func (te *Terminal) ActiveScreenKey() (ScreenKey, error) {
 	defer te.zigoRelease()
 	result, code := raw.TerminalActiveScreenKey(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("Terminal.ActiveScreenKey", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ActiveScreenKey", code), te)
 	}
 	return ScreenKey(result), nil
 }
@@ -970,9 +975,9 @@ func (te *Terminal) ActiveScreen() (*Screen, error) {
 	defer te.zigoRelease()
 	result, code := raw.TerminalActiveScreen(ptr)
 	if code != 0 {
-		return nil, zigoPoisonAfterPanic(errorForCode("Terminal.ActiveScreen", code), te)
+		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ActiveScreen", code), te)
 	}
-	return newBorrowedScreen(result, te), nil
+	return zigoNewBorrowedScreen(result, te), nil
 }
 
 // Screen: A specific screen, or absent if the terminal has not created it yet. The
@@ -988,12 +993,12 @@ func (te *Terminal) Screen(key ScreenKey) (*Screen, bool, error) {
 	defer te.zigoRelease()
 	result, code := raw.TerminalScreen(ptr, uint8(key))
 	if code != 0 {
-		return nil, false, zigoPoisonAfterPanic(errorForCode("Terminal.Screen", code), te)
+		return nil, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Screen", code), te)
 	}
 	if result == nil {
 		return nil, false, nil
 	}
-	return newBorrowedScreen(result, te), true, nil
+	return zigoNewBorrowedScreen(result, te), true, nil
 }
 
 // SelectAll calls the Zig function Screen.selectAll.
@@ -1007,7 +1012,7 @@ func (s *Screen) SelectAll() (bool, error) {
 	defer s.zigoRelease()
 	result, code := raw.ScreenSelectAll(ptr)
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(errorForCode("Screen.SelectAll", code), s)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Screen.SelectAll", code), s)
 	}
 	return result != 0, nil
 }
@@ -1023,7 +1028,7 @@ func (s *Screen) ClearSelection() error {
 	defer s.zigoRelease()
 	code := raw.ScreenClearSelection(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Screen.ClearSelection", code), s)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Screen.ClearSelection", code), s)
 	}
 	return nil
 }
@@ -1039,7 +1044,7 @@ func (s *Screen) HasSelection() (bool, error) {
 	defer s.zigoRelease()
 	result, code := raw.ScreenHasSelection(ptr)
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(errorForCode("Screen.HasSelection", code), s)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Screen.HasSelection", code), s)
 	}
 	return result != 0, nil
 }
@@ -1053,9 +1058,9 @@ func (s *Screen) SelectRange(x1 uint16, y1 uint16, x2 uint16, y2 uint16, rectang
 		return false, err
 	}
 	defer s.zigoRelease()
-	result, code := raw.ScreenSelectRange(ptr, x1, y1, x2, y2, boolToUint8(rectangle))
+	result, code := raw.ScreenSelectRange(ptr, x1, y1, x2, y2, zigoBoolToUint8(rectangle))
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(errorForCode("Screen.SelectRange", code), s)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Screen.SelectRange", code), s)
 	}
 	return result != 0, nil
 }
@@ -1063,10 +1068,10 @@ func (s *Screen) SelectRange(x1 uint16, y1 uint16, x2 uint16, y2 uint16, rectang
 // SelectWord calls the Zig function Screen.selectWord.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
-func (s *Screen) SelectWord(x uint16, y uint16, boundaries []uint32) (bool, error) {
+func (s *Screen) SelectWord(x uint16, y uint16, boundaries []rune) (bool, error) {
 	for _, zigoValue := range boundaries {
-		if zigoValue > 2097151 {
-			return false, &RangeError{Operation: "Screen.SelectWord", Parameter: "boundaries", Type: "u21"}
+		if zigoValue < 0 || zigoValue > 1114111 {
+			return false, &RangeError{Operation: "Screen.SelectWord", Parameter: "boundaries", Type: "codepoint"}
 		}
 	}
 	ptr, err := zigoCheckedPointer("Screen.SelectWord receiver", s)
@@ -1074,9 +1079,9 @@ func (s *Screen) SelectWord(x uint16, y uint16, boundaries []uint32) (bool, erro
 		return false, err
 	}
 	defer s.zigoRelease()
-	result, code := raw.ScreenSelectWord(ptr, x, y, boundaries)
+	result, code := raw.ScreenSelectWord(ptr, x, y, zigoRunesToUint32(boundaries))
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(errorForCode("Screen.SelectWord", code), s)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Screen.SelectWord", code), s)
 	}
 	return result != 0, nil
 }
@@ -1092,7 +1097,7 @@ func (s *Screen) SelectLine(x uint16, y uint16) (bool, error) {
 	defer s.zigoRelease()
 	result, code := raw.ScreenSelectLine(ptr, x, y)
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(errorForCode("Screen.SelectLine", code), s)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Screen.SelectLine", code), s)
 	}
 	return result != 0, nil
 }
@@ -1108,7 +1113,7 @@ func (s *Screen) SelectOutput(x uint16, y uint16) (bool, error) {
 	defer s.zigoRelease()
 	result, code := raw.ScreenSelectOutput(ptr, x, y)
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(errorForCode("Screen.SelectOutput", code), s)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Screen.SelectOutput", code), s)
 	}
 	return result != 0, nil
 }
@@ -1124,9 +1129,57 @@ func (s *Screen) SelectionString() (string, bool, error) {
 	defer s.zigoRelease()
 	result, zigoHas, code := raw.ScreenSelectionString(ptr)
 	if code != 0 {
-		return "", false, zigoPoisonAfterPanic(errorForCode("Screen.SelectionString", code), s)
+		return "", false, zigoPoisonAfterPanic(zigoErrorForCode("Screen.SelectionString", code), s)
 	}
 	return result, zigoHas, nil
+}
+
+// Selection calls the Zig function Screen.selection.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Screen) Selection() (Selection, bool, error) {
+	ptr, err := zigoCheckedPointer("Screen.Selection receiver", s)
+	if err != nil {
+		return Selection{}, false, err
+	}
+	defer s.zigoRelease()
+	result, zigoHas, code := raw.ScreenSelection(ptr)
+	if code != 0 {
+		return Selection{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Screen.Selection", code), s)
+	}
+	return zigoSelectionFromRaw(result), zigoHas, nil
+}
+
+// SetSelection calls the Zig function Screen.setSelection.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (s *Screen) SetSelection(sel Selection) (bool, error) {
+	ptr, err := zigoCheckedPointer("Screen.SetSelection receiver", s)
+	if err != nil {
+		return false, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.ScreenSetSelection(ptr, zigoSelectionToRaw(sel))
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Screen.SetSelection", code), s)
+	}
+	return result != 0, nil
+}
+
+// ViewportTop calls the Zig function Screen.viewportTop.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Screen) ViewportTop() (uint32, error) {
+	ptr, err := zigoCheckedPointer("Screen.ViewportTop receiver", s)
+	if err != nil {
+		return 0, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.ScreenViewportTop(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Screen.ViewportTop", code), s)
+	}
+	return result, nil
 }
 
 // StartHyperlink calls the Zig function Screen.startHyperlink.
@@ -1140,7 +1193,7 @@ func (s *Screen) StartHyperlink(uri string, id string) error {
 	defer s.zigoRelease()
 	code := raw.ScreenStartHyperlink(ptr, uri, id)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Screen.StartHyperlink", code), s)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Screen.StartHyperlink", code), s)
 	}
 	return nil
 }
@@ -1156,7 +1209,7 @@ func (s *Screen) ViewportIsBottom() (bool, error) {
 	defer s.zigoRelease()
 	result, code := raw.ScreenViewportIsBottom(ptr)
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(errorForCode("Screen.ViewportIsBottom", code), s)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Screen.ViewportIsBottom", code), s)
 	}
 	return result != 0, nil
 }
@@ -1172,7 +1225,7 @@ func (s *Screen) EndHyperlink() error {
 	defer s.zigoRelease()
 	code := raw.ScreenEndHyperlink(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Screen.EndHyperlink", code), s)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Screen.EndHyperlink", code), s)
 	}
 	return nil
 }
@@ -1196,10 +1249,10 @@ func (s *Screen) NewSearch(needle string) (*Search, error) {
 	}()
 	result, code := raw.ScreenNewSearch(ptr, needle)
 	if code != 0 {
-		return nil, zigoPoisonAfterPanic(errorForCode("Screen.NewSearch", code), s)
+		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Screen.NewSearch", code), s)
 	}
 	zigoChildCreated = true
-	return newSearch(result, zigoChildParent), nil
+	return zigoNewSearch(result, zigoChildParent), nil
 }
 
 // SearchAll calls the Zig function Search.searchAll.
@@ -1213,7 +1266,7 @@ func (s *Search) SearchAll() error {
 	defer s.zigoRelease()
 	code := raw.SearchSearchAll(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Search.SearchAll", code), s)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Search.SearchAll", code), s)
 	}
 	return nil
 }
@@ -1229,7 +1282,7 @@ func (s *Search) Needle() (string, error) {
 	defer s.zigoRelease()
 	result, code := raw.SearchNeedle(ptr)
 	if code != 0 {
-		return "", zigoPoisonAfterPanic(errorForCode("Search.Needle", code), s)
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("Search.Needle", code), s)
 	}
 	return result, nil
 }
@@ -1245,7 +1298,7 @@ func (s *Search) MatchCount() (uint, error) {
 	defer s.zigoRelease()
 	result, code := raw.SearchMatchCount(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("Search.MatchCount", code), s)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Search.MatchCount", code), s)
 	}
 	return result, nil
 }
@@ -1261,9 +1314,43 @@ func (s *Search) Select(to SearchDirection) (bool, error) {
 	defer s.zigoRelease()
 	result, code := raw.SearchSelect(ptr, uint8(to))
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(errorForCode("Search.Select", code), s)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Search.Select", code), s)
 	}
 	return result != 0, nil
+}
+
+// Matches calls the Zig function Search.matches.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Search) Matches(dst []Selection) (uint, error) {
+	ptr, err := zigoCheckedPointer("Search.Matches receiver", s)
+	if err != nil {
+		return 0, err
+	}
+	defer s.zigoRelease()
+	dstRaw := make([]raw.SelectionData, len(dst))
+	result, code := raw.SearchMatches(ptr, dstRaw)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Search.Matches", code), s)
+	}
+	zigoSelectionSliceCopyFromRaw(dst, dstRaw, int(result))
+	return result, nil
+}
+
+// SelectedMatch calls the Zig function Search.selectedMatch.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Search) SelectedMatch() (Selection, bool, error) {
+	ptr, err := zigoCheckedPointer("Search.SelectedMatch receiver", s)
+	if err != nil {
+		return Selection{}, false, err
+	}
+	defer s.zigoRelease()
+	result, zigoHas, code := raw.SearchSelectedMatch(ptr)
+	if code != 0 {
+		return Selection{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Search.SelectedMatch", code), s)
+	}
+	return zigoSelectionFromRaw(result), zigoHas, nil
 }
 
 // PrintAttributesInto: Write the cursor's current SGR attributes into `dst` as a DECRPSS response
@@ -1281,7 +1368,7 @@ func (te *Terminal) PrintAttributesInto(dst []byte) (uint, error) {
 	defer te.zigoRelease()
 	result, code := raw.TerminalPrintAttributesInto(ptr, dst)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("Terminal.PrintAttributesInto", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PrintAttributesInto", code), te)
 	}
 	return result, nil
 }
@@ -1300,7 +1387,7 @@ func (te *Terminal) HistoryString() (string, error) {
 	defer te.zigoRelease()
 	result, code := raw.TerminalHistoryString(ptr)
 	if code != 0 {
-		return "", zigoPoisonAfterPanic(errorForCode("Terminal.HistoryString", code), te)
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("Terminal.HistoryString", code), te)
 	}
 	return result, nil
 }
@@ -1316,7 +1403,7 @@ func (te *Terminal) ScreenString() (string, error) {
 	defer te.zigoRelease()
 	result, code := raw.TerminalScreenString(ptr)
 	if code != 0 {
-		return "", zigoPoisonAfterPanic(errorForCode("Terminal.ScreenString", code), te)
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ScreenString", code), te)
 	}
 	return result, nil
 }
@@ -1332,7 +1419,7 @@ func (te *Terminal) CursorUp(countReq uint) error {
 	defer te.zigoRelease()
 	code := raw.TerminalCursorUp(ptr, countReq)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.CursorUp", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorUp", code), te)
 	}
 	return nil
 }
@@ -1348,7 +1435,7 @@ func (te *Terminal) CursorDown(countReq uint) error {
 	defer te.zigoRelease()
 	code := raw.TerminalCursorDown(ptr, countReq)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.CursorDown", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorDown", code), te)
 	}
 	return nil
 }
@@ -1364,7 +1451,7 @@ func (te *Terminal) CursorLeft(countReq uint) error {
 	defer te.zigoRelease()
 	code := raw.TerminalCursorLeft(ptr, countReq)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.CursorLeft", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorLeft", code), te)
 	}
 	return nil
 }
@@ -1380,7 +1467,7 @@ func (te *Terminal) CursorRight(countReq uint) error {
 	defer te.zigoRelease()
 	code := raw.TerminalCursorRight(ptr, countReq)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.CursorRight", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorRight", code), te)
 	}
 	return nil
 }
@@ -1396,7 +1483,7 @@ func (te *Terminal) SaveCursor() error {
 	defer te.zigoRelease()
 	code := raw.TerminalSaveCursor(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.SaveCursor", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SaveCursor", code), te)
 	}
 	return nil
 }
@@ -1412,7 +1499,7 @@ func (te *Terminal) RestoreCursor() error {
 	defer te.zigoRelease()
 	code := raw.TerminalRestoreCursor(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.RestoreCursor", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.RestoreCursor", code), te)
 	}
 	return nil
 }
@@ -1428,7 +1515,7 @@ func (te *Terminal) Index() error {
 	defer te.zigoRelease()
 	code := raw.TerminalIndex(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.Index", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Index", code), te)
 	}
 	return nil
 }
@@ -1444,7 +1531,7 @@ func (te *Terminal) ReverseIndex() error {
 	defer te.zigoRelease()
 	code := raw.TerminalReverseIndex(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.ReverseIndex", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ReverseIndex", code), te)
 	}
 	return nil
 }
@@ -1460,7 +1547,7 @@ func (te *Terminal) HorizontalTab() error {
 	defer te.zigoRelease()
 	code := raw.TerminalHorizontalTab(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.HorizontalTab", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.HorizontalTab", code), te)
 	}
 	return nil
 }
@@ -1476,7 +1563,7 @@ func (te *Terminal) HorizontalTabBack() error {
 	defer te.zigoRelease()
 	code := raw.TerminalHorizontalTabBack(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.HorizontalTabBack", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.HorizontalTabBack", code), te)
 	}
 	return nil
 }
@@ -1492,7 +1579,7 @@ func (te *Terminal) TabSet() error {
 	defer te.zigoRelease()
 	code := raw.TerminalTabSet(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.TabSet", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.TabSet", code), te)
 	}
 	return nil
 }
@@ -1508,7 +1595,7 @@ func (te *Terminal) TabReset() error {
 	defer te.zigoRelease()
 	code := raw.TerminalTabReset(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.TabReset", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.TabReset", code), te)
 	}
 	return nil
 }
@@ -1524,7 +1611,7 @@ func (te *Terminal) TabClear(cmd TabClear) error {
 	defer te.zigoRelease()
 	code := raw.TerminalTabClear(ptr, uint8(cmd))
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.TabClear", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.TabClear", code), te)
 	}
 	return nil
 }
@@ -1540,7 +1627,7 @@ func (te *Terminal) ScrollUp(count uint) error {
 	defer te.zigoRelease()
 	code := raw.TerminalScrollUp(ptr, count)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.ScrollUp", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ScrollUp", code), te)
 	}
 	return nil
 }
@@ -1556,7 +1643,7 @@ func (te *Terminal) ScrollDown(count uint) error {
 	defer te.zigoRelease()
 	code := raw.TerminalScrollDown(ptr, count)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.ScrollDown", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ScrollDown", code), te)
 	}
 	return nil
 }
@@ -1572,7 +1659,7 @@ func (te *Terminal) SetTopAndBottomMargin(topReq uint, bottomReq uint) error {
 	defer te.zigoRelease()
 	code := raw.TerminalSetTopAndBottomMargin(ptr, topReq, bottomReq)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.SetTopAndBottomMargin", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetTopAndBottomMargin", code), te)
 	}
 	return nil
 }
@@ -1588,7 +1675,7 @@ func (te *Terminal) SetLeftAndRightMargin(leftReq uint, rightReq uint) error {
 	defer te.zigoRelease()
 	code := raw.TerminalSetLeftAndRightMargin(ptr, leftReq, rightReq)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.SetLeftAndRightMargin", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetLeftAndRightMargin", code), te)
 	}
 	return nil
 }
@@ -1605,7 +1692,7 @@ func (te *Terminal) SetScrollbackMaxBytes(max uint) error {
 	defer te.zigoRelease()
 	code := raw.TerminalSetScrollbackMaxBytes(ptr, max)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.SetScrollbackMaxBytes", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetScrollbackMaxBytes", code), te)
 	}
 	return nil
 }
@@ -1621,7 +1708,7 @@ func (te *Terminal) ClearScrollbackMaxBytes() error {
 	defer te.zigoRelease()
 	code := raw.TerminalClearScrollbackMaxBytes(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.ClearScrollbackMaxBytes", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ClearScrollbackMaxBytes", code), te)
 	}
 	return nil
 }
@@ -1637,7 +1724,7 @@ func (te *Terminal) SetScrollbackMaxLines(max uint) error {
 	defer te.zigoRelease()
 	code := raw.TerminalSetScrollbackMaxLines(ptr, max)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.SetScrollbackMaxLines", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetScrollbackMaxLines", code), te)
 	}
 	return nil
 }
@@ -1653,7 +1740,7 @@ func (te *Terminal) ClearScrollbackMaxLines() error {
 	defer te.zigoRelease()
 	code := raw.TerminalClearScrollbackMaxLines(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.ClearScrollbackMaxLines", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ClearScrollbackMaxLines", code), te)
 	}
 	return nil
 }
@@ -1669,7 +1756,7 @@ func (te *Terminal) InsertLines(count uint) error {
 	defer te.zigoRelease()
 	code := raw.TerminalInsertLines(ptr, count)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.InsertLines", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.InsertLines", code), te)
 	}
 	return nil
 }
@@ -1685,7 +1772,7 @@ func (te *Terminal) DeleteLines(count uint) error {
 	defer te.zigoRelease()
 	code := raw.TerminalDeleteLines(ptr, count)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.DeleteLines", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.DeleteLines", code), te)
 	}
 	return nil
 }
@@ -1701,7 +1788,7 @@ func (te *Terminal) InsertBlanks(count uint) error {
 	defer te.zigoRelease()
 	code := raw.TerminalInsertBlanks(ptr, count)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.InsertBlanks", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.InsertBlanks", code), te)
 	}
 	return nil
 }
@@ -1717,7 +1804,7 @@ func (te *Terminal) DeleteChars(countReq uint) error {
 	defer te.zigoRelease()
 	code := raw.TerminalDeleteChars(ptr, countReq)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.DeleteChars", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.DeleteChars", code), te)
 	}
 	return nil
 }
@@ -1733,7 +1820,7 @@ func (te *Terminal) EraseChars(countReq uint) error {
 	defer te.zigoRelease()
 	code := raw.TerminalEraseChars(ptr, countReq)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.EraseChars", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.EraseChars", code), te)
 	}
 	return nil
 }
@@ -1747,9 +1834,9 @@ func (te *Terminal) EraseLine(mode EraseLine, protectedReq bool) error {
 		return err
 	}
 	defer te.zigoRelease()
-	code := raw.TerminalEraseLine(ptr, uint8(mode), boolToUint8(protectedReq))
+	code := raw.TerminalEraseLine(ptr, uint8(mode), zigoBoolToUint8(protectedReq))
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.EraseLine", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.EraseLine", code), te)
 	}
 	return nil
 }
@@ -1763,9 +1850,9 @@ func (te *Terminal) EraseDisplay(mode EraseDisplay, protectedReq bool) error {
 		return err
 	}
 	defer te.zigoRelease()
-	code := raw.TerminalEraseDisplay(ptr, uint8(mode), boolToUint8(protectedReq))
+	code := raw.TerminalEraseDisplay(ptr, uint8(mode), zigoBoolToUint8(protectedReq))
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.EraseDisplay", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.EraseDisplay", code), te)
 	}
 	return nil
 }
@@ -1781,7 +1868,7 @@ func (te *Terminal) Decaln() error {
 	defer te.zigoRelease()
 	code := raw.TerminalDecaln(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.Decaln", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Decaln", code), te)
 	}
 	return nil
 }
@@ -1789,18 +1876,18 @@ func (te *Terminal) Decaln() error {
 // Print calls the Zig function Terminal.print.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
-func (te *Terminal) Print(c uint32) error {
-	if c > 2097151 {
-		return &RangeError{Operation: "Terminal.Print", Parameter: "c", Type: "u21"}
+func (te *Terminal) Print(c rune) error {
+	if c < 0 || c > 1114111 {
+		return &RangeError{Operation: "Terminal.Print", Parameter: "c", Type: "codepoint"}
 	}
 	ptr, err := zigoCheckedPointer("Terminal.Print receiver", te)
 	if err != nil {
 		return err
 	}
 	defer te.zigoRelease()
-	code := raw.TerminalPrint(ptr, c)
+	code := raw.TerminalPrint(ptr, uint32(c))
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.Print", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Print", code), te)
 	}
 	return nil
 }
@@ -1816,7 +1903,7 @@ func (te *Terminal) PrintRepeat(countReq uint) error {
 	defer te.zigoRelease()
 	code := raw.TerminalPrintRepeat(ptr, countReq)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.PrintRepeat", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PrintRepeat", code), te)
 	}
 	return nil
 }
@@ -1824,15 +1911,20 @@ func (te *Terminal) PrintRepeat(countReq uint) error {
 // PrintSlice calls the Zig function Terminal.printSlice.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
-func (te *Terminal) PrintSlice(cps []uint32) error {
+func (te *Terminal) PrintSlice(cps []rune) error {
+	for _, zigoValue := range cps {
+		if zigoValue < 0 || zigoValue > 1114111 {
+			return &RangeError{Operation: "Terminal.PrintSlice", Parameter: "cps", Type: "codepoint"}
+		}
+	}
 	ptr, err := zigoCheckedPointer("Terminal.PrintSlice receiver", te)
 	if err != nil {
 		return err
 	}
 	defer te.zigoRelease()
-	code := raw.TerminalPrintSlice(ptr, cps)
+	code := raw.TerminalPrintSlice(ptr, zigoRunesToUint32(cps))
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.PrintSlice", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PrintSlice", code), te)
 	}
 	return nil
 }
@@ -1848,9 +1940,175 @@ func (te *Terminal) PlainStringUnwrapped() (string, error) {
 	defer te.zigoRelease()
 	result, code := raw.TerminalPlainStringUnwrapped(ptr)
 	if code != 0 {
-		return "", zigoPoisonAfterPanic(errorForCode("Terminal.PlainStringUnwrapped", code), te)
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PlainStringUnwrapped", code), te)
 	}
 	return result, nil
+}
+
+// BackgroundColor: The current background color: what OSC 11 set, else the default.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) BackgroundColor() (uint32, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.BackgroundColor receiver", te)
+	if err != nil {
+		return 0, false, err
+	}
+	defer te.zigoRelease()
+	result, zigoHas, code := raw.TerminalBackgroundColor(ptr)
+	if code != 0 {
+		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.BackgroundColor", code), te)
+	}
+	return result, zigoHas, nil
+}
+
+// ForegroundColor: The current foreground color: what OSC 10 set, else the default.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) ForegroundColor() (uint32, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.ForegroundColor receiver", te)
+	if err != nil {
+		return 0, false, err
+	}
+	defer te.zigoRelease()
+	result, zigoHas, code := raw.TerminalForegroundColor(ptr)
+	if code != 0 {
+		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ForegroundColor", code), te)
+	}
+	return result, zigoHas, nil
+}
+
+// CursorColor: The current cursor color, if one was set or configured. Null means the
+// cursor takes the foreground color.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) CursorColor() (uint32, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.CursorColor receiver", te)
+	if err != nil {
+		return 0, false, err
+	}
+	defer te.zigoRelease()
+	result, zigoHas, code := raw.TerminalCursorColor(ptr)
+	if code != 0 {
+		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorColor", code), te)
+	}
+	return result, zigoHas, nil
+}
+
+// PaletteColor: The current color of palette entry `index`, after any OSC 4 change.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) PaletteColor(index uint8) (uint32, error) {
+	ptr, err := zigoCheckedPointer("Terminal.PaletteColor receiver", te)
+	if err != nil {
+		return 0, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalPaletteColor(ptr, index)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PaletteColor", code), te)
+	}
+	return result, nil
+}
+
+// PaletteColors: Copy the current 256-color palette into `dst` and return how many entries
+// were written: 256, or `dst.len` if shorter.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) PaletteColors(dst []uint32) (uint, error) {
+	ptr, err := zigoCheckedPointer("Terminal.PaletteColors receiver", te)
+	if err != nil {
+		return 0, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalPaletteColors(ptr, dst)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PaletteColors", code), te)
+	}
+	return result, nil
+}
+
+// SetDefaultBackgroundColor: Set the configured default background: the value in effect until OSC 11
+// overrides it and again after OSC 111 resets it.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SetDefaultBackgroundColor(rgb uint32) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetDefaultBackgroundColor receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetDefaultBackgroundColor(ptr, rgb)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultBackgroundColor", code), te)
+	}
+	return nil
+}
+
+// SetDefaultForegroundColor: Set the configured default foreground. See `setDefaultBackgroundColor`.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SetDefaultForegroundColor(rgb uint32) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetDefaultForegroundColor receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetDefaultForegroundColor(ptr, rgb)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultForegroundColor", code), te)
+	}
+	return nil
+}
+
+// SetDefaultCursorColor: Set the configured default cursor color. See `setDefaultBackgroundColor`.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SetDefaultCursorColor(rgb uint32) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetDefaultCursorColor receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetDefaultCursorColor(ptr, rgb)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultCursorColor", code), te)
+	}
+	return nil
+}
+
+// ModeEnabled: Whether `mode` is currently on.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) ModeEnabled(mode Mode) (bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.ModeEnabled receiver", te)
+	if err != nil {
+		return false, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalModeEnabled(ptr, uint16(mode))
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ModeEnabled", code), te)
+	}
+	return result != 0, nil
+}
+
+// SetMode: Turn `mode` on or off. This flips the state only; the side effects the
+// parser performs when a program changes a mode -- switching screens for
+// 1049, resizing for 132-column -- do not run. Use `switchScreenMode` and
+// `deccolm` for those.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SetMode(mode Mode, value bool) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetMode receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetMode(ptr, uint16(mode), zigoBoolToUint8(value))
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetMode", code), te)
+	}
+	return nil
 }
 
 // SetPwd calls the Zig function Terminal.setPwd.
@@ -1864,7 +2122,7 @@ func (te *Terminal) SetPwd(pwd string) error {
 	defer te.zigoRelease()
 	code := raw.TerminalSetPwd(ptr, pwd)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.SetPwd", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetPwd", code), te)
 	}
 	return nil
 }
@@ -1880,7 +2138,7 @@ func (te *Terminal) GetPwd() (string, bool, error) {
 	defer te.zigoRelease()
 	result, zigoHas, code := raw.TerminalGetPwd(ptr)
 	if code != 0 {
-		return "", false, zigoPoisonAfterPanic(errorForCode("Terminal.GetPwd", code), te)
+		return "", false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.GetPwd", code), te)
 	}
 	return result, zigoHas, nil
 }
@@ -1896,7 +2154,7 @@ func (te *Terminal) GetTitle() (string, bool, error) {
 	defer te.zigoRelease()
 	result, zigoHas, code := raw.TerminalGetTitle(ptr)
 	if code != 0 {
-		return "", false, zigoPoisonAfterPanic(errorForCode("Terminal.GetTitle", code), te)
+		return "", false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.GetTitle", code), te)
 	}
 	return result, zigoHas, nil
 }
@@ -1912,7 +2170,7 @@ func (te *Terminal) SetTitle(t string) error {
 	defer te.zigoRelease()
 	code := raw.TerminalSetTitle(ptr, t)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.SetTitle", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetTitle", code), te)
 	}
 	return nil
 }
@@ -1929,7 +2187,7 @@ func (te *Terminal) SetAttribute(attr Attribute) error {
 	defer te.zigoRelease()
 	code := raw.TerminalSetAttribute(ptr, uint8(attr.tag), uint8(attr.underline), attr.underlineColorRgb, attr.underlineColor256, attr.directColorFg, attr.directColorBg, attr.color256Fg, attr.color256Bg, uint8(attr.namedFg), uint8(attr.namedBg), uint8(attr.brightNamedFg), uint8(attr.brightNamedBg))
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.SetAttribute", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetAttribute", code), te)
 	}
 	return nil
 }
@@ -1945,7 +2203,7 @@ func (te *Terminal) SetProtectedMode(mode ProtectedMode) error {
 	defer te.zigoRelease()
 	code := raw.TerminalSetProtectedMode(ptr, uint8(mode))
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.SetProtectedMode", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetProtectedMode", code), te)
 	}
 	return nil
 }
@@ -1961,7 +2219,7 @@ func (te *Terminal) SetDefaultCursorStyle(configuredStyle CursorStyle) error {
 	defer te.zigoRelease()
 	code := raw.TerminalSetDefaultCursorStyle(ptr, uint8(configuredStyle))
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.SetDefaultCursorStyle", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultCursorStyle", code), te)
 	}
 	return nil
 }
@@ -1980,9 +2238,9 @@ func (te *Terminal) SetDefaultCursorBlink(blink bool) error {
 		return err
 	}
 	defer te.zigoRelease()
-	code := raw.TerminalSetDefaultCursorBlink(ptr, boolToUint8(blink))
+	code := raw.TerminalSetDefaultCursorBlink(ptr, zigoBoolToUint8(blink))
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.SetDefaultCursorBlink", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultCursorBlink", code), te)
 	}
 	return nil
 }
@@ -1998,7 +2256,7 @@ func (te *Terminal) ResetDefaultCursorBlink() error {
 	defer te.zigoRelease()
 	code := raw.TerminalResetDefaultCursorBlink(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.ResetDefaultCursorBlink", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetDefaultCursorBlink", code), te)
 	}
 	return nil
 }
@@ -2014,7 +2272,7 @@ func (te *Terminal) ConfigureCharset(slot CharsetSlot, set Charset) error {
 	defer te.zigoRelease()
 	code := raw.TerminalConfigureCharset(ptr, uint8(slot), uint8(set))
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.ConfigureCharset", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ConfigureCharset", code), te)
 	}
 	return nil
 }
@@ -2028,9 +2286,9 @@ func (te *Terminal) InvokeCharset(active CharsetActiveSlot, slot CharsetSlot, si
 		return err
 	}
 	defer te.zigoRelease()
-	code := raw.TerminalInvokeCharset(ptr, uint8(active), uint8(slot), boolToUint8(single))
+	code := raw.TerminalInvokeCharset(ptr, uint8(active), uint8(slot), zigoBoolToUint8(single))
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.InvokeCharset", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.InvokeCharset", code), te)
 	}
 	return nil
 }
@@ -2046,7 +2304,7 @@ func (te *Terminal) Deccolm(mode DeccolmMode) error {
 	defer te.zigoRelease()
 	code := raw.TerminalDeccolm(ptr, uint8(mode))
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.Deccolm", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Deccolm", code), te)
 	}
 	return nil
 }
@@ -2062,7 +2320,7 @@ func (te *Terminal) ScrollViewport(behavior ScrollViewport) error {
 	defer te.zigoRelease()
 	code := raw.TerminalScrollViewport(ptr, uint8(behavior.tag), behavior.delta, behavior.row)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.ScrollViewport", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ScrollViewport", code), te)
 	}
 	return nil
 }
@@ -2078,7 +2336,7 @@ func (te *Terminal) CompressionActivity() (uint64, error) {
 	defer te.zigoRelease()
 	result, code := raw.TerminalCompressionActivity(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("Terminal.CompressionActivity", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CompressionActivity", code), te)
 	}
 	return result, nil
 }
@@ -2097,7 +2355,7 @@ func (te *Terminal) Resize(width uint16, height uint16) error {
 	defer te.zigoRelease()
 	code := raw.TerminalResize(ptr, width, height)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.Resize", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Resize", code), te)
 	}
 	return nil
 }
@@ -2119,7 +2377,7 @@ func (te *Terminal) ResizeCells(width uint16, height uint16, cellWidth uint32, c
 	defer te.zigoRelease()
 	code := raw.TerminalResizeCells(ptr, width, height, cellWidth, cellHeight)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.ResizeCells", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResizeCells", code), te)
 	}
 	return nil
 }
@@ -2130,9 +2388,9 @@ func (te *Terminal) ResizeCells(width uint16, height uint16, cellWidth uint32, c
 func NewRenderState() (*RenderState, error) {
 	result, code := raw.NewRenderState()
 	if code != 0 {
-		return nil, errorForCode("NewRenderState", code)
+		return nil, zigoErrorForCode("NewRenderState", code)
 	}
-	return newRenderState(result), nil
+	return zigoNewRenderState(result), nil
 }
 
 // Update calls the Zig function RenderState.update.
@@ -2151,7 +2409,7 @@ func (r *RenderState) Update(term *Terminal) error {
 	defer lifecycle.Release(term)
 	code := raw.RenderStateUpdate(ptr, termPtr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("RenderState.Update", code), r, term)
+		return zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Update", code), r, term)
 	}
 	return nil
 }
@@ -2167,7 +2425,7 @@ func (r *RenderState) CellCount() (uint, error) {
 	defer r.zigoRelease()
 	result, code := raw.RenderStateCellCount(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("RenderState.CellCount", code), r)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.CellCount", code), r)
 	}
 	return result, nil
 }
@@ -2184,7 +2442,7 @@ func (r *RenderState) Cells(dst []RenderCell) (uint, error) {
 	dstRaw := make([]raw.RenderCellData, len(dst))
 	result, code := raw.RenderStateCells(ptr, dstRaw)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("RenderState.Cells", code), r)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Cells", code), r)
 	}
 	zigoRenderCellSliceCopyFromRaw(dst, dstRaw, int(result))
 	return result, nil
@@ -2201,7 +2459,7 @@ func (r *RenderState) Rows() (uint16, error) {
 	defer r.zigoRelease()
 	result, code := raw.RenderStateRows(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("RenderState.Rows", code), r)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Rows", code), r)
 	}
 	return result, nil
 }
@@ -2217,7 +2475,7 @@ func (r *RenderState) Cols() (uint16, error) {
 	defer r.zigoRelease()
 	result, code := raw.RenderStateCols(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("RenderState.Cols", code), r)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Cols", code), r)
 	}
 	return result, nil
 }
@@ -2233,7 +2491,7 @@ func (r *RenderState) Background() (uint32, error) {
 	defer r.zigoRelease()
 	result, code := raw.RenderStateBackground(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("RenderState.Background", code), r)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Background", code), r)
 	}
 	return result, nil
 }
@@ -2249,7 +2507,7 @@ func (r *RenderState) Foreground() (uint32, error) {
 	defer r.zigoRelease()
 	result, code := raw.RenderStateForeground(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("RenderState.Foreground", code), r)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Foreground", code), r)
 	}
 	return result, nil
 }
@@ -2265,7 +2523,7 @@ func (r *RenderState) CursorX() (uint16, bool, error) {
 	defer r.zigoRelease()
 	result, zigoHas, code := raw.RenderStateCursorX(ptr)
 	if code != 0 {
-		return 0, false, zigoPoisonAfterPanic(errorForCode("RenderState.CursorX", code), r)
+		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.CursorX", code), r)
 	}
 	return result, zigoHas, nil
 }
@@ -2281,7 +2539,7 @@ func (r *RenderState) CursorY() (uint16, bool, error) {
 	defer r.zigoRelease()
 	result, zigoHas, code := raw.RenderStateCursorY(ptr)
 	if code != 0 {
-		return 0, false, zigoPoisonAfterPanic(errorForCode("RenderState.CursorY", code), r)
+		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.CursorY", code), r)
 	}
 	return result, zigoHas, nil
 }
@@ -2297,7 +2555,7 @@ func (r *RenderState) CursorVisible() (bool, error) {
 	defer r.zigoRelease()
 	result, code := raw.RenderStateCursorVisible(ptr)
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(errorForCode("RenderState.CursorVisible", code), r)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.CursorVisible", code), r)
 	}
 	return result != 0, nil
 }
@@ -2313,7 +2571,7 @@ func (r *RenderState) CursorStyle() (CursorStyle, error) {
 	defer r.zigoRelease()
 	result, code := raw.RenderStateCursorStyle(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("RenderState.CursorStyle", code), r)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.CursorStyle", code), r)
 	}
 	return CursorStyle(result), nil
 }
@@ -2324,9 +2582,9 @@ func (r *RenderState) CursorStyle() (CursorStyle, error) {
 func NewKittyImages() (*KittyImages, error) {
 	result, code := raw.NewKittyImages()
 	if code != 0 {
-		return nil, errorForCode("NewKittyImages", code)
+		return nil, zigoErrorForCode("NewKittyImages", code)
 	}
-	return newKittyImages(result), nil
+	return zigoNewKittyImages(result), nil
 }
 
 // Update calls the Zig function KittyImages.update.
@@ -2345,7 +2603,7 @@ func (k *KittyImages) Update(term *Terminal) error {
 	defer lifecycle.Release(term)
 	code := raw.KittyImagesUpdate(ptr, termPtr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("KittyImages.Update", code), k, term)
+		return zigoPoisonAfterPanic(zigoErrorForCode("KittyImages.Update", code), k, term)
 	}
 	return nil
 }
@@ -2361,7 +2619,7 @@ func (k *KittyImages) Generation() (uint64, error) {
 	defer k.zigoRelease()
 	result, code := raw.KittyImagesGeneration(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("KittyImages.Generation", code), k)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("KittyImages.Generation", code), k)
 	}
 	return result, nil
 }
@@ -2377,7 +2635,7 @@ func (k *KittyImages) PlacementCount() (uint, error) {
 	defer k.zigoRelease()
 	result, code := raw.KittyImagesPlacementCount(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("KittyImages.PlacementCount", code), k)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("KittyImages.PlacementCount", code), k)
 	}
 	return result, nil
 }
@@ -2397,7 +2655,7 @@ func (k *KittyImages) Placements(dst []KittyPlacement) (uint, error) {
 	}
 	result, code := raw.KittyImagesPlacements(ptr, dstRaw)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("KittyImages.Placements", code), k)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("KittyImages.Placements", code), k)
 	}
 	return result, nil
 }
@@ -2413,7 +2671,7 @@ func (te *Terminal) SetKittyGraphicsSizeLimit(limit uint) error {
 	defer te.zigoRelease()
 	code := raw.TerminalSetKittyGraphicsSizeLimit(ptr, limit)
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("Terminal.SetKittyGraphicsSizeLimit", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetKittyGraphicsSizeLimit", code), te)
 	}
 	return nil
 }
@@ -2429,7 +2687,7 @@ func (te *Terminal) KittyImage(imageID uint32) (KittyImage, bool, error) {
 	defer te.zigoRelease()
 	result, zigoHas, code := raw.TerminalKittyImage(ptr, imageID)
 	if code != 0 {
-		return KittyImage{}, false, zigoPoisonAfterPanic(errorForCode("Terminal.KittyImage", code), te)
+		return KittyImage{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.KittyImage", code), te)
 	}
 	return zigoKittyImageFromRaw(result), zigoHas, nil
 }
@@ -2451,7 +2709,17 @@ func (te *Terminal) KittyImageData(imageID uint32, dst []byte) (uint, error) {
 	defer te.zigoRelease()
 	result, code := raw.TerminalKittyImageData(ptr, imageID, dst)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(errorForCode("Terminal.KittyImageData", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.KittyImageData", code), te)
 	}
 	return result, nil
+}
+
+// zigoRunesToUint32 views a []rune as the []uint32 the raw layer takes, without copying.
+func zigoRunesToUint32(values []rune) []uint32 {
+	return unsafe.Slice((*uint32)(unsafe.Pointer(unsafe.SliceData(values))), len(values))
+}
+
+// zigoUint32ToRunes views a []uint32 from the raw layer as a []rune, without copying.
+func zigoUint32ToRunes(values []uint32) []rune {
+	return unsafe.Slice((*rune)(unsafe.Pointer(unsafe.SliceData(values))), len(values))
 }

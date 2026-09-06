@@ -25,8 +25,8 @@ func EncodeKey(writer io.Writer, terminal *zigo_default.Terminal, event KeyEvent
 		return err
 	}
 	defer lifecycle.Release(terminal)
-	writerHandle := newZigoWriterHandle(writer)
-	defer deleteCallbackHandle(writerHandle)
+	writerHandle := zigoNewWriterStreamHandle(writer)
+	defer zigoDeleteCallbackHandle(writerHandle)
 	code := raw.EncodeKey(uintptr(writerHandle), terminalPtr, zigoKeyEventToRaw(event), utf8)
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("EncodeKey", writerHandle)
@@ -35,7 +35,7 @@ func EncodeKey(writer io.Writer, terminal *zigo_default.Terminal, event KeyEvent
 		return err
 	}
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("EncodeKey", code), terminal)
+		return zigoPoisonAfterPanic(zigoErrorForCode("EncodeKey", code), terminal)
 	}
 	return nil
 }
@@ -56,9 +56,9 @@ func EncodeMouse(writer io.Writer, terminal *zigo_default.Terminal, event MouseE
 		return err
 	}
 	defer lifecycle.Release(terminal)
-	writerHandle := newZigoWriterHandle(writer)
-	defer deleteCallbackHandle(writerHandle)
-	code := raw.EncodeMouse(uintptr(writerHandle), terminalPtr, zigoMouseEventToRaw(event), zigoRenderSizeToRaw(size), boolToUint8(anyButtonPressed))
+	writerHandle := zigoNewWriterStreamHandle(writer)
+	defer zigoDeleteCallbackHandle(writerHandle)
+	code := raw.EncodeMouse(uintptr(writerHandle), terminalPtr, zigoMouseEventToRaw(event), zigoRenderSizeToRaw(size), zigoBoolToUint8(anyButtonPressed))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("EncodeMouse", writerHandle)
 	}
@@ -66,7 +66,7 @@ func EncodeMouse(writer io.Writer, terminal *zigo_default.Terminal, event MouseE
 		return err
 	}
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("EncodeMouse", code), terminal)
+		return zigoPoisonAfterPanic(zigoErrorForCode("EncodeMouse", code), terminal)
 	}
 	return nil
 }
@@ -91,9 +91,9 @@ func KeyW3C(key Key) string {
 }
 
 // KeyCodepoint: The Unicode codepoint the key produces on a US layout, if it has one.
-func KeyCodepoint(key Key) (uint32, bool) {
+func KeyCodepoint(key Key) (rune, bool) {
 	zigoResult, zigoHas := raw.KeyCodepoint(int32(key))
-	return zigoResult, zigoHas
+	return rune(zigoResult), zigoHas
 }
 
 // KeyPrintable: True for keys that produce text on a US layout.
@@ -135,8 +135,8 @@ func EncodeFocus(writer io.Writer, event FocusEvent) error {
 	if writer == nil {
 		return &StreamError{Operation: "EncodeFocus", Parameter: "writer", Err: ErrNilStream}
 	}
-	writerHandle := newZigoWriterHandle(writer)
-	defer deleteCallbackHandle(writerHandle)
+	writerHandle := zigoNewWriterStreamHandle(writer)
+	defer zigoDeleteCallbackHandle(writerHandle)
 	code := raw.EncodeFocus(uintptr(writerHandle), uint8(event))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("EncodeFocus", writerHandle)
@@ -145,7 +145,7 @@ func EncodeFocus(writer io.Writer, event FocusEvent) error {
 		return err
 	}
 	if code != 0 {
-		return errorForCode("EncodeFocus", code)
+		return zigoErrorForCode("EncodeFocus", code)
 	}
 	return nil
 }
@@ -169,8 +169,8 @@ func EncodePaste(writer io.Writer, terminal *zigo_default.Terminal, data []byte)
 		return err
 	}
 	defer lifecycle.Release(terminal)
-	writerHandle := newZigoWriterHandle(writer)
-	defer deleteCallbackHandle(writerHandle)
+	writerHandle := zigoNewWriterStreamHandle(writer)
+	defer zigoDeleteCallbackHandle(writerHandle)
 	code := raw.EncodePaste(uintptr(writerHandle), terminalPtr, data)
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("EncodePaste", writerHandle)
@@ -179,7 +179,7 @@ func EncodePaste(writer io.Writer, terminal *zigo_default.Terminal, data []byte)
 		return err
 	}
 	if code != 0 {
-		return zigoPoisonAfterPanic(errorForCode("EncodePaste", code), terminal)
+		return zigoPoisonAfterPanic(zigoErrorForCode("EncodePaste", code), terminal)
 	}
 	return nil
 }

@@ -80,10 +80,9 @@ bench: build ## Run the benchmarks
 
 vet: build ## Run go vet
 	$(GO) vet ./...
-	cd example && $(GO) vet ./...
 
-example: build ## Run the example terminal emulator
-	cd example && $(GO) run .
+example: build ## Run the HyperCat example terminal emulator
+	$(GO) run ./examples/hypercat
 
 verify: ## Validate generated bindings, toolchain and native library
 	$(call run-zig-tool,go-verify)

@@ -207,7 +207,7 @@ func TestRenderWideCells(t *testing.T) {
 
 // The word boundaries a double click uses are the embedder's choice, not
 // ghostty's: its own UI reads them from configuration.
-var wordBoundaries = []uint32{0, ' ', '\t', '\'', '"', '`', '|', ':', ';', ',', '(', ')', '[', ']', '{', '}', '<', '>', '$'}
+var wordBoundaries = []rune{0, ' ', '\t', '\'', '"', '`', '|', ':', ';', ',', '(', ')', '[', ']', '{', '}', '<', '>', '$'}
 
 // Word and line selection are what a double and triple click do. ghostty owns
 // what a "word" and a "line" are -- soft wraps, whitespace trimming, semantic

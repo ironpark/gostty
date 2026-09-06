@@ -350,6 +350,300 @@ func (value SwitchScreenMode) String() string {
 	}
 }
 
+// Mode represents the corresponding Zig enum.
+type Mode uint16
+
+const (
+	// ModeDisableKeyboard corresponds to the Zig tag disable_keyboard.
+	ModeDisableKeyboard Mode = 32770
+	// ModeInsert corresponds to the Zig tag insert.
+	ModeInsert Mode = 32772
+	// ModeSendReceiveMode corresponds to the Zig tag send_receive_mode.
+	ModeSendReceiveMode Mode = 32780
+	// ModeLinefeed corresponds to the Zig tag linefeed.
+	ModeLinefeed Mode = 32788
+	// ModeCursorKeys corresponds to the Zig tag cursor_keys.
+	ModeCursorKeys Mode = 1
+	// Mode132Column corresponds to the Zig tag 132_column.
+	Mode132Column Mode = 3
+	// ModeSlowScroll corresponds to the Zig tag slow_scroll.
+	ModeSlowScroll Mode = 4
+	// ModeReverseColors corresponds to the Zig tag reverse_colors.
+	ModeReverseColors Mode = 5
+	// ModeOrigin corresponds to the Zig tag origin.
+	ModeOrigin Mode = 6
+	// ModeWraparound corresponds to the Zig tag wraparound.
+	ModeWraparound Mode = 7
+	// ModeAutorepeat corresponds to the Zig tag autorepeat.
+	ModeAutorepeat Mode = 8
+	// ModeMouseEventX10 corresponds to the Zig tag mouse_event_x10.
+	ModeMouseEventX10 Mode = 9
+	// ModeCursorBlinking corresponds to the Zig tag cursor_blinking.
+	ModeCursorBlinking Mode = 12
+	// ModeCursorVisible corresponds to the Zig tag cursor_visible.
+	ModeCursorVisible Mode = 25
+	// ModeEnableMode3 corresponds to the Zig tag enable_mode_3.
+	ModeEnableMode3 Mode = 40
+	// ModeReverseWrap corresponds to the Zig tag reverse_wrap.
+	ModeReverseWrap Mode = 45
+	// ModeAltScreenLegacy corresponds to the Zig tag alt_screen_legacy.
+	ModeAltScreenLegacy Mode = 47
+	// ModeKeypadKeys corresponds to the Zig tag keypad_keys.
+	ModeKeypadKeys Mode = 66
+	// ModeBackarrowKeyMode corresponds to the Zig tag backarrow_key_mode.
+	ModeBackarrowKeyMode Mode = 67
+	// ModeEnableLeftAndRightMargin corresponds to the Zig tag enable_left_and_right_margin.
+	ModeEnableLeftAndRightMargin Mode = 69
+	// ModeMouseEventNormal corresponds to the Zig tag mouse_event_normal.
+	ModeMouseEventNormal Mode = 1000
+	// ModeMouseEventButton corresponds to the Zig tag mouse_event_button.
+	ModeMouseEventButton Mode = 1002
+	// ModeMouseEventAny corresponds to the Zig tag mouse_event_any.
+	ModeMouseEventAny Mode = 1003
+	// ModeFocusEvent corresponds to the Zig tag focus_event.
+	ModeFocusEvent Mode = 1004
+	// ModeMouseFormatUTF8 corresponds to the Zig tag mouse_format_utf8.
+	ModeMouseFormatUTF8 Mode = 1005
+	// ModeMouseFormatSgr corresponds to the Zig tag mouse_format_sgr.
+	ModeMouseFormatSgr Mode = 1006
+	// ModeMouseAlternateScroll corresponds to the Zig tag mouse_alternate_scroll.
+	ModeMouseAlternateScroll Mode = 1007
+	// ModeMouseFormatUrxvt corresponds to the Zig tag mouse_format_urxvt.
+	ModeMouseFormatUrxvt Mode = 1015
+	// ModeMouseFormatSgrPixels corresponds to the Zig tag mouse_format_sgr_pixels.
+	ModeMouseFormatSgrPixels Mode = 1016
+	// ModeIgnoreKeypadWithNumlock corresponds to the Zig tag ignore_keypad_with_numlock.
+	ModeIgnoreKeypadWithNumlock Mode = 1035
+	// ModeAltEscPrefix corresponds to the Zig tag alt_esc_prefix.
+	ModeAltEscPrefix Mode = 1036
+	// ModeAltSendsEscape corresponds to the Zig tag alt_sends_escape.
+	ModeAltSendsEscape Mode = 1039
+	// ModeReverseWrapExtended corresponds to the Zig tag reverse_wrap_extended.
+	ModeReverseWrapExtended Mode = 1045
+	// ModeAltScreen corresponds to the Zig tag alt_screen.
+	ModeAltScreen Mode = 1047
+	// ModeSaveCursor corresponds to the Zig tag save_cursor.
+	ModeSaveCursor Mode = 1048
+	// ModeAltScreenSaveCursorClearEnter corresponds to the Zig tag alt_screen_save_cursor_clear_enter.
+	ModeAltScreenSaveCursorClearEnter Mode = 1049
+	// ModeBracketedPaste corresponds to the Zig tag bracketed_paste.
+	ModeBracketedPaste Mode = 2004
+	// ModeSynchronizedOutput corresponds to the Zig tag synchronized_output.
+	ModeSynchronizedOutput Mode = 2026
+	// ModeGraphemeCluster corresponds to the Zig tag grapheme_cluster.
+	ModeGraphemeCluster Mode = 2027
+	// ModeReportColorScheme corresponds to the Zig tag report_color_scheme.
+	ModeReportColorScheme Mode = 2031
+	// ModeReportVisibility corresponds to the Zig tag report_visibility.
+	ModeReportVisibility Mode = 2033
+	// ModeInBandSizeReports corresponds to the Zig tag in_band_size_reports.
+	ModeInBandSizeReports Mode = 2048
+	// ModeKittyPasteEvents corresponds to the Zig tag kitty_paste_events.
+	ModeKittyPasteEvents Mode = 5522
+)
+
+// String returns the Zig tag name.
+func (value Mode) String() string {
+	switch value {
+	case ModeDisableKeyboard:
+		return "disable_keyboard"
+	case ModeInsert:
+		return "insert"
+	case ModeSendReceiveMode:
+		return "send_receive_mode"
+	case ModeLinefeed:
+		return "linefeed"
+	case ModeCursorKeys:
+		return "cursor_keys"
+	case Mode132Column:
+		return "132_column"
+	case ModeSlowScroll:
+		return "slow_scroll"
+	case ModeReverseColors:
+		return "reverse_colors"
+	case ModeOrigin:
+		return "origin"
+	case ModeWraparound:
+		return "wraparound"
+	case ModeAutorepeat:
+		return "autorepeat"
+	case ModeMouseEventX10:
+		return "mouse_event_x10"
+	case ModeCursorBlinking:
+		return "cursor_blinking"
+	case ModeCursorVisible:
+		return "cursor_visible"
+	case ModeEnableMode3:
+		return "enable_mode_3"
+	case ModeReverseWrap:
+		return "reverse_wrap"
+	case ModeAltScreenLegacy:
+		return "alt_screen_legacy"
+	case ModeKeypadKeys:
+		return "keypad_keys"
+	case ModeBackarrowKeyMode:
+		return "backarrow_key_mode"
+	case ModeEnableLeftAndRightMargin:
+		return "enable_left_and_right_margin"
+	case ModeMouseEventNormal:
+		return "mouse_event_normal"
+	case ModeMouseEventButton:
+		return "mouse_event_button"
+	case ModeMouseEventAny:
+		return "mouse_event_any"
+	case ModeFocusEvent:
+		return "focus_event"
+	case ModeMouseFormatUTF8:
+		return "mouse_format_utf8"
+	case ModeMouseFormatSgr:
+		return "mouse_format_sgr"
+	case ModeMouseAlternateScroll:
+		return "mouse_alternate_scroll"
+	case ModeMouseFormatUrxvt:
+		return "mouse_format_urxvt"
+	case ModeMouseFormatSgrPixels:
+		return "mouse_format_sgr_pixels"
+	case ModeIgnoreKeypadWithNumlock:
+		return "ignore_keypad_with_numlock"
+	case ModeAltEscPrefix:
+		return "alt_esc_prefix"
+	case ModeAltSendsEscape:
+		return "alt_sends_escape"
+	case ModeReverseWrapExtended:
+		return "reverse_wrap_extended"
+	case ModeAltScreen:
+		return "alt_screen"
+	case ModeSaveCursor:
+		return "save_cursor"
+	case ModeAltScreenSaveCursorClearEnter:
+		return "alt_screen_save_cursor_clear_enter"
+	case ModeBracketedPaste:
+		return "bracketed_paste"
+	case ModeSynchronizedOutput:
+		return "synchronized_output"
+	case ModeGraphemeCluster:
+		return "grapheme_cluster"
+	case ModeReportColorScheme:
+		return "report_color_scheme"
+	case ModeReportVisibility:
+		return "report_visibility"
+	case ModeInBandSizeReports:
+		return "in_band_size_reports"
+	case ModeKittyPasteEvents:
+		return "kitty_paste_events"
+	default:
+		return "Mode(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// ParseMode returns the Mode named by text, which is a Zig tag name.
+func ParseMode(text string) (Mode, error) {
+	switch text {
+	case "disable_keyboard":
+		return ModeDisableKeyboard, nil
+	case "insert":
+		return ModeInsert, nil
+	case "send_receive_mode":
+		return ModeSendReceiveMode, nil
+	case "linefeed":
+		return ModeLinefeed, nil
+	case "cursor_keys":
+		return ModeCursorKeys, nil
+	case "132_column":
+		return Mode132Column, nil
+	case "slow_scroll":
+		return ModeSlowScroll, nil
+	case "reverse_colors":
+		return ModeReverseColors, nil
+	case "origin":
+		return ModeOrigin, nil
+	case "wraparound":
+		return ModeWraparound, nil
+	case "autorepeat":
+		return ModeAutorepeat, nil
+	case "mouse_event_x10":
+		return ModeMouseEventX10, nil
+	case "cursor_blinking":
+		return ModeCursorBlinking, nil
+	case "cursor_visible":
+		return ModeCursorVisible, nil
+	case "enable_mode_3":
+		return ModeEnableMode3, nil
+	case "reverse_wrap":
+		return ModeReverseWrap, nil
+	case "alt_screen_legacy":
+		return ModeAltScreenLegacy, nil
+	case "keypad_keys":
+		return ModeKeypadKeys, nil
+	case "backarrow_key_mode":
+		return ModeBackarrowKeyMode, nil
+	case "enable_left_and_right_margin":
+		return ModeEnableLeftAndRightMargin, nil
+	case "mouse_event_normal":
+		return ModeMouseEventNormal, nil
+	case "mouse_event_button":
+		return ModeMouseEventButton, nil
+	case "mouse_event_any":
+		return ModeMouseEventAny, nil
+	case "focus_event":
+		return ModeFocusEvent, nil
+	case "mouse_format_utf8":
+		return ModeMouseFormatUTF8, nil
+	case "mouse_format_sgr":
+		return ModeMouseFormatSgr, nil
+	case "mouse_alternate_scroll":
+		return ModeMouseAlternateScroll, nil
+	case "mouse_format_urxvt":
+		return ModeMouseFormatUrxvt, nil
+	case "mouse_format_sgr_pixels":
+		return ModeMouseFormatSgrPixels, nil
+	case "ignore_keypad_with_numlock":
+		return ModeIgnoreKeypadWithNumlock, nil
+	case "alt_esc_prefix":
+		return ModeAltEscPrefix, nil
+	case "alt_sends_escape":
+		return ModeAltSendsEscape, nil
+	case "reverse_wrap_extended":
+		return ModeReverseWrapExtended, nil
+	case "alt_screen":
+		return ModeAltScreen, nil
+	case "save_cursor":
+		return ModeSaveCursor, nil
+	case "alt_screen_save_cursor_clear_enter":
+		return ModeAltScreenSaveCursorClearEnter, nil
+	case "bracketed_paste":
+		return ModeBracketedPaste, nil
+	case "synchronized_output":
+		return ModeSynchronizedOutput, nil
+	case "grapheme_cluster":
+		return ModeGraphemeCluster, nil
+	case "report_color_scheme":
+		return ModeReportColorScheme, nil
+	case "report_visibility":
+		return ModeReportVisibility, nil
+	case "in_band_size_reports":
+		return ModeInBandSizeReports, nil
+	case "kitty_paste_events":
+		return ModeKittyPasteEvents, nil
+	}
+	return 0, &EnumParseError{Type: "Mode", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value Mode) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseMode.
+func (value *Mode) UnmarshalText(text []byte) error {
+	parsed, err := ParseMode(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
 // StreamEvent represents the corresponding Zig enum.
 type StreamEvent uint8
 

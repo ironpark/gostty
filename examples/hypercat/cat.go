@@ -8,7 +8,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/ironpark/gostty"
-	"github.com/ironpark/gostty/example/thecat"
+	"github.com/ironpark/gostty/examples/hypercat/thecat"
 )
 
 // A cat that walks around on the text.

@@ -21,12 +21,12 @@ type KeyMods struct {
 
 func zigoKeyModsToBacking(value KeyMods) uint8 {
 	var result uint64
-	result |= (uint64(boolToUint8(value.Shift)) & 0x1) << 0
-	result |= (uint64(boolToUint8(value.Ctrl)) & 0x1) << 1
-	result |= (uint64(boolToUint8(value.Alt)) & 0x1) << 2
-	result |= (uint64(boolToUint8(value.Super)) & 0x1) << 3
-	result |= (uint64(boolToUint8(value.CapsLock)) & 0x1) << 4
-	result |= (uint64(boolToUint8(value.NumLock)) & 0x1) << 5
+	result |= (uint64(zigoBoolToUint8(value.Shift)) & 0x1) << 0
+	result |= (uint64(zigoBoolToUint8(value.Ctrl)) & 0x1) << 1
+	result |= (uint64(zigoBoolToUint8(value.Alt)) & 0x1) << 2
+	result |= (uint64(zigoBoolToUint8(value.Super)) & 0x1) << 3
+	result |= (uint64(zigoBoolToUint8(value.CapsLock)) & 0x1) << 4
+	result |= (uint64(zigoBoolToUint8(value.NumLock)) & 0x1) << 5
 	result |= (uint64(value.Padding) & 0x3) << 6
 	return uint8(result)
 }
@@ -60,7 +60,7 @@ type KeyEvent struct {
 	// Composing corresponds to the Zig field composing.
 	Composing bool
 	// UnshiftedCodepoint corresponds to the Zig field unshifted_codepoint.
-	UnshiftedCodepoint uint32
+	UnshiftedCodepoint rune
 }
 
 // MouseEvent mirrors the Zig `extern struct` of the same name.
@@ -117,8 +117,8 @@ func zigoKeyEventToRaw(value KeyEvent) raw.KeyEventData {
 		Key:                int32(value.Key),
 		Mods:               value.Mods.Backing(),
 		ConsumedMods:       value.ConsumedMods.Backing(),
-		Composing:          boolToUint8(value.Composing),
-		UnshiftedCodepoint: value.UnshiftedCodepoint,
+		Composing:          zigoBoolToUint8(value.Composing),
+		UnshiftedCodepoint: uint32(value.UnshiftedCodepoint),
 	}
 }
 
@@ -126,7 +126,7 @@ func zigoMouseEventToRaw(value MouseEvent) raw.MouseEventData {
 	return raw.MouseEventData{
 		Action:    int32(value.Action),
 		Button:    int32(value.Button),
-		HasButton: boolToUint8(value.HasButton),
+		HasButton: zigoBoolToUint8(value.HasButton),
 		Mods:      value.Mods.Backing(),
 		X:         value.X,
 		Y:         value.Y,

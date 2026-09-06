@@ -93,7 +93,7 @@ func TestOnlyWideCellsAreEmoji(t *testing.T) {
 		wide[r] = false
 	}
 	for r, want := range wide {
-		w, err := gostty.CodepointWidth(uint32(r))
+		w, err := gostty.CodepointWidth(r)
 		if err != nil {
 			t.Fatalf("CodepointWidth(%q): %v", r, err)
 		}

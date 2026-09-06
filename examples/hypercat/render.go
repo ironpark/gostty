@@ -97,7 +97,7 @@ func (g *game) drawGlyphs(screen *ebiten.Image) {
 		wide := flags.Wide == gostty.CellWidthWide
 		x := float64(i%g.cols) * g.fonts.cellW
 		y := float64(i/g.cols) * g.fonts.cellH
-		g.glyph(screen, rune(cell.Codepoint), x, y, wide, flags.Bold, flags.Italic, fg)
+		g.glyph(screen, cell.Codepoint, x, y, wide, flags.Bold, flags.Italic, fg)
 
 		if flags.Underline != gostty.UnderlineNone || flags.Strikethrough || flags.Overline {
 			width := g.fonts.cellW
@@ -197,7 +197,7 @@ func (g *game) drawCursor(screen *ebiten.Image) {
 		// Redraw the glyph in the background color so it stays legible.
 		if i := int(g.cursor.y)*g.cols + int(g.cursor.x); i < len(g.cells) {
 			cell := g.cells[i]
-			if r := rune(cell.Codepoint); r > ' ' {
+			if r := cell.Codepoint; r > ' ' {
 				flags := cell.Flags
 				wide := flags.Wide == gostty.CellWidthWide
 				g.glyph(screen, r, x, y, wide, flags.Bold, flags.Italic, g.bg)

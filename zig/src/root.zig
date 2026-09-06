@@ -564,6 +564,56 @@ pub fn screenSelectRange(
     return true;
 }
 
+/// A selection in screen coordinates: `y` counts rows from the top of the
+/// scrollback, so a selection stays valid as the viewport scrolls. Convert to
+/// viewport rows with `screenViewportTop`. `start` and `end` are in the order
+/// the selection was made, which may be backwards.
+///
+/// ghostty's own `Selection` holds tracked pins into page memory, which cannot
+/// cross the C boundary; this is the same information as coordinates.
+pub const Selection = extern struct {
+    start_x: u16,
+    start_y: u32,
+    end_x: u16,
+    end_y: u32,
+    /// A rectangle between the two corners rather than a run of lines.
+    rectangle: bool,
+
+    fn fromPins(pages: *const vt.PageList, start: vt.Pin, end: vt.Pin, rectangle: bool) ?Selection {
+        const s = pages.pointFromPin(.screen, start) orelse return null;
+        const e = pages.pointFromPin(.screen, end) orelse return null;
+        return .{
+            .start_x = s.screen.x,
+            .start_y = s.screen.y,
+            .end_x = e.screen.x,
+            .end_y = e.screen.y,
+            .rectangle = rectangle,
+        };
+    }
+};
+
+/// The screen's current selection, or null when there is none.
+pub fn screenSelection(self: *Screen) ?Selection {
+    const sel = self.selection orelse return null;
+    return Selection.fromPins(&self.pages, sel.start(), sel.end(), sel.rectangle);
+}
+
+/// Replace the screen's selection. Returns false, leaving the selection as it
+/// was, if either end is outside the screen.
+pub fn screenSetSelection(self: *Screen, sel: Selection) !bool {
+    const start = self.pages.pin(.{ .screen = .{ .x = sel.start_x, .y = sel.start_y } }) orelse return false;
+    const end = self.pages.pin(.{ .screen = .{ .x = sel.end_x, .y = sel.end_y } }) orelse return false;
+    try self.select(vt.Selection.init(start, end, sel.rectangle));
+    return true;
+}
+
+/// The screen row shown at the top of the viewport: subtract it from a
+/// `Selection` row to get the viewport row a renderer draws at.
+pub fn screenViewportTop(self: *Screen) u32 {
+    const top = self.pages.pointFromPin(.screen, self.pages.getTopLeft(.viewport)) orelse return 0;
+    return top.screen.y;
+}
+
 /// A text search over one screen, including its scrollback.
 ///
 /// A child of the screen it reads, which is itself borrowed from a terminal, so
@@ -619,6 +669,29 @@ pub fn searchSelect(self: *Search, to: SearchDirection) !bool {
         pages.scroll(.{ .pin = bounds.start });
     }
     return true;
+}
+
+/// Copy the matches found so far into `dst`, most recent screen content
+/// first, and return how many were written. Matches are in screen
+/// coordinates; size `dst` from `searchMatchCount`.
+pub fn searchMatches(self: *Search, dst: []Selection) usize {
+    var written: usize = 0;
+    const total = self.matchesLen();
+    var i: usize = 0;
+    while (i < total and written < dst.len) : (i += 1) {
+        const match = self.matchAt(i) orelse continue;
+        const bounds = match.untracked();
+        dst[written] = Selection.fromPins(&self.screen.pages, bounds.start, bounds.end, false) orelse continue;
+        written += 1;
+    }
+    return written;
+}
+
+/// The match `searchSelect` last moved to, or null before the first move.
+pub fn searchSelectedMatch(self: *Search) ?Selection {
+    const match = self.selectedMatch() orelse return null;
+    const bounds = match.untracked();
+    return Selection.fromPins(&self.screen.pages, bounds.start, bounds.end, false);
 }
 
 /// Select the word under a viewport position -- what a double click does.
@@ -854,6 +927,80 @@ pub fn graphemeWidth(cps: []const u32) u8 {
 }
 
 /// Unicode helpers, re-exported as-is.
+// Colors. Everything is `0xRRGGBB`, the same packing `RenderCell` uses, so a
+// renderer keeps one color representation.
+
+fn packColor(c: vt.color.RGB) u32 {
+    return (@as(u32, c.r) << 16) | (@as(u32, c.g) << 8) | c.b;
+}
+
+fn unpackColor(v: u32) vt.color.RGB {
+    return .{ .r = @truncate(v >> 16), .g = @truncate(v >> 8), .b = @truncate(v) };
+}
+
+/// The current background color: what OSC 11 set, else the default.
+pub fn backgroundColor(self: *const Terminal) ?u32 {
+    return packColor(self.colors.background.get() orelse return null);
+}
+
+/// The current foreground color: what OSC 10 set, else the default.
+pub fn foregroundColor(self: *const Terminal) ?u32 {
+    return packColor(self.colors.foreground.get() orelse return null);
+}
+
+/// The current cursor color, if one was set or configured. Null means the
+/// cursor takes the foreground color.
+pub fn cursorColor(self: *const Terminal) ?u32 {
+    return packColor(self.colors.cursor.get() orelse return null);
+}
+
+/// The current color of palette entry `index`, after any OSC 4 change.
+pub fn paletteColor(self: *const Terminal, index: u8) u32 {
+    return packColor(self.colors.palette.current[index]);
+}
+
+/// Copy the current 256-color palette into `dst` and return how many entries
+/// were written: 256, or `dst.len` if shorter.
+pub fn paletteColors(self: *const Terminal, dst: []u32) usize {
+    const n = @min(dst.len, self.colors.palette.current.len);
+    for (dst[0..n], self.colors.palette.current[0..n]) |*out, c| out.* = packColor(c);
+    return n;
+}
+
+/// Set the configured default background: the value in effect until OSC 11
+/// overrides it and again after OSC 111 resets it.
+pub fn setDefaultBackgroundColor(self: *Terminal, rgb: u32) void {
+    self.colors.background.default = unpackColor(rgb);
+}
+
+/// Set the configured default foreground. See `setDefaultBackgroundColor`.
+pub fn setDefaultForegroundColor(self: *Terminal, rgb: u32) void {
+    self.colors.foreground.default = unpackColor(rgb);
+}
+
+/// Set the configured default cursor color. See `setDefaultBackgroundColor`.
+pub fn setDefaultCursorColor(self: *Terminal, rgb: u32) void {
+    self.colors.cursor.default = unpackColor(rgb);
+}
+
+/// An ANSI or DEC private mode: the switches a program flips with `CSI ? h`
+/// and `CSI ? l`, such as cursor keys (DECCKM), bracketed paste or the
+/// mouse tracking modes.
+pub const Mode = vt.Mode;
+
+/// Whether `mode` is currently on.
+pub fn modeEnabled(self: *const Terminal, mode: Mode) bool {
+    return self.modes.get(mode);
+}
+
+/// Turn `mode` on or off. This flips the state only; the side effects the
+/// parser performs when a program changes a mode -- switching screens for
+/// 1049, resizing for 132-column -- do not run. Use `switchScreenMode` and
+/// `deccolm` for those.
+pub fn setMode(self: *Terminal, mode: Mode, value: bool) void {
+    self.modes.set(mode, value);
+}
+
 pub const unicode = vt.unicode;
 
 /// Input encoding: turning key, mouse and focus events into the bytes a

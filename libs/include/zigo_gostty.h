@@ -55,6 +55,51 @@ typedef uint8_t zg_switch_screen_mode;
 #define ZG_SWITCH_SCREEN_MODE_1047 1
 #define ZG_SWITCH_SCREEN_MODE_1049 2
 
+typedef uint16_t zg_mode;
+#define ZG_MODE_DISABLE_KEYBOARD 32770
+#define ZG_MODE_INSERT 32772
+#define ZG_MODE_SEND_RECEIVE_MODE 32780
+#define ZG_MODE_LINEFEED 32788
+#define ZG_MODE_CURSOR_KEYS 1
+#define ZG_MODE_132_COLUMN 3
+#define ZG_MODE_SLOW_SCROLL 4
+#define ZG_MODE_REVERSE_COLORS 5
+#define ZG_MODE_ORIGIN 6
+#define ZG_MODE_WRAPAROUND 7
+#define ZG_MODE_AUTOREPEAT 8
+#define ZG_MODE_MOUSE_EVENT_X10 9
+#define ZG_MODE_CURSOR_BLINKING 12
+#define ZG_MODE_CURSOR_VISIBLE 25
+#define ZG_MODE_ENABLE_MODE_3 40
+#define ZG_MODE_REVERSE_WRAP 45
+#define ZG_MODE_ALT_SCREEN_LEGACY 47
+#define ZG_MODE_KEYPAD_KEYS 66
+#define ZG_MODE_BACKARROW_KEY_MODE 67
+#define ZG_MODE_ENABLE_LEFT_AND_RIGHT_MARGIN 69
+#define ZG_MODE_MOUSE_EVENT_NORMAL 1000
+#define ZG_MODE_MOUSE_EVENT_BUTTON 1002
+#define ZG_MODE_MOUSE_EVENT_ANY 1003
+#define ZG_MODE_FOCUS_EVENT 1004
+#define ZG_MODE_MOUSE_FORMAT_UTF8 1005
+#define ZG_MODE_MOUSE_FORMAT_SGR 1006
+#define ZG_MODE_MOUSE_ALTERNATE_SCROLL 1007
+#define ZG_MODE_MOUSE_FORMAT_URXVT 1015
+#define ZG_MODE_MOUSE_FORMAT_SGR_PIXELS 1016
+#define ZG_MODE_IGNORE_KEYPAD_WITH_NUMLOCK 1035
+#define ZG_MODE_ALT_ESC_PREFIX 1036
+#define ZG_MODE_ALT_SENDS_ESCAPE 1039
+#define ZG_MODE_REVERSE_WRAP_EXTENDED 1045
+#define ZG_MODE_ALT_SCREEN 1047
+#define ZG_MODE_SAVE_CURSOR 1048
+#define ZG_MODE_ALT_SCREEN_SAVE_CURSOR_CLEAR_ENTER 1049
+#define ZG_MODE_BRACKETED_PASTE 2004
+#define ZG_MODE_SYNCHRONIZED_OUTPUT 2026
+#define ZG_MODE_GRAPHEME_CLUSTER 2027
+#define ZG_MODE_REPORT_COLOR_SCHEME 2031
+#define ZG_MODE_REPORT_VISIBILITY 2033
+#define ZG_MODE_IN_BAND_SIZE_REPORTS 2048
+#define ZG_MODE_KITTY_PASTE_EVENTS 5522
+
 typedef uint8_t zg_stream_event;
 #define ZG_STREAM_EVENT_BELL 0
 #define ZG_STREAM_EVENT_TITLE_CHANGED 1
@@ -433,6 +478,14 @@ typedef struct zg_render_size {
     uint32_t padding_left;
 } zg_render_size;
 
+typedef struct zg_selection {
+    uint16_t start_x;
+    uint32_t start_y;
+    uint16_t end_x;
+    uint32_t end_y;
+    uint8_t rectangle;
+} zg_selection;
+
 typedef struct zg_render_cell {
     uint32_t codepoint;
     uint32_t fg;
@@ -541,6 +594,9 @@ ZIGO_EXPORT int32_t zg_screen_select_word(zg_screen * self, uint16_t x, uint16_t
 ZIGO_EXPORT int32_t zg_screen_select_line(zg_screen * self, uint16_t x, uint16_t y, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_screen_select_output(zg_screen * self, uint16_t x, uint16_t y, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_screen_selection_string(zg_screen * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_screen_selection(zg_screen * self, uint8_t * out_result_has, zg_selection * out_result);
+ZIGO_EXPORT int32_t zg_screen_set_selection(zg_screen * self, const zg_selection * sel, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_screen_viewport_top(zg_screen * self, uint32_t * out_result);
 ZIGO_EXPORT int32_t zg_screen_start_hyperlink(zg_screen * self, const uint8_t * uri_ptr, size_t uri_len, const uint8_t * id_ptr, size_t id_len);
 ZIGO_EXPORT int32_t zg_screen_viewport_is_bottom(const zg_screen * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_screen_end_hyperlink(zg_screen * self);
@@ -550,6 +606,8 @@ ZIGO_EXPORT int32_t zg_search_search_all(zg_search * self);
 ZIGO_EXPORT int32_t zg_search_needle(zg_search * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
 ZIGO_EXPORT int32_t zg_search_match_count(zg_search * self, size_t * out_result);
 ZIGO_EXPORT int32_t zg_search_select(zg_search * self, uint8_t to, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_search_matches(zg_search * self, zg_selection * dst_ptr, size_t dst_len, size_t * out_result);
+ZIGO_EXPORT int32_t zg_search_selected_match(zg_search * self, uint8_t * out_result_has, zg_selection * out_result);
 ZIGO_EXPORT int32_t zg_terminal_print_attributes_into(zg_terminal * self, uint8_t * dst_ptr, size_t dst_len, size_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_history_string(zg_terminal * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
 ZIGO_EXPORT int32_t zg_terminal_screen_string(zg_terminal * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
@@ -586,6 +644,16 @@ ZIGO_EXPORT int32_t zg_terminal_print(zg_terminal * self, uint32_t c);
 ZIGO_EXPORT int32_t zg_terminal_print_repeat(zg_terminal * self, size_t count_req);
 ZIGO_EXPORT int32_t zg_terminal_print_slice(zg_terminal * self, const uint32_t * cps_ptr, size_t cps_len);
 ZIGO_EXPORT int32_t zg_terminal_plain_string_unwrapped(zg_terminal * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_terminal_background_color(zg_terminal * self, uint8_t * out_result_has, uint32_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_foreground_color(zg_terminal * self, uint8_t * out_result_has, uint32_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_cursor_color(zg_terminal * self, uint8_t * out_result_has, uint32_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_palette_color(zg_terminal * self, uint8_t index, uint32_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_palette_colors(zg_terminal * self, uint32_t * dst_ptr, size_t dst_len, size_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_set_default_background_color(zg_terminal * self, uint32_t rgb);
+ZIGO_EXPORT int32_t zg_terminal_set_default_foreground_color(zg_terminal * self, uint32_t rgb);
+ZIGO_EXPORT int32_t zg_terminal_set_default_cursor_color(zg_terminal * self, uint32_t rgb);
+ZIGO_EXPORT int32_t zg_terminal_mode_enabled(zg_terminal * self, uint16_t mode, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_set_mode(zg_terminal * self, uint16_t mode, uint8_t value);
 ZIGO_EXPORT int32_t zg_terminal_set_pwd(zg_terminal * self, const uint8_t * pwd_ptr, size_t pwd_len);
 ZIGO_EXPORT int32_t zg_terminal_get_pwd(zg_terminal * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
 ZIGO_EXPORT int32_t zg_terminal_get_title(zg_terminal * self, const uint8_t * * out_result_ptr, size_t * out_result_len);

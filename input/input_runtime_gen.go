@@ -21,32 +21,32 @@ func zigoPoisonAfterPanic(err error, handles ...zigoHandle) error {
 	return lifecycle.PoisonAfterPanic(err, handles...)
 }
 
-func boolToUint8(value bool) uint8 {
+func zigoBoolToUint8(value bool) uint8 {
 	if value {
 		return 1
 	}
 	return 0
 }
 
-var activeCallbackHandles atomic.Int64
+var zigoActiveCallbackHandles atomic.Int64
 
 type zigoCallbackHandle = cgo.Handle
 
-func newZigoWriterHandle(value io.Writer) zigoCallbackHandle {
+func zigoNewWriterStreamHandle(value io.Writer) zigoCallbackHandle {
 	handle := cgo.NewHandle(&raw.CallbackState{Writer: value})
-	activeCallbackHandles.Add(1)
+	zigoActiveCallbackHandles.Add(1)
 	return handle
 }
 
-func deleteCallbackHandle(handle zigoCallbackHandle) {
+func zigoDeleteCallbackHandle(handle zigoCallbackHandle) {
 	if handle == 0 {
 		return
 	}
 	handle.Delete()
-	activeCallbackHandles.Add(-1)
+	zigoActiveCallbackHandles.Add(-1)
 }
 
-func activeCallbackHandleCount() int64 { return activeCallbackHandles.Load() }
+func zigoActiveCallbackHandleCount() int64 { return zigoActiveCallbackHandles.Load() }
 
 // zigoCallbackPanicPending is the fast-path check ahead of the per-slot sweep:
 // one atomic load says whether any callback recorded a panic nobody has taken.

@@ -38,11 +38,7 @@ jobs:
       - name: Test
         run: go test ./...
 
-      # The example depends on a published gostty version, which always lags
-      # the commit under test; point it at this checkout so CI exercises the
-      # code in the branch rather than the last release.
-      - name: Build example
-        working-directory: example
-        run: |
-          go mod edit -replace github.com/ironpark/gostty=..
-          go build ./...
+      # The example lives in the root module, so `go build ./...` above already
+      # compiled it against this checkout; run its own tests too.
+      - name: Test example
+        run: go test ./examples/...

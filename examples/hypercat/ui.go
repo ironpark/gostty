@@ -490,7 +490,7 @@ func (g *game) drawText(screen *ebiten.Image, s string, x, y float64, fg color.R
 // runeWidth asks the binding how many columns a rune takes, which is the same
 // answer the terminal used when it laid the grid out.
 func runeWidth(r rune) int {
-	w, err := gostty.CodepointWidth(uint32(r))
+	w, err := gostty.CodepointWidth(r)
 	if err != nil {
 		return 1
 	}

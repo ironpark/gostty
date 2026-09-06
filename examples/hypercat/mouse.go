@@ -27,7 +27,7 @@ const multiClickInterval = 400 * time.Millisecond
 // ghostty has no default for these on purpose: its own UI reads the set from
 // configuration, so the choice belongs to whoever embeds it. This is that
 // configuration for this program.
-var wordBoundaries = []uint32{
+var wordBoundaries = []rune{
 	0, ' ', '\t', '\'', '"', '`', '|', ':', ';', ',',
 	'(', ')', '[', ']', '{', '}', '<', '>', '$', '\u2502',
 }

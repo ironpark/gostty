@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/ironpark/gostty"
-	"github.com/ironpark/gostty/example/thecat"
+	"github.com/ironpark/gostty/examples/hypercat/thecat"
 )
 
 func TestThemeReplacesOnlyTerminalDefaults(t *testing.T) {
@@ -45,7 +45,7 @@ func grid(rows ...string) *game {
 	}
 	for y, row := range rows {
 		for x, r := range row {
-			g.cells[y*cols+x] = gostty.RenderCell{Codepoint: uint32(r)}
+			g.cells[y*cols+x] = gostty.RenderCell{Codepoint: r}
 		}
 	}
 	return g

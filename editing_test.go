@@ -1,6 +1,7 @@
 package gostty
 
 import (
+	"errors"
 	"strings"
 	"testing"
 )
@@ -260,22 +261,29 @@ func TestResize(t *testing.T) {
 func TestGraphemeWidth(t *testing.T) {
 	for _, tc := range []struct {
 		name string
-		cps  []uint32
+		cps  []rune
 		want uint8
 	}{
-		{"ascii", []uint32{'a'}, 1},
-		{"hangul", []uint32{0xAC00}, 2},
-		{"emoji zwj", []uint32{0x1F468, 0x200D, 0x1F4BB}, 2},
+		{"ascii", []rune{'a'}, 1},
+		{"hangul", []rune{0xAC00}, 2},
+		{"emoji zwj", []rune{0x1F468, 0x200D, 0x1F4BB}, 2},
 	} {
-		if got := GraphemeWidth(tc.cps); got != tc.want {
+		got, err := GraphemeWidth(tc.cps)
+		if err != nil {
+			t.Fatalf("GraphemeWidth(%s): %v", tc.name, err)
+		}
+		if got != tc.want {
 			t.Errorf("GraphemeWidth(%s) = %d, want %d", tc.name, got, tc.want)
 		}
+	}
+	if _, err := GraphemeWidth([]rune{0x110000}); !errors.Is(err, ErrOutOfRange) {
+		t.Errorf("GraphemeWidth(0x110000) err = %v, want ErrOutOfRange", err)
 	}
 }
 
 func TestPrintSlice(t *testing.T) {
 	term := newTerm(t, 10, 2)
-	if err := term.PrintSlice([]uint32{'h', 'i', 0xAC00}); err != nil {
+	if err := term.PrintSlice([]rune{'h', 'i', 0xAC00}); err != nil {
 		t.Fatalf("PrintSlice: %v", err)
 	}
 	if got, want := screen(t, term), "hi가"; got != want {

@@ -712,6 +712,40 @@ func ScreenSelectionString(self unsafe.Pointer) (string, bool, int32) {
 	return result, true, code
 }
 
+// ScreenSelection calls the generated C ABI wrapper for zg_screen_selection.
+func ScreenSelection(self unsafe.Pointer) (SelectionData, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.zg_selection
+	code := int32(C.zg_screen_selection((*C.zg_screen)(self), &outResultHas, &outResult))
+	return SelectionData{
+		StartX:    uint16(outResult.start_x),
+		StartY:    uint32(outResult.start_y),
+		EndX:      uint16(outResult.end_x),
+		EndY:      uint32(outResult.end_y),
+		Rectangle: uint8(outResult.rectangle),
+	}, outResultHas != 0, code
+}
+
+// ScreenSetSelection calls the generated C ABI wrapper for zg_screen_set_selection.
+func ScreenSetSelection(self unsafe.Pointer, sel SelectionData) (uint8, int32) {
+	var csel C.zg_selection
+	csel.start_x = C.uint16_t(sel.StartX)
+	csel.start_y = C.uint32_t(sel.StartY)
+	csel.end_x = C.uint16_t(sel.EndX)
+	csel.end_y = C.uint32_t(sel.EndY)
+	csel.rectangle = C.uint8_t(sel.Rectangle)
+	var outResult C.uint8_t
+	code := int32(C.zg_screen_set_selection((*C.zg_screen)(self), &csel, &outResult))
+	return uint8(outResult), code
+}
+
+// ScreenViewportTop calls the generated C ABI wrapper for zg_screen_viewport_top.
+func ScreenViewportTop(self unsafe.Pointer) (uint32, int32) {
+	var outResult C.uint32_t
+	code := int32(C.zg_screen_viewport_top((*C.zg_screen)(self), &outResult))
+	return uint32(outResult), code
+}
+
 // ScreenStartHyperlink calls the generated C ABI wrapper for zg_screen_start_hyperlink.
 func ScreenStartHyperlink(self unsafe.Pointer, uri string, id string) int32 {
 	uriPtr := (*C.uint8_t)(zigoStringPtr(uri))
@@ -776,6 +810,41 @@ func SearchSelect(self unsafe.Pointer, to uint8) (uint8, int32) {
 	var outResult C.uint8_t
 	code := int32(C.zg_search_select((*C.zg_search)(self), C.uint8_t(to), &outResult))
 	return uint8(outResult), code
+}
+
+// SearchMatches calls the generated C ABI wrapper for zg_search_matches.
+func SearchMatches(self unsafe.Pointer, dst []SelectionData) (uint, int32) {
+	var dstValues []C.zg_selection
+	if len(dst) != 0 {
+		dstValues = make([]C.zg_selection, len(dst))
+	}
+	dstPtr := (*C.zg_selection)(zigoSlicePtr(dstValues))
+	var outResult C.size_t
+	code := int32(C.zg_search_matches((*C.zg_search)(self), dstPtr, C.size_t(len(dst)), &outResult))
+	for i := 0; i < int(outResult) && i < len(dst); i++ {
+		dst[i] = SelectionData{
+			StartX:    uint16(dstValues[i].start_x),
+			StartY:    uint32(dstValues[i].start_y),
+			EndX:      uint16(dstValues[i].end_x),
+			EndY:      uint32(dstValues[i].end_y),
+			Rectangle: uint8(dstValues[i].rectangle),
+		}
+	}
+	return uint(outResult), code
+}
+
+// SearchSelectedMatch calls the generated C ABI wrapper for zg_search_selected_match.
+func SearchSelectedMatch(self unsafe.Pointer) (SelectionData, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.zg_selection
+	code := int32(C.zg_search_selected_match((*C.zg_search)(self), &outResultHas, &outResult))
+	return SelectionData{
+		StartX:    uint16(outResult.start_x),
+		StartY:    uint32(outResult.start_y),
+		EndX:      uint16(outResult.end_x),
+		EndY:      uint32(outResult.end_y),
+		Rectangle: uint8(outResult.rectangle),
+	}, outResultHas != 0, code
 }
 
 // TerminalPrintAttributesInto calls the generated C ABI wrapper for zg_terminal_print_attributes_into.
@@ -1025,6 +1094,76 @@ func TerminalPlainStringUnwrapped(self unsafe.Pointer) (string, int32) {
 	}
 	C.zg_free_string(outResultPtr, outResultLen)
 	return result, code
+}
+
+// TerminalBackgroundColor calls the generated C ABI wrapper for zg_terminal_background_color.
+func TerminalBackgroundColor(self unsafe.Pointer) (uint32, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.uint32_t
+	code := int32(C.zg_terminal_background_color((*C.zg_terminal)(self), &outResultHas, &outResult))
+	return uint32(outResult), outResultHas != 0, code
+}
+
+// TerminalForegroundColor calls the generated C ABI wrapper for zg_terminal_foreground_color.
+func TerminalForegroundColor(self unsafe.Pointer) (uint32, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.uint32_t
+	code := int32(C.zg_terminal_foreground_color((*C.zg_terminal)(self), &outResultHas, &outResult))
+	return uint32(outResult), outResultHas != 0, code
+}
+
+// TerminalCursorColor calls the generated C ABI wrapper for zg_terminal_cursor_color.
+func TerminalCursorColor(self unsafe.Pointer) (uint32, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.uint32_t
+	code := int32(C.zg_terminal_cursor_color((*C.zg_terminal)(self), &outResultHas, &outResult))
+	return uint32(outResult), outResultHas != 0, code
+}
+
+// TerminalPaletteColor calls the generated C ABI wrapper for zg_terminal_palette_color.
+func TerminalPaletteColor(self unsafe.Pointer, index uint8) (uint32, int32) {
+	var outResult C.uint32_t
+	code := int32(C.zg_terminal_palette_color((*C.zg_terminal)(self), C.uint8_t(index), &outResult))
+	return uint32(outResult), code
+}
+
+// TerminalPaletteColors calls the generated C ABI wrapper for zg_terminal_palette_colors.
+func TerminalPaletteColors(self unsafe.Pointer, dst []uint32) (uint, int32) {
+	dstPtr := (*C.uint32_t)(zigoSlicePtr(dst))
+	var outResult C.size_t
+	code := int32(C.zg_terminal_palette_colors((*C.zg_terminal)(self), dstPtr, C.size_t(len(dst)), &outResult))
+	return uint(outResult), code
+}
+
+// TerminalSetDefaultBackgroundColor calls the generated C ABI wrapper for zg_terminal_set_default_background_color.
+func TerminalSetDefaultBackgroundColor(self unsafe.Pointer, rgb uint32) int32 {
+	code := int32(C.zg_terminal_set_default_background_color((*C.zg_terminal)(self), C.uint32_t(rgb)))
+	return code
+}
+
+// TerminalSetDefaultForegroundColor calls the generated C ABI wrapper for zg_terminal_set_default_foreground_color.
+func TerminalSetDefaultForegroundColor(self unsafe.Pointer, rgb uint32) int32 {
+	code := int32(C.zg_terminal_set_default_foreground_color((*C.zg_terminal)(self), C.uint32_t(rgb)))
+	return code
+}
+
+// TerminalSetDefaultCursorColor calls the generated C ABI wrapper for zg_terminal_set_default_cursor_color.
+func TerminalSetDefaultCursorColor(self unsafe.Pointer, rgb uint32) int32 {
+	code := int32(C.zg_terminal_set_default_cursor_color((*C.zg_terminal)(self), C.uint32_t(rgb)))
+	return code
+}
+
+// TerminalModeEnabled calls the generated C ABI wrapper for zg_terminal_mode_enabled.
+func TerminalModeEnabled(self unsafe.Pointer, mode uint16) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_terminal_mode_enabled((*C.zg_terminal)(self), C.uint16_t(mode), &outResult))
+	return uint8(outResult), code
+}
+
+// TerminalSetMode calls the generated C ABI wrapper for zg_terminal_set_mode.
+func TerminalSetMode(self unsafe.Pointer, mode uint16, value uint8) int32 {
+	code := int32(C.zg_terminal_set_mode((*C.zg_terminal)(self), C.uint16_t(mode), C.uint8_t(value)))
+	return code
 }
 
 // TerminalSetPwd calls the generated C ABI wrapper for zg_terminal_set_pwd.
@@ -1352,6 +1491,18 @@ type RenderSizeData struct {
 	PaddingLeft   uint32
 }
 
+// SelectionData mirrors the zg_selection layout, padding included.
+type SelectionData struct {
+	StartX    uint16
+	_         [2]byte
+	StartY    uint32
+	EndX      uint16
+	_         [2]byte
+	EndY      uint32
+	Rectangle uint8
+	_         [3]byte
+}
+
 // RenderCellData mirrors the zg_render_cell layout, padding included.
 type RenderCellData struct {
 	Codepoint uint32
@@ -1419,6 +1570,14 @@ var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.PaddingTop)-unsafe.Offset
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.PaddingBottom)-unsafe.Offsetof(C.zg_render_size{}.padding_bottom)]
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.PaddingRight)-unsafe.Offsetof(C.zg_render_size{}.padding_right)]
 var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.PaddingLeft)-unsafe.Offsetof(C.zg_render_size{}.padding_left)]
+
+// SelectionData slices are copied from C memory as one run, so it must match zg_selection byte for byte.
+var _ = [1]struct{}{}[unsafe.Sizeof(SelectionData{})-unsafe.Sizeof(C.zg_selection{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(SelectionData{}.StartX)-unsafe.Offsetof(C.zg_selection{}.start_x)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SelectionData{}.StartY)-unsafe.Offsetof(C.zg_selection{}.start_y)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SelectionData{}.EndX)-unsafe.Offsetof(C.zg_selection{}.end_x)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SelectionData{}.EndY)-unsafe.Offsetof(C.zg_selection{}.end_y)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SelectionData{}.Rectangle)-unsafe.Offsetof(C.zg_selection{}.rectangle)]
 
 // RenderCellData slices are copied from C memory as one run, so it must match zg_render_cell byte for byte.
 var _ = [1]struct{}{}[unsafe.Sizeof(RenderCellData{})-unsafe.Sizeof(C.zg_render_cell{})]

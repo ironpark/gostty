@@ -49,7 +49,7 @@ func (te *Terminal) zigoRelease() {
 	state, release := te.zigoTakeLocked()
 	te.mu.Unlock()
 	if release {
-		cleanupTerminal(state)
+		zigoCleanupTerminal(state)
 	}
 }
 
@@ -113,18 +113,18 @@ func (te *Terminal) ZigoAcquireChild(operation string) (unsafe.Pointer, lifecycl
 // ZigoDropChild releases a dependent-child reservation.
 func (te *Terminal) ZigoDropChild() { te.zigoDropChild() }
 
-type terminalCleanupState struct {
+type zigoTerminalCleanupState struct {
 	ptr unsafe.Pointer
 }
 
-func newTerminal(ptr unsafe.Pointer) *Terminal {
+func zigoNewTerminal(ptr unsafe.Pointer) *Terminal {
 	value := &Terminal{ptr: ptr}
-	state := terminalCleanupState{ptr: ptr}
-	value.cleanup = runtime.AddCleanup(value, cleanupTerminal, state)
+	state := zigoTerminalCleanupState{ptr: ptr}
+	value.cleanup = runtime.AddCleanup(value, zigoCleanupTerminal, state)
 	return value
 }
 
-func cleanupTerminal(state terminalCleanupState) {
+func zigoCleanupTerminal(state zigoTerminalCleanupState) {
 	if state.ptr != nil {
 		raw.TerminalDeinit(state.ptr)
 	}
@@ -158,7 +158,7 @@ func (te *Terminal) Close() error {
 	state, release := te.zigoTakeLocked()
 	te.mu.Unlock()
 	if release {
-		cleanupTerminal(state)
+		zigoCleanupTerminal(state)
 	}
 	runtime.KeepAlive(te)
 	return nil
@@ -167,11 +167,11 @@ func (te *Terminal) Close() error {
 // zigoTakeLocked hands out what is left to release once te is closed and no
 // call is inside native; mu must be held. A poisoned handle keeps its native
 // object: releasing state a panic left half-changed could fault, so it leaks.
-func (te *Terminal) zigoTakeLocked() (terminalCleanupState, bool) {
+func (te *Terminal) zigoTakeLocked() (zigoTerminalCleanupState, bool) {
 	if !te.closed || te.active != 0 || te.ptr == nil {
-		return terminalCleanupState{}, false
+		return zigoTerminalCleanupState{}, false
 	}
-	state := terminalCleanupState{ptr: te.ptr}
+	state := zigoTerminalCleanupState{ptr: te.ptr}
 	te.ptr = nil
 	if te.poison != nil {
 		state.ptr = nil
@@ -251,7 +251,7 @@ func (s *Stream) zigoRelease() {
 	state, release := s.zigoTakeLocked()
 	s.mu.Unlock()
 	if release {
-		cleanupStream(state)
+		zigoCleanupStream(state)
 	}
 	if parent != nil {
 		parent.ZigoRelease()
@@ -287,25 +287,25 @@ func (s *Stream) ZigoRelease() { s.zigoRelease() }
 // ZigoPoison implements the shared lifecycle handle contract.
 func (s *Stream) ZigoPoison(cause *NativePanicError) { s.zigoPoison(cause) }
 
-type streamCleanupState struct {
+type zigoStreamCleanupState struct {
 	ptr             unsafe.Pointer
 	parent          zigoChildHandle
 	callbackHandles []zigoCallbackHandle
 }
 
-func newStream(ptr unsafe.Pointer, parent zigoChildHandle, callbackHandles []zigoCallbackHandle) *Stream {
+func zigoNewStream(ptr unsafe.Pointer, parent zigoChildHandle, callbackHandles []zigoCallbackHandle) *Stream {
 	value := &Stream{ptr: ptr, parent: parent, callbackHandles: callbackHandles}
-	state := streamCleanupState{ptr: ptr, parent: parent, callbackHandles: callbackHandles}
-	value.cleanup = runtime.AddCleanup(value, cleanupStream, state)
+	state := zigoStreamCleanupState{ptr: ptr, parent: parent, callbackHandles: callbackHandles}
+	value.cleanup = runtime.AddCleanup(value, zigoCleanupStream, state)
 	return value
 }
 
-func cleanupStream(state streamCleanupState) {
+func zigoCleanupStream(state zigoStreamCleanupState) {
 	if state.ptr != nil {
 		raw.StreamFreeStream(state.ptr)
 	}
 	for _, handle := range state.callbackHandles {
-		deleteCallbackHandle(handle)
+		zigoDeleteCallbackHandle(handle)
 	}
 	if state.parent != nil {
 		state.parent.ZigoDropChild()
@@ -330,7 +330,7 @@ func (s *Stream) Close() error {
 	state, release := s.zigoTakeLocked()
 	s.mu.Unlock()
 	if release {
-		cleanupStream(state)
+		zigoCleanupStream(state)
 	}
 	runtime.KeepAlive(s)
 	return nil
@@ -339,11 +339,11 @@ func (s *Stream) Close() error {
 // zigoTakeLocked hands out what is left to release once s is closed and no
 // call is inside native; mu must be held. A poisoned handle keeps its native
 // object: releasing state a panic left half-changed could fault, so it leaks.
-func (s *Stream) zigoTakeLocked() (streamCleanupState, bool) {
+func (s *Stream) zigoTakeLocked() (zigoStreamCleanupState, bool) {
 	if !s.closed || s.active != 0 || s.ptr == nil {
-		return streamCleanupState{}, false
+		return zigoStreamCleanupState{}, false
 	}
-	state := streamCleanupState{ptr: s.ptr, callbackHandles: s.callbackHandles, parent: s.parent}
+	state := zigoStreamCleanupState{ptr: s.ptr, callbackHandles: s.callbackHandles, parent: s.parent}
 	s.ptr = nil
 	s.callbackHandles = nil
 	s.parent = nil
@@ -364,7 +364,7 @@ type Screen struct {
 	owner    zigoHandle
 }
 
-func newBorrowedScreen(ptr unsafe.Pointer, owner zigoHandle) *Screen {
+func zigoNewBorrowedScreen(ptr unsafe.Pointer, owner zigoHandle) *Screen {
 	return &Screen{ptr: ptr, owner: owner}
 }
 
@@ -586,7 +586,7 @@ func (s *Search) zigoRelease() {
 	state, release := s.zigoTakeLocked()
 	s.mu.Unlock()
 	if release {
-		cleanupSearch(state)
+		zigoCleanupSearch(state)
 	}
 	if parent != nil {
 		parent.ZigoRelease()
@@ -622,19 +622,19 @@ func (s *Search) ZigoRelease() { s.zigoRelease() }
 // ZigoPoison implements the shared lifecycle handle contract.
 func (s *Search) ZigoPoison(cause *NativePanicError) { s.zigoPoison(cause) }
 
-type searchCleanupState struct {
+type zigoSearchCleanupState struct {
 	ptr    unsafe.Pointer
 	parent zigoChildHandle
 }
 
-func newSearch(ptr unsafe.Pointer, parent zigoChildHandle) *Search {
+func zigoNewSearch(ptr unsafe.Pointer, parent zigoChildHandle) *Search {
 	value := &Search{ptr: ptr, parent: parent}
-	state := searchCleanupState{ptr: ptr, parent: parent}
-	value.cleanup = runtime.AddCleanup(value, cleanupSearch, state)
+	state := zigoSearchCleanupState{ptr: ptr, parent: parent}
+	value.cleanup = runtime.AddCleanup(value, zigoCleanupSearch, state)
 	return value
 }
 
-func cleanupSearch(state searchCleanupState) {
+func zigoCleanupSearch(state zigoSearchCleanupState) {
 	if state.ptr != nil {
 		raw.SearchFreeSearch(state.ptr)
 	}
@@ -661,7 +661,7 @@ func (s *Search) Close() error {
 	state, release := s.zigoTakeLocked()
 	s.mu.Unlock()
 	if release {
-		cleanupSearch(state)
+		zigoCleanupSearch(state)
 	}
 	runtime.KeepAlive(s)
 	return nil
@@ -670,11 +670,11 @@ func (s *Search) Close() error {
 // zigoTakeLocked hands out what is left to release once s is closed and no
 // call is inside native; mu must be held. A poisoned handle keeps its native
 // object: releasing state a panic left half-changed could fault, so it leaks.
-func (s *Search) zigoTakeLocked() (searchCleanupState, bool) {
+func (s *Search) zigoTakeLocked() (zigoSearchCleanupState, bool) {
 	if !s.closed || s.active != 0 || s.ptr == nil {
-		return searchCleanupState{}, false
+		return zigoSearchCleanupState{}, false
 	}
-	state := searchCleanupState{ptr: s.ptr, parent: s.parent}
+	state := zigoSearchCleanupState{ptr: s.ptr, parent: s.parent}
 	s.ptr = nil
 	s.parent = nil
 	if s.poison != nil {
@@ -720,7 +720,7 @@ func (r *RenderState) zigoRelease() {
 	state, release := r.zigoTakeLocked()
 	r.mu.Unlock()
 	if release {
-		cleanupRenderState(state)
+		zigoCleanupRenderState(state)
 	}
 }
 
@@ -749,18 +749,18 @@ func (r *RenderState) ZigoRelease() { r.zigoRelease() }
 // ZigoPoison implements the shared lifecycle handle contract.
 func (r *RenderState) ZigoPoison(cause *NativePanicError) { r.zigoPoison(cause) }
 
-type renderStateCleanupState struct {
+type zigoRenderStateCleanupState struct {
 	ptr unsafe.Pointer
 }
 
-func newRenderState(ptr unsafe.Pointer) *RenderState {
+func zigoNewRenderState(ptr unsafe.Pointer) *RenderState {
 	value := &RenderState{ptr: ptr}
-	state := renderStateCleanupState{ptr: ptr}
-	value.cleanup = runtime.AddCleanup(value, cleanupRenderState, state)
+	state := zigoRenderStateCleanupState{ptr: ptr}
+	value.cleanup = runtime.AddCleanup(value, zigoCleanupRenderState, state)
 	return value
 }
 
-func cleanupRenderState(state renderStateCleanupState) {
+func zigoCleanupRenderState(state zigoRenderStateCleanupState) {
 	if state.ptr != nil {
 		raw.RenderStateFreeRenderState(state.ptr)
 	}
@@ -784,7 +784,7 @@ func (r *RenderState) Close() error {
 	state, release := r.zigoTakeLocked()
 	r.mu.Unlock()
 	if release {
-		cleanupRenderState(state)
+		zigoCleanupRenderState(state)
 	}
 	runtime.KeepAlive(r)
 	return nil
@@ -793,11 +793,11 @@ func (r *RenderState) Close() error {
 // zigoTakeLocked hands out what is left to release once r is closed and no
 // call is inside native; mu must be held. A poisoned handle keeps its native
 // object: releasing state a panic left half-changed could fault, so it leaks.
-func (r *RenderState) zigoTakeLocked() (renderStateCleanupState, bool) {
+func (r *RenderState) zigoTakeLocked() (zigoRenderStateCleanupState, bool) {
 	if !r.closed || r.active != 0 || r.ptr == nil {
-		return renderStateCleanupState{}, false
+		return zigoRenderStateCleanupState{}, false
 	}
-	state := renderStateCleanupState{ptr: r.ptr}
+	state := zigoRenderStateCleanupState{ptr: r.ptr}
 	r.ptr = nil
 	if r.poison != nil {
 		state.ptr = nil
@@ -842,7 +842,7 @@ func (k *KittyImages) zigoRelease() {
 	state, release := k.zigoTakeLocked()
 	k.mu.Unlock()
 	if release {
-		cleanupKittyImages(state)
+		zigoCleanupKittyImages(state)
 	}
 }
 
@@ -871,18 +871,18 @@ func (k *KittyImages) ZigoRelease() { k.zigoRelease() }
 // ZigoPoison implements the shared lifecycle handle contract.
 func (k *KittyImages) ZigoPoison(cause *NativePanicError) { k.zigoPoison(cause) }
 
-type kittyImagesCleanupState struct {
+type zigoKittyImagesCleanupState struct {
 	ptr unsafe.Pointer
 }
 
-func newKittyImages(ptr unsafe.Pointer) *KittyImages {
+func zigoNewKittyImages(ptr unsafe.Pointer) *KittyImages {
 	value := &KittyImages{ptr: ptr}
-	state := kittyImagesCleanupState{ptr: ptr}
-	value.cleanup = runtime.AddCleanup(value, cleanupKittyImages, state)
+	state := zigoKittyImagesCleanupState{ptr: ptr}
+	value.cleanup = runtime.AddCleanup(value, zigoCleanupKittyImages, state)
 	return value
 }
 
-func cleanupKittyImages(state kittyImagesCleanupState) {
+func zigoCleanupKittyImages(state zigoKittyImagesCleanupState) {
 	if state.ptr != nil {
 		raw.KittyImagesFreeKittyImages(state.ptr)
 	}
@@ -906,7 +906,7 @@ func (k *KittyImages) Close() error {
 	state, release := k.zigoTakeLocked()
 	k.mu.Unlock()
 	if release {
-		cleanupKittyImages(state)
+		zigoCleanupKittyImages(state)
 	}
 	runtime.KeepAlive(k)
 	return nil
@@ -915,11 +915,11 @@ func (k *KittyImages) Close() error {
 // zigoTakeLocked hands out what is left to release once k is closed and no
 // call is inside native; mu must be held. A poisoned handle keeps its native
 // object: releasing state a panic left half-changed could fault, so it leaks.
-func (k *KittyImages) zigoTakeLocked() (kittyImagesCleanupState, bool) {
+func (k *KittyImages) zigoTakeLocked() (zigoKittyImagesCleanupState, bool) {
 	if !k.closed || k.active != 0 || k.ptr == nil {
-		return kittyImagesCleanupState{}, false
+		return zigoKittyImagesCleanupState{}, false
 	}
-	state := kittyImagesCleanupState{ptr: k.ptr}
+	state := zigoKittyImagesCleanupState{ptr: k.ptr}
 	k.ptr = nil
 	if k.poison != nil {
 		state.ptr = nil

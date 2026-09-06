@@ -7,14 +7,13 @@ import (
 
 func TestCodepointWidth(t *testing.T) {
 	for _, tc := range []struct {
-		cp   uint32
+		cp   rune
 		want uint8
 	}{
 		{'A', 1},
 		{0x00, 0},
-		{0xAC00, 2},   // 가
-		{0x1F600, 2},  // 😀
-		{0x110000, 1}, // above Unicode but inside u21: ghostty's own answer
+		{0xAC00, 2},  // 가
+		{0x1F600, 2}, // 😀
 	} {
 		got, err := CodepointWidth(tc.cp)
 		if err != nil {
@@ -27,18 +26,18 @@ func TestCodepointWidth(t *testing.T) {
 	}
 }
 
-// The Zig parameter is u21, which zigo promotes to uint32 at the C boundary.
-// Arguments past maxInt(u21) are rejected in Go before the native call.
-func TestCodepointWidthAboveU21(t *testing.T) {
-	got, err := CodepointWidth(0x200000)
+// The parameter is a rune; values past the Unicode range are rejected in Go
+// before the native call.
+func TestCodepointWidthAboveUnicode(t *testing.T) {
+	got, err := CodepointWidth(0x110000)
 	if !errors.Is(err, ErrOutOfRange) {
-		t.Fatalf("CodepointWidth(0x200000) = %d, %v; want ErrOutOfRange", got, err)
+		t.Fatalf("CodepointWidth(0x110000) = %d, %v; want ErrOutOfRange", got, err)
 	}
 	var rangeErr *RangeError
 	if !errors.As(err, &rangeErr) {
 		t.Fatalf("error is not *RangeError: %v", err)
 	}
-	if rangeErr.Parameter != "p0" || rangeErr.Type != "u21" {
-		t.Errorf("RangeError = %+v; want Parameter p0, Type u21", rangeErr)
+	if rangeErr.Parameter != "p0" || rangeErr.Type != "codepoint" {
+		t.Errorf("RangeError = %+v; want Parameter p0, Type codepoint", rangeErr)
 	}
 }

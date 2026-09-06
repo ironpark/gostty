@@ -6,6 +6,9 @@ pub const bindings = zigo.define(.{
     .root = gostty,
     .allocator = .smp_allocator,
     .io = "io",
+    // ghostty spells codepoints as `u21`; every such parameter and return is
+    // a Go `rune`. The `u32` ones that are also codepoints opt in below.
+    .codepoints = .infer_u21,
     // Key and mouse encoding is over half the public surface -- the `Key` enum
     // alone is 176 constants -- and nothing on the terminal side names it, so it
     // gets its own package. The dependency runs one way: `input` names
@@ -56,7 +59,7 @@ pub const bindings = zigo.define(.{
         .{ .type = gostty.Stream, .repr = .@"opaque", .name = "Stream" },
         .{ .type = gostty.Screen, .repr = .@"opaque", .name = "Screen" },
         .{ .type = gostty.Search, .repr = .@"opaque", .name = "Search" },
-        .{ .type = gostty.KeyEvent, .repr = .value, .name = "KeyEvent" },
+        .{ .type = gostty.KeyEvent, .repr = .value, .name = "KeyEvent", .field_meta = .{ .unshifted_codepoint = .{ .semantic = .codepoint } } },
         .{ .type = gostty.MouseEvent, .repr = .value, .name = "MouseEvent" },
         .{ .type = gostty.KeyMods, .repr = .value, .name = "KeyMods" },
         .{ .type = gostty.RenderSize, .repr = .value, .name = "RenderSize" },
@@ -74,6 +77,8 @@ pub const bindings = zigo.define(.{
         .{ .name = "ProtectedMode", .type = gostty.ProtectedMode, .repr = .enumeration },
         .{ .name = "ScreenKey", .type = gostty.ScreenKey, .repr = .enumeration },
         .{ .name = "SwitchScreenMode", .type = gostty.SwitchScreenMode, .repr = .enumeration },
+        .{ .name = "Mode", .type = gostty.Mode, .repr = .enumeration, .text = true },
+        .{ .name = "Selection", .type = gostty.Selection, .repr = .value },
         .{ .name = "StreamEvent", .type = gostty.StreamEvent, .repr = .enumeration, .text = true },
         .{ .name = "ProgressState", .type = gostty.ProgressState, .repr = .enumeration, .text = true },
         .{ .name = "ClipboardLocation", .type = gostty.ClipboardLocation, .repr = .enumeration, .text = true, .exhaustive = false },
@@ -94,7 +99,7 @@ pub const bindings = zigo.define(.{
         .{ .name = "DeccolmMode", .type = gostty.DeccolmMode, .repr = .enumeration },
         .{ .name = "ScrollViewport", .type = gostty.ScrollViewport, .repr = .tagged_union },
         .{ .type = gostty.RenderState, .repr = .@"opaque", .name = "RenderState" },
-        .{ .type = gostty.RenderCell, .repr = .value, .name = "RenderCell" },
+        .{ .type = gostty.RenderCell, .repr = .value, .name = "RenderCell", .field_meta = .{ .codepoint = .{ .semantic = .codepoint } } },
         // An integer-backed packed struct: Go sees named fields, the C ABI sees
         // one u32.
         .{ .type = gostty.CellFlags, .repr = .value, .name = "CellFlags" },
@@ -107,7 +112,7 @@ pub const bindings = zigo.define(.{
     },
     .functions = .{
         .{ .path = "root.unicode.codepointWidth" },
-        .{ .path = "root.graphemeWidth", .params = .{"cps"} },
+        .{ .path = "root.graphemeWidth", .params = .{"cps"}, .param_meta = .{ .cps = .{ .semantic = .codepoint } } },
 
         // Input encoding.
         .{ .path = "root.encodeKey", .params = .{ "writer", "terminal", "event", "utf8" }, .param_meta = .{ .utf8 = .{ .semantic = .utf8_string } } },
@@ -224,6 +229,9 @@ pub const bindings = zigo.define(.{
                 .{ .path = "root.screenSelectLine", .params = .{ "x", "y" }, .covers = "Screen.selectLine" },
                 .{ .path = "root.screenSelectOutput", .params = .{ "x", "y" }, .covers = "Screen.selectOutput" },
                 .{ .path = "root.screenSelectionString", .returns = .caller, .release = "root.freeString", .semantic = .utf8_string, .covers = "Screen.selectionString" },
+                "root.screenSelection",
+                .{ .path = "root.screenSetSelection", .params = .{"sel"} },
+                "root.screenViewportTop",
                 .{ .path = "root.screenStartHyperlink", .params = .{ "uri", "id" }, .param_meta = .{ .uri = .{ .semantic = .utf8_string }, .id = .{ .semantic = .utf8_string } }, .covers = "Screen.startHyperlink" },
             },
         },
@@ -241,6 +249,13 @@ pub const bindings = zigo.define(.{
             .functions = .{
                 .{ .path = "root.searchMatchCount", .covers = "Search.matchesLen" },
                 .{ .path = "root.searchSelect", .params = .{"to"}, .covers = .{ "Search.select", "Search.selectedMatch" } },
+                .{
+                    .path = "root.searchMatches",
+                    .params = .{"dst"},
+                    .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
+                    .covers = .{ "Search.matchAt", "Search.matches" },
+                },
+                "root.searchSelectedMatch",
             },
         },
         .{
@@ -292,10 +307,25 @@ pub const bindings = zigo.define(.{
         // Printing.
         .{ .path = "Terminal.print", .params = .{"c"} },
         .{ .path = "Terminal.printRepeat", .params = .{"count_req"} },
-        .{ .path = "Terminal.printSlice", .params = .{"cps"} },
+        .{ .path = "Terminal.printSlice", .params = .{"cps"}, .param_meta = .{ .cps = .{ .semantic = .codepoint } } },
         .{ .path = "Terminal.plainStringUnwrapped", .returns = .caller, .release = "root.freeString", .semantic = .utf8_string },
 
         // Metadata the terminal tracks for the shell.
+        // Colors and modes.
+        .{ .path = "root.backgroundColor" },
+        .{ .path = "root.foregroundColor" },
+        .{ .path = "root.cursorColor" },
+        .{ .path = "root.paletteColor", .params = .{"index"} },
+        .{
+            .path = "root.paletteColors",
+            .params = .{"dst"},
+            .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
+        },
+        .{ .path = "root.setDefaultBackgroundColor", .params = .{"rgb"} },
+        .{ .path = "root.setDefaultForegroundColor", .params = .{"rgb"} },
+        .{ .path = "root.setDefaultCursorColor", .params = .{"rgb"} },
+        .{ .path = "root.modeEnabled", .params = .{"mode"} },
+        .{ .path = "root.setMode", .params = .{ "mode", "value" } },
         .{ .path = "Terminal.setPwd", .params = .{"pwd"}, .param_meta = .{ .pwd = .{ .semantic = .utf8_string } } },
         .{ .path = "Terminal.getPwd", .semantic = .utf8_string },
         .{ .path = "Terminal.getTitle", .semantic = .utf8_string },

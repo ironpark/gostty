@@ -82,7 +82,7 @@ var ErrInvalidValue = &Error{Code: 8, Name: "InvalidValue"}
 // ErrNoSpaceLeft represents Zig error.NoSpaceLeft.
 var ErrNoSpaceLeft = &Error{Code: 9, Name: "NoSpaceLeft"}
 
-func errorForCode(operation string, code int32) error {
+func zigoErrorForCode(operation string, code int32) error {
 	if code <= -256 {
 		return &NativePanicError{Operation: operation, Message: raw.PanicMessage(code)}
 	}

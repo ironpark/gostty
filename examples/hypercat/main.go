@@ -27,7 +27,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/ironpark/gostty"
-	"github.com/ironpark/gostty/example/thecat"
+	"github.com/ironpark/gostty/examples/hypercat/thecat"
 	"golang.design/x/clipboard"
 )
 

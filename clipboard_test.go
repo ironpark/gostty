@@ -148,7 +148,7 @@ func TestClipboardAccessorsOutsideCallback(t *testing.T) {
 // registration would strand a cgo.Handle and the Go closure behind it for the
 // life of the process.
 func TestClipboardCallbackHandlesAreReleased(t *testing.T) {
-	before := activeCallbackHandleCount()
+	before := zigoActiveCallbackHandleCount()
 
 	func() {
 		term, err := NewTerminal(20, 3)
@@ -166,19 +166,19 @@ func TestClipboardCallbackHandlesAreReleased(t *testing.T) {
 			if err := stream.OnClipboardWriteRequest(func() {}); err != nil {
 				t.Fatalf("OnClipboardWriteRequest: %v", err)
 			}
-			if got, want := activeCallbackHandleCount(), before+1; got != want {
+			if got, want := zigoActiveCallbackHandleCount(), before+1; got != want {
 				t.Fatalf("after %d registrations, %d handles live, want %d", i+1, got, want)
 			}
 		}
 		if err := stream.OnClipboardReadRequest(func() {}); err != nil {
 			t.Fatalf("OnClipboardReadRequest: %v", err)
 		}
-		if got, want := activeCallbackHandleCount(), before+2; got != want {
+		if got, want := zigoActiveCallbackHandleCount(), before+2; got != want {
 			t.Fatalf("two slots live = %d, want %d", got, want)
 		}
 	}()
 
-	if got := activeCallbackHandleCount(); got != before {
+	if got := zigoActiveCallbackHandleCount(); got != before {
 		t.Errorf("after Close, %d handles live, want %d", got, before)
 	}
 }
