@@ -10936,7 +10936,7 @@
         "signed": false
       },
       "text": true,
-      "zig_path": "terminal.modes.Mode__enum_28717"
+      "zig_path": "terminal.modes.Mode__enum_28823"
     },
     {
       "exhaustive": true,
@@ -13872,7 +13872,7 @@
         "signed": false
       },
       "text": true,
-      "zig_path": "gesture.GestureAutoscroll"
+      "zig_path": "gesture.GestureAutoscrollDirection"
     },
     {
       "exhaustive": true,

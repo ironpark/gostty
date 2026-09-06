@@ -285,7 +285,7 @@ const gesture_ = @import("gesture.zig");
 
 pub const Gesture = gesture_.Gesture;
 pub const GestureBehavior = gesture_.GestureBehavior;
-pub const GestureAutoscroll = gesture_.GestureAutoscroll;
+pub const GestureAutoscrollDirection = gesture_.GestureAutoscrollDirection;
 pub const GestureGeometry = gesture_.GestureGeometry;
 pub const GesturePressEvent = gesture_.GesturePressEvent;
 pub const GestureDragEvent = gesture_.GestureDragEvent;

@@ -55,7 +55,7 @@ pub const GestureBehavior = enum(u8) {
 ///
 /// While this is not `none`, run a timer -- roughly every 15ms is what ghostty
 /// suggests -- calling `autoscrollTick` with the last pointer position.
-pub const GestureAutoscroll = enum(u8) {
+pub const GestureAutoscrollDirection = enum(u8) {
     none,
     up,
     down,
@@ -268,7 +268,7 @@ pub fn gestureDrag(self: *Gesture, d: GestureDragEvent) ?Selection {
 
 /// Which way an active drag wants the viewport scrolled, `none` when it does
 /// not. Read it after every `Drag` to start or stop the autoscroll timer.
-pub fn gestureAutoscroll(self: *Gesture) GestureAutoscroll {
+pub fn gestureAutoscroll(self: *Gesture) GestureAutoscrollDirection {
     return switch (self.inner.left_drag_autoscroll) {
         .none => .none,
         .up => .up,

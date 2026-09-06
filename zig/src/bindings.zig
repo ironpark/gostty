@@ -2,6 +2,37 @@
 const zigo = @import("zigo");
 const gostty = @import("gostty");
 
+/// One Go enum, named once.
+///
+/// Every enum here spells its Go name rather than letting zigo derive one:
+/// ghostty builds most of them through `lib.Enum`, whose `@typeName` is a
+/// generic instantiation with no usable short name. Taking the declaration by
+/// name means the Go name and the declaration it comes from cannot drift.
+///
+/// `.text` asks for `Parse<Enum>`, `MarshalText` and `UnmarshalText`, so the
+/// enum can live in a config file or a flag; it is on for the enums a consumer
+/// is likely to name in text. `.open` carries through an enum ghostty leaves
+/// non-exhaustive so that a number arriving from a pty never fails
+/// `@enumFromInt`.
+fn enumeration(comptime name: []const u8, comptime opts: struct {
+    text: bool = false,
+    open: bool = false,
+}) struct {
+    type: type,
+    repr: @TypeOf(.enum_literal),
+    name: []const u8,
+    text: bool,
+    exhaustive: bool,
+} {
+    return .{
+        .type = @field(gostty, name),
+        .repr = .enumeration,
+        .name = name,
+        .text = opts.text,
+        .exhaustive = !opts.open,
+    };
+}
+
 pub const bindings = zigo.define(.{
     .root = gostty,
     .allocator = .smp_allocator,
@@ -87,54 +118,48 @@ pub const bindings = zigo.define(.{
         .{ .type = gostty.MouseEvent, .repr = .value },
         .{ .type = gostty.KeyMods, .repr = .value },
         .{ .type = gostty.RenderSize, .repr = .value },
-        // `.text` gives an enum `Parse<Enum>`, `MarshalText` and `UnmarshalText`,
-        // so it can live in a config file or a flag. Enabled for the enums a
-        // consumer is likely to name in text: keybinding and mouse input, and
-        // the display state an emulator shows or persists.
-        .{ .type = gostty.CursorStyle, .repr = .enumeration, .name = "CursorStyle", .text = true },
-        .{ .type = gostty.CursorStyleReq, .repr = .enumeration, .name = "CursorStyleReq" },
-        .{ .type = gostty.EraseDisplay, .repr = .enumeration, .name = "EraseDisplay" },
-        // ghostty leaves these two non-exhaustive so a number from a pty never
-        // fails `@enumFromInt`; carry that through to Go rather than closing it.
-        .{ .type = gostty.EraseLine, .repr = .enumeration, .name = "EraseLine", .text = true, .exhaustive = false },
-        .{ .type = gostty.TabClear, .repr = .enumeration, .name = "TabClear", .text = true, .exhaustive = false },
-        .{ .type = gostty.ProtectedMode, .repr = .enumeration, .name = "ProtectedMode" },
-        .{ .type = gostty.ScreenKey, .repr = .enumeration, .name = "ScreenKey" },
-        .{ .type = gostty.SwitchScreenMode, .repr = .enumeration, .name = "SwitchScreenMode" },
-        .{ .type = gostty.Mode, .repr = .enumeration, .name = "Mode", .text = true },
+        enumeration("CursorStyle", .{ .text = true }),
+        enumeration("CursorStyleReq", .{}),
+        enumeration("EraseDisplay", .{}),
+        enumeration("EraseLine", .{ .text = true, .open = true }),
+        enumeration("TabClear", .{ .text = true, .open = true }),
+        enumeration("ProtectedMode", .{}),
+        enumeration("ScreenKey", .{}),
+        enumeration("SwitchScreenMode", .{}),
+        enumeration("Mode", .{ .text = true }),
         .{ .type = gostty.Selection, .repr = .value },
-        .{ .type = gostty.FormatterFormat, .repr = .enumeration, .name = "FormatterFormat", .text = true },
+        enumeration("FormatterFormat", .{ .text = true }),
         .{ .type = gostty.FormatOptions, .repr = .value },
-        .{ .type = gostty.SelectionAdjustment, .repr = .enumeration, .name = "SelectionAdjustment", .text = true },
-        .{ .type = gostty.StreamEvent, .repr = .enumeration, .name = "StreamEvent", .text = true },
-        .{ .type = gostty.ProgressState, .repr = .enumeration, .name = "ProgressState", .text = true },
-        .{ .type = gostty.ColorScheme, .repr = .enumeration, .name = "ColorScheme", .text = true },
-        .{ .type = gostty.DragEvent, .repr = .enumeration, .name = "DragEvent", .text = true },
-        .{ .type = gostty.DragOperation, .repr = .enumeration, .name = "DragOperation", .text = true },
+        enumeration("SelectionAdjustment", .{ .text = true }),
+        enumeration("StreamEvent", .{ .text = true }),
+        enumeration("ProgressState", .{ .text = true }),
+        enumeration("ColorScheme", .{ .text = true }),
+        enumeration("DragEvent", .{ .text = true }),
+        enumeration("DragOperation", .{ .text = true }),
         .{ .type = gostty.DragOperations, .repr = .value },
         .{ .type = gostty.DragMove, .repr = .value },
         .{ .type = gostty.DragFn, .repr = .callback, .name = "DragHandler", .retention = .retained, .reentrancy = .allowed, .thread = .caller },
-        .{ .type = gostty.ClipboardLocation, .repr = .enumeration, .name = "ClipboardLocation", .text = true, .exhaustive = false },
-        .{ .type = gostty.ClipboardDenial, .repr = .enumeration, .name = "ClipboardDenial" },
+        enumeration("ClipboardLocation", .{ .text = true, .open = true }),
+        enumeration("ClipboardDenial", .{}),
         .{ .type = gostty.ClipboardFn, .repr = .callback, .name = "ClipboardHandler", .retention = .retained, .reentrancy = .allowed, .thread = .caller },
         .{ .type = gostty.SysFn, .repr = .callback, .name = "Handler", .retention = .retained, .reentrancy = .allowed, .thread = .caller },
-        .{ .type = gostty.Underline, .repr = .enumeration, .name = "Underline" },
-        .{ .type = gostty.ColorName, .repr = .enumeration, .name = "ColorName", .text = true, .exhaustive = false },
+        enumeration("Underline", .{}),
+        enumeration("ColorName", .{ .text = true, .open = true }),
         .{ .type = gostty.Attribute, .repr = .tagged_union },
-        .{ .type = gostty.SearchDirection, .repr = .enumeration, .name = "SearchDirection" },
-        .{ .type = gostty.SearchScroll, .repr = .enumeration, .name = "SearchScroll" },
-        .{ .type = gostty.SearchState, .repr = .enumeration, .name = "SearchState" },
-        .{ .type = gostty.SearchProgress, .repr = .enumeration, .name = "SearchProgress" },
+        enumeration("SearchDirection", .{}),
+        enumeration("SearchScroll", .{}),
+        enumeration("SearchState", .{}),
+        enumeration("SearchProgress", .{}),
         .{ .type = gostty.Scrollbar, .repr = .value },
-        .{ .type = gostty.Key, .repr = .enumeration, .name = "Key", .text = true },
-        .{ .type = gostty.KeyAction, .repr = .enumeration, .name = "KeyAction", .text = true },
-        .{ .type = gostty.FocusEvent, .repr = .enumeration, .name = "FocusEvent", .text = true },
-        .{ .type = gostty.MouseAction, .repr = .enumeration, .name = "MouseAction", .text = true },
-        .{ .type = gostty.MouseButton, .repr = .enumeration, .name = "MouseButton", .text = true },
-        .{ .type = gostty.Charset, .repr = .enumeration, .name = "Charset" },
-        .{ .type = gostty.CharsetSlot, .repr = .enumeration, .name = "CharsetSlot" },
-        .{ .type = gostty.CharsetActiveSlot, .repr = .enumeration, .name = "CharsetActiveSlot" },
-        .{ .type = gostty.DeccolmMode, .repr = .enumeration, .name = "DeccolmMode" },
+        enumeration("Key", .{ .text = true }),
+        enumeration("KeyAction", .{ .text = true }),
+        enumeration("FocusEvent", .{ .text = true }),
+        enumeration("MouseAction", .{ .text = true }),
+        enumeration("MouseButton", .{ .text = true }),
+        enumeration("Charset", .{}),
+        enumeration("CharsetSlot", .{}),
+        enumeration("CharsetActiveSlot", .{}),
+        enumeration("DeccolmMode", .{}),
         .{ .type = gostty.ScrollViewport, .repr = .tagged_union },
         .{ .type = gostty.RenderState, .repr = .@"opaque", .fields = .{
             .{ .path = "rows" },
@@ -148,37 +173,37 @@ pub const bindings = zigo.define(.{
         // An integer-backed packed struct: Go sees named fields, the C ABI sees
         // one u32.
         .{ .type = gostty.CellFlags, .repr = .value },
-        .{ .type = gostty.CellWidth, .repr = .enumeration, .name = "CellWidth" },
-        .{ .type = gostty.RenderDirty, .repr = .enumeration, .name = "RenderDirty" },
+        enumeration("CellWidth", .{}),
+        enumeration("RenderDirty", .{}),
         .{ .type = gostty.KittyImages, .repr = .@"opaque", .fields = .{
             .{ .path = "generation" },
         } },
-        .{ .type = gostty.KittyLayer, .repr = .enumeration, .name = "KittyLayer", .text = true },
+        enumeration("KittyLayer", .{ .text = true }),
         .{ .type = gostty.KittyPlacement, .repr = .value },
         .{ .type = gostty.KittyImage, .repr = .value },
-        .{ .type = gostty.KittyFormat, .repr = .enumeration, .name = "KittyFormat" },
-        .{ .type = gostty.KittyCompression, .repr = .enumeration, .name = "KittyCompression" },
+        enumeration("KittyFormat", .{}),
+        enumeration("KittyCompression", .{}),
 
         // Terminal configuration and state reads.
         .{ .type = gostty.ScrollRegion, .repr = .value },
-        .{ .type = gostty.MouseTracking, .repr = .enumeration, .name = "MouseTracking", .text = true },
-        .{ .type = gostty.MouseReportFormat, .repr = .enumeration, .name = "MouseReportFormat", .text = true },
-        .{ .type = gostty.ModeReport, .repr = .enumeration, .name = "ModeReport", .text = true },
+        enumeration("MouseTracking", .{ .text = true }),
+        enumeration("MouseReportFormat", .{ .text = true }),
+        enumeration("ModeReport", .{ .text = true }),
 
         // Selection gestures.
         .{ .type = gostty.Gesture, .repr = .@"opaque" },
-        .{ .type = gostty.GestureBehavior, .repr = .enumeration, .name = "GestureBehavior", .text = true },
-        .{ .type = gostty.GestureAutoscroll, .repr = .enumeration, .name = "GestureAutoscrollDirection", .text = true },
+        enumeration("GestureBehavior", .{ .text = true }),
+        enumeration("GestureAutoscrollDirection", .{ .text = true }),
         .{ .type = gostty.GestureGeometry, .repr = .value },
         .{ .type = gostty.GesturePressEvent, .repr = .value },
         .{ .type = gostty.GestureDragEvent, .repr = .value },
 
         // The standalone parsers.
         .{ .type = gostty.OSCParser, .repr = .@"opaque", .name = "OSCParser" },
-        .{ .type = gostty.OSCCommand, .repr = .enumeration, .name = "OSCCommand", .text = true },
-        .{ .type = gostty.OSCTerminator, .repr = .enumeration, .name = "OSCTerminator", .text = true },
-        .{ .type = gostty.SemanticPromptAction, .repr = .enumeration, .name = "SemanticPromptAction", .text = true },
-        .{ .type = gostty.SgrAttributeTag, .repr = .enumeration, .name = "SgrAttributeTag", .text = true },
+        enumeration("OSCCommand", .{ .text = true }),
+        enumeration("OSCTerminator", .{ .text = true }),
+        enumeration("SemanticPromptAction", .{ .text = true }),
+        enumeration("SgrAttributeTag", .{ .text = true }),
         .{ .type = gostty.SgrAttribute, .repr = .value },
     },
     .functions = .{
