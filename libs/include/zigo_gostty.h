@@ -560,6 +560,7 @@ ZIGO_EXPORT int32_t zg_terminal_cursor_x(const zg_terminal * self, uint16_t * ou
 ZIGO_EXPORT int32_t zg_terminal_cursor_y(const zg_terminal * self, uint16_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_cursor_style(const zg_terminal * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_active_screen_key(const zg_terminal * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_stream_failed(const zg_stream * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_render_state_rows(const zg_render_state * self, uint16_t * out_result);
 ZIGO_EXPORT int32_t zg_render_state_cols(const zg_render_state * self, uint16_t * out_result);
 ZIGO_EXPORT int32_t zg_render_state_cursor_visible(const zg_render_state * self, uint8_t * out_result);
@@ -585,7 +586,6 @@ ZIGO_EXPORT void zg_free_string(const uint8_t * str_ptr, size_t str_len);
 ZIGO_EXPORT int32_t zg_terminal_new_stream(zg_terminal * self, size_t continuation_max_bytes, zg_stream * * out_result);
 ZIGO_EXPORT int32_t zg_stream_free_stream(zg_stream * self);
 ZIGO_EXPORT int32_t zg_stream_feed(zg_stream * self, const uint8_t * bytes_ptr, size_t bytes_len);
-ZIGO_EXPORT int32_t zg_stream_failed(zg_stream * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_stream_next_event(zg_stream * self, uint8_t * out_result_has, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_stream_event_title(zg_stream * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
 ZIGO_EXPORT int32_t zg_stream_event_body(zg_stream * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
@@ -640,8 +640,8 @@ ZIGO_EXPORT int32_t zg_screen_start_hyperlink(zg_screen * self, const uint8_t * 
 ZIGO_EXPORT int32_t zg_screen_viewport_is_bottom(const zg_screen * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_screen_clear_selection(zg_screen * self);
 ZIGO_EXPORT int32_t zg_screen_end_hyperlink(zg_screen * self);
-ZIGO_EXPORT int32_t zg_screen_new_search(zg_screen * self, const uint8_t * needle_ptr, size_t needle_len, zg_search * * out_result);
-ZIGO_EXPORT int32_t zg_search_free_search(zg_search * self);
+ZIGO_EXPORT int32_t zg_screen_new_search(zg_screen * self, const uint8_t * needle_unowned_ptr, size_t needle_unowned_len, zg_search * * out_result);
+ZIGO_EXPORT int32_t zg_search_deinit(zg_search * self);
 ZIGO_EXPORT int32_t zg_search_search_all(zg_search * self);
 ZIGO_EXPORT int32_t zg_search_match_count(zg_search * self, size_t * out_result);
 ZIGO_EXPORT int32_t zg_search_select(zg_search * self, uint8_t to, uint8_t * out_result);
@@ -684,7 +684,7 @@ ZIGO_EXPORT int32_t zg_terminal_print_repeat(zg_terminal * self, size_t count_re
 ZIGO_EXPORT int32_t zg_terminal_print_slice(zg_terminal * self, const uint32_t * cps_ptr, size_t cps_len);
 ZIGO_EXPORT int32_t zg_terminal_format(zg_terminal * self, const zg_format_options * opts, size_t writer_userdata);
 ZIGO_EXPORT int32_t zg_decode_snapshot(const uint8_t * reader_data, size_t reader_data_len, size_t reader_userdata, size_t max_continuation_bytes, zg_snapshot * * out_result);
-ZIGO_EXPORT int32_t zg_snapshot_free_snapshot(zg_snapshot * self);
+ZIGO_EXPORT int32_t zg_snapshot_deinit(zg_snapshot * self);
 ZIGO_EXPORT int32_t zg_snapshot_restore_into(zg_snapshot * self, zg_terminal * term);
 ZIGO_EXPORT int32_t zg_snapshot_continuation(zg_snapshot * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
 ZIGO_EXPORT int32_t zg_terminal_background_color(zg_terminal * self, uint8_t * out_result_has, uint32_t * out_result);
@@ -715,7 +715,7 @@ ZIGO_EXPORT int32_t zg_terminal_resize_cells(zg_terminal * self, uint16_t width,
 ZIGO_EXPORT int32_t zg_new_render_state(zg_render_state * * out_result);
 ZIGO_EXPORT int32_t zg_render_state_update(zg_render_state * self, zg_terminal * t);
 ZIGO_EXPORT int32_t zg_render_state_clean(zg_render_state * self);
-ZIGO_EXPORT int32_t zg_render_state_free_render_state(zg_render_state * self);
+ZIGO_EXPORT int32_t zg_render_state_deinit(zg_render_state * self);
 ZIGO_EXPORT int32_t zg_render_state_cell_count(zg_render_state * self, size_t * out_result);
 ZIGO_EXPORT int32_t zg_render_state_cells(zg_render_state * self, zg_render_cell * dst_ptr, size_t dst_len, size_t * out_result);
 ZIGO_EXPORT int32_t zg_render_state_background(zg_render_state * self, uint32_t * out_result);

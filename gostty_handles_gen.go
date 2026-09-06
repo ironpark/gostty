@@ -636,7 +636,7 @@ func zigoNewSearch(ptr unsafe.Pointer, parent zigoChildHandle) *Search {
 
 func zigoCleanupSearch(state zigoSearchCleanupState) {
 	if state.ptr != nil {
-		raw.SearchFreeSearch(state.ptr)
+		raw.SearchDeinit(state.ptr)
 	}
 	if state.parent != nil {
 		state.parent.ZigoDropChild()
@@ -762,7 +762,7 @@ func zigoNewSnapshot(ptr unsafe.Pointer) *Snapshot {
 
 func zigoCleanupSnapshot(state zigoSnapshotCleanupState) {
 	if state.ptr != nil {
-		raw.SnapshotFreeSnapshot(state.ptr)
+		raw.SnapshotDeinit(state.ptr)
 	}
 }
 
@@ -884,7 +884,7 @@ func zigoNewRenderState(ptr unsafe.Pointer) *RenderState {
 
 func zigoCleanupRenderState(state zigoRenderStateCleanupState) {
 	if state.ptr != nil {
-		raw.RenderStateFreeRenderState(state.ptr)
+		raw.RenderStateDeinit(state.ptr)
 	}
 }
 

@@ -255,12 +255,6 @@ pub const Stream = struct {
         self.inner.nextSlice(bytes);
     }
 
-    /// True once a sequence failed in a way the terminal could not absorb, such
-    /// as an allocation failure. Streams are best-effort and keep going.
-    pub fn failed(self: *Stream) bool {
-        return self.inner.handler.semantic_failure;
-    }
-
     /// Whether the terminal has answered a query since the last `writeReplies`.
     pub fn hasReplies(self: *Stream) bool {
         return self.replies.items.len > 0;
@@ -663,20 +657,6 @@ pub const Search = vt.search.Screen;
 /// function symbol for `Search.select`.
 pub const SearchDirection = vt.search.Screen.Select;
 
-/// Start searching `target` for `needle`. The search does not run until
-/// `searchAll`.
-pub fn newSearch(gpa: Allocator, target: *Screen, needle: []const u8) !*Search {
-    const self = try gpa.create(Search);
-    errdefer gpa.destroy(self);
-    self.* = try .init(gpa, target, needle);
-    return self;
-}
-
-pub fn freeSearch(self: *Search, gpa: Allocator) void {
-    self.deinit();
-    gpa.destroy(self);
-}
-
 /// Copy the matches found so far into `dst`, most recent screen content
 /// first, and return how many were written. Matches are in screen
 /// coordinates; size `dst` from `Search.matchesLen`.
@@ -857,24 +837,18 @@ pub fn screenFormatSelection(self: *Screen, opts: FormatOptions, sel: Selection,
 // Writing one is `Stream.writeSnapshot`, since the stream owns the
 // unfinished-sequence state a snapshot carries.
 
-/// A decoded snapshot. Restore it into a terminal with `restoreInto`, then
-/// feed `continuation` to a fresh stream on it to resume mid-sequence.
-pub const Snapshot = struct {
-    decoded: vt.snapshot.Decoded,
-};
+/// A decoded snapshot: ghostty's own type, bound as a handle. Restore it into
+/// a terminal with `restoreInto`, then feed `continuation` to a fresh stream
+/// on it to resume mid-sequence.
+pub const Snapshot = vt.snapshot.Decoded;
 
 /// Decode a snapshot from `reader`. `max_continuation_bytes` bounds the
 /// unfinished-sequence suffix the snapshot may carry.
-pub fn decodeSnapshot(gpa: Allocator, reader: *std.Io.Reader, max_continuation_bytes: usize) !*Snapshot {
-    const self = try gpa.create(Snapshot);
-    errdefer gpa.destroy(self);
-    self.decoded = try vt.snapshot.decode(gpa, io, reader, .{ .max_continuation_bytes = max_continuation_bytes });
-    return self;
-}
-
-pub fn freeSnapshot(self: *Snapshot, gpa: Allocator) void {
-    self.decoded.deinit(gpa);
-    gpa.destroy(self);
+///
+/// Wrapped because ghostty's `decode` takes an options struct; returned by
+/// value so zigo boxes it and `Snapshot.deinit` frees it.
+pub fn decodeSnapshot(gpa: Allocator, reader: *std.Io.Reader, max_continuation_bytes: usize) !Snapshot {
+    return try vt.snapshot.decode(gpa, io, reader, .{ .max_continuation_bytes = max_continuation_bytes });
 }
 
 /// Replace `term` with the terminal the snapshot holds: its size, screens,
@@ -886,8 +860,8 @@ pub fn freeSnapshot(self: *Snapshot, gpa: Allocator) void {
 /// zigo allows one constructor per handle and `newTerminal` is it, so a
 /// restore fills a terminal the caller made rather than returning one.
 pub fn snapshotRestoreInto(self: *Snapshot, gpa: Allocator, term: *Terminal) error{TerminalTaken}!void {
-    const restored = self.decoded.terminal orelse return error.TerminalTaken;
-    self.decoded.terminal = null;
+    if (self.terminal == null) return error.TerminalTaken;
+    const restored = self.toOwned();
     term.deinit(gpa);
     term.* = restored;
 }
@@ -896,7 +870,7 @@ pub fn snapshotRestoreInto(self: *Snapshot, gpa: Allocator, term: *Terminal) err
 /// when the stream was at ground. Feed them to the restored terminal's
 /// stream before any new input.
 pub fn snapshotContinuation(self: *Snapshot) []const u8 {
-    return switch (self.decoded.continuation) {
+    return switch (self.continuation) {
         .ground => "",
         .bytes => |bytes| bytes,
     };
@@ -1410,16 +1384,11 @@ pub const RenderCell = extern struct {
     flags: CellFlags,
 };
 
-pub fn newRenderState(gpa: Allocator) !*RenderState {
-    const self = try gpa.create(RenderState);
-    errdefer gpa.destroy(self);
-    self.* = .empty;
-    return self;
-}
-
-pub fn freeRenderState(self: *RenderState, gpa: Allocator) void {
-    self.deinit(gpa);
-    gpa.destroy(self);
+/// An empty render state, filled by the first `RenderState.update`. Returned
+/// by value so zigo boxes it and `RenderState.deinit` frees it; ghostty spells
+/// the empty state as a constant, which has no function to bind.
+pub fn newRenderState() RenderState {
+    return .empty;
 }
 
 /// How many `RenderCell`s `renderCells` needs: `rows * cols`.

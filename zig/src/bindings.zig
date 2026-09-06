@@ -54,7 +54,9 @@ pub const bindings = zigo.define(.{
             .{ .path = "screens.active.cursor.cursor_style", .name = "cursorStyle" },
             .{ .path = "screens.active_key", .name = "activeScreenKey" },
         } },
-        .{ .type = gostty.Stream, .repr = .@"opaque", .name = "Stream" },
+        .{ .type = gostty.Stream, .repr = .@"opaque", .name = "Stream", .fields = .{
+            .{ .path = "inner.handler.semantic_failure", .name = "failed", .doc = "True once a sequence failed in a way the terminal could not absorb, such as an allocation failure. Streams are best-effort and keep going." },
+        } },
         .{ .type = gostty.Screen, .repr = .@"opaque", .name = "Screen" },
         .{ .type = gostty.Search, .repr = .@"opaque", .name = "Search" },
         .{ .type = gostty.Snapshot, .repr = .@"opaque", .name = "Snapshot" },
@@ -162,7 +164,6 @@ pub const bindings = zigo.define(.{
         .{ .path = "root.newStream", .constructs = "Stream", .child_of_receiver = true, .params = .{"continuation_max_bytes"} },
         .{ .path = "root.freeStream", .destroys = "Stream" },
         .{ .path = "Stream.feed", .params = .{"bytes"} },
-        .{ .path = "Stream.failed" },
         // `Events` is the range-over-func form: `for event, err := range s.Events()`.
         .{ .path = "Stream.nextEvent", .iterator = .{ .name = "Events" } },
         .{ .path = "Stream.eventTitle", .semantic = .utf8_string },
@@ -253,8 +254,10 @@ pub const bindings = zigo.define(.{
         .{ .path = "Screen.viewportIsBottom" },
         .{ .path = "Screen.clearSelection" },
         .{ .path = "Screen.endHyperlink" },
-        .{ .path = "root.newSearch", .constructs = "Search", .child_of_receiver = true, .params = .{"needle"}, .param_meta = .{ .needle = .{ .semantic = .utf8_string } }, .covers = "Search.init" },
-        .{ .path = "root.freeSearch", .destroys = "Search", .covers = "Search.deinit" },
+        // `Search.init` returns by value, like `Terminal.init`: zigo boxes the
+        // result and frees the box in `deinit`.
+        .{ .path = "Search.init", .constructs = "Search", .child_of_receiver = true, .name = "newSearch", .params = .{"needle_unowned"}, .param_meta = .{ .needle_unowned = .{ .semantic = .utf8_string } } },
+        .{ .path = "Search.deinit", .destroys = "Search" },
         .{ .path = "Search.searchAll" },
         .{ .path = "Search.matchesLen", .name = "MatchCount" },
         .{ .path = "Search.select", .params = .{"to"} },
@@ -326,7 +329,7 @@ pub const bindings = zigo.define(.{
         .{ .path = "root.formatTerminal", .name = "Format", .params = .{ "opts", "writer" } },
         // Snapshots.
         .{ .path = "root.decodeSnapshot", .name = "DecodeSnapshot", .constructs = "Snapshot", .params = .{ "reader", "max_continuation_bytes" } },
-        .{ .path = "root.freeSnapshot", .destroys = "Snapshot" },
+        .{ .path = "Snapshot.deinit", .destroys = "Snapshot" },
         .{
             .receiver = "Snapshot",
             .strip_prefix = "snapshot",
@@ -371,7 +374,7 @@ pub const bindings = zigo.define(.{
         .{ .path = "root.newRenderState", .constructs = "RenderState" },
         .{ .path = "RenderState.update", .params = .{"t"}, .covers = .{ "RenderState.beginUpdate", "RenderState.endUpdate" } },
         .{ .path = "RenderState.clean" },
-        .{ .path = "root.freeRenderState", .destroys = "RenderState", .covers = "RenderState.deinit" },
+        .{ .path = "RenderState.deinit", .destroys = "RenderState" },
         .{
             .receiver = "RenderState",
             .strip_prefix = "render",

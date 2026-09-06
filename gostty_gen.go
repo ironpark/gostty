@@ -110,6 +110,29 @@ func (te *Terminal) ActiveScreenKey() (ScreenKey, error) {
 	return ScreenKey(result), nil
 }
 
+// Failed: True once a sequence failed in a way the terminal could not absorb, such as an allocation failure. Streams are best-effort and keep going.
+// Zig field: Stream.inner.handler.semantic_failure.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Stream) Failed() (bool, error) {
+	ptr, err := zigoCheckedPointer("Stream.Failed receiver", s)
+	if err != nil {
+		return false, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.StreamFailed(ptr)
+	if zigoCallbackPanicPending() {
+		for slot := range 2 {
+			zigoRethrowCallbackPanic("Stream.Failed", s.zigoCallbackHandle(slot))
+		}
+	}
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Stream.Failed", code), s)
+	}
+	return result != 0, nil
+}
+
 // Rows returns the Zig field RenderState.rows.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
@@ -274,29 +297,6 @@ func (s *Stream) Feed(bytes []byte) error {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.Feed", code), s)
 	}
 	return nil
-}
-
-// Failed: True once a sequence failed in a way the terminal could not absorb, such
-// as an allocation failure. Streams are best-effort and keep going.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) Failed() (bool, error) {
-	ptr, err := zigoCheckedPointer("Stream.Failed receiver", s)
-	if err != nil {
-		return false, err
-	}
-	defer s.zigoRelease()
-	result, code := raw.StreamFailed(ptr)
-	if zigoCallbackPanicPending() {
-		for slot := range 2 {
-			zigoRethrowCallbackPanic("Stream.Failed", s.zigoCallbackHandle(slot))
-		}
-	}
-	if code != 0 {
-		return false, zigoPoisonAfterPanic(zigoErrorForCode("Stream.Failed", code), s)
-	}
-	return result != 0, nil
 }
 
 // NextEvent: Take the next event a feed produced, absent when the queue is empty.
@@ -1434,12 +1434,11 @@ func (s *Screen) EndHyperlink() error {
 	return nil
 }
 
-// NewSearch: Start searching `target` for `needle`. The search does not run until
-// `searchAll`.
+// NewSearch creates a caller-owned Search.
 // The caller must call Close on the returned handle.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
-func (s *Screen) NewSearch(needle string) (*Search, error) {
+func (s *Screen) NewSearch(needleUnowned string) (*Search, error) {
 	ptr, zigoChildParent, err := s.zigoAcquireChild("Screen.NewSearch receiver")
 	if err != nil {
 		return nil, err
@@ -1451,7 +1450,7 @@ func (s *Screen) NewSearch(needle string) (*Search, error) {
 			zigoChildParent.ZigoDropChild()
 		}
 	}()
-	result, code := raw.ScreenNewSearch(ptr, needle)
+	result, code := raw.ScreenNewSearch(ptr, needleUnowned)
 	if code != 0 {
 		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Screen.NewSearch", code), s)
 	}
@@ -2623,9 +2622,11 @@ func (te *Terminal) ResizeCells(width uint16, height uint16, cellWidth uint32, c
 	return nil
 }
 
-// NewRenderState creates a caller-owned RenderState.
+// NewRenderState: An empty render state, filled by the first `RenderState.update`. Returned
+// by value so zigo boxes it and `RenderState.deinit` frees it; ghostty spells
+// the empty state as a constant, which has no function to bind.
 // The caller must call Close on the returned handle.
-// Native failures are returned as generated error values.
+// A native panic is returned as *NativePanicError.
 func NewRenderState() (*RenderState, error) {
 	result, code := raw.NewRenderState()
 	if code != 0 {

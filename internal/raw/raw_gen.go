@@ -253,6 +253,13 @@ func TerminalActiveScreenKey(self unsafe.Pointer) (uint8, int32) {
 	return uint8(outResult), code
 }
 
+// StreamFailed calls the generated C ABI wrapper for zg_stream_failed.
+func StreamFailed(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_stream_failed((*C.zg_stream)(self), &outResult))
+	return uint8(outResult), code
+}
+
 // RenderStateRows calls the generated C ABI wrapper for zg_render_state_rows.
 func RenderStateRows(self unsafe.Pointer) (uint16, int32) {
 	var outResult C.uint16_t
@@ -432,13 +439,6 @@ func StreamFeed(self unsafe.Pointer, bytes []uint8) int32 {
 	bytesPtr := (*C.uint8_t)(zigoSlicePtr(bytes))
 	code := int32(C.zg_stream_feed((*C.zg_stream)(self), bytesPtr, C.size_t(len(bytes))))
 	return code
-}
-
-// StreamFailed calls the generated C ABI wrapper for zg_stream_failed.
-func StreamFailed(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_stream_failed((*C.zg_stream)(self), &outResult))
-	return uint8(outResult), code
 }
 
 // StreamNextEvent calls the generated C ABI wrapper for zg_stream_next_event.
@@ -906,16 +906,16 @@ func ScreenEndHyperlink(self unsafe.Pointer) int32 {
 }
 
 // ScreenNewSearch calls the generated C ABI wrapper for zg_screen_new_search.
-func ScreenNewSearch(self unsafe.Pointer, needle string) (unsafe.Pointer, int32) {
-	needlePtr := (*C.uint8_t)(zigoStringPtr(needle))
+func ScreenNewSearch(self unsafe.Pointer, needleUnowned string) (unsafe.Pointer, int32) {
+	needleUnownedPtr := (*C.uint8_t)(zigoStringPtr(needleUnowned))
 	var outResult *C.zg_search
-	code := int32(C.zg_screen_new_search((*C.zg_screen)(self), needlePtr, C.size_t(len(needle)), &outResult))
+	code := int32(C.zg_screen_new_search((*C.zg_screen)(self), needleUnownedPtr, C.size_t(len(needleUnowned)), &outResult))
 	return unsafe.Pointer(outResult), code
 }
 
-// SearchFreeSearch calls the generated C ABI wrapper for zg_search_free_search.
-func SearchFreeSearch(self unsafe.Pointer) int32 {
-	code := int32(C.zg_search_free_search((*C.zg_search)(self)))
+// SearchDeinit calls the generated C ABI wrapper for zg_search_deinit.
+func SearchDeinit(self unsafe.Pointer) int32 {
+	code := int32(C.zg_search_deinit((*C.zg_search)(self)))
 	return code
 }
 
@@ -1231,9 +1231,9 @@ func DecodeSnapshot(readerHandle uintptr, readerData []byte, maxContinuationByte
 	return unsafe.Pointer(outResult), code
 }
 
-// SnapshotFreeSnapshot calls the generated C ABI wrapper for zg_snapshot_free_snapshot.
-func SnapshotFreeSnapshot(self unsafe.Pointer) int32 {
-	code := int32(C.zg_snapshot_free_snapshot((*C.zg_snapshot)(self)))
+// SnapshotDeinit calls the generated C ABI wrapper for zg_snapshot_deinit.
+func SnapshotDeinit(self unsafe.Pointer) int32 {
+	code := int32(C.zg_snapshot_deinit((*C.zg_snapshot)(self)))
 	return code
 }
 
@@ -1451,9 +1451,9 @@ func RenderStateClean(self unsafe.Pointer) int32 {
 	return code
 }
 
-// RenderStateFreeRenderState calls the generated C ABI wrapper for zg_render_state_free_render_state.
-func RenderStateFreeRenderState(self unsafe.Pointer) int32 {
-	code := int32(C.zg_render_state_free_render_state((*C.zg_render_state)(self)))
+// RenderStateDeinit calls the generated C ABI wrapper for zg_render_state_deinit.
+func RenderStateDeinit(self unsafe.Pointer) int32 {
+	code := int32(C.zg_render_state_deinit((*C.zg_render_state)(self)))
 	return code
 }
 
