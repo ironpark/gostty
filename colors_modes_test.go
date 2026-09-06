@@ -100,16 +100,12 @@ func TestSelectionValue(t *testing.T) {
 func TestSearchMatches(t *testing.T) {
 	term, stream := newStreamPair(t, 10, 3)
 	feed(t, stream, "ab ab\r\nab")
-	screen, err := term.ActiveScreen()
-	if err != nil {
-		t.Fatal(err)
-	}
-	search, err := screen.NewSearch("ab")
+	search, err := term.NewSearch("ab")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer search.Close()
-	if err := search.SearchAll(); err != nil {
+	if err := search.All(); err != nil {
 		t.Fatal(err)
 	}
 	if _, ok, err := search.SelectedMatch(); err != nil || ok {
@@ -129,7 +125,7 @@ func TestSearchMatches(t *testing.T) {
 			t.Errorf("match %+v does not span two cells on one row", m)
 		}
 	}
-	if _, err := search.Select(SearchDirectionNext); err != nil {
+	if _, err := search.Select(SearchDirectionNext, SearchScrollNone); err != nil {
 		t.Fatal(err)
 	}
 	if sel, ok, err := search.SelectedMatch(); err != nil || !ok || sel.EndX != sel.StartX+1 {

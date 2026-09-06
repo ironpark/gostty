@@ -58,8 +58,8 @@ const (
 
 func (u *ui) open() bool { return u.mode != uiNone }
 
-// closeSearch drops the search handle. It is a child of the screen, which is
-// borrowed from the terminal, so it cannot outlive either.
+// closeSearch drops the search handle. It is a child of the terminal, so it
+// cannot outlive it.
 func (u *ui) closeSearch() {
 	if u.search != nil {
 		u.search.Close()
@@ -158,19 +158,16 @@ func (g *game) searchKeys(m mods) error {
 
 // runSearch rebuilds the search for the current query.
 //
-// A search holds positions in the scrollback, and feeding the terminal moves
-// them, so it is rebuilt rather than kept: the query is short and the scan is
-// ghostty's, which makes this cheap enough to do on every keystroke.
+// A search holds positions in the scrollback, so the query changing means a
+// new one. It is not run here: the scan is driven a slice at a time from
+// `tickSearch`, so a long scrollback does not stall the keystroke that
+// started it.
 func (g *game) runSearch() error {
 	g.ui.closeSearch()
 	if len(g.ui.query) == 0 {
 		return nil
 	}
-	screen, err := g.vt.ActiveScreen()
-	if err != nil {
-		return err
-	}
-	search, err := screen.NewSearch(string(g.ui.query))
+	search, err := g.vt.NewSearch(string(g.ui.query))
 	if err != nil {
 		// A needle the search cannot take (too long for its window) is the
 		// user's problem to see, not a reason to stop the terminal.
@@ -178,17 +175,51 @@ func (g *game) runSearch() error {
 		return nil
 	}
 	g.ui.search = search
-	if err := search.SearchAll(); err != nil {
+	return nil
+}
+
+// tickSearch pushes the scan forward by one frame's worth and refreshes the
+// count. `Tick` does not read the terminal, so most of the work here is the
+// kind a real emulator would do off the IO thread; `Feed` is what hands it
+// more scrollback and notices that the viewport moved.
+func (g *game) tickSearch() error {
+	if g.ui.search == nil {
+		return nil
+	}
+	if err := g.ui.search.Feed(true); err != nil {
 		return err
 	}
-	g.ui.matches, err = search.MatchCount()
+	// A budget rather than a loop to completion: whatever is not finished this
+	// frame is finished on the next, and the matches already found are drawn
+	// in the meantime.
+	for range searchTicksPerFrame {
+		progress, err := g.ui.search.Tick()
+		if err != nil {
+			return err
+		}
+		if progress != gostty.SearchProgressProgress {
+			break
+		}
+	}
+	var err error
+	g.ui.matches, err = g.ui.search.MatchCount()
 	return err
 }
 
-// refreshMatches marks the viewport cells covered by a search match. Matches
-// are in screen coordinates; the viewport's top row turns them into cells.
+// How many times a frame the search is pushed forward. Enough that a normal
+// scrollback finishes in a frame or two, small enough that a huge one still
+// leaves the frame time to draw.
+const searchTicksPerFrame = 16
+
+// refreshMatches marks the viewport cells covered by a search match.
+//
+// `ViewportMatches` rather than `Matches`: only the matches on screen can be
+// highlighted, and asking for those is a cached read of the viewport alone,
+// so it costs the same whether the scrollback holds ten matches or a million,
+// and it answers before the scrollback scan has finished. Matches are in
+// screen coordinates; the viewport's top row turns them into cells.
 func (g *game) refreshMatches() error {
-	if g.ui.search == nil || g.ui.matches == 0 {
+	if g.ui.search == nil {
 		prev := g.matchCells
 		g.matchCells = g.matchCells[:0]
 		g.markMatchChanges(prev)
@@ -202,8 +233,12 @@ func (g *game) refreshMatches() error {
 	if err != nil {
 		return err
 	}
-	matches := make([]gostty.Selection, g.ui.matches)
-	n, err := g.ui.search.Matches(matches)
+	// The count is not known in advance. A match spans at least one cell, so
+	// one per viewport cell cannot be exceeded by anything that is on screen.
+	if cap(g.viewportMatches) < len(g.cells) {
+		g.viewportMatches = make([]gostty.Selection, len(g.cells))
+	}
+	n, err := g.ui.search.ViewportMatches(g.viewportMatches[:len(g.cells)])
 	if err != nil {
 		return err
 	}
@@ -214,7 +249,7 @@ func (g *game) refreshMatches() error {
 	g.matchCells = g.matchCells[:len(g.cells)]
 	clear(g.matchCells)
 	defer g.markMatchChanges(prev)
-	for _, m := range matches[:n] {
+	for _, m := range g.viewportMatches[:n] {
 		if m.StartY < top || m.EndY >= top+uint32(g.rows) || m.StartY > m.EndY {
 			continue
 		}
@@ -261,7 +296,7 @@ func (g *game) moveMatch(dir gostty.SearchDirection) error {
 	if g.ui.search == nil || g.ui.matches == 0 {
 		return nil
 	}
-	ok, err := g.ui.search.Select(dir)
+	ok, err := g.ui.search.Select(dir, gostty.SearchScrollNone)
 	if err != nil || !ok {
 		return err
 	}
@@ -322,7 +357,9 @@ func (g *game) settingsAdjust(delta int) error {
 	case settingsRowTheme:
 		g.ui.theme = (g.ui.theme + delta + len(themes)) % len(themes)
 		g.redrawAll = true
-		return nil
+		// A program that subscribed with mode 2031 is told now, not the next
+		// time it thinks to ask.
+		return g.stream.ColorSchemeChanged(g.colorScheme())
 	case settingsRowCat:
 		if g.cat == nil {
 			return nil
@@ -427,6 +464,23 @@ var themes = []theme{
 }
 
 func (g *game) currentTheme() theme { return themes[g.ui.theme%len(themes)] }
+
+// colorScheme reports whether the current theme reads as light or dark, which
+// is what a program asking CSI ? 996 n wants to know. Derived from the
+// background's luminance rather than declared per theme, so a new theme cannot
+// forget to say.
+func (g *game) colorScheme() gostty.ColorScheme {
+	bg := g.currentTheme().background
+	if g.currentTheme().terminal {
+		bg = g.terminalBg
+	}
+	// Rec. 601 luma, which is close enough to decide light from dark.
+	luma := 0.299*float64(bg.R) + 0.587*float64(bg.G) + 0.114*float64(bg.B)
+	if luma > 0x80 {
+		return gostty.ColorSchemeLight
+	}
+	return gostty.ColorSchemeDark
+}
 
 // themeColor substitutes only the terminal's default colors. Explicit ANSI
 // colors belong to the application and remain untouched.

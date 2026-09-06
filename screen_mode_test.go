@@ -61,11 +61,7 @@ func TestHyperlink(t *testing.T) {
 
 func TestSearchNeedle(t *testing.T) {
 	term, _ := newStreamPair(t, 20, 3)
-	screen, err := term.ActiveScreen()
-	if err != nil {
-		t.Fatal(err)
-	}
-	search, err := screen.NewSearch("needle")
+	search, err := term.NewSearch("needle")
 	if err != nil {
 		t.Fatal(err)
 	}

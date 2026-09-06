@@ -430,3 +430,68 @@ func TestRenderDirtyRows(t *testing.T) {
 		t.Errorf("DirtyRows after Clean = %d", n)
 	}
 }
+
+// The cursor state a renderer needs beyond its position: whether to blink it,
+// whether to hide it because a password is being typed, and whether it is
+// sitting on the tail of a wide character.
+func TestRenderCursorState(t *testing.T) {
+	term, stream := newStreamPair(t, 10, 3)
+	state, err := NewRenderState()
+	if err != nil {
+		t.Fatalf("NewRenderState: %v", err)
+	}
+	defer state.Close()
+
+	// DECSCUSR 1 is a blinking block, 2 a steady one.
+	feed(t, stream, "\x1b[1 q")
+	if err := state.Update(term); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+	if blinking, err := state.CursorBlinking(); err != nil || !blinking {
+		t.Errorf("CursorBlinking() after DECSCUSR 1 = %v, %v; want true", blinking, err)
+	}
+	feed(t, stream, "\x1b[2 q")
+	if err := state.Update(term); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+	if blinking, err := state.CursorBlinking(); err != nil || blinking {
+		t.Errorf("CursorBlinking() after DECSCUSR 2 = %v, %v; want false", blinking, err)
+	}
+
+	// Nothing has claimed a password field, and the cursor is on a narrow cell.
+	if pw, err := state.CursorPasswordInput(); err != nil || pw {
+		t.Errorf("CursorPasswordInput() = %v, %v; want false", pw, err)
+	}
+	tail, ok, err := state.CursorWideTail()
+	if err != nil || !ok || tail {
+		t.Errorf("CursorWideTail() = %v, %v, %v; want false, true, nil", tail, ok, err)
+	}
+}
+
+// The cursor color comes off the snapshot rather than the terminal, so it
+// matches the cells drawn beside it. Absent until something sets one.
+func TestRenderCursorColor(t *testing.T) {
+	term, stream := newStreamPair(t, 10, 3)
+	state, err := NewRenderState()
+	if err != nil {
+		t.Fatalf("NewRenderState: %v", err)
+	}
+	defer state.Close()
+
+	if err := state.Update(term); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+	if _, ok, err := state.CursorColor(); err != nil || ok {
+		t.Fatalf("CursorColor() before one is set = ok %v, %v; want false", ok, err)
+	}
+
+	// OSC 12 sets the cursor color.
+	feed(t, stream, "\x1b]12;#ff0000\x07")
+	if err := state.Update(term); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+	rgb, ok, err := state.CursorColor()
+	if err != nil || !ok || rgb != 0xff0000 {
+		t.Errorf("CursorColor() = %#06x, %v, %v; want 0xff0000, true, nil", rgb, ok, err)
+	}
+}

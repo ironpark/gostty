@@ -312,6 +312,20 @@ func RenderStateCursorStyle(self unsafe.Pointer) (uint8, int32) {
 	return uint8(outResult), code
 }
 
+// RenderStateCursorBlinking calls the generated C ABI wrapper for zg_render_state_cursor_blinking.
+func RenderStateCursorBlinking(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_render_state_cursor_blinking((*C.zg_render_state)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// RenderStateCursorPasswordInput calls the generated C ABI wrapper for zg_render_state_cursor_password_input.
+func RenderStateCursorPasswordInput(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_render_state_cursor_password_input((*C.zg_render_state)(self), &outResult))
+	return uint8(outResult), code
+}
+
 // KittyImagesGeneration calls the generated C ABI wrapper for zg_kitty_images_generation.
 func KittyImagesGeneration(self unsafe.Pointer) (uint64, int32) {
 	var outResult C.uint64_t
@@ -534,6 +548,50 @@ func StreamEventProgress(self unsafe.Pointer) (uint8, bool, int32) {
 	var outResult C.uint8_t
 	code := int32(C.zg_stream_event_progress((*C.zg_stream)(self), &outResultHas, &outResult))
 	return uint8(outResult), outResultHas != 0, code
+}
+
+// StreamEventSequence calls the generated C ABI wrapper for zg_stream_event_sequence.
+func StreamEventSequence(self unsafe.Pointer) ([]uint8, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_stream_event_sequence((*C.zg_stream)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return nil, code
+	}
+	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
+}
+
+// StreamSetUnknownMaxBytes calls the generated C ABI wrapper for zg_stream_set_unknown_max_bytes.
+func StreamSetUnknownMaxBytes(self unsafe.Pointer, max uint) int32 {
+	code := int32(C.zg_stream_set_unknown_max_bytes((*C.zg_stream)(self), C.size_t(max)))
+	return code
+}
+
+// StreamSetVersionReport calls the generated C ABI wrapper for zg_stream_set_version_report.
+func StreamSetVersionReport(self unsafe.Pointer, name string, version string) int32 {
+	namePtr := (*C.uint8_t)(zigoStringPtr(name))
+	versionPtr := (*C.uint8_t)(zigoStringPtr(version))
+	code := int32(C.zg_stream_set_version_report((*C.zg_stream)(self), namePtr, C.size_t(len(name)), versionPtr, C.size_t(len(version))))
+	return code
+}
+
+// StreamSetEnquiryResponse calls the generated C ABI wrapper for zg_stream_set_enquiry_response.
+func StreamSetEnquiryResponse(self unsafe.Pointer, reply string) int32 {
+	replyPtr := (*C.uint8_t)(zigoStringPtr(reply))
+	code := int32(C.zg_stream_set_enquiry_response((*C.zg_stream)(self), replyPtr, C.size_t(len(reply))))
+	return code
+}
+
+// StreamColorSchemeChanged calls the generated C ABI wrapper for zg_stream_color_scheme_changed.
+func StreamColorSchemeChanged(self unsafe.Pointer, scheme uint8) int32 {
+	code := int32(C.zg_stream_color_scheme_changed((*C.zg_stream)(self), C.uint8_t(scheme)))
+	return code
+}
+
+// StreamClearColorScheme calls the generated C ABI wrapper for zg_stream_clear_color_scheme.
+func StreamClearColorScheme(self unsafe.Pointer) int32 {
+	code := int32(C.zg_stream_clear_color_scheme((*C.zg_stream)(self)))
+	return code
 }
 
 // StreamOnClipboardWriteRequest calls the generated C ABI wrapper for zg_stream_on_clipboard_write_request.
@@ -860,6 +918,17 @@ func ScreenViewportTop(self unsafe.Pointer) (uint32, int32) {
 	return uint32(outResult), code
 }
 
+// ScreenScrollbar calls the generated C ABI wrapper for zg_screen_scrollbar.
+func ScreenScrollbar(self unsafe.Pointer) (ScrollbarData, int32) {
+	var outResult C.zg_scrollbar
+	code := int32(C.zg_screen_scrollbar((*C.zg_screen)(self), &outResult))
+	return ScrollbarData{
+		Total:  uint64(outResult.total),
+		Offset: uint64(outResult.offset),
+		Len:    uint64(outResult.len),
+	}, code
+}
+
 // ScreenFormat calls the generated C ABI wrapper for zg_screen_format.
 func ScreenFormat(self unsafe.Pointer, opts FormatOptionsData, writerHandle uintptr) int32 {
 	var copts C.zg_format_options
@@ -955,38 +1024,18 @@ func ScreenEndHyperlink(self unsafe.Pointer) int32 {
 	return code
 }
 
-// ScreenNewSearch calls the generated C ABI wrapper for zg_screen_new_search.
-func ScreenNewSearch(self unsafe.Pointer, needleUnowned string) (unsafe.Pointer, int32) {
+// TerminalNewSearch calls the generated C ABI wrapper for zg_terminal_new_search.
+func TerminalNewSearch(self unsafe.Pointer, needleUnowned string) (unsafe.Pointer, int32) {
 	needleUnownedPtr := (*C.uint8_t)(zigoStringPtr(needleUnowned))
 	var outResult *C.zg_search
-	code := int32(C.zg_screen_new_search((*C.zg_screen)(self), needleUnownedPtr, C.size_t(len(needleUnowned)), &outResult))
+	code := int32(C.zg_terminal_new_search((*C.zg_terminal)(self), needleUnownedPtr, C.size_t(len(needleUnowned)), &outResult))
 	return unsafe.Pointer(outResult), code
 }
 
-// SearchDeinit calls the generated C ABI wrapper for zg_search_deinit.
-func SearchDeinit(self unsafe.Pointer) int32 {
-	code := int32(C.zg_search_deinit((*C.zg_search)(self)))
+// SearchSearchClose calls the generated C ABI wrapper for zg_search_search_close.
+func SearchSearchClose(self unsafe.Pointer) int32 {
+	code := int32(C.zg_search_search_close((*C.zg_search)(self)))
 	return code
-}
-
-// SearchSearchAll calls the generated C ABI wrapper for zg_search_search_all.
-func SearchSearchAll(self unsafe.Pointer) int32 {
-	code := int32(C.zg_search_search_all((*C.zg_search)(self)))
-	return code
-}
-
-// SearchMatchCount calls the generated C ABI wrapper for zg_search_match_count.
-func SearchMatchCount(self unsafe.Pointer) (uint, int32) {
-	var outResult C.size_t
-	code := int32(C.zg_search_match_count((*C.zg_search)(self), &outResult))
-	return uint(outResult), code
-}
-
-// SearchSelect calls the generated C ABI wrapper for zg_search_select.
-func SearchSelect(self unsafe.Pointer, to uint8) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_search_select((*C.zg_search)(self), C.uint8_t(to), &outResult))
-	return uint8(outResult), code
 }
 
 // SearchNeedle calls the generated C ABI wrapper for zg_search_needle.
@@ -1000,6 +1049,46 @@ func SearchNeedle(self unsafe.Pointer) (string, int32) {
 	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
 }
 
+// SearchStatus calls the generated C ABI wrapper for zg_search_status.
+func SearchStatus(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_search_status((*C.zg_search)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// SearchTick calls the generated C ABI wrapper for zg_search_tick.
+func SearchTick(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_search_tick((*C.zg_search)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// SearchFeed calls the generated C ABI wrapper for zg_search_feed.
+func SearchFeed(self unsafe.Pointer, activeDirty uint8) int32 {
+	code := int32(C.zg_search_feed((*C.zg_search)(self), C.uint8_t(activeDirty)))
+	return code
+}
+
+// SearchAll calls the generated C ABI wrapper for zg_search_all.
+func SearchAll(self unsafe.Pointer) int32 {
+	code := int32(C.zg_search_all((*C.zg_search)(self)))
+	return code
+}
+
+// SearchSelect calls the generated C ABI wrapper for zg_search_select.
+func SearchSelect(self unsafe.Pointer, to uint8, scroll uint8) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_search_select((*C.zg_search)(self), C.uint8_t(to), C.uint8_t(scroll), &outResult))
+	return uint8(outResult), code
+}
+
+// SearchMatchCount calls the generated C ABI wrapper for zg_search_match_count.
+func SearchMatchCount(self unsafe.Pointer) (uint, int32) {
+	var outResult C.size_t
+	code := int32(C.zg_search_match_count((*C.zg_search)(self), &outResult))
+	return uint(outResult), code
+}
+
 // SearchMatches calls the generated C ABI wrapper for zg_search_matches.
 func SearchMatches(self unsafe.Pointer, dst []SelectionData) (uint, int32) {
 	var dstValues []C.zg_selection
@@ -1009,6 +1098,27 @@ func SearchMatches(self unsafe.Pointer, dst []SelectionData) (uint, int32) {
 	dstPtr := (*C.zg_selection)(zigoSlicePtr(dstValues))
 	var outResult C.size_t
 	code := int32(C.zg_search_matches((*C.zg_search)(self), dstPtr, C.size_t(len(dst)), &outResult))
+	for i := 0; i < int(outResult) && i < len(dst); i++ {
+		dst[i] = SelectionData{
+			StartX:    uint16(dstValues[i].start_x),
+			StartY:    uint32(dstValues[i].start_y),
+			EndX:      uint16(dstValues[i].end_x),
+			EndY:      uint32(dstValues[i].end_y),
+			Rectangle: uint8(dstValues[i].rectangle),
+		}
+	}
+	return uint(outResult), code
+}
+
+// SearchViewportMatches calls the generated C ABI wrapper for zg_search_viewport_matches.
+func SearchViewportMatches(self unsafe.Pointer, dst []SelectionData) (uint, int32) {
+	var dstValues []C.zg_selection
+	if len(dst) != 0 {
+		dstValues = make([]C.zg_selection, len(dst))
+	}
+	dstPtr := (*C.zg_selection)(zigoSlicePtr(dstValues))
+	var outResult C.size_t
+	code := int32(C.zg_search_viewport_matches((*C.zg_search)(self), dstPtr, C.size_t(len(dst)), &outResult))
 	for i := 0; i < int(outResult) && i < len(dst); i++ {
 		dst[i] = SelectionData{
 			StartX:    uint16(dstValues[i].start_x),
@@ -1033,6 +1143,14 @@ func SearchSelectedMatch(self unsafe.Pointer) (SelectionData, bool, int32) {
 		EndY:      uint32(outResult.end_y),
 		Rectangle: uint8(outResult.rectangle),
 	}, outResultHas != 0, code
+}
+
+// SearchSelectedIndex calls the generated C ABI wrapper for zg_search_selected_index.
+func SearchSelectedIndex(self unsafe.Pointer) (uint, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.size_t
+	code := int32(C.zg_search_selected_index((*C.zg_search)(self), &outResultHas, &outResult))
+	return uint(outResult), outResultHas != 0, code
 }
 
 // TerminalPrintAttributesInto calls the generated C ABI wrapper for zg_terminal_print_attributes_into.
@@ -1571,6 +1689,22 @@ func RenderStateCursorY(self unsafe.Pointer) (uint16, bool, int32) {
 	return uint16(outResult), outResultHas != 0, code
 }
 
+// RenderStateCursorWideTail calls the generated C ABI wrapper for zg_render_state_cursor_wide_tail.
+func RenderStateCursorWideTail(self unsafe.Pointer) (uint8, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.uint8_t
+	code := int32(C.zg_render_state_cursor_wide_tail((*C.zg_render_state)(self), &outResultHas, &outResult))
+	return uint8(outResult), outResultHas != 0, code
+}
+
+// RenderStateCursorColor calls the generated C ABI wrapper for zg_render_state_cursor_color.
+func RenderStateCursorColor(self unsafe.Pointer) (uint32, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.uint32_t
+	code := int32(C.zg_render_state_cursor_color((*C.zg_render_state)(self), &outResultHas, &outResult))
+	return uint32(outResult), outResultHas != 0, code
+}
+
 // RenderStateDirty calls the generated C ABI wrapper for zg_render_state_dirty.
 func RenderStateDirty(self unsafe.Pointer) (uint8, int32) {
 	var outResult C.uint8_t
@@ -1816,6 +1950,13 @@ type FormatOptionsData struct {
 	ResolvePalette         uint8
 }
 
+// ScrollbarData mirrors the zg_scrollbar layout, padding included.
+type ScrollbarData struct {
+	Total  uint64
+	Offset uint64
+	Len    uint64
+}
+
 // RenderCellData mirrors the zg_render_cell layout, padding included.
 type RenderCellData struct {
 	Codepoint uint32
@@ -1904,6 +2045,12 @@ var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.Cursor)-unsafe.Offseto
 var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.NoStyles)-unsafe.Offsetof(C.zg_format_options{}.no_styles)]
 var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.NoHyperlinks)-unsafe.Offsetof(C.zg_format_options{}.no_hyperlinks)]
 var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.ResolvePalette)-unsafe.Offsetof(C.zg_format_options{}.resolve_palette)]
+
+// ScrollbarData slices are copied from C memory as one run, so it must match zg_scrollbar byte for byte.
+var _ = [1]struct{}{}[unsafe.Sizeof(ScrollbarData{})-unsafe.Sizeof(C.zg_scrollbar{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(ScrollbarData{}.Total)-unsafe.Offsetof(C.zg_scrollbar{}.total)]
+var _ = [1]struct{}{}[unsafe.Offsetof(ScrollbarData{}.Offset)-unsafe.Offsetof(C.zg_scrollbar{}.offset)]
+var _ = [1]struct{}{}[unsafe.Offsetof(ScrollbarData{}.Len)-unsafe.Offsetof(C.zg_scrollbar{}.len)]
 
 // RenderCellData slices are copied from C memory as one run, so it must match zg_render_cell byte for byte.
 var _ = [1]struct{}{}[unsafe.Sizeof(RenderCellData{})-unsafe.Sizeof(C.zg_render_cell{})]

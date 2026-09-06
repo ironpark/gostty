@@ -38,7 +38,37 @@ pub const StreamEvent = enum(u8) {
     desktop_notification,
     /// OSC 9;4. `eventProgressState` and `eventProgress` carry the report.
     progress_report,
+    /// A sequence this library does not implement, captured so it can be
+    /// looked at. Only APC today. `eventSequence` carries the content.
+    ///
+    /// Off until `setUnknownMaxBytes` turns it on: capturing costs a buffer
+    /// per stream, and a program that never sends an unknown sequence would
+    /// pay it for nothing.
+    unknown_sequence,
 };
+
+/// Which color scheme the desktop is in, reported to a program that asks
+/// (CSI ? 996 n) or that subscribed to changes (mode 2031).
+pub const ColorScheme = vt.device_status.ColorScheme;
+
+/// ghostty's device attributes reply. Not named by `lib_vt.zig`, so it is
+/// recovered from the effect's own signature.
+const Attributes = @typeInfo(@typeInfo(@typeInfo(
+    @FieldType(vt.TerminalStream.Handler.Effects, "device_attributes"),
+).optional.child).pointer.child).@"fn".return_type.?;
+
+/// The DA1 reply and its feature codes, reached the same way.
+const DaFeature = @FieldType(Attributes, "primary").Feature;
+
+/// The DA1 feature codes this binding can advertise. Two today, so the
+/// backing array is sized for the list rather than for ghostty's full set.
+const max_da_features = 2;
+
+/// How long an XTVERSION reply may be. ghostty drops anything longer.
+const max_version_bytes = 256;
+
+/// How long an ENQ reply may be. ghostty drops anything longer.
+const max_enquiry_bytes = 255;
 
 /// How far along an OSC 9;4 progress report says the program is.
 pub const ProgressState = vt.osc.Command.ProgressReport.State;
@@ -94,6 +124,21 @@ pub const Stream = struct {
     write_userdata: usize = 0,
     on_clipboard_read: ?ClipboardFn = null,
     read_userdata: usize = 0,
+
+    /// The XTVERSION reply, "name version". Empty means ghostty's own
+    /// fallback, which is the library name rather than the embedder's.
+    version_buf: [max_version_bytes]u8 = undefined,
+    version_len: usize = 0,
+    /// The ENQ (0x05) reply. Empty means no answer, which is the usual
+    /// choice: an answerback string is a security hazard as often as a
+    /// feature.
+    enquiry_buf: [max_enquiry_bytes]u8 = undefined,
+    enquiry_len: usize = 0,
+    /// The desktop color scheme, or null to leave CSI ? 996 n unanswered.
+    color_scheme: ?ColorScheme = null,
+    /// Backing storage for the DA1 feature list, which ghostty borrows for
+    /// the duration of the effect call.
+    da_features: [max_da_features]DaFeature = undefined,
     /// What `nextEvent` last handed out. Its payload stays readable until the
     /// following `nextEvent`.
     current: ?Queued = null,
@@ -104,6 +149,10 @@ pub const Stream = struct {
         title: []const u8 = "",
         /// Notification body. Owned.
         body: []const u8 = "",
+        /// An unknown sequence's content. Owned. Kept apart from `body` so
+        /// each accessor means one thing: an accessor that changes meaning
+        /// with the event tag is a trap for the caller.
+        sequence: []const u8 = "",
         progress_state: ProgressState = .remove,
         /// 0..100, or 255 when the report carried no percentage.
         progress: u8 = 255,
@@ -111,6 +160,7 @@ pub const Stream = struct {
         fn deinit(self: Queued, gpa: Allocator) void {
             gpa.free(self.title);
             gpa.free(self.body);
+            gpa.free(self.sequence);
         }
     };
 
@@ -217,6 +267,54 @@ pub const Stream = struct {
         if (!self.answered) read.reply(.denied);
     }
 
+    /// A sequence the library does not implement. The content is borrowed
+    /// for the call, so it is copied like the notification strings.
+    fn onUnknownSequence(
+        handler: *vt.TerminalStream.Handler,
+        value: vt.UnknownSequence,
+    ) void {
+        const self = fromHandler(handler);
+        const content = switch (value) {
+            .apc => |apc| apc.content,
+        };
+        const copy = self.gpa.dupe(u8, content) catch return;
+        self.push(.{ .kind = .unknown_sequence, .sequence = copy });
+    }
+
+    /// What the terminal answers `CSI c`, `CSI > c` and `CSI = c` with.
+    ///
+    /// Not configurable: the conformance level and device type describe what
+    /// the parser implements, which is ghostty's business rather than the
+    /// embedder's. The one part that varies is whether OSC 52 is served, and
+    /// the stream already knows that from whether a clipboard callback was
+    /// installed -- an embedder should not have to declare a fact about its
+    /// own wiring.
+    fn onDeviceAttributes(handler: *vt.TerminalStream.Handler) Attributes {
+        const self = fromHandler(handler);
+        var n: usize = 0;
+        self.da_features[n] = .ansi_color;
+        n += 1;
+        if (self.on_clipboard_read != null or self.on_clipboard_write != null) {
+            self.da_features[n] = .clipboard;
+            n += 1;
+        }
+        return .{ .primary = .{ .features = self.da_features[0..n] } };
+    }
+
+    fn onXtversion(handler: *vt.TerminalStream.Handler) []const u8 {
+        const self = fromHandler(handler);
+        return self.version_buf[0..self.version_len];
+    }
+
+    fn onEnquiry(handler: *vt.TerminalStream.Handler) []const u8 {
+        const self = fromHandler(handler);
+        return self.enquiry_buf[0..self.enquiry_len];
+    }
+
+    fn onColorScheme(handler: *vt.TerminalStream.Handler) ?ColorScheme {
+        return fromHandler(handler).color_scheme;
+    }
+
     fn effects() vt.TerminalStream.Handler.Effects {
         var result: vt.TerminalStream.Handler.Effects = .readonly;
         result.bell = onBell;
@@ -228,6 +326,14 @@ pub const Stream = struct {
         result.size = onSize;
         result.clipboard_write = onClipboardWrite;
         result.clipboard_read = onClipboardRead;
+        // Wired unconditionally. These answer queries a program blocks on --
+        // `CSI c` and ENQ go unanswered without them -- and every answer is
+        // either fixed or already known to the stream, so there is nothing
+        // for an embedder to configure before they are correct.
+        result.device_attributes = onDeviceAttributes;
+        result.xtversion = onXtversion;
+        result.enquiry = onEnquiry;
+        result.color_scheme = onColorScheme;
         return result;
     }
 
@@ -308,6 +414,86 @@ pub const Stream = struct {
     pub fn eventProgressState(self: *Stream) ProgressState {
         const event = self.current orelse return .remove;
         return event.progress_state;
+    }
+
+    /// The current event's unknown-sequence content, empty for other events.
+    ///
+    /// Its own accessor rather than a second meaning for `eventBody`: one
+    /// accessor whose meaning depends on the event tag is a trap, and the
+    /// event tag is not in the type system to catch the mistake.
+    pub fn eventSequence(self: *Stream) []const u8 {
+        const event = self.current orelse return "";
+        return event.sequence;
+    }
+
+    /// Capture up to `max` bytes of the sequences this library does not
+    /// implement, and report them as `unknown_sequence` events. Zero, the
+    /// default, turns capture off.
+    ///
+    /// A diagnostic: it is how you find out that a program is speaking a
+    /// graphics protocol you did not wire up, rather than watching it draw
+    /// nothing. The buffer is per stream, which is why it is off by default.
+    pub fn setUnknownMaxBytes(self: *Stream, max: usize) void {
+        self.inner.handler.apc_handler.unknown_max_bytes = max;
+        self.inner.handler.unknown_sequence = if (max > 0) onUnknownSequence else null;
+    }
+
+    /// Report the embedder's name and version to programs that ask
+    /// (XTVERSION, `CSI > 0 q`).
+    ///
+    /// Takes the two parts rather than one string because the reply is parsed
+    /// as `"name version"`, and a caller with one string to hand over has no
+    /// reason to know that. Without this the terminal answers `libghostty`,
+    /// which is true of the parser and useless as an application identity.
+    ///
+    /// Silently truncated past 256 bytes, which is ghostty's cap.
+    pub fn setVersionReport(self: *Stream, name: []const u8, version: []const u8) void {
+        var writer: std.Io.Writer = .fixed(&self.version_buf);
+        if (version.len == 0) {
+            writer.writeAll(name) catch {};
+        } else {
+            writer.print("{s} {s}", .{ name, version }) catch {};
+        }
+        self.version_len = writer.end;
+    }
+
+    /// Answer ENQ (0x05) with `reply`. Empty, the default, answers nothing.
+    ///
+    /// An answerback string is echoed to anything that sends a single control
+    /// byte, so it leaks whatever it holds to any program that asks. Terminals
+    /// leave it empty for that reason and so does this.
+    ///
+    /// Silently truncated past 255 bytes, which is ghostty's cap.
+    pub fn setEnquiryResponse(self: *Stream, reply: []const u8) void {
+        const n = @min(reply.len, self.enquiry_buf.len);
+        @memcpy(self.enquiry_buf[0..n], reply[0..n]);
+        self.enquiry_len = n;
+    }
+
+    /// Tell the terminal the desktop is in `scheme`.
+    ///
+    /// Both halves of the protocol, because doing one without the other is a
+    /// silent bug: a program that asks (CSI ? 996 n) gets the answer, and a
+    /// program that subscribed (mode 2031) is told right now. The report goes
+    /// into the reply buffer, so it leaves with the next `writeReplies`.
+    ///
+    /// Named for the event rather than the field it sets: this writes to the
+    /// program, which `setColorScheme` would not have said.
+    pub fn colorSchemeChanged(self: *Stream, scheme: ColorScheme) void {
+        const previous = self.color_scheme;
+        self.color_scheme = scheme;
+        if (previous != null and previous.? == scheme) return;
+        if (!self.inner.handler.terminal.modes.get(.report_color_scheme)) return;
+        var buf: [vt.device_status.max_color_scheme_report_encode_size]u8 = undefined;
+        var writer: std.Io.Writer = .fixed(&buf);
+        vt.device_status.encodeColorSchemeReport(&writer, scheme) catch return;
+        self.replies.appendSlice(self.gpa, writer.buffered()) catch {};
+    }
+
+    /// Leave color scheme queries unanswered, which is ghostty's default. For
+    /// an embedder with no desktop to ask.
+    pub fn clearColorScheme(self: *Stream) void {
+        self.color_scheme = null;
     }
 
     /// The current event's progress percentage, absent when the report carried

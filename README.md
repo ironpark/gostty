@@ -141,6 +141,41 @@ A request that is not answered is denied, as is any request arriving on a stream
 with no handler installed. Answering a read allows the running program to read the
 user's clipboard, so ensure user consent before calling `ReplyClipboardText`.
 
+### Identity and the desktop
+
+A program that asks what terminal it is talking to blocks until it is answered.
+`CSI c`, `CSI > c`, `CSI = c` and XTVERSION are answered by every stream with no
+setup: the conformance level and device type describe what the parser
+implements, and the one part that varies — whether OSC 52 is served — the stream
+already knows from whether a clipboard callback was installed. There is nothing
+to configure before they are right.
+
+Two things are worth saying anyway:
+
+```go
+// Otherwise XTVERSION names the parser, "libghostty", which is no use as an
+// application identity. Two arguments because the reply is parsed as
+// "name version".
+stream.SetVersionReport("hypercat", "0.1.0")
+
+// Answers CSI ? 996 n, and reports the change to a program that subscribed
+// with mode 2031 -- both halves, because doing one without the other is a
+// silent bug. The report leaves with the next WriteReplies.
+stream.ColorSchemeChanged(gostty.ColorSchemeDark)
+```
+
+ENQ (`0x05`) answers nothing unless `SetEnquiryResponse` gives it something. An
+answerback string is echoed to any program that sends one control byte, so it
+leaks whatever it holds; terminals leave it empty and so does this.
+
+### Unimplemented sequences
+
+`SetUnknownMaxBytes` captures the sequences this library does not implement —
+only APC today — and reports them as `StreamEventUnknownSequence` with the
+content on `EventSequence`. Off by default, since the capture buffer is per
+stream and most programs never send one. It is how a program speaking a
+graphics protocol you never wired up says so, instead of drawing nothing.
+
 ## Layout
 
 ```text
@@ -175,9 +210,9 @@ not be edited manually. Unexported generator helpers (`newTerminal`, `newStream`
 
 ### What `root.zig` is for
 
-Most of libghostty-vt is bound directly: `Terminal`, `Screen`, `Search`,
-`RenderState` and `Snapshot` are ghostty's own types and their methods become Go
-methods with nothing in between, including their `init`/`deinit` lifecycles,
+Most of libghostty-vt is bound directly: `Terminal`, `Screen`, `RenderState`
+and `Snapshot` are ghostty's own types and their methods become Go methods with
+nothing in between, including their `init`/`deinit` lifecycles,
 while `.fields` and `.flatten` in `bindings.zig` cover plain field reads and
 `Terminal.init`. What is left in `root.zig` is the shapes that cannot cross a C
 ABI directly:
@@ -189,6 +224,9 @@ ABI directly:
 - wrappers for calls that return a value holding page pins — `SelectWord`,
   `SelectLine`, `SelectOutput` — which apply the selection instead of handing it
   back;
+- `Search`, ghostty's terminal-wide searcher with the terminal held beside it:
+  nearly every call on it takes the terminal back, including its own `deinit`,
+  and its matches are page pins that come out as screen coordinates;
 - flat mirrors for the two things with no C representation: `Attribute`,
   ghostty's SGR union, and `RenderCell`, one viewport cell with its colors
   already resolved.

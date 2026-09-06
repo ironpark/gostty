@@ -808,6 +808,8 @@ const (
 	StreamEventDesktopNotification StreamEvent = 3
 	// StreamEventProgressReport corresponds to the Zig tag progress_report.
 	StreamEventProgressReport StreamEvent = 4
+	// StreamEventUnknownSequence corresponds to the Zig tag unknown_sequence.
+	StreamEventUnknownSequence StreamEvent = 5
 )
 
 // String returns the Zig tag name.
@@ -823,6 +825,8 @@ func (value StreamEvent) String() string {
 		return "desktop_notification"
 	case StreamEventProgressReport:
 		return "progress_report"
+	case StreamEventUnknownSequence:
+		return "unknown_sequence"
 	default:
 		return "StreamEvent(" + strconv.Itoa(int(value)) + ")"
 	}
@@ -841,6 +845,8 @@ func ParseStreamEvent(text string) (StreamEvent, error) {
 		return StreamEventDesktopNotification, nil
 	case "progress_report":
 		return StreamEventProgressReport, nil
+	case "unknown_sequence":
+		return StreamEventUnknownSequence, nil
 	}
 	return 0, &EnumParseError{Type: "StreamEvent", Text: text}
 }
@@ -919,6 +925,54 @@ func (value ProgressState) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler with ParseProgressState.
 func (value *ProgressState) UnmarshalText(text []byte) error {
 	parsed, err := ParseProgressState(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// ColorScheme represents the corresponding Zig enum.
+type ColorScheme uint8
+
+const (
+	// ColorSchemeLight corresponds to the Zig tag light.
+	ColorSchemeLight ColorScheme = 0
+	// ColorSchemeDark corresponds to the Zig tag dark.
+	ColorSchemeDark ColorScheme = 1
+)
+
+// String returns the Zig tag name.
+func (value ColorScheme) String() string {
+	switch value {
+	case ColorSchemeLight:
+		return "light"
+	case ColorSchemeDark:
+		return "dark"
+	default:
+		return "ColorScheme(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// ParseColorScheme returns the ColorScheme named by text, which is a Zig tag name.
+func ParseColorScheme(text string) (ColorScheme, error) {
+	switch text {
+	case "light":
+		return ColorSchemeLight, nil
+	case "dark":
+		return ColorSchemeDark, nil
+	}
+	return 0, &EnumParseError{Type: "ColorScheme", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value ColorScheme) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseColorScheme.
+func (value *ColorScheme) UnmarshalText(text []byte) error {
+	parsed, err := ParseColorScheme(string(text))
 	if err != nil {
 		return err
 	}
@@ -1345,6 +1399,80 @@ func (value SearchDirection) String() string {
 		return "prev"
 	default:
 		return "SearchDirection(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// SearchScroll represents the corresponding Zig enum.
+type SearchScroll uint8
+
+const (
+	// SearchScrollIfNeeded corresponds to the Zig tag if_needed.
+	SearchScrollIfNeeded SearchScroll = 0
+	// SearchScrollNone corresponds to the Zig tag none.
+	SearchScrollNone SearchScroll = 1
+)
+
+// String returns the Zig tag name.
+func (value SearchScroll) String() string {
+	switch value {
+	case SearchScrollIfNeeded:
+		return "if_needed"
+	case SearchScrollNone:
+		return "none"
+	default:
+		return "SearchScroll(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// SearchState represents the corresponding Zig enum.
+type SearchState uint8
+
+const (
+	// SearchStateRunning corresponds to the Zig tag running.
+	SearchStateRunning SearchState = 0
+	// SearchStateFeedRequired corresponds to the Zig tag feed_required.
+	SearchStateFeedRequired SearchState = 1
+	// SearchStateComplete corresponds to the Zig tag complete.
+	SearchStateComplete SearchState = 2
+)
+
+// String returns the Zig tag name.
+func (value SearchState) String() string {
+	switch value {
+	case SearchStateRunning:
+		return "running"
+	case SearchStateFeedRequired:
+		return "feed_required"
+	case SearchStateComplete:
+		return "complete"
+	default:
+		return "SearchState(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// SearchProgress represents the corresponding Zig enum.
+type SearchProgress uint8
+
+const (
+	// SearchProgressComplete corresponds to the Zig tag complete.
+	SearchProgressComplete SearchProgress = 0
+	// SearchProgressProgress corresponds to the Zig tag progress.
+	SearchProgressProgress SearchProgress = 1
+	// SearchProgressBlocked corresponds to the Zig tag blocked.
+	SearchProgressBlocked SearchProgress = 2
+)
+
+// String returns the Zig tag name.
+func (value SearchProgress) String() string {
+	switch value {
+	case SearchProgressComplete:
+		return "complete"
+	case SearchProgressProgress:
+		return "progress"
+	case SearchProgressBlocked:
+		return "blocked"
+	default:
+		return "SearchProgress(" + strconv.Itoa(int(value)) + ")"
 	}
 }
 

@@ -99,6 +99,7 @@ pub const bindings = zigo.define(.{
         .{ .name = "SelectionAdjustment", .type = gostty.SelectionAdjustment, .repr = .enumeration, .text = true },
         .{ .name = "StreamEvent", .type = gostty.StreamEvent, .repr = .enumeration, .text = true },
         .{ .name = "ProgressState", .type = gostty.ProgressState, .repr = .enumeration, .text = true },
+        .{ .name = "ColorScheme", .type = gostty.ColorScheme, .repr = .enumeration, .text = true },
         .{ .name = "ClipboardLocation", .type = gostty.ClipboardLocation, .repr = .enumeration, .text = true, .exhaustive = false },
         .{ .name = "ClipboardDenial", .type = gostty.ClipboardDenial, .repr = .enumeration },
         .{ .name = "ClipboardHandler", .type = gostty.ClipboardFn, .repr = .callback },
@@ -107,6 +108,10 @@ pub const bindings = zigo.define(.{
         .{ .name = "ColorName", .type = gostty.ColorName, .repr = .enumeration, .text = true, .exhaustive = false },
         .{ .name = "Attribute", .type = gostty.Attribute, .repr = .tagged_union },
         .{ .name = "SearchDirection", .type = gostty.SearchDirection, .repr = .enumeration },
+        .{ .name = "SearchScroll", .type = gostty.SearchScroll, .repr = .enumeration },
+        .{ .name = "SearchState", .type = gostty.SearchState, .repr = .enumeration },
+        .{ .name = "SearchProgress", .type = gostty.SearchProgress, .repr = .enumeration },
+        .{ .name = "Scrollbar", .type = gostty.Scrollbar, .repr = .value },
         .{ .name = "Key", .type = gostty.Key, .repr = .enumeration, .text = true },
         .{ .name = "KeyAction", .type = gostty.KeyAction, .repr = .enumeration, .text = true },
         .{ .name = "FocusEvent", .type = gostty.FocusEvent, .repr = .enumeration, .text = true },
@@ -122,6 +127,8 @@ pub const bindings = zigo.define(.{
             .{ .path = "cols" },
             .{ .path = "cursor.visible", .name = "cursorVisible" },
             .{ .path = "cursor.visual_style", .name = "cursorStyle" },
+            .{ .path = "cursor.blinking", .name = "cursorBlinking" },
+            .{ .path = "cursor.password_input", .name = "cursorPasswordInput" },
         } },
         .{ .type = gostty.RenderCell, .repr = .value, .name = "RenderCell", .field_meta = .{ .codepoint = .{ .semantic = .codepoint } } },
         // An integer-backed packed struct: Go sees named fields, the C ABI sees
@@ -190,6 +197,12 @@ pub const bindings = zigo.define(.{
         .{ .path = "Stream.eventBody", .semantic = .utf8_string },
         .{ .path = "Stream.eventProgressState" },
         .{ .path = "Stream.eventProgress" },
+        .{ .path = "Stream.eventSequence" },
+        .{ .path = "Stream.setUnknownMaxBytes", .params = .{"max"} },
+        .{ .path = "Stream.setVersionReport", .params = .{ "name", "version" }, .param_meta = .{ .name = .{ .semantic = .utf8_string }, .version = .{ .semantic = .utf8_string } } },
+        .{ .path = "Stream.setEnquiryResponse", .params = .{"reply"}, .param_meta = .{ .reply = .{ .semantic = .utf8_string } } },
+        .{ .path = "Stream.colorSchemeChanged", .params = .{"scheme"} },
+        .{ .path = "Stream.clearColorScheme" },
         // A clipboard request runs while `feed` is on the stack, on the thread
         // that called it, and the callback is expected to answer it by calling
         // back into the same stream. Both facts are contracts a caller has to
@@ -262,6 +275,7 @@ pub const bindings = zigo.define(.{
                 "root.screenSelection",
                 .{ .path = "root.screenSetSelection", .params = .{"sel"} },
                 "root.screenViewportTop",
+                "root.screenScrollbar",
                 .{ .path = "root.screenFormat", .params = .{ "opts", "writer" } },
                 .{ .path = "root.screenFormatSelection", .params = .{ "opts", "sel", "writer" } },
                 .{ .path = "root.screenSelectionContains", .params = .{ "sel", "x", "y" } },
@@ -276,23 +290,33 @@ pub const bindings = zigo.define(.{
         .{ .path = "Screen.endHyperlink" },
         // `Search.init` returns by value, like `Terminal.init`: zigo boxes the
         // result and frees the box in `deinit`.
-        .{ .path = "Search.init", .constructs = "Search", .child_of_receiver = true, .name = "newSearch", .params = .{"needle_unowned"}, .param_meta = .{ .needle_unowned = .{ .semantic = .utf8_string } } },
-        .{ .path = "Search.deinit", .destroys = "Search" },
-        .{ .path = "Search.searchAll" },
-        .{ .path = "Search.matchesLen", .name = "MatchCount" },
-        .{ .path = "Search.select", .params = .{"to"} },
-        .{ .path = "Search.needle", .semantic = .utf8_string },
+        // `newSearch` returns by value, like `Terminal.init`: zigo boxes the
+        // result and frees the box in `close`.
+        .{ .path = "root.newSearch", .constructs = "Search", .child_of_receiver = true, .params = .{"needle_unowned"}, .param_meta = .{ .needle_unowned = .{ .semantic = .utf8_string } } },
+        .{ .path = "root.searchClose", .destroys = "Search" },
         .{
             .receiver = "Search",
             .strip_prefix = "search",
             .functions = .{
+                .{ .path = "root.searchNeedle", .semantic = .utf8_string },
+                "root.searchStatus",
+                "root.searchTick",
+                .{ .path = "root.searchFeed", .params = .{"active_dirty"} },
+                "root.searchAll",
+                .{ .path = "root.searchSelect", .params = .{ "to", "scroll" } },
+                .{ .path = "root.searchMatchCount", .name = "MatchCount" },
                 .{
                     .path = "root.searchMatches",
                     .params = .{"dst"},
                     .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
-                    .covers = .{ "Search.matchAt", "Search.matches" },
                 },
-                .{ .path = "root.searchSelectedMatch", .covers = "Search.selectedMatch" },
+                .{
+                    .path = "root.searchViewportMatches",
+                    .params = .{"dst"},
+                    .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
+                },
+                "root.searchSelectedMatch",
+                "root.searchSelectedIndex",
             },
         },
         .{
@@ -410,6 +434,8 @@ pub const bindings = zigo.define(.{
                 "root.renderForeground",
                 "root.renderCursorX",
                 "root.renderCursorY",
+                "root.renderCursorWideTail",
+                "root.renderCursorColor",
                 // Partial redraw: which rows changed, one row's cells, and
                 // marking them drawn.
                 "root.renderDirty",

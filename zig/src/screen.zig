@@ -1,6 +1,6 @@
-//! Screens, selections and search.
+//! Screens and selections.
 //!
-//! `Screen` and `Search` are ghostty's own types, bound directly. What is here
+//! `Screen` is ghostty's own type, bound directly. What is here
 //! is the calls whose values hold page pins -- tracked positions in the
 //! scrollback -- which cannot cross a C ABI. `Selection` is the same
 //! information as plain screen coordinates, and the `select*` wrappers apply
@@ -73,7 +73,7 @@ pub const Selection = extern struct {
     /// A rectangle between the two corners rather than a run of lines.
     rectangle: bool,
 
-    fn fromPins(pages: *const vt.PageList, start: vt.Pin, end: vt.Pin, rectangle: bool) ?Selection {
+    pub fn fromPins(pages: *const vt.PageList, start: vt.Pin, end: vt.Pin, rectangle: bool) ?Selection {
         const s = pages.pointFromPin(.screen, start) orelse return null;
         const e = pages.pointFromPin(.screen, end) orelse return null;
         return .{
@@ -131,40 +131,23 @@ pub fn screenViewportTop(self: *Screen) u32 {
     return top.screen.y;
 }
 
-/// A text search over one screen, including its scrollback.
+/// What a scrollbar needs, in rows: how tall the scrollable area is, where
+/// the viewport sits in it, and how tall the viewport is.
 ///
-/// A child of the screen it reads, which is itself borrowed from a terminal, so
-/// the close order is search, then terminal.
-pub const Search = vt.search.Screen;
+/// ghostty maintains `total` incrementally and caches `offset`, so this is
+/// amortized O(1) and cheap enough to read every frame. A screen with no
+/// scrollback reports `offset = 0` and `total = len`, so a renderer can hide
+/// the scrollbar by comparing the two rather than asking about scrollback.
+pub const Scrollbar = extern struct {
+    total: u64,
+    offset: u64,
+    len: u64,
+};
 
-/// Which way `Search.select` moves.
-///
-/// Named `SearchDirection` rather than mirroring ghostty's `Select`: the C
-/// typedef for a `SearchSelect` would be `zg_search_select`, colliding with the
-/// function symbol for `Search.select`.
-pub const SearchDirection = vt.search.Screen.Select;
-
-/// Copy the matches found so far into `dst`, most recent screen content
-/// first, and return how many were written. Matches are in screen
-/// coordinates; size `dst` from `Search.matchesLen`.
-pub fn searchMatches(self: *Search, dst: []Selection) usize {
-    var written: usize = 0;
-    const total = self.matchesLen();
-    var i: usize = 0;
-    while (i < total and written < dst.len) : (i += 1) {
-        const match = self.matchAt(i) orelse continue;
-        const bounds = match.untracked();
-        dst[written] = Selection.fromPins(&self.screen.pages, bounds.start, bounds.end, false) orelse continue;
-        written += 1;
-    }
-    return written;
-}
-
-/// The match `Search.select` last moved to, or null before the first move.
-pub fn searchSelectedMatch(self: *Search) ?Selection {
-    const match = self.selectedMatch() orelse return null;
-    const bounds = match.untracked();
-    return Selection.fromPins(&self.screen.pages, bounds.start, bounds.end, false);
+/// The screen's scrollbar state.
+pub fn screenScrollbar(self: *Screen) Scrollbar {
+    const bar = self.pages.scrollbar();
+    return .{ .total = bar.total, .offset = bar.offset, .len = bar.len };
 }
 
 /// Select the word under a viewport position -- what a double click does.

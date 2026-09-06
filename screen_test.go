@@ -210,3 +210,55 @@ func TestOptionalScreen(t *testing.T) {
 		t.Errorf("alternate selection = %q, want %q", got, want)
 	}
 }
+
+// What a GUI needs to draw a scrollbar, in rows. ghostty keeps the total
+// incrementally and caches the offset, so this is cheap enough per frame.
+func TestScreenScrollbar(t *testing.T) {
+	term, stream := newStreamPair(t, 20, 4)
+	if err := term.SetScrollbackMaxBytes(1 << 20); err != nil {
+		t.Fatalf("SetScrollbackMaxBytes: %v", err)
+	}
+	screen, err := term.ActiveScreen()
+	if err != nil {
+		t.Fatalf("ActiveScreen: %v", err)
+	}
+
+	// Nothing scrolled yet: the whole scrollable area is the viewport.
+	bar, err := screen.Scrollbar()
+	if err != nil {
+		t.Fatalf("Scrollbar: %v", err)
+	}
+	if bar.Len != 4 || bar.Offset != 0 {
+		t.Errorf("Scrollbar() on a fresh screen = %+v; want Len 4, Offset 0", bar)
+	}
+
+	for range 20 {
+		feed(t, stream, "line\r\n")
+	}
+	bar, err = screen.Scrollbar()
+	if err != nil {
+		t.Fatalf("Scrollbar: %v", err)
+	}
+	if bar.Len != 4 {
+		t.Errorf("Scrollbar().Len = %d, want the viewport height 4", bar.Len)
+	}
+	if bar.Total <= bar.Len {
+		t.Errorf("Scrollbar() = %+v; Total should have grown past the viewport", bar)
+	}
+	// The viewport is at the bottom, so the thumb is at the end.
+	if bar.Offset+bar.Len != bar.Total {
+		t.Errorf("Scrollbar() = %+v; want Offset+Len == Total at the bottom", bar)
+	}
+
+	// Scrolling up moves the thumb and nothing else.
+	if err := term.ScrollViewport(ScrollViewportTop()); err != nil {
+		t.Fatalf("ScrollViewport: %v", err)
+	}
+	top, err := screen.Scrollbar()
+	if err != nil {
+		t.Fatalf("Scrollbar: %v", err)
+	}
+	if top.Offset != 0 || top.Total != bar.Total || top.Len != bar.Len {
+		t.Errorf("Scrollbar() at the top = %+v, want Offset 0 and the same Total/Len as %+v", top, bar)
+	}
+}

@@ -271,3 +271,19 @@ pub fn renderCursorY(self: *RenderState) ?u16 {
     const vp = self.cursor.viewport orelse return null;
     return vp.y;
 }
+
+/// Whether the cursor sits on the tail of a wide character. A renderer that
+/// draws a one-cell cursor may want to move it back one column so it covers
+/// the character rather than half of it. Null when the cursor is scrolled out
+/// of the viewport, the same as `renderCursorX`.
+pub fn renderCursorWideTail(self: *RenderState) ?bool {
+    const vp = self.cursor.viewport orelse return null;
+    return vp.wide_tail;
+}
+
+/// The cursor color as of this frame, 0xRRGGBB, or null when the program has
+/// not set one and the renderer should pick. Read from the snapshot rather
+/// than the terminal so it matches the cells drawn beside it.
+pub fn renderCursorColor(self: *RenderState) ?u32 {
+    return packColor(self.colors.cursor orelse return null);
+}

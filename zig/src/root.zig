@@ -77,6 +77,7 @@ const stream_ = @import("stream.zig");
 
 pub const StreamEvent = stream_.StreamEvent;
 pub const ProgressState = stream_.ProgressState;
+pub const ColorScheme = stream_.ColorScheme;
 pub const ClipboardLocation = stream_.ClipboardLocation;
 pub const ClipboardDenial = stream_.ClipboardDenial;
 pub const ClipboardFn = stream_.ClipboardFn;
@@ -84,7 +85,7 @@ pub const Stream = stream_.Stream;
 pub const newStream = stream_.newStream;
 pub const freeStream = stream_.freeStream;
 
-// Screens, selections and search.
+// Screens and selections.
 const screen_ = @import("screen.zig");
 
 pub const SwitchScreenMode = screen_.SwitchScreenMode;
@@ -99,10 +100,30 @@ pub const SelectionAdjustment = screen_.SelectionAdjustment;
 pub const screenSelectionContains = screen_.screenSelectionContains;
 pub const screenSelectionAdjust = screen_.screenSelectionAdjust;
 pub const screenViewportTop = screen_.screenViewportTop;
-pub const Search = screen_.Search;
-pub const SearchDirection = screen_.SearchDirection;
-pub const searchMatches = screen_.searchMatches;
-pub const searchSelectedMatch = screen_.searchSelectedMatch;
+pub const Scrollbar = screen_.Scrollbar;
+pub const screenScrollbar = screen_.screenScrollbar;
+
+// Text search over a terminal.
+const search_ = @import("search.zig");
+
+pub const Search = search_.Search;
+pub const SearchDirection = search_.SearchDirection;
+pub const SearchScroll = search_.SearchScroll;
+pub const SearchState = search_.SearchState;
+pub const SearchProgress = search_.SearchProgress;
+pub const newSearch = search_.newSearch;
+pub const searchClose = search_.searchClose;
+pub const searchNeedle = search_.searchNeedle;
+pub const searchStatus = search_.searchStatus;
+pub const searchTick = search_.searchTick;
+pub const searchFeed = search_.searchFeed;
+pub const searchAll = search_.searchAll;
+pub const searchSelect = search_.searchSelect;
+pub const searchMatchCount = search_.searchMatchCount;
+pub const searchMatches = search_.searchMatches;
+pub const searchViewportMatches = search_.searchViewportMatches;
+pub const searchSelectedMatch = search_.searchSelectedMatch;
+pub const searchSelectedIndex = search_.searchSelectedIndex;
 pub const screenSelectWord = screen_.screenSelectWord;
 pub const screenSelectLine = screen_.screenSelectLine;
 pub const screenSelectOutput = screen_.screenSelectOutput;
@@ -211,6 +232,8 @@ pub const renderBackground = render_.renderBackground;
 pub const renderForeground = render_.renderForeground;
 pub const renderCursorX = render_.renderCursorX;
 pub const renderCursorY = render_.renderCursorY;
+pub const renderCursorWideTail = render_.renderCursorWideTail;
+pub const renderCursorColor = render_.renderCursorColor;
 
 // Kitty graphics, snapshotted per frame.
 const kitty_ = @import("kitty.zig");

@@ -106,6 +106,9 @@ type game struct {
 	// Search matches in the viewport, one bool per cell, refreshed with the
 	// cells so the highlight never lags the text under it.
 	matchCells []bool
+	// Scratch for the viewport matches read each frame, kept so a frame with
+	// highlights on screen does not allocate.
+	viewportMatches []gostty.Selection
 
 	// Partial redraw. The grid is drawn into two layers, backgrounds and
 	// glyphs, so Kitty images can sit between them; a row is redrawn only
@@ -236,6 +239,26 @@ func (g *game) start() error {
 		// which is the wrong default for anything but a demo.
 		_ = g.stream.ReplyClipboardText(string(g.pasteText()), false)
 	}); err != nil {
+		return err
+	}
+
+	// Tell programs who they are talking to. Without this XTVERSION names the
+	// parser ("libghostty"), which is true and useless: a program checking
+	// whether the terminal supports something wants the emulator's identity.
+	if err := g.stream.SetVersionReport("hypercat", "0.1.0"); err != nil {
+		return err
+	}
+	// The color scheme answers CSI ? 996 n and, once a program subscribes with
+	// mode 2031, is reported the moment it changes. A real emulator would hook
+	// this to the OS appearance notification; this one only knows its own
+	// theme, so it says that.
+	if err := g.stream.ColorSchemeChanged(g.colorScheme()); err != nil {
+		return err
+	}
+	// Capture the sequences this library does not implement, so a program
+	// speaking a graphics protocol hypercat never wired up says so in the log
+	// instead of drawing nothing.
+	if err := g.stream.SetUnknownMaxBytes(256); err != nil {
 		return err
 	}
 
@@ -397,6 +420,14 @@ func (g *game) drainEvents() error {
 				return err
 			}
 			log.Printf("notification: %s %s", title, body)
+		case gostty.StreamEventUnknownSequence:
+			// An APC nothing here handles. Only visible because capture was
+			// turned on at startup.
+			data, err := g.stream.EventSequence()
+			if err != nil {
+				return err
+			}
+			log.Printf("unhandled APC: %q", data)
 		case gostty.StreamEventProgressReport:
 			if err := g.progressReport(); err != nil {
 				return err
@@ -469,6 +500,9 @@ func (g *game) refresh() error {
 	g.cells = g.cells[:n]
 	if _, err := g.state.Cells(g.cells); err != nil {
 		return fmt.Errorf("render cells: %w", err)
+	}
+	if err := g.tickSearch(); err != nil {
+		return err
 	}
 	if err := g.refreshMatches(); err != nil {
 		return err

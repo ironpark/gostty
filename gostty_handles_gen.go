@@ -355,13 +355,12 @@ func (s *Stream) zigoTakeLocked() (zigoStreamCleanupState, bool) {
 
 // Screen represents a native Zig handle.
 type Screen struct {
-	ptr      unsafe.Pointer
-	mu       sync.Mutex
-	active   int
-	children int
-	closed   bool
-	poison   *NativePanicError
-	owner    zigoHandle
+	ptr    unsafe.Pointer
+	mu     sync.Mutex
+	active int
+	closed bool
+	poison *NativePanicError
+	owner  zigoHandle
 }
 
 func zigoNewBorrowedScreen(ptr unsafe.Pointer, owner zigoHandle) *Screen {
@@ -442,72 +441,6 @@ func (s *Screen) ZigoRelease() { s.zigoRelease() }
 
 // ZigoPoison implements the shared lifecycle handle contract.
 func (s *Screen) ZigoPoison(cause *NativePanicError) { s.zigoPoison(cause) }
-
-// zigoAcquireChild reserves one dependent child on the ultimate owning handle.
-func (s *Screen) zigoAcquireChild(operation string) (unsafe.Pointer, zigoChildHandle, error) {
-	if s == nil {
-		return nil, nil, &HandleError{Operation: operation}
-	}
-	s.mu.Lock()
-	parent := s.owner
-	s.mu.Unlock()
-	if parent != nil {
-		childParent, ok := parent.(zigoChildHandle)
-		if !ok {
-			return nil, nil, &HandleError{Operation: operation}
-		}
-		_, reservation, err := childParent.ZigoAcquireChild(operation)
-		if err != nil {
-			return nil, nil, err
-		}
-		s.mu.Lock()
-		if s.closed || s.ptr == nil {
-			s.mu.Unlock()
-			childParent.ZigoRelease()
-			reservation.ZigoDropChild()
-			return nil, nil, &HandleError{Operation: operation}
-		}
-		if s.poison != nil {
-			err := s.poison.Poisoned(operation)
-			s.mu.Unlock()
-			childParent.ZigoRelease()
-			reservation.ZigoDropChild()
-			return nil, nil, err
-		}
-		s.active++
-		ptr := s.ptr
-		s.mu.Unlock()
-		return ptr, reservation, nil
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.closed || s.ptr == nil {
-		return nil, nil, &HandleError{Operation: operation}
-	}
-	if s.poison != nil {
-		return nil, nil, s.poison.Poisoned(operation)
-	}
-	s.active++
-	s.children++
-	return s.ptr, s, nil
-}
-
-func (s *Screen) zigoDropChild() {
-	if s == nil {
-		return
-	}
-	s.mu.Lock()
-	s.children--
-	s.mu.Unlock()
-}
-
-// ZigoAcquireChild reserves a dependent child through the shared lifecycle contract.
-func (s *Screen) ZigoAcquireChild(operation string) (unsafe.Pointer, lifecycle.ChildHandle, error) {
-	return s.zigoAcquireChild(operation)
-}
-
-// ZigoDropChild releases a dependent-child reservation.
-func (s *Screen) ZigoDropChild() { s.zigoDropChild() }
 
 // Close detaches this borrowed Screen view without releasing native resources.
 func (s *Screen) Close() error {
@@ -636,7 +569,7 @@ func zigoNewSearch(ptr unsafe.Pointer, parent zigoChildHandle) *Search {
 
 func zigoCleanupSearch(state zigoSearchCleanupState) {
 	if state.ptr != nil {
-		raw.SearchDeinit(state.ptr)
+		raw.SearchSearchClose(state.ptr)
 	}
 	if state.parent != nil {
 		state.parent.ZigoDropChild()

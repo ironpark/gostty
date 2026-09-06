@@ -94,6 +94,23 @@ type FormatOptions struct {
 	ResolvePalette bool
 }
 
+// Scrollbar mirrors the Zig `extern struct` of the same name.
+type Scrollbar struct {
+	// Total corresponds to the Zig field total.
+	Total uint64
+	// Offset corresponds to the Zig field offset.
+	Offset uint64
+	// Len corresponds to the Zig field len.
+	Len uint64
+}
+
+// Scrollbar is reinterpreted as raw.ScrollbarData instead of copied, so the two
+// layouts must stay identical.
+var _ = [1]struct{}{}[unsafe.Sizeof(Scrollbar{})-unsafe.Sizeof(raw.ScrollbarData{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(Scrollbar{}.Total)-unsafe.Offsetof(raw.ScrollbarData{}.Total)]
+var _ = [1]struct{}{}[unsafe.Offsetof(Scrollbar{}.Offset)-unsafe.Offsetof(raw.ScrollbarData{}.Offset)]
+var _ = [1]struct{}{}[unsafe.Offsetof(Scrollbar{}.Len)-unsafe.Offsetof(raw.ScrollbarData{}.Len)]
+
 // RenderCell mirrors the Zig `extern struct` of the same name.
 type RenderCell struct {
 	// Codepoint corresponds to the Zig field codepoint.
@@ -216,6 +233,14 @@ func zigoFormatOptionsToRaw(value FormatOptions) raw.FormatOptionsData {
 		NoStyles:               zigoBoolToUint8(value.NoStyles),
 		NoHyperlinks:           zigoBoolToUint8(value.NoHyperlinks),
 		ResolvePalette:         zigoBoolToUint8(value.ResolvePalette),
+	}
+}
+
+func zigoScrollbarFromRaw(value raw.ScrollbarData) Scrollbar {
+	return Scrollbar{
+		Total:  value.Total,
+		Offset: value.Offset,
+		Len:    value.Len,
 	}
 }
 
