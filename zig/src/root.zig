@@ -103,6 +103,26 @@ pub const screenViewportTop = screen_.screenViewportTop;
 pub const Scrollbar = screen_.Scrollbar;
 pub const screenScrollbar = screen_.screenScrollbar;
 
+// Kitty drag and drop (OSC 72).
+const dnd_ = @import("dnd.zig");
+
+pub const DragEvent = dnd_.DragEvent;
+pub const DragOperation = dnd_.DragOperation;
+pub const DragOperations = dnd_.DragOperations;
+pub const DragMove = dnd_.DragMove;
+pub const DragFn = dnd_.DragFn;
+pub const onDrag = dnd_.onDrag;
+pub const dragEvent = dnd_.dragEvent;
+pub const dragAccepted = dnd_.dragAccepted;
+pub const dragActive = dnd_.dragActive;
+pub const dragRegisteredMimes = dnd_.dragRegisteredMimes;
+pub const dragClientAccepted = dnd_.dragClientAccepted;
+pub const dragMove = dnd_.dragMove;
+pub const dragLeave = dnd_.dragLeave;
+pub const dragAddItem = dnd_.dragAddItem;
+pub const dragDrop = dnd_.dragDrop;
+pub const dragClearItems = dnd_.dragClearItems;
+
 // Text search over a terminal.
 const search_ = @import("search.zig");
 
@@ -184,6 +204,14 @@ pub const Snapshot = snapshot_.Snapshot;
 pub const decodeSnapshot = snapshot_.decodeSnapshot;
 pub const snapshotRestoreInto = snapshot_.snapshotRestoreInto;
 pub const snapshotContinuation = snapshot_.snapshotContinuation;
+pub const SnapshotDecoder = snapshot_.SnapshotDecoder;
+pub const SnapshotProgress = snapshot_.SnapshotProgress;
+pub const newSnapshotDecoder = snapshot_.newSnapshotDecoder;
+pub const freeSnapshotDecoder = snapshot_.freeSnapshotDecoder;
+pub const snapshotDecoderReady = snapshot_.snapshotDecoderReady;
+pub const snapshotDecoderRestoreInto = snapshot_.snapshotDecoderRestoreInto;
+pub const snapshotDecoderContinuation = snapshot_.snapshotDecoderContinuation;
+pub const snapshotDecoderNext = snapshot_.snapshotDecoderNext;
 
 // Key, mouse and paste events into pty bytes.
 const encode_ = @import("encode.zig");

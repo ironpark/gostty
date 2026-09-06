@@ -74,6 +74,8 @@ pub const bindings = zigo.define(.{
         .{ .type = gostty.Screen, .repr = .@"opaque", .name = "Screen" },
         .{ .type = gostty.Search, .repr = .@"opaque", .name = "Search" },
         .{ .type = gostty.Snapshot, .repr = .@"opaque", .name = "Snapshot" },
+        .{ .type = gostty.SnapshotDecoder, .repr = .@"opaque", .name = "SnapshotDecoder" },
+        .{ .type = gostty.SnapshotProgress, .repr = .value, .name = "SnapshotProgress" },
         .{ .type = gostty.KeyEvent, .repr = .value, .name = "KeyEvent", .field_meta = .{ .unshifted_codepoint = .{ .semantic = .codepoint } } },
         .{ .type = gostty.MouseEvent, .repr = .value, .name = "MouseEvent" },
         .{ .type = gostty.KeyMods, .repr = .value, .name = "KeyMods" },
@@ -100,6 +102,11 @@ pub const bindings = zigo.define(.{
         .{ .name = "StreamEvent", .type = gostty.StreamEvent, .repr = .enumeration, .text = true },
         .{ .name = "ProgressState", .type = gostty.ProgressState, .repr = .enumeration, .text = true },
         .{ .name = "ColorScheme", .type = gostty.ColorScheme, .repr = .enumeration, .text = true },
+        .{ .name = "DragEvent", .type = gostty.DragEvent, .repr = .enumeration, .text = true },
+        .{ .name = "DragOperation", .type = gostty.DragOperation, .repr = .enumeration, .text = true },
+        .{ .name = "DragOperations", .type = gostty.DragOperations, .repr = .value },
+        .{ .name = "DragMove", .type = gostty.DragMove, .repr = .value },
+        .{ .name = "DragHandler", .type = gostty.DragFn, .repr = .callback },
         .{ .name = "ClipboardLocation", .type = gostty.ClipboardLocation, .repr = .enumeration, .text = true, .exhaustive = false },
         .{ .name = "ClipboardDenial", .type = gostty.ClipboardDenial, .repr = .enumeration },
         .{ .name = "ClipboardHandler", .type = gostty.ClipboardFn, .repr = .callback },
@@ -203,6 +210,31 @@ pub const bindings = zigo.define(.{
         .{ .path = "Stream.setEnquiryResponse", .params = .{"reply"}, .param_meta = .{ .reply = .{ .semantic = .utf8_string } } },
         .{ .path = "Stream.colorSchemeChanged", .params = .{"scheme"} },
         .{ .path = "Stream.clearColorScheme" },
+
+        // Kitty drag and drop. The handler takes its whole payload as
+        // arguments: everything is a scalar, so the signature carries it and
+        // there is nothing to read back afterwards -- which also means the
+        // acceptance is the one being reported rather than whatever a later
+        // event in the same feed replaced it with.
+        .{
+            .path = "root.onDrag",
+            .params = .{ "callback", "userdata" },
+            .param_meta = .{ .callback = .{
+                .retention = .retained,
+                .reentrancy = .allowed,
+                .thread = .caller,
+            } },
+        },
+        .{ .path = "root.dragEvent" },
+        .{ .path = "root.dragAccepted" },
+        .{ .path = "root.dragActive" },
+        .{ .path = "root.dragRegisteredMimes", .semantic = .utf8_string },
+        .{ .path = "root.dragClientAccepted" },
+        .{ .path = "root.dragMove", .params = .{ "ev", "mimes" }, .param_meta = .{ .mimes = .{ .semantic = .utf8_string } } },
+        .{ .path = "root.dragLeave" },
+        .{ .path = "root.dragAddItem", .params = .{ "mime", "data" }, .param_meta = .{ .mime = .{ .semantic = .utf8_string } } },
+        .{ .path = "root.dragDrop", .params = .{"ev"} },
+        .{ .path = "root.dragClearItems" },
         // A clipboard request runs while `feed` is on the stack, on the thread
         // that called it, and the callback is expected to answer it by calling
         // back into the same stream. Both facts are contracts a caller has to
@@ -374,6 +406,20 @@ pub const bindings = zigo.define(.{
         // Snapshots.
         .{ .path = "root.decodeSnapshot", .name = "DecodeSnapshot", .constructs = "Snapshot", .params = .{ "reader", "max_continuation_bytes" } },
         .{ .path = "Snapshot.deinit", .destroys = "Snapshot" },
+        // The incremental form: `ready` hands over a drawable terminal, then
+        // `next` prepends the scrollback a page at a time.
+        .{ .path = "root.newSnapshotDecoder", .constructs = "SnapshotDecoder", .params = .{"data"} },
+        .{ .path = "root.freeSnapshotDecoder", .destroys = "SnapshotDecoder" },
+        .{
+            .receiver = "SnapshotDecoder",
+            .strip_prefix = "snapshotDecoder",
+            .functions = .{
+                .{ .path = "root.snapshotDecoderReady", .params = .{"max_continuation_bytes"} },
+                .{ .path = "root.snapshotDecoderRestoreInto", .params = .{"term"} },
+                .{ .path = "root.snapshotDecoderContinuation" },
+                .{ .path = "root.snapshotDecoderNext", .params = .{"term"} },
+            },
+        },
         .{
             .receiver = "Snapshot",
             .strip_prefix = "snapshot",

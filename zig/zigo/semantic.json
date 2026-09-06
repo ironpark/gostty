@@ -24,6 +24,11 @@
       "type": "Snapshot"
     },
     {
+      "deinit": "freeSnapshotDecoder",
+      "init": "newSnapshotDecoder",
+      "type": "SnapshotDecoder"
+    },
+    {
       "deinit": "deinit",
       "init": "newRenderState",
       "type": "RenderState"
@@ -1131,7 +1136,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 160,
+            "line": 170,
             "column": 33
           },
           "type": {
@@ -1145,7 +1150,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 160,
+        "line": 170,
         "column": 12
       },
       "symbol": "zg_terminal_deinit"
@@ -1214,7 +1219,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 655,
+            "line": 673,
             "column": 34
           },
           "type": {
@@ -1227,7 +1232,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 655,
+            "line": 673,
             "column": 55
           },
           "type": {
@@ -1254,7 +1259,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 655,
+        "line": 673,
         "column": 8
       },
       "zig_path": "newStream",
@@ -1272,7 +1277,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 674,
+            "line": 692,
             "column": 34
           },
           "type": {
@@ -1286,7 +1291,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 674,
+        "line": 692,
         "column": 8
       },
       "zig_path": "freeStream",
@@ -1303,7 +1308,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 341,
+            "line": 352,
             "column": 32
           },
           "type": {
@@ -1324,7 +1329,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 341,
+        "line": 352,
         "column": 12
       },
       "symbol": "zg_stream_feed"
@@ -1347,7 +1352,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 391,
+        "line": 402,
         "column": 12
       },
       "symbol": "zg_stream_next_event"
@@ -1371,7 +1376,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "stream.zig",
-        "line": 403,
+        "line": 414,
         "column": 12
       },
       "symbol": "zg_stream_event_title"
@@ -1395,7 +1400,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "stream.zig",
-        "line": 409,
+        "line": 420,
         "column": 12
       },
       "symbol": "zg_stream_event_body"
@@ -1411,7 +1416,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 414,
+        "line": 425,
         "column": 12
       },
       "symbol": "zg_stream_event_progress_state"
@@ -1433,7 +1438,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 501,
+        "line": 512,
         "column": 12
       },
       "symbol": "zg_stream_event_progress"
@@ -1456,7 +1461,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 424,
+        "line": 435,
         "column": 12
       },
       "symbol": "zg_stream_event_sequence"
@@ -1472,7 +1477,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 436,
+            "line": 447,
             "column": 46
           },
           "type": {
@@ -1489,7 +1494,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 436,
+        "line": 447,
         "column": 12
       },
       "symbol": "zg_stream_set_unknown_max_bytes"
@@ -1506,7 +1511,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 450,
+            "line": 461,
             "column": 44
           },
           "type": {
@@ -1527,7 +1532,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 450,
+            "line": 461,
             "column": 62
           },
           "type": {
@@ -1548,7 +1553,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 450,
+        "line": 461,
         "column": 12
       },
       "symbol": "zg_stream_set_version_report"
@@ -1565,7 +1570,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 467,
+            "line": 478,
             "column": 46
           },
           "type": {
@@ -1586,7 +1591,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 467,
+        "line": 478,
         "column": 12
       },
       "symbol": "zg_stream_set_enquiry_response"
@@ -1602,7 +1607,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 482,
+            "line": 493,
             "column": 46
           },
           "type": {
@@ -1617,7 +1622,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 482,
+        "line": 493,
         "column": 12
       },
       "symbol": "zg_stream_color_scheme_changed"
@@ -1633,10 +1638,381 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 495,
+        "line": 506,
         "column": 12
       },
       "symbol": "zg_stream_clear_color_scheme"
+    },
+    {
+      "doc": "Handle drag and drop events from the running program. Without a handler\nthe protocol still works -- the terminal answers the program's queries --\nbut nothing connects it to the window system, so no native drag reaches it.",
+      "name": "onDrag",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "reentrancy": "allowed",
+          "thread": "caller",
+          "name": "callback",
+          "name_source": "sidecar",
+          "retention": "retained",
+          "source": {
+            "line": 143,
+            "column": 30
+          },
+          "type": {
+            "c_callconv": true,
+            "has_userdata": true,
+            "kind": "callback",
+            "params": [
+              {
+                "bits": 64,
+                "is_usize": true,
+                "kind": "int",
+                "signed": false
+              }
+            ],
+            "ref": "DragHandler",
+            "return": {
+              "kind": "void"
+            }
+          }
+        },
+        {
+          "direction": "in",
+          "name": "userdata",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 143,
+            "column": 48
+          },
+          "type": {
+            "bits": 64,
+            "is_usize": true,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "receiver": "Stream",
+      "return": {
+        "kind": "void"
+      },
+      "source": {
+        "path": "dnd.zig",
+        "line": 143,
+        "column": 8
+      },
+      "zig_path": "onDrag",
+      "symbol": "zg_stream_on_drag"
+    },
+    {
+      "doc": "The event the running handler was called for. Only meaningful inside the\nhandler; `registration` outside one.",
+      "name": "dragEvent",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Stream",
+      "return": {
+        "kind": "enum",
+        "ref": "DragEvent"
+      },
+      "source": {
+        "path": "dnd.zig",
+        "line": 129,
+        "column": 8
+      },
+      "zig_path": "dragEvent",
+      "symbol": "zg_stream_drag_event"
+    },
+    {
+      "doc": "What the program answered about the drag, as of the event the handler is\nrunning for. Null before it has answered, which is not the same as `none`\n-- that is a refusal.",
+      "name": "dragAccepted",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Stream",
+      "return": {
+        "child": {
+          "kind": "enum",
+          "ref": "DragOperation"
+        },
+        "kind": "optional"
+      },
+      "source": {
+        "path": "dnd.zig",
+        "line": 136,
+        "column": 8
+      },
+      "zig_path": "dragAccepted",
+      "symbol": "zg_stream_drag_accepted"
+    },
+    {
+      "doc": "Whether a program is currently registered to accept drops.\n\nFalse is the normal state, and the answer to \"should I hand this drag to\nthe program or handle it myself\".",
+      "name": "dragActive",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Stream",
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "dnd.zig",
+        "line": 152,
+        "column": 8
+      },
+      "zig_path": "dragActive",
+      "symbol": "zg_stream_drag_active"
+    },
+    {
+      "doc": "The MIME types the registered program asked the window system to accept,\nspace separated, empty when it named none (the common case).\n\nSpace separated because that is how the protocol carries it and how\n`dragMove` takes it back; MIME types cannot contain a space.",
+      "name": "dragRegisteredMimes",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Stream",
+      "return": {
+        "const": true,
+        "element": {
+          "bits": 8,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "slice"
+      },
+      "return_semantic": "utf8_string",
+      "source": {
+        "path": "dnd.zig",
+        "line": 161,
+        "column": 8
+      },
+      "zig_path": "dragRegisteredMimes",
+      "symbol": "zg_stream_drag_registered_mimes"
+    },
+    {
+      "doc": "What the program answered about the drag currently over the terminal, or\nnull before it has answered. `none` is a refusal, which is not the same as\nno answer: an embedder that has no answer yet should show its own default.",
+      "name": "dragClientAccepted",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Stream",
+      "return": {
+        "child": {
+          "kind": "enum",
+          "ref": "DragOperation"
+        },
+        "kind": "optional"
+      },
+      "source": {
+        "path": "dnd.zig",
+        "line": 169,
+        "column": 8
+      },
+      "zig_path": "dragClientAccepted",
+      "symbol": "zg_stream_drag_client_accepted"
+    },
+    {
+      "doc": "Tell the program a native drag is over the terminal, offering `mimes`\n(space separated) if it is dropped.\n\nThe order matters: it is what the program's data requests index into, and\nwhat `dragAddItem` has to match at drop time. A no-op when no program is\nregistered.",
+      "name": "dragMove",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "ev",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 180,
+            "column": 32
+          },
+          "type": {
+            "kind": "value_struct",
+            "ref": "DragMove"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "mimes",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "semantic": "utf8_string",
+          "source": {
+            "line": 180,
+            "column": 46
+          },
+          "type": {
+            "const": true,
+            "element": {
+              "bits": 8,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          }
+        }
+      ],
+      "receiver": "Stream",
+      "return": {
+        "error_set": [
+          "WriteFailed",
+          "OutOfMemory"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "void"
+        }
+      },
+      "source": {
+        "path": "dnd.zig",
+        "line": 180,
+        "column": 8
+      },
+      "zig_path": "dragMove",
+      "symbol": "zg_stream_drag_move"
+    },
+    {
+      "doc": "Tell the program the drag left without dropping. A no-op after a drop:\nsome window systems report the drop itself as a leave, and the data has to\nsurvive until the program is done with it.",
+      "name": "dragLeave",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Stream",
+      "return": {
+        "error_set": [
+          "WriteFailed",
+          "OutOfMemory"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "void"
+        }
+      },
+      "source": {
+        "path": "dnd.zig",
+        "line": 192,
+        "column": 8
+      },
+      "zig_path": "dragLeave",
+      "symbol": "zg_stream_drag_leave"
+    },
+    {
+      "doc": "Stage one representation of a drop.\n\nStaged rather than passed to `dragDrop` because a drop is a list of\n(type, bytes) pairs and a slice of slices has no C representation. Call it\nonce per representation, in the order `dragMove` offered them, then\n`dragDrop`. The bytes are copied.",
+      "name": "dragAddItem",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "mime",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "semantic": "utf8_string",
+          "source": {
+            "line": 206,
+            "column": 35
+          },
+          "type": {
+            "const": true,
+            "element": {
+              "bits": 8,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "data",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 206,
+            "column": 53
+          },
+          "type": {
+            "const": true,
+            "element": {
+              "bits": 8,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          }
+        }
+      ],
+      "receiver": "Stream",
+      "return": {
+        "error_set": [
+          "NoSpaceLeft",
+          "OutOfMemory"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "void"
+        }
+      },
+      "source": {
+        "path": "dnd.zig",
+        "line": 206,
+        "column": 8
+      },
+      "zig_path": "dragAddItem",
+      "symbol": "zg_stream_drag_add_item"
+    },
+    {
+      "doc": "Drop the staged representations onto the program.\n\nThe terminal copies and holds them until the program has read what it\nwants and concluded, which arrives as a `concluded_*` event. The staging\nlist is emptied either way, so a failed drop does not leak into the next.",
+      "name": "dragDrop",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "ev",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 221,
+            "column": 32
+          },
+          "type": {
+            "kind": "value_struct",
+            "ref": "DragMove"
+          }
+        }
+      ],
+      "receiver": "Stream",
+      "return": {
+        "error_set": [
+          "WriteFailed",
+          "OutOfMemory"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "void"
+        }
+      },
+      "source": {
+        "path": "dnd.zig",
+        "line": 221,
+        "column": 8
+      },
+      "zig_path": "dragDrop",
+      "symbol": "zg_stream_drag_drop"
+    },
+    {
+      "doc": "Drop the staged representations without sending anything. For a drag the\nwindow system cancelled after the embedder had already staged it.",
+      "name": "dragClearItems",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Stream",
+      "return": {
+        "kind": "void"
+      },
+      "source": {
+        "path": "dnd.zig",
+        "line": 232,
+        "column": 8
+      },
+      "zig_path": "dragClearItems",
+      "symbol": "zg_stream_drag_clear_items"
     },
     {
       "doc": "Handle clipboard writes (OSC 52 set, Kitty OSC 5522). Without a\ncallback the terminal answers every write with `denied`.",
@@ -1651,7 +2027,7 @@
           "name_source": "sidecar",
           "retention": "retained",
           "source": {
-            "line": 511,
+            "line": 522,
             "column": 9
           },
           "type": {
@@ -1666,7 +2042,7 @@
                 "signed": false
               }
             ],
-            "ref": "ClipboardHandler",
+            "ref": "DragHandler",
             "return": {
               "kind": "void"
             }
@@ -1678,7 +2054,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 512,
+            "line": 523,
             "column": 9
           },
           "type": {
@@ -1695,7 +2071,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 509,
+        "line": 520,
         "column": 12
       },
       "symbol": "zg_stream_on_clipboard_write_request"
@@ -1713,7 +2089,7 @@
           "name_source": "sidecar",
           "retention": "retained",
           "source": {
-            "line": 523,
+            "line": 534,
             "column": 9
           },
           "type": {
@@ -1728,7 +2104,7 @@
                 "signed": false
               }
             ],
-            "ref": "ClipboardHandler",
+            "ref": "DragHandler",
             "return": {
               "kind": "void"
             }
@@ -1740,7 +2116,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 524,
+            "line": 535,
             "column": 9
           },
           "type": {
@@ -1757,7 +2133,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 521,
+        "line": 532,
         "column": 12
       },
       "symbol": "zg_stream_on_clipboard_read_request"
@@ -1774,7 +2150,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 531,
+        "line": 542,
         "column": 12
       },
       "symbol": "zg_stream_clipboard_location"
@@ -1798,7 +2174,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "stream.zig",
-        "line": 538,
+        "line": 549,
         "column": 12
       },
       "symbol": "zg_stream_clipboard_name"
@@ -1814,7 +2190,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 546,
+        "line": 557,
         "column": 12
       },
       "symbol": "zg_stream_clipboard_granted"
@@ -1830,7 +2206,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 554,
+        "line": 565,
         "column": 12
       },
       "symbol": "zg_stream_clipboard_can_remember"
@@ -1849,7 +2225,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 562,
+        "line": 573,
         "column": 12
       },
       "symbol": "zg_stream_clipboard_content_count"
@@ -1865,7 +2241,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 568,
+            "line": 579,
             "column": 48
           },
           "type": {
@@ -1890,7 +2266,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "stream.zig",
-        "line": 568,
+        "line": 579,
         "column": 12
       },
       "symbol": "zg_stream_clipboard_content_mime"
@@ -1906,7 +2282,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 575,
+            "line": 586,
             "column": 48
           },
           "type": {
@@ -1930,7 +2306,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 575,
+        "line": 586,
         "column": 12
       },
       "symbol": "zg_stream_clipboard_content_data"
@@ -1949,7 +2325,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 582,
+        "line": 593,
         "column": 12
       },
       "symbol": "zg_stream_clipboard_mime_count"
@@ -1965,7 +2341,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 588,
+            "line": 599,
             "column": 41
           },
           "type": {
@@ -1990,7 +2366,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "stream.zig",
-        "line": 588,
+        "line": 599,
         "column": 12
       },
       "symbol": "zg_stream_clipboard_mime"
@@ -2006,7 +2382,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 595,
+            "line": 606,
             "column": 42
           },
           "type": {
@@ -2020,7 +2396,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 595,
+        "line": 606,
         "column": 12
       },
       "symbol": "zg_stream_allow_clipboard"
@@ -2037,7 +2413,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 612,
+            "line": 623,
             "column": 46
           },
           "type": {
@@ -2057,7 +2433,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 612,
+            "line": 623,
             "column": 64
           },
           "type": {
@@ -2071,7 +2447,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 612,
+        "line": 623,
         "column": 12
       },
       "symbol": "zg_stream_reply_clipboard_text"
@@ -2087,7 +2463,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 627,
+            "line": 638,
             "column": 41
           },
           "type": {
@@ -2102,7 +2478,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 627,
+        "line": 638,
         "column": 12
       },
       "symbol": "zg_stream_deny_clipboard"
@@ -2118,7 +2494,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 367,
+            "line": 378,
             "column": 45
           },
           "type": {
@@ -2140,7 +2516,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 367,
+        "line": 378,
         "column": 12
       },
       "symbol": "zg_stream_write_continuation"
@@ -2156,7 +2532,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 346,
+        "line": 357,
         "column": 12
       },
       "symbol": "zg_stream_has_replies"
@@ -2172,7 +2548,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 374,
+            "line": 385,
             "column": 41
           },
           "type": {
@@ -2218,7 +2594,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 374,
+        "line": 385,
         "column": 12
       },
       "symbol": "zg_stream_write_snapshot"
@@ -2234,7 +2610,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 359,
+            "line": 370,
             "column": 40
           },
           "type": {
@@ -2254,7 +2630,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 359,
+        "line": 370,
         "column": 12
       },
       "symbol": "zg_stream_write_replies"
@@ -3332,7 +3708,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 341,
+            "line": 352,
             "column": 32
           },
           "type": {
@@ -3346,7 +3722,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 341,
+        "line": 352,
         "column": 12
       },
       "zig_path": "searchFeed",
@@ -4483,7 +4859,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 160,
+            "line": 170,
             "column": 33
           },
           "type": {
@@ -4497,10 +4873,323 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 160,
+        "line": 170,
         "column": 12
       },
       "symbol": "zg_snapshot_deinit"
+    },
+    {
+      "boxed": "create",
+      "doc": "Start decoding `data`, which is copied.\n\nNothing is read until `snapshotDecoderReady`.",
+      "go_owner": "SnapshotDecoder",
+      "name": "newSnapshotDecoder",
+      "ownership": "caller",
+      "params": [
+        {
+          "direction": "in",
+          "injected": "allocator",
+          "name": "gpa",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 112,
+            "column": 27
+          },
+          "type": {
+            "kind": "void"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "data",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "source": {
+            "line": 112,
+            "column": 43
+          },
+          "type": {
+            "const": true,
+            "element": {
+              "bits": 8,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          }
+        }
+      ],
+      "return": {
+        "error_set": [
+          "OutOfMemory"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "const": false,
+          "kind": "opaque_ptr",
+          "nullable": false,
+          "ref": "SnapshotDecoder"
+        }
+      },
+      "source": {
+        "path": "snapshot.zig",
+        "line": 112,
+        "column": 8
+      },
+      "symbol": "zg_new_snapshot_decoder"
+    },
+    {
+      "boxed": "destroy",
+      "name": "freeSnapshotDecoder",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "injected": "allocator",
+          "name": "gpa",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 127,
+            "column": 52
+          },
+          "type": {
+            "kind": "void"
+          }
+        }
+      ],
+      "receiver": "SnapshotDecoder",
+      "return": {
+        "kind": "void"
+      },
+      "source": {
+        "path": "snapshot.zig",
+        "line": 127,
+        "column": 8
+      },
+      "zig_path": "freeSnapshotDecoder",
+      "symbol": "zg_snapshot_decoder_free_snapshot_decoder"
+    },
+    {
+      "name": "ready",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "injected": "allocator",
+          "name": "allocator",
+          "name_source": "fallback",
+          "retention": "borrowed",
+          "type": {
+            "kind": "void"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "max_continuation_bytes",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "bits": 64,
+            "is_usize": true,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "receiver": "SnapshotDecoder",
+      "return": {
+        "error_set": [
+          "EndOfStream",
+          "ReadFailed",
+          "OutOfMemory",
+          "OutOfSpace",
+          "InvalidDimensions",
+          "InvalidScreenCount",
+          "NoPendingState",
+          "NonCanonicalContinuation",
+          "ReplayWouldCommit",
+          "InvalidMagic",
+          "UnsupportedVersion",
+          "InvalidTag",
+          "InvalidChecksum",
+          "PayloadNotExhausted",
+          "UnexpectedRecordTag",
+          "InvalidKey",
+          "InvalidRowCellCount",
+          "InvalidKind",
+          "InvalidDestinationCapacity",
+          "ZeroRowCount",
+          "ZeroColCount",
+          "UnmarkedGraphemeRow",
+          "MissingGraphemeData",
+          "InvalidGraphemeCount",
+          "UnmarkedGraphemeCell",
+          "MissingStyle",
+          "UnmarkedStyleRow",
+          "MismatchedStyleRef",
+          "InvalidStyleCount",
+          "MissingHyperlinkData",
+          "MismatchedHyperlinkRef",
+          "UnmarkedHyperlinkCell",
+          "UnmarkedHyperlinkRow",
+          "InvalidSpacerTailLocation",
+          "InvalidSpacerHeadLocation",
+          "UnwrappedSpacerHead",
+          "InvalidPageDimensions",
+          "NoPages",
+          "InsufficientRows",
+          "InvalidPageCount",
+          "ContinuationLimitExceeded",
+          "UnexpectedScreenKey",
+          "DuplicateScreen",
+          "AlreadyReady"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "void"
+        }
+      },
+      "zig_path": "snapshotDecoderReady",
+      "symbol": "zg_snapshot_decoder_ready"
+    },
+    {
+      "name": "restoreInto",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "injected": "allocator",
+          "name": "allocator",
+          "name_source": "fallback",
+          "retention": "borrowed",
+          "type": {
+            "kind": "void"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "term",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "const": false,
+            "kind": "opaque_ptr",
+            "nullable": false,
+            "ref": "Terminal"
+          }
+        }
+      ],
+      "receiver": "SnapshotDecoder",
+      "return": {
+        "error_set": [
+          "TerminalTaken"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "void"
+        }
+      },
+      "zig_path": "snapshotDecoderRestoreInto",
+      "symbol": "zg_snapshot_decoder_restore_into"
+    },
+    {
+      "name": "continuation",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "SnapshotDecoder",
+      "return": {
+        "const": true,
+        "element": {
+          "bits": 8,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "slice"
+      },
+      "zig_path": "snapshotDecoderContinuation",
+      "symbol": "zg_snapshot_decoder_continuation"
+    },
+    {
+      "name": "next",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "injected": "allocator",
+          "name": "allocator",
+          "name_source": "fallback",
+          "retention": "borrowed",
+          "type": {
+            "kind": "void"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "term",
+          "name_source": "sidecar",
+          "retention": "borrowed",
+          "type": {
+            "const": false,
+            "kind": "opaque_ptr",
+            "nullable": false,
+            "ref": "Terminal"
+          }
+        }
+      ],
+      "receiver": "SnapshotDecoder",
+      "return": {
+        "error_set": [
+          "EndOfStream",
+          "ReadFailed",
+          "OutOfMemory",
+          "InvalidDimensions",
+          "InvalidTag",
+          "InvalidChecksum",
+          "PayloadNotExhausted",
+          "UnexpectedRecordTag",
+          "InvalidKey",
+          "InvalidRowCellCount",
+          "InvalidKind",
+          "InvalidDestinationCapacity",
+          "ZeroRowCount",
+          "ZeroColCount",
+          "UnmarkedGraphemeRow",
+          "MissingGraphemeData",
+          "InvalidGraphemeCount",
+          "UnmarkedGraphemeCell",
+          "MissingStyle",
+          "UnmarkedStyleRow",
+          "MismatchedStyleRef",
+          "InvalidStyleCount",
+          "MissingHyperlinkData",
+          "MismatchedHyperlinkRef",
+          "UnmarkedHyperlinkCell",
+          "UnmarkedHyperlinkRow",
+          "InvalidSpacerTailLocation",
+          "InvalidSpacerHeadLocation",
+          "UnwrappedSpacerHead",
+          "InvalidPageDimensions",
+          "DecoderNotReady",
+          "DecoderFailed",
+          "UnexpectedHistoryKey",
+          "DuplicateHistory",
+          "RowCountOverflow",
+          "PageSizeOverflow"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "child": {
+            "kind": "value_struct",
+            "ref": "SnapshotProgress"
+          },
+          "kind": "optional"
+        }
+      },
+      "zig_path": "snapshotDecoderNext",
+      "symbol": "zg_snapshot_decoder_next"
     },
     {
       "name": "restoreInto",
@@ -5545,7 +6234,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 160,
+            "line": 170,
             "column": 33
           },
           "type": {
@@ -5559,7 +6248,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 160,
+        "line": 170,
         "column": 12
       },
       "symbol": "zg_render_state_deinit"
@@ -6601,6 +7290,49 @@
     },
     {
       "exhaustive": true,
+      "fields": [],
+      "kind": "opaque",
+      "name": "SnapshotDecoder",
+      "zig_path": "snapshot.SnapshotDecoder"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "name": "rows",
+          "type": {
+            "bits": 64,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "name": "remaining",
+          "type": {
+            "bits": 32,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "name": "_pad",
+          "type": {
+            "bits": 32,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "kind": "value_struct",
+      "layout": "extern",
+      "name": "SnapshotProgress",
+      "zig_path": "snapshot.SnapshotProgress"
+    },
+    {
+      "exhaustive": true,
       "fields": [
         {
           "name": "action",
@@ -7270,7 +8002,7 @@
         "signed": false
       },
       "text": true,
-      "zig_path": "terminal.modes.Mode__enum_28694"
+      "zig_path": "terminal.modes.Mode__enum_28708"
     },
     {
       "exhaustive": true,
@@ -7553,6 +8285,164 @@
       },
       "text": true,
       "zig_path": "lib.enum.Enum(.{ .zig = {} },&.{ &.{ ... }[0..(...)], &.{ ... }[0..(...)] }[0..2])#ColorScheme"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "name": "registration",
+          "value": 0
+        },
+        {
+          "name": "acceptance",
+          "value": 1
+        },
+        {
+          "name": "concluded_none",
+          "value": 2
+        },
+        {
+          "name": "concluded_copy",
+          "value": 3
+        },
+        {
+          "name": "concluded_move",
+          "value": 4
+        }
+      ],
+      "kind": "enum",
+      "name": "DragEvent",
+      "tag_type": {
+        "bits": 8,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "text": true,
+      "zig_path": "dnd.DragEvent"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "name": "none",
+          "value": 0
+        },
+        {
+          "name": "copy",
+          "value": 1
+        },
+        {
+          "name": "move",
+          "value": 2
+        }
+      ],
+      "kind": "enum",
+      "name": "DragOperation",
+      "tag_type": {
+        "bits": 8,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "text": true,
+      "zig_path": "dnd.DragOperation"
+    },
+    {
+      "backing_type": {
+        "bits": 8,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "exhaustive": true,
+      "fields": [
+        {
+          "name": "copy",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
+          "name": "move",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
+          "name": "_pad",
+          "type": {
+            "bits": 6,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "kind": "value_struct",
+      "layout": "packed",
+      "name": "DragOperations",
+      "registered_value": true,
+      "zig_path": "dnd.DragOperations"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "name": "cell_x",
+          "type": {
+            "bits": 32,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "name": "cell_y",
+          "type": {
+            "bits": 32,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "name": "pixel_x",
+          "type": {
+            "bits": 32,
+            "is_usize": false,
+            "kind": "int",
+            "signed": true
+          }
+        },
+        {
+          "name": "pixel_y",
+          "type": {
+            "bits": 32,
+            "is_usize": false,
+            "kind": "int",
+            "signed": true
+          }
+        },
+        {
+          "name": "operations",
+          "type": {
+            "kind": "value_struct",
+            "ref": "DragOperations"
+          }
+        }
+      ],
+      "kind": "value_struct",
+      "layout": "extern",
+      "name": "DragMove",
+      "zig_path": "dnd.DragMove"
+    },
+    {
+      "exhaustive": true,
+      "fields": [],
+      "kind": "callback",
+      "name": "DragHandler",
+      "zig_path": "*const fn (usize) callconv(.c) void"
     },
     {
       "exhaustive": false,

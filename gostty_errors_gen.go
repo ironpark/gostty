@@ -292,6 +292,9 @@ var ErrNoPendingRequest = &Error{Code: 78, Name: "NoPendingRequest"}
 // ErrSizeMismatch represents Zig error.SizeMismatch.
 var ErrSizeMismatch = &Error{Code: 79, Name: "SizeMismatch"}
 
+// ErrAlreadyReady represents Zig error.AlreadyReady.
+var ErrAlreadyReady = &Error{Code: 80, Name: "AlreadyReady"}
+
 func zigoErrorForCode(operation string, code int32) error {
 	if code <= -256 {
 		return &NativePanicError{Operation: operation, Message: raw.PanicMessage(code)}
@@ -455,6 +458,8 @@ func zigoErrorForCode(operation string, code int32) error {
 		return &Error{Code: 78, Name: "NoPendingRequest", Operation: operation}
 	case 79:
 		return &Error{Code: 79, Name: "SizeMismatch", Operation: operation}
+	case 80:
+		return &Error{Code: 80, Name: "AlreadyReady", Operation: operation}
 	default:
 		return &Error{Code: code, Name: "Unknown(" + strconv.Itoa(int(code)) + ")", Operation: operation}
 	}

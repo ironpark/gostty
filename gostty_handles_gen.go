@@ -738,6 +738,128 @@ func (s *Snapshot) zigoTakeLocked() (zigoSnapshotCleanupState, bool) {
 	return state, true
 }
 
+// SnapshotDecoder is a caller-owned native handle. Call Close when it is no longer needed.
+type SnapshotDecoder struct {
+	ptr     unsafe.Pointer
+	mu      sync.Mutex
+	active  int
+	closed  bool
+	poison  *NativePanicError
+	cleanup runtime.Cleanup
+}
+
+// zigoAcquire pins s open for one native call and hands back its pointer;
+// the call ends with zigoRelease. A nil, closed, or poisoned handle is the error.
+func (s *SnapshotDecoder) zigoAcquire(operation string) (unsafe.Pointer, error) {
+	if s == nil {
+		return nil, &HandleError{Operation: operation}
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closed || s.ptr == nil {
+		return nil, &HandleError{Operation: operation}
+	}
+	if s.poison != nil {
+		return nil, s.poison.Poisoned(operation)
+	}
+	s.active++
+	return s.ptr, nil
+}
+
+func (s *SnapshotDecoder) zigoRelease() {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	s.active--
+	state, release := s.zigoTakeLocked()
+	s.mu.Unlock()
+	if release {
+		zigoCleanupSnapshotDecoder(state)
+	}
+}
+
+// zigoPoison marks s unusable: a Zig panic unwound through native frames
+// without running their defers, so the state behind it is unknown.
+func (s *SnapshotDecoder) zigoPoison(cause *NativePanicError) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.poison == nil {
+		s.poison = cause
+		s.cleanup.Stop()
+	}
+}
+
+// ZigoAcquire implements the shared lifecycle handle contract.
+func (s *SnapshotDecoder) ZigoAcquire(operation string) (unsafe.Pointer, error) {
+	return s.zigoAcquire(operation)
+}
+
+// ZigoRelease implements the shared lifecycle handle contract.
+func (s *SnapshotDecoder) ZigoRelease() { s.zigoRelease() }
+
+// ZigoPoison implements the shared lifecycle handle contract.
+func (s *SnapshotDecoder) ZigoPoison(cause *NativePanicError) { s.zigoPoison(cause) }
+
+type zigoSnapshotDecoderCleanupState struct {
+	ptr unsafe.Pointer
+}
+
+func zigoNewSnapshotDecoder(ptr unsafe.Pointer) *SnapshotDecoder {
+	value := &SnapshotDecoder{ptr: ptr}
+	state := zigoSnapshotDecoderCleanupState{ptr: ptr}
+	value.cleanup = runtime.AddCleanup(value, zigoCleanupSnapshotDecoder, state)
+	return value
+}
+
+func zigoCleanupSnapshotDecoder(state zigoSnapshotDecoderCleanupState) {
+	if state.ptr != nil {
+		raw.SnapshotDecoderFreeSnapshotDecoder(state.ptr)
+	}
+}
+
+// Close releases the native SnapshotDecoder resources. It is safe to call more than once.
+// The error result is always nil; it exists so SnapshotDecoder satisfies io.Closer.
+// Close does not wait: a call still inside native keeps the resources until it
+// returns, and every call made after Close fails with *HandleError.
+func (s *SnapshotDecoder) Close() error {
+	if s == nil {
+		return nil
+	}
+	s.mu.Lock()
+	if s.closed {
+		s.mu.Unlock()
+		return nil
+	}
+	s.closed = true
+	s.cleanup.Stop()
+	state, release := s.zigoTakeLocked()
+	s.mu.Unlock()
+	if release {
+		zigoCleanupSnapshotDecoder(state)
+	}
+	runtime.KeepAlive(s)
+	return nil
+}
+
+// zigoTakeLocked hands out what is left to release once s is closed and no
+// call is inside native; mu must be held. A poisoned handle keeps its native
+// object: releasing state a panic left half-changed could fault, so it leaks.
+func (s *SnapshotDecoder) zigoTakeLocked() (zigoSnapshotDecoderCleanupState, bool) {
+	if !s.closed || s.active != 0 || s.ptr == nil {
+		return zigoSnapshotDecoderCleanupState{}, false
+	}
+	state := zigoSnapshotDecoderCleanupState{ptr: s.ptr}
+	s.ptr = nil
+	if s.poison != nil {
+		state.ptr = nil
+	}
+	return state, true
+}
+
 // RenderState is a caller-owned native handle. Call Close when it is no longer needed.
 type RenderState struct {
 	ptr     unsafe.Pointer

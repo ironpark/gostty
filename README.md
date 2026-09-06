@@ -50,7 +50,10 @@ renderer converts with `Screen.ViewportTop`.
 A terminal can be saved and restored: `Stream.WriteSnapshot` writes ghostty's
 binary snapshot, unfinished escape sequence included, and `DecodeSnapshot`
 reads one back into a `Snapshot` whose `RestoreInto` replaces an existing
-terminal's contents.
+terminal's contents. The format puts the active state first so a terminal is
+drawable before its scrollback has been read, which `SnapshotDecoder` exposes:
+`Ready` then `RestoreInto` gives a terminal to draw, and `Next` prepends the
+scrollback a page at a time.
 
 Enums that a consumer names in text -- keys, mouse buttons, cursor styles,
 progress states -- implement `encoding.TextMarshaler` and `TextUnmarshaler` and have a
@@ -167,6 +170,44 @@ stream.ColorSchemeChanged(gostty.ColorSchemeDark)
 ENQ (`0x05`) answers nothing unless `SetEnquiryResponse` gives it something. An
 answerback string is echoed to any program that sends one control byte, so it
 leaks whatever it holds; terminals leave it empty and so does this.
+
+### Drag and drop
+
+Kitty's OSC 72 is the one part of the binding where the embedder is not
+draining what a program did but driving a conversation with it. A program
+registers to accept drops, the terminal tells it where a native drag is and
+what could be handed over, and on drop the terminal holds the data until the
+program has read it.
+
+```go
+stream.OnDrag(func() {
+	ev, _ := stream.DragEvent()
+	switch ev {
+	case gostty.DragEventRegistration:
+		if active, _ := stream.DragActive(); active {
+			mimes, _ := stream.DragRegisteredMimes()
+			window.AcceptDrops(strings.Fields(mimes))
+		} else {
+			window.AcceptDrops(nil)
+		}
+	case gostty.DragEventAcceptance:
+		op, ok, _ := stream.DragAccepted()
+		window.SetDragFeedback(ok, op)
+	}
+})
+
+// The native half. Every call is a no-op while no program is registered,
+// which is the normal state.
+stream.DragMove(gostty.DragMove{CellX: 3, CellY: 1, Operations: ops}, "text/uri-list text/plain")
+stream.DragAddItem("text/uri-list", uris)   // staged, in the order offered
+stream.DragDrop(gostty.DragMove{ /* ... */ })
+```
+
+The event and the program's answer are read off the stream rather than passed
+as arguments, the way a clipboard request is, because zigo spells a callback
+parameter as its wire scalar and a registered enum cannot ride in the
+signature. They are captured when the effect fires, not read live, so a second
+event in the same feed cannot overwrite the first one's answer.
 
 ### Unimplemented sequences
 

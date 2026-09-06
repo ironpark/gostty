@@ -187,6 +187,18 @@ func zg_zigo_stream_read(p0 *C.uint8_t, p1 C.size_t, p2 C.size_t) (result C.int3
 	return C.int32_t(-1)
 }
 
+//export zg_stream_on_drag_go_callback_callback
+func zg_stream_on_drag_go_callback_callback(p0 C.size_t) {
+	state := cgo.Handle(p0).Value().(*CallbackState)
+	defer func() {
+		if value := recover(); value != nil {
+			state.record(value)
+		}
+	}()
+	callback := state.Fn.(func())
+	callback()
+}
+
 //export zg_stream_on_clipboard_write_request_go_callback_callback
 func zg_stream_on_clipboard_write_request_go_callback_callback(p0 C.size_t) {
 	state := cgo.Handle(p0).Value().(*CallbackState)
@@ -591,6 +603,98 @@ func StreamColorSchemeChanged(self unsafe.Pointer, scheme uint8) int32 {
 // StreamClearColorScheme calls the generated C ABI wrapper for zg_stream_clear_color_scheme.
 func StreamClearColorScheme(self unsafe.Pointer) int32 {
 	code := int32(C.zg_stream_clear_color_scheme((*C.zg_stream)(self)))
+	return code
+}
+
+// StreamOnDrag calls the generated C ABI wrapper for zg_stream_on_drag.
+func StreamOnDrag(self unsafe.Pointer, callbackHandle uintptr) int32 {
+	code := int32(C.zg_stream_on_drag((*C.zg_stream)(self), C.size_t(callbackHandle)))
+	return code
+}
+
+// StreamDragEvent calls the generated C ABI wrapper for zg_stream_drag_event.
+func StreamDragEvent(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_stream_drag_event((*C.zg_stream)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// StreamDragAccepted calls the generated C ABI wrapper for zg_stream_drag_accepted.
+func StreamDragAccepted(self unsafe.Pointer) (uint8, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.uint8_t
+	code := int32(C.zg_stream_drag_accepted((*C.zg_stream)(self), &outResultHas, &outResult))
+	return uint8(outResult), outResultHas != 0, code
+}
+
+// StreamDragActive calls the generated C ABI wrapper for zg_stream_drag_active.
+func StreamDragActive(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_stream_drag_active((*C.zg_stream)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// StreamDragRegisteredMimes calls the generated C ABI wrapper for zg_stream_drag_registered_mimes.
+func StreamDragRegisteredMimes(self unsafe.Pointer) (string, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_stream_drag_registered_mimes((*C.zg_stream)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return "", code
+	}
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
+}
+
+// StreamDragClientAccepted calls the generated C ABI wrapper for zg_stream_drag_client_accepted.
+func StreamDragClientAccepted(self unsafe.Pointer) (uint8, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.uint8_t
+	code := int32(C.zg_stream_drag_client_accepted((*C.zg_stream)(self), &outResultHas, &outResult))
+	return uint8(outResult), outResultHas != 0, code
+}
+
+// StreamDragMove calls the generated C ABI wrapper for zg_stream_drag_move.
+func StreamDragMove(self unsafe.Pointer, ev DragMoveData, mimes string) int32 {
+	var cev C.zg_drag_move
+	cev.cell_x = C.uint32_t(ev.CellX)
+	cev.cell_y = C.uint32_t(ev.CellY)
+	cev.pixel_x = C.int32_t(ev.PixelX)
+	cev.pixel_y = C.int32_t(ev.PixelY)
+	cev.operations = C.uint8_t(ev.Operations)
+	mimesPtr := (*C.uint8_t)(zigoStringPtr(mimes))
+	code := int32(C.zg_stream_drag_move((*C.zg_stream)(self), &cev, mimesPtr, C.size_t(len(mimes))))
+	return code
+}
+
+// StreamDragLeave calls the generated C ABI wrapper for zg_stream_drag_leave.
+func StreamDragLeave(self unsafe.Pointer) int32 {
+	code := int32(C.zg_stream_drag_leave((*C.zg_stream)(self)))
+	return code
+}
+
+// StreamDragAddItem calls the generated C ABI wrapper for zg_stream_drag_add_item.
+func StreamDragAddItem(self unsafe.Pointer, mime string, data []uint8) int32 {
+	mimePtr := (*C.uint8_t)(zigoStringPtr(mime))
+	dataPtr := (*C.uint8_t)(zigoSlicePtr(data))
+	code := int32(C.zg_stream_drag_add_item((*C.zg_stream)(self), mimePtr, C.size_t(len(mime)), dataPtr, C.size_t(len(data))))
+	return code
+}
+
+// StreamDragDrop calls the generated C ABI wrapper for zg_stream_drag_drop.
+func StreamDragDrop(self unsafe.Pointer, ev DragMoveData) int32 {
+	var cev C.zg_drag_move
+	cev.cell_x = C.uint32_t(ev.CellX)
+	cev.cell_y = C.uint32_t(ev.CellY)
+	cev.pixel_x = C.int32_t(ev.PixelX)
+	cev.pixel_y = C.int32_t(ev.PixelY)
+	cev.operations = C.uint8_t(ev.Operations)
+	code := int32(C.zg_stream_drag_drop((*C.zg_stream)(self), &cev))
+	return code
+}
+
+// StreamDragClearItems calls the generated C ABI wrapper for zg_stream_drag_clear_items.
+func StreamDragClearItems(self unsafe.Pointer) int32 {
+	code := int32(C.zg_stream_drag_clear_items((*C.zg_stream)(self)))
 	return code
 }
 
@@ -1405,6 +1509,55 @@ func SnapshotDeinit(self unsafe.Pointer) int32 {
 	return code
 }
 
+// NewSnapshotDecoder calls the generated C ABI wrapper for zg_new_snapshot_decoder.
+func NewSnapshotDecoder(data []uint8) (unsafe.Pointer, int32) {
+	dataPtr := (*C.uint8_t)(zigoSlicePtr(data))
+	var outResult *C.zg_snapshot_decoder
+	code := int32(C.zg_new_snapshot_decoder(dataPtr, C.size_t(len(data)), &outResult))
+	return unsafe.Pointer(outResult), code
+}
+
+// SnapshotDecoderFreeSnapshotDecoder calls the generated C ABI wrapper for zg_snapshot_decoder_free_snapshot_decoder.
+func SnapshotDecoderFreeSnapshotDecoder(self unsafe.Pointer) int32 {
+	code := int32(C.zg_snapshot_decoder_free_snapshot_decoder((*C.zg_snapshot_decoder)(self)))
+	return code
+}
+
+// SnapshotDecoderReady calls the generated C ABI wrapper for zg_snapshot_decoder_ready.
+func SnapshotDecoderReady(self unsafe.Pointer, maxContinuationBytes uint) int32 {
+	code := int32(C.zg_snapshot_decoder_ready((*C.zg_snapshot_decoder)(self), C.size_t(maxContinuationBytes)))
+	return code
+}
+
+// SnapshotDecoderRestoreInto calls the generated C ABI wrapper for zg_snapshot_decoder_restore_into.
+func SnapshotDecoderRestoreInto(self unsafe.Pointer, term unsafe.Pointer) int32 {
+	code := int32(C.zg_snapshot_decoder_restore_into((*C.zg_snapshot_decoder)(self), (*C.zg_terminal)(term)))
+	return code
+}
+
+// SnapshotDecoderContinuation calls the generated C ABI wrapper for zg_snapshot_decoder_continuation.
+func SnapshotDecoderContinuation(self unsafe.Pointer) ([]uint8, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_snapshot_decoder_continuation((*C.zg_snapshot_decoder)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return nil, code
+	}
+	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
+}
+
+// SnapshotDecoderNext calls the generated C ABI wrapper for zg_snapshot_decoder_next.
+func SnapshotDecoderNext(self unsafe.Pointer, term unsafe.Pointer) (SnapshotProgressData, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.zg_snapshot_progress
+	code := int32(C.zg_snapshot_decoder_next((*C.zg_snapshot_decoder)(self), (*C.zg_terminal)(term), &outResultHas, &outResult))
+	return SnapshotProgressData{
+		Rows:      uint64(outResult.rows),
+		Remaining: uint32(outResult.remaining),
+		Pad:       uint32(outResult._pad),
+	}, outResultHas != 0, code
+}
+
 // SnapshotRestoreInto calls the generated C ABI wrapper for zg_snapshot_restore_into.
 func SnapshotRestoreInto(self unsafe.Pointer, term unsafe.Pointer) int32 {
 	code := int32(C.zg_snapshot_restore_into((*C.zg_snapshot)(self), (*C.zg_terminal)(term)))
@@ -1892,6 +2045,13 @@ func TerminalKittyImageData(self unsafe.Pointer, imageID uint32, dst []uint8) (u
 	return uint(outResult), code
 }
 
+// SnapshotProgressData mirrors the zg_snapshot_progress layout, padding included.
+type SnapshotProgressData struct {
+	Rows      uint64
+	Remaining uint32
+	Pad       uint32
+}
+
 // KeyEventData mirrors the zg_key_event layout, padding included.
 type KeyEventData struct {
 	Action             uint8
@@ -1950,6 +2110,16 @@ type FormatOptionsData struct {
 	ResolvePalette         uint8
 }
 
+// DragMoveData mirrors the zg_drag_move layout, padding included.
+type DragMoveData struct {
+	CellX      uint32
+	CellY      uint32
+	PixelX     int32
+	PixelY     int32
+	Operations uint8
+	_          [3]byte
+}
+
 // ScrollbarData mirrors the zg_scrollbar layout, padding included.
 type ScrollbarData struct {
 	Total  uint64
@@ -1999,6 +2169,12 @@ type KittyImageData struct {
 	_           [4]byte
 }
 
+// SnapshotProgressData slices are copied from C memory as one run, so it must match zg_snapshot_progress byte for byte.
+var _ = [1]struct{}{}[unsafe.Sizeof(SnapshotProgressData{})-unsafe.Sizeof(C.zg_snapshot_progress{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgressData{}.Rows)-unsafe.Offsetof(C.zg_snapshot_progress{}.rows)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgressData{}.Remaining)-unsafe.Offsetof(C.zg_snapshot_progress{}.remaining)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgressData{}.Pad)-unsafe.Offsetof(C.zg_snapshot_progress{}._pad)]
+
 // KeyEventData slices are copied from C memory as one run, so it must match zg_key_event byte for byte.
 var _ = [1]struct{}{}[unsafe.Sizeof(KeyEventData{})-unsafe.Sizeof(C.zg_key_event{})]
 var _ = [1]struct{}{}[unsafe.Offsetof(KeyEventData{}.Action)-unsafe.Offsetof(C.zg_key_event{}.action)]
@@ -2045,6 +2221,14 @@ var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.Cursor)-unsafe.Offseto
 var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.NoStyles)-unsafe.Offsetof(C.zg_format_options{}.no_styles)]
 var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.NoHyperlinks)-unsafe.Offsetof(C.zg_format_options{}.no_hyperlinks)]
 var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.ResolvePalette)-unsafe.Offsetof(C.zg_format_options{}.resolve_palette)]
+
+// DragMoveData slices are copied from C memory as one run, so it must match zg_drag_move byte for byte.
+var _ = [1]struct{}{}[unsafe.Sizeof(DragMoveData{})-unsafe.Sizeof(C.zg_drag_move{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(DragMoveData{}.CellX)-unsafe.Offsetof(C.zg_drag_move{}.cell_x)]
+var _ = [1]struct{}{}[unsafe.Offsetof(DragMoveData{}.CellY)-unsafe.Offsetof(C.zg_drag_move{}.cell_y)]
+var _ = [1]struct{}{}[unsafe.Offsetof(DragMoveData{}.PixelX)-unsafe.Offsetof(C.zg_drag_move{}.pixel_x)]
+var _ = [1]struct{}{}[unsafe.Offsetof(DragMoveData{}.PixelY)-unsafe.Offsetof(C.zg_drag_move{}.pixel_y)]
+var _ = [1]struct{}{}[unsafe.Offsetof(DragMoveData{}.Operations)-unsafe.Offsetof(C.zg_drag_move{}.operations)]
 
 // ScrollbarData slices are copied from C memory as one run, so it must match zg_scrollbar byte for byte.
 var _ = [1]struct{}{}[unsafe.Sizeof(ScrollbarData{})-unsafe.Sizeof(C.zg_scrollbar{})]

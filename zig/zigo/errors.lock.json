@@ -1,5 +1,6 @@
 {
   "codes": {
+    "AlreadyReady": 80,
     "ContinuationDisabled": 6,
     "ContinuationLimitExceeded": 68,
     "ContinuationUnavailable": 7,
@@ -81,7 +82,7 @@
     "ZeroRowCount": 47
   },
   "ir_version": 1,
-  "next_code": 80,
+  "next_code": 81,
   "reserved": {
     "-1": "Unknown",
     "-2": "PanicCaught",

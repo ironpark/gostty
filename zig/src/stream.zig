@@ -139,6 +139,16 @@ pub const Stream = struct {
     /// Backing storage for the DA1 feature list, which ghostty borrows for
     /// the duration of the effect call.
     da_features: [max_da_features]DaFeature = undefined,
+
+    /// Drag and drop, in `dnd.zig`: the handler for what the program does,
+    /// and the representations staged for the next drop.
+    on_drag: ?@import("dnd.zig").DragFn = null,
+    drag_userdata: usize = 0,
+    /// The event and answer the running drag handler was called for, captured
+    /// at effect time so a later event in the same feed cannot replace them.
+    drag_event: @import("dnd.zig").DragEvent = .registration,
+    drag_accepted: ?@import("dnd.zig").DragOperation = null,
+    drag_items: std.ArrayList(vt.kitty.dnd.Item) = .empty,
     /// What `nextEvent` last handed out. Its payload stays readable until the
     /// following `nextEvent`.
     current: ?Queued = null,
@@ -334,6 +344,7 @@ pub const Stream = struct {
         result.xtversion = onXtversion;
         result.enquiry = onEnquiry;
         result.color_scheme = onColorScheme;
+        result.drag_and_drop = @import("dnd.zig").onDragEffect;
         return result;
     }
 
@@ -648,6 +659,13 @@ pub const Stream = struct {
     }
 };
 
+/// The stream a ghostty handler belongs to. `dnd.zig` needs it to reach the
+/// callback and the reply buffer from inside an effect.
+pub fn streamFromHandler(handler: *vt.TerminalStream.Handler) *Stream {
+    const inner: *vt.TerminalStream = @fieldParentPtr("handler", handler);
+    return @fieldParentPtr("inner", inner);
+}
+
 /// Create a VT stream that applies escape sequences to `terminal`.
 ///
 /// `continuation_max_bytes` caps the unfinished-sequence suffix the stream
@@ -672,6 +690,8 @@ pub fn newStream(gpa: Allocator, terminal: *Terminal, continuation_max_bytes: us
 
 /// Destroys a stream created by `newStream`.
 pub fn freeStream(self: *Stream, gpa: Allocator) void {
+    @import("dnd.zig").clearDragItems(self);
+    self.drag_items.deinit(gpa);
     for (self.queue.items) |event| event.deinit(gpa);
     self.queue.deinit(gpa);
     self.replies.deinit(gpa);

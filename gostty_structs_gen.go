@@ -8,6 +8,33 @@ import (
 	"github.com/ironpark/gostty/internal/raw"
 )
 
+// DragOperations mirrors the Zig packed struct of the same name.
+type DragOperations struct {
+	Copy bool
+	Move bool
+	Pad  uint8
+}
+
+func zigoDragOperationsToBacking(value DragOperations) uint8 {
+	var result uint64
+	result |= (uint64(zigoBoolToUint8(value.Copy)) & 0x1) << 0
+	result |= (uint64(zigoBoolToUint8(value.Move)) & 0x1) << 1
+	result |= (uint64(value.Pad) & 0x3f) << 2
+	return uint8(result)
+}
+
+// Backing returns the integer representation used by Zig.
+func (value DragOperations) Backing() uint8 { return zigoDragOperationsToBacking(value) }
+
+// DragOperationsFromBacking reconstructs a DragOperations from its Zig integer representation.
+func DragOperationsFromBacking(value uint8) DragOperations {
+	return DragOperations{
+		Copy: ((uint64(value) >> 0) & 0x1) != 0,
+		Move: ((uint64(value) >> 1) & 0x1) != 0,
+		Pad:  uint8(((uint64(value) >> 2) & 0x3f)),
+	}
+}
+
 // CellFlags mirrors the Zig packed struct of the same name.
 type CellFlags struct {
 	Bold          bool
@@ -62,6 +89,23 @@ func CellFlagsFromBacking(value uint32) CellFlags {
 	}
 }
 
+// SnapshotProgress mirrors the Zig `extern struct` of the same name.
+type SnapshotProgress struct {
+	// Rows corresponds to the Zig field rows.
+	Rows uint64
+	// Remaining corresponds to the Zig field remaining.
+	Remaining uint32
+	// Pad corresponds to the Zig field _pad.
+	Pad uint32
+}
+
+// SnapshotProgress is reinterpreted as raw.SnapshotProgressData instead of copied, so the two
+// layouts must stay identical.
+var _ = [1]struct{}{}[unsafe.Sizeof(SnapshotProgress{})-unsafe.Sizeof(raw.SnapshotProgressData{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgress{}.Rows)-unsafe.Offsetof(raw.SnapshotProgressData{}.Rows)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgress{}.Remaining)-unsafe.Offsetof(raw.SnapshotProgressData{}.Remaining)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgress{}.Pad)-unsafe.Offsetof(raw.SnapshotProgressData{}.Pad)]
+
 // Selection mirrors the Zig `extern struct` of the same name.
 type Selection struct {
 	// StartX corresponds to the Zig field start_x.
@@ -92,6 +136,20 @@ type FormatOptions struct {
 	NoHyperlinks bool
 	// ResolvePalette corresponds to the Zig field resolve_palette.
 	ResolvePalette bool
+}
+
+// DragMove mirrors the Zig `extern struct` of the same name.
+type DragMove struct {
+	// CellX corresponds to the Zig field cell_x.
+	CellX uint32
+	// CellY corresponds to the Zig field cell_y.
+	CellY uint32
+	// PixelX corresponds to the Zig field pixel_x.
+	PixelX int32
+	// PixelY corresponds to the Zig field pixel_y.
+	PixelY int32
+	// Operations corresponds to the Zig field operations.
+	Operations DragOperations
 }
 
 // Scrollbar mirrors the Zig `extern struct` of the same name.
@@ -192,6 +250,14 @@ var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Format)-unsafe.Offsetof(raw.K
 var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Compression)-unsafe.Offsetof(raw.KittyImageData{}.Compression)]
 var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Pad)-unsafe.Offsetof(raw.KittyImageData{}.Pad)]
 
+func zigoSnapshotProgressFromRaw(value raw.SnapshotProgressData) SnapshotProgress {
+	return SnapshotProgress{
+		Rows:      value.Rows,
+		Remaining: value.Remaining,
+		Pad:       value.Pad,
+	}
+}
+
 func zigoSelectionToRaw(value Selection) raw.SelectionData {
 	return raw.SelectionData{
 		StartX:    value.StartX,
@@ -233,6 +299,16 @@ func zigoFormatOptionsToRaw(value FormatOptions) raw.FormatOptionsData {
 		NoStyles:               zigoBoolToUint8(value.NoStyles),
 		NoHyperlinks:           zigoBoolToUint8(value.NoHyperlinks),
 		ResolvePalette:         zigoBoolToUint8(value.ResolvePalette),
+	}
+}
+
+func zigoDragMoveToRaw(value DragMove) raw.DragMoveData {
+	return raw.DragMoveData{
+		CellX:      value.CellX,
+		CellY:      value.CellY,
+		PixelX:     value.PixelX,
+		PixelY:     value.PixelY,
+		Operations: value.Operations.Backing(),
 	}
 }
 

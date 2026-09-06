@@ -23,10 +23,10 @@ func zigoPoisonAfterPanic(err error, handles ...zigoHandle) error {
 	return lifecycle.PoisonAfterPanic(err, handles...)
 }
 
-// ClipboardHandler is the Go callback signature accepted by the generated binding.
+// DragHandler is the Go callback signature accepted by the generated binding.
 // Reentrancy: allowed; the callback may re-enter the binding while it is running.
 // Thread: caller; the callback runs on the thread that initiated the native call.
-type ClipboardHandler func()
+type DragHandler func()
 
 func zigoBoolToUint8(value bool) uint8 {
 	if value {
@@ -39,7 +39,7 @@ var zigoActiveCallbackHandles atomic.Int64
 
 type zigoCallbackHandle = cgo.Handle
 
-func zigoNewClipboardHandlerHandle(value ClipboardHandler) zigoCallbackHandle {
+func zigoNewDragHandlerHandle(value DragHandler) zigoCallbackHandle {
 	stored := (func())(value)
 	handle := cgo.NewHandle(&raw.CallbackState{Fn: stored})
 	zigoActiveCallbackHandles.Add(1)

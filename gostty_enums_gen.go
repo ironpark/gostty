@@ -980,6 +980,126 @@ func (value *ColorScheme) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// DragEvent represents the corresponding Zig enum.
+type DragEvent uint8
+
+const (
+	// DragEventRegistration corresponds to the Zig tag registration.
+	DragEventRegistration DragEvent = 0
+	// DragEventAcceptance corresponds to the Zig tag acceptance.
+	DragEventAcceptance DragEvent = 1
+	// DragEventConcludedNone corresponds to the Zig tag concluded_none.
+	DragEventConcludedNone DragEvent = 2
+	// DragEventConcludedCopy corresponds to the Zig tag concluded_copy.
+	DragEventConcludedCopy DragEvent = 3
+	// DragEventConcludedMove corresponds to the Zig tag concluded_move.
+	DragEventConcludedMove DragEvent = 4
+)
+
+// String returns the Zig tag name.
+func (value DragEvent) String() string {
+	switch value {
+	case DragEventRegistration:
+		return "registration"
+	case DragEventAcceptance:
+		return "acceptance"
+	case DragEventConcludedNone:
+		return "concluded_none"
+	case DragEventConcludedCopy:
+		return "concluded_copy"
+	case DragEventConcludedMove:
+		return "concluded_move"
+	default:
+		return "DragEvent(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// ParseDragEvent returns the DragEvent named by text, which is a Zig tag name.
+func ParseDragEvent(text string) (DragEvent, error) {
+	switch text {
+	case "registration":
+		return DragEventRegistration, nil
+	case "acceptance":
+		return DragEventAcceptance, nil
+	case "concluded_none":
+		return DragEventConcludedNone, nil
+	case "concluded_copy":
+		return DragEventConcludedCopy, nil
+	case "concluded_move":
+		return DragEventConcludedMove, nil
+	}
+	return 0, &EnumParseError{Type: "DragEvent", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value DragEvent) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseDragEvent.
+func (value *DragEvent) UnmarshalText(text []byte) error {
+	parsed, err := ParseDragEvent(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// DragOperation represents the corresponding Zig enum.
+type DragOperation uint8
+
+const (
+	// DragOperationNone corresponds to the Zig tag none.
+	DragOperationNone DragOperation = 0
+	// DragOperationCopy corresponds to the Zig tag copy.
+	DragOperationCopy DragOperation = 1
+	// DragOperationMove corresponds to the Zig tag move.
+	DragOperationMove DragOperation = 2
+)
+
+// String returns the Zig tag name.
+func (value DragOperation) String() string {
+	switch value {
+	case DragOperationNone:
+		return "none"
+	case DragOperationCopy:
+		return "copy"
+	case DragOperationMove:
+		return "move"
+	default:
+		return "DragOperation(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// ParseDragOperation returns the DragOperation named by text, which is a Zig tag name.
+func ParseDragOperation(text string) (DragOperation, error) {
+	switch text {
+	case "none":
+		return DragOperationNone, nil
+	case "copy":
+		return DragOperationCopy, nil
+	case "move":
+		return DragOperationMove, nil
+	}
+	return 0, &EnumParseError{Type: "DragOperation", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value DragOperation) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseDragOperation.
+func (value *DragOperation) UnmarshalText(text []byte) error {
+	parsed, err := ParseDragOperation(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
 // ClipboardLocation represents the corresponding Zig open enum; values outside the named constants are valid.
 type ClipboardLocation int32
 

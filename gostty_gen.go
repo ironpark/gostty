@@ -123,7 +123,7 @@ func (s *Stream) Failed() (bool, error) {
 	defer s.zigoRelease()
 	result, code := raw.StreamFailed(ptr)
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.Failed", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -306,7 +306,7 @@ func (te *Terminal) NewStream(continuationMaxBytes uint) (*Stream, error) {
 		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.NewStream", code), te)
 	}
 	zigoChildCreated = true
-	return zigoNewStream(result, zigoChildParent, []zigoCallbackHandle{0, 0}), nil
+	return zigoNewStream(result, zigoChildParent, []zigoCallbackHandle{0, 0, 0}), nil
 }
 
 // Feed bytes to the parser, applying them to the terminal.
@@ -321,7 +321,7 @@ func (s *Stream) Feed(bytes []byte) error {
 	defer s.zigoRelease()
 	code := raw.StreamFeed(ptr, bytes)
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.Feed", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -346,7 +346,7 @@ func (s *Stream) NextEvent() (StreamEvent, bool, error) {
 	defer s.zigoRelease()
 	result, zigoHas, code := raw.StreamNextEvent(ptr)
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.NextEvent", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -386,7 +386,7 @@ func (s *Stream) EventTitle() (string, error) {
 	defer s.zigoRelease()
 	result, code := raw.StreamEventTitle(ptr)
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.EventTitle", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -408,7 +408,7 @@ func (s *Stream) EventBody() (string, error) {
 	defer s.zigoRelease()
 	result, code := raw.StreamEventBody(ptr)
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.EventBody", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -430,7 +430,7 @@ func (s *Stream) EventProgressState() (ProgressState, error) {
 	defer s.zigoRelease()
 	result, code := raw.StreamEventProgressState(ptr)
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.EventProgressState", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -453,7 +453,7 @@ func (s *Stream) EventProgress() (uint8, bool, error) {
 	defer s.zigoRelease()
 	result, zigoHas, code := raw.StreamEventProgress(ptr)
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.EventProgress", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -479,7 +479,7 @@ func (s *Stream) EventSequence() ([]byte, error) {
 	defer s.zigoRelease()
 	result, code := raw.StreamEventSequence(ptr)
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.EventSequence", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -507,7 +507,7 @@ func (s *Stream) SetUnknownMaxBytes(max uint) error {
 	defer s.zigoRelease()
 	code := raw.StreamSetUnknownMaxBytes(ptr, max)
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.SetUnknownMaxBytes", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -537,7 +537,7 @@ func (s *Stream) SetVersionReport(name string, version string) error {
 	defer s.zigoRelease()
 	code := raw.StreamSetVersionReport(ptr, name, version)
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.SetVersionReport", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -565,7 +565,7 @@ func (s *Stream) SetEnquiryResponse(reply string) error {
 	defer s.zigoRelease()
 	code := raw.StreamSetEnquiryResponse(ptr, reply)
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.SetEnquiryResponse", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -595,7 +595,7 @@ func (s *Stream) ColorSchemeChanged(scheme ColorScheme) error {
 	defer s.zigoRelease()
 	code := raw.StreamColorSchemeChanged(ptr, uint8(scheme))
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.ColorSchemeChanged", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -618,12 +618,298 @@ func (s *Stream) ClearColorScheme() error {
 	defer s.zigoRelease()
 	code := raw.StreamClearColorScheme(ptr)
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.ClearColorScheme", s.zigoCallbackHandle(slot))
 		}
 	}
 	if code != 0 {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.ClearColorScheme", code), s)
+	}
+	return nil
+}
+
+// OnDrag: Handle drag and drop events from the running program. Without a handler
+// the protocol still works -- the terminal answers the program's queries --
+// but nothing connects it to the window system, so no native drag reaches it.
+// Callback callback reentrancy: allowed; it may re-enter the binding while it is running.
+// Callback callback thread: caller; it runs on the thread that initiated the native call.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Stream) OnDrag(callback DragHandler) error {
+	ptr, err := zigoCheckedPointer("Stream.OnDrag receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	callbackHandle := zigoNewDragHandlerHandle(callback)
+	callbackHandleAdopted := false
+	defer func() {
+		if !callbackHandleAdopted {
+			zigoDeleteCallbackHandle(callbackHandle)
+		}
+	}()
+	code := raw.StreamOnDrag(ptr, uintptr(callbackHandle))
+	if zigoCallbackPanicPending() {
+		zigoRethrowCallbackPanic("Stream.OnDrag", callbackHandle)
+		for slot := range 3 {
+			zigoRethrowCallbackPanic("Stream.OnDrag", s.zigoCallbackHandle(slot))
+		}
+	}
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.OnDrag", code), s)
+	}
+	callbackPreviousHandle := s.zigoReplaceCallbackHandle(0, callbackHandle)
+	callbackHandleAdopted = true
+	zigoDeleteCallbackHandle(callbackPreviousHandle)
+	return nil
+}
+
+// DragEvent: The event the running handler was called for. Only meaningful inside the
+// handler; `registration` outside one.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Stream) DragEvent() (DragEvent, error) {
+	ptr, err := zigoCheckedPointer("Stream.DragEvent receiver", s)
+	if err != nil {
+		return 0, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.StreamDragEvent(ptr)
+	if zigoCallbackPanicPending() {
+		for slot := range 3 {
+			zigoRethrowCallbackPanic("Stream.DragEvent", s.zigoCallbackHandle(slot))
+		}
+	}
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Stream.DragEvent", code), s)
+	}
+	return DragEvent(result), nil
+}
+
+// DragAccepted: What the program answered about the drag, as of the event the handler is
+// running for. Null before it has answered, which is not the same as `none`
+// -- that is a refusal.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Stream) DragAccepted() (DragOperation, bool, error) {
+	ptr, err := zigoCheckedPointer("Stream.DragAccepted receiver", s)
+	if err != nil {
+		return 0, false, err
+	}
+	defer s.zigoRelease()
+	result, zigoHas, code := raw.StreamDragAccepted(ptr)
+	if zigoCallbackPanicPending() {
+		for slot := range 3 {
+			zigoRethrowCallbackPanic("Stream.DragAccepted", s.zigoCallbackHandle(slot))
+		}
+	}
+	if code != 0 {
+		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Stream.DragAccepted", code), s)
+	}
+	return DragOperation(result), zigoHas, nil
+}
+
+// DragActive: Whether a program is currently registered to accept drops.
+//
+// False is the normal state, and the answer to "should I hand this drag to
+// the program or handle it myself".
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Stream) DragActive() (bool, error) {
+	ptr, err := zigoCheckedPointer("Stream.DragActive receiver", s)
+	if err != nil {
+		return false, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.StreamDragActive(ptr)
+	if zigoCallbackPanicPending() {
+		for slot := range 3 {
+			zigoRethrowCallbackPanic("Stream.DragActive", s.zigoCallbackHandle(slot))
+		}
+	}
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Stream.DragActive", code), s)
+	}
+	return result != 0, nil
+}
+
+// DragRegisteredMimes: The MIME types the registered program asked the window system to accept,
+// space separated, empty when it named none (the common case).
+//
+// Space separated because that is how the protocol carries it and how
+// `dragMove` takes it back; MIME types cannot contain a space.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Stream) DragRegisteredMimes() (string, error) {
+	ptr, err := zigoCheckedPointer("Stream.DragRegisteredMimes receiver", s)
+	if err != nil {
+		return "", err
+	}
+	defer s.zigoRelease()
+	result, code := raw.StreamDragRegisteredMimes(ptr)
+	if zigoCallbackPanicPending() {
+		for slot := range 3 {
+			zigoRethrowCallbackPanic("Stream.DragRegisteredMimes", s.zigoCallbackHandle(slot))
+		}
+	}
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("Stream.DragRegisteredMimes", code), s)
+	}
+	return result, nil
+}
+
+// DragClientAccepted: What the program answered about the drag currently over the terminal, or
+// null before it has answered. `none` is a refusal, which is not the same as
+// no answer: an embedder that has no answer yet should show its own default.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Stream) DragClientAccepted() (DragOperation, bool, error) {
+	ptr, err := zigoCheckedPointer("Stream.DragClientAccepted receiver", s)
+	if err != nil {
+		return 0, false, err
+	}
+	defer s.zigoRelease()
+	result, zigoHas, code := raw.StreamDragClientAccepted(ptr)
+	if zigoCallbackPanicPending() {
+		for slot := range 3 {
+			zigoRethrowCallbackPanic("Stream.DragClientAccepted", s.zigoCallbackHandle(slot))
+		}
+	}
+	if code != 0 {
+		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Stream.DragClientAccepted", code), s)
+	}
+	return DragOperation(result), zigoHas, nil
+}
+
+// DragMove: Tell the program a native drag is over the terminal, offering `mimes`
+// (space separated) if it is dropped.
+//
+// The order matters: it is what the program's data requests index into, and
+// what `dragAddItem` has to match at drop time. A no-op when no program is
+// registered.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Stream) DragMove(ev DragMove, mimes string) error {
+	ptr, err := zigoCheckedPointer("Stream.DragMove receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	code := raw.StreamDragMove(ptr, zigoDragMoveToRaw(ev), mimes)
+	if zigoCallbackPanicPending() {
+		for slot := range 3 {
+			zigoRethrowCallbackPanic("Stream.DragMove", s.zigoCallbackHandle(slot))
+		}
+	}
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.DragMove", code), s)
+	}
+	return nil
+}
+
+// DragLeave: Tell the program the drag left without dropping. A no-op after a drop:
+// some window systems report the drop itself as a leave, and the data has to
+// survive until the program is done with it.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Stream) DragLeave() error {
+	ptr, err := zigoCheckedPointer("Stream.DragLeave receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	code := raw.StreamDragLeave(ptr)
+	if zigoCallbackPanicPending() {
+		for slot := range 3 {
+			zigoRethrowCallbackPanic("Stream.DragLeave", s.zigoCallbackHandle(slot))
+		}
+	}
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.DragLeave", code), s)
+	}
+	return nil
+}
+
+// DragAddItem: Stage one representation of a drop.
+//
+// Staged rather than passed to `dragDrop` because a drop is a list of
+// (type, bytes) pairs and a slice of slices has no C representation. Call it
+// once per representation, in the order `dragMove` offered them, then
+// `dragDrop`. The bytes are copied.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Stream) DragAddItem(mime string, data []byte) error {
+	ptr, err := zigoCheckedPointer("Stream.DragAddItem receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	code := raw.StreamDragAddItem(ptr, mime, data)
+	if zigoCallbackPanicPending() {
+		for slot := range 3 {
+			zigoRethrowCallbackPanic("Stream.DragAddItem", s.zigoCallbackHandle(slot))
+		}
+	}
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.DragAddItem", code), s)
+	}
+	return nil
+}
+
+// DragDrop: Drop the staged representations onto the program.
+//
+// The terminal copies and holds them until the program has read what it
+// wants and concluded, which arrives as a `concluded_*` event. The staging
+// list is emptied either way, so a failed drop does not leak into the next.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Stream) DragDrop(ev DragMove) error {
+	ptr, err := zigoCheckedPointer("Stream.DragDrop receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	code := raw.StreamDragDrop(ptr, zigoDragMoveToRaw(ev))
+	if zigoCallbackPanicPending() {
+		for slot := range 3 {
+			zigoRethrowCallbackPanic("Stream.DragDrop", s.zigoCallbackHandle(slot))
+		}
+	}
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.DragDrop", code), s)
+	}
+	return nil
+}
+
+// DragClearItems: Drop the staged representations without sending anything. For a drag the
+// window system cancelled after the embedder had already staged it.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Stream) DragClearItems() error {
+	ptr, err := zigoCheckedPointer("Stream.DragClearItems receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	code := raw.StreamDragClearItems(ptr)
+	if zigoCallbackPanicPending() {
+		for slot := range 3 {
+			zigoRethrowCallbackPanic("Stream.DragClearItems", s.zigoCallbackHandle(slot))
+		}
+	}
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.DragClearItems", code), s)
 	}
 	return nil
 }
@@ -635,13 +921,13 @@ func (s *Stream) ClearColorScheme() error {
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) OnClipboardWriteRequest(callback ClipboardHandler) error {
+func (s *Stream) OnClipboardWriteRequest(callback DragHandler) error {
 	ptr, err := zigoCheckedPointer("Stream.OnClipboardWriteRequest receiver", s)
 	if err != nil {
 		return err
 	}
 	defer s.zigoRelease()
-	callbackHandle := zigoNewClipboardHandlerHandle(callback)
+	callbackHandle := zigoNewDragHandlerHandle(callback)
 	callbackHandleAdopted := false
 	defer func() {
 		if !callbackHandleAdopted {
@@ -651,14 +937,14 @@ func (s *Stream) OnClipboardWriteRequest(callback ClipboardHandler) error {
 	code := raw.StreamOnClipboardWriteRequest(ptr, uintptr(callbackHandle))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("Stream.OnClipboardWriteRequest", callbackHandle)
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.OnClipboardWriteRequest", s.zigoCallbackHandle(slot))
 		}
 	}
 	if code != 0 {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.OnClipboardWriteRequest", code), s)
 	}
-	callbackPreviousHandle := s.zigoReplaceCallbackHandle(0, callbackHandle)
+	callbackPreviousHandle := s.zigoReplaceCallbackHandle(1, callbackHandle)
 	callbackHandleAdopted = true
 	zigoDeleteCallbackHandle(callbackPreviousHandle)
 	return nil
@@ -672,13 +958,13 @@ func (s *Stream) OnClipboardWriteRequest(callback ClipboardHandler) error {
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) OnClipboardReadRequest(callback ClipboardHandler) error {
+func (s *Stream) OnClipboardReadRequest(callback DragHandler) error {
 	ptr, err := zigoCheckedPointer("Stream.OnClipboardReadRequest receiver", s)
 	if err != nil {
 		return err
 	}
 	defer s.zigoRelease()
-	callbackHandle := zigoNewClipboardHandlerHandle(callback)
+	callbackHandle := zigoNewDragHandlerHandle(callback)
 	callbackHandleAdopted := false
 	defer func() {
 		if !callbackHandleAdopted {
@@ -688,14 +974,14 @@ func (s *Stream) OnClipboardReadRequest(callback ClipboardHandler) error {
 	code := raw.StreamOnClipboardReadRequest(ptr, uintptr(callbackHandle))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("Stream.OnClipboardReadRequest", callbackHandle)
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.OnClipboardReadRequest", s.zigoCallbackHandle(slot))
 		}
 	}
 	if code != 0 {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.OnClipboardReadRequest", code), s)
 	}
-	callbackPreviousHandle := s.zigoReplaceCallbackHandle(1, callbackHandle)
+	callbackPreviousHandle := s.zigoReplaceCallbackHandle(2, callbackHandle)
 	callbackHandleAdopted = true
 	zigoDeleteCallbackHandle(callbackPreviousHandle)
 	return nil
@@ -713,7 +999,7 @@ func (s *Stream) ClipboardLocation() (ClipboardLocation, error) {
 	defer s.zigoRelease()
 	result, code := raw.StreamClipboardLocation(ptr)
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.ClipboardLocation", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -735,7 +1021,7 @@ func (s *Stream) ClipboardName() (string, error) {
 	defer s.zigoRelease()
 	result, code := raw.StreamClipboardName(ptr)
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.ClipboardName", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -758,7 +1044,7 @@ func (s *Stream) ClipboardGranted() (bool, error) {
 	defer s.zigoRelease()
 	result, code := raw.StreamClipboardGranted(ptr)
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.ClipboardGranted", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -781,7 +1067,7 @@ func (s *Stream) ClipboardCanRemember() (bool, error) {
 	defer s.zigoRelease()
 	result, code := raw.StreamClipboardCanRemember(ptr)
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.ClipboardCanRemember", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -804,7 +1090,7 @@ func (s *Stream) ClipboardContentCount() (uint, error) {
 	defer s.zigoRelease()
 	result, code := raw.StreamClipboardContentCount(ptr)
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.ClipboardContentCount", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -826,7 +1112,7 @@ func (s *Stream) ClipboardContentMime(index uint) (string, error) {
 	defer s.zigoRelease()
 	result, code := raw.StreamClipboardContentMime(ptr, index)
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.ClipboardContentMime", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -848,7 +1134,7 @@ func (s *Stream) ClipboardContentData(index uint) ([]byte, error) {
 	defer s.zigoRelease()
 	result, code := raw.StreamClipboardContentData(ptr, index)
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.ClipboardContentData", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -870,7 +1156,7 @@ func (s *Stream) ClipboardMimeCount() (uint, error) {
 	defer s.zigoRelease()
 	result, code := raw.StreamClipboardMimeCount(ptr)
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.ClipboardMimeCount", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -892,7 +1178,7 @@ func (s *Stream) ClipboardMime(index uint) (string, error) {
 	defer s.zigoRelease()
 	result, code := raw.StreamClipboardMime(ptr, index)
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.ClipboardMime", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -914,7 +1200,7 @@ func (s *Stream) AllowClipboard(remember bool) error {
 	defer s.zigoRelease()
 	code := raw.StreamAllowClipboard(ptr, zigoBoolToUint8(remember))
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.AllowClipboard", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -939,7 +1225,7 @@ func (s *Stream) ReplyClipboardText(text string, remember bool) error {
 	defer s.zigoRelease()
 	code := raw.StreamReplyClipboardText(ptr, text, zigoBoolToUint8(remember))
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.ReplyClipboardText", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -961,7 +1247,7 @@ func (s *Stream) DenyClipboard(reason ClipboardDenial) error {
 	defer s.zigoRelease()
 	code := raw.StreamDenyClipboard(ptr, uint8(reason))
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.DenyClipboard", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -989,7 +1275,7 @@ func (s *Stream) WriteContinuation(writer io.Writer) error {
 	code := raw.StreamWriteContinuation(ptr, uintptr(writerHandle))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("Stream.WriteContinuation", writerHandle)
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.WriteContinuation", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -1014,7 +1300,7 @@ func (s *Stream) HasReplies() (bool, error) {
 	defer s.zigoRelease()
 	result, code := raw.StreamHasReplies(ptr)
 	if zigoCallbackPanicPending() {
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.HasReplies", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -1044,7 +1330,7 @@ func (s *Stream) WriteSnapshot(writer io.Writer) error {
 	code := raw.StreamWriteSnapshot(ptr, uintptr(writerHandle))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("Stream.WriteSnapshot", writerHandle)
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.WriteSnapshot", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -1083,7 +1369,7 @@ func (s *Stream) WriteReplies(writer io.Writer) error {
 	code := raw.StreamWriteReplies(ptr, uintptr(writerHandle))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("Stream.WriteReplies", writerHandle)
-		for slot := range 2 {
+		for slot := range 3 {
 			zigoRethrowCallbackPanic("Stream.WriteReplies", s.zigoCallbackHandle(slot))
 		}
 	}
@@ -2465,6 +2751,93 @@ func DecodeSnapshot(reader io.Reader, maxContinuationBytes uint) (*Snapshot, err
 		return nil, zigoErrorForCode("DecodeSnapshot", code)
 	}
 	return zigoNewSnapshot(result), nil
+}
+
+// NewSnapshotDecoder: Start decoding `data`, which is copied.
+//
+// Nothing is read until `snapshotDecoderReady`.
+// The caller must call Close on the returned handle.
+// Native failures are returned as generated error values.
+func NewSnapshotDecoder(data []byte) (*SnapshotDecoder, error) {
+	result, code := raw.NewSnapshotDecoder(data)
+	if code != 0 {
+		return nil, zigoErrorForCode("NewSnapshotDecoder", code)
+	}
+	return zigoNewSnapshotDecoder(result), nil
+}
+
+// Ready calls the Zig function SnapshotDecoder.ready.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (s *SnapshotDecoder) Ready(maxContinuationBytes uint) error {
+	ptr, err := zigoCheckedPointer("SnapshotDecoder.Ready receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	code := raw.SnapshotDecoderReady(ptr, maxContinuationBytes)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("SnapshotDecoder.Ready", code), s)
+	}
+	return nil
+}
+
+// RestoreInto calls the Zig function SnapshotDecoder.restoreInto.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (s *SnapshotDecoder) RestoreInto(term *Terminal) error {
+	ptr, err := zigoCheckedPointer("SnapshotDecoder.RestoreInto receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	termPtr, err := zigoCheckedPointer("SnapshotDecoder.RestoreInto parameter term", term)
+	if err != nil {
+		return err
+	}
+	defer lifecycle.Release(term)
+	code := raw.SnapshotDecoderRestoreInto(ptr, termPtr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("SnapshotDecoder.RestoreInto", code), s, term)
+	}
+	return nil
+}
+
+// Continuation calls the Zig function SnapshotDecoder.continuation.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *SnapshotDecoder) Continuation() ([]byte, error) {
+	ptr, err := zigoCheckedPointer("SnapshotDecoder.Continuation receiver", s)
+	if err != nil {
+		return nil, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.SnapshotDecoderContinuation(ptr)
+	if code != 0 {
+		return nil, zigoPoisonAfterPanic(zigoErrorForCode("SnapshotDecoder.Continuation", code), s)
+	}
+	return result, nil
+}
+
+// Next calls the Zig function SnapshotDecoder.next.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (s *SnapshotDecoder) Next(term *Terminal) (SnapshotProgress, bool, error) {
+	ptr, err := zigoCheckedPointer("SnapshotDecoder.Next receiver", s)
+	if err != nil {
+		return SnapshotProgress{}, false, err
+	}
+	defer s.zigoRelease()
+	termPtr, err := zigoCheckedPointer("SnapshotDecoder.Next parameter term", term)
+	if err != nil {
+		return SnapshotProgress{}, false, err
+	}
+	defer lifecycle.Release(term)
+	result, zigoHas, code := raw.SnapshotDecoderNext(ptr, termPtr)
+	if code != 0 {
+		return SnapshotProgress{}, false, zigoPoisonAfterPanic(zigoErrorForCode("SnapshotDecoder.Next", code), s, term)
+	}
+	return zigoSnapshotProgressFromRaw(result), zigoHas, nil
 }
 
 // RestoreInto calls the Zig function Snapshot.restoreInto.
