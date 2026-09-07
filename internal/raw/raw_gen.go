@@ -1660,6 +1660,51 @@ func GestureGestureClose(self unsafe.Pointer) int32 {
 	return code
 }
 
+// TerminalNewGridRef calls the generated C ABI wrapper for zg_terminal_new_grid_ref.
+func TerminalNewGridRef(self unsafe.Pointer, tag uint8, x uint16, y uint32) (unsafe.Pointer, int32) {
+	var outResult *C.zg_grid_ref
+	code := int32(C.zg_terminal_new_grid_ref((*C.zg_terminal)(self), C.uint8_t(tag), C.uint16_t(x), C.uint32_t(y), &outResult))
+	return unsafe.Pointer(outResult), code
+}
+
+// GridRefGridRefClose calls the generated C ABI wrapper for zg_grid_ref_grid_ref_close.
+func GridRefGridRefClose(self unsafe.Pointer) int32 {
+	code := int32(C.zg_grid_ref_grid_ref_close((*C.zg_grid_ref)(self)))
+	return code
+}
+
+// TerminalCellAt calls the generated C ABI wrapper for zg_terminal_cell_at.
+func TerminalCellAt(self unsafe.Pointer, tag uint8, x uint16, y uint32) (RenderCellData, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.zg_render_cell
+	code := int32(C.zg_terminal_cell_at((*C.zg_terminal)(self), C.uint8_t(tag), C.uint16_t(x), C.uint32_t(y), &outResultHas, &outResult))
+	return RenderCellData{
+		Codepoint: uint32(outResult.codepoint),
+		Fg:        uint32(outResult.fg),
+		Bg:        uint32(outResult.bg),
+		Flags:     uint32(outResult.flags),
+	}, outResultHas != 0, code
+}
+
+// TerminalHyperlinkAt calls the generated C ABI wrapper for zg_terminal_hyperlink_at.
+func TerminalHyperlinkAt(self unsafe.Pointer, tag uint8, x uint16, y uint32) (string, bool, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_terminal_hyperlink_at((*C.zg_terminal)(self), C.uint8_t(tag), C.uint16_t(x), C.uint32_t(y), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return "", false, code
+	}
+	if outResultPtr == nil {
+		return "", false, code
+	}
+	var result string
+	if outResultLen != 0 {
+		result = C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
+	}
+	C.zg_free_string(outResultPtr, outResultLen)
+	return result, true, code
+}
+
 // NewOscParser calls the generated C ABI wrapper for zg_new_osc_parser.
 func NewOscParser() (unsafe.Pointer, int32) {
 	var outResult *C.zg_osc_parser
@@ -2424,6 +2469,71 @@ func GestureDragged(self unsafe.Pointer) (uint8, int32) {
 	return uint8(outResult), code
 }
 
+// GridRefHasValue calls the generated C ABI wrapper for zg_grid_ref_has_value.
+func GridRefHasValue(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_grid_ref_has_value((*C.zg_grid_ref)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// GridRefPoint calls the generated C ABI wrapper for zg_grid_ref_point.
+func GridRefPoint(self unsafe.Pointer, tag uint8) (GridPointData, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.zg_grid_point
+	code := int32(C.zg_grid_ref_point((*C.zg_grid_ref)(self), C.uint8_t(tag), &outResultHas, &outResult))
+	return GridPointData{
+		X: uint16(outResult.x),
+		Y: uint32(outResult.y),
+	}, outResultHas != 0, code
+}
+
+// GridRefSet calls the generated C ABI wrapper for zg_grid_ref_set.
+func GridRefSet(self unsafe.Pointer, tag uint8, x uint16, y uint32) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_grid_ref_set((*C.zg_grid_ref)(self), C.uint8_t(tag), C.uint16_t(x), C.uint32_t(y), &outResult))
+	return uint8(outResult), code
+}
+
+// GridRefCell calls the generated C ABI wrapper for zg_grid_ref_cell.
+func GridRefCell(self unsafe.Pointer) (RenderCellData, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.zg_render_cell
+	code := int32(C.zg_grid_ref_cell((*C.zg_grid_ref)(self), &outResultHas, &outResult))
+	return RenderCellData{
+		Codepoint: uint32(outResult.codepoint),
+		Fg:        uint32(outResult.fg),
+		Bg:        uint32(outResult.bg),
+		Flags:     uint32(outResult.flags),
+	}, outResultHas != 0, code
+}
+
+// GridRefGraphemes calls the generated C ABI wrapper for zg_grid_ref_graphemes.
+func GridRefGraphemes(self unsafe.Pointer, dst []uint32) (uint, int32) {
+	dstPtr := (*C.uint32_t)(zigoSlicePtr(dst))
+	var outResult C.size_t
+	code := int32(C.zg_grid_ref_graphemes((*C.zg_grid_ref)(self), dstPtr, C.size_t(len(dst)), &outResult))
+	return uint(outResult), code
+}
+
+// GridRefHyperlinkUri calls the generated C ABI wrapper for zg_grid_ref_hyperlink_uri.
+func GridRefHyperlinkUri(self unsafe.Pointer) (string, bool, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_grid_ref_hyperlink_uri((*C.zg_grid_ref)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return "", false, code
+	}
+	if outResultPtr == nil {
+		return "", false, code
+	}
+	var result string
+	if outResultLen != 0 {
+		result = C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
+	}
+	C.zg_free_string(outResultPtr, outResultLen)
+	return result, true, code
+}
+
 // OscParserFeed calls the generated C ABI wrapper for zg_osc_parser_feed.
 func OscParserFeed(self unsafe.Pointer, bytes []uint8) int32 {
 	bytesPtr := (*C.uint8_t)(zigoSlicePtr(bytes))
@@ -2587,6 +2697,13 @@ func OscParserProgressValue(self unsafe.Pointer) (int16, int32) {
 	var outResult C.int16_t
 	code := int32(C.zg_osc_parser_progress_value((*C.zg_osc_parser)(self), &outResult))
 	return int16(outResult), code
+}
+
+// GridPointData mirrors the zg_grid_point layout, padding included.
+type GridPointData struct {
+	X uint16
+	_ [2]byte
+	Y uint32
 }
 
 // SnapshotProgressData mirrors the zg_snapshot_progress layout, padding included.
@@ -2770,6 +2887,11 @@ type AttributeData struct {
 	BrightNamedBg     uint8
 	_                 [2]byte
 }
+
+// GridPointData slices are copied from C memory as one run, so it must match zg_grid_point byte for byte.
+var _ = [1]struct{}{}[unsafe.Sizeof(GridPointData{})-unsafe.Sizeof(C.zg_grid_point{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(GridPointData{}.X)-unsafe.Offsetof(C.zg_grid_point{}.x)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GridPointData{}.Y)-unsafe.Offsetof(C.zg_grid_point{}.y)]
 
 // SnapshotProgressData slices are copied from C memory as one run, so it must match zg_snapshot_progress byte for byte.
 var _ = [1]struct{}{}[unsafe.Sizeof(SnapshotProgressData{})-unsafe.Sizeof(C.zg_snapshot_progress{})]

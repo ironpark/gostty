@@ -51,6 +51,7 @@
     "NoPendingState": 32,
     "NoSpaceLeft": 9,
     "NonCanonicalContinuation": 33,
+    "OutOfBounds": 82,
     "OutOfMemory": 1,
     "OutOfSpace": 3,
     "Overflow": 10,
@@ -83,7 +84,7 @@
     "ZeroRowCount": 47
   },
   "ir_version": 1,
-  "next_code": 82,
+  "next_code": 83,
   "reserved": {
     "-1": "Unknown",
     "-2": "PanicCaught",

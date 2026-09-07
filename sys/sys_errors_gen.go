@@ -298,6 +298,9 @@ var ErrAlreadyReady = &Error{Code: 80, Name: "AlreadyReady"}
 // ErrSgrTooManyParams represents Zig error.SGRTooManyParams.
 var ErrSgrTooManyParams = &Error{Code: 81, Name: "SGRTooManyParams"}
 
+// ErrOutOfBounds represents Zig error.OutOfBounds.
+var ErrOutOfBounds = &Error{Code: 82, Name: "OutOfBounds"}
+
 func zigoErrorForCode(operation string, code int32) error {
 	if code <= -256 {
 		return &NativePanicError{Operation: operation, Message: raw.PanicMessage(code)}
@@ -465,6 +468,8 @@ func zigoErrorForCode(operation string, code int32) error {
 		return &Error{Code: 80, Name: "AlreadyReady", Operation: operation}
 	case 81:
 		return &Error{Code: 81, Name: "SGRTooManyParams", Operation: operation}
+	case 82:
+		return &Error{Code: 82, Name: "OutOfBounds", Operation: operation}
 	default:
 		return &Error{Code: code, Name: "Unknown(" + strconv.Itoa(int(code)) + ")", Operation: operation}
 	}

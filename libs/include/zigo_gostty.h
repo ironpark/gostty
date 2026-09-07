@@ -9,6 +9,13 @@ typedef struct zg_terminal zg_terminal;
 typedef struct zg_stream zg_stream;
 typedef struct zg_screen zg_screen;
 typedef struct zg_search zg_search;
+typedef struct zg_grid_ref zg_grid_ref;
+typedef uint8_t zg_point_tag;
+#define ZG_POINT_TAG_ACTIVE 0
+#define ZG_POINT_TAG_VIEWPORT 1
+#define ZG_POINT_TAG_SCREEN 2
+#define ZG_POINT_TAG_HISTORY 3
+
 typedef struct zg_snapshot zg_snapshot;
 typedef struct zg_snapshot_decoder zg_snapshot_decoder;
 typedef uint8_t zg_cursor_style;
@@ -588,6 +595,11 @@ typedef uint8_t zg_semantic_prompt_action;
 #endif
 #endif
 
+typedef struct zg_grid_point {
+    uint16_t x;
+    uint32_t y;
+} zg_grid_point;
+
 typedef struct zg_snapshot_progress {
     uint64_t rows;
     uint32_t remaining;
@@ -936,6 +948,10 @@ ZIGO_EXPORT int32_t zg_terminal_mouse_report_format(zg_terminal * self, uint8_t 
 ZIGO_EXPORT int32_t zg_terminal_mode_report(zg_terminal * self, uint16_t mode, uint8_t ansi, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_new_gesture(zg_terminal * self, zg_gesture * * out_result);
 ZIGO_EXPORT int32_t zg_gesture_gesture_close(zg_gesture * self);
+ZIGO_EXPORT int32_t zg_terminal_new_grid_ref(zg_terminal * self, uint8_t tag, uint16_t x, uint32_t y, zg_grid_ref * * out_result);
+ZIGO_EXPORT int32_t zg_grid_ref_grid_ref_close(zg_grid_ref * self);
+ZIGO_EXPORT int32_t zg_terminal_cell_at(zg_terminal * self, uint8_t tag, uint16_t x, uint32_t y, uint8_t * out_result_has, zg_render_cell * out_result);
+ZIGO_EXPORT int32_t zg_terminal_hyperlink_at(zg_terminal * self, uint8_t tag, uint16_t x, uint32_t y, const uint8_t * * out_result_ptr, size_t * out_result_len);
 ZIGO_EXPORT int32_t zg_new_osc_parser(zg_osc_parser * * out_result);
 ZIGO_EXPORT int32_t zg_osc_parser_free_osc_parser(zg_osc_parser * self);
 ZIGO_EXPORT int32_t zg_sgr_attribute_count(const uint16_t * params_ptr, size_t params_len, uint32_t colon_mask, size_t * out_result);
@@ -1011,6 +1027,12 @@ ZIGO_EXPORT int32_t zg_gesture_release(zg_gesture * self, uint16_t x, uint16_t y
 ZIGO_EXPORT int32_t zg_gesture_reset(zg_gesture * self);
 ZIGO_EXPORT int32_t zg_gesture_click_count(zg_gesture * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_gesture_dragged(zg_gesture * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_grid_ref_has_value(zg_grid_ref * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_grid_ref_point(zg_grid_ref * self, uint8_t tag, uint8_t * out_result_has, zg_grid_point * out_result);
+ZIGO_EXPORT int32_t zg_grid_ref_set(zg_grid_ref * self, uint8_t tag, uint16_t x, uint32_t y, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_grid_ref_cell(zg_grid_ref * self, uint8_t * out_result_has, zg_render_cell * out_result);
+ZIGO_EXPORT int32_t zg_grid_ref_graphemes(zg_grid_ref * self, uint32_t * dst_ptr, size_t dst_len, size_t * out_result);
+ZIGO_EXPORT int32_t zg_grid_ref_hyperlink_uri(zg_grid_ref * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
 ZIGO_EXPORT int32_t zg_osc_parser_feed(zg_osc_parser * self, const uint8_t * bytes_ptr, size_t bytes_len);
 ZIGO_EXPORT int32_t zg_osc_parser_end(zg_osc_parser * self, uint8_t terminator, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_osc_parser_reset(zg_osc_parser * self);

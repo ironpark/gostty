@@ -119,6 +119,20 @@ func CellFlagsFromBacking(value uint32) CellFlags {
 	}
 }
 
+// GridPoint mirrors the Zig `extern struct` of the same name.
+type GridPoint struct {
+	// X corresponds to the Zig field x.
+	X uint16
+	// Y corresponds to the Zig field y.
+	Y uint32
+}
+
+// GridPoint is reinterpreted as raw.GridPointData instead of copied, so the two
+// layouts must stay identical.
+var _ = [1]struct{}{}[unsafe.Sizeof(GridPoint{})-unsafe.Sizeof(raw.GridPointData{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(GridPoint{}.X)-unsafe.Offsetof(raw.GridPointData{}.X)]
+var _ = [1]struct{}{}[unsafe.Offsetof(GridPoint{}.Y)-unsafe.Offsetof(raw.GridPointData{}.Y)]
+
 // SnapshotProgress mirrors the Zig `extern struct` of the same name.
 type SnapshotProgress struct {
 	// Rows corresponds to the Zig field rows.
@@ -361,6 +375,13 @@ type GestureDragEvent struct {
 	Ypos float64
 	// Rectangle corresponds to the Zig field rectangle.
 	Rectangle bool
+}
+
+func zigoGridPointFromRaw(value raw.GridPointData) GridPoint {
+	return GridPoint{
+		X: value.X,
+		Y: value.Y,
+	}
 }
 
 func zigoSnapshotProgressFromRaw(value raw.SnapshotProgressData) SnapshotProgress {

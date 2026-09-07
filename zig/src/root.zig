@@ -299,6 +299,23 @@ pub const gestureReset = gesture_.gestureReset;
 pub const gestureClickCount = gesture_.gestureClickCount;
 pub const gestureDragged = gesture_.gestureDragged;
 
+// Tracked cell references.
+const gridref_ = @import("gridref.zig");
+
+pub const PointTag = gridref_.PointTag;
+pub const GridPoint = gridref_.GridPoint;
+pub const GridRef = gridref_.GridRef;
+pub const newGridRef = gridref_.newGridRef;
+pub const gridRefClose = gridref_.gridRefClose;
+pub const gridRefHasValue = gridref_.gridRefHasValue;
+pub const gridRefPoint = gridref_.gridRefPoint;
+pub const gridRefSet = gridref_.gridRefSet;
+pub const gridRefCell = gridref_.gridRefCell;
+pub const gridRefGraphemes = gridref_.gridRefGraphemes;
+pub const gridRefHyperlinkUri = gridref_.gridRefHyperlinkUri;
+pub const cellAt = gridref_.cellAt;
+pub const hyperlinkAt = gridref_.hyperlinkAt;
+
 // Reads of terminal state the bindings could otherwise only write.
 const state_ = @import("state.zig");
 

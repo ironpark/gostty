@@ -20,6 +20,66 @@ func (err *EnumParseError) Error() string {
 	return "zigo: " + err.Type + ": unknown value " + strconv.Quote(err.Text)
 }
 
+// PointTag represents the corresponding Zig enum.
+type PointTag uint8
+
+const (
+	// PointTagActive corresponds to the Zig tag active.
+	PointTagActive PointTag = 0
+	// PointTagViewport corresponds to the Zig tag viewport.
+	PointTagViewport PointTag = 1
+	// PointTagScreen corresponds to the Zig tag screen.
+	PointTagScreen PointTag = 2
+	// PointTagHistory corresponds to the Zig tag history.
+	PointTagHistory PointTag = 3
+)
+
+// String returns the Zig tag name.
+func (value PointTag) String() string {
+	switch value {
+	case PointTagActive:
+		return "active"
+	case PointTagViewport:
+		return "viewport"
+	case PointTagScreen:
+		return "screen"
+	case PointTagHistory:
+		return "history"
+	default:
+		return "PointTag(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// ParsePointTag returns the PointTag named by text, which is a Zig tag name.
+func ParsePointTag(text string) (PointTag, error) {
+	switch text {
+	case "active":
+		return PointTagActive, nil
+	case "viewport":
+		return PointTagViewport, nil
+	case "screen":
+		return PointTagScreen, nil
+	case "history":
+		return PointTagHistory, nil
+	}
+	return 0, &EnumParseError{Type: "PointTag", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value PointTag) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParsePointTag.
+func (value *PointTag) UnmarshalText(text []byte) error {
+	parsed, err := ParsePointTag(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
 // CursorStyle represents the corresponding Zig enum.
 type CursorStyle uint8
 

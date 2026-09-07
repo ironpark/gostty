@@ -3498,6 +3498,70 @@ func (te *Terminal) NewGesture() (*Gesture, error) {
 	return zigoNewGesture(result, zigoChildParent), nil
 }
 
+// NewGridRef: Start tracking the cell at `x`, `y` in the coordinate system `tag` names,
+// on the active screen. `error.OutOfBounds` if there is no such cell.
+//
+// Returned by value, like `Terminal.init`: zigo boxes the result and frees
+// the box in `close`.
+// The caller must call Close on the returned handle.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) NewGridRef(tag PointTag, x uint16, y uint32) (*GridRef, error) {
+	ptr, zigoChildParent, err := te.zigoAcquireChild("Terminal.NewGridRef receiver")
+	if err != nil {
+		return nil, err
+	}
+	zigoChildCreated := false
+	defer func() {
+		te.zigoRelease()
+		if !zigoChildCreated {
+			zigoChildParent.ZigoDropChild()
+		}
+	}()
+	result, code := raw.TerminalNewGridRef(ptr, uint8(tag), x, y)
+	if code != 0 {
+		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.NewGridRef", code), te)
+	}
+	zigoChildCreated = true
+	return zigoNewGridRef(result, zigoChildParent), nil
+}
+
+// CellAt: The cell at `x`, `y` of the active screen, in the coordinate system `tag`
+// names, without tracking it. Null if there is no such cell. For a read
+// that happens once, such as what is under a click; a cell that is read
+// again after the terminal changes wants a `GridRef`.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) CellAt(tag PointTag, x uint16, y uint32) (RenderCell, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.CellAt receiver", te)
+	if err != nil {
+		return RenderCell{}, false, err
+	}
+	defer te.zigoRelease()
+	result, zigoHas, code := raw.TerminalCellAt(ptr, uint8(tag), x, y)
+	if code != 0 {
+		return RenderCell{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CellAt", code), te)
+	}
+	return zigoRenderCellFromRaw(result), zigoHas, nil
+}
+
+// HyperlinkAt: The hyperlink URI of the cell at `x`, `y` of the active screen, or null
+// when the cell is not a link or there is no such cell.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) HyperlinkAt(tag PointTag, x uint16, y uint32) (string, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.HyperlinkAt receiver", te)
+	if err != nil {
+		return "", false, err
+	}
+	defer te.zigoRelease()
+	result, zigoHas, code := raw.TerminalHyperlinkAt(ptr, uint8(tag), x, y)
+	if code != 0 {
+		return "", false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.HyperlinkAt", code), te)
+	}
+	return result, zigoHas, nil
+}
+
 // NewOSCParser: Create a standalone OSC parser.
 //
 // The parser is given an allocator, so the sequences that are allowed to grow
@@ -4771,6 +4835,115 @@ func (g *Gesture) Dragged() (bool, error) {
 		return false, zigoPoisonAfterPanic(zigoErrorForCode("Gesture.Dragged", code), g)
 	}
 	return result != 0, nil
+}
+
+// HasValue: Whether the reference still names a cell. False after a reset, or after
+// the scrollback limit pruned the page the cell was on.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (g *GridRef) HasValue() (bool, error) {
+	ptr, err := zigoCheckedPointer("GridRef.HasValue receiver", g)
+	if err != nil {
+		return false, err
+	}
+	defer g.zigoRelease()
+	result, code := raw.GridRefHasValue(ptr)
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("GridRef.HasValue", code), g)
+	}
+	return result != 0, nil
+}
+
+// Point: Where the cell is now, in the coordinate system `tag` names. Null when the
+// reference is empty, or when the cell is outside that system -- a cell in
+// the scrollback has no `active` position, and one scrolled off screen has
+// no `viewport` position.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (g *GridRef) Point(tag PointTag) (GridPoint, bool, error) {
+	ptr, err := zigoCheckedPointer("GridRef.Point receiver", g)
+	if err != nil {
+		return GridPoint{}, false, err
+	}
+	defer g.zigoRelease()
+	result, zigoHas, code := raw.GridRefPoint(ptr, uint8(tag))
+	if code != 0 {
+		return GridPoint{}, false, zigoPoisonAfterPanic(zigoErrorForCode("GridRef.Point", code), g)
+	}
+	return zigoGridPointFromRaw(result), zigoHas, nil
+}
+
+// Set: Point the reference at another cell of the active screen, clearing an
+// empty state. Returns false, leaving the reference as it was, if there is no
+// such cell.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (g *GridRef) Set(tag PointTag, x uint16, y uint32) (bool, error) {
+	ptr, err := zigoCheckedPointer("GridRef.Set receiver", g)
+	if err != nil {
+		return false, err
+	}
+	defer g.zigoRelease()
+	result, code := raw.GridRefSet(ptr, uint8(tag), x, y)
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("GridRef.Set", code), g)
+	}
+	return result != 0, nil
+}
+
+// Cell: The cell, with its colors resolved the way `RenderState` resolves them.
+// Null when the reference is empty. `selected` is never set: the selection
+// is a property of a frame, not of a cell.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (g *GridRef) Cell() (RenderCell, bool, error) {
+	ptr, err := zigoCheckedPointer("GridRef.Cell receiver", g)
+	if err != nil {
+		return RenderCell{}, false, err
+	}
+	defer g.zigoRelease()
+	result, zigoHas, code := raw.GridRefCell(ptr)
+	if code != 0 {
+		return RenderCell{}, false, zigoPoisonAfterPanic(zigoErrorForCode("GridRef.Cell", code), g)
+	}
+	return zigoRenderCellFromRaw(result), zigoHas, nil
+}
+
+// Graphemes: The codepoints of the cell: the base codepoint followed by any combining
+// marks or ZWJ sequence members, which `RenderCell.codepoint` alone drops.
+// Copies them into `dst` and returns how many were written; zero for an
+// empty cell or an empty reference. `error.NoSpaceLeft` if `dst` is shorter
+// than the cluster.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (g *GridRef) Graphemes(dst []rune) (uint, error) {
+	ptr, err := zigoCheckedPointer("GridRef.Graphemes receiver", g)
+	if err != nil {
+		return 0, err
+	}
+	defer g.zigoRelease()
+	result, code := raw.GridRefGraphemes(ptr, zigoRunesToUint32(dst))
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("GridRef.Graphemes", code), g)
+	}
+	return result, nil
+}
+
+// HyperlinkUri: The URI of the hyperlink (OSC 8) the cell is part of, or null when the
+// cell is not a link or the reference is empty.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (g *GridRef) HyperlinkUri() (string, bool, error) {
+	ptr, err := zigoCheckedPointer("GridRef.HyperlinkUri receiver", g)
+	if err != nil {
+		return "", false, err
+	}
+	defer g.zigoRelease()
+	result, zigoHas, code := raw.GridRefHyperlinkUri(ptr)
+	if code != 0 {
+		return "", false, zigoPoisonAfterPanic(zigoErrorForCode("GridRef.HyperlinkUri", code), g)
+	}
+	return result, zigoHas, nil
 }
 
 // Feed bytes to the parser, applying them to the terminal.

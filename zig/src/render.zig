@@ -244,7 +244,7 @@ fn resolveColor(self: *RenderState, c: vt.Style.Color) ?u32 {
 
 /// Fold ghostty's style flags into ours, leaving the fields this binding owns
 /// (`wide`, `selected`) as they were.
-fn mergeFlags(out: CellFlags, f: anytype) CellFlags {
+pub fn mergeFlags(out: CellFlags, f: anytype) CellFlags {
     var merged = out;
     merged.bold = f.bold;
     merged.italic = f.italic;

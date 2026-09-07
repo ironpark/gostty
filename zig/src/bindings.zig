@@ -128,6 +128,9 @@ pub const bindings = zigo.define(.{
         } } },
         .{ .handle = .{ .type = gostty.Screen } },
         .{ .handle = .{ .type = gostty.Search } },
+        .{ .handle = .{ .type = gostty.GridRef } },
+        enumeration("PointTag", .{ .text = true }),
+        .{ .value = .{ .type = gostty.GridPoint } },
         .{ .handle = .{ .type = gostty.Snapshot, .name = "Snapshot" } },
         .{ .handle = .{ .type = gostty.SnapshotDecoder } },
         .{ .value = .{ .type = gostty.SnapshotProgress } },
@@ -496,6 +499,14 @@ pub const bindings = zigo.define(.{
         .{ .path = "root.newGesture", .constructs = gostty.Gesture, .child_of_receiver = true },
         .{ .path = "root.gestureClose", .destroys = gostty.Gesture },
 
+        // Tracked cell references. A pin lives in the terminal's page storage
+        // and is updated by it, so a reference is a child handle and closes
+        // first. The two `At` reads are the untracked form for a one-off.
+        .{ .path = "root.newGridRef", .constructs = gostty.GridRef, .child_of_receiver = true },
+        .{ .path = "root.gridRefClose", .destroys = gostty.GridRef },
+        .{ .path = "root.cellAt" },
+        .{ .path = "root.hyperlinkAt", .returns = .{ .ownership = .caller } },
+
         // The standalone parsers. `Stream` needs a `Terminal` behind it; these
         // two parse a sequence and hand back what it said, with no terminal
         // state involved at all.
@@ -636,6 +647,21 @@ pub const bindings = zigo.define(.{
                 .{ .path = "root.gestureReset" },
                 .{ .path = "root.gestureClickCount" },
                 .{ .path = "root.gestureDragged" },
+            },
+        },
+        .{
+            .receiver = gostty.GridRef,
+            .strip_prefix = "gridRef",
+            .functions = &.{
+                .{ .path = "root.gridRefHasValue" },
+                .{ .path = "root.gridRefPoint" },
+                .{ .path = "root.gridRefSet" },
+                .{ .path = "root.gridRefCell" },
+                .{
+                    .path = "root.gridRefGraphemes",
+                    .params = &.{.{ .direction = .out, .written = .result, .semantic = .codepoint }},
+                },
+                .{ .path = "root.gridRefHyperlinkUri", .returns = .{ .ownership = .caller } },
             },
         },
         .{

@@ -122,6 +122,35 @@ through unicode placeholders rather than by the cursor, so its `ViewportCol`
 and `ViewportRow` mean nothing; a renderer that does not scan cells for
 placeholders should skip those.
 
+### Tracked cells
+
+Every coordinate above names a cell by where it is now, and stops naming it
+as soon as output pushes it into the scrollback. A `GridRef` names the cell
+itself: ghostty's tracked pin, kept up to date by the page storage as pages
+are added, reflowed and pruned. It is what a renderer keeps for the cell under
+the mouse between frames, or an embedder keeps for a mark it wants to scroll
+back to. Positions are asked for in whichever coordinate system is useful:
+`PointTagActive`, `PointTagViewport`, `PointTagScreen` or `PointTagHistory`.
+
+```go
+ref, _ := term.NewGridRef(gostty.PointTagViewport, mouseX, mouseY)
+defer ref.Close() // before term, like Search and Gesture
+
+// ... output scrolls the row into the scrollback ...
+
+if pt, ok, _ := ref.Point(gostty.PointTagScreen); ok {
+	cell, _, _ := ref.Cell()          // a RenderCell, colors resolved
+	uri, isLink, _ := ref.HyperlinkUri()
+	scrollTo(pt.Y)
+}
+```
+
+A full reset discards every page, and a scrollback limit prunes the oldest,
+after which `HasValue` is false and the reads report nothing until `Set`
+points the reference somewhere new. For a read that happens once, such as
+what is under a click, `Terminal.CellAt` and `Terminal.HyperlinkAt` answer
+the same questions without tracking anything.
+
 ### Clipboard
 
 Clipboard write requests cannot wait for a drain: the program blocks until they
@@ -301,6 +330,8 @@ ABI directly:
 - wrappers for calls that return a value holding page pins — `SelectWord`,
   `SelectLine`, `SelectOutput` — which apply the selection instead of handing it
   back;
+- `GridRef`, a tracked pin held beside the screen it was tracked by, so that
+  a reset that replaces the screens is noticed before the pin is touched;
 - `Search`, ghostty's terminal-wide searcher with the terminal held beside it:
   nearly every call on it takes the terminal back, including its own `deinit`,
   and its matches are page pins that come out as screen coordinates;

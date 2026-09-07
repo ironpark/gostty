@@ -44,6 +44,11 @@
       "type": "Gesture"
     },
     {
+      "deinit": "gridRefClose",
+      "init": "newGridRef",
+      "type": "GridRef"
+    },
+    {
       "deinit": "freeOSCParser",
       "init": "newOSCParser",
       "type": "OSCParser"
@@ -6834,6 +6839,265 @@
       "symbol": "zg_gesture_gesture_close"
     },
     {
+      "boxed": "create",
+      "child_of_receiver": true,
+      "doc": "Start tracking the cell at `x`, `y` in the coordinate system `tag` names,\non the active screen. `error.OutOfBounds` if there is no such cell.\n\nReturned by value, like `Terminal.init`: zigo boxes the result and frees\nthe box in `close`.",
+      "go_owner": "GridRef",
+      "name": "newGridRef",
+      "ownership": "caller",
+      "params": [
+        {
+          "direction": "in",
+          "name": "tag",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 102,
+            "column": 33
+          },
+          "type": {
+            "kind": "enum",
+            "ref": "PointTag"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "x",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 102,
+            "column": 48
+          },
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "in",
+          "name": "y",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 102,
+            "column": 56
+          },
+          "type": {
+            "bits": 32,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "receiver": "Terminal",
+      "return": {
+        "error_set": [
+          "OutOfMemory",
+          "OutOfBounds"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "const": false,
+          "kind": "opaque_ptr",
+          "nullable": false,
+          "ref": "GridRef"
+        }
+      },
+      "source": {
+        "path": "gridref.zig",
+        "line": 102,
+        "column": 8
+      },
+      "zig_path": "newGridRef",
+      "symbol": "zg_terminal_new_grid_ref"
+    },
+    {
+      "boxed": "destroy",
+      "doc": "Stop tracking and release the pin. Must happen before the terminal is\nclosed.",
+      "name": "gridRefClose",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "GridRef",
+      "return": {
+        "kind": "void"
+      },
+      "source": {
+        "path": "gridref.zig",
+        "line": 116,
+        "column": 8
+      },
+      "zig_path": "gridRefClose",
+      "symbol": "zg_grid_ref_grid_ref_close"
+    },
+    {
+      "doc": "The cell at `x`, `y` of the active screen, in the coordinate system `tag`\nnames, without tracking it. Null if there is no such cell. For a read\nthat happens once, such as what is under a click; a cell that is read\nagain after the terminal changes wants a `GridRef`.",
+      "name": "cellAt",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "tag",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 182,
+            "column": 29
+          },
+          "type": {
+            "kind": "enum",
+            "ref": "PointTag"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "x",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 182,
+            "column": 44
+          },
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "in",
+          "name": "y",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 182,
+            "column": 52
+          },
+          "type": {
+            "bits": 32,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "receiver": "Terminal",
+      "return": {
+        "child": {
+          "kind": "value_struct",
+          "ref": "RenderCell"
+        },
+        "kind": "optional"
+      },
+      "source": {
+        "path": "gridref.zig",
+        "line": 182,
+        "column": 8
+      },
+      "zig_path": "cellAt",
+      "symbol": "zg_terminal_cell_at"
+    },
+    {
+      "doc": "The hyperlink URI of the cell at `x`, `y` of the active screen, or null\nwhen the cell is not a link or there is no such cell.",
+      "name": "hyperlinkAt",
+      "ownership": "caller",
+      "params": [
+        {
+          "direction": "in",
+          "injected": "allocator",
+          "name": "gpa",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 189,
+            "column": 34
+          },
+          "type": {
+            "kind": "void"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "tag",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 189,
+            "column": 50
+          },
+          "type": {
+            "kind": "enum",
+            "ref": "PointTag"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "x",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 189,
+            "column": 65
+          },
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "in",
+          "name": "y",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 189,
+            "column": 73
+          },
+          "type": {
+            "bits": 32,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "receiver": "Terminal",
+      "release": "freeString",
+      "return": {
+        "error_set": [
+          "OutOfMemory"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "child": {
+            "const": true,
+            "element": {
+              "bits": 8,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          },
+          "kind": "optional"
+        }
+      },
+      "return_semantic": "utf8_string",
+      "source": {
+        "path": "gridref.zig",
+        "line": 189,
+        "column": 8
+      },
+      "zig_path": "hyperlinkAt",
+      "symbol": "zg_terminal_hyperlink_at"
+    },
+    {
       "doc": "Create a standalone OSC parser.\n\nThe parser is given an allocator, so the sequences that are allowed to grow\npast ghostty's 2 KiB inline buffer -- OSC 52 clipboard writes, mainly -- are\nparsed rather than dropped.",
       "go_owner": "OSCParser",
       "name": "newOSCParser",
@@ -9665,6 +9929,249 @@
       "symbol": "zg_gesture_dragged"
     },
     {
+      "doc": "Whether the reference still names a cell. False after a reset, or after\nthe scrollback limit pruned the page the cell was on.",
+      "name": "hasValue",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "GridRef",
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "gridref.zig",
+        "line": 122,
+        "column": 8
+      },
+      "zig_path": "gridRefHasValue",
+      "symbol": "zg_grid_ref_has_value"
+    },
+    {
+      "doc": "Where the cell is now, in the coordinate system `tag` names. Null when the\nreference is empty, or when the cell is outside that system -- a cell in\nthe scrollback has no `active` position, and one scrolled off screen has\nno `viewport` position.",
+      "name": "point",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "tag",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 130,
+            "column": 43
+          },
+          "type": {
+            "kind": "enum",
+            "ref": "PointTag"
+          }
+        }
+      ],
+      "receiver": "GridRef",
+      "return": {
+        "child": {
+          "kind": "value_struct",
+          "ref": "GridPoint"
+        },
+        "kind": "optional"
+      },
+      "source": {
+        "path": "gridref.zig",
+        "line": 130,
+        "column": 8
+      },
+      "zig_path": "gridRefPoint",
+      "symbol": "zg_grid_ref_point"
+    },
+    {
+      "doc": "Point the reference at another cell of the active screen, clearing an\nempty state. Returns false, leaving the reference as it was, if there is no\nsuch cell.",
+      "name": "set",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "tag",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 141,
+            "column": 35
+          },
+          "type": {
+            "kind": "enum",
+            "ref": "PointTag"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "x",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 141,
+            "column": 50
+          },
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "in",
+          "name": "y",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 141,
+            "column": 58
+          },
+          "type": {
+            "bits": 32,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "receiver": "GridRef",
+      "return": {
+        "error_set": [
+          "OutOfMemory"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "bool"
+        }
+      },
+      "source": {
+        "path": "gridref.zig",
+        "line": 141,
+        "column": 8
+      },
+      "zig_path": "gridRefSet",
+      "symbol": "zg_grid_ref_set"
+    },
+    {
+      "doc": "The cell, with its colors resolved the way `RenderState` resolves them.\nNull when the reference is empty. `selected` is never set: the selection\nis a property of a frame, not of a cell.",
+      "name": "cell",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "GridRef",
+      "return": {
+        "child": {
+          "kind": "value_struct",
+          "ref": "RenderCell"
+        },
+        "kind": "optional"
+      },
+      "source": {
+        "path": "gridref.zig",
+        "line": 156,
+        "column": 8
+      },
+      "zig_path": "gridRefCell",
+      "symbol": "zg_grid_ref_cell"
+    },
+    {
+      "doc": "The codepoints of the cell: the base codepoint followed by any combining\nmarks or ZWJ sequence members, which `RenderCell.codepoint` alone drops.\nCopies them into `dst` and returns how many were written; zero for an\nempty cell or an empty reference. `error.NoSpaceLeft` if `dst` is shorter\nthan the cluster.",
+      "name": "graphemes",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "out",
+          "name": "dst",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "semantic": "codepoint",
+          "source": {
+            "line": 166,
+            "column": 47
+          },
+          "type": {
+            "const": false,
+            "element": {
+              "bits": 32,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          },
+          "written": "return"
+        }
+      ],
+      "receiver": "GridRef",
+      "return": {
+        "error_set": [
+          "NoSpaceLeft"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "bits": 64,
+          "is_usize": true,
+          "kind": "int",
+          "signed": false
+        }
+      },
+      "source": {
+        "path": "gridref.zig",
+        "line": 166,
+        "column": 8
+      },
+      "zig_path": "gridRefGraphemes",
+      "symbol": "zg_grid_ref_graphemes"
+    },
+    {
+      "doc": "The URI of the hyperlink (OSC 8) the cell is part of, or null when the\ncell is not a link or the reference is empty.",
+      "name": "hyperlinkUri",
+      "ownership": "caller",
+      "params": [
+        {
+          "direction": "in",
+          "injected": "allocator",
+          "name": "gpa",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 173,
+            "column": 50
+          },
+          "type": {
+            "kind": "void"
+          }
+        }
+      ],
+      "receiver": "GridRef",
+      "release": "freeString",
+      "return": {
+        "error_set": [
+          "OutOfMemory"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "child": {
+            "const": true,
+            "element": {
+              "bits": 8,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          },
+          "kind": "optional"
+        }
+      },
+      "return_semantic": "utf8_string",
+      "source": {
+        "path": "gridref.zig",
+        "line": 173,
+        "column": 8
+      },
+      "zig_path": "gridRefHyperlinkUri",
+      "symbol": "zg_grid_ref_hyperlink_uri"
+    },
+    {
       "doc": "Feed bytes to the parser, applying them to the terminal.",
       "name": "feed",
       "ownership": "borrowed",
@@ -10122,6 +10629,71 @@
       "kind": "opaque",
       "name": "Search",
       "zig_path": "search.Search"
+    },
+    {
+      "exhaustive": true,
+      "fields": [],
+      "kind": "opaque",
+      "name": "GridRef",
+      "zig_path": "gridref.GridRef"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "name": "active",
+          "value": 0
+        },
+        {
+          "name": "viewport",
+          "value": 1
+        },
+        {
+          "name": "screen",
+          "value": 2
+        },
+        {
+          "name": "history",
+          "value": 3
+        }
+      ],
+      "kind": "enum",
+      "name": "PointTag",
+      "tag_type": {
+        "bits": 8,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "text": true,
+      "zig_path": "gridref.PointTag"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "name": "x",
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "name": "y",
+          "type": {
+            "bits": 32,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "kind": "value_struct",
+      "layout": "extern",
+      "name": "GridPoint",
+      "zig_path": "gridref.GridPoint"
     },
     {
       "exhaustive": true,
@@ -10844,7 +11416,7 @@
         "signed": false
       },
       "text": true,
-      "zig_path": "terminal.modes.Mode__enum_29102"
+      "zig_path": "terminal.modes.Mode__enum_29136"
     },
     {
       "exhaustive": true,

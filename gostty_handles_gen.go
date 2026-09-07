@@ -616,6 +616,158 @@ func (s *Search) zigoTakeLocked() (zigoSearchCleanupState, bool) {
 	return state, true
 }
 
+// GridRef is a caller-owned native handle. Call Close when it is no longer needed.
+type GridRef struct {
+	ptr     unsafe.Pointer
+	mu      sync.Mutex
+	active  int
+	closed  bool
+	poison  *NativePanicError
+	parent  zigoChildHandle
+	cleanup runtime.Cleanup
+}
+
+// zigoAcquire pins g and its parent open for one native call.
+func (g *GridRef) zigoAcquire(operation string) (unsafe.Pointer, error) {
+	if g == nil {
+		return nil, &HandleError{Operation: operation}
+	}
+	g.mu.Lock()
+	parent := g.parent
+	g.mu.Unlock()
+	if parent != nil {
+		if _, err := parent.ZigoAcquire(operation); err != nil {
+			return nil, err
+		}
+	}
+	g.mu.Lock()
+	var err error
+	switch {
+	case g.closed || g.ptr == nil:
+		err = &HandleError{Operation: operation}
+	case g.poison != nil:
+		err = g.poison.Poisoned(operation)
+	default:
+		g.active++
+	}
+	ptr := g.ptr
+	g.mu.Unlock()
+	if err != nil {
+		if parent != nil {
+			parent.ZigoRelease()
+		}
+		return nil, err
+	}
+	return ptr, nil
+}
+
+func (g *GridRef) zigoRelease() {
+	if g == nil {
+		return
+	}
+	g.mu.Lock()
+	g.active--
+	parent := g.parent
+	state, release := g.zigoTakeLocked()
+	g.mu.Unlock()
+	if release {
+		zigoCleanupGridRef(state)
+	}
+	if parent != nil {
+		parent.ZigoRelease()
+	}
+}
+
+// zigoPoison marks g unusable: a Zig panic unwound through native frames
+// without running their defers, so the state behind it is unknown.
+func (g *GridRef) zigoPoison(cause *NativePanicError) {
+	if g == nil {
+		return
+	}
+	g.mu.Lock()
+	parent := g.parent
+	if g.poison == nil {
+		g.poison = cause
+		g.cleanup.Stop()
+	}
+	g.mu.Unlock()
+	if parent != nil {
+		parent.ZigoPoison(cause)
+	}
+}
+
+// ZigoAcquire implements the shared lifecycle handle contract.
+func (g *GridRef) ZigoAcquire(operation string) (unsafe.Pointer, error) {
+	return g.zigoAcquire(operation)
+}
+
+// ZigoRelease implements the shared lifecycle handle contract.
+func (g *GridRef) ZigoRelease() { g.zigoRelease() }
+
+// ZigoPoison implements the shared lifecycle handle contract.
+func (g *GridRef) ZigoPoison(cause *NativePanicError) { g.zigoPoison(cause) }
+
+type zigoGridRefCleanupState struct {
+	ptr    unsafe.Pointer
+	parent zigoChildHandle
+}
+
+func zigoNewGridRef(ptr unsafe.Pointer, parent zigoChildHandle) *GridRef {
+	value := &GridRef{ptr: ptr, parent: parent}
+	state := zigoGridRefCleanupState{ptr: ptr, parent: parent}
+	value.cleanup = runtime.AddCleanup(value, zigoCleanupGridRef, state)
+	return value
+}
+
+func zigoCleanupGridRef(state zigoGridRefCleanupState) {
+	if state.ptr != nil {
+		raw.GridRefGridRefClose(state.ptr)
+	}
+	if state.parent != nil {
+		state.parent.ZigoDropChild()
+	}
+}
+
+// Close releases the native GridRef resources. It is safe to call more than once.
+// The error result is always nil; it exists so GridRef satisfies io.Closer.
+// Close does not wait: a call still inside native keeps the resources until it
+// returns, and every call made after Close fails with *HandleError.
+func (g *GridRef) Close() error {
+	if g == nil {
+		return nil
+	}
+	g.mu.Lock()
+	if g.closed {
+		g.mu.Unlock()
+		return nil
+	}
+	g.closed = true
+	g.cleanup.Stop()
+	state, release := g.zigoTakeLocked()
+	g.mu.Unlock()
+	if release {
+		zigoCleanupGridRef(state)
+	}
+	runtime.KeepAlive(g)
+	return nil
+}
+
+// zigoTakeLocked hands out what is left to release once g is closed and no
+// call is inside native; mu must be held. A poisoned handle keeps its native
+// object: releasing state a panic left half-changed could fault, so it leaks.
+func (g *GridRef) zigoTakeLocked() (zigoGridRefCleanupState, bool) {
+	if !g.closed || g.active != 0 || g.ptr == nil {
+		return zigoGridRefCleanupState{}, false
+	}
+	state := zigoGridRefCleanupState{ptr: g.ptr, parent: g.parent}
+	g.ptr = nil
+	g.parent = nil
+	if g.poison != nil {
+		state.ptr = nil
+	}
+	return state, true
+}
+
 // Snapshot is a caller-owned native handle. Call Close when it is no longer needed.
 type Snapshot struct {
 	ptr     unsafe.Pointer
