@@ -445,7 +445,7 @@
         {
           "direction": "in",
           "name": "cps",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "semantic": "codepoint",
           "source": {
@@ -659,219 +659,6 @@
     },
     {
       "covers": [
-        "Key.codepoint"
-      ],
-      "doc": "The Unicode codepoint the key produces on a US layout, if it has one.",
-      "name": "codepoint",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Key",
-      "receiver_kind": "value",
-      "return": {
-        "child": {
-          "bits": 21,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "optional"
-      },
-      "return_semantic": "codepoint",
-      "source": {
-        "path": "encode.zig",
-        "line": 39,
-        "column": 8
-      },
-      "zig_path": "keyCodepoint",
-      "symbol": "zg_key_codepoint"
-    },
-    {
-      "covers": [
-        "Key.printable"
-      ],
-      "doc": "True for keys that produce text on a US layout.",
-      "name": "printable",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Key",
-      "receiver_kind": "value",
-      "return": {
-        "kind": "bool"
-      },
-      "source": {
-        "path": "encode.zig",
-        "line": 44,
-        "column": 8
-      },
-      "zig_path": "keyPrintable",
-      "symbol": "zg_key_printable"
-    },
-    {
-      "covers": [
-        "Key.modifier"
-      ],
-      "doc": "True for modifier keys such as shift, control and alt.",
-      "name": "modifier",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Key",
-      "receiver_kind": "value",
-      "return": {
-        "kind": "bool"
-      },
-      "source": {
-        "path": "encode.zig",
-        "line": 49,
-        "column": 8
-      },
-      "zig_path": "keyModifier",
-      "symbol": "zg_key_modifier"
-    },
-    {
-      "covers": [
-        "Key.keypad"
-      ],
-      "doc": "True for keys on the numeric keypad.",
-      "name": "keypad",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Key",
-      "receiver_kind": "value",
-      "return": {
-        "kind": "bool"
-      },
-      "source": {
-        "path": "encode.zig",
-        "line": 54,
-        "column": 8
-      },
-      "zig_path": "keyKeypad",
-      "symbol": "zg_key_keypad"
-    },
-    {
-      "covers": [
-        "Key.leftOrRightShift"
-      ],
-      "doc": "True for shift on either side.",
-      "name": "leftOrRightShift",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Key",
-      "receiver_kind": "value",
-      "return": {
-        "kind": "bool"
-      },
-      "source": {
-        "path": "encode.zig",
-        "line": 59,
-        "column": 8
-      },
-      "zig_path": "keyLeftOrRightShift",
-      "symbol": "zg_key_left_or_right_shift"
-    },
-    {
-      "covers": [
-        "Key.leftOrRightAlt"
-      ],
-      "doc": "True for alt on either side.",
-      "name": "leftOrRightAlt",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Key",
-      "receiver_kind": "value",
-      "return": {
-        "kind": "bool"
-      },
-      "source": {
-        "path": "encode.zig",
-        "line": 64,
-        "column": 8
-      },
-      "zig_path": "keyLeftOrRightAlt",
-      "symbol": "zg_key_left_or_right_alt"
-    },
-    {
-      "covers": [
-        "Key.ctrlOrSuper"
-      ],
-      "doc": "True for the platform's primary modifier: command on macOS, control\neverywhere else. Which one that is was decided when the native library\nfor this platform was built, so it needs no runtime check in Go.",
-      "name": "ctrlOrSuper",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Key",
-      "receiver_kind": "value",
-      "return": {
-        "kind": "bool"
-      },
-      "source": {
-        "path": "encode.zig",
-        "line": 71,
-        "column": 8
-      },
-      "zig_path": "keyCtrlOrSuper",
-      "symbol": "zg_key_ctrl_or_super"
-    },
-    {
-      "covers": [
-        "Key.shouldBeRemappable"
-      ],
-      "doc": "True for keys a keybinding UI may remap by default.\n\nFalse for the W3C \"writing system\" keys -- the letters, digits and\npunctuation -- because what those produce is decided by the user's layout,\nso a binding on one is not the same key for everyone. Everything else,\nfunction and navigation keys included, is fair game.",
-      "name": "shouldBeRemappable",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Key",
-      "receiver_kind": "value",
-      "return": {
-        "kind": "bool"
-      },
-      "source": {
-        "path": "encode.zig",
-        "line": 81,
-        "column": 8
-      },
-      "zig_path": "keyShouldBeRemappable",
-      "symbol": "zg_key_should_be_remappable"
-    },
-    {
-      "covers": [
-        "Key.w3c"
-      ],
-      "doc": "The W3C `KeyboardEvent.code` name for the key, such as \"KeyA\" or\n\"ArrowUp\", empty for a key with none. Static storage, so the string stays\nvalid for the life of the process.",
-      "name": "w3C",
-      "package": "input",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Key",
-      "receiver_kind": "value",
-      "return": {
-        "const": true,
-        "element": {
-          "bits": 8,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "slice"
-      },
-      "return_semantic": "utf8_string",
-      "source": {
-        "path": "encode.zig",
-        "line": 88,
-        "column": 8
-      },
-      "zig_path": "keyW3C",
-      "symbol": "zg_key_w3_c"
-    },
-    {
-      "covers": [
         "Key.fromASCII"
       ],
       "doc": "The key for a printable ASCII byte, or null if none maps to it.",
@@ -1029,7 +816,7 @@
         {
           "direction": "in",
           "name": "writer",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 237,
@@ -1042,7 +829,7 @@
         {
           "direction": "in",
           "name": "terminal",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 238,
@@ -1058,7 +845,7 @@
         {
           "direction": "in",
           "name": "data",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 239,
@@ -1150,7 +937,7 @@
             }
           ],
           "name": "opts",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 83,
@@ -1365,7 +1152,7 @@
         {
           "direction": "in",
           "name": "bytes",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 356,
@@ -1960,7 +1747,7 @@
         {
           "direction": "in",
           "name": "mime",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
@@ -1981,7 +1768,7 @@
         {
           "direction": "in",
           "name": "data",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 195,
@@ -3104,801 +2891,6 @@
       "symbol": "zg_terminal_screen"
     },
     {
-      "covers": [
-        "Screen.selectAll"
-      ],
-      "doc": "Select the whole screen. Returns false when there is nothing to select.",
-      "name": "selectAll",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Screen",
-      "return": {
-        "error_set": [
-          "OutOfMemory"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "kind": "bool"
-        }
-      },
-      "source": {
-        "path": "screen.zig",
-        "line": 32,
-        "column": 8
-      },
-      "zig_path": "screenSelectAll",
-      "symbol": "zg_screen_select_all"
-    },
-    {
-      "doc": "True when the screen has a selection.",
-      "name": "hasSelection",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Screen",
-      "return": {
-        "kind": "bool"
-      },
-      "source": {
-        "path": "screen.zig",
-        "line": 188,
-        "column": 8
-      },
-      "zig_path": "screenHasSelection",
-      "symbol": "zg_screen_has_selection"
-    },
-    {
-      "covers": [
-        "Screen.select"
-      ],
-      "doc": "Select the cells between two viewport positions, inclusive of both ends.\n\n`rectangle` selects the block between the two corners rather than the flow\nof text from one to the other. Returns false when either end is outside the\nviewport, which is what a drag that left the window looks like.",
-      "name": "selectRange",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "x1",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 45,
-            "column": 5
-          },
-          "type": {
-            "bits": 16,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        },
-        {
-          "direction": "in",
-          "name": "y1",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 46,
-            "column": 5
-          },
-          "type": {
-            "bits": 16,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        },
-        {
-          "direction": "in",
-          "name": "x2",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 47,
-            "column": 5
-          },
-          "type": {
-            "bits": 16,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        },
-        {
-          "direction": "in",
-          "name": "y2",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 48,
-            "column": 5
-          },
-          "type": {
-            "bits": 16,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        },
-        {
-          "direction": "in",
-          "name": "rectangle",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 49,
-            "column": 5
-          },
-          "type": {
-            "kind": "bool"
-          }
-        }
-      ],
-      "receiver": "Screen",
-      "return": {
-        "error_set": [
-          "OutOfMemory"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "kind": "bool"
-        }
-      },
-      "source": {
-        "path": "screen.zig",
-        "line": 43,
-        "column": 8
-      },
-      "zig_path": "screenSelectRange",
-      "symbol": "zg_screen_select_range"
-    },
-    {
-      "covers": [
-        "Screen.selectWord"
-      ],
-      "doc": "Select the word under a viewport position -- what a double click does.\n\n`boundaries` are the codepoints that end a word. ghostty has no default for\nthem on purpose: its own UI reads the set from configuration, so the choice\nbelongs to the embedder.\n\nWrapped because ghostty returns the `Selection` rather than applying it, and\na `Selection` holds page pins that cannot cross the C ABI. False when the\nposition is outside the viewport or there is no word under it.",
-      "name": "selectWord",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "x",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 158,
-            "column": 40
-          },
-          "type": {
-            "bits": 16,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        },
-        {
-          "direction": "in",
-          "name": "y",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 158,
-            "column": 48
-          },
-          "type": {
-            "bits": 16,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        },
-        {
-          "direction": "in",
-          "name": "boundaries",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "semantic": "codepoint",
-          "source": {
-            "line": 158,
-            "column": 56
-          },
-          "type": {
-            "const": true,
-            "element": {
-              "bits": 21,
-              "is_usize": false,
-              "kind": "int",
-              "signed": false
-            },
-            "kind": "slice"
-          }
-        }
-      ],
-      "receiver": "Screen",
-      "return": {
-        "error_set": [
-          "OutOfMemory"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "kind": "bool"
-        }
-      },
-      "source": {
-        "path": "screen.zig",
-        "line": 158,
-        "column": 8
-      },
-      "zig_path": "screenSelectWord",
-      "symbol": "zg_screen_select_word"
-    },
-    {
-      "covers": [
-        "Screen.selectLine"
-      ],
-      "doc": "Select the line under a viewport position -- what a triple click does.\n\nSoft-wrapped lines are followed as one line, leading and trailing whitespace\nis trimmed, and a semantic prompt boundary ends the selection.",
-      "name": "selectLine",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "x",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 169,
-            "column": 40
-          },
-          "type": {
-            "bits": 16,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        },
-        {
-          "direction": "in",
-          "name": "y",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 169,
-            "column": 48
-          },
-          "type": {
-            "bits": 16,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        }
-      ],
-      "receiver": "Screen",
-      "return": {
-        "error_set": [
-          "OutOfMemory"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "kind": "bool"
-        }
-      },
-      "source": {
-        "path": "screen.zig",
-        "line": 169,
-        "column": 8
-      },
-      "zig_path": "screenSelectLine",
-      "symbol": "zg_screen_select_line"
-    },
-    {
-      "covers": [
-        "Screen.selectOutput"
-      ],
-      "doc": "Select the command output the given position belongs to.\n\nNeeds the shell to mark its prompts with OSC 133; without those marks there\nis no output block to find and this returns false.",
-      "name": "selectOutput",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "x",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 180,
-            "column": 42
-          },
-          "type": {
-            "bits": 16,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        },
-        {
-          "direction": "in",
-          "name": "y",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 180,
-            "column": 50
-          },
-          "type": {
-            "bits": 16,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        }
-      ],
-      "receiver": "Screen",
-      "return": {
-        "error_set": [
-          "OutOfMemory"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "kind": "bool"
-        }
-      },
-      "source": {
-        "path": "screen.zig",
-        "line": 180,
-        "column": 8
-      },
-      "zig_path": "screenSelectOutput",
-      "symbol": "zg_screen_select_output"
-    },
-    {
-      "covers": [
-        "Screen.selectionString"
-      ],
-      "doc": "The text of the current selection, absent when nothing is selected.",
-      "name": "selectionString",
-      "ownership": "caller",
-      "params": [
-        {
-          "direction": "in",
-          "injected": "allocator",
-          "name": "gpa",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 193,
-            "column": 45
-          },
-          "type": {
-            "kind": "void"
-          }
-        }
-      ],
-      "receiver": "Screen",
-      "release": "freeString",
-      "return": {
-        "error_set": [
-          "OutOfMemory"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "child": {
-            "const": true,
-            "element": {
-              "bits": 8,
-              "is_usize": false,
-              "kind": "int",
-              "signed": false
-            },
-            "kind": "slice"
-          },
-          "kind": "optional"
-        }
-      },
-      "return_semantic": "utf8_string",
-      "source": {
-        "path": "screen.zig",
-        "line": 193,
-        "column": 8
-      },
-      "zig_path": "screenSelectionString",
-      "symbol": "zg_screen_selection_string"
-    },
-    {
-      "doc": "The screen's current selection, or null when there is none.",
-      "name": "selection",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Screen",
-      "return": {
-        "child": {
-          "kind": "value_struct",
-          "ref": "Selection"
-        },
-        "kind": "optional"
-      },
-      "source": {
-        "path": "screen.zig",
-        "line": 86,
-        "column": 8
-      },
-      "zig_path": "screenSelection",
-      "symbol": "zg_screen_selection"
-    },
-    {
-      "doc": "Replace the screen's selection. Returns false, leaving the selection as it\nwas, if either end is outside the screen.",
-      "name": "setSelection",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "sel",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 93,
-            "column": 42
-          },
-          "type": {
-            "kind": "value_struct",
-            "ref": "Selection"
-          }
-        }
-      ],
-      "receiver": "Screen",
-      "return": {
-        "error_set": [
-          "OutOfMemory"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "kind": "bool"
-        }
-      },
-      "source": {
-        "path": "screen.zig",
-        "line": 93,
-        "column": 8
-      },
-      "zig_path": "screenSetSelection",
-      "symbol": "zg_screen_set_selection"
-    },
-    {
-      "doc": "The screen row shown at the top of the viewport: subtract it from a\n`Selection` row to get the viewport row a renderer draws at.",
-      "name": "viewportTop",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Screen",
-      "return": {
-        "bits": 32,
-        "is_usize": false,
-        "kind": "int",
-        "signed": false
-      },
-      "source": {
-        "path": "screen.zig",
-        "line": 125,
-        "column": 8
-      },
-      "zig_path": "screenViewportTop",
-      "symbol": "zg_screen_viewport_top"
-    },
-    {
-      "doc": "The screen's scrollbar state.",
-      "name": "scrollbar",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Screen",
-      "return": {
-        "kind": "value_struct",
-        "ref": "Scrollbar"
-      },
-      "source": {
-        "path": "screen.zig",
-        "line": 144,
-        "column": 8
-      },
-      "zig_path": "screenScrollbar",
-      "symbol": "zg_screen_scrollbar"
-    },
-    {
-      "doc": "Format a whole screen, scrollback included. `Terminal.format` is the\nactive area only.",
-      "name": "format",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "opts",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 76,
-            "column": 36
-          },
-          "type": {
-            "kind": "value_struct",
-            "ref": "FormatOptions"
-          }
-        },
-        {
-          "direction": "in",
-          "name": "writer",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 76,
-            "column": 57
-          },
-          "type": {
-            "kind": "io_writer"
-          }
-        }
-      ],
-      "receiver": "Screen",
-      "return": {
-        "error_set": [
-          "WriteFailed"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "kind": "void"
-        }
-      },
-      "source": {
-        "path": "format.zig",
-        "line": 76,
-        "column": 8
-      },
-      "zig_path": "screenFormat",
-      "symbol": "zg_screen_format"
-    },
-    {
-      "doc": "Format the part of a screen inside `sel`. Returns false, writing\nnothing, if `sel` is outside the screen.",
-      "name": "formatSelection",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "opts",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 84,
-            "column": 45
-          },
-          "type": {
-            "kind": "value_struct",
-            "ref": "FormatOptions"
-          }
-        },
-        {
-          "direction": "in",
-          "name": "sel",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 84,
-            "column": 66
-          },
-          "type": {
-            "kind": "value_struct",
-            "ref": "Selection"
-          }
-        },
-        {
-          "direction": "in",
-          "name": "writer",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 84,
-            "column": 82
-          },
-          "type": {
-            "kind": "io_writer"
-          }
-        }
-      ],
-      "receiver": "Screen",
-      "return": {
-        "error_set": [
-          "WriteFailed"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "kind": "bool"
-        }
-      },
-      "source": {
-        "path": "format.zig",
-        "line": 84,
-        "column": 8
-      },
-      "zig_path": "screenFormatSelection",
-      "symbol": "zg_screen_format_selection"
-    },
-    {
-      "doc": "Whether the screen cell at `x`, `y` (screen coordinates) is inside `sel`.\nFalse when either is outside the screen.",
-      "name": "selectionContains",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "sel",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 109,
-            "column": 47
-          },
-          "type": {
-            "kind": "value_struct",
-            "ref": "Selection"
-          }
-        },
-        {
-          "direction": "in",
-          "name": "x",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 109,
-            "column": 63
-          },
-          "type": {
-            "bits": 16,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        },
-        {
-          "direction": "in",
-          "name": "y",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 109,
-            "column": 71
-          },
-          "type": {
-            "bits": 32,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        }
-      ],
-      "receiver": "Screen",
-      "return": {
-        "kind": "bool"
-      },
-      "source": {
-        "path": "screen.zig",
-        "line": 109,
-        "column": 8
-      },
-      "zig_path": "screenSelectionContains",
-      "symbol": "zg_screen_selection_contains"
-    },
-    {
-      "doc": "Move the end of `sel` by `adjustment` -- what shift+arrow does to a\nselection -- and return the result. Null if `sel` is outside the screen.",
-      "name": "selectionAdjust",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "sel",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 117,
-            "column": 45
-          },
-          "type": {
-            "kind": "value_struct",
-            "ref": "Selection"
-          }
-        },
-        {
-          "direction": "in",
-          "name": "adjustment",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 117,
-            "column": 61
-          },
-          "type": {
-            "kind": "enum",
-            "ref": "SelectionAdjustment"
-          }
-        }
-      ],
-      "receiver": "Screen",
-      "return": {
-        "child": {
-          "kind": "value_struct",
-          "ref": "Selection"
-        },
-        "kind": "optional"
-      },
-      "source": {
-        "path": "screen.zig",
-        "line": 117,
-        "column": 8
-      },
-      "zig_path": "screenSelectionAdjust",
-      "symbol": "zg_screen_selection_adjust"
-    },
-    {
-      "covers": [
-        "Screen.startHyperlink"
-      ],
-      "doc": "Open a hyperlink on the screen; cells printed until `Screen.endHyperlink`\ncarry it. An empty `id` leaves the link without an explicit id, which is\nwhat OSC 8 does when the parameter is absent.",
-      "name": "startHyperlink",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "uri",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "semantic": "utf8_string",
-          "source": {
-            "line": 201,
-            "column": 44
-          },
-          "type": {
-            "const": true,
-            "element": {
-              "bits": 8,
-              "is_usize": false,
-              "kind": "int",
-              "signed": false
-            },
-            "kind": "slice"
-          }
-        },
-        {
-          "direction": "in",
-          "name": "id",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "semantic": "utf8_string",
-          "source": {
-            "line": 201,
-            "column": 61
-          },
-          "type": {
-            "const": true,
-            "element": {
-              "bits": 8,
-              "is_usize": false,
-              "kind": "int",
-              "signed": false
-            },
-            "kind": "slice"
-          }
-        }
-      ],
-      "receiver": "Screen",
-      "return": {
-        "error_set": [
-          "OutOfMemory",
-          "OutOfSpace"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "kind": "void"
-        }
-      },
-      "source": {
-        "path": "screen.zig",
-        "line": 201,
-        "column": 8
-      },
-      "zig_path": "screenStartHyperlink",
-      "symbol": "zg_screen_start_hyperlink"
-    },
-    {
       "doc": "Returns true if the viewport is scrolled to the bottom of the screen.",
       "name": "viewportIsBottom",
       "ownership": "borrowed",
@@ -4031,317 +3023,6 @@
       "symbol": "zg_search_search_close"
     },
     {
-      "doc": "The needle being searched for, borrowed.",
-      "name": "needle",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Search",
-      "return": {
-        "const": true,
-        "element": {
-          "bits": 8,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "slice"
-      },
-      "return_semantic": "utf8_string",
-      "source": {
-        "path": "search.zig",
-        "line": 74,
-        "column": 8
-      },
-      "zig_path": "searchNeedle",
-      "symbol": "zg_search_needle"
-    },
-    {
-      "doc": "How much of the terminal the search has covered so far.",
-      "name": "status",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Search",
-      "return": {
-        "kind": "enum",
-        "ref": "SearchState"
-      },
-      "source": {
-        "path": "search.zig",
-        "line": 79,
-        "column": 8
-      },
-      "zig_path": "searchStatus",
-      "symbol": "zg_search_status"
-    },
-    {
-      "doc": "Push the search forward as far as it can go without reading the terminal,\nand report what that achieved. Safe to run beside terminal IO, so a UI can\nspend a slice of each frame here rather than blocking on `searchAll`.\n\n`blocked` means the searcher has consumed everything the last `searchFeed`\ngave it and needs another one.",
-      "name": "tick",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Search",
-      "return": {
-        "kind": "enum",
-        "ref": "SearchProgress"
-      },
-      "source": {
-        "path": "search.zig",
-        "line": 89,
-        "column": 8
-      },
-      "zig_path": "searchTick",
-      "symbol": "zg_search_tick"
-    },
-    {
-      "doc": "Read the terminal into the search: reconcile its screens, hand the\nsearchers more scrollback, and notice whether the viewport moved.\n\nThis is also the only way the search learns that the terminal changed, so\nkeep feeding it while it is in use, even after it reports complete.\n\nPass `active_dirty` false only if you know the active area has not changed\nsince the last feed; true is always correct and the rescan is cheap.",
-      "name": "feed",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "active_dirty",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 101,
-            "column": 34
-          },
-          "type": {
-            "kind": "bool"
-          }
-        }
-      ],
-      "receiver": "Search",
-      "return": {
-        "kind": "void"
-      },
-      "source": {
-        "path": "search.zig",
-        "line": 101,
-        "column": 8
-      },
-      "zig_path": "searchFeed",
-      "symbol": "zg_search_feed"
-    },
-    {
-      "doc": "Run the search to completion, feeding and ticking until nothing is left.\n\nThe simple call, for a program that would rather block than drive the\nsearch itself. A large scrollback can take a while; `searchTick` and\n`searchFeed` are the way to spread that over frames instead.",
-      "name": "all",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Search",
-      "return": {
-        "kind": "void"
-      },
-      "source": {
-        "path": "search.zig",
-        "line": 110,
-        "column": 8
-      },
-      "zig_path": "searchAll",
-      "symbol": "zg_search_all"
-    },
-    {
-      "doc": "Move to the next or previous match on the active screen, wrapping at the\nends, and select it on the screen. False if there is nothing to select.\n\nFeeds first, so it always works against current terminal state.",
-      "name": "select",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "to",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 126,
-            "column": 36
-          },
-          "type": {
-            "kind": "enum",
-            "ref": "SearchDirection"
-          }
-        },
-        {
-          "direction": "in",
-          "name": "scroll",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 126,
-            "column": 57
-          },
-          "type": {
-            "kind": "enum",
-            "ref": "SearchScroll"
-          }
-        }
-      ],
-      "receiver": "Search",
-      "return": {
-        "error_set": [
-          "OutOfMemory"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "kind": "bool"
-        }
-      },
-      "source": {
-        "path": "search.zig",
-        "line": 126,
-        "column": 8
-      },
-      "zig_path": "searchSelect",
-      "symbol": "zg_search_select"
-    },
-    {
-      "doc": "How many matches have been found on the active screen so far. Grows as the\nsearch progresses, so it is only final once the status is `complete`.",
-      "name": "matchCount",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Search",
-      "return": {
-        "bits": 64,
-        "is_usize": true,
-        "kind": "int",
-        "signed": false
-      },
-      "source": {
-        "path": "search.zig",
-        "line": 132,
-        "column": 8
-      },
-      "zig_path": "searchMatchCount",
-      "symbol": "zg_search_match_count"
-    },
-    {
-      "doc": "Copy the matches found on the active screen so far into `dst`, most recent\nscreen content first, and return how many were written. Matches are in\nscreen coordinates; size `dst` from `searchMatchCount`.",
-      "name": "matches",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "out",
-          "name": "dst",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 140,
-            "column": 37
-          },
-          "type": {
-            "const": false,
-            "element": {
-              "kind": "value_struct",
-              "ref": "Selection"
-            },
-            "kind": "slice"
-          },
-          "written": "return"
-        }
-      ],
-      "receiver": "Search",
-      "return": {
-        "bits": 64,
-        "is_usize": true,
-        "kind": "int",
-        "signed": false
-      },
-      "source": {
-        "path": "search.zig",
-        "line": 140,
-        "column": 8
-      },
-      "zig_path": "searchMatches",
-      "symbol": "zg_search_matches"
-    },
-    {
-      "doc": "The matches on the pages the viewport covers, in screen coordinates, for a\nrenderer highlighting what is on screen. Returns how many were written.\n\nThis is the cheap way to draw highlights: the viewport is searched on its\nown and the results are cached until it moves, so a frame does not pay for\nthe whole scrollback, and the answer is there before the scrollback search\nhas finished. It can include a few matches just off screen when they share\na page with the viewport, which a renderer clips anyway.\n\nThe count is not known in advance, so size `dst` generously and treat a\nfull `dst` as \"there may be more\".",
-      "name": "viewportMatches",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "out",
-          "name": "dst",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 166,
-            "column": 45
-          },
-          "type": {
-            "const": false,
-            "element": {
-              "kind": "value_struct",
-              "ref": "Selection"
-            },
-            "kind": "slice"
-          },
-          "written": "return"
-        }
-      ],
-      "receiver": "Search",
-      "return": {
-        "error_set": [
-          "OutOfMemory"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "bits": 64,
-          "is_usize": true,
-          "kind": "int",
-          "signed": false
-        }
-      },
-      "source": {
-        "path": "search.zig",
-        "line": 166,
-        "column": 8
-      },
-      "zig_path": "searchViewportMatches",
-      "symbol": "zg_search_viewport_matches"
-    },
-    {
-      "doc": "The match `searchSelect` last moved to, or null before the first move.",
-      "name": "selectedMatch",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Search",
-      "return": {
-        "child": {
-          "kind": "value_struct",
-          "ref": "Selection"
-        },
-        "kind": "optional"
-      },
-      "source": {
-        "path": "search.zig",
-        "line": 179,
-        "column": 8
-      },
-      "zig_path": "searchSelectedMatch",
-      "symbol": "zg_search_selected_match"
-    },
-    {
-      "doc": "The index of the selected match in the list `searchMatches` writes, or null\nbefore the first `searchSelect`. What a UI shows as \"3 of 12\".",
-      "name": "selectedIndex",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Search",
-      "return": {
-        "child": {
-          "bits": 64,
-          "is_usize": true,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "optional"
-      },
-      "source": {
-        "path": "search.zig",
-        "line": 188,
-        "column": 8
-      },
-      "zig_path": "searchSelectedIndex",
-      "symbol": "zg_search_selected_index"
-    },
-    {
       "covers": [
         "Terminal.printAttributes"
       ],
@@ -4352,7 +3033,7 @@
         {
           "direction": "out",
           "name": "dst",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 64,
@@ -5383,7 +4064,7 @@
         {
           "direction": "in",
           "name": "cps",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "semantic": "codepoint",
           "source": {
@@ -5646,7 +4327,7 @@
         {
           "direction": "in",
           "name": "data",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 114,
@@ -5714,352 +4395,6 @@
       },
       "zig_path": "freeSnapshotDecoder",
       "symbol": "zg_snapshot_decoder_free_snapshot_decoder"
-    },
-    {
-      "doc": "Decode as far as the READY marker: everything a terminal needs to be drawn.\n\n`max_continuation_bytes` bounds the unfinished-sequence suffix. After this\nthe terminal can be taken with `restoreInto` and drawn, and the history\narrives through `next` at whatever pace suits.",
-      "name": "ready",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "injected": "allocator",
-          "name": "gpa",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 139,
-            "column": 53
-          },
-          "type": {
-            "kind": "void"
-          }
-        },
-        {
-          "direction": "in",
-          "name": "max_continuation_bytes",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 139,
-            "column": 69
-          },
-          "type": {
-            "bits": 64,
-            "is_usize": true,
-            "kind": "int",
-            "signed": false
-          }
-        }
-      ],
-      "receiver": "SnapshotDecoder",
-      "return": {
-        "error_set": [
-          "EndOfStream",
-          "ReadFailed",
-          "OutOfMemory",
-          "OutOfSpace",
-          "InvalidDimensions",
-          "InvalidScreenCount",
-          "NoPendingState",
-          "NonCanonicalContinuation",
-          "ReplayWouldCommit",
-          "InvalidMagic",
-          "UnsupportedVersion",
-          "InvalidTag",
-          "InvalidChecksum",
-          "PayloadNotExhausted",
-          "UnexpectedRecordTag",
-          "InvalidKey",
-          "InvalidRowCellCount",
-          "InvalidKind",
-          "InvalidDestinationCapacity",
-          "ZeroRowCount",
-          "ZeroColCount",
-          "UnmarkedGraphemeRow",
-          "MissingGraphemeData",
-          "InvalidGraphemeCount",
-          "UnmarkedGraphemeCell",
-          "MissingStyle",
-          "UnmarkedStyleRow",
-          "MismatchedStyleRef",
-          "InvalidStyleCount",
-          "MissingHyperlinkData",
-          "MismatchedHyperlinkRef",
-          "UnmarkedHyperlinkCell",
-          "UnmarkedHyperlinkRow",
-          "InvalidSpacerTailLocation",
-          "InvalidSpacerHeadLocation",
-          "UnwrappedSpacerHead",
-          "InvalidPageDimensions",
-          "NoPages",
-          "InsufficientRows",
-          "InvalidPageCount",
-          "ContinuationLimitExceeded",
-          "UnexpectedScreenKey",
-          "DuplicateScreen",
-          "AlreadyReady"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "kind": "void"
-        }
-      },
-      "source": {
-        "path": "snapshot.zig",
-        "line": 139,
-        "column": 8
-      },
-      "zig_path": "snapshotDecoderReady",
-      "symbol": "zg_snapshot_decoder_ready"
-    },
-    {
-      "doc": "Replace `term` with the decoded terminal. See `snapshotRestoreInto`; the\nsame one-shot rule applies, and `next` wants the same terminal afterwards.",
-      "name": "restoreInto",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "injected": "allocator",
-          "name": "gpa",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 149,
-            "column": 59
-          },
-          "type": {
-            "kind": "void"
-          }
-        },
-        {
-          "direction": "in",
-          "name": "term",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 149,
-            "column": 75
-          },
-          "type": {
-            "const": false,
-            "kind": "opaque_ptr",
-            "nullable": false,
-            "ref": "Terminal"
-          }
-        }
-      ],
-      "receiver": "SnapshotDecoder",
-      "return": {
-        "error_set": [
-          "TerminalTaken"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "kind": "void"
-        }
-      },
-      "source": {
-        "path": "snapshot.zig",
-        "line": 149,
-        "column": 8
-      },
-      "zig_path": "snapshotDecoderRestoreInto",
-      "symbol": "zg_snapshot_decoder_restore_into"
-    },
-    {
-      "doc": "The unfinished sequence the snapshot was taken in, empty at ground.",
-      "name": "continuation",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "SnapshotDecoder",
-      "return": {
-        "const": true,
-        "element": {
-          "bits": 8,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "slice"
-      },
-      "source": {
-        "path": "snapshot.zig",
-        "line": 155,
-        "column": 8
-      },
-      "zig_path": "snapshotDecoderContinuation",
-      "symbol": "zg_snapshot_decoder_continuation"
-    },
-    {
-      "doc": "Decode one page of history and prepend it to its screen in `term`, which\nmust be the one `restoreInto` filled.\n\nReturns null once the snapshot is complete. Wire errors are fatal -- the\nposition in the stream is lost -- but a page that cannot be applied is\nreported as zero rows rather than failing, because the terminal is live\nand may have moved on since `ready`.",
-      "name": "next",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "injected": "allocator",
-          "name": "gpa",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 167,
-            "column": 52
-          },
-          "type": {
-            "kind": "void"
-          }
-        },
-        {
-          "direction": "in",
-          "name": "term",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 167,
-            "column": 68
-          },
-          "type": {
-            "const": false,
-            "kind": "opaque_ptr",
-            "nullable": false,
-            "ref": "Terminal"
-          }
-        }
-      ],
-      "receiver": "SnapshotDecoder",
-      "return": {
-        "error_set": [
-          "EndOfStream",
-          "ReadFailed",
-          "OutOfMemory",
-          "InvalidDimensions",
-          "InvalidTag",
-          "InvalidChecksum",
-          "PayloadNotExhausted",
-          "UnexpectedRecordTag",
-          "InvalidKey",
-          "InvalidRowCellCount",
-          "InvalidKind",
-          "InvalidDestinationCapacity",
-          "ZeroRowCount",
-          "ZeroColCount",
-          "UnmarkedGraphemeRow",
-          "MissingGraphemeData",
-          "InvalidGraphemeCount",
-          "UnmarkedGraphemeCell",
-          "MissingStyle",
-          "UnmarkedStyleRow",
-          "MismatchedStyleRef",
-          "InvalidStyleCount",
-          "MissingHyperlinkData",
-          "MismatchedHyperlinkRef",
-          "UnmarkedHyperlinkCell",
-          "UnmarkedHyperlinkRow",
-          "InvalidSpacerTailLocation",
-          "InvalidSpacerHeadLocation",
-          "UnwrappedSpacerHead",
-          "InvalidPageDimensions",
-          "DecoderNotReady",
-          "DecoderFailed",
-          "UnexpectedHistoryKey",
-          "DuplicateHistory",
-          "RowCountOverflow",
-          "PageSizeOverflow"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "child": {
-            "kind": "value_struct",
-            "ref": "SnapshotProgress"
-          },
-          "kind": "optional"
-        }
-      },
-      "source": {
-        "path": "snapshot.zig",
-        "line": 167,
-        "column": 8
-      },
-      "zig_path": "snapshotDecoderNext",
-      "symbol": "zg_snapshot_decoder_next"
-    },
-    {
-      "doc": "Replace `term` with the terminal the snapshot holds: its size, screens,\nscrollback, modes and colors. The snapshot gives its terminal up once;\na second call fails. Streams on `term` keep pointing at it, but their\nparser state belongs to the old contents, so open a new stream and feed\nit `continuation` before any new input.\n\nzigo allows one constructor per handle and `newTerminal` is it, so a\nrestore fills a terminal the caller made rather than returning one.",
-      "name": "restoreInto",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "injected": "allocator",
-          "name": "gpa",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 42,
-            "column": 45
-          },
-          "type": {
-            "kind": "void"
-          }
-        },
-        {
-          "direction": "in",
-          "name": "term",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 42,
-            "column": 61
-          },
-          "type": {
-            "const": false,
-            "kind": "opaque_ptr",
-            "nullable": false,
-            "ref": "Terminal"
-          }
-        }
-      ],
-      "receiver": "Snapshot",
-      "return": {
-        "error_set": [
-          "TerminalTaken"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "kind": "void"
-        }
-      },
-      "source": {
-        "path": "snapshot.zig",
-        "line": 42,
-        "column": 8
-      },
-      "zig_path": "snapshotRestoreInto",
-      "symbol": "zg_snapshot_restore_into"
-    },
-    {
-      "doc": "The bytes of the unfinished sequence the snapshot was taken in, empty\nwhen the stream was at ground. Feed them to the restored terminal's\nstream before any new input.",
-      "name": "continuation",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Snapshot",
-      "return": {
-        "const": true,
-        "element": {
-          "bits": 8,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "slice"
-      },
-      "source": {
-        "path": "snapshot.zig",
-        "line": 58,
-        "column": 8
-      },
-      "zig_path": "snapshotContinuation",
-      "symbol": "zg_snapshot_continuation"
     },
     {
       "doc": "The current background color: what OSC 11 set, else the default.",
@@ -6138,7 +4473,7 @@
         {
           "direction": "out",
           "name": "dst",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 274,
@@ -6273,33 +4608,6 @@
       },
       "zig_path": "setDefaultCursorColor",
       "symbol": "zg_terminal_set_default_cursor_color"
-    },
-    {
-      "covers": [
-        "ColorName.default"
-      ],
-      "doc": "The color's default value as `0xRRGGBB`, or null when the name has none.\n\nOnly the sixteen named colors have one. The enum is open because every\nother 256-color palette index is a valid value, and those take their\ncolor from the palette rather than from a default; read them with\n`paletteColors`.\n\nWrapped because ghostty returns `color.RGB`, a `packed struct(u24)` with\nno C representation, behind an error union.",
-      "name": "default",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "ColorName",
-      "receiver_kind": "value",
-      "return": {
-        "child": {
-          "bits": 32,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "optional"
-      },
-      "source": {
-        "path": "terminal.zig",
-        "line": 89,
-        "column": 8
-      },
-      "zig_path": "colorNameDefault",
-      "symbol": "zg_color_name_default"
     },
     {
       "doc": "Whether `mode` is currently on.",
@@ -7189,493 +5497,6 @@
       "symbol": "zg_render_state_deinit"
     },
     {
-      "doc": "How many `RenderCell`s `renderCells` needs: `rows * cols`.",
-      "name": "cellCount",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "RenderState",
-      "return": {
-        "bits": 64,
-        "is_usize": true,
-        "kind": "int",
-        "signed": false
-      },
-      "source": {
-        "path": "render.zig",
-        "line": 73,
-        "column": 8
-      },
-      "zig_path": "renderCellCount",
-      "symbol": "zg_render_state_cell_count"
-    },
-    {
-      "doc": "Flatten the viewport into `dst`, row-major from the top, and report how\nmany cells were written.",
-      "name": "cells",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "out",
-          "name": "dst",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 79,
-            "column": 40
-          },
-          "type": {
-            "const": false,
-            "element": {
-              "kind": "value_struct",
-              "ref": "RenderCell"
-            },
-            "kind": "slice"
-          },
-          "written": "return"
-        }
-      ],
-      "receiver": "RenderState",
-      "return": {
-        "error_set": [
-          "NoSpaceLeft"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "bits": 64,
-          "is_usize": true,
-          "kind": "int",
-          "signed": false
-        }
-      },
-      "source": {
-        "path": "render.zig",
-        "line": 79,
-        "column": 8
-      },
-      "zig_path": "renderCells",
-      "symbol": "zg_render_state_cells"
-    },
-    {
-      "doc": "The terminal's default background, 0xRRGGBB. Already reversed if the\nterminal is in reverse-video mode.",
-      "name": "background",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "RenderState",
-      "return": {
-        "bits": 32,
-        "is_usize": false,
-        "kind": "int",
-        "signed": false
-      },
-      "source": {
-        "path": "render.zig",
-        "line": 263,
-        "column": 8
-      },
-      "zig_path": "renderBackground",
-      "symbol": "zg_render_state_background"
-    },
-    {
-      "name": "foreground",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "RenderState",
-      "return": {
-        "bits": 32,
-        "is_usize": false,
-        "kind": "int",
-        "signed": false
-      },
-      "source": {
-        "path": "render.zig",
-        "line": 267,
-        "column": 8
-      },
-      "zig_path": "renderForeground",
-      "symbol": "zg_render_state_foreground"
-    },
-    {
-      "doc": "The cursor's column within the viewport, or false if it is scrolled out.",
-      "name": "cursorX",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "RenderState",
-      "return": {
-        "child": {
-          "bits": 16,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "optional"
-      },
-      "source": {
-        "path": "render.zig",
-        "line": 272,
-        "column": 8
-      },
-      "zig_path": "renderCursorX",
-      "symbol": "zg_render_state_cursor_x"
-    },
-    {
-      "name": "cursorY",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "RenderState",
-      "return": {
-        "child": {
-          "bits": 16,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "optional"
-      },
-      "source": {
-        "path": "render.zig",
-        "line": 277,
-        "column": 8
-      },
-      "zig_path": "renderCursorY",
-      "symbol": "zg_render_state_cursor_y"
-    },
-    {
-      "doc": "Whether the cursor sits on the tail of a wide character. A renderer that\ndraws a one-cell cursor may want to move it back one column so it covers\nthe character rather than half of it. Null when the cursor is scrolled out\nof the viewport, the same as `renderCursorX`.",
-      "name": "cursorWideTail",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "RenderState",
-      "return": {
-        "child": {
-          "kind": "bool"
-        },
-        "kind": "optional"
-      },
-      "source": {
-        "path": "render.zig",
-        "line": 286,
-        "column": 8
-      },
-      "zig_path": "renderCursorWideTail",
-      "symbol": "zg_render_state_cursor_wide_tail"
-    },
-    {
-      "doc": "The cursor color as of this frame, 0xRRGGBB, or null when the program has\nnot set one and the renderer should pick. Read from the snapshot rather\nthan the terminal so it matches the cells drawn beside it.",
-      "name": "cursorColor",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "RenderState",
-      "return": {
-        "child": {
-          "bits": 32,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "optional"
-      },
-      "source": {
-        "path": "render.zig",
-        "line": 294,
-        "column": 8
-      },
-      "zig_path": "renderCursorColor",
-      "symbol": "zg_render_state_cursor_color"
-    },
-    {
-      "doc": "What changed since `RenderState.clean`. `RenderState.update` raises this;\nnothing lowers it but `clean`.",
-      "name": "dirty",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "RenderState",
-      "return": {
-        "kind": "enum",
-        "ref": "RenderDirty"
-      },
-      "source": {
-        "path": "render.zig",
-        "line": 171,
-        "column": 8
-      },
-      "zig_path": "renderDirty",
-      "symbol": "zg_render_state_dirty"
-    },
-    {
-      "doc": "Write the indexes of the dirty viewport rows into `dst`, top to bottom,\nand report how many there are. `error.NoSpaceLeft` if `dst` is shorter\nthan that; size it to `rows`.",
-      "name": "dirtyRows",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "out",
-          "name": "dst",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 182,
-            "column": 44
-          },
-          "type": {
-            "const": false,
-            "element": {
-              "bits": 16,
-              "is_usize": false,
-              "kind": "int",
-              "signed": false
-            },
-            "kind": "slice"
-          },
-          "written": "return"
-        }
-      ],
-      "receiver": "RenderState",
-      "return": {
-        "error_set": [
-          "NoSpaceLeft"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "bits": 64,
-          "is_usize": true,
-          "kind": "int",
-          "signed": false
-        }
-      },
-      "source": {
-        "path": "render.zig",
-        "line": 182,
-        "column": 8
-      },
-      "zig_path": "renderDirtyRows",
-      "symbol": "zg_render_state_dirty_rows"
-    },
-    {
-      "doc": "Flatten one viewport row into `dst` and report how many cells were\nwritten: `cols`, or zero for a row off the grid. For a renderer that\nredraws only the rows `renderDirtyRows` names.",
-      "name": "rowCells",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "y",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 91,
-            "column": 43
-          },
-          "type": {
-            "bits": 16,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        },
-        {
-          "direction": "out",
-          "name": "dst",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 91,
-            "column": 51
-          },
-          "type": {
-            "const": false,
-            "element": {
-              "kind": "value_struct",
-              "ref": "RenderCell"
-            },
-            "kind": "slice"
-          },
-          "written": "return"
-        }
-      ],
-      "receiver": "RenderState",
-      "return": {
-        "error_set": [
-          "NoSpaceLeft"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "bits": 64,
-          "is_usize": true,
-          "kind": "int",
-          "signed": false
-        }
-      },
-      "source": {
-        "path": "render.zig",
-        "line": 91,
-        "column": 8
-      },
-      "zig_path": "renderRowCells",
-      "symbol": "zg_render_state_row_cells"
-    },
-    {
-      "doc": "The codepoints of the cell at viewport `x`, `y`: the base codepoint\nfollowed by any combining marks or ZWJ sequence members, which\n`RenderCell.codepoint` alone drops. Copies them into `dst` and returns\nhow many were written; zero for an empty cell or a position off the grid.\n`error.NoSpaceLeft` if `dst` is shorter than the cluster.",
-      "name": "graphemes",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "x",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 198,
-            "column": 44
-          },
-          "type": {
-            "bits": 16,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        },
-        {
-          "direction": "in",
-          "name": "y",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 198,
-            "column": 52
-          },
-          "type": {
-            "bits": 16,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        },
-        {
-          "direction": "out",
-          "name": "dst",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "semantic": "codepoint",
-          "source": {
-            "line": 198,
-            "column": 60
-          },
-          "type": {
-            "const": false,
-            "element": {
-              "bits": 32,
-              "is_usize": false,
-              "kind": "int",
-              "signed": false
-            },
-            "kind": "slice"
-          },
-          "written": "return"
-        }
-      ],
-      "receiver": "RenderState",
-      "return": {
-        "error_set": [
-          "NoSpaceLeft"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "bits": 64,
-          "is_usize": true,
-          "kind": "int",
-          "signed": false
-        }
-      },
-      "source": {
-        "path": "render.zig",
-        "line": 198,
-        "column": 8
-      },
-      "zig_path": "renderGraphemes",
-      "symbol": "zg_render_state_graphemes"
-    },
-    {
-      "covers": [
-        "RenderState.linkCells"
-      ],
-      "doc": "The OSC 8 hyperlink under viewport `x`, `y`, or null when the cell has\nnone. Valid only until the terminal changes: like ghostty's own\n`linkCells`, this reads page memory through the pins `RenderState.update`\ncaptured, so call it right after an update.",
-      "name": "hyperlinkAt",
-      "ownership": "caller",
-      "params": [
-        {
-          "direction": "in",
-          "injected": "allocator",
-          "name": "gpa",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 226,
-            "column": 46
-          },
-          "type": {
-            "kind": "void"
-          }
-        },
-        {
-          "direction": "in",
-          "name": "x",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 226,
-            "column": 62
-          },
-          "type": {
-            "bits": 16,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        },
-        {
-          "direction": "in",
-          "name": "y",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 226,
-            "column": 70
-          },
-          "type": {
-            "bits": 16,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        }
-      ],
-      "receiver": "RenderState",
-      "release": "freeString",
-      "return": {
-        "error_set": [
-          "OutOfMemory"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "child": {
-            "const": true,
-            "element": {
-              "bits": 8,
-              "is_usize": false,
-              "kind": "int",
-              "signed": false
-            },
-            "kind": "slice"
-          },
-          "kind": "optional"
-        }
-      },
-      "return_semantic": "utf8_string",
-      "source": {
-        "path": "render.zig",
-        "line": 226,
-        "column": 8
-      },
-      "zig_path": "renderHyperlinkAt",
-      "symbol": "zg_render_state_hyperlink_at"
-    },
-    {
       "go_owner": "KittyImages",
       "name": "newKittyImages",
       "ownership": "caller",
@@ -7744,112 +5565,6 @@
       },
       "zig_path": "freeKittyImages",
       "symbol": "zg_kitty_images_free_kitty_images"
-    },
-    {
-      "doc": "Rebuild the snapshot from `term`'s active screen.\n\nPlacements that cannot be drawn at all are left out: the ones scrolled off\nthe viewport, and the ones whose text has been pruned out of the scrollback.\nVirtual (unicode placeholder) placements are kept, flagged and positionless,\nsince the cells that reference them are what place them; so are the ones\npositioned relative to a virtual placement, for the same reason.",
-      "name": "update",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "term",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 176,
-            "column": 40
-          },
-          "type": {
-            "const": false,
-            "kind": "opaque_ptr",
-            "nullable": false,
-            "ref": "Terminal"
-          }
-        }
-      ],
-      "receiver": "KittyImages",
-      "return": {
-        "error_set": [
-          "OutOfMemory"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "kind": "void"
-        }
-      },
-      "source": {
-        "path": "kitty.zig",
-        "line": 176,
-        "column": 8
-      },
-      "zig_path": "kittyUpdate",
-      "symbol": "zg_kitty_images_update"
-    },
-    {
-      "doc": "How many placements `kittyPlacements` will write.",
-      "name": "placementCount",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "KittyImages",
-      "return": {
-        "bits": 64,
-        "is_usize": true,
-        "kind": "int",
-        "signed": false
-      },
-      "source": {
-        "path": "kitty.zig",
-        "line": 323,
-        "column": 8
-      },
-      "zig_path": "kittyPlacementCount",
-      "symbol": "zg_kitty_images_placement_count"
-    },
-    {
-      "doc": "Copy the placements into `dst`, back to front, and report how many.",
-      "name": "placements",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "out",
-          "name": "dst",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 328,
-            "column": 44
-          },
-          "type": {
-            "const": false,
-            "element": {
-              "kind": "value_struct",
-              "ref": "KittyPlacement"
-            },
-            "kind": "slice"
-          },
-          "written": "return"
-        }
-      ],
-      "receiver": "KittyImages",
-      "return": {
-        "error_set": [
-          "NoSpaceLeft"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "bits": 64,
-          "is_usize": true,
-          "kind": "int",
-          "signed": false
-        }
-      },
-      "source": {
-        "path": "kitty.zig",
-        "line": 328,
-        "column": 8
-      },
-      "zig_path": "kittyPlacements",
-      "symbol": "zg_kitty_images_placements"
     },
     {
       "doc": "Set the storage size limit for Kitty graphics across all screens.",
@@ -8032,7 +5747,7 @@
         {
           "direction": "in",
           "name": "image_id",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 370,
@@ -8048,7 +5763,7 @@
         {
           "direction": "out",
           "name": "dst",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 370,
@@ -8167,7 +5882,7 @@
         {
           "direction": "out",
           "name": "dst",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 72,
@@ -8209,7 +5924,7 @@
         {
           "direction": "in",
           "name": "width",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 80,
@@ -8225,7 +5940,7 @@
         {
           "direction": "in",
           "name": "height",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 80,
@@ -8241,7 +5956,7 @@
         {
           "direction": "in",
           "name": "rgba",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 80,
@@ -8373,7 +6088,7 @@
         {
           "direction": "in",
           "name": "bytes",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 105,
@@ -9164,6 +6879,2490 @@
       "symbol": "zg_gesture_gesture_close"
     },
     {
+      "doc": "Create a standalone OSC parser.\n\nThe parser is given an allocator, so the sequences that are allowed to grow\npast ghostty's 2 KiB inline buffer -- OSC 52 clipboard writes, mainly -- are\nparsed rather than dropped.",
+      "go_owner": "OSCParser",
+      "name": "newOSCParser",
+      "ownership": "caller",
+      "params": [
+        {
+          "direction": "in",
+          "injected": "allocator",
+          "name": "gpa",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 294,
+            "column": 21
+          },
+          "type": {
+            "kind": "void"
+          }
+        }
+      ],
+      "return": {
+        "error_set": [
+          "OutOfMemory"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "const": false,
+          "kind": "opaque_ptr",
+          "nullable": false,
+          "ref": "OSCParser"
+        }
+      },
+      "source": {
+        "path": "parser.zig",
+        "line": 294,
+        "column": 8
+      },
+      "symbol": "zg_new_osc_parser"
+    },
+    {
+      "doc": "Destroys a parser created by `newOSCParser`.",
+      "name": "freeOSCParser",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "OSCParser",
+      "return": {
+        "kind": "void"
+      },
+      "source": {
+        "path": "parser.zig",
+        "line": 301,
+        "column": 8
+      },
+      "zig_path": "freeOSCParser",
+      "symbol": "zg_osc_parser_free_osc_parser"
+    },
+    {
+      "doc": "How many attributes a CSI SGR parameter list yields, for sizing the slice\n`sgrAttributes` fills. An empty list is the SGR reset, so it yields one.\n\nSee `sgrAttributes` for what `colon_mask` means.",
+      "name": "sgrAttributeCount",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "params",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 388,
+            "column": 26
+          },
+          "type": {
+            "const": true,
+            "element": {
+              "bits": 16,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "colon_mask",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 388,
+            "column": 47
+          },
+          "type": {
+            "bits": 32,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "return": {
+        "error_set": [
+          "SGRTooManyParams"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "bits": 64,
+          "is_usize": true,
+          "kind": "int",
+          "signed": false
+        }
+      },
+      "source": {
+        "path": "parser.zig",
+        "line": 388,
+        "column": 8
+      },
+      "symbol": "zg_sgr_attribute_count"
+    },
+    {
+      "doc": "Parse a CSI SGR parameter list into `dst`, in order, and report how many\nattributes were written.\n\n`params` is the parameter list of a `CSI ... m` sequence with the `m`\ndropped, and `colon_mask` says how the parameters were separated: bit `i`\nset means parameter `i` was followed by a colon rather than a semicolon,\nwhich is ghostty's own convention for the bitset. That distinction is not\ncosmetic -- `4;3` is underline then italic while `4:3` is a curly underline,\nand `38;2;r;g;b` and `38:2::r:g:b` are both truecolor -- so it has to be\ncarried explicitly. A mask is used rather than ghostty's own\n`std.StaticBitSet` because a bitset has no C representation.\n\nA parameter ghostty does not implement yields `unknown` rather than being\nskipped, so the attributes line up with the sequence as written.",
+      "name": "sgrAttributes",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "params",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 409,
+            "column": 22
+          },
+          "type": {
+            "const": true,
+            "element": {
+              "bits": 16,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "colon_mask",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 409,
+            "column": 43
+          },
+          "type": {
+            "bits": 32,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "out",
+          "name": "dst",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 409,
+            "column": 60
+          },
+          "type": {
+            "const": false,
+            "element": {
+              "kind": "value_struct",
+              "ref": "SgrAttribute"
+            },
+            "kind": "slice"
+          },
+          "written": "return"
+        }
+      ],
+      "return": {
+        "error_set": [
+          "NoSpaceLeft",
+          "SGRTooManyParams"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "bits": 64,
+          "is_usize": true,
+          "kind": "int",
+          "signed": false
+        }
+      },
+      "source": {
+        "path": "parser.zig",
+        "line": 409,
+        "column": 8
+      },
+      "symbol": "zg_sgr_attributes"
+    },
+    {
+      "covers": [
+        "Key.codepoint"
+      ],
+      "doc": "The Unicode codepoint the key produces on a US layout, if it has one.",
+      "name": "codepoint",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Key",
+      "receiver_kind": "value",
+      "return": {
+        "child": {
+          "bits": 21,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "optional"
+      },
+      "return_semantic": "codepoint",
+      "source": {
+        "path": "encode.zig",
+        "line": 39,
+        "column": 8
+      },
+      "zig_path": "keyCodepoint",
+      "symbol": "zg_key_codepoint"
+    },
+    {
+      "covers": [
+        "Key.printable"
+      ],
+      "doc": "True for keys that produce text on a US layout.",
+      "name": "printable",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Key",
+      "receiver_kind": "value",
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "encode.zig",
+        "line": 44,
+        "column": 8
+      },
+      "zig_path": "keyPrintable",
+      "symbol": "zg_key_printable"
+    },
+    {
+      "covers": [
+        "Key.modifier"
+      ],
+      "doc": "True for modifier keys such as shift, control and alt.",
+      "name": "modifier",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Key",
+      "receiver_kind": "value",
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "encode.zig",
+        "line": 49,
+        "column": 8
+      },
+      "zig_path": "keyModifier",
+      "symbol": "zg_key_modifier"
+    },
+    {
+      "covers": [
+        "Key.keypad"
+      ],
+      "doc": "True for keys on the numeric keypad.",
+      "name": "keypad",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Key",
+      "receiver_kind": "value",
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "encode.zig",
+        "line": 54,
+        "column": 8
+      },
+      "zig_path": "keyKeypad",
+      "symbol": "zg_key_keypad"
+    },
+    {
+      "covers": [
+        "Key.leftOrRightShift"
+      ],
+      "doc": "True for shift on either side.",
+      "name": "leftOrRightShift",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Key",
+      "receiver_kind": "value",
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "encode.zig",
+        "line": 59,
+        "column": 8
+      },
+      "zig_path": "keyLeftOrRightShift",
+      "symbol": "zg_key_left_or_right_shift"
+    },
+    {
+      "covers": [
+        "Key.leftOrRightAlt"
+      ],
+      "doc": "True for alt on either side.",
+      "name": "leftOrRightAlt",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Key",
+      "receiver_kind": "value",
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "encode.zig",
+        "line": 64,
+        "column": 8
+      },
+      "zig_path": "keyLeftOrRightAlt",
+      "symbol": "zg_key_left_or_right_alt"
+    },
+    {
+      "covers": [
+        "Key.ctrlOrSuper"
+      ],
+      "doc": "True for the platform's primary modifier: command on macOS, control\neverywhere else. Which one that is was decided when the native library\nfor this platform was built, so it needs no runtime check in Go.",
+      "name": "ctrlOrSuper",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Key",
+      "receiver_kind": "value",
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "encode.zig",
+        "line": 71,
+        "column": 8
+      },
+      "zig_path": "keyCtrlOrSuper",
+      "symbol": "zg_key_ctrl_or_super"
+    },
+    {
+      "covers": [
+        "Key.shouldBeRemappable"
+      ],
+      "doc": "True for keys a keybinding UI may remap by default.\n\nFalse for the W3C \"writing system\" keys -- the letters, digits and\npunctuation -- because what those produce is decided by the user's layout,\nso a binding on one is not the same key for everyone. Everything else,\nfunction and navigation keys included, is fair game.",
+      "name": "shouldBeRemappable",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Key",
+      "receiver_kind": "value",
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "encode.zig",
+        "line": 81,
+        "column": 8
+      },
+      "zig_path": "keyShouldBeRemappable",
+      "symbol": "zg_key_should_be_remappable"
+    },
+    {
+      "covers": [
+        "Key.w3c"
+      ],
+      "doc": "The W3C `KeyboardEvent.code` name for the key, such as \"KeyA\" or\n\"ArrowUp\", empty for a key with none. Static storage, so the string stays\nvalid for the life of the process.",
+      "name": "w3C",
+      "package": "input",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Key",
+      "receiver_kind": "value",
+      "return": {
+        "const": true,
+        "element": {
+          "bits": 8,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "slice"
+      },
+      "return_semantic": "utf8_string",
+      "source": {
+        "path": "encode.zig",
+        "line": 88,
+        "column": 8
+      },
+      "zig_path": "keyW3C",
+      "symbol": "zg_key_w3_c"
+    },
+    {
+      "covers": [
+        "Screen.selectAll"
+      ],
+      "doc": "Select the whole screen. Returns false when there is nothing to select.",
+      "name": "selectAll",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Screen",
+      "return": {
+        "error_set": [
+          "OutOfMemory"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "bool"
+        }
+      },
+      "source": {
+        "path": "screen.zig",
+        "line": 32,
+        "column": 8
+      },
+      "zig_path": "screenSelectAll",
+      "symbol": "zg_screen_select_all"
+    },
+    {
+      "doc": "True when the screen has a selection.",
+      "name": "hasSelection",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Screen",
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "screen.zig",
+        "line": 188,
+        "column": 8
+      },
+      "zig_path": "screenHasSelection",
+      "symbol": "zg_screen_has_selection"
+    },
+    {
+      "covers": [
+        "Screen.select"
+      ],
+      "doc": "Select the cells between two viewport positions, inclusive of both ends.\n\n`rectangle` selects the block between the two corners rather than the flow\nof text from one to the other. Returns false when either end is outside the\nviewport, which is what a drag that left the window looks like.",
+      "name": "selectRange",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "x1",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 45,
+            "column": 5
+          },
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "in",
+          "name": "y1",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 46,
+            "column": 5
+          },
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "in",
+          "name": "x2",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 47,
+            "column": 5
+          },
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "in",
+          "name": "y2",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 48,
+            "column": 5
+          },
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "in",
+          "name": "rectangle",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 49,
+            "column": 5
+          },
+          "type": {
+            "kind": "bool"
+          }
+        }
+      ],
+      "receiver": "Screen",
+      "return": {
+        "error_set": [
+          "OutOfMemory"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "bool"
+        }
+      },
+      "source": {
+        "path": "screen.zig",
+        "line": 43,
+        "column": 8
+      },
+      "zig_path": "screenSelectRange",
+      "symbol": "zg_screen_select_range"
+    },
+    {
+      "covers": [
+        "Screen.selectWord"
+      ],
+      "doc": "Select the word under a viewport position -- what a double click does.\n\n`boundaries` are the codepoints that end a word. ghostty has no default for\nthem on purpose: its own UI reads the set from configuration, so the choice\nbelongs to the embedder.\n\nWrapped because ghostty returns the `Selection` rather than applying it, and\na `Selection` holds page pins that cannot cross the C ABI. False when the\nposition is outside the viewport or there is no word under it.",
+      "name": "selectWord",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "x",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 158,
+            "column": 40
+          },
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "in",
+          "name": "y",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 158,
+            "column": 48
+          },
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "in",
+          "name": "boundaries",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "semantic": "codepoint",
+          "source": {
+            "line": 158,
+            "column": 56
+          },
+          "type": {
+            "const": true,
+            "element": {
+              "bits": 21,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          }
+        }
+      ],
+      "receiver": "Screen",
+      "return": {
+        "error_set": [
+          "OutOfMemory"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "bool"
+        }
+      },
+      "source": {
+        "path": "screen.zig",
+        "line": 158,
+        "column": 8
+      },
+      "zig_path": "screenSelectWord",
+      "symbol": "zg_screen_select_word"
+    },
+    {
+      "covers": [
+        "Screen.selectLine"
+      ],
+      "doc": "Select the line under a viewport position -- what a triple click does.\n\nSoft-wrapped lines are followed as one line, leading and trailing whitespace\nis trimmed, and a semantic prompt boundary ends the selection.",
+      "name": "selectLine",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "x",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 169,
+            "column": 40
+          },
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "in",
+          "name": "y",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 169,
+            "column": 48
+          },
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "receiver": "Screen",
+      "return": {
+        "error_set": [
+          "OutOfMemory"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "bool"
+        }
+      },
+      "source": {
+        "path": "screen.zig",
+        "line": 169,
+        "column": 8
+      },
+      "zig_path": "screenSelectLine",
+      "symbol": "zg_screen_select_line"
+    },
+    {
+      "covers": [
+        "Screen.selectOutput"
+      ],
+      "doc": "Select the command output the given position belongs to.\n\nNeeds the shell to mark its prompts with OSC 133; without those marks there\nis no output block to find and this returns false.",
+      "name": "selectOutput",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "x",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 180,
+            "column": 42
+          },
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "in",
+          "name": "y",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 180,
+            "column": 50
+          },
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "receiver": "Screen",
+      "return": {
+        "error_set": [
+          "OutOfMemory"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "bool"
+        }
+      },
+      "source": {
+        "path": "screen.zig",
+        "line": 180,
+        "column": 8
+      },
+      "zig_path": "screenSelectOutput",
+      "symbol": "zg_screen_select_output"
+    },
+    {
+      "covers": [
+        "Screen.selectionString"
+      ],
+      "doc": "The text of the current selection, absent when nothing is selected.",
+      "name": "selectionString",
+      "ownership": "caller",
+      "params": [
+        {
+          "direction": "in",
+          "injected": "allocator",
+          "name": "gpa",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 193,
+            "column": 45
+          },
+          "type": {
+            "kind": "void"
+          }
+        }
+      ],
+      "receiver": "Screen",
+      "release": "freeString",
+      "return": {
+        "error_set": [
+          "OutOfMemory"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "child": {
+            "const": true,
+            "element": {
+              "bits": 8,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          },
+          "kind": "optional"
+        }
+      },
+      "return_semantic": "utf8_string",
+      "source": {
+        "path": "screen.zig",
+        "line": 193,
+        "column": 8
+      },
+      "zig_path": "screenSelectionString",
+      "symbol": "zg_screen_selection_string"
+    },
+    {
+      "doc": "The screen's current selection, or null when there is none.",
+      "name": "selection",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Screen",
+      "return": {
+        "child": {
+          "kind": "value_struct",
+          "ref": "Selection"
+        },
+        "kind": "optional"
+      },
+      "source": {
+        "path": "screen.zig",
+        "line": 86,
+        "column": 8
+      },
+      "zig_path": "screenSelection",
+      "symbol": "zg_screen_selection"
+    },
+    {
+      "doc": "Replace the screen's selection. Returns false, leaving the selection as it\nwas, if either end is outside the screen.",
+      "name": "setSelection",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "sel",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 93,
+            "column": 42
+          },
+          "type": {
+            "kind": "value_struct",
+            "ref": "Selection"
+          }
+        }
+      ],
+      "receiver": "Screen",
+      "return": {
+        "error_set": [
+          "OutOfMemory"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "bool"
+        }
+      },
+      "source": {
+        "path": "screen.zig",
+        "line": 93,
+        "column": 8
+      },
+      "zig_path": "screenSetSelection",
+      "symbol": "zg_screen_set_selection"
+    },
+    {
+      "doc": "The screen row shown at the top of the viewport: subtract it from a\n`Selection` row to get the viewport row a renderer draws at.",
+      "name": "viewportTop",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Screen",
+      "return": {
+        "bits": 32,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "source": {
+        "path": "screen.zig",
+        "line": 125,
+        "column": 8
+      },
+      "zig_path": "screenViewportTop",
+      "symbol": "zg_screen_viewport_top"
+    },
+    {
+      "doc": "The screen's scrollbar state.",
+      "name": "scrollbar",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Screen",
+      "return": {
+        "kind": "value_struct",
+        "ref": "Scrollbar"
+      },
+      "source": {
+        "path": "screen.zig",
+        "line": 144,
+        "column": 8
+      },
+      "zig_path": "screenScrollbar",
+      "symbol": "zg_screen_scrollbar"
+    },
+    {
+      "doc": "Format a whole screen, scrollback included. `Terminal.format` is the\nactive area only.",
+      "name": "format",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "opts",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 76,
+            "column": 36
+          },
+          "type": {
+            "kind": "value_struct",
+            "ref": "FormatOptions"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "writer",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 76,
+            "column": 57
+          },
+          "type": {
+            "kind": "io_writer"
+          }
+        }
+      ],
+      "receiver": "Screen",
+      "return": {
+        "error_set": [
+          "WriteFailed"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "void"
+        }
+      },
+      "source": {
+        "path": "format.zig",
+        "line": 76,
+        "column": 8
+      },
+      "zig_path": "screenFormat",
+      "symbol": "zg_screen_format"
+    },
+    {
+      "doc": "Format the part of a screen inside `sel`. Returns false, writing\nnothing, if `sel` is outside the screen.",
+      "name": "formatSelection",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "opts",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 84,
+            "column": 45
+          },
+          "type": {
+            "kind": "value_struct",
+            "ref": "FormatOptions"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "sel",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 84,
+            "column": 66
+          },
+          "type": {
+            "kind": "value_struct",
+            "ref": "Selection"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "writer",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 84,
+            "column": 82
+          },
+          "type": {
+            "kind": "io_writer"
+          }
+        }
+      ],
+      "receiver": "Screen",
+      "return": {
+        "error_set": [
+          "WriteFailed"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "bool"
+        }
+      },
+      "source": {
+        "path": "format.zig",
+        "line": 84,
+        "column": 8
+      },
+      "zig_path": "screenFormatSelection",
+      "symbol": "zg_screen_format_selection"
+    },
+    {
+      "doc": "Whether the screen cell at `x`, `y` (screen coordinates) is inside `sel`.\nFalse when either is outside the screen.",
+      "name": "selectionContains",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "sel",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 109,
+            "column": 47
+          },
+          "type": {
+            "kind": "value_struct",
+            "ref": "Selection"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "x",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 109,
+            "column": 63
+          },
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "in",
+          "name": "y",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 109,
+            "column": 71
+          },
+          "type": {
+            "bits": 32,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "receiver": "Screen",
+      "return": {
+        "kind": "bool"
+      },
+      "source": {
+        "path": "screen.zig",
+        "line": 109,
+        "column": 8
+      },
+      "zig_path": "screenSelectionContains",
+      "symbol": "zg_screen_selection_contains"
+    },
+    {
+      "doc": "Move the end of `sel` by `adjustment` -- what shift+arrow does to a\nselection -- and return the result. Null if `sel` is outside the screen.",
+      "name": "selectionAdjust",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "sel",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 117,
+            "column": 45
+          },
+          "type": {
+            "kind": "value_struct",
+            "ref": "Selection"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "adjustment",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 117,
+            "column": 61
+          },
+          "type": {
+            "kind": "enum",
+            "ref": "SelectionAdjustment"
+          }
+        }
+      ],
+      "receiver": "Screen",
+      "return": {
+        "child": {
+          "kind": "value_struct",
+          "ref": "Selection"
+        },
+        "kind": "optional"
+      },
+      "source": {
+        "path": "screen.zig",
+        "line": 117,
+        "column": 8
+      },
+      "zig_path": "screenSelectionAdjust",
+      "symbol": "zg_screen_selection_adjust"
+    },
+    {
+      "covers": [
+        "Screen.startHyperlink"
+      ],
+      "doc": "Open a hyperlink on the screen; cells printed until `Screen.endHyperlink`\ncarry it. An empty `id` leaves the link without an explicit id, which is\nwhat OSC 8 does when the parameter is absent.",
+      "name": "startHyperlink",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "uri",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "semantic": "utf8_string",
+          "source": {
+            "line": 201,
+            "column": 44
+          },
+          "type": {
+            "const": true,
+            "element": {
+              "bits": 8,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "id",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "semantic": "utf8_string",
+          "source": {
+            "line": 201,
+            "column": 61
+          },
+          "type": {
+            "const": true,
+            "element": {
+              "bits": 8,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          }
+        }
+      ],
+      "receiver": "Screen",
+      "return": {
+        "error_set": [
+          "OutOfMemory",
+          "OutOfSpace"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "void"
+        }
+      },
+      "source": {
+        "path": "screen.zig",
+        "line": 201,
+        "column": 8
+      },
+      "zig_path": "screenStartHyperlink",
+      "symbol": "zg_screen_start_hyperlink"
+    },
+    {
+      "doc": "The needle being searched for, borrowed.",
+      "name": "needle",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Search",
+      "return": {
+        "const": true,
+        "element": {
+          "bits": 8,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "slice"
+      },
+      "return_semantic": "utf8_string",
+      "source": {
+        "path": "search.zig",
+        "line": 74,
+        "column": 8
+      },
+      "zig_path": "searchNeedle",
+      "symbol": "zg_search_needle"
+    },
+    {
+      "doc": "How much of the terminal the search has covered so far.",
+      "name": "status",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Search",
+      "return": {
+        "kind": "enum",
+        "ref": "SearchState"
+      },
+      "source": {
+        "path": "search.zig",
+        "line": 79,
+        "column": 8
+      },
+      "zig_path": "searchStatus",
+      "symbol": "zg_search_status"
+    },
+    {
+      "doc": "Push the search forward as far as it can go without reading the terminal,\nand report what that achieved. Safe to run beside terminal IO, so a UI can\nspend a slice of each frame here rather than blocking on `searchAll`.\n\n`blocked` means the searcher has consumed everything the last `searchFeed`\ngave it and needs another one.",
+      "name": "tick",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Search",
+      "return": {
+        "kind": "enum",
+        "ref": "SearchProgress"
+      },
+      "source": {
+        "path": "search.zig",
+        "line": 89,
+        "column": 8
+      },
+      "zig_path": "searchTick",
+      "symbol": "zg_search_tick"
+    },
+    {
+      "doc": "Read the terminal into the search: reconcile its screens, hand the\nsearchers more scrollback, and notice whether the viewport moved.\n\nThis is also the only way the search learns that the terminal changed, so\nkeep feeding it while it is in use, even after it reports complete.\n\nPass `active_dirty` false only if you know the active area has not changed\nsince the last feed; true is always correct and the rescan is cheap.",
+      "name": "feed",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "active_dirty",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 101,
+            "column": 34
+          },
+          "type": {
+            "kind": "bool"
+          }
+        }
+      ],
+      "receiver": "Search",
+      "return": {
+        "kind": "void"
+      },
+      "source": {
+        "path": "search.zig",
+        "line": 101,
+        "column": 8
+      },
+      "zig_path": "searchFeed",
+      "symbol": "zg_search_feed"
+    },
+    {
+      "doc": "Run the search to completion, feeding and ticking until nothing is left.\n\nThe simple call, for a program that would rather block than drive the\nsearch itself. A large scrollback can take a while; `searchTick` and\n`searchFeed` are the way to spread that over frames instead.",
+      "name": "all",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Search",
+      "return": {
+        "kind": "void"
+      },
+      "source": {
+        "path": "search.zig",
+        "line": 110,
+        "column": 8
+      },
+      "zig_path": "searchAll",
+      "symbol": "zg_search_all"
+    },
+    {
+      "doc": "Move to the next or previous match on the active screen, wrapping at the\nends, and select it on the screen. False if there is nothing to select.\n\nFeeds first, so it always works against current terminal state.",
+      "name": "select",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "to",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 126,
+            "column": 36
+          },
+          "type": {
+            "kind": "enum",
+            "ref": "SearchDirection"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "scroll",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 126,
+            "column": 57
+          },
+          "type": {
+            "kind": "enum",
+            "ref": "SearchScroll"
+          }
+        }
+      ],
+      "receiver": "Search",
+      "return": {
+        "error_set": [
+          "OutOfMemory"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "bool"
+        }
+      },
+      "source": {
+        "path": "search.zig",
+        "line": 126,
+        "column": 8
+      },
+      "zig_path": "searchSelect",
+      "symbol": "zg_search_select"
+    },
+    {
+      "doc": "How many matches have been found on the active screen so far. Grows as the\nsearch progresses, so it is only final once the status is `complete`.",
+      "name": "matchCount",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Search",
+      "return": {
+        "bits": 64,
+        "is_usize": true,
+        "kind": "int",
+        "signed": false
+      },
+      "source": {
+        "path": "search.zig",
+        "line": 132,
+        "column": 8
+      },
+      "zig_path": "searchMatchCount",
+      "symbol": "zg_search_match_count"
+    },
+    {
+      "doc": "Copy the matches found on the active screen so far into `dst`, most recent\nscreen content first, and return how many were written. Matches are in\nscreen coordinates; size `dst` from `searchMatchCount`.",
+      "name": "matches",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "out",
+          "name": "dst",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 140,
+            "column": 37
+          },
+          "type": {
+            "const": false,
+            "element": {
+              "kind": "value_struct",
+              "ref": "Selection"
+            },
+            "kind": "slice"
+          },
+          "written": "return"
+        }
+      ],
+      "receiver": "Search",
+      "return": {
+        "bits": 64,
+        "is_usize": true,
+        "kind": "int",
+        "signed": false
+      },
+      "source": {
+        "path": "search.zig",
+        "line": 140,
+        "column": 8
+      },
+      "zig_path": "searchMatches",
+      "symbol": "zg_search_matches"
+    },
+    {
+      "doc": "The matches on the pages the viewport covers, in screen coordinates, for a\nrenderer highlighting what is on screen. Returns how many were written.\n\nThis is the cheap way to draw highlights: the viewport is searched on its\nown and the results are cached until it moves, so a frame does not pay for\nthe whole scrollback, and the answer is there before the scrollback search\nhas finished. It can include a few matches just off screen when they share\na page with the viewport, which a renderer clips anyway.\n\nThe count is not known in advance, so size `dst` generously and treat a\nfull `dst` as \"there may be more\".",
+      "name": "viewportMatches",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "out",
+          "name": "dst",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 166,
+            "column": 45
+          },
+          "type": {
+            "const": false,
+            "element": {
+              "kind": "value_struct",
+              "ref": "Selection"
+            },
+            "kind": "slice"
+          },
+          "written": "return"
+        }
+      ],
+      "receiver": "Search",
+      "return": {
+        "error_set": [
+          "OutOfMemory"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "bits": 64,
+          "is_usize": true,
+          "kind": "int",
+          "signed": false
+        }
+      },
+      "source": {
+        "path": "search.zig",
+        "line": 166,
+        "column": 8
+      },
+      "zig_path": "searchViewportMatches",
+      "symbol": "zg_search_viewport_matches"
+    },
+    {
+      "doc": "The match `searchSelect` last moved to, or null before the first move.",
+      "name": "selectedMatch",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Search",
+      "return": {
+        "child": {
+          "kind": "value_struct",
+          "ref": "Selection"
+        },
+        "kind": "optional"
+      },
+      "source": {
+        "path": "search.zig",
+        "line": 179,
+        "column": 8
+      },
+      "zig_path": "searchSelectedMatch",
+      "symbol": "zg_search_selected_match"
+    },
+    {
+      "doc": "The index of the selected match in the list `searchMatches` writes, or null\nbefore the first `searchSelect`. What a UI shows as \"3 of 12\".",
+      "name": "selectedIndex",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Search",
+      "return": {
+        "child": {
+          "bits": 64,
+          "is_usize": true,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "optional"
+      },
+      "source": {
+        "path": "search.zig",
+        "line": 188,
+        "column": 8
+      },
+      "zig_path": "searchSelectedIndex",
+      "symbol": "zg_search_selected_index"
+    },
+    {
+      "doc": "Decode as far as the READY marker: everything a terminal needs to be drawn.\n\n`max_continuation_bytes` bounds the unfinished-sequence suffix. After this\nthe terminal can be taken with `restoreInto` and drawn, and the history\narrives through `next` at whatever pace suits.",
+      "name": "ready",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "injected": "allocator",
+          "name": "gpa",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 139,
+            "column": 53
+          },
+          "type": {
+            "kind": "void"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "max_continuation_bytes",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 139,
+            "column": 69
+          },
+          "type": {
+            "bits": 64,
+            "is_usize": true,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "receiver": "SnapshotDecoder",
+      "return": {
+        "error_set": [
+          "EndOfStream",
+          "ReadFailed",
+          "OutOfMemory",
+          "OutOfSpace",
+          "InvalidDimensions",
+          "InvalidScreenCount",
+          "NoPendingState",
+          "NonCanonicalContinuation",
+          "ReplayWouldCommit",
+          "InvalidMagic",
+          "UnsupportedVersion",
+          "InvalidTag",
+          "InvalidChecksum",
+          "PayloadNotExhausted",
+          "UnexpectedRecordTag",
+          "InvalidKey",
+          "InvalidRowCellCount",
+          "InvalidKind",
+          "InvalidDestinationCapacity",
+          "ZeroRowCount",
+          "ZeroColCount",
+          "UnmarkedGraphemeRow",
+          "MissingGraphemeData",
+          "InvalidGraphemeCount",
+          "UnmarkedGraphemeCell",
+          "MissingStyle",
+          "UnmarkedStyleRow",
+          "MismatchedStyleRef",
+          "InvalidStyleCount",
+          "MissingHyperlinkData",
+          "MismatchedHyperlinkRef",
+          "UnmarkedHyperlinkCell",
+          "UnmarkedHyperlinkRow",
+          "InvalidSpacerTailLocation",
+          "InvalidSpacerHeadLocation",
+          "UnwrappedSpacerHead",
+          "InvalidPageDimensions",
+          "NoPages",
+          "InsufficientRows",
+          "InvalidPageCount",
+          "ContinuationLimitExceeded",
+          "UnexpectedScreenKey",
+          "DuplicateScreen",
+          "AlreadyReady"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "void"
+        }
+      },
+      "source": {
+        "path": "snapshot.zig",
+        "line": 139,
+        "column": 8
+      },
+      "zig_path": "snapshotDecoderReady",
+      "symbol": "zg_snapshot_decoder_ready"
+    },
+    {
+      "doc": "Replace `term` with the decoded terminal. See `snapshotRestoreInto`; the\nsame one-shot rule applies, and `next` wants the same terminal afterwards.",
+      "name": "restoreInto",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "injected": "allocator",
+          "name": "gpa",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 149,
+            "column": 59
+          },
+          "type": {
+            "kind": "void"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "term",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 149,
+            "column": 75
+          },
+          "type": {
+            "const": false,
+            "kind": "opaque_ptr",
+            "nullable": false,
+            "ref": "Terminal"
+          }
+        }
+      ],
+      "receiver": "SnapshotDecoder",
+      "return": {
+        "error_set": [
+          "TerminalTaken"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "void"
+        }
+      },
+      "source": {
+        "path": "snapshot.zig",
+        "line": 149,
+        "column": 8
+      },
+      "zig_path": "snapshotDecoderRestoreInto",
+      "symbol": "zg_snapshot_decoder_restore_into"
+    },
+    {
+      "doc": "The unfinished sequence the snapshot was taken in, empty at ground.",
+      "name": "continuation",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "SnapshotDecoder",
+      "return": {
+        "const": true,
+        "element": {
+          "bits": 8,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "slice"
+      },
+      "source": {
+        "path": "snapshot.zig",
+        "line": 155,
+        "column": 8
+      },
+      "zig_path": "snapshotDecoderContinuation",
+      "symbol": "zg_snapshot_decoder_continuation"
+    },
+    {
+      "doc": "Decode one page of history and prepend it to its screen in `term`, which\nmust be the one `restoreInto` filled.\n\nReturns null once the snapshot is complete. Wire errors are fatal -- the\nposition in the stream is lost -- but a page that cannot be applied is\nreported as zero rows rather than failing, because the terminal is live\nand may have moved on since `ready`.",
+      "name": "next",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "injected": "allocator",
+          "name": "gpa",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 167,
+            "column": 52
+          },
+          "type": {
+            "kind": "void"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "term",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 167,
+            "column": 68
+          },
+          "type": {
+            "const": false,
+            "kind": "opaque_ptr",
+            "nullable": false,
+            "ref": "Terminal"
+          }
+        }
+      ],
+      "receiver": "SnapshotDecoder",
+      "return": {
+        "error_set": [
+          "EndOfStream",
+          "ReadFailed",
+          "OutOfMemory",
+          "InvalidDimensions",
+          "InvalidTag",
+          "InvalidChecksum",
+          "PayloadNotExhausted",
+          "UnexpectedRecordTag",
+          "InvalidKey",
+          "InvalidRowCellCount",
+          "InvalidKind",
+          "InvalidDestinationCapacity",
+          "ZeroRowCount",
+          "ZeroColCount",
+          "UnmarkedGraphemeRow",
+          "MissingGraphemeData",
+          "InvalidGraphemeCount",
+          "UnmarkedGraphemeCell",
+          "MissingStyle",
+          "UnmarkedStyleRow",
+          "MismatchedStyleRef",
+          "InvalidStyleCount",
+          "MissingHyperlinkData",
+          "MismatchedHyperlinkRef",
+          "UnmarkedHyperlinkCell",
+          "UnmarkedHyperlinkRow",
+          "InvalidSpacerTailLocation",
+          "InvalidSpacerHeadLocation",
+          "UnwrappedSpacerHead",
+          "InvalidPageDimensions",
+          "DecoderNotReady",
+          "DecoderFailed",
+          "UnexpectedHistoryKey",
+          "DuplicateHistory",
+          "RowCountOverflow",
+          "PageSizeOverflow"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "child": {
+            "kind": "value_struct",
+            "ref": "SnapshotProgress"
+          },
+          "kind": "optional"
+        }
+      },
+      "source": {
+        "path": "snapshot.zig",
+        "line": 167,
+        "column": 8
+      },
+      "zig_path": "snapshotDecoderNext",
+      "symbol": "zg_snapshot_decoder_next"
+    },
+    {
+      "doc": "Replace `term` with the terminal the snapshot holds: its size, screens,\nscrollback, modes and colors. The snapshot gives its terminal up once;\na second call fails. Streams on `term` keep pointing at it, but their\nparser state belongs to the old contents, so open a new stream and feed\nit `continuation` before any new input.\n\nzigo allows one constructor per handle and `newTerminal` is it, so a\nrestore fills a terminal the caller made rather than returning one.",
+      "name": "restoreInto",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "injected": "allocator",
+          "name": "gpa",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 42,
+            "column": 45
+          },
+          "type": {
+            "kind": "void"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "term",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 42,
+            "column": 61
+          },
+          "type": {
+            "const": false,
+            "kind": "opaque_ptr",
+            "nullable": false,
+            "ref": "Terminal"
+          }
+        }
+      ],
+      "receiver": "Snapshot",
+      "return": {
+        "error_set": [
+          "TerminalTaken"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "void"
+        }
+      },
+      "source": {
+        "path": "snapshot.zig",
+        "line": 42,
+        "column": 8
+      },
+      "zig_path": "snapshotRestoreInto",
+      "symbol": "zg_snapshot_restore_into"
+    },
+    {
+      "doc": "The bytes of the unfinished sequence the snapshot was taken in, empty\nwhen the stream was at ground. Feed them to the restored terminal's\nstream before any new input.",
+      "name": "continuation",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Snapshot",
+      "return": {
+        "const": true,
+        "element": {
+          "bits": 8,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "slice"
+      },
+      "source": {
+        "path": "snapshot.zig",
+        "line": 58,
+        "column": 8
+      },
+      "zig_path": "snapshotContinuation",
+      "symbol": "zg_snapshot_continuation"
+    },
+    {
+      "covers": [
+        "ColorName.default"
+      ],
+      "doc": "The color's default value as `0xRRGGBB`, or null when the name has none.\n\nOnly the sixteen named colors have one. The enum is open because every\nother 256-color palette index is a valid value, and those take their\ncolor from the palette rather than from a default; read them with\n`paletteColors`.\n\nWrapped because ghostty returns `color.RGB`, a `packed struct(u24)` with\nno C representation, behind an error union.",
+      "name": "default",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "ColorName",
+      "receiver_kind": "value",
+      "return": {
+        "child": {
+          "bits": 32,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "optional"
+      },
+      "source": {
+        "path": "terminal.zig",
+        "line": 89,
+        "column": 8
+      },
+      "zig_path": "colorNameDefault",
+      "symbol": "zg_color_name_default"
+    },
+    {
+      "doc": "How many `RenderCell`s `renderCells` needs: `rows * cols`.",
+      "name": "cellCount",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "RenderState",
+      "return": {
+        "bits": 64,
+        "is_usize": true,
+        "kind": "int",
+        "signed": false
+      },
+      "source": {
+        "path": "render.zig",
+        "line": 73,
+        "column": 8
+      },
+      "zig_path": "renderCellCount",
+      "symbol": "zg_render_state_cell_count"
+    },
+    {
+      "doc": "Flatten the viewport into `dst`, row-major from the top, and report how\nmany cells were written.",
+      "name": "cells",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "out",
+          "name": "dst",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 79,
+            "column": 40
+          },
+          "type": {
+            "const": false,
+            "element": {
+              "kind": "value_struct",
+              "ref": "RenderCell"
+            },
+            "kind": "slice"
+          },
+          "written": "return"
+        }
+      ],
+      "receiver": "RenderState",
+      "return": {
+        "error_set": [
+          "NoSpaceLeft"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "bits": 64,
+          "is_usize": true,
+          "kind": "int",
+          "signed": false
+        }
+      },
+      "source": {
+        "path": "render.zig",
+        "line": 79,
+        "column": 8
+      },
+      "zig_path": "renderCells",
+      "symbol": "zg_render_state_cells"
+    },
+    {
+      "doc": "The terminal's default background, 0xRRGGBB. Already reversed if the\nterminal is in reverse-video mode.",
+      "name": "background",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "RenderState",
+      "return": {
+        "bits": 32,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "source": {
+        "path": "render.zig",
+        "line": 263,
+        "column": 8
+      },
+      "zig_path": "renderBackground",
+      "symbol": "zg_render_state_background"
+    },
+    {
+      "name": "foreground",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "RenderState",
+      "return": {
+        "bits": 32,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "source": {
+        "path": "render.zig",
+        "line": 267,
+        "column": 8
+      },
+      "zig_path": "renderForeground",
+      "symbol": "zg_render_state_foreground"
+    },
+    {
+      "doc": "The cursor's column within the viewport, or false if it is scrolled out.",
+      "name": "cursorX",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "RenderState",
+      "return": {
+        "child": {
+          "bits": 16,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "optional"
+      },
+      "source": {
+        "path": "render.zig",
+        "line": 272,
+        "column": 8
+      },
+      "zig_path": "renderCursorX",
+      "symbol": "zg_render_state_cursor_x"
+    },
+    {
+      "name": "cursorY",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "RenderState",
+      "return": {
+        "child": {
+          "bits": 16,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "optional"
+      },
+      "source": {
+        "path": "render.zig",
+        "line": 277,
+        "column": 8
+      },
+      "zig_path": "renderCursorY",
+      "symbol": "zg_render_state_cursor_y"
+    },
+    {
+      "doc": "Whether the cursor sits on the tail of a wide character. A renderer that\ndraws a one-cell cursor may want to move it back one column so it covers\nthe character rather than half of it. Null when the cursor is scrolled out\nof the viewport, the same as `renderCursorX`.",
+      "name": "cursorWideTail",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "RenderState",
+      "return": {
+        "child": {
+          "kind": "bool"
+        },
+        "kind": "optional"
+      },
+      "source": {
+        "path": "render.zig",
+        "line": 286,
+        "column": 8
+      },
+      "zig_path": "renderCursorWideTail",
+      "symbol": "zg_render_state_cursor_wide_tail"
+    },
+    {
+      "doc": "The cursor color as of this frame, 0xRRGGBB, or null when the program has\nnot set one and the renderer should pick. Read from the snapshot rather\nthan the terminal so it matches the cells drawn beside it.",
+      "name": "cursorColor",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "RenderState",
+      "return": {
+        "child": {
+          "bits": 32,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "optional"
+      },
+      "source": {
+        "path": "render.zig",
+        "line": 294,
+        "column": 8
+      },
+      "zig_path": "renderCursorColor",
+      "symbol": "zg_render_state_cursor_color"
+    },
+    {
+      "doc": "What changed since `RenderState.clean`. `RenderState.update` raises this;\nnothing lowers it but `clean`.",
+      "name": "dirty",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "RenderState",
+      "return": {
+        "kind": "enum",
+        "ref": "RenderDirty"
+      },
+      "source": {
+        "path": "render.zig",
+        "line": 171,
+        "column": 8
+      },
+      "zig_path": "renderDirty",
+      "symbol": "zg_render_state_dirty"
+    },
+    {
+      "doc": "Write the indexes of the dirty viewport rows into `dst`, top to bottom,\nand report how many there are. `error.NoSpaceLeft` if `dst` is shorter\nthan that; size it to `rows`.",
+      "name": "dirtyRows",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "out",
+          "name": "dst",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 182,
+            "column": 44
+          },
+          "type": {
+            "const": false,
+            "element": {
+              "bits": 16,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          },
+          "written": "return"
+        }
+      ],
+      "receiver": "RenderState",
+      "return": {
+        "error_set": [
+          "NoSpaceLeft"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "bits": 64,
+          "is_usize": true,
+          "kind": "int",
+          "signed": false
+        }
+      },
+      "source": {
+        "path": "render.zig",
+        "line": 182,
+        "column": 8
+      },
+      "zig_path": "renderDirtyRows",
+      "symbol": "zg_render_state_dirty_rows"
+    },
+    {
+      "doc": "Flatten one viewport row into `dst` and report how many cells were\nwritten: `cols`, or zero for a row off the grid. For a renderer that\nredraws only the rows `renderDirtyRows` names.",
+      "name": "rowCells",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "y",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 91,
+            "column": 43
+          },
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "out",
+          "name": "dst",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 91,
+            "column": 51
+          },
+          "type": {
+            "const": false,
+            "element": {
+              "kind": "value_struct",
+              "ref": "RenderCell"
+            },
+            "kind": "slice"
+          },
+          "written": "return"
+        }
+      ],
+      "receiver": "RenderState",
+      "return": {
+        "error_set": [
+          "NoSpaceLeft"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "bits": 64,
+          "is_usize": true,
+          "kind": "int",
+          "signed": false
+        }
+      },
+      "source": {
+        "path": "render.zig",
+        "line": 91,
+        "column": 8
+      },
+      "zig_path": "renderRowCells",
+      "symbol": "zg_render_state_row_cells"
+    },
+    {
+      "doc": "The codepoints of the cell at viewport `x`, `y`: the base codepoint\nfollowed by any combining marks or ZWJ sequence members, which\n`RenderCell.codepoint` alone drops. Copies them into `dst` and returns\nhow many were written; zero for an empty cell or a position off the grid.\n`error.NoSpaceLeft` if `dst` is shorter than the cluster.",
+      "name": "graphemes",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "x",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 198,
+            "column": 44
+          },
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "in",
+          "name": "y",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 198,
+            "column": 52
+          },
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "out",
+          "name": "dst",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "semantic": "codepoint",
+          "source": {
+            "line": 198,
+            "column": 60
+          },
+          "type": {
+            "const": false,
+            "element": {
+              "bits": 32,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          },
+          "written": "return"
+        }
+      ],
+      "receiver": "RenderState",
+      "return": {
+        "error_set": [
+          "NoSpaceLeft"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "bits": 64,
+          "is_usize": true,
+          "kind": "int",
+          "signed": false
+        }
+      },
+      "source": {
+        "path": "render.zig",
+        "line": 198,
+        "column": 8
+      },
+      "zig_path": "renderGraphemes",
+      "symbol": "zg_render_state_graphemes"
+    },
+    {
+      "covers": [
+        "RenderState.linkCells"
+      ],
+      "doc": "The OSC 8 hyperlink under viewport `x`, `y`, or null when the cell has\nnone. Valid only until the terminal changes: like ghostty's own\n`linkCells`, this reads page memory through the pins `RenderState.update`\ncaptured, so call it right after an update.",
+      "name": "hyperlinkAt",
+      "ownership": "caller",
+      "params": [
+        {
+          "direction": "in",
+          "injected": "allocator",
+          "name": "gpa",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 226,
+            "column": 46
+          },
+          "type": {
+            "kind": "void"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "x",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 226,
+            "column": 62
+          },
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "in",
+          "name": "y",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 226,
+            "column": 70
+          },
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "receiver": "RenderState",
+      "release": "freeString",
+      "return": {
+        "error_set": [
+          "OutOfMemory"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "child": {
+            "const": true,
+            "element": {
+              "bits": 8,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          },
+          "kind": "optional"
+        }
+      },
+      "return_semantic": "utf8_string",
+      "source": {
+        "path": "render.zig",
+        "line": 226,
+        "column": 8
+      },
+      "zig_path": "renderHyperlinkAt",
+      "symbol": "zg_render_state_hyperlink_at"
+    },
+    {
+      "doc": "Rebuild the snapshot from `term`'s active screen.\n\nPlacements that cannot be drawn at all are left out: the ones scrolled off\nthe viewport, and the ones whose text has been pruned out of the scrollback.\nVirtual (unicode placeholder) placements are kept, flagged and positionless,\nsince the cells that reference them are what place them; so are the ones\npositioned relative to a virtual placement, for the same reason.",
+      "name": "update",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "term",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 176,
+            "column": 40
+          },
+          "type": {
+            "const": false,
+            "kind": "opaque_ptr",
+            "nullable": false,
+            "ref": "Terminal"
+          }
+        }
+      ],
+      "receiver": "KittyImages",
+      "return": {
+        "error_set": [
+          "OutOfMemory"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "void"
+        }
+      },
+      "source": {
+        "path": "kitty.zig",
+        "line": 176,
+        "column": 8
+      },
+      "zig_path": "kittyUpdate",
+      "symbol": "zg_kitty_images_update"
+    },
+    {
+      "doc": "How many placements `kittyPlacements` will write.",
+      "name": "placementCount",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "KittyImages",
+      "return": {
+        "bits": 64,
+        "is_usize": true,
+        "kind": "int",
+        "signed": false
+      },
+      "source": {
+        "path": "kitty.zig",
+        "line": 323,
+        "column": 8
+      },
+      "zig_path": "kittyPlacementCount",
+      "symbol": "zg_kitty_images_placement_count"
+    },
+    {
+      "doc": "Copy the placements into `dst`, back to front, and report how many.",
+      "name": "placements",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "out",
+          "name": "dst",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 328,
+            "column": 44
+          },
+          "type": {
+            "const": false,
+            "element": {
+              "kind": "value_struct",
+              "ref": "KittyPlacement"
+            },
+            "kind": "slice"
+          },
+          "written": "return"
+        }
+      ],
+      "receiver": "KittyImages",
+      "return": {
+        "error_set": [
+          "NoSpaceLeft"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "bits": 64,
+          "is_usize": true,
+          "kind": "int",
+          "signed": false
+        }
+      },
+      "source": {
+        "path": "kitty.zig",
+        "line": 328,
+        "column": 8
+      },
+      "zig_path": "kittyPlacements",
+      "symbol": "zg_kitty_images_placements"
+    },
+    {
       "doc": "What a single, double and triple click select.\n\nDefaults to ghostty's own mapping, so this is only for an emulator offering\nsomething else -- selecting command output on triple click, say. Takes\neffect on the next press; a gesture already in progress keeps the behavior\nits press chose.",
       "name": "setBehaviors",
       "ownership": "borrowed",
@@ -9558,63 +9757,6 @@
       "symbol": "zg_gesture_dragged"
     },
     {
-      "doc": "Create a standalone OSC parser.\n\nThe parser is given an allocator, so the sequences that are allowed to grow\npast ghostty's 2 KiB inline buffer -- OSC 52 clipboard writes, mainly -- are\nparsed rather than dropped.",
-      "go_owner": "OSCParser",
-      "name": "newOSCParser",
-      "ownership": "caller",
-      "params": [
-        {
-          "direction": "in",
-          "injected": "allocator",
-          "name": "gpa",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 294,
-            "column": 21
-          },
-          "type": {
-            "kind": "void"
-          }
-        }
-      ],
-      "return": {
-        "error_set": [
-          "OutOfMemory"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "const": false,
-          "kind": "opaque_ptr",
-          "nullable": false,
-          "ref": "OSCParser"
-        }
-      },
-      "source": {
-        "path": "parser.zig",
-        "line": 294,
-        "column": 8
-      },
-      "symbol": "zg_new_osc_parser"
-    },
-    {
-      "doc": "Destroys a parser created by `newOSCParser`.",
-      "name": "freeOSCParser",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "OSCParser",
-      "return": {
-        "kind": "void"
-      },
-      "source": {
-        "path": "parser.zig",
-        "line": 301,
-        "column": 8
-      },
-      "zig_path": "freeOSCParser",
-      "symbol": "zg_osc_parser_free_osc_parser"
-    },
-    {
       "doc": "Feed bytes to the parser, applying them to the terminal.",
       "name": "feed",
       "ownership": "borrowed",
@@ -9622,7 +9764,7 @@
         {
           "direction": "in",
           "name": "bytes",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 356,
@@ -9659,7 +9801,7 @@
         {
           "direction": "in",
           "name": "terminator",
-          "name_source": "sidecar",
+          "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 112,
@@ -10026,148 +10168,6 @@
         "column": 12
       },
       "symbol": "zg_osc_parser_progress_value"
-    },
-    {
-      "doc": "How many attributes a CSI SGR parameter list yields, for sizing the slice\n`sgrAttributes` fills. An empty list is the SGR reset, so it yields one.\n\nSee `sgrAttributes` for what `colon_mask` means.",
-      "name": "sgrAttributeCount",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "params",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 388,
-            "column": 26
-          },
-          "type": {
-            "const": true,
-            "element": {
-              "bits": 16,
-              "is_usize": false,
-              "kind": "int",
-              "signed": false
-            },
-            "kind": "slice"
-          }
-        },
-        {
-          "direction": "in",
-          "name": "colon_mask",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 388,
-            "column": 47
-          },
-          "type": {
-            "bits": 32,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        }
-      ],
-      "return": {
-        "error_set": [
-          "SGRTooManyParams"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "bits": 64,
-          "is_usize": true,
-          "kind": "int",
-          "signed": false
-        }
-      },
-      "source": {
-        "path": "parser.zig",
-        "line": 388,
-        "column": 8
-      },
-      "symbol": "zg_sgr_attribute_count"
-    },
-    {
-      "doc": "Parse a CSI SGR parameter list into `dst`, in order, and report how many\nattributes were written.\n\n`params` is the parameter list of a `CSI ... m` sequence with the `m`\ndropped, and `colon_mask` says how the parameters were separated: bit `i`\nset means parameter `i` was followed by a colon rather than a semicolon,\nwhich is ghostty's own convention for the bitset. That distinction is not\ncosmetic -- `4;3` is underline then italic while `4:3` is a curly underline,\nand `38;2;r;g;b` and `38:2::r:g:b` are both truecolor -- so it has to be\ncarried explicitly. A mask is used rather than ghostty's own\n`std.StaticBitSet` because a bitset has no C representation.\n\nA parameter ghostty does not implement yields `unknown` rather than being\nskipped, so the attributes line up with the sequence as written.",
-      "name": "sgrAttributes",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "params",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 409,
-            "column": 22
-          },
-          "type": {
-            "const": true,
-            "element": {
-              "bits": 16,
-              "is_usize": false,
-              "kind": "int",
-              "signed": false
-            },
-            "kind": "slice"
-          }
-        },
-        {
-          "direction": "in",
-          "name": "colon_mask",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 409,
-            "column": 43
-          },
-          "type": {
-            "bits": 32,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        },
-        {
-          "direction": "out",
-          "name": "dst",
-          "name_source": "sidecar",
-          "retention": "borrowed",
-          "source": {
-            "line": 409,
-            "column": 60
-          },
-          "type": {
-            "const": false,
-            "element": {
-              "kind": "value_struct",
-              "ref": "SgrAttribute"
-            },
-            "kind": "slice"
-          },
-          "written": "return"
-        }
-      ],
-      "return": {
-        "error_set": [
-          "NoSpaceLeft",
-          "SGRTooManyParams"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "bits": 64,
-          "is_usize": true,
-          "kind": "int",
-          "signed": false
-        }
-      },
-      "source": {
-        "path": "parser.zig",
-        "line": 409,
-        "column": 8
-      },
-      "symbol": "zg_sgr_attributes"
     }
   ],
   "io": "target.io",
@@ -10936,7 +10936,7 @@
         "signed": false
       },
       "text": true,
-      "zig_path": "terminal.modes.Mode__enum_28823"
+      "zig_path": "terminal.modes.Mode__enum_29098"
     },
     {
       "exhaustive": true,

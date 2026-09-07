@@ -17,48 +17,41 @@ const gostty = @import("gostty");
 fn enumeration(comptime name: []const u8, comptime opts: struct {
     text: bool = false,
     open: bool = false,
-}) struct {
-    type: type,
-    repr: @TypeOf(.enum_literal),
-    name: []const u8,
-    text: bool,
-    exhaustive: bool,
-} {
-    return .{
+}) zigo.Type {
+    return .{ .enumeration = .{
         .type = @field(gostty, name),
-        .repr = .enumeration,
         .name = name,
         .text = opts.text,
         .exhaustive = !opts.open,
-    };
+    } };
 }
 
 /// One Go callback type. Every callback here is retained by the stream that
 /// takes it, may re-enter the bindings, and runs on the thread that fed the
 /// bytes; the name is required because a function-pointer alias has none of
 /// its own to derive.
-fn callback(comptime decl: []const u8, comptime go_name: []const u8) struct {
-    type: type,
-    repr: @TypeOf(.enum_literal),
-    name: []const u8,
-    retention: @TypeOf(.enum_literal),
-    reentrancy: @TypeOf(.enum_literal),
-    thread: @TypeOf(.enum_literal),
-} {
-    return .{
+fn callback(comptime decl: []const u8, comptime go_name: []const u8) zigo.Type {
+    return .{ .callback = .{
         .type = @field(gostty, decl),
-        .repr = .callback,
         .name = go_name,
         .retention = .retained,
         .reentrancy = .allowed,
         .thread = .caller,
-    };
+    } };
 }
+
+/// A caller-provided buffer the function fills and reports the length of.
+const out: zigo.Param = .{ .direction = .out, .written = .result };
+/// A parameter or result that is bytes rather than text, which inference
+/// cannot tell apart on its own.
+const bytes: zigo.Param = .{ .semantic = .opaque_bytes };
+/// A parameter zigo names and shapes from the source, kept to hold a position.
+const any: zigo.Param = .{};
 
 pub const bindings = zigo.define(.{
     .root = gostty,
     .allocator = .smp_allocator,
-    .io = "io",
+    .io = .{ .path = "io" },
     // ghostty spells codepoints as `u21`; every such parameter and return is
     // a Go `rune`. The `u32` ones that are also codepoints opt in below.
     .codepoints = .infer_u21,
@@ -66,14 +59,14 @@ pub const bindings = zigo.define(.{
     // titles, URIs, needles, VT sequences. Inferring it keeps the spelling out
     // of every entry below; `.semantic = .opaque_bytes` opts a byte buffer out.
     .strings = .infer_utf8,
-    // Every `.returns = .caller` string here is allocator memory `freeString`
-    // hands back, so it is the default rather than a spelling per entry.
+    // Every caller-owned string here is allocator memory `freeString` hands
+    // back, so it is the default rather than a spelling per entry.
     .string_release = "root.freeString",
     // Key and mouse encoding is over half the public surface -- the `Key` enum
     // alone is 176 constants -- and nothing on the terminal side names it, so it
     // gets its own package. The dependency runs one way: `input` names
     // `*Terminal`, the root package names nothing from `input`.
-    .packages = .{
+    .packages = &.{
         // Process-global hooks ghostty needs the embedder for. Their own
         // package so that `sys.Clear` reads as what it is, and because a
         // renderer that never shows images or a program that trusts the
@@ -81,8 +74,8 @@ pub const bindings = zigo.define(.{
         .{
             .path = "sys",
             .doc = "Package sys installs the process-global hooks libghostty-vt cannot provide in a library build: a PNG decoder for Kitty graphics and a secure entropy source for Kitty clipboard grants.",
-            .types = .{"Handler"},
-            .namespaces = .{"sys"},
+            .types = &.{"Handler"},
+            .namespaces = &.{"sys"},
         },
         .{
             .path = "input",
@@ -93,10 +86,9 @@ pub const bindings = zigo.define(.{
             // `MouseTracking` and `MouseReportFormat` are state reads that
             // belong to the root package -- pulling them in here would make
             // the two packages import each other.
-            .types = .{ "Key*", "MouseAction", "MouseButton", "MouseEvent", "FocusEvent", "RenderSize" },
-            // Plain names, unlike the entries below: these select which of the
-            // already-declared functions move here, they do not declare any.
-            .functions = .{
+            .types = &.{ "Key*", "MouseAction", "MouseButton", "MouseEvent", "FocusEvent", "RenderSize" },
+            // Paths of functions declared below, selecting which move here.
+            .functions = &.{
                 "root.encodeKey",
                 "root.encodeMouse",
                 "root.input.encodeFocus",
@@ -108,40 +100,41 @@ pub const bindings = zigo.define(.{
         },
     },
 
-    .types = .{
+    .types = &.{
         .{
-            .type = gostty.Terminal,
-            .repr = .@"opaque",
-            .fields = .{
-                .{ .path = "cols" },
-                .{ .path = "rows" },
-                .{ .path = "screens.active.cursor.x", .name = "cursorX" },
-                .{ .path = "screens.active.cursor.y", .name = "cursorY" },
-                .{ .path = "screens.active.cursor.cursor_style", .name = "cursorStyle" },
-                .{ .path = "screens.active_key", .name = "activeScreenKey" },
-                // The LCF: set once printing has filled the last column, so the
-                // next print soft-wraps instead of overwriting.
-                .{ .path = "screens.active.cursor.pending_wrap", .name = "cursorPendingWrap" },
-                .{ .path = "screens.active.cursor.protected", .name = "cursorProtected" },
-                .{ .path = "width_px", .name = "widthPx" },
-                .{ .path = "height_px", .name = "heightPx" },
-                .{ .path = "flags.focused", .name = "focused" },
-                .{ .path = "flags.visible", .name = "visible" },
-                .{ .path = "flags.password_input", .name = "passwordInput" },
+            .handle = .{
+                .type = gostty.Terminal,
+                .fields = &.{
+                    .{ .path = "cols" },
+                    .{ .path = "rows" },
+                    .{ .path = "screens.active.cursor.x", .name = "cursorX" },
+                    .{ .path = "screens.active.cursor.y", .name = "cursorY" },
+                    .{ .path = "screens.active.cursor.cursor_style", .name = "cursorStyle" },
+                    .{ .path = "screens.active_key", .name = "activeScreenKey" },
+                    // The LCF: set once printing has filled the last column, so the
+                    // next print soft-wraps instead of overwriting.
+                    .{ .path = "screens.active.cursor.pending_wrap", .name = "cursorPendingWrap" },
+                    .{ .path = "screens.active.cursor.protected", .name = "cursorProtected" },
+                    .{ .path = "width_px", .name = "widthPx" },
+                    .{ .path = "height_px", .name = "heightPx" },
+                    .{ .path = "flags.focused", .name = "focused" },
+                    .{ .path = "flags.visible", .name = "visible" },
+                    .{ .path = "flags.password_input", .name = "passwordInput" },
+                },
             },
         },
-        .{ .type = gostty.Stream, .repr = .@"opaque", .fields = .{
+        .{ .handle = .{ .type = gostty.Stream, .fields = &.{
             .{ .path = "inner.handler.semantic_failure", .name = "failed", .doc = "True once a sequence failed in a way the terminal could not absorb, such as an allocation failure. Streams are best-effort and keep going." },
-        } },
-        .{ .type = gostty.Screen, .repr = .@"opaque" },
-        .{ .type = gostty.Search, .repr = .@"opaque" },
-        .{ .type = gostty.Snapshot, .repr = .@"opaque", .name = "Snapshot" },
-        .{ .type = gostty.SnapshotDecoder, .repr = .@"opaque" },
-        .{ .type = gostty.SnapshotProgress, .repr = .value },
-        .{ .type = gostty.KeyEvent, .repr = .value, .field_meta = .{ .unshifted_codepoint = .{ .semantic = .codepoint } } },
-        .{ .type = gostty.MouseEvent, .repr = .value },
-        .{ .type = gostty.KeyMods, .repr = .value },
-        .{ .type = gostty.RenderSize, .repr = .value },
+        } } },
+        .{ .handle = .{ .type = gostty.Screen } },
+        .{ .handle = .{ .type = gostty.Search } },
+        .{ .handle = .{ .type = gostty.Snapshot, .name = "Snapshot" } },
+        .{ .handle = .{ .type = gostty.SnapshotDecoder } },
+        .{ .value = .{ .type = gostty.SnapshotProgress } },
+        .{ .value = .{ .type = gostty.KeyEvent, .fields = &.{.{ .name = "unshifted_codepoint", .semantic = .codepoint }} } },
+        .{ .value = .{ .type = gostty.MouseEvent } },
+        .{ .value = .{ .type = gostty.KeyMods } },
+        .{ .value = .{ .type = gostty.RenderSize } },
         enumeration("CursorStyle", .{ .text = true }),
         enumeration("CursorStyleReq", .{}),
         enumeration("EraseDisplay", .{}),
@@ -151,17 +144,17 @@ pub const bindings = zigo.define(.{
         enumeration("ScreenKey", .{}),
         enumeration("SwitchScreenMode", .{}),
         enumeration("Mode", .{ .text = true }),
-        .{ .type = gostty.Selection, .repr = .value },
+        .{ .value = .{ .type = gostty.Selection } },
         enumeration("FormatterFormat", .{ .text = true }),
-        .{ .type = gostty.FormatOptions, .repr = .value },
+        .{ .value = .{ .type = gostty.FormatOptions } },
         enumeration("SelectionAdjustment", .{ .text = true }),
         enumeration("StreamEvent", .{ .text = true }),
         enumeration("ProgressState", .{ .text = true }),
         enumeration("ColorScheme", .{ .text = true }),
         enumeration("DragEvent", .{ .text = true }),
         enumeration("DragOperation", .{ .text = true }),
-        .{ .type = gostty.DragOperations, .repr = .value },
-        .{ .type = gostty.DragMove, .repr = .value },
+        .{ .value = .{ .type = gostty.DragOperations } },
+        .{ .value = .{ .type = gostty.DragMove } },
         callback("DragFn", "DragHandler"),
         enumeration("ClipboardLocation", .{ .text = true, .open = true }),
         enumeration("ClipboardDenial", .{}),
@@ -169,12 +162,12 @@ pub const bindings = zigo.define(.{
         callback("SysFn", "Handler"),
         enumeration("Underline", .{}),
         enumeration("ColorName", .{ .text = true, .open = true }),
-        .{ .type = gostty.Attribute, .repr = .tagged_union },
+        .{ .tagged_union = .{ .type = gostty.Attribute } },
         enumeration("SearchDirection", .{}),
         enumeration("SearchScroll", .{}),
         enumeration("SearchState", .{}),
         enumeration("SearchProgress", .{}),
-        .{ .type = gostty.Scrollbar, .repr = .value },
+        .{ .value = .{ .type = gostty.Scrollbar } },
         enumeration("Key", .{ .text = true }),
         enumeration("KeyAction", .{ .text = true }),
         enumeration("FocusEvent", .{ .text = true }),
@@ -184,86 +177,67 @@ pub const bindings = zigo.define(.{
         enumeration("CharsetSlot", .{}),
         enumeration("CharsetActiveSlot", .{}),
         enumeration("DeccolmMode", .{}),
-        .{ .type = gostty.ScrollViewport, .repr = .tagged_union },
-        .{ .type = gostty.RenderState, .repr = .@"opaque", .fields = .{
+        .{ .tagged_union = .{ .type = gostty.ScrollViewport } },
+        .{ .handle = .{ .type = gostty.RenderState, .fields = &.{
             .{ .path = "rows" },
             .{ .path = "cols" },
             .{ .path = "cursor.visible", .name = "cursorVisible" },
             .{ .path = "cursor.visual_style", .name = "cursorStyle" },
             .{ .path = "cursor.blinking", .name = "cursorBlinking" },
             .{ .path = "cursor.password_input", .name = "cursorPasswordInput" },
-        } },
-        .{ .type = gostty.RenderCell, .repr = .value, .field_meta = .{ .codepoint = .{ .semantic = .codepoint } } },
+        } } },
+        .{ .value = .{ .type = gostty.RenderCell, .fields = &.{.{ .name = "codepoint", .semantic = .codepoint }} } },
         // An integer-backed packed struct: Go sees named fields, the C ABI sees
         // one u32.
-        .{ .type = gostty.CellFlags, .repr = .value },
+        .{ .value = .{ .type = gostty.CellFlags } },
         enumeration("CellWidth", .{}),
         enumeration("RenderDirty", .{}),
-        .{ .type = gostty.KittyImages, .repr = .@"opaque", .fields = .{
+        .{ .handle = .{ .type = gostty.KittyImages, .fields = &.{
             .{ .path = "generation" },
-        } },
+        } } },
         enumeration("KittyLayer", .{ .text = true }),
-        .{ .type = gostty.KittyPlacement, .repr = .value },
-        .{ .type = gostty.KittyImage, .repr = .value },
+        .{ .value = .{ .type = gostty.KittyPlacement } },
+        .{ .value = .{ .type = gostty.KittyImage } },
         enumeration("KittyFormat", .{}),
         enumeration("KittyCompression", .{}),
 
         // Terminal configuration and state reads.
-        .{ .type = gostty.ScrollRegion, .repr = .value },
+        .{ .value = .{ .type = gostty.ScrollRegion } },
         enumeration("MouseTracking", .{ .text = true }),
         enumeration("MouseReportFormat", .{ .text = true }),
         enumeration("ModeReport", .{ .text = true }),
 
         // Selection gestures.
-        .{ .type = gostty.Gesture, .repr = .@"opaque" },
+        .{ .handle = .{ .type = gostty.Gesture } },
         enumeration("GestureBehavior", .{ .text = true }),
         enumeration("GestureAutoscrollDirection", .{ .text = true }),
-        .{ .type = gostty.GestureGeometry, .repr = .value },
-        .{ .type = gostty.GesturePressEvent, .repr = .value },
-        .{ .type = gostty.GestureDragEvent, .repr = .value },
+        .{ .value = .{ .type = gostty.GestureGeometry } },
+        .{ .value = .{ .type = gostty.GesturePressEvent } },
+        .{ .value = .{ .type = gostty.GestureDragEvent } },
 
         // The standalone parsers.
-        .{ .type = gostty.OSCParser, .repr = .@"opaque", .name = "OSCParser" },
+        .{ .handle = .{ .type = gostty.OSCParser, .name = "OSCParser" } },
         enumeration("OSCCommand", .{ .text = true }),
         enumeration("OSCTerminator", .{ .text = true }),
         enumeration("SemanticPromptAction", .{ .text = true }),
         enumeration("SgrAttributeTag", .{ .text = true }),
-        .{ .type = gostty.SgrAttribute, .repr = .value },
+        .{ .value = .{ .type = gostty.SgrAttribute } },
     },
-    .functions = .{
+    .functions = &.{
         .{ .path = "root.unicode.codepointWidth" },
-        .{ .path = "root.graphemeWidth", .params = .{"cps"}, .param_meta = .{ .cps = .{ .semantic = .codepoint } } },
+        .{ .path = "root.graphemeWidth", .params = &.{.{ .semantic = .codepoint }} },
 
         // Input encoding.
         .{ .path = "root.encodeKey" },
         .{ .path = "root.encodeMouse" },
-        // What a key is, for a caller deciding whether a press can carry text.
-        // These stay wrappers rather than binding ghostty's methods directly
-        // because they carry the documentation and shape the optionals; the
-        // receiver group makes them methods on the enum all the same.
-        .{
-            .receiver = "Key",
-            .strip_prefix = "key",
-            .functions = .{
-                .{ .path = "root.keyCodepoint", .covers = "Key.codepoint" },
-                .{ .path = "root.keyPrintable", .covers = "Key.printable" },
-                .{ .path = "root.keyModifier", .covers = "Key.modifier" },
-                .{ .path = "root.keyKeypad", .covers = "Key.keypad" },
-                .{ .path = "root.keyLeftOrRightShift", .covers = "Key.leftOrRightShift" },
-                .{ .path = "root.keyLeftOrRightAlt", .covers = "Key.leftOrRightAlt" },
-                .{ .path = "root.keyCtrlOrSuper", .covers = "Key.ctrlOrSuper" },
-                .{ .path = "root.keyShouldBeRemappable", .covers = "Key.shouldBeRemappable" },
-                .{ .path = "root.keyW3C", .covers = "Key.w3c" },
-            },
-        },
         // The two that map onto a key rather than off one, so they take no
-        // receiver.
-        .{ .path = "root.keyFromASCII", .covers = "Key.fromASCII" },
-        .{ .path = "root.keyFromW3C", .covers = "Key.fromW3C" },
+        // receiver; the rest are methods, in `.methods` below.
+        .{ .path = "root.keyFromASCII", .covers = &.{"Key.fromASCII"} },
+        .{ .path = "root.keyFromW3C", .covers = &.{"Key.fromW3C"} },
         // ghostty's own encoders, reached through the `input` namespace.
-        .{ .path = "root.input.encodeFocus", .params = .{ "writer", "event" } },
-        .{ .path = "root.input.isSafePaste", .params = .{"data"}, .param_meta = .{ .data = .{ .semantic = .opaque_bytes } } },
-        .{ .path = "root.encodePaste", .params = .{ "writer", "terminal", "data" }, .param_meta = .{ .data = .{ .semantic = .opaque_bytes } } },
+        .{ .path = "root.input.encodeFocus", .params = &.{ .{ .name = "writer" }, .{ .name = "event" } } },
+        .{ .path = "root.input.isSafePaste", .params = &.{.{ .name = "data", .semantic = .opaque_bytes }} },
+        .{ .path = "root.encodePaste", .params = &.{ any, any, bytes } },
 
         // Lifecycle. `Terminal.init` returns by value and takes an `Options`
         // whose `colors` field holds optionals that cannot cross the C ABI.
@@ -271,25 +245,24 @@ pub const bindings = zigo.define(.{
         // Zig defaults, so ghostty's own constructor is bound without a wrapper.
         .{
             .path = "Terminal.init",
-            .constructs = "Terminal",
             .name = "newTerminal",
-            .params = .{"opts"},
-            .param_meta = .{ .opts = .{ .flatten = .{ "cols", "rows" } } },
+            .constructs = gostty.Terminal,
+            .params = &.{.{ .flatten = &.{ "cols", "rows" } }},
         },
-        .{ .path = "Terminal.deinit", .destroys = "Terminal" },
+        .{ .path = "Terminal.deinit", .destroys = gostty.Terminal },
         .{ .path = "root.freeString" },
         // A stream borrows its terminal: ghostty's handler reaches through it for
         // an allocator when it tears down, so the terminal must outlive it.
-        .{ .path = "root.newStream", .constructs = "Stream", .child_of_receiver = true },
-        .{ .path = "root.freeStream", .destroys = "Stream" },
-        .{ .path = "Stream.feed", .params = .{"bytes"}, .param_meta = .{ .bytes = .{ .semantic = .opaque_bytes } } },
+        .{ .path = "root.newStream", .constructs = gostty.Stream, .child_of_receiver = true },
+        .{ .path = "root.freeStream", .destroys = gostty.Stream },
+        .{ .path = "Stream.feed", .params = &.{bytes} },
         // `Events` is the range-over-func form: `for event, err := range s.Events()`.
         .{ .path = "Stream.nextEvent", .iterator = .{ .name = "Events" } },
         .{ .path = "Stream.eventTitle" },
         .{ .path = "Stream.eventBody" },
         .{ .path = "Stream.eventProgressState" },
         .{ .path = "Stream.eventProgress" },
-        .{ .path = "Stream.eventSequence", .semantic = .opaque_bytes },
+        .{ .path = "Stream.eventSequence", .returns = .{ .semantic = .opaque_bytes } },
         .{ .path = "Stream.setUnknownMaxBytes" },
         .{ .path = "Stream.setVersionReport" },
         .{ .path = "Stream.setEnquiryResponse" },
@@ -309,13 +282,13 @@ pub const bindings = zigo.define(.{
         .{ .path = "root.dragClientAccepted" },
         .{ .path = "root.dragMove" },
         .{ .path = "root.dragLeave" },
-        .{ .path = "root.dragAddItem", .params = .{ "mime", "data" }, .param_meta = .{ .data = .{ .semantic = .opaque_bytes } } },
+        .{ .path = "root.dragAddItem", .params = &.{ any, bytes } },
         .{ .path = "root.dragDrop" },
         .{ .path = "root.dragClearItems" },
         // A clipboard request runs while `feed` is on the stack, on the thread
         // that called it, and the callback is expected to answer it by calling
         // back into the same stream. Both facts are contracts a caller has to
-        // know, so they are declared rather than left to the prose.
+        // know, and they are declared on the callback type above.
         .{ .path = "Stream.onClipboardWriteRequest" },
         .{ .path = "Stream.onClipboardReadRequest" },
         .{ .path = "Stream.clipboardLocation" },
@@ -324,7 +297,7 @@ pub const bindings = zigo.define(.{
         .{ .path = "Stream.clipboardCanRemember" },
         .{ .path = "Stream.clipboardContentCount" },
         .{ .path = "Stream.clipboardContentMime" },
-        .{ .path = "Stream.clipboardContentData", .semantic = .opaque_bytes },
+        .{ .path = "Stream.clipboardContentData", .returns = .{ .semantic = .opaque_bytes } },
         .{ .path = "Stream.clipboardMimeCount" },
         .{ .path = "Stream.clipboardMime" },
         .{ .path = "Stream.allowClipboard" },
@@ -337,7 +310,7 @@ pub const bindings = zigo.define(.{
 
         // ghostty's own methods, bound directly.
         .{ .path = "Terminal.printString" },
-        .{ .path = "Terminal.plainString", .returns = .caller },
+        .{ .path = "Terminal.plainString", .returns = .{ .ownership = .caller } },
         .{ .path = "Terminal.setCursorStyle" },
         .{ .path = "Terminal.setCursorPos" },
         .{ .path = "Terminal.carriageReturn" },
@@ -347,76 +320,25 @@ pub const bindings = zigo.define(.{
         .{ .path = "Terminal.fullReset" },
         // Returns the screen being left, borrowed, or absent when `key` was
         // already active.
-        .{ .path = "Terminal.switchScreen", .returns = .borrowed },
+        .{ .path = "Terminal.switchScreen", .returns = .{ .ownership = .borrowed } },
         .{ .path = "Terminal.switchScreenMode" },
-        .{ .path = "root.activeScreen", .returns = .borrowed },
-        .{ .path = "root.screen", .returns = .borrowed },
-        // Screen is ghostty's own type, so these cannot be written as methods
-        // on it; the group attaches them and drops the shared `screen` prefix.
-        .{
-            .receiver = "Screen",
-            .strip_prefix = "screen",
-            .functions = .{
-                .{ .path = "root.screenSelectAll", .covers = "Screen.selectAll" },
-                .{ .path = "root.screenHasSelection" },
-                .{ .path = "root.screenSelectRange", .covers = "Screen.select" },
-
-                .{ .path = "root.screenSelectWord", .covers = "Screen.selectWord" },
-                .{ .path = "root.screenSelectLine", .covers = "Screen.selectLine" },
-                .{ .path = "root.screenSelectOutput", .covers = "Screen.selectOutput" },
-                .{ .path = "root.screenSelectionString", .returns = .caller, .covers = "Screen.selectionString" },
-                .{ .path = "root.screenSelection" },
-                .{ .path = "root.screenSetSelection" },
-                .{ .path = "root.screenViewportTop" },
-                .{ .path = "root.screenScrollbar" },
-                .{ .path = "root.screenFormat" },
-                .{ .path = "root.screenFormatSelection" },
-                .{ .path = "root.screenSelectionContains" },
-                .{ .path = "root.screenSelectionAdjust" },
-                .{ .path = "root.screenStartHyperlink", .covers = "Screen.startHyperlink" },
-            },
-        },
-        // ghostty takes the screen by value here; zigo 0.8.0 passes the handle and
+        .{ .path = "root.activeScreen", .returns = .{ .ownership = .borrowed } },
+        .{ .path = "root.screen", .returns = .{ .ownership = .borrowed } },
+        // ghostty takes the screen by value here; zigo passes the handle and
         // the shim copies, so no wrapper is needed.
         .{ .path = "Screen.viewportIsBottom" },
         .{ .path = "Screen.clearSelection" },
         .{ .path = "Screen.endHyperlink" },
         // `newSearch` returns by value, like `Terminal.init`: zigo boxes the
         // result and frees the box in `close`.
-        .{ .path = "root.newSearch", .constructs = "Search", .child_of_receiver = true },
-        .{ .path = "root.searchClose", .destroys = "Search" },
-        .{
-            .receiver = "Search",
-            .strip_prefix = "search",
-            .functions = .{
-                .{ .path = "root.searchNeedle" },
-                .{ .path = "root.searchStatus" },
-                .{ .path = "root.searchTick" },
-                .{ .path = "root.searchFeed", .params = .{"active_dirty"} },
-                .{ .path = "root.searchAll" },
-                .{ .path = "root.searchSelect", .params = .{ "to", "scroll" } },
-                .{ .path = "root.searchMatchCount" },
-                .{
-                    .path = "root.searchMatches",
-                    .params = .{"dst"},
-                    .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
-                },
-                .{
-                    .path = "root.searchViewportMatches",
-                    .params = .{"dst"},
-                    .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
-                },
-                .{ .path = "root.searchSelectedMatch" },
-                .{ .path = "root.searchSelectedIndex" },
-            },
-        },
+        .{ .path = "root.newSearch", .constructs = gostty.Search, .child_of_receiver = true },
+        .{ .path = "root.searchClose", .destroys = gostty.Search },
         .{
             .path = "root.printAttributesInto",
-            .params = .{"dst"},
-            .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
-            .covers = "Terminal.printAttributes",
+            .params = &.{out},
+            .covers = &.{"Terminal.printAttributes"},
         },
-        .{ .path = "root.historyString", .returns = .caller, .covers = "Screen.dumpStringAlloc" },
+        .{ .path = "root.historyString", .returns = .{ .ownership = .caller }, .covers = &.{"Screen.dumpStringAlloc"} },
 
         // Cursor movement.
         .{ .path = "Terminal.cursorUp" },
@@ -440,9 +362,9 @@ pub const bindings = zigo.define(.{
         .{ .path = "Terminal.scrollDown" },
         .{ .path = "Terminal.setTopAndBottomMargin" },
         .{ .path = "Terminal.setLeftAndRightMargin" },
-        .{ .path = "root.setScrollbackMaxBytes", .covers = "Terminal.setScrollbackMaxBytes" },
+        .{ .path = "root.setScrollbackMaxBytes", .covers = &.{"Terminal.setScrollbackMaxBytes"} },
         .{ .path = "root.clearScrollbackMaxBytes" },
-        .{ .path = "root.setScrollbackMaxLines", .covers = "Terminal.setScrollbackMaxLines" },
+        .{ .path = "root.setScrollbackMaxLines", .covers = &.{"Terminal.setScrollbackMaxLines"} },
         .{ .path = "root.clearScrollbackMaxLines" },
 
         // Editing.
@@ -456,163 +378,81 @@ pub const bindings = zigo.define(.{
         .{ .path = "Terminal.decaln" },
 
         // Printing.
-        .{ .path = "Terminal.print", .params = .{"c"} },
+        .{ .path = "Terminal.print", .params = &.{.{ .name = "c" }} },
         .{ .path = "Terminal.printRepeat" },
-        .{ .path = "Terminal.printSlice", .params = .{"cps"}, .param_meta = .{ .cps = .{ .semantic = .codepoint } } },
+        .{ .path = "Terminal.printSlice", .params = &.{.{ .semantic = .codepoint }} },
 
         // Metadata the terminal tracks for the shell.
         .{ .path = "root.formatTerminal", .name = "Format" },
         // Snapshots.
-        .{ .path = "root.decodeSnapshot", .name = "DecodeSnapshot", .constructs = "Snapshot" },
-        .{ .path = "Snapshot.deinit", .destroys = "Snapshot" },
+        .{ .path = "root.decodeSnapshot", .name = "DecodeSnapshot", .constructs = gostty.Snapshot },
+        .{ .path = "Snapshot.deinit", .destroys = gostty.Snapshot },
         // The incremental form: `ready` hands over a drawable terminal, then
         // `next` prepends the scrollback a page at a time.
-        .{ .path = "root.newSnapshotDecoder", .constructs = "SnapshotDecoder", .params = .{"data"}, .param_meta = .{ .data = .{ .semantic = .opaque_bytes } } },
-        .{ .path = "root.freeSnapshotDecoder", .destroys = "SnapshotDecoder" },
-        .{
-            .receiver = "SnapshotDecoder",
-            .strip_prefix = "snapshotDecoder",
-            .functions = .{
-                .{ .path = "root.snapshotDecoderReady" },
-                .{ .path = "root.snapshotDecoderRestoreInto" },
-                .{ .path = "root.snapshotDecoderContinuation", .semantic = .opaque_bytes },
-                .{ .path = "root.snapshotDecoderNext" },
-            },
-        },
-        .{
-            .receiver = "Snapshot",
-            .strip_prefix = "snapshot",
-            .functions = .{
-                .{ .path = "root.snapshotRestoreInto" },
-                .{ .path = "root.snapshotContinuation", .semantic = .opaque_bytes },
-            },
-        },
+        .{ .path = "root.newSnapshotDecoder", .constructs = gostty.SnapshotDecoder, .params = &.{bytes} },
+        .{ .path = "root.freeSnapshotDecoder", .destroys = gostty.SnapshotDecoder },
+
         // Colors and modes.
         .{ .path = "root.backgroundColor" },
         .{ .path = "root.foregroundColor" },
         .{ .path = "root.cursorColor" },
-        .{
-            .path = "root.paletteColors",
-            .params = .{"dst"},
-            .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
-        },
+        .{ .path = "root.paletteColors", .params = &.{out} },
         .{ .path = "root.setDefaultBackgroundColor" },
         .{ .path = "root.setDefaultForegroundColor" },
         .{ .path = "root.setDefaultCursorColor" },
-        .{
-            .receiver = "ColorName",
-            .strip_prefix = "colorName",
-            .functions = .{
-                .{ .path = "root.colorNameDefault", .covers = "ColorName.default" },
-            },
-        },
         .{ .path = "root.modeEnabled" },
         .{ .path = "root.setMode" },
         .{ .path = "Terminal.setPwd" },
-        .{ .path = "Terminal.getPwd", .semantic = .utf8_string },
-        .{ .path = "Terminal.getTitle", .semantic = .utf8_string },
+        .{ .path = "Terminal.getPwd", .returns = .{ .semantic = .utf8_string } },
+        .{ .path = "Terminal.getTitle", .returns = .{ .semantic = .utf8_string } },
         .{ .path = "Terminal.setTitle" },
-        .{ .path = "root.setAttribute", .covers = "Terminal.setAttribute" },
+        .{ .path = "root.setAttribute", .covers = &.{"Terminal.setAttribute"} },
         .{ .path = "Terminal.setProtectedMode" },
         .{ .path = "Terminal.setDefaultCursorStyle" },
-        .{ .path = "root.setDefaultCursorBlink", .covers = "Terminal.setDefaultCursorBlink" },
+        .{ .path = "root.setDefaultCursorBlink", .covers = &.{"Terminal.setDefaultCursorBlink"} },
         .{ .path = "root.resetDefaultCursorBlink" },
         .{ .path = "Terminal.configureCharset" },
         .{ .path = "Terminal.invokeCharset" },
         .{ .path = "Terminal.deccolm" },
         .{ .path = "Terminal.scrollViewport" },
         .{ .path = "Terminal.compressionActivity" },
-        .{ .path = "root.resize", .covers = "Terminal.resize" },
+        .{ .path = "root.resize", .covers = &.{"Terminal.resize"} },
         .{ .path = "root.resizeCells" },
 
         // Rendering. `RenderState` is ghostty's own renderer-facing snapshot;
         // a frame is one `update` plus one `cells` crossing.
-        .{ .path = "root.newRenderState", .constructs = "RenderState" },
-        .{ .path = "RenderState.update", .params = .{"t"}, .covers = .{ "RenderState.beginUpdate", "RenderState.endUpdate" } },
-        .{ .path = "RenderState.clean" },
-        .{ .path = "RenderState.deinit", .destroys = "RenderState" },
+        .{ .path = "root.newRenderState", .constructs = gostty.RenderState },
         .{
-            .receiver = "RenderState",
-            .strip_prefix = "render",
-            .functions = .{
-                .{ .path = "root.renderCellCount" },
-                .{
-                    .path = "root.renderCells",
-                    .params = .{"dst"},
-                    .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
-                },
-                .{ .path = "root.renderBackground" },
-                .{ .path = "root.renderForeground" },
-                .{ .path = "root.renderCursorX" },
-                .{ .path = "root.renderCursorY" },
-                .{ .path = "root.renderCursorWideTail" },
-                .{ .path = "root.renderCursorColor" },
-                // Partial redraw: which rows changed, one row's cells, and
-                // marking them drawn.
-                .{ .path = "root.renderDirty" },
-                .{
-                    .path = "root.renderDirtyRows",
-                    .params = .{"dst"},
-                    .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
-                },
-                .{
-                    .path = "root.renderRowCells",
-                    .params = .{ "y", "dst" },
-                    .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
-                },
-                .{
-                    .path = "root.renderGraphemes",
-                    .params = .{ "x", "y", "dst" },
-                    .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return", .semantic = .codepoint } },
-                },
-                .{ .path = "root.renderHyperlinkAt", .params = .{ "x", "y" }, .returns = .caller, .covers = "RenderState.linkCells" },
-            },
+            .path = "RenderState.update",
+            .params = &.{.{ .name = "t" }},
+            .covers = &.{ "RenderState.beginUpdate", "RenderState.endUpdate" },
         },
+        .{ .path = "RenderState.clean" },
+        .{ .path = "RenderState.deinit", .destroys = gostty.RenderState },
 
         // Kitty graphics. `KittyImages` is the same kind of snapshot as
         // `RenderState`, for the images rather than the cells: one `update` and
         // one `placements` crossing per frame, with the pixels fetched by id
         // only when their generation says they changed.
-        .{ .path = "root.newKittyImages", .constructs = "KittyImages" },
-        .{ .path = "root.freeKittyImages", .destroys = "KittyImages" },
-        .{
-            .receiver = "KittyImages",
-            .strip_prefix = "kitty",
-            .functions = .{
-                .{ .path = "root.kittyUpdate", .params = .{"term"} },
-                .{ .path = "root.kittyPlacementCount" },
-                .{
-                    .path = "root.kittyPlacements",
-                    .params = .{"dst"},
-                    .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
-                },
-            },
-        },
+        .{ .path = "root.newKittyImages", .constructs = gostty.KittyImages },
+        .{ .path = "root.freeKittyImages", .destroys = gostty.KittyImages },
         .{ .path = "Terminal.setKittyGraphicsSizeLimit" },
         .{
             .path = "root.setKittyGraphicsLoadingLimits",
-            .covers = "Terminal.setKittyGraphicsLoadingLimits",
+            .covers = &.{"Terminal.setKittyGraphicsLoadingLimits"},
         },
         .{ .path = "root.kittyImage" },
-        .{
-            .path = "root.kittyImageData",
-            .params = .{ "image_id", "dst" },
-            .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
-        },
+        .{ .path = "root.kittyImageData", .params = &.{ any, out } },
 
         // System hooks: process-global, answered from inside the callback the
         // same way a clipboard request is. They live in a namespace so that one
         // `clear` is the release zigo requires for the retained callbacks.
         .{ .path = "root.sys.onPngDecodeRequest" },
-        .{
-            .path = "root.sys.pngRequestData",
-            .params = .{"dst"},
-            .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
-        },
-        .{ .path = "root.sys.replyPngImage", .params = .{ "width", "height", "rgba" }, .param_meta = .{ .rgba = .{ .semantic = .opaque_bytes } } },
+        .{ .path = "root.sys.pngRequestData", .params = &.{out} },
+        .{ .path = "root.sys.replyPngImage", .params = &.{ any, any, bytes } },
         .{ .path = "root.sys.onSecureRandomRequest" },
         .{ .path = "root.sys.clear" },
-        .{ .path = "root.sys.replySecureRandom", .params = .{"bytes"}, .param_meta = .{ .bytes = .{ .semantic = .opaque_bytes } } },
+        .{ .path = "root.sys.replySecureRandom", .params = &.{bytes} },
 
         // Terminal configuration: what the embedder sets underneath whatever
         // a program on the pty asks for.
@@ -646,12 +486,140 @@ pub const bindings = zigo.define(.{
         // Selection gestures. Like `Search`, a gesture borrows its terminal --
         // it holds a tracked pin inside it and hands it back on every call --
         // so it is a child handle and closes first.
-        .{ .path = "root.newGesture", .constructs = "Gesture", .child_of_receiver = true },
-        .{ .path = "root.gestureClose", .destroys = "Gesture" },
+        .{ .path = "root.newGesture", .constructs = gostty.Gesture, .child_of_receiver = true },
+        .{ .path = "root.gestureClose", .destroys = gostty.Gesture },
+
+        // The standalone parsers. `Stream` needs a `Terminal` behind it; these
+        // two parse a sequence and hand back what it said, with no terminal
+        // state involved at all.
+        .{ .path = "root.newOSCParser", .constructs = gostty.OSCParser },
+        .{ .path = "root.freeOSCParser", .destroys = gostty.OSCParser },
+        .{ .path = "root.sgrAttributeCount" },
+        .{ .path = "root.sgrAttributes", .params = &.{ any, any, out } },
+    },
+    .methods = &.{
+        // What a key is, for a caller deciding whether a press can carry text.
+        // These stay wrappers rather than binding ghostty's methods directly
+        // because they carry the documentation and shape the optionals; the
+        // group makes them methods on the enum all the same.
         .{
-            .receiver = "Gesture",
+            .receiver = gostty.Key,
+            .strip_prefix = "key",
+            .functions = &.{
+                .{ .path = "root.keyCodepoint", .covers = &.{"Key.codepoint"} },
+                .{ .path = "root.keyPrintable", .covers = &.{"Key.printable"} },
+                .{ .path = "root.keyModifier", .covers = &.{"Key.modifier"} },
+                .{ .path = "root.keyKeypad", .covers = &.{"Key.keypad"} },
+                .{ .path = "root.keyLeftOrRightShift", .covers = &.{"Key.leftOrRightShift"} },
+                .{ .path = "root.keyLeftOrRightAlt", .covers = &.{"Key.leftOrRightAlt"} },
+                .{ .path = "root.keyCtrlOrSuper", .covers = &.{"Key.ctrlOrSuper"} },
+                .{ .path = "root.keyShouldBeRemappable", .covers = &.{"Key.shouldBeRemappable"} },
+                .{ .path = "root.keyW3C", .covers = &.{"Key.w3c"} },
+            },
+        },
+        // Screen is ghostty's own type, so these cannot be written as methods
+        // on it; the group attaches them and drops the shared `screen` prefix.
+        .{
+            .receiver = gostty.Screen,
+            .strip_prefix = "screen",
+            .functions = &.{
+                .{ .path = "root.screenSelectAll", .covers = &.{"Screen.selectAll"} },
+                .{ .path = "root.screenHasSelection" },
+                .{ .path = "root.screenSelectRange", .covers = &.{"Screen.select"} },
+                .{ .path = "root.screenSelectWord", .covers = &.{"Screen.selectWord"} },
+                .{ .path = "root.screenSelectLine", .covers = &.{"Screen.selectLine"} },
+                .{ .path = "root.screenSelectOutput", .covers = &.{"Screen.selectOutput"} },
+                .{ .path = "root.screenSelectionString", .returns = .{ .ownership = .caller }, .covers = &.{"Screen.selectionString"} },
+                .{ .path = "root.screenSelection" },
+                .{ .path = "root.screenSetSelection" },
+                .{ .path = "root.screenViewportTop" },
+                .{ .path = "root.screenScrollbar" },
+                .{ .path = "root.screenFormat" },
+                .{ .path = "root.screenFormatSelection" },
+                .{ .path = "root.screenSelectionContains" },
+                .{ .path = "root.screenSelectionAdjust" },
+                .{ .path = "root.screenStartHyperlink", .covers = &.{"Screen.startHyperlink"} },
+            },
+        },
+        .{
+            .receiver = gostty.Search,
+            .strip_prefix = "search",
+            .functions = &.{
+                .{ .path = "root.searchNeedle" },
+                .{ .path = "root.searchStatus" },
+                .{ .path = "root.searchTick" },
+                .{ .path = "root.searchFeed" },
+                .{ .path = "root.searchAll" },
+                .{ .path = "root.searchSelect" },
+                .{ .path = "root.searchMatchCount" },
+                .{ .path = "root.searchMatches", .params = &.{out} },
+                .{ .path = "root.searchViewportMatches", .params = &.{out} },
+                .{ .path = "root.searchSelectedMatch" },
+                .{ .path = "root.searchSelectedIndex" },
+            },
+        },
+        .{
+            .receiver = gostty.SnapshotDecoder,
+            .strip_prefix = "snapshotDecoder",
+            .functions = &.{
+                .{ .path = "root.snapshotDecoderReady" },
+                .{ .path = "root.snapshotDecoderRestoreInto" },
+                .{ .path = "root.snapshotDecoderContinuation", .returns = .{ .semantic = .opaque_bytes } },
+                .{ .path = "root.snapshotDecoderNext" },
+            },
+        },
+        .{
+            .receiver = gostty.Snapshot,
+            .strip_prefix = "snapshot",
+            .functions = &.{
+                .{ .path = "root.snapshotRestoreInto" },
+                .{ .path = "root.snapshotContinuation", .returns = .{ .semantic = .opaque_bytes } },
+            },
+        },
+        .{
+            .receiver = gostty.ColorName,
+            .strip_prefix = "colorName",
+            .functions = &.{
+                .{ .path = "root.colorNameDefault", .covers = &.{"ColorName.default"} },
+            },
+        },
+        .{
+            .receiver = gostty.RenderState,
+            .strip_prefix = "render",
+            .functions = &.{
+                .{ .path = "root.renderCellCount" },
+                .{ .path = "root.renderCells", .params = &.{out} },
+                .{ .path = "root.renderBackground" },
+                .{ .path = "root.renderForeground" },
+                .{ .path = "root.renderCursorX" },
+                .{ .path = "root.renderCursorY" },
+                .{ .path = "root.renderCursorWideTail" },
+                .{ .path = "root.renderCursorColor" },
+                // Partial redraw: which rows changed, one row's cells, and
+                // marking them drawn.
+                .{ .path = "root.renderDirty" },
+                .{ .path = "root.renderDirtyRows", .params = &.{out} },
+                .{ .path = "root.renderRowCells", .params = &.{ any, out } },
+                .{
+                    .path = "root.renderGraphemes",
+                    .params = &.{ any, any, .{ .direction = .out, .written = .result, .semantic = .codepoint } },
+                },
+                .{ .path = "root.renderHyperlinkAt", .returns = .{ .ownership = .caller }, .covers = &.{"RenderState.linkCells"} },
+            },
+        },
+        .{
+            .receiver = gostty.KittyImages,
+            .strip_prefix = "kitty",
+            .functions = &.{
+                .{ .path = "root.kittyUpdate" },
+                .{ .path = "root.kittyPlacementCount" },
+                .{ .path = "root.kittyPlacements", .params = &.{out} },
+            },
+        },
+        .{
+            .receiver = gostty.Gesture,
             .strip_prefix = "gesture",
-            .functions = .{
+            .functions = &.{
                 .{ .path = "root.gestureSetBehaviors" },
                 .{ .path = "root.gestureSetWordBoundaries" },
                 .{ .path = "root.gestureSetGeometry" },
@@ -666,18 +634,11 @@ pub const bindings = zigo.define(.{
                 .{ .path = "root.gestureDragged" },
             },
         },
-
-        // The standalone parsers. `Stream` needs a `Terminal` behind it; these
-        // two parse a sequence and hand back what it said, with no terminal
-        // state involved at all.
-        .{ .path = "root.newOSCParser", .constructs = "OSCParser" },
-        .{ .path = "root.freeOSCParser", .destroys = "OSCParser" },
         .{
-            .receiver = "OSCParser",
-            .strip_prefix = "",
-            .functions = .{
-                .{ .path = "root.OSCParser.feed", .params = .{"bytes"}, .param_meta = .{ .bytes = .{ .semantic = .opaque_bytes } } },
-                .{ .path = "root.OSCParser.end", .params = .{"terminator"} },
+            .receiver = gostty.OSCParser,
+            .functions = &.{
+                .{ .path = "root.OSCParser.feed", .params = &.{bytes} },
+                .{ .path = "root.OSCParser.end" },
                 .{ .path = "root.OSCParser.reset" },
                 .{ .path = "root.OSCParser.command" },
                 // The strings below are borrowed from the parser and stay valid
@@ -698,12 +659,6 @@ pub const bindings = zigo.define(.{
                 .{ .path = "root.OSCParser.progressState" },
                 .{ .path = "root.OSCParser.progressValue" },
             },
-        },
-        .{ .path = "root.sgrAttributeCount" },
-        .{
-            .path = "root.sgrAttributes",
-            .params = .{ "params", "colon_mask", "dst" },
-            .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
         },
     },
 });

@@ -443,56 +443,6 @@ func EncodeMouse(writerHandle uintptr, terminal unsafe.Pointer, event MouseEvent
 	return code
 }
 
-// KeyCodepoint calls the generated C ABI wrapper for zg_key_codepoint.
-func KeyCodepoint(self int32) (uint32, bool) {
-	var outResult C.uint32_t
-	outResultHas := C.zg_key_codepoint(C.int32_t(self), &outResult) != 0
-	return uint32(outResult), outResultHas
-}
-
-// KeyPrintable calls the generated C ABI wrapper for zg_key_printable.
-func KeyPrintable(self int32) uint8 {
-	return uint8(C.zg_key_printable(C.int32_t(self)))
-}
-
-// KeyModifier calls the generated C ABI wrapper for zg_key_modifier.
-func KeyModifier(self int32) uint8 {
-	return uint8(C.zg_key_modifier(C.int32_t(self)))
-}
-
-// KeyKeypad calls the generated C ABI wrapper for zg_key_keypad.
-func KeyKeypad(self int32) uint8 {
-	return uint8(C.zg_key_keypad(C.int32_t(self)))
-}
-
-// KeyLeftOrRightShift calls the generated C ABI wrapper for zg_key_left_or_right_shift.
-func KeyLeftOrRightShift(self int32) uint8 {
-	return uint8(C.zg_key_left_or_right_shift(C.int32_t(self)))
-}
-
-// KeyLeftOrRightAlt calls the generated C ABI wrapper for zg_key_left_or_right_alt.
-func KeyLeftOrRightAlt(self int32) uint8 {
-	return uint8(C.zg_key_left_or_right_alt(C.int32_t(self)))
-}
-
-// KeyCtrlOrSuper calls the generated C ABI wrapper for zg_key_ctrl_or_super.
-func KeyCtrlOrSuper(self int32) uint8 {
-	return uint8(C.zg_key_ctrl_or_super(C.int32_t(self)))
-}
-
-// KeyShouldBeRemappable calls the generated C ABI wrapper for zg_key_should_be_remappable.
-func KeyShouldBeRemappable(self int32) uint8 {
-	return uint8(C.zg_key_should_be_remappable(C.int32_t(self)))
-}
-
-// KeyW3C calls the generated C ABI wrapper for zg_key_w3_c.
-func KeyW3C(self int32) string {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	C.zg_key_w3_c(C.int32_t(self), &outResultPtr, &outResultLen)
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
-}
-
 // KeyFromAscii calls the generated C ABI wrapper for zg_key_from_ascii.
 func KeyFromAscii(ch uint8) (int32, bool) {
 	var outResult C.int32_t
@@ -975,189 +925,6 @@ func TerminalScreen(self unsafe.Pointer, key uint8) (unsafe.Pointer, int32) {
 	return unsafe.Pointer(outResult), code
 }
 
-// ScreenSelectAll calls the generated C ABI wrapper for zg_screen_select_all.
-func ScreenSelectAll(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_screen_select_all((*C.zg_screen)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// ScreenHasSelection calls the generated C ABI wrapper for zg_screen_has_selection.
-func ScreenHasSelection(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_screen_has_selection((*C.zg_screen)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// ScreenSelectRange calls the generated C ABI wrapper for zg_screen_select_range.
-func ScreenSelectRange(self unsafe.Pointer, x1 uint16, y1 uint16, x2 uint16, y2 uint16, rectangle uint8) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_screen_select_range((*C.zg_screen)(self), C.uint16_t(x1), C.uint16_t(y1), C.uint16_t(x2), C.uint16_t(y2), C.uint8_t(rectangle), &outResult))
-	return uint8(outResult), code
-}
-
-// ScreenSelectWord calls the generated C ABI wrapper for zg_screen_select_word.
-func ScreenSelectWord(self unsafe.Pointer, x uint16, y uint16, boundaries []uint32) (uint8, int32) {
-	boundariesPtr := (*C.uint32_t)(zigoSlicePtr(boundaries))
-	var outResult C.uint8_t
-	code := int32(C.zg_screen_select_word((*C.zg_screen)(self), C.uint16_t(x), C.uint16_t(y), boundariesPtr, C.size_t(len(boundaries)), &outResult))
-	return uint8(outResult), code
-}
-
-// ScreenSelectLine calls the generated C ABI wrapper for zg_screen_select_line.
-func ScreenSelectLine(self unsafe.Pointer, x uint16, y uint16) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_screen_select_line((*C.zg_screen)(self), C.uint16_t(x), C.uint16_t(y), &outResult))
-	return uint8(outResult), code
-}
-
-// ScreenSelectOutput calls the generated C ABI wrapper for zg_screen_select_output.
-func ScreenSelectOutput(self unsafe.Pointer, x uint16, y uint16) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_screen_select_output((*C.zg_screen)(self), C.uint16_t(x), C.uint16_t(y), &outResult))
-	return uint8(outResult), code
-}
-
-// ScreenSelectionString calls the generated C ABI wrapper for zg_screen_selection_string.
-func ScreenSelectionString(self unsafe.Pointer) (string, bool, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_screen_selection_string((*C.zg_screen)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", false, code
-	}
-	if outResultPtr == nil {
-		return "", false, code
-	}
-	var result string
-	if outResultLen != 0 {
-		result = C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
-	}
-	C.zg_free_string(outResultPtr, outResultLen)
-	return result, true, code
-}
-
-// ScreenSelection calls the generated C ABI wrapper for zg_screen_selection.
-func ScreenSelection(self unsafe.Pointer) (SelectionData, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.zg_selection
-	code := int32(C.zg_screen_selection((*C.zg_screen)(self), &outResultHas, &outResult))
-	return SelectionData{
-		StartX:    uint16(outResult.start_x),
-		StartY:    uint32(outResult.start_y),
-		EndX:      uint16(outResult.end_x),
-		EndY:      uint32(outResult.end_y),
-		Rectangle: uint8(outResult.rectangle),
-	}, outResultHas != 0, code
-}
-
-// ScreenSetSelection calls the generated C ABI wrapper for zg_screen_set_selection.
-func ScreenSetSelection(self unsafe.Pointer, sel SelectionData) (uint8, int32) {
-	var csel C.zg_selection
-	csel.start_x = C.uint16_t(sel.StartX)
-	csel.start_y = C.uint32_t(sel.StartY)
-	csel.end_x = C.uint16_t(sel.EndX)
-	csel.end_y = C.uint32_t(sel.EndY)
-	csel.rectangle = C.uint8_t(sel.Rectangle)
-	var outResult C.uint8_t
-	code := int32(C.zg_screen_set_selection((*C.zg_screen)(self), &csel, &outResult))
-	return uint8(outResult), code
-}
-
-// ScreenViewportTop calls the generated C ABI wrapper for zg_screen_viewport_top.
-func ScreenViewportTop(self unsafe.Pointer) (uint32, int32) {
-	var outResult C.uint32_t
-	code := int32(C.zg_screen_viewport_top((*C.zg_screen)(self), &outResult))
-	return uint32(outResult), code
-}
-
-// ScreenScrollbar calls the generated C ABI wrapper for zg_screen_scrollbar.
-func ScreenScrollbar(self unsafe.Pointer) (ScrollbarData, int32) {
-	var outResult C.zg_scrollbar
-	code := int32(C.zg_screen_scrollbar((*C.zg_screen)(self), &outResult))
-	return ScrollbarData{
-		Total:  uint64(outResult.total),
-		Offset: uint64(outResult.offset),
-		Len:    uint64(outResult.len),
-	}, code
-}
-
-// ScreenFormat calls the generated C ABI wrapper for zg_screen_format.
-func ScreenFormat(self unsafe.Pointer, opts FormatOptionsData, writerHandle uintptr) int32 {
-	var copts C.zg_format_options
-	copts.format = C.uint8_t(opts.Format)
-	copts.unwrap = C.uint8_t(opts.Unwrap)
-	copts.keep_trailing_whitespace = C.uint8_t(opts.KeepTrailingWhitespace)
-	copts.cursor = C.uint8_t(opts.Cursor)
-	copts.no_styles = C.uint8_t(opts.NoStyles)
-	copts.no_hyperlinks = C.uint8_t(opts.NoHyperlinks)
-	copts.resolve_palette = C.uint8_t(opts.ResolvePalette)
-	code := int32(C.zg_screen_format((*C.zg_screen)(self), &copts, C.size_t(writerHandle)))
-	return code
-}
-
-// ScreenFormatSelection calls the generated C ABI wrapper for zg_screen_format_selection.
-func ScreenFormatSelection(self unsafe.Pointer, opts FormatOptionsData, sel SelectionData, writerHandle uintptr) (uint8, int32) {
-	var copts C.zg_format_options
-	copts.format = C.uint8_t(opts.Format)
-	copts.unwrap = C.uint8_t(opts.Unwrap)
-	copts.keep_trailing_whitespace = C.uint8_t(opts.KeepTrailingWhitespace)
-	copts.cursor = C.uint8_t(opts.Cursor)
-	copts.no_styles = C.uint8_t(opts.NoStyles)
-	copts.no_hyperlinks = C.uint8_t(opts.NoHyperlinks)
-	copts.resolve_palette = C.uint8_t(opts.ResolvePalette)
-	var csel C.zg_selection
-	csel.start_x = C.uint16_t(sel.StartX)
-	csel.start_y = C.uint32_t(sel.StartY)
-	csel.end_x = C.uint16_t(sel.EndX)
-	csel.end_y = C.uint32_t(sel.EndY)
-	csel.rectangle = C.uint8_t(sel.Rectangle)
-	var outResult C.uint8_t
-	code := int32(C.zg_screen_format_selection((*C.zg_screen)(self), &copts, &csel, C.size_t(writerHandle), &outResult))
-	return uint8(outResult), code
-}
-
-// ScreenSelectionContains calls the generated C ABI wrapper for zg_screen_selection_contains.
-func ScreenSelectionContains(self unsafe.Pointer, sel SelectionData, x uint16, y uint32) (uint8, int32) {
-	var csel C.zg_selection
-	csel.start_x = C.uint16_t(sel.StartX)
-	csel.start_y = C.uint32_t(sel.StartY)
-	csel.end_x = C.uint16_t(sel.EndX)
-	csel.end_y = C.uint32_t(sel.EndY)
-	csel.rectangle = C.uint8_t(sel.Rectangle)
-	var outResult C.uint8_t
-	code := int32(C.zg_screen_selection_contains((*C.zg_screen)(self), &csel, C.uint16_t(x), C.uint32_t(y), &outResult))
-	return uint8(outResult), code
-}
-
-// ScreenSelectionAdjust calls the generated C ABI wrapper for zg_screen_selection_adjust.
-func ScreenSelectionAdjust(self unsafe.Pointer, sel SelectionData, adjustment uint8) (SelectionData, bool, int32) {
-	var csel C.zg_selection
-	csel.start_x = C.uint16_t(sel.StartX)
-	csel.start_y = C.uint32_t(sel.StartY)
-	csel.end_x = C.uint16_t(sel.EndX)
-	csel.end_y = C.uint32_t(sel.EndY)
-	csel.rectangle = C.uint8_t(sel.Rectangle)
-	var outResultHas C.uint8_t
-	var outResult C.zg_selection
-	code := int32(C.zg_screen_selection_adjust((*C.zg_screen)(self), &csel, C.uint8_t(adjustment), &outResultHas, &outResult))
-	return SelectionData{
-		StartX:    uint16(outResult.start_x),
-		StartY:    uint32(outResult.start_y),
-		EndX:      uint16(outResult.end_x),
-		EndY:      uint32(outResult.end_y),
-		Rectangle: uint8(outResult.rectangle),
-	}, outResultHas != 0, code
-}
-
-// ScreenStartHyperlink calls the generated C ABI wrapper for zg_screen_start_hyperlink.
-func ScreenStartHyperlink(self unsafe.Pointer, uri string, id string) int32 {
-	uriPtr := (*C.uint8_t)(zigoStringPtr(uri))
-	idPtr := (*C.uint8_t)(zigoStringPtr(id))
-	code := int32(C.zg_screen_start_hyperlink((*C.zg_screen)(self), uriPtr, C.size_t(len(uri)), idPtr, C.size_t(len(id))))
-	return code
-}
-
 // ScreenViewportIsBottom calls the generated C ABI wrapper for zg_screen_viewport_is_bottom.
 func ScreenViewportIsBottom(self unsafe.Pointer) (uint8, int32) {
 	var outResult C.uint8_t
@@ -1189,121 +956,6 @@ func TerminalNewSearch(self unsafe.Pointer, needleUnowned string) (unsafe.Pointe
 func SearchSearchClose(self unsafe.Pointer) int32 {
 	code := int32(C.zg_search_search_close((*C.zg_search)(self)))
 	return code
-}
-
-// SearchNeedle calls the generated C ABI wrapper for zg_search_needle.
-func SearchNeedle(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_search_needle((*C.zg_search)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
-	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// SearchStatus calls the generated C ABI wrapper for zg_search_status.
-func SearchStatus(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_search_status((*C.zg_search)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// SearchTick calls the generated C ABI wrapper for zg_search_tick.
-func SearchTick(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_search_tick((*C.zg_search)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// SearchFeed calls the generated C ABI wrapper for zg_search_feed.
-func SearchFeed(self unsafe.Pointer, activeDirty uint8) int32 {
-	code := int32(C.zg_search_feed((*C.zg_search)(self), C.uint8_t(activeDirty)))
-	return code
-}
-
-// SearchAll calls the generated C ABI wrapper for zg_search_all.
-func SearchAll(self unsafe.Pointer) int32 {
-	code := int32(C.zg_search_all((*C.zg_search)(self)))
-	return code
-}
-
-// SearchSelect calls the generated C ABI wrapper for zg_search_select.
-func SearchSelect(self unsafe.Pointer, to uint8, scroll uint8) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_search_select((*C.zg_search)(self), C.uint8_t(to), C.uint8_t(scroll), &outResult))
-	return uint8(outResult), code
-}
-
-// SearchMatchCount calls the generated C ABI wrapper for zg_search_match_count.
-func SearchMatchCount(self unsafe.Pointer) (uint, int32) {
-	var outResult C.size_t
-	code := int32(C.zg_search_match_count((*C.zg_search)(self), &outResult))
-	return uint(outResult), code
-}
-
-// SearchMatches calls the generated C ABI wrapper for zg_search_matches.
-func SearchMatches(self unsafe.Pointer, dst []SelectionData) (uint, int32) {
-	var dstValues []C.zg_selection
-	if len(dst) != 0 {
-		dstValues = make([]C.zg_selection, len(dst))
-	}
-	dstPtr := (*C.zg_selection)(zigoSlicePtr(dstValues))
-	var outResult C.size_t
-	code := int32(C.zg_search_matches((*C.zg_search)(self), dstPtr, C.size_t(len(dst)), &outResult))
-	for i := 0; i < int(outResult) && i < len(dst); i++ {
-		dst[i] = SelectionData{
-			StartX:    uint16(dstValues[i].start_x),
-			StartY:    uint32(dstValues[i].start_y),
-			EndX:      uint16(dstValues[i].end_x),
-			EndY:      uint32(dstValues[i].end_y),
-			Rectangle: uint8(dstValues[i].rectangle),
-		}
-	}
-	return uint(outResult), code
-}
-
-// SearchViewportMatches calls the generated C ABI wrapper for zg_search_viewport_matches.
-func SearchViewportMatches(self unsafe.Pointer, dst []SelectionData) (uint, int32) {
-	var dstValues []C.zg_selection
-	if len(dst) != 0 {
-		dstValues = make([]C.zg_selection, len(dst))
-	}
-	dstPtr := (*C.zg_selection)(zigoSlicePtr(dstValues))
-	var outResult C.size_t
-	code := int32(C.zg_search_viewport_matches((*C.zg_search)(self), dstPtr, C.size_t(len(dst)), &outResult))
-	for i := 0; i < int(outResult) && i < len(dst); i++ {
-		dst[i] = SelectionData{
-			StartX:    uint16(dstValues[i].start_x),
-			StartY:    uint32(dstValues[i].start_y),
-			EndX:      uint16(dstValues[i].end_x),
-			EndY:      uint32(dstValues[i].end_y),
-			Rectangle: uint8(dstValues[i].rectangle),
-		}
-	}
-	return uint(outResult), code
-}
-
-// SearchSelectedMatch calls the generated C ABI wrapper for zg_search_selected_match.
-func SearchSelectedMatch(self unsafe.Pointer) (SelectionData, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.zg_selection
-	code := int32(C.zg_search_selected_match((*C.zg_search)(self), &outResultHas, &outResult))
-	return SelectionData{
-		StartX:    uint16(outResult.start_x),
-		StartY:    uint32(outResult.start_y),
-		EndX:      uint16(outResult.end_x),
-		EndY:      uint32(outResult.end_y),
-		Rectangle: uint8(outResult.rectangle),
-	}, outResultHas != 0, code
-}
-
-// SearchSelectedIndex calls the generated C ABI wrapper for zg_search_selected_index.
-func SearchSelectedIndex(self unsafe.Pointer) (uint, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.size_t
-	code := int32(C.zg_search_selected_index((*C.zg_search)(self), &outResultHas, &outResult))
-	return uint(outResult), outResultHas != 0, code
 }
 
 // TerminalPrintAttributesInto calls the generated C ABI wrapper for zg_terminal_print_attributes_into.
@@ -1572,58 +1224,6 @@ func SnapshotDecoderFreeSnapshotDecoder(self unsafe.Pointer) int32 {
 	return code
 }
 
-// SnapshotDecoderReady calls the generated C ABI wrapper for zg_snapshot_decoder_ready.
-func SnapshotDecoderReady(self unsafe.Pointer, maxContinuationBytes uint) int32 {
-	code := int32(C.zg_snapshot_decoder_ready((*C.zg_snapshot_decoder)(self), C.size_t(maxContinuationBytes)))
-	return code
-}
-
-// SnapshotDecoderRestoreInto calls the generated C ABI wrapper for zg_snapshot_decoder_restore_into.
-func SnapshotDecoderRestoreInto(self unsafe.Pointer, term unsafe.Pointer) int32 {
-	code := int32(C.zg_snapshot_decoder_restore_into((*C.zg_snapshot_decoder)(self), (*C.zg_terminal)(term)))
-	return code
-}
-
-// SnapshotDecoderContinuation calls the generated C ABI wrapper for zg_snapshot_decoder_continuation.
-func SnapshotDecoderContinuation(self unsafe.Pointer) ([]uint8, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_snapshot_decoder_continuation((*C.zg_snapshot_decoder)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return nil, code
-	}
-	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
-}
-
-// SnapshotDecoderNext calls the generated C ABI wrapper for zg_snapshot_decoder_next.
-func SnapshotDecoderNext(self unsafe.Pointer, term unsafe.Pointer) (SnapshotProgressData, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.zg_snapshot_progress
-	code := int32(C.zg_snapshot_decoder_next((*C.zg_snapshot_decoder)(self), (*C.zg_terminal)(term), &outResultHas, &outResult))
-	return SnapshotProgressData{
-		Rows:      uint64(outResult.rows),
-		Remaining: uint32(outResult.remaining),
-		Pad:       uint32(outResult._pad),
-	}, outResultHas != 0, code
-}
-
-// SnapshotRestoreInto calls the generated C ABI wrapper for zg_snapshot_restore_into.
-func SnapshotRestoreInto(self unsafe.Pointer, term unsafe.Pointer) int32 {
-	code := int32(C.zg_snapshot_restore_into((*C.zg_snapshot)(self), (*C.zg_terminal)(term)))
-	return code
-}
-
-// SnapshotContinuation calls the generated C ABI wrapper for zg_snapshot_continuation.
-func SnapshotContinuation(self unsafe.Pointer) ([]uint8, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_snapshot_continuation((*C.zg_snapshot)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return nil, code
-	}
-	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
-}
-
 // TerminalBackgroundColor calls the generated C ABI wrapper for zg_terminal_background_color.
 func TerminalBackgroundColor(self unsafe.Pointer) (uint32, bool, int32) {
 	var outResultHas C.uint8_t
@@ -1672,13 +1272,6 @@ func TerminalSetDefaultForegroundColor(self unsafe.Pointer, rgb uint32) int32 {
 func TerminalSetDefaultCursorColor(self unsafe.Pointer, rgb uint32) int32 {
 	code := int32(C.zg_terminal_set_default_cursor_color((*C.zg_terminal)(self), C.uint32_t(rgb)))
 	return code
-}
-
-// ColorNameDefault calls the generated C ABI wrapper for zg_color_name_default.
-func ColorNameDefault(self uint8) (uint32, bool) {
-	var outResult C.uint32_t
-	outResultHas := C.zg_color_name_default(C.uint8_t(self), &outResult) != 0
-	return uint32(outResult), outResultHas
 }
 
 // TerminalModeEnabled calls the generated C ABI wrapper for zg_terminal_mode_enabled.
@@ -1834,141 +1427,6 @@ func RenderStateDeinit(self unsafe.Pointer) int32 {
 	return code
 }
 
-// RenderStateCellCount calls the generated C ABI wrapper for zg_render_state_cell_count.
-func RenderStateCellCount(self unsafe.Pointer) (uint, int32) {
-	var outResult C.size_t
-	code := int32(C.zg_render_state_cell_count((*C.zg_render_state)(self), &outResult))
-	return uint(outResult), code
-}
-
-// RenderStateCells calls the generated C ABI wrapper for zg_render_state_cells.
-func RenderStateCells(self unsafe.Pointer, dst []RenderCellData) (uint, int32) {
-	var dstValues []C.zg_render_cell
-	if len(dst) != 0 {
-		dstValues = make([]C.zg_render_cell, len(dst))
-	}
-	dstPtr := (*C.zg_render_cell)(zigoSlicePtr(dstValues))
-	var outResult C.size_t
-	code := int32(C.zg_render_state_cells((*C.zg_render_state)(self), dstPtr, C.size_t(len(dst)), &outResult))
-	for i := 0; i < int(outResult) && i < len(dst); i++ {
-		dst[i] = RenderCellData{
-			Codepoint: uint32(dstValues[i].codepoint),
-			Fg:        uint32(dstValues[i].fg),
-			Bg:        uint32(dstValues[i].bg),
-			Flags:     uint32(dstValues[i].flags),
-		}
-	}
-	return uint(outResult), code
-}
-
-// RenderStateBackground calls the generated C ABI wrapper for zg_render_state_background.
-func RenderStateBackground(self unsafe.Pointer) (uint32, int32) {
-	var outResult C.uint32_t
-	code := int32(C.zg_render_state_background((*C.zg_render_state)(self), &outResult))
-	return uint32(outResult), code
-}
-
-// RenderStateForeground calls the generated C ABI wrapper for zg_render_state_foreground.
-func RenderStateForeground(self unsafe.Pointer) (uint32, int32) {
-	var outResult C.uint32_t
-	code := int32(C.zg_render_state_foreground((*C.zg_render_state)(self), &outResult))
-	return uint32(outResult), code
-}
-
-// RenderStateCursorX calls the generated C ABI wrapper for zg_render_state_cursor_x.
-func RenderStateCursorX(self unsafe.Pointer) (uint16, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.uint16_t
-	code := int32(C.zg_render_state_cursor_x((*C.zg_render_state)(self), &outResultHas, &outResult))
-	return uint16(outResult), outResultHas != 0, code
-}
-
-// RenderStateCursorY calls the generated C ABI wrapper for zg_render_state_cursor_y.
-func RenderStateCursorY(self unsafe.Pointer) (uint16, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.uint16_t
-	code := int32(C.zg_render_state_cursor_y((*C.zg_render_state)(self), &outResultHas, &outResult))
-	return uint16(outResult), outResultHas != 0, code
-}
-
-// RenderStateCursorWideTail calls the generated C ABI wrapper for zg_render_state_cursor_wide_tail.
-func RenderStateCursorWideTail(self unsafe.Pointer) (uint8, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.uint8_t
-	code := int32(C.zg_render_state_cursor_wide_tail((*C.zg_render_state)(self), &outResultHas, &outResult))
-	return uint8(outResult), outResultHas != 0, code
-}
-
-// RenderStateCursorColor calls the generated C ABI wrapper for zg_render_state_cursor_color.
-func RenderStateCursorColor(self unsafe.Pointer) (uint32, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.uint32_t
-	code := int32(C.zg_render_state_cursor_color((*C.zg_render_state)(self), &outResultHas, &outResult))
-	return uint32(outResult), outResultHas != 0, code
-}
-
-// RenderStateDirty calls the generated C ABI wrapper for zg_render_state_dirty.
-func RenderStateDirty(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_render_state_dirty((*C.zg_render_state)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// RenderStateDirtyRows calls the generated C ABI wrapper for zg_render_state_dirty_rows.
-func RenderStateDirtyRows(self unsafe.Pointer, dst []uint16) (uint, int32) {
-	dstPtr := (*C.uint16_t)(zigoSlicePtr(dst))
-	var outResult C.size_t
-	code := int32(C.zg_render_state_dirty_rows((*C.zg_render_state)(self), dstPtr, C.size_t(len(dst)), &outResult))
-	return uint(outResult), code
-}
-
-// RenderStateRowCells calls the generated C ABI wrapper for zg_render_state_row_cells.
-func RenderStateRowCells(self unsafe.Pointer, y uint16, dst []RenderCellData) (uint, int32) {
-	var dstValues []C.zg_render_cell
-	if len(dst) != 0 {
-		dstValues = make([]C.zg_render_cell, len(dst))
-	}
-	dstPtr := (*C.zg_render_cell)(zigoSlicePtr(dstValues))
-	var outResult C.size_t
-	code := int32(C.zg_render_state_row_cells((*C.zg_render_state)(self), C.uint16_t(y), dstPtr, C.size_t(len(dst)), &outResult))
-	for i := 0; i < int(outResult) && i < len(dst); i++ {
-		dst[i] = RenderCellData{
-			Codepoint: uint32(dstValues[i].codepoint),
-			Fg:        uint32(dstValues[i].fg),
-			Bg:        uint32(dstValues[i].bg),
-			Flags:     uint32(dstValues[i].flags),
-		}
-	}
-	return uint(outResult), code
-}
-
-// RenderStateGraphemes calls the generated C ABI wrapper for zg_render_state_graphemes.
-func RenderStateGraphemes(self unsafe.Pointer, x uint16, y uint16, dst []uint32) (uint, int32) {
-	dstPtr := (*C.uint32_t)(zigoSlicePtr(dst))
-	var outResult C.size_t
-	code := int32(C.zg_render_state_graphemes((*C.zg_render_state)(self), C.uint16_t(x), C.uint16_t(y), dstPtr, C.size_t(len(dst)), &outResult))
-	return uint(outResult), code
-}
-
-// RenderStateHyperlinkAt calls the generated C ABI wrapper for zg_render_state_hyperlink_at.
-func RenderStateHyperlinkAt(self unsafe.Pointer, x uint16, y uint16) (string, bool, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_render_state_hyperlink_at((*C.zg_render_state)(self), C.uint16_t(x), C.uint16_t(y), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", false, code
-	}
-	if outResultPtr == nil {
-		return "", false, code
-	}
-	var result string
-	if outResultLen != 0 {
-		result = C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
-	}
-	C.zg_free_string(outResultPtr, outResultLen)
-	return result, true, code
-}
-
 // NewKittyImages calls the generated C ABI wrapper for zg_new_kitty_images.
 func NewKittyImages() (unsafe.Pointer, int32) {
 	var outResult *C.zg_kitty_images
@@ -1980,53 +1438,6 @@ func NewKittyImages() (unsafe.Pointer, int32) {
 func KittyImagesFreeKittyImages(self unsafe.Pointer) int32 {
 	code := int32(C.zg_kitty_images_free_kitty_images((*C.zg_kitty_images)(self)))
 	return code
-}
-
-// KittyImagesUpdate calls the generated C ABI wrapper for zg_kitty_images_update.
-func KittyImagesUpdate(self unsafe.Pointer, term unsafe.Pointer) int32 {
-	code := int32(C.zg_kitty_images_update((*C.zg_kitty_images)(self), (*C.zg_terminal)(term)))
-	return code
-}
-
-// KittyImagesPlacementCount calls the generated C ABI wrapper for zg_kitty_images_placement_count.
-func KittyImagesPlacementCount(self unsafe.Pointer) (uint, int32) {
-	var outResult C.size_t
-	code := int32(C.zg_kitty_images_placement_count((*C.zg_kitty_images)(self), &outResult))
-	return uint(outResult), code
-}
-
-// KittyImagesPlacements calls the generated C ABI wrapper for zg_kitty_images_placements.
-func KittyImagesPlacements(self unsafe.Pointer, dst []KittyPlacementData) (uint, int32) {
-	var dstValues []C.zg_kitty_placement
-	if len(dst) != 0 {
-		dstValues = make([]C.zg_kitty_placement, len(dst))
-	}
-	dstPtr := (*C.zg_kitty_placement)(zigoSlicePtr(dstValues))
-	var outResult C.size_t
-	code := int32(C.zg_kitty_images_placements((*C.zg_kitty_images)(self), dstPtr, C.size_t(len(dst)), &outResult))
-	for i := 0; i < int(outResult) && i < len(dst); i++ {
-		dst[i] = KittyPlacementData{
-			ImageID:      uint32(dstValues[i].image_id),
-			PlacementID:  uint32(dstValues[i].placement_id),
-			ViewportCol:  int32(dstValues[i].viewport_col),
-			ViewportRow:  int32(dstValues[i].viewport_row),
-			XOffset:      uint32(dstValues[i].x_offset),
-			YOffset:      uint32(dstValues[i].y_offset),
-			PixelWidth:   uint32(dstValues[i].pixel_width),
-			PixelHeight:  uint32(dstValues[i].pixel_height),
-			GridCols:     uint32(dstValues[i].grid_cols),
-			GridRows:     uint32(dstValues[i].grid_rows),
-			SourceX:      uint32(dstValues[i].source_x),
-			SourceY:      uint32(dstValues[i].source_y),
-			SourceWidth:  uint32(dstValues[i].source_width),
-			SourceHeight: uint32(dstValues[i].source_height),
-			Z:            int32(dstValues[i].z),
-			Layer:        uint8(dstValues[i].layer),
-			Virtual:      uint8(dstValues[i].virtual),
-			Pad:          uint16(dstValues[i]._pad),
-		}
-	}
-	return uint(outResult), code
 }
 
 // TerminalSetKittyGraphicsSizeLimit calls the generated C ABI wrapper for zg_terminal_set_kitty_graphics_size_limit.
@@ -2270,6 +1681,625 @@ func GestureGestureClose(self unsafe.Pointer) int32 {
 	return code
 }
 
+// NewOscParser calls the generated C ABI wrapper for zg_new_osc_parser.
+func NewOscParser() (unsafe.Pointer, int32) {
+	var outResult *C.zg_osc_parser
+	code := int32(C.zg_new_osc_parser(&outResult))
+	return unsafe.Pointer(outResult), code
+}
+
+// OscParserFreeOscParser calls the generated C ABI wrapper for zg_osc_parser_free_osc_parser.
+func OscParserFreeOscParser(self unsafe.Pointer) int32 {
+	code := int32(C.zg_osc_parser_free_osc_parser((*C.zg_osc_parser)(self)))
+	return code
+}
+
+// SgrAttributeCount calls the generated C ABI wrapper for zg_sgr_attribute_count.
+func SgrAttributeCount(params []uint16, colonMask uint32) (uint, int32) {
+	paramsPtr := (*C.uint16_t)(zigoSlicePtr(params))
+	var outResult C.size_t
+	code := int32(C.zg_sgr_attribute_count(paramsPtr, C.size_t(len(params)), C.uint32_t(colonMask), &outResult))
+	return uint(outResult), code
+}
+
+// SgrAttributes calls the generated C ABI wrapper for zg_sgr_attributes.
+func SgrAttributes(params []uint16, colonMask uint32, dst []SgrAttributeData) (uint, int32) {
+	paramsPtr := (*C.uint16_t)(zigoSlicePtr(params))
+	dstPtr := (*C.zg_sgr_attribute)(zigoSlicePtr(dst))
+	var outResult C.size_t
+	code := int32(C.zg_sgr_attributes(paramsPtr, C.size_t(len(params)), C.uint32_t(colonMask), dstPtr, C.size_t(len(dst)), &outResult))
+	return uint(outResult), code
+}
+
+// KeyCodepoint calls the generated C ABI wrapper for zg_key_codepoint.
+func KeyCodepoint(self int32) (uint32, bool) {
+	var outResult C.uint32_t
+	outResultHas := C.zg_key_codepoint(C.int32_t(self), &outResult) != 0
+	return uint32(outResult), outResultHas
+}
+
+// KeyPrintable calls the generated C ABI wrapper for zg_key_printable.
+func KeyPrintable(self int32) uint8 {
+	return uint8(C.zg_key_printable(C.int32_t(self)))
+}
+
+// KeyModifier calls the generated C ABI wrapper for zg_key_modifier.
+func KeyModifier(self int32) uint8 {
+	return uint8(C.zg_key_modifier(C.int32_t(self)))
+}
+
+// KeyKeypad calls the generated C ABI wrapper for zg_key_keypad.
+func KeyKeypad(self int32) uint8 {
+	return uint8(C.zg_key_keypad(C.int32_t(self)))
+}
+
+// KeyLeftOrRightShift calls the generated C ABI wrapper for zg_key_left_or_right_shift.
+func KeyLeftOrRightShift(self int32) uint8 {
+	return uint8(C.zg_key_left_or_right_shift(C.int32_t(self)))
+}
+
+// KeyLeftOrRightAlt calls the generated C ABI wrapper for zg_key_left_or_right_alt.
+func KeyLeftOrRightAlt(self int32) uint8 {
+	return uint8(C.zg_key_left_or_right_alt(C.int32_t(self)))
+}
+
+// KeyCtrlOrSuper calls the generated C ABI wrapper for zg_key_ctrl_or_super.
+func KeyCtrlOrSuper(self int32) uint8 {
+	return uint8(C.zg_key_ctrl_or_super(C.int32_t(self)))
+}
+
+// KeyShouldBeRemappable calls the generated C ABI wrapper for zg_key_should_be_remappable.
+func KeyShouldBeRemappable(self int32) uint8 {
+	return uint8(C.zg_key_should_be_remappable(C.int32_t(self)))
+}
+
+// KeyW3C calls the generated C ABI wrapper for zg_key_w3_c.
+func KeyW3C(self int32) string {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	C.zg_key_w3_c(C.int32_t(self), &outResultPtr, &outResultLen)
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
+}
+
+// ScreenSelectAll calls the generated C ABI wrapper for zg_screen_select_all.
+func ScreenSelectAll(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_screen_select_all((*C.zg_screen)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// ScreenHasSelection calls the generated C ABI wrapper for zg_screen_has_selection.
+func ScreenHasSelection(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_screen_has_selection((*C.zg_screen)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// ScreenSelectRange calls the generated C ABI wrapper for zg_screen_select_range.
+func ScreenSelectRange(self unsafe.Pointer, x1 uint16, y1 uint16, x2 uint16, y2 uint16, rectangle uint8) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_screen_select_range((*C.zg_screen)(self), C.uint16_t(x1), C.uint16_t(y1), C.uint16_t(x2), C.uint16_t(y2), C.uint8_t(rectangle), &outResult))
+	return uint8(outResult), code
+}
+
+// ScreenSelectWord calls the generated C ABI wrapper for zg_screen_select_word.
+func ScreenSelectWord(self unsafe.Pointer, x uint16, y uint16, boundaries []uint32) (uint8, int32) {
+	boundariesPtr := (*C.uint32_t)(zigoSlicePtr(boundaries))
+	var outResult C.uint8_t
+	code := int32(C.zg_screen_select_word((*C.zg_screen)(self), C.uint16_t(x), C.uint16_t(y), boundariesPtr, C.size_t(len(boundaries)), &outResult))
+	return uint8(outResult), code
+}
+
+// ScreenSelectLine calls the generated C ABI wrapper for zg_screen_select_line.
+func ScreenSelectLine(self unsafe.Pointer, x uint16, y uint16) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_screen_select_line((*C.zg_screen)(self), C.uint16_t(x), C.uint16_t(y), &outResult))
+	return uint8(outResult), code
+}
+
+// ScreenSelectOutput calls the generated C ABI wrapper for zg_screen_select_output.
+func ScreenSelectOutput(self unsafe.Pointer, x uint16, y uint16) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_screen_select_output((*C.zg_screen)(self), C.uint16_t(x), C.uint16_t(y), &outResult))
+	return uint8(outResult), code
+}
+
+// ScreenSelectionString calls the generated C ABI wrapper for zg_screen_selection_string.
+func ScreenSelectionString(self unsafe.Pointer) (string, bool, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_screen_selection_string((*C.zg_screen)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return "", false, code
+	}
+	if outResultPtr == nil {
+		return "", false, code
+	}
+	var result string
+	if outResultLen != 0 {
+		result = C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
+	}
+	C.zg_free_string(outResultPtr, outResultLen)
+	return result, true, code
+}
+
+// ScreenSelection calls the generated C ABI wrapper for zg_screen_selection.
+func ScreenSelection(self unsafe.Pointer) (SelectionData, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.zg_selection
+	code := int32(C.zg_screen_selection((*C.zg_screen)(self), &outResultHas, &outResult))
+	return SelectionData{
+		StartX:    uint16(outResult.start_x),
+		StartY:    uint32(outResult.start_y),
+		EndX:      uint16(outResult.end_x),
+		EndY:      uint32(outResult.end_y),
+		Rectangle: uint8(outResult.rectangle),
+	}, outResultHas != 0, code
+}
+
+// ScreenSetSelection calls the generated C ABI wrapper for zg_screen_set_selection.
+func ScreenSetSelection(self unsafe.Pointer, sel SelectionData) (uint8, int32) {
+	var csel C.zg_selection
+	csel.start_x = C.uint16_t(sel.StartX)
+	csel.start_y = C.uint32_t(sel.StartY)
+	csel.end_x = C.uint16_t(sel.EndX)
+	csel.end_y = C.uint32_t(sel.EndY)
+	csel.rectangle = C.uint8_t(sel.Rectangle)
+	var outResult C.uint8_t
+	code := int32(C.zg_screen_set_selection((*C.zg_screen)(self), &csel, &outResult))
+	return uint8(outResult), code
+}
+
+// ScreenViewportTop calls the generated C ABI wrapper for zg_screen_viewport_top.
+func ScreenViewportTop(self unsafe.Pointer) (uint32, int32) {
+	var outResult C.uint32_t
+	code := int32(C.zg_screen_viewport_top((*C.zg_screen)(self), &outResult))
+	return uint32(outResult), code
+}
+
+// ScreenScrollbar calls the generated C ABI wrapper for zg_screen_scrollbar.
+func ScreenScrollbar(self unsafe.Pointer) (ScrollbarData, int32) {
+	var outResult C.zg_scrollbar
+	code := int32(C.zg_screen_scrollbar((*C.zg_screen)(self), &outResult))
+	return ScrollbarData{
+		Total:  uint64(outResult.total),
+		Offset: uint64(outResult.offset),
+		Len:    uint64(outResult.len),
+	}, code
+}
+
+// ScreenFormat calls the generated C ABI wrapper for zg_screen_format.
+func ScreenFormat(self unsafe.Pointer, opts FormatOptionsData, writerHandle uintptr) int32 {
+	var copts C.zg_format_options
+	copts.format = C.uint8_t(opts.Format)
+	copts.unwrap = C.uint8_t(opts.Unwrap)
+	copts.keep_trailing_whitespace = C.uint8_t(opts.KeepTrailingWhitespace)
+	copts.cursor = C.uint8_t(opts.Cursor)
+	copts.no_styles = C.uint8_t(opts.NoStyles)
+	copts.no_hyperlinks = C.uint8_t(opts.NoHyperlinks)
+	copts.resolve_palette = C.uint8_t(opts.ResolvePalette)
+	code := int32(C.zg_screen_format((*C.zg_screen)(self), &copts, C.size_t(writerHandle)))
+	return code
+}
+
+// ScreenFormatSelection calls the generated C ABI wrapper for zg_screen_format_selection.
+func ScreenFormatSelection(self unsafe.Pointer, opts FormatOptionsData, sel SelectionData, writerHandle uintptr) (uint8, int32) {
+	var copts C.zg_format_options
+	copts.format = C.uint8_t(opts.Format)
+	copts.unwrap = C.uint8_t(opts.Unwrap)
+	copts.keep_trailing_whitespace = C.uint8_t(opts.KeepTrailingWhitespace)
+	copts.cursor = C.uint8_t(opts.Cursor)
+	copts.no_styles = C.uint8_t(opts.NoStyles)
+	copts.no_hyperlinks = C.uint8_t(opts.NoHyperlinks)
+	copts.resolve_palette = C.uint8_t(opts.ResolvePalette)
+	var csel C.zg_selection
+	csel.start_x = C.uint16_t(sel.StartX)
+	csel.start_y = C.uint32_t(sel.StartY)
+	csel.end_x = C.uint16_t(sel.EndX)
+	csel.end_y = C.uint32_t(sel.EndY)
+	csel.rectangle = C.uint8_t(sel.Rectangle)
+	var outResult C.uint8_t
+	code := int32(C.zg_screen_format_selection((*C.zg_screen)(self), &copts, &csel, C.size_t(writerHandle), &outResult))
+	return uint8(outResult), code
+}
+
+// ScreenSelectionContains calls the generated C ABI wrapper for zg_screen_selection_contains.
+func ScreenSelectionContains(self unsafe.Pointer, sel SelectionData, x uint16, y uint32) (uint8, int32) {
+	var csel C.zg_selection
+	csel.start_x = C.uint16_t(sel.StartX)
+	csel.start_y = C.uint32_t(sel.StartY)
+	csel.end_x = C.uint16_t(sel.EndX)
+	csel.end_y = C.uint32_t(sel.EndY)
+	csel.rectangle = C.uint8_t(sel.Rectangle)
+	var outResult C.uint8_t
+	code := int32(C.zg_screen_selection_contains((*C.zg_screen)(self), &csel, C.uint16_t(x), C.uint32_t(y), &outResult))
+	return uint8(outResult), code
+}
+
+// ScreenSelectionAdjust calls the generated C ABI wrapper for zg_screen_selection_adjust.
+func ScreenSelectionAdjust(self unsafe.Pointer, sel SelectionData, adjustment uint8) (SelectionData, bool, int32) {
+	var csel C.zg_selection
+	csel.start_x = C.uint16_t(sel.StartX)
+	csel.start_y = C.uint32_t(sel.StartY)
+	csel.end_x = C.uint16_t(sel.EndX)
+	csel.end_y = C.uint32_t(sel.EndY)
+	csel.rectangle = C.uint8_t(sel.Rectangle)
+	var outResultHas C.uint8_t
+	var outResult C.zg_selection
+	code := int32(C.zg_screen_selection_adjust((*C.zg_screen)(self), &csel, C.uint8_t(adjustment), &outResultHas, &outResult))
+	return SelectionData{
+		StartX:    uint16(outResult.start_x),
+		StartY:    uint32(outResult.start_y),
+		EndX:      uint16(outResult.end_x),
+		EndY:      uint32(outResult.end_y),
+		Rectangle: uint8(outResult.rectangle),
+	}, outResultHas != 0, code
+}
+
+// ScreenStartHyperlink calls the generated C ABI wrapper for zg_screen_start_hyperlink.
+func ScreenStartHyperlink(self unsafe.Pointer, uri string, id string) int32 {
+	uriPtr := (*C.uint8_t)(zigoStringPtr(uri))
+	idPtr := (*C.uint8_t)(zigoStringPtr(id))
+	code := int32(C.zg_screen_start_hyperlink((*C.zg_screen)(self), uriPtr, C.size_t(len(uri)), idPtr, C.size_t(len(id))))
+	return code
+}
+
+// SearchNeedle calls the generated C ABI wrapper for zg_search_needle.
+func SearchNeedle(self unsafe.Pointer) (string, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_search_needle((*C.zg_search)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return "", code
+	}
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
+}
+
+// SearchStatus calls the generated C ABI wrapper for zg_search_status.
+func SearchStatus(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_search_status((*C.zg_search)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// SearchTick calls the generated C ABI wrapper for zg_search_tick.
+func SearchTick(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_search_tick((*C.zg_search)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// SearchFeed calls the generated C ABI wrapper for zg_search_feed.
+func SearchFeed(self unsafe.Pointer, activeDirty uint8) int32 {
+	code := int32(C.zg_search_feed((*C.zg_search)(self), C.uint8_t(activeDirty)))
+	return code
+}
+
+// SearchAll calls the generated C ABI wrapper for zg_search_all.
+func SearchAll(self unsafe.Pointer) int32 {
+	code := int32(C.zg_search_all((*C.zg_search)(self)))
+	return code
+}
+
+// SearchSelect calls the generated C ABI wrapper for zg_search_select.
+func SearchSelect(self unsafe.Pointer, to uint8, scroll uint8) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_search_select((*C.zg_search)(self), C.uint8_t(to), C.uint8_t(scroll), &outResult))
+	return uint8(outResult), code
+}
+
+// SearchMatchCount calls the generated C ABI wrapper for zg_search_match_count.
+func SearchMatchCount(self unsafe.Pointer) (uint, int32) {
+	var outResult C.size_t
+	code := int32(C.zg_search_match_count((*C.zg_search)(self), &outResult))
+	return uint(outResult), code
+}
+
+// SearchMatches calls the generated C ABI wrapper for zg_search_matches.
+func SearchMatches(self unsafe.Pointer, dst []SelectionData) (uint, int32) {
+	var dstValues []C.zg_selection
+	if len(dst) != 0 {
+		dstValues = make([]C.zg_selection, len(dst))
+	}
+	dstPtr := (*C.zg_selection)(zigoSlicePtr(dstValues))
+	var outResult C.size_t
+	code := int32(C.zg_search_matches((*C.zg_search)(self), dstPtr, C.size_t(len(dst)), &outResult))
+	for i := 0; i < int(outResult) && i < len(dst); i++ {
+		dst[i] = SelectionData{
+			StartX:    uint16(dstValues[i].start_x),
+			StartY:    uint32(dstValues[i].start_y),
+			EndX:      uint16(dstValues[i].end_x),
+			EndY:      uint32(dstValues[i].end_y),
+			Rectangle: uint8(dstValues[i].rectangle),
+		}
+	}
+	return uint(outResult), code
+}
+
+// SearchViewportMatches calls the generated C ABI wrapper for zg_search_viewport_matches.
+func SearchViewportMatches(self unsafe.Pointer, dst []SelectionData) (uint, int32) {
+	var dstValues []C.zg_selection
+	if len(dst) != 0 {
+		dstValues = make([]C.zg_selection, len(dst))
+	}
+	dstPtr := (*C.zg_selection)(zigoSlicePtr(dstValues))
+	var outResult C.size_t
+	code := int32(C.zg_search_viewport_matches((*C.zg_search)(self), dstPtr, C.size_t(len(dst)), &outResult))
+	for i := 0; i < int(outResult) && i < len(dst); i++ {
+		dst[i] = SelectionData{
+			StartX:    uint16(dstValues[i].start_x),
+			StartY:    uint32(dstValues[i].start_y),
+			EndX:      uint16(dstValues[i].end_x),
+			EndY:      uint32(dstValues[i].end_y),
+			Rectangle: uint8(dstValues[i].rectangle),
+		}
+	}
+	return uint(outResult), code
+}
+
+// SearchSelectedMatch calls the generated C ABI wrapper for zg_search_selected_match.
+func SearchSelectedMatch(self unsafe.Pointer) (SelectionData, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.zg_selection
+	code := int32(C.zg_search_selected_match((*C.zg_search)(self), &outResultHas, &outResult))
+	return SelectionData{
+		StartX:    uint16(outResult.start_x),
+		StartY:    uint32(outResult.start_y),
+		EndX:      uint16(outResult.end_x),
+		EndY:      uint32(outResult.end_y),
+		Rectangle: uint8(outResult.rectangle),
+	}, outResultHas != 0, code
+}
+
+// SearchSelectedIndex calls the generated C ABI wrapper for zg_search_selected_index.
+func SearchSelectedIndex(self unsafe.Pointer) (uint, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.size_t
+	code := int32(C.zg_search_selected_index((*C.zg_search)(self), &outResultHas, &outResult))
+	return uint(outResult), outResultHas != 0, code
+}
+
+// SnapshotDecoderReady calls the generated C ABI wrapper for zg_snapshot_decoder_ready.
+func SnapshotDecoderReady(self unsafe.Pointer, maxContinuationBytes uint) int32 {
+	code := int32(C.zg_snapshot_decoder_ready((*C.zg_snapshot_decoder)(self), C.size_t(maxContinuationBytes)))
+	return code
+}
+
+// SnapshotDecoderRestoreInto calls the generated C ABI wrapper for zg_snapshot_decoder_restore_into.
+func SnapshotDecoderRestoreInto(self unsafe.Pointer, term unsafe.Pointer) int32 {
+	code := int32(C.zg_snapshot_decoder_restore_into((*C.zg_snapshot_decoder)(self), (*C.zg_terminal)(term)))
+	return code
+}
+
+// SnapshotDecoderContinuation calls the generated C ABI wrapper for zg_snapshot_decoder_continuation.
+func SnapshotDecoderContinuation(self unsafe.Pointer) ([]uint8, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_snapshot_decoder_continuation((*C.zg_snapshot_decoder)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return nil, code
+	}
+	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
+}
+
+// SnapshotDecoderNext calls the generated C ABI wrapper for zg_snapshot_decoder_next.
+func SnapshotDecoderNext(self unsafe.Pointer, term unsafe.Pointer) (SnapshotProgressData, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.zg_snapshot_progress
+	code := int32(C.zg_snapshot_decoder_next((*C.zg_snapshot_decoder)(self), (*C.zg_terminal)(term), &outResultHas, &outResult))
+	return SnapshotProgressData{
+		Rows:      uint64(outResult.rows),
+		Remaining: uint32(outResult.remaining),
+		Pad:       uint32(outResult._pad),
+	}, outResultHas != 0, code
+}
+
+// SnapshotRestoreInto calls the generated C ABI wrapper for zg_snapshot_restore_into.
+func SnapshotRestoreInto(self unsafe.Pointer, term unsafe.Pointer) int32 {
+	code := int32(C.zg_snapshot_restore_into((*C.zg_snapshot)(self), (*C.zg_terminal)(term)))
+	return code
+}
+
+// SnapshotContinuation calls the generated C ABI wrapper for zg_snapshot_continuation.
+func SnapshotContinuation(self unsafe.Pointer) ([]uint8, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_snapshot_continuation((*C.zg_snapshot)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return nil, code
+	}
+	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
+}
+
+// ColorNameDefault calls the generated C ABI wrapper for zg_color_name_default.
+func ColorNameDefault(self uint8) (uint32, bool) {
+	var outResult C.uint32_t
+	outResultHas := C.zg_color_name_default(C.uint8_t(self), &outResult) != 0
+	return uint32(outResult), outResultHas
+}
+
+// RenderStateCellCount calls the generated C ABI wrapper for zg_render_state_cell_count.
+func RenderStateCellCount(self unsafe.Pointer) (uint, int32) {
+	var outResult C.size_t
+	code := int32(C.zg_render_state_cell_count((*C.zg_render_state)(self), &outResult))
+	return uint(outResult), code
+}
+
+// RenderStateCells calls the generated C ABI wrapper for zg_render_state_cells.
+func RenderStateCells(self unsafe.Pointer, dst []RenderCellData) (uint, int32) {
+	var dstValues []C.zg_render_cell
+	if len(dst) != 0 {
+		dstValues = make([]C.zg_render_cell, len(dst))
+	}
+	dstPtr := (*C.zg_render_cell)(zigoSlicePtr(dstValues))
+	var outResult C.size_t
+	code := int32(C.zg_render_state_cells((*C.zg_render_state)(self), dstPtr, C.size_t(len(dst)), &outResult))
+	for i := 0; i < int(outResult) && i < len(dst); i++ {
+		dst[i] = RenderCellData{
+			Codepoint: uint32(dstValues[i].codepoint),
+			Fg:        uint32(dstValues[i].fg),
+			Bg:        uint32(dstValues[i].bg),
+			Flags:     uint32(dstValues[i].flags),
+		}
+	}
+	return uint(outResult), code
+}
+
+// RenderStateBackground calls the generated C ABI wrapper for zg_render_state_background.
+func RenderStateBackground(self unsafe.Pointer) (uint32, int32) {
+	var outResult C.uint32_t
+	code := int32(C.zg_render_state_background((*C.zg_render_state)(self), &outResult))
+	return uint32(outResult), code
+}
+
+// RenderStateForeground calls the generated C ABI wrapper for zg_render_state_foreground.
+func RenderStateForeground(self unsafe.Pointer) (uint32, int32) {
+	var outResult C.uint32_t
+	code := int32(C.zg_render_state_foreground((*C.zg_render_state)(self), &outResult))
+	return uint32(outResult), code
+}
+
+// RenderStateCursorX calls the generated C ABI wrapper for zg_render_state_cursor_x.
+func RenderStateCursorX(self unsafe.Pointer) (uint16, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.uint16_t
+	code := int32(C.zg_render_state_cursor_x((*C.zg_render_state)(self), &outResultHas, &outResult))
+	return uint16(outResult), outResultHas != 0, code
+}
+
+// RenderStateCursorY calls the generated C ABI wrapper for zg_render_state_cursor_y.
+func RenderStateCursorY(self unsafe.Pointer) (uint16, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.uint16_t
+	code := int32(C.zg_render_state_cursor_y((*C.zg_render_state)(self), &outResultHas, &outResult))
+	return uint16(outResult), outResultHas != 0, code
+}
+
+// RenderStateCursorWideTail calls the generated C ABI wrapper for zg_render_state_cursor_wide_tail.
+func RenderStateCursorWideTail(self unsafe.Pointer) (uint8, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.uint8_t
+	code := int32(C.zg_render_state_cursor_wide_tail((*C.zg_render_state)(self), &outResultHas, &outResult))
+	return uint8(outResult), outResultHas != 0, code
+}
+
+// RenderStateCursorColor calls the generated C ABI wrapper for zg_render_state_cursor_color.
+func RenderStateCursorColor(self unsafe.Pointer) (uint32, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.uint32_t
+	code := int32(C.zg_render_state_cursor_color((*C.zg_render_state)(self), &outResultHas, &outResult))
+	return uint32(outResult), outResultHas != 0, code
+}
+
+// RenderStateDirty calls the generated C ABI wrapper for zg_render_state_dirty.
+func RenderStateDirty(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_render_state_dirty((*C.zg_render_state)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// RenderStateDirtyRows calls the generated C ABI wrapper for zg_render_state_dirty_rows.
+func RenderStateDirtyRows(self unsafe.Pointer, dst []uint16) (uint, int32) {
+	dstPtr := (*C.uint16_t)(zigoSlicePtr(dst))
+	var outResult C.size_t
+	code := int32(C.zg_render_state_dirty_rows((*C.zg_render_state)(self), dstPtr, C.size_t(len(dst)), &outResult))
+	return uint(outResult), code
+}
+
+// RenderStateRowCells calls the generated C ABI wrapper for zg_render_state_row_cells.
+func RenderStateRowCells(self unsafe.Pointer, y uint16, dst []RenderCellData) (uint, int32) {
+	var dstValues []C.zg_render_cell
+	if len(dst) != 0 {
+		dstValues = make([]C.zg_render_cell, len(dst))
+	}
+	dstPtr := (*C.zg_render_cell)(zigoSlicePtr(dstValues))
+	var outResult C.size_t
+	code := int32(C.zg_render_state_row_cells((*C.zg_render_state)(self), C.uint16_t(y), dstPtr, C.size_t(len(dst)), &outResult))
+	for i := 0; i < int(outResult) && i < len(dst); i++ {
+		dst[i] = RenderCellData{
+			Codepoint: uint32(dstValues[i].codepoint),
+			Fg:        uint32(dstValues[i].fg),
+			Bg:        uint32(dstValues[i].bg),
+			Flags:     uint32(dstValues[i].flags),
+		}
+	}
+	return uint(outResult), code
+}
+
+// RenderStateGraphemes calls the generated C ABI wrapper for zg_render_state_graphemes.
+func RenderStateGraphemes(self unsafe.Pointer, x uint16, y uint16, dst []uint32) (uint, int32) {
+	dstPtr := (*C.uint32_t)(zigoSlicePtr(dst))
+	var outResult C.size_t
+	code := int32(C.zg_render_state_graphemes((*C.zg_render_state)(self), C.uint16_t(x), C.uint16_t(y), dstPtr, C.size_t(len(dst)), &outResult))
+	return uint(outResult), code
+}
+
+// RenderStateHyperlinkAt calls the generated C ABI wrapper for zg_render_state_hyperlink_at.
+func RenderStateHyperlinkAt(self unsafe.Pointer, x uint16, y uint16) (string, bool, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_render_state_hyperlink_at((*C.zg_render_state)(self), C.uint16_t(x), C.uint16_t(y), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return "", false, code
+	}
+	if outResultPtr == nil {
+		return "", false, code
+	}
+	var result string
+	if outResultLen != 0 {
+		result = C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
+	}
+	C.zg_free_string(outResultPtr, outResultLen)
+	return result, true, code
+}
+
+// KittyImagesUpdate calls the generated C ABI wrapper for zg_kitty_images_update.
+func KittyImagesUpdate(self unsafe.Pointer, term unsafe.Pointer) int32 {
+	code := int32(C.zg_kitty_images_update((*C.zg_kitty_images)(self), (*C.zg_terminal)(term)))
+	return code
+}
+
+// KittyImagesPlacementCount calls the generated C ABI wrapper for zg_kitty_images_placement_count.
+func KittyImagesPlacementCount(self unsafe.Pointer) (uint, int32) {
+	var outResult C.size_t
+	code := int32(C.zg_kitty_images_placement_count((*C.zg_kitty_images)(self), &outResult))
+	return uint(outResult), code
+}
+
+// KittyImagesPlacements calls the generated C ABI wrapper for zg_kitty_images_placements.
+func KittyImagesPlacements(self unsafe.Pointer, dst []KittyPlacementData) (uint, int32) {
+	var dstValues []C.zg_kitty_placement
+	if len(dst) != 0 {
+		dstValues = make([]C.zg_kitty_placement, len(dst))
+	}
+	dstPtr := (*C.zg_kitty_placement)(zigoSlicePtr(dstValues))
+	var outResult C.size_t
+	code := int32(C.zg_kitty_images_placements((*C.zg_kitty_images)(self), dstPtr, C.size_t(len(dst)), &outResult))
+	for i := 0; i < int(outResult) && i < len(dst); i++ {
+		dst[i] = KittyPlacementData{
+			ImageID:      uint32(dstValues[i].image_id),
+			PlacementID:  uint32(dstValues[i].placement_id),
+			ViewportCol:  int32(dstValues[i].viewport_col),
+			ViewportRow:  int32(dstValues[i].viewport_row),
+			XOffset:      uint32(dstValues[i].x_offset),
+			YOffset:      uint32(dstValues[i].y_offset),
+			PixelWidth:   uint32(dstValues[i].pixel_width),
+			PixelHeight:  uint32(dstValues[i].pixel_height),
+			GridCols:     uint32(dstValues[i].grid_cols),
+			GridRows:     uint32(dstValues[i].grid_rows),
+			SourceX:      uint32(dstValues[i].source_x),
+			SourceY:      uint32(dstValues[i].source_y),
+			SourceWidth:  uint32(dstValues[i].source_width),
+			SourceHeight: uint32(dstValues[i].source_height),
+			Z:            int32(dstValues[i].z),
+			Layer:        uint8(dstValues[i].layer),
+			Virtual:      uint8(dstValues[i].virtual),
+			Pad:          uint16(dstValues[i]._pad),
+		}
+	}
+	return uint(outResult), code
+}
+
 // GestureSetBehaviors calls the generated C ABI wrapper for zg_gesture_set_behaviors.
 func GestureSetBehaviors(self unsafe.Pointer, singleClick uint8, doubleClick uint8, tripleClick uint8) int32 {
 	code := int32(C.zg_gesture_set_behaviors((*C.zg_gesture)(self), C.uint8_t(singleClick), C.uint8_t(doubleClick), C.uint8_t(tripleClick)))
@@ -2401,19 +2431,6 @@ func GestureDragged(self unsafe.Pointer) (uint8, int32) {
 	var outResult C.uint8_t
 	code := int32(C.zg_gesture_dragged((*C.zg_gesture)(self), &outResult))
 	return uint8(outResult), code
-}
-
-// NewOscParser calls the generated C ABI wrapper for zg_new_osc_parser.
-func NewOscParser() (unsafe.Pointer, int32) {
-	var outResult *C.zg_osc_parser
-	code := int32(C.zg_new_osc_parser(&outResult))
-	return unsafe.Pointer(outResult), code
-}
-
-// OscParserFreeOscParser calls the generated C ABI wrapper for zg_osc_parser_free_osc_parser.
-func OscParserFreeOscParser(self unsafe.Pointer) int32 {
-	code := int32(C.zg_osc_parser_free_osc_parser((*C.zg_osc_parser)(self)))
-	return code
 }
 
 // OscParserFeed calls the generated C ABI wrapper for zg_osc_parser_feed.
@@ -2579,23 +2596,6 @@ func OscParserProgressValue(self unsafe.Pointer) (int16, int32) {
 	var outResult C.int16_t
 	code := int32(C.zg_osc_parser_progress_value((*C.zg_osc_parser)(self), &outResult))
 	return int16(outResult), code
-}
-
-// SgrAttributeCount calls the generated C ABI wrapper for zg_sgr_attribute_count.
-func SgrAttributeCount(params []uint16, colonMask uint32) (uint, int32) {
-	paramsPtr := (*C.uint16_t)(zigoSlicePtr(params))
-	var outResult C.size_t
-	code := int32(C.zg_sgr_attribute_count(paramsPtr, C.size_t(len(params)), C.uint32_t(colonMask), &outResult))
-	return uint(outResult), code
-}
-
-// SgrAttributes calls the generated C ABI wrapper for zg_sgr_attributes.
-func SgrAttributes(params []uint16, colonMask uint32, dst []SgrAttributeData) (uint, int32) {
-	paramsPtr := (*C.uint16_t)(zigoSlicePtr(params))
-	dstPtr := (*C.zg_sgr_attribute)(zigoSlicePtr(dst))
-	var outResult C.size_t
-	code := int32(C.zg_sgr_attributes(paramsPtr, C.size_t(len(params)), C.uint32_t(colonMask), dstPtr, C.size_t(len(dst)), &outResult))
-	return uint(outResult), code
 }
 
 // SnapshotProgressData mirrors the zg_snapshot_progress layout, padding included.
