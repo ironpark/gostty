@@ -80,16 +80,32 @@ pub const DragMove = extern struct {
     }
 };
 
-/// Called once per drag event, on the thread that fed the stream.
+/// What a drag event reports, packed so the C ABI sees one integer and Go sees
+/// named fields.
 ///
-/// Carries no payload: zigo spells a callback parameter as the wire scalar, so
-/// a registered enum cannot ride in the signature and `DragEvent` would arrive
-/// as a bare integer. The event and the program's answer are read off the
-/// stream instead, the way a clipboard request is.
+/// `accepted` is the program's answer about the drag currently over the
+/// terminal, meaningful only when `answered` is true: `none` is a refusal,
+/// which is not the same as no answer yet.
+pub const DragNotice = packed struct(u32) {
+    event: DragEvent = .registration,
+    accepted: DragOperation = .none,
+    answered: bool = false,
+    _pad: u15 = 0,
+};
+
+/// Called once per drag event, on the thread that fed the stream, with the
+/// whole payload as arguments.
 ///
-/// They are still captured at the moment the effect fires, not read live, so a
-/// second event in the same feed cannot overwrite the first one's answer.
-pub const DragFn = *const fn (userdata: usize) callconv(.c) void;
+/// `mimes` is what the registered program asked the window system to accept,
+/// space separated and empty when it named none or is no longer registered.
+/// Both arguments are captured at the moment the effect fires, so a second
+/// event in the same feed cannot replace them.
+pub const DragFn = *const fn (
+    notice: DragNotice,
+    mimes: [*]const u8,
+    mimes_len: usize,
+    userdata: usize,
+) callconv(.c) void;
 
 fn toEvent(event: dnd.Event) DragEvent {
     return common.mirror(DragEvent, event);
@@ -99,31 +115,21 @@ fn toOperation(op: dnd.Operation) DragOperation {
     return common.mirror(DragOperation, op);
 }
 
-/// The effect ghostty calls. The acceptance is captured here, while the event
-/// being reported is the current one, rather than left for the handler to read
-/// afterwards when a second event in the same feed would have replaced it.
+/// The effect ghostty calls. The payload is read here, while the event being
+/// reported is the current one, and handed over as arguments.
 pub fn onDragEffect(handler: *vt.TerminalStream.Handler, event: dnd.Event) void {
     const self = stream_mod.streamFromHandler(handler);
     const callback = self.on_drag orelse return;
-    self.drag_event = toEvent(event);
-    self.drag_accepted = null;
+    var mimes: []const u8 = "";
+    var notice: DragNotice = .{ .event = toEvent(event) };
     if (handler.terminal.kitty_dnd) |state| {
-        if (state.clientAccepted()) |op| self.drag_accepted = toOperation(op);
+        mimes = state.drop.registered_mimes.items;
+        if (state.clientAccepted()) |op| {
+            notice.accepted = toOperation(op);
+            notice.answered = true;
+        }
     }
-    callback(self.drag_userdata);
-}
-
-/// The event the running handler was called for. Only meaningful inside the
-/// handler; `registration` outside one.
-pub fn dragEvent(self: *Stream) DragEvent {
-    return self.drag_event;
-}
-
-/// What the program answered about the drag, as of the event the handler is
-/// running for. Null before it has answered, which is not the same as `none`
-/// -- that is a refusal.
-pub fn dragAccepted(self: *Stream) ?DragOperation {
-    return self.drag_accepted;
+    callback(notice, mimes.ptr, mimes.len, self.drag_userdata);
 }
 
 /// Handle drag and drop events from the running program. Without a handler

@@ -26,7 +26,12 @@ func zigoPoisonAfterPanic(err error, handles ...zigoHandle) error {
 // DragHandler is the Go callback signature accepted by the generated binding.
 // Reentrancy: allowed; the callback may re-enter the binding while it is running.
 // Thread: caller; the callback runs on the thread that initiated the native call.
-type DragHandler func()
+type DragHandler func(DragNotice, string)
+
+// ClipboardHandler is the Go callback signature accepted by the generated binding.
+// Reentrancy: allowed; the callback may re-enter the binding while it is running.
+// Thread: caller; the callback runs on the thread that initiated the native call.
+type ClipboardHandler func(*ClipboardRequest)
 
 func zigoBoolToUint8(value bool) uint8 {
 	if value {
@@ -40,7 +45,18 @@ var zigoActiveCallbackHandles atomic.Int64
 type zigoCallbackHandle = cgo.Handle
 
 func zigoNewDragHandlerHandle(value DragHandler) zigoCallbackHandle {
-	stored := (func())(value)
+	stored := func(p0 uint32, p1 string) {
+		value(DragNoticeFromBacking(p0), p1)
+	}
+	handle := cgo.NewHandle(&raw.CallbackState{Fn: stored})
+	zigoActiveCallbackHandles.Add(1)
+	return handle
+}
+
+func zigoNewClipboardHandlerHandle(value ClipboardHandler) zigoCallbackHandle {
+	stored := func(p0 unsafe.Pointer) {
+		value(zigoNewBorrowedClipboardRequest(p0, nil))
+	}
 	handle := cgo.NewHandle(&raw.CallbackState{Fn: stored})
 	zigoActiveCallbackHandles.Add(1)
 	return handle

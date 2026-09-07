@@ -161,6 +161,7 @@ typedef uint8_t zg_clipboard_denial;
 #define ZG_CLIPBOARD_DENIAL_BUSY 2
 #define ZG_CLIPBOARD_DENIAL_IO_ERROR 3
 
+typedef struct zg_clipboard_request zg_clipboard_request;
 typedef uint8_t zg_underline;
 #define ZG_UNDERLINE_NONE 0
 #define ZG_UNDERLINE_SINGLE 1
@@ -576,39 +577,6 @@ typedef uint8_t zg_semantic_prompt_action;
 #define ZG_SEMANTIC_PROMPT_ACTION_END_INPUT_START_OUTPUT 6
 #define ZG_SEMANTIC_PROMPT_ACTION_END_COMMAND 7
 
-typedef uint8_t zg_sgr_attribute_tag;
-#define ZG_SGR_ATTRIBUTE_TAG_UNSET 0
-#define ZG_SGR_ATTRIBUTE_TAG_BOLD 1
-#define ZG_SGR_ATTRIBUTE_TAG_RESET_BOLD 2
-#define ZG_SGR_ATTRIBUTE_TAG_ITALIC 3
-#define ZG_SGR_ATTRIBUTE_TAG_RESET_ITALIC 4
-#define ZG_SGR_ATTRIBUTE_TAG_FAINT 5
-#define ZG_SGR_ATTRIBUTE_TAG_UNDERLINE 6
-#define ZG_SGR_ATTRIBUTE_TAG_UNDERLINE_COLOR_RGB 7
-#define ZG_SGR_ATTRIBUTE_TAG_UNDERLINE_COLOR_256 8
-#define ZG_SGR_ATTRIBUTE_TAG_RESET_UNDERLINE_COLOR 9
-#define ZG_SGR_ATTRIBUTE_TAG_OVERLINE 10
-#define ZG_SGR_ATTRIBUTE_TAG_RESET_OVERLINE 11
-#define ZG_SGR_ATTRIBUTE_TAG_BLINK 12
-#define ZG_SGR_ATTRIBUTE_TAG_RESET_BLINK 13
-#define ZG_SGR_ATTRIBUTE_TAG_INVERSE 14
-#define ZG_SGR_ATTRIBUTE_TAG_RESET_INVERSE 15
-#define ZG_SGR_ATTRIBUTE_TAG_INVISIBLE 16
-#define ZG_SGR_ATTRIBUTE_TAG_RESET_INVISIBLE 17
-#define ZG_SGR_ATTRIBUTE_TAG_STRIKETHROUGH 18
-#define ZG_SGR_ATTRIBUTE_TAG_RESET_STRIKETHROUGH 19
-#define ZG_SGR_ATTRIBUTE_TAG_DIRECT_COLOR_FG 20
-#define ZG_SGR_ATTRIBUTE_TAG_DIRECT_COLOR_BG 21
-#define ZG_SGR_ATTRIBUTE_TAG_COLOR_256_FG 22
-#define ZG_SGR_ATTRIBUTE_TAG_COLOR_256_BG 23
-#define ZG_SGR_ATTRIBUTE_TAG_NAMED_FG 24
-#define ZG_SGR_ATTRIBUTE_TAG_NAMED_BG 25
-#define ZG_SGR_ATTRIBUTE_TAG_BRIGHT_NAMED_FG 26
-#define ZG_SGR_ATTRIBUTE_TAG_BRIGHT_NAMED_BG 27
-#define ZG_SGR_ATTRIBUTE_TAG_RESET_FG 28
-#define ZG_SGR_ATTRIBUTE_TAG_RESET_BG 29
-#define ZG_SGR_ATTRIBUTE_TAG_UNKNOWN 30
-
 // ELF and Mach-O export every non-static symbol of a shared library;
 // COFF exports nothing without an explicit annotation, so a DLL built
 // without this would load and then resolve none of its entry points.
@@ -757,10 +725,20 @@ typedef struct zg_gesture_drag_event {
     uint8_t rectangle;
 } zg_gesture_drag_event;
 
-typedef struct zg_sgr_attribute {
-    zg_sgr_attribute_tag tag;
-    uint32_t value;
-} zg_sgr_attribute;
+typedef struct zg_attribute_snapshot_t {
+    zg_attribute_tag tag;
+    zg_underline underline;
+    uint32_t underline_color_rgb;
+    uint8_t underline_color_256;
+    uint32_t direct_color_fg;
+    uint32_t direct_color_bg;
+    uint8_t color_256_fg;
+    uint8_t color_256_bg;
+    zg_color_name named_fg;
+    zg_color_name named_bg;
+    zg_color_name bright_named_fg;
+    zg_color_name bright_named_bg;
+} zg_attribute_snapshot_t;
 
 ZIGO_EXPORT int32_t zg_terminal_cols(const zg_terminal * self, uint16_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_rows(const zg_terminal * self, uint16_t * out_result);
@@ -810,8 +788,6 @@ ZIGO_EXPORT int32_t zg_stream_set_enquiry_response(zg_stream * self, const uint8
 ZIGO_EXPORT int32_t zg_stream_color_scheme_changed(zg_stream * self, uint8_t scheme);
 ZIGO_EXPORT int32_t zg_stream_clear_color_scheme(zg_stream * self);
 ZIGO_EXPORT int32_t zg_stream_on_drag(zg_stream * self, size_t userdata);
-ZIGO_EXPORT int32_t zg_stream_drag_event(zg_stream * self, uint8_t * out_result);
-ZIGO_EXPORT int32_t zg_stream_drag_accepted(zg_stream * self, uint8_t * out_result_has, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_stream_drag_active(zg_stream * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_stream_drag_registered_mimes(zg_stream * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
 ZIGO_EXPORT int32_t zg_stream_drag_client_accepted(zg_stream * self, uint8_t * out_result_has, uint8_t * out_result);
@@ -822,18 +798,18 @@ ZIGO_EXPORT int32_t zg_stream_drag_drop(zg_stream * self, const zg_drag_move * e
 ZIGO_EXPORT int32_t zg_stream_drag_clear_items(zg_stream * self);
 ZIGO_EXPORT int32_t zg_stream_on_clipboard_write_request(zg_stream * self, size_t userdata);
 ZIGO_EXPORT int32_t zg_stream_on_clipboard_read_request(zg_stream * self, size_t userdata);
-ZIGO_EXPORT int32_t zg_stream_clipboard_location(zg_stream * self, int32_t * out_result);
-ZIGO_EXPORT int32_t zg_stream_clipboard_name(zg_stream * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
-ZIGO_EXPORT int32_t zg_stream_clipboard_granted(zg_stream * self, uint8_t * out_result);
-ZIGO_EXPORT int32_t zg_stream_clipboard_can_remember(zg_stream * self, uint8_t * out_result);
-ZIGO_EXPORT int32_t zg_stream_clipboard_content_count(zg_stream * self, size_t * out_result);
-ZIGO_EXPORT int32_t zg_stream_clipboard_content_mime(zg_stream * self, size_t index, const uint8_t * * out_result_ptr, size_t * out_result_len);
-ZIGO_EXPORT int32_t zg_stream_clipboard_content_data(zg_stream * self, size_t index, const uint8_t * * out_result_ptr, size_t * out_result_len);
-ZIGO_EXPORT int32_t zg_stream_clipboard_mime_count(zg_stream * self, size_t * out_result);
-ZIGO_EXPORT int32_t zg_stream_clipboard_mime(zg_stream * self, size_t index, const uint8_t * * out_result_ptr, size_t * out_result_len);
-ZIGO_EXPORT int32_t zg_stream_allow_clipboard(zg_stream * self, uint8_t remember);
-ZIGO_EXPORT int32_t zg_stream_reply_clipboard_text(zg_stream * self, const uint8_t * text_ptr, size_t text_len, uint8_t remember);
-ZIGO_EXPORT int32_t zg_stream_deny_clipboard(zg_stream * self, uint8_t reason);
+ZIGO_EXPORT int32_t zg_clipboard_request_location(zg_clipboard_request * self, int32_t * out_result);
+ZIGO_EXPORT int32_t zg_clipboard_request_name(zg_clipboard_request * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_clipboard_request_granted(zg_clipboard_request * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_clipboard_request_can_remember(zg_clipboard_request * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_clipboard_request_content_count(zg_clipboard_request * self, size_t * out_result);
+ZIGO_EXPORT int32_t zg_clipboard_request_content_mime(zg_clipboard_request * self, size_t index, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_clipboard_request_content_data(zg_clipboard_request * self, size_t index, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_clipboard_request_mime_count(zg_clipboard_request * self, size_t * out_result);
+ZIGO_EXPORT int32_t zg_clipboard_request_mime(zg_clipboard_request * self, size_t index, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_clipboard_request_allow(zg_clipboard_request * self, uint8_t remember);
+ZIGO_EXPORT int32_t zg_clipboard_request_reply_text(zg_clipboard_request * self, const uint8_t * text_ptr, size_t text_len, uint8_t remember);
+ZIGO_EXPORT int32_t zg_clipboard_request_deny(zg_clipboard_request * self, uint8_t reason);
 ZIGO_EXPORT int32_t zg_stream_write_continuation(zg_stream * self, size_t writer_userdata);
 ZIGO_EXPORT int32_t zg_stream_has_replies(zg_stream * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_stream_write_snapshot(zg_stream * self, size_t writer_userdata);
@@ -931,7 +907,6 @@ ZIGO_EXPORT int32_t zg_terminal_set_kitty_graphics_loading_limits(zg_terminal * 
 ZIGO_EXPORT int32_t zg_terminal_kitty_image(zg_terminal * self, uint32_t image_id, uint8_t * out_result_has, zg_kitty_image * out_result);
 ZIGO_EXPORT int32_t zg_terminal_kitty_image_data(zg_terminal * self, uint32_t image_id, uint8_t * dst_ptr, size_t dst_len, size_t * out_result);
 ZIGO_EXPORT void zg_sys_on_png_decode_request(size_t userdata);
-ZIGO_EXPORT size_t zg_sys_png_request_data(uint8_t * dst_ptr, size_t dst_len);
 ZIGO_EXPORT int32_t zg_sys_reply_png_image(uint32_t width, uint32_t height, const uint8_t * rgba_ptr, size_t rgba_len);
 ZIGO_EXPORT void zg_sys_on_secure_random_request(size_t userdata);
 ZIGO_EXPORT void zg_sys_clear(void);
@@ -964,7 +939,7 @@ ZIGO_EXPORT int32_t zg_gesture_gesture_close(zg_gesture * self);
 ZIGO_EXPORT int32_t zg_new_osc_parser(zg_osc_parser * * out_result);
 ZIGO_EXPORT int32_t zg_osc_parser_free_osc_parser(zg_osc_parser * self);
 ZIGO_EXPORT int32_t zg_sgr_attribute_count(const uint16_t * params_ptr, size_t params_len, uint32_t colon_mask, size_t * out_result);
-ZIGO_EXPORT int32_t zg_sgr_attributes(const uint16_t * params_ptr, size_t params_len, uint32_t colon_mask, zg_sgr_attribute * dst_ptr, size_t dst_len, size_t * out_result);
+ZIGO_EXPORT int32_t zg_sgr_attribute_at(const uint16_t * params_ptr, size_t params_len, uint32_t colon_mask, size_t index, zg_attribute_snapshot_t * out_result);
 ZIGO_EXPORT uint8_t zg_key_codepoint(int32_t self, uint32_t * out_result);
 ZIGO_EXPORT uint8_t zg_key_printable(int32_t self);
 ZIGO_EXPORT uint8_t zg_key_modifier(int32_t self);

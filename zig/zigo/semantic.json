@@ -489,7 +489,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 146,
+            "line": 91,
             "column": 5
           },
           "type": {
@@ -502,7 +502,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 147,
+            "line": 92,
             "column": 5
           },
           "type": {
@@ -518,7 +518,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 148,
+            "line": 93,
             "column": 5
           },
           "type": {
@@ -533,7 +533,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 149,
+            "line": 94,
             "column": 5
           },
           "type": {
@@ -559,7 +559,7 @@
       },
       "source": {
         "path": "encode.zig",
-        "line": 145,
+        "line": 90,
         "column": 8
       },
       "symbol": "zg_encode_key"
@@ -576,7 +576,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 218,
+            "line": 163,
             "column": 5
           },
           "type": {
@@ -589,7 +589,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 219,
+            "line": 164,
             "column": 5
           },
           "type": {
@@ -605,7 +605,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 220,
+            "line": 165,
             "column": 5
           },
           "type": {
@@ -619,7 +619,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 221,
+            "line": 166,
             "column": 5
           },
           "type": {
@@ -633,7 +633,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 222,
+            "line": 167,
             "column": 5
           },
           "type": {
@@ -652,7 +652,7 @@
       },
       "source": {
         "path": "encode.zig",
-        "line": 217,
+        "line": 162,
         "column": 8
       },
       "symbol": "zg_encode_mouse"
@@ -672,7 +672,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 34,
+            "line": 33,
             "column": 21
           },
           "type": {
@@ -692,7 +692,7 @@
       },
       "source": {
         "path": "encode.zig",
-        "line": 34,
+        "line": 33,
         "column": 8
       },
       "symbol": "zg_key_from_ascii"
@@ -713,7 +713,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 94,
+            "line": 39,
             "column": 19
           },
           "type": {
@@ -737,7 +737,7 @@
       },
       "source": {
         "path": "encode.zig",
-        "line": 94,
+        "line": 39,
         "column": 8
       },
       "symbol": "zg_key_from_w3_c"
@@ -819,7 +819,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 237,
+            "line": 182,
             "column": 5
           },
           "type": {
@@ -832,7 +832,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 238,
+            "line": 183,
             "column": 5
           },
           "type": {
@@ -848,7 +848,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 239,
+            "line": 184,
             "column": 5
           },
           "type": {
@@ -874,7 +874,7 @@
       },
       "source": {
         "path": "encode.zig",
-        "line": 236,
+        "line": 181,
         "column": 8
       },
       "symbol": "zg_encode_paste"
@@ -982,7 +982,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 179,
+            "line": 291,
             "column": 33
           },
           "type": {
@@ -996,7 +996,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 179,
+        "line": 291,
         "column": 12
       },
       "symbol": "zg_terminal_deinit"
@@ -1066,7 +1066,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 670,
+            "line": 673,
             "column": 34
           },
           "type": {
@@ -1079,7 +1079,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 670,
+            "line": 673,
             "column": 55
           },
           "type": {
@@ -1106,7 +1106,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 670,
+        "line": 673,
         "column": 8
       },
       "zig_path": "newStream",
@@ -1124,7 +1124,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 689,
+            "line": 692,
             "column": 34
           },
           "type": {
@@ -1138,7 +1138,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 689,
+        "line": 692,
         "column": 8
       },
       "zig_path": "freeStream",
@@ -1146,6 +1146,7 @@
     },
     {
       "doc": "Feed bytes to the parser, applying them to the terminal.",
+      "implements": "writer",
       "name": "feed",
       "ownership": "borrowed",
       "params": [
@@ -1155,7 +1156,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 356,
+            "line": 466,
             "column": 32
           },
           "type": {
@@ -1176,7 +1177,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 356,
+        "line": 466,
         "column": 12
       },
       "symbol": "zg_stream_feed"
@@ -1199,7 +1200,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 406,
+        "line": 516,
         "column": 12
       },
       "symbol": "zg_stream_next_event"
@@ -1223,7 +1224,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "stream.zig",
-        "line": 424,
+        "line": 534,
         "column": 12
       },
       "symbol": "zg_stream_event_title"
@@ -1247,7 +1248,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "stream.zig",
-        "line": 430,
+        "line": 540,
         "column": 12
       },
       "symbol": "zg_stream_event_body"
@@ -1263,7 +1264,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 435,
+        "line": 545,
         "column": 12
       },
       "symbol": "zg_stream_event_progress_state"
@@ -1285,7 +1286,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 522,
+        "line": 632,
         "column": 12
       },
       "symbol": "zg_stream_event_progress"
@@ -1308,7 +1309,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 445,
+        "line": 555,
         "column": 12
       },
       "symbol": "zg_stream_event_sequence"
@@ -1324,7 +1325,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 457,
+            "line": 567,
             "column": 46
           },
           "type": {
@@ -1341,7 +1342,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 457,
+        "line": 567,
         "column": 12
       },
       "symbol": "zg_stream_set_unknown_max_bytes"
@@ -1358,7 +1359,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 471,
+            "line": 581,
             "column": 44
           },
           "type": {
@@ -1379,7 +1380,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 471,
+            "line": 581,
             "column": 62
           },
           "type": {
@@ -1400,7 +1401,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 471,
+        "line": 581,
         "column": 12
       },
       "symbol": "zg_stream_set_version_report"
@@ -1417,7 +1418,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 488,
+            "line": 598,
             "column": 46
           },
           "type": {
@@ -1438,7 +1439,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 488,
+        "line": 598,
         "column": 12
       },
       "symbol": "zg_stream_set_enquiry_response"
@@ -1454,7 +1455,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 503,
+            "line": 613,
             "column": 46
           },
           "type": {
@@ -1469,7 +1470,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 503,
+        "line": 613,
         "column": 12
       },
       "symbol": "zg_stream_color_scheme_changed"
@@ -1485,7 +1486,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 516,
+        "line": 626,
         "column": 12
       },
       "symbol": "zg_stream_clear_color_scheme"
@@ -1503,14 +1504,33 @@
           "name_source": "ast",
           "retention": "retained",
           "source": {
-            "line": 132,
+            "line": 138,
             "column": 30
           },
           "type": {
             "c_callconv": true,
             "has_userdata": true,
             "kind": "callback",
+            "param_semantics": [
+              null,
+              "utf8_string",
+              null
+            ],
             "params": [
+              {
+                "kind": "value_struct",
+                "ref": "DragNotice"
+              },
+              {
+                "const": true,
+                "element": {
+                  "bits": 8,
+                  "is_usize": false,
+                  "kind": "int",
+                  "signed": false
+                },
+                "kind": "slice"
+              },
               {
                 "bits": 64,
                 "is_usize": true,
@@ -1530,7 +1550,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 132,
+            "line": 138,
             "column": 48
           },
           "type": {
@@ -1547,50 +1567,11 @@
       },
       "source": {
         "path": "dnd.zig",
-        "line": 132,
+        "line": 138,
         "column": 8
       },
       "zig_path": "onDrag",
       "symbol": "zg_stream_on_drag"
-    },
-    {
-      "doc": "The event the running handler was called for. Only meaningful inside the\nhandler; `registration` outside one.",
-      "name": "dragEvent",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Stream",
-      "return": {
-        "kind": "enum",
-        "ref": "DragEvent"
-      },
-      "source": {
-        "path": "dnd.zig",
-        "line": 118,
-        "column": 8
-      },
-      "zig_path": "dragEvent",
-      "symbol": "zg_stream_drag_event"
-    },
-    {
-      "doc": "What the program answered about the drag, as of the event the handler is\nrunning for. Null before it has answered, which is not the same as `none`\n-- that is a refusal.",
-      "name": "dragAccepted",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Stream",
-      "return": {
-        "child": {
-          "kind": "enum",
-          "ref": "DragOperation"
-        },
-        "kind": "optional"
-      },
-      "source": {
-        "path": "dnd.zig",
-        "line": 125,
-        "column": 8
-      },
-      "zig_path": "dragAccepted",
-      "symbol": "zg_stream_drag_accepted"
     },
     {
       "doc": "Whether a program is currently registered to accept drops.\n\nFalse is the normal state, and the answer to \"should I hand this drag to\nthe program or handle it myself\".",
@@ -1603,7 +1584,7 @@
       },
       "source": {
         "path": "dnd.zig",
-        "line": 141,
+        "line": 147,
         "column": 8
       },
       "zig_path": "dragActive",
@@ -1628,7 +1609,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "dnd.zig",
-        "line": 150,
+        "line": 156,
         "column": 8
       },
       "zig_path": "dragRegisteredMimes",
@@ -1649,7 +1630,7 @@
       },
       "source": {
         "path": "dnd.zig",
-        "line": 158,
+        "line": 164,
         "column": 8
       },
       "zig_path": "dragClientAccepted",
@@ -1666,7 +1647,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 169,
+            "line": 175,
             "column": 32
           },
           "type": {
@@ -1681,7 +1662,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 169,
+            "line": 175,
             "column": 46
           },
           "type": {
@@ -1709,7 +1690,7 @@
       },
       "source": {
         "path": "dnd.zig",
-        "line": 169,
+        "line": 175,
         "column": 8
       },
       "zig_path": "dragMove",
@@ -1733,7 +1714,7 @@
       },
       "source": {
         "path": "dnd.zig",
-        "line": 181,
+        "line": 187,
         "column": 8
       },
       "zig_path": "dragLeave",
@@ -1751,7 +1732,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 195,
+            "line": 201,
             "column": 35
           },
           "type": {
@@ -1771,7 +1752,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 195,
+            "line": 201,
             "column": 53
           },
           "type": {
@@ -1799,7 +1780,7 @@
       },
       "source": {
         "path": "dnd.zig",
-        "line": 195,
+        "line": 201,
         "column": 8
       },
       "zig_path": "dragAddItem",
@@ -1816,7 +1797,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 210,
+            "line": 216,
             "column": 32
           },
           "type": {
@@ -1838,7 +1819,7 @@
       },
       "source": {
         "path": "dnd.zig",
-        "line": 210,
+        "line": 216,
         "column": 8
       },
       "zig_path": "dragDrop",
@@ -1855,7 +1836,7 @@
       },
       "source": {
         "path": "dnd.zig",
-        "line": 221,
+        "line": 227,
         "column": 8
       },
       "zig_path": "dragClearItems",
@@ -1874,7 +1855,7 @@
           "name_source": "ast",
           "retention": "retained",
           "source": {
-            "line": 532,
+            "line": 642,
             "column": 9
           },
           "type": {
@@ -1883,13 +1864,19 @@
             "kind": "callback",
             "params": [
               {
+                "const": false,
+                "kind": "opaque_ptr",
+                "nullable": false,
+                "ref": "ClipboardRequest"
+              },
+              {
                 "bits": 64,
                 "is_usize": true,
                 "kind": "int",
                 "signed": false
               }
             ],
-            "ref": "DragHandler",
+            "ref": "ClipboardHandler",
             "return": {
               "kind": "void"
             }
@@ -1901,7 +1888,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 533,
+            "line": 643,
             "column": 9
           },
           "type": {
@@ -1918,7 +1905,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 530,
+        "line": 640,
         "column": 12
       },
       "symbol": "zg_stream_on_clipboard_write_request"
@@ -1936,7 +1923,7 @@
           "name_source": "ast",
           "retention": "retained",
           "source": {
-            "line": 544,
+            "line": 654,
             "column": 9
           },
           "type": {
@@ -1945,13 +1932,19 @@
             "kind": "callback",
             "params": [
               {
+                "const": false,
+                "kind": "opaque_ptr",
+                "nullable": false,
+                "ref": "ClipboardRequest"
+              },
+              {
                 "bits": 64,
                 "is_usize": true,
                 "kind": "int",
                 "signed": false
               }
             ],
-            "ref": "DragHandler",
+            "ref": "ClipboardHandler",
             "return": {
               "kind": "void"
             }
@@ -1963,7 +1956,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 545,
+            "line": 655,
             "column": 9
           },
           "type": {
@@ -1980,34 +1973,34 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 542,
+        "line": 652,
         "column": 12
       },
       "symbol": "zg_stream_on_clipboard_read_request"
     },
     {
-      "doc": "Which clipboard the pending request names.",
-      "name": "clipboardLocation",
+      "doc": "Which clipboard the request names.",
+      "name": "location",
       "ownership": "borrowed",
       "params": [],
-      "receiver": "Stream",
+      "receiver": "ClipboardRequest",
       "return": {
         "kind": "enum",
         "ref": "ClipboardLocation"
       },
       "source": {
         "path": "stream.zig",
-        "line": 552,
+        "line": 118,
         "column": 12
       },
-      "symbol": "zg_stream_clipboard_location"
+      "symbol": "zg_clipboard_request_location"
     },
     {
       "doc": "The requesting program's name, empty when the protocol carries none.",
-      "name": "clipboardName",
+      "name": "name",
       "ownership": "borrowed",
       "params": [],
-      "receiver": "Stream",
+      "receiver": "ClipboardRequest",
       "return": {
         "const": true,
         "element": {
@@ -2021,49 +2014,49 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "stream.zig",
-        "line": 559,
+        "line": 125,
         "column": 12
       },
-      "symbol": "zg_stream_clipboard_name"
+      "symbol": "zg_clipboard_request_name"
     },
     {
       "doc": "True when the terminal already holds a session grant, so the embedder\nshould skip its permission prompt.",
-      "name": "clipboardGranted",
+      "name": "granted",
       "ownership": "borrowed",
       "params": [],
-      "receiver": "Stream",
+      "receiver": "ClipboardRequest",
       "return": {
         "kind": "bool"
       },
       "source": {
         "path": "stream.zig",
-        "line": 567,
+        "line": 133,
         "column": 12
       },
-      "symbol": "zg_stream_clipboard_granted"
+      "symbol": "zg_clipboard_request_granted"
     },
     {
       "doc": "True when the program supplied a session password, so a decision can be\nremembered via the `remember` argument when answering.",
-      "name": "clipboardCanRemember",
+      "name": "canRemember",
       "ownership": "borrowed",
       "params": [],
-      "receiver": "Stream",
+      "receiver": "ClipboardRequest",
       "return": {
         "kind": "bool"
       },
       "source": {
         "path": "stream.zig",
-        "line": 575,
+        "line": 141,
         "column": 12
       },
-      "symbol": "zg_stream_clipboard_can_remember"
+      "symbol": "zg_clipboard_request_can_remember"
     },
     {
-      "doc": "How many representations a pending write carries. Zero clears the\ndestination.",
-      "name": "clipboardContentCount",
+      "doc": "How many representations a write carries. Zero clears the destination.",
+      "name": "contentCount",
       "ownership": "borrowed",
       "params": [],
-      "receiver": "Stream",
+      "receiver": "ClipboardRequest",
       "return": {
         "bits": 64,
         "is_usize": true,
@@ -2072,14 +2065,14 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 583,
+        "line": 148,
         "column": 12
       },
-      "symbol": "zg_stream_clipboard_content_count"
+      "symbol": "zg_clipboard_request_content_count"
     },
     {
-      "doc": "The MIME type of one representation of a pending write.",
-      "name": "clipboardContentMime",
+      "doc": "The MIME type of one representation of a write.",
+      "name": "contentMime",
       "ownership": "borrowed",
       "params": [
         {
@@ -2088,8 +2081,8 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 589,
-            "column": 48
+            "line": 154,
+            "column": 49
           },
           "type": {
             "bits": 64,
@@ -2099,7 +2092,7 @@
           }
         }
       ],
-      "receiver": "Stream",
+      "receiver": "ClipboardRequest",
       "return": {
         "const": true,
         "element": {
@@ -2113,14 +2106,14 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "stream.zig",
-        "line": 589,
+        "line": 154,
         "column": 12
       },
-      "symbol": "zg_stream_clipboard_content_mime"
+      "symbol": "zg_clipboard_request_content_mime"
     },
     {
-      "doc": "The bytes of one representation of a pending write. Binary safe.",
-      "name": "clipboardContentData",
+      "doc": "The bytes of one representation of a write. Binary safe.",
+      "name": "contentData",
       "ownership": "borrowed",
       "params": [
         {
@@ -2129,8 +2122,8 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 596,
-            "column": 48
+            "line": 161,
+            "column": 49
           },
           "type": {
             "bits": 64,
@@ -2140,7 +2133,7 @@
           }
         }
       ],
-      "receiver": "Stream",
+      "receiver": "ClipboardRequest",
       "return": {
         "const": true,
         "element": {
@@ -2153,17 +2146,17 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 596,
+        "line": 161,
         "column": 12
       },
-      "symbol": "zg_stream_clipboard_content_data"
+      "symbol": "zg_clipboard_request_content_data"
     },
     {
-      "doc": "How many MIME types a pending read asks for, in order of preference.",
-      "name": "clipboardMimeCount",
+      "doc": "How many MIME types a read asks for, in order of preference.",
+      "name": "mimeCount",
       "ownership": "borrowed",
       "params": [],
-      "receiver": "Stream",
+      "receiver": "ClipboardRequest",
       "return": {
         "bits": 64,
         "is_usize": true,
@@ -2172,14 +2165,14 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 603,
+        "line": 168,
         "column": 12
       },
-      "symbol": "zg_stream_clipboard_mime_count"
+      "symbol": "zg_clipboard_request_mime_count"
     },
     {
-      "doc": "One of the MIME types a pending read asks for.",
-      "name": "clipboardMime",
+      "doc": "One of the MIME types a read asks for.",
+      "name": "mime",
       "ownership": "borrowed",
       "params": [
         {
@@ -2188,8 +2181,8 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 609,
-            "column": 41
+            "line": 174,
+            "column": 42
           },
           "type": {
             "bits": 64,
@@ -2199,7 +2192,7 @@
           }
         }
       ],
-      "receiver": "Stream",
+      "receiver": "ClipboardRequest",
       "return": {
         "const": true,
         "element": {
@@ -2213,14 +2206,14 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "stream.zig",
-        "line": 609,
+        "line": 174,
         "column": 12
       },
-      "symbol": "zg_stream_clipboard_mime"
+      "symbol": "zg_clipboard_request_mime"
     },
     {
-      "doc": "Accept a pending write. Answering a read this way serves empty text.",
-      "name": "allowClipboard",
+      "doc": "Accept a write. Answering a read this way serves empty text.",
+      "name": "allow",
       "ownership": "borrowed",
       "params": [
         {
@@ -2229,28 +2222,28 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 616,
-            "column": 42
+            "line": 181,
+            "column": 43
           },
           "type": {
             "kind": "bool"
           }
         }
       ],
-      "receiver": "Stream",
+      "receiver": "ClipboardRequest",
       "return": {
         "kind": "void"
       },
       "source": {
         "path": "stream.zig",
-        "line": 616,
+        "line": 181,
         "column": 12
       },
-      "symbol": "zg_stream_allow_clipboard"
+      "symbol": "zg_clipboard_request_allow"
     },
     {
-      "doc": "Serve a pending read with plain text.\n\n`text` is borrowed for this call only; the terminal copies what it\nneeds before returning.",
-      "name": "replyClipboardText",
+      "doc": "Serve a read with plain text.\n\n`text` is borrowed for this call only; the terminal copies what it\nneeds before returning.",
+      "name": "replyText",
       "ownership": "borrowed",
       "params": [
         {
@@ -2260,8 +2253,8 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 633,
-            "column": 46
+            "line": 198,
+            "column": 47
           },
           "type": {
             "const": true,
@@ -2280,28 +2273,28 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 633,
-            "column": 64
+            "line": 198,
+            "column": 65
           },
           "type": {
             "kind": "bool"
           }
         }
       ],
-      "receiver": "Stream",
+      "receiver": "ClipboardRequest",
       "return": {
         "kind": "void"
       },
       "source": {
         "path": "stream.zig",
-        "line": 633,
+        "line": 198,
         "column": 12
       },
-      "symbol": "zg_stream_reply_clipboard_text"
+      "symbol": "zg_clipboard_request_reply_text"
     },
     {
-      "doc": "Refuse a pending request.",
-      "name": "denyClipboard",
+      "doc": "Refuse the request.",
+      "name": "deny",
       "ownership": "borrowed",
       "params": [
         {
@@ -2310,8 +2303,8 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 648,
-            "column": 41
+            "line": 213,
+            "column": 42
           },
           "type": {
             "kind": "enum",
@@ -2319,16 +2312,16 @@
           }
         }
       ],
-      "receiver": "Stream",
+      "receiver": "ClipboardRequest",
       "return": {
         "kind": "void"
       },
       "source": {
         "path": "stream.zig",
-        "line": 648,
+        "line": 213,
         "column": 12
       },
-      "symbol": "zg_stream_deny_clipboard"
+      "symbol": "zg_clipboard_request_deny"
     },
     {
       "doc": "Write the unfinished sequence suffix, when continuation tracking is on.",
@@ -2341,7 +2334,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 382,
+            "line": 492,
             "column": 45
           },
           "type": {
@@ -2363,7 +2356,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 382,
+        "line": 492,
         "column": 12
       },
       "symbol": "zg_stream_write_continuation"
@@ -2379,7 +2372,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 361,
+        "line": 471,
         "column": 12
       },
       "symbol": "zg_stream_has_replies"
@@ -2395,7 +2388,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 389,
+            "line": 499,
             "column": 41
           },
           "type": {
@@ -2441,7 +2434,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 389,
+        "line": 499,
         "column": 12
       },
       "symbol": "zg_stream_write_snapshot"
@@ -2457,7 +2450,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 374,
+            "line": 484,
             "column": 40
           },
           "type": {
@@ -2477,7 +2470,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 374,
+        "line": 484,
         "column": 12
       },
       "symbol": "zg_stream_write_replies"
@@ -4284,7 +4277,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 179,
+            "line": 291,
             "column": 33
           },
           "type": {
@@ -4298,7 +4291,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 179,
+        "line": 291,
         "column": 12
       },
       "symbol": "zg_snapshot_deinit"
@@ -5477,7 +5470,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 179,
+            "line": 291,
             "column": 33
           },
           "type": {
@@ -5491,7 +5484,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 179,
+        "line": 291,
         "column": 12
       },
       "symbol": "zg_render_state_deinit"
@@ -5818,7 +5811,7 @@
           "name_source": "ast",
           "retention": "retained",
           "source": {
-            "line": 64,
+            "line": 59,
             "column": 27
           },
           "type": {
@@ -5827,10 +5820,14 @@
             "kind": "callback",
             "params": [
               {
-                "bits": 64,
-                "is_usize": true,
-                "kind": "int",
-                "signed": false
+                "const": true,
+                "element": {
+                  "bits": 8,
+                  "is_usize": false,
+                  "kind": "int",
+                  "signed": false
+                },
+                "kind": "slice"
               },
               {
                 "bits": 64,
@@ -5839,7 +5836,7 @@
                 "signed": false
               }
             ],
-            "ref": "Handler",
+            "ref": "PngDecodeHandler",
             "return": {
               "kind": "void"
             }
@@ -5851,8 +5848,8 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 64,
-            "column": 44
+            "line": 59,
+            "column": 50
           },
           "type": {
             "bits": 64,
@@ -5867,52 +5864,10 @@
       },
       "source": {
         "path": "sys.zig",
-        "line": 64,
+        "line": 59,
         "column": 8
       },
       "symbol": "zg_sys_on_png_decode_request"
-    },
-    {
-      "doc": "Copy the PNG bytes of the pending request into `dst` and return how many\nwere written: all of them, or `dst.len` if shorter.",
-      "name": "pngRequestData",
-      "package": "sys",
-      "namespace": "sys",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "out",
-          "name": "dst",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 72,
-            "column": 23
-          },
-          "type": {
-            "const": false,
-            "element": {
-              "bits": 8,
-              "is_usize": false,
-              "kind": "int",
-              "signed": false
-            },
-            "kind": "slice"
-          },
-          "written": "return"
-        }
-      ],
-      "return": {
-        "bits": 64,
-        "is_usize": true,
-        "kind": "int",
-        "signed": false
-      },
-      "source": {
-        "path": "sys.zig",
-        "line": 72,
-        "column": 8
-      },
-      "symbol": "zg_sys_png_request_data"
     },
     {
       "doc": "Answer the pending PNG request with decoded pixels, four bytes per pixel,\nrow-major. `rgba` is copied; it must be exactly `width * height * 4` bytes.",
@@ -5927,7 +5882,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 80,
+            "line": 67,
             "column": 22
           },
           "type": {
@@ -5943,7 +5898,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 80,
+            "line": 67,
             "column": 34
           },
           "type": {
@@ -5959,7 +5914,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 80,
+            "line": 67,
             "column": 47
           },
           "type": {
@@ -5987,7 +5942,7 @@
       },
       "source": {
         "path": "sys.zig",
-        "line": 80,
+        "line": 67,
         "column": 8
       },
       "symbol": "zg_sys_reply_png_image"
@@ -6007,7 +5962,7 @@
           "name_source": "ast",
           "retention": "retained",
           "source": {
-            "line": 97,
+            "line": 84,
             "column": 30
           },
           "type": {
@@ -6028,7 +5983,7 @@
                 "signed": false
               }
             ],
-            "ref": "Handler",
+            "ref": "SecureRandomHandler",
             "return": {
               "kind": "void"
             }
@@ -6040,8 +5995,8 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 97,
-            "column": 47
+            "line": 84,
+            "column": 56
           },
           "type": {
             "bits": 64,
@@ -6056,7 +6011,7 @@
       },
       "source": {
         "path": "sys.zig",
-        "line": 97,
+        "line": 84,
         "column": 8
       },
       "symbol": "zg_sys_on_secure_random_request"
@@ -6073,7 +6028,7 @@
       },
       "source": {
         "path": "sys.zig",
-        "line": 114,
+        "line": 101,
         "column": 8
       },
       "symbol": "zg_sys_clear"
@@ -6091,7 +6046,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 105,
+            "line": 92,
             "column": 26
           },
           "type": {
@@ -6118,7 +6073,7 @@
       },
       "source": {
         "path": "sys.zig",
-        "line": 105,
+        "line": 92,
         "column": 8
       },
       "symbol": "zg_sys_reply_secure_random"
@@ -6936,7 +6891,7 @@
       "symbol": "zg_osc_parser_free_osc_parser"
     },
     {
-      "doc": "How many attributes a CSI SGR parameter list yields, for sizing the slice\n`sgrAttributes` fills. An empty list is the SGR reset, so it yields one.\n\nSee `sgrAttributes` for what `colon_mask` means.",
+      "doc": "How many attributes a CSI SGR parameter list yields, so a caller knows how\nmany indices `sgrAttributeAt` answers. An empty list is the SGR reset, so\nit yields one. Refuses a list longer than ghostty's CSI parser records.\n\nSee `sgrAttributeAt` for what `colon_mask` means.",
       "name": "sgrAttributeCount",
       "ownership": "borrowed",
       "params": [
@@ -6946,7 +6901,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 388,
+            "line": 321,
             "column": 26
           },
           "type": {
@@ -6966,7 +6921,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 388,
+            "line": 321,
             "column": 47
           },
           "type": {
@@ -6991,14 +6946,14 @@
       },
       "source": {
         "path": "parser.zig",
-        "line": 388,
+        "line": 321,
         "column": 8
       },
       "symbol": "zg_sgr_attribute_count"
     },
     {
-      "doc": "Parse a CSI SGR parameter list into `dst`, in order, and report how many\nattributes were written.\n\n`params` is the parameter list of a `CSI ... m` sequence with the `m`\ndropped, and `colon_mask` says how the parameters were separated: bit `i`\nset means parameter `i` was followed by a colon rather than a semicolon,\nwhich is ghostty's own convention for the bitset. That distinction is not\ncosmetic -- `4;3` is underline then italic while `4:3` is a curly underline,\nand `38;2;r;g;b` and `38:2::r:g:b` are both truecolor -- so it has to be\ncarried explicitly. A mask is used rather than ghostty's own\n`std.StaticBitSet` because a bitset has no C representation.\n\nA parameter ghostty does not implement yields `unknown` rather than being\nskipped, so the attributes line up with the sequence as written.",
-      "name": "sgrAttributes",
+      "doc": "The `index`th attribute a CSI SGR parameter list yields, as the same\n`Attribute` that `setAttribute` takes, so what the parser saw can be applied\nas it is.\n\n`params` is the parameter list of a `CSI ... m` sequence with the `m`\ndropped, and `colon_mask` says how the parameters were separated: bit `i`\nset means parameter `i` was followed by a colon rather than a semicolon,\nwhich is ghostty's own convention for the bitset. That distinction is not\ncosmetic -- `4;3` is underline then italic while `4:3` is a curly underline,\nand `38;2;r;g;b` and `38:2::r:g:b` are both truecolor -- so it has to be\ncarried explicitly. A mask is used rather than ghostty's own\n`std.StaticBitSet` because a bitset has no C representation.\n\nA parameter ghostty does not implement yields `unknown` rather than being\nskipped, so the attributes line up with the sequence as written. An index\npast the count `sgrAttributeCount` reports, or a list it refuses, also\nyields `unknown`: a tagged union cannot travel with an error, and the count\nis where the list is validated.\n\nIndexed rather than filled into a slice because a tagged union cannot be a\nslice element across the boundary. The parse is a linear pass over at most\n`MAX_SGR_PARAMS` integers, so re-running it per index costs nothing.",
+      "name": "sgrAttributeAt",
       "ownership": "borrowed",
       "params": [
         {
@@ -7007,8 +6962,8 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 409,
-            "column": 22
+            "line": 350,
+            "column": 23
           },
           "type": {
             "const": true,
@@ -7027,8 +6982,8 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 409,
-            "column": 43
+            "line": 350,
+            "column": 44
           },
           "type": {
             "bits": 32,
@@ -7038,50 +6993,35 @@
           }
         },
         {
-          "direction": "out",
-          "name": "dst",
+          "direction": "in",
+          "name": "index",
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 409,
-            "column": 60
+            "line": 350,
+            "column": 61
           },
           "type": {
-            "const": false,
-            "element": {
-              "kind": "value_struct",
-              "ref": "SgrAttribute"
-            },
-            "kind": "slice"
-          },
-          "written": "return"
+            "bits": 64,
+            "is_usize": true,
+            "kind": "int",
+            "signed": false
+          }
         }
       ],
       "return": {
-        "error_set": [
-          "NoSpaceLeft",
-          "SGRTooManyParams"
-        ],
-        "kind": "error_union",
-        "payload": {
-          "bits": 64,
-          "is_usize": true,
-          "kind": "int",
-          "signed": false
-        }
+        "kind": "value_struct",
+        "ref": "Attribute"
       },
       "source": {
         "path": "parser.zig",
-        "line": 409,
+        "line": 350,
         "column": 8
       },
-      "symbol": "zg_sgr_attributes"
+      "symbol": "zg_sgr_attribute_at"
     },
     {
-      "covers": [
-        "Key.codepoint"
-      ],
-      "doc": "The Unicode codepoint the key produces on a US layout, if it has one.",
+      "doc": "Returns the codepoint representing this key, or null if the key is not\nprintable",
       "name": "codepoint",
       "package": "input",
       "ownership": "borrowed",
@@ -7099,18 +7039,14 @@
       },
       "return_semantic": "codepoint",
       "source": {
-        "path": "encode.zig",
-        "line": 39,
-        "column": 8
+        "path": "input/key.zig",
+        "line": 527,
+        "column": 12
       },
-      "zig_path": "keyCodepoint",
       "symbol": "zg_key_codepoint"
     },
     {
-      "covers": [
-        "Key.printable"
-      ],
-      "doc": "True for keys that produce text on a US layout.",
+      "doc": "True if this key represents a printable character.",
       "name": "printable",
       "package": "input",
       "ownership": "borrowed",
@@ -7121,18 +7057,14 @@
         "kind": "bool"
       },
       "source": {
-        "path": "encode.zig",
-        "line": 44,
-        "column": 8
+        "path": "input/key.zig",
+        "line": 404,
+        "column": 12
       },
-      "zig_path": "keyPrintable",
       "symbol": "zg_key_printable"
     },
     {
-      "covers": [
-        "Key.modifier"
-      ],
-      "doc": "True for modifier keys such as shift, control and alt.",
+      "doc": "True if this key is a modifier.",
       "name": "modifier",
       "package": "input",
       "ownership": "borrowed",
@@ -7143,18 +7075,14 @@
         "kind": "bool"
       },
       "source": {
-        "path": "encode.zig",
-        "line": 49,
-        "column": 8
+        "path": "input/key.zig",
+        "line": 420,
+        "column": 12
       },
-      "zig_path": "keyModifier",
       "symbol": "zg_key_modifier"
     },
     {
-      "covers": [
-        "Key.keypad"
-      ],
-      "doc": "True for keys on the numeric keypad.",
+      "doc": "Returns true if this is a keypad key.",
       "name": "keypad",
       "package": "input",
       "ownership": "borrowed",
@@ -7165,18 +7093,14 @@
         "kind": "bool"
       },
       "source": {
-        "path": "encode.zig",
-        "line": 54,
-        "column": 8
+        "path": "input/key.zig",
+        "line": 515,
+        "column": 12
       },
-      "zig_path": "keyKeypad",
       "symbol": "zg_key_keypad"
     },
     {
-      "covers": [
-        "Key.leftOrRightShift"
-      ],
-      "doc": "True for shift on either side.",
+      "doc": "true if this key is either left or right shift.",
       "name": "leftOrRightShift",
       "package": "input",
       "ownership": "borrowed",
@@ -7187,18 +7111,14 @@
         "kind": "bool"
       },
       "source": {
-        "path": "encode.zig",
-        "line": 59,
-        "column": 8
+        "path": "input/key.zig",
+        "line": 747,
+        "column": 12
       },
-      "zig_path": "keyLeftOrRightShift",
       "symbol": "zg_key_left_or_right_shift"
     },
     {
-      "covers": [
-        "Key.leftOrRightAlt"
-      ],
-      "doc": "True for alt on either side.",
+      "doc": "true if this key is either left or right alt.",
       "name": "leftOrRightAlt",
       "package": "input",
       "ownership": "borrowed",
@@ -7209,18 +7129,14 @@
         "kind": "bool"
       },
       "source": {
-        "path": "encode.zig",
-        "line": 64,
-        "column": 8
+        "path": "input/key.zig",
+        "line": 752,
+        "column": 12
       },
-      "zig_path": "keyLeftOrRightAlt",
       "symbol": "zg_key_left_or_right_alt"
     },
     {
-      "covers": [
-        "Key.ctrlOrSuper"
-      ],
-      "doc": "True for the platform's primary modifier: command on macOS, control\neverywhere else. Which one that is was decided when the native library\nfor this platform was built, so it needs no runtime check in Go.",
+      "doc": "true if this key is one of the left or right versions of super (MacOS)\nor ctrl.",
       "name": "ctrlOrSuper",
       "package": "input",
       "ownership": "borrowed",
@@ -7231,18 +7147,14 @@
         "kind": "bool"
       },
       "source": {
-        "path": "encode.zig",
-        "line": 71,
-        "column": 8
+        "path": "input/key.zig",
+        "line": 739,
+        "column": 12
       },
-      "zig_path": "keyCtrlOrSuper",
       "symbol": "zg_key_ctrl_or_super"
     },
     {
-      "covers": [
-        "Key.shouldBeRemappable"
-      ],
-      "doc": "True for keys a keybinding UI may remap by default.\n\nFalse for the W3C \"writing system\" keys -- the letters, digits and\npunctuation -- because what those produce is decided by the user's layout,\nso a binding on one is not the same key for everyone. Everything else,\nfunction and navigation keys included, is fair game.",
+      "doc": "Whether this key should be remappable by the operating system.\n\nOn certain OSes (namely Linux and the BSDs) certain keys like the\nfunctional keys are expected to be remappable by the user, such as\nin the very common use case of swapping the Caps Lock key with the\nEscape key with the XKB option `caps:swapescape`.\n\nHowever, the way XKB implements this is by essentially acting as a\nsoftware key remapper that destroys all information about the original\nphysical key, leading to very annoying bugs like #7309 where the\nphysical key `XKB_KEY_c` gets remapped into `XKB_KEY_Cyrillic_tse`,\nwhich causes all of our physical key handling to completely break down.\n_Very naughty._\n\nAs a compromise, given that writing system keys (§3.1.1) comprise the\nmajority of keys that \"change meaning [...] based on the current locale\nand keyboard layout\", we allow all other keys to be remapped by default\nsince they should be fairly harmless. We might consider making this\nconfigurable, but for now this should at least placate most people.",
       "name": "shouldBeRemappable",
       "package": "input",
       "ownership": "borrowed",
@@ -7253,19 +7165,15 @@
         "kind": "bool"
       },
       "source": {
-        "path": "encode.zig",
-        "line": 81,
-        "column": 8
+        "path": "input/key.zig",
+        "line": 455,
+        "column": 12
       },
-      "zig_path": "keyShouldBeRemappable",
       "symbol": "zg_key_should_be_remappable"
     },
     {
-      "covers": [
-        "Key.w3c"
-      ],
-      "doc": "The W3C `KeyboardEvent.code` name for the key, such as \"KeyA\" or\n\"ArrowUp\", empty for a key with none. Static storage, so the string stays\nvalid for the life of the process.",
-      "name": "w3C",
+      "doc": "Converts a Ghostty key enum value to a W3C key code.",
+      "name": "W3C",
       "package": "input",
       "ownership": "borrowed",
       "params": [],
@@ -7283,11 +7191,11 @@
       },
       "return_semantic": "utf8_string",
       "source": {
-        "path": "encode.zig",
-        "line": 88,
-        "column": 8
+        "path": "input/key.zig",
+        "line": 373,
+        "column": 12
       },
-      "zig_path": "keyW3C",
+      "zig_path": "Key.w3c",
       "symbol": "zg_key_w3_c"
     },
     {
@@ -9767,7 +9675,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 356,
+            "line": 466,
             "column": 32
           },
           "type": {
@@ -9788,7 +9696,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 356,
+        "line": 466,
         "column": 12
       },
       "symbol": "zg_osc_parser_feed"
@@ -10936,7 +10844,7 @@
         "signed": false
       },
       "text": true,
-      "zig_path": "terminal.modes.Mode__enum_29098"
+      "zig_path": "terminal.modes.Mode__enum_29102"
     },
     {
       "exhaustive": true,
@@ -11372,11 +11280,56 @@
       "zig_path": "dnd.DragMove"
     },
     {
+      "backing_type": {
+        "bits": 32,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "exhaustive": true,
+      "fields": [
+        {
+          "name": "event",
+          "type": {
+            "kind": "enum",
+            "ref": "DragEvent"
+          }
+        },
+        {
+          "name": "accepted",
+          "type": {
+            "kind": "enum",
+            "ref": "DragOperation"
+          }
+        },
+        {
+          "name": "answered",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
+          "name": "_pad",
+          "type": {
+            "bits": 15,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "kind": "value_struct",
+      "layout": "packed",
+      "name": "DragNotice",
+      "registered_value": true,
+      "zig_path": "dnd.DragNotice"
+    },
+    {
       "exhaustive": true,
       "fields": [],
       "kind": "callback",
       "name": "DragHandler",
-      "zig_path": "*const fn (usize) callconv(.c) void"
+      "zig_path": "*const fn (dnd.DragNotice, [*]const u8, usize, usize) callconv(.c) void"
     },
     {
       "exhaustive": false,
@@ -11441,13 +11394,28 @@
       "fields": [],
       "kind": "callback",
       "name": "ClipboardHandler",
-      "zig_path": "*const fn (usize) callconv(.c) void"
+      "zig_path": "*const fn (*stream.ClipboardRequest, usize) callconv(.c) void"
+    },
+    {
+      "exhaustive": true,
+      "fields": [],
+      "kind": "opaque",
+      "name": "ClipboardRequest",
+      "zig_path": "stream.ClipboardRequest"
     },
     {
       "exhaustive": true,
       "fields": [],
       "kind": "callback",
-      "name": "Handler",
+      "name": "PngDecodeHandler",
+      "package": "sys",
+      "zig_path": "*const fn ([*]const u8, usize, usize) callconv(.c) void"
+    },
+    {
+      "exhaustive": true,
+      "fields": [],
+      "kind": "callback",
+      "name": "SecureRandomHandler",
       "package": "sys",
       "zig_path": "*const fn (usize, usize) callconv(.c) void"
     },
@@ -14231,170 +14199,6 @@
       },
       "text": true,
       "zig_path": "terminal.osc.parsers.semantic_prompt.Command.Action"
-    },
-    {
-      "exhaustive": true,
-      "fields": [
-        {
-          "name": "unset",
-          "value": 0
-        },
-        {
-          "name": "bold",
-          "value": 1
-        },
-        {
-          "name": "reset_bold",
-          "value": 2
-        },
-        {
-          "name": "italic",
-          "value": 3
-        },
-        {
-          "name": "reset_italic",
-          "value": 4
-        },
-        {
-          "name": "faint",
-          "value": 5
-        },
-        {
-          "name": "underline",
-          "value": 6
-        },
-        {
-          "name": "underline_color_rgb",
-          "value": 7
-        },
-        {
-          "name": "underline_color_256",
-          "value": 8
-        },
-        {
-          "name": "reset_underline_color",
-          "value": 9
-        },
-        {
-          "name": "overline",
-          "value": 10
-        },
-        {
-          "name": "reset_overline",
-          "value": 11
-        },
-        {
-          "name": "blink",
-          "value": 12
-        },
-        {
-          "name": "reset_blink",
-          "value": 13
-        },
-        {
-          "name": "inverse",
-          "value": 14
-        },
-        {
-          "name": "reset_inverse",
-          "value": 15
-        },
-        {
-          "name": "invisible",
-          "value": 16
-        },
-        {
-          "name": "reset_invisible",
-          "value": 17
-        },
-        {
-          "name": "strikethrough",
-          "value": 18
-        },
-        {
-          "name": "reset_strikethrough",
-          "value": 19
-        },
-        {
-          "name": "direct_color_fg",
-          "value": 20
-        },
-        {
-          "name": "direct_color_bg",
-          "value": 21
-        },
-        {
-          "name": "color_256_fg",
-          "value": 22
-        },
-        {
-          "name": "color_256_bg",
-          "value": 23
-        },
-        {
-          "name": "named_fg",
-          "value": 24
-        },
-        {
-          "name": "named_bg",
-          "value": 25
-        },
-        {
-          "name": "bright_named_fg",
-          "value": 26
-        },
-        {
-          "name": "bright_named_bg",
-          "value": 27
-        },
-        {
-          "name": "reset_fg",
-          "value": 28
-        },
-        {
-          "name": "reset_bg",
-          "value": 29
-        },
-        {
-          "name": "unknown",
-          "value": 30
-        }
-      ],
-      "kind": "enum",
-      "name": "SgrAttributeTag",
-      "tag_type": {
-        "bits": 8,
-        "is_usize": false,
-        "kind": "int",
-        "signed": false
-      },
-      "text": true,
-      "zig_path": "parser.SgrAttributeTag"
-    },
-    {
-      "exhaustive": true,
-      "fields": [
-        {
-          "name": "tag",
-          "type": {
-            "kind": "enum",
-            "ref": "SgrAttributeTag"
-          }
-        },
-        {
-          "name": "value",
-          "type": {
-            "bits": 32,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        }
-      ],
-      "kind": "value_struct",
-      "layout": "extern",
-      "name": "SgrAttribute",
-      "zig_path": "parser.SgrAttribute"
     },
     {
       "exhaustive": true,

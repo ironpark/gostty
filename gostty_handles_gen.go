@@ -860,6 +860,117 @@ func (s *SnapshotDecoder) zigoTakeLocked() (zigoSnapshotDecoderCleanupState, boo
 	return state, true
 }
 
+// ClipboardRequest represents a native Zig handle.
+type ClipboardRequest struct {
+	ptr    unsafe.Pointer
+	mu     sync.Mutex
+	active int
+	closed bool
+	poison *NativePanicError
+	owner  zigoHandle
+}
+
+func zigoNewBorrowedClipboardRequest(ptr unsafe.Pointer, owner zigoHandle) *ClipboardRequest {
+	return &ClipboardRequest{ptr: ptr, owner: owner}
+}
+
+// zigoAcquire pins c and its parent open for one native call.
+func (c *ClipboardRequest) zigoAcquire(operation string) (unsafe.Pointer, error) {
+	if c == nil {
+		return nil, &HandleError{Operation: operation}
+	}
+	c.mu.Lock()
+	parent := c.owner
+	c.mu.Unlock()
+	if parent != nil {
+		if _, err := parent.ZigoAcquire(operation); err != nil {
+			return nil, err
+		}
+	}
+	c.mu.Lock()
+	var err error
+	switch {
+	case c.closed || c.ptr == nil:
+		err = &HandleError{Operation: operation}
+	case c.poison != nil:
+		err = c.poison.Poisoned(operation)
+	default:
+		c.active++
+	}
+	ptr := c.ptr
+	c.mu.Unlock()
+	if err != nil {
+		if parent != nil {
+			parent.ZigoRelease()
+		}
+		return nil, err
+	}
+	return ptr, nil
+}
+
+func (c *ClipboardRequest) zigoRelease() {
+	if c == nil {
+		return
+	}
+	c.mu.Lock()
+	c.active--
+	parent := c.owner
+	c.mu.Unlock()
+	if parent != nil {
+		parent.ZigoRelease()
+	}
+}
+
+// zigoPoison marks c unusable: a Zig panic unwound through native frames
+// without running their defers, so the state behind it is unknown.
+func (c *ClipboardRequest) zigoPoison(cause *NativePanicError) {
+	if c == nil {
+		return
+	}
+	c.mu.Lock()
+	parent := c.owner
+	if c.poison == nil {
+		c.poison = cause
+	}
+	c.mu.Unlock()
+	if parent != nil {
+		parent.ZigoPoison(cause)
+	}
+}
+
+// ZigoAcquire implements the shared lifecycle handle contract.
+func (c *ClipboardRequest) ZigoAcquire(operation string) (unsafe.Pointer, error) {
+	return c.zigoAcquire(operation)
+}
+
+// ZigoRelease implements the shared lifecycle handle contract.
+func (c *ClipboardRequest) ZigoRelease() { c.zigoRelease() }
+
+// ZigoPoison implements the shared lifecycle handle contract.
+func (c *ClipboardRequest) ZigoPoison(cause *NativePanicError) { c.zigoPoison(cause) }
+
+// Close detaches this borrowed ClipboardRequest view without releasing native resources.
+func (c *ClipboardRequest) Close() error {
+	if c == nil {
+		return nil
+	}
+	c.mu.Lock()
+	if c.closed {
+		c.mu.Unlock()
+		return nil
+	}
+	if c.active != 0 {
+		active := c.active
+		c.mu.Unlock()
+		return &HandleInUseError{Operation: "ClipboardRequest.Close", Children: active}
+	}
+	c.closed = true
+	c.ptr = nil
+	c.owner = nil
+	c.mu.Unlock()
+	return nil
+}
+
 // RenderState is a caller-owned native handle. Call Close when it is no longer needed.
 type RenderState struct {
 	ptr     unsafe.Pointer

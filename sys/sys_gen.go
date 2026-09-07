@@ -12,18 +12,12 @@ import "github.com/ironpark/gostty/internal/raw"
 // Callback callback reentrancy: allowed; it may re-enter the binding while it is running.
 // Callback callback thread: caller; it runs on the thread that initiated the native call.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func OnPngDecodeRequest(callback Handler) {
-	callbackHandle := zigoNewHandlerHandle(callback)
+func OnPngDecodeRequest(callback PngDecodeHandler) {
+	callbackHandle := zigoNewPngDecodeHandlerHandle(callback)
 	raw.SysOnPngDecodeRequest(uintptr(callbackHandle))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("OnPngDecodeRequest", callbackHandle)
 	}
-}
-
-// PngRequestData: Copy the PNG bytes of the pending request into `dst` and return how many
-// were written: all of them, or `dst.len` if shorter.
-func PngRequestData(dst []byte) uint {
-	return raw.SysPngRequestData(dst)
 }
 
 // ReplyPngImage: Answer the pending PNG request with decoded pixels, four bytes per pixel,
@@ -45,8 +39,8 @@ func ReplyPngImage(width uint32, height uint32, rgba []byte) error {
 // Callback callback reentrancy: allowed; it may re-enter the binding while it is running.
 // Callback callback thread: caller; it runs on the thread that initiated the native call.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func OnSecureRandomRequest(callback Handler) {
-	callbackHandle := zigoNewHandlerHandle(callback)
+func OnSecureRandomRequest(callback SecureRandomHandler) {
+	callbackHandle := zigoNewSecureRandomHandlerHandle(callback)
 	raw.SysOnSecureRandomRequest(uintptr(callbackHandle))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("OnSecureRandomRequest", callbackHandle)

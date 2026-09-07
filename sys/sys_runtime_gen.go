@@ -20,16 +20,28 @@ func zigoPoisonAfterPanic(err error, handles ...zigoHandle) error {
 	return lifecycle.PoisonAfterPanic(err, handles...)
 }
 
-// Handler is the Go callback signature accepted by the generated binding.
+// PngDecodeHandler is the Go callback signature accepted by the generated binding.
 // Reentrancy: allowed; the callback may re-enter the binding while it is running.
 // Thread: caller; the callback runs on the thread that initiated the native call.
-type Handler func(uint)
+type PngDecodeHandler func([]byte)
+
+// SecureRandomHandler is the Go callback signature accepted by the generated binding.
+// Reentrancy: allowed; the callback may re-enter the binding while it is running.
+// Thread: caller; the callback runs on the thread that initiated the native call.
+type SecureRandomHandler func(uint)
 
 var zigoActiveCallbackHandles atomic.Int64
 
 type zigoCallbackHandle = cgo.Handle
 
-func zigoNewHandlerHandle(value Handler) zigoCallbackHandle {
+func zigoNewPngDecodeHandlerHandle(value PngDecodeHandler) zigoCallbackHandle {
+	stored := (func([]byte))(value)
+	handle := cgo.NewHandle(&raw.CallbackState{Fn: stored})
+	zigoActiveCallbackHandles.Add(1)
+	return handle
+}
+
+func zigoNewSecureRandomHandlerHandle(value SecureRandomHandler) zigoCallbackHandle {
 	stored := (func(uint))(value)
 	handle := cgo.NewHandle(&raw.CallbackState{Fn: stored})
 	zigoActiveCallbackHandles.Add(1)

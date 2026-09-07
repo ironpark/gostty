@@ -35,6 +35,36 @@ func DragOperationsFromBacking(value uint8) DragOperations {
 	}
 }
 
+// DragNotice mirrors the Zig packed struct of the same name.
+type DragNotice struct {
+	Event    DragEvent
+	Accepted DragOperation
+	Answered bool
+	Pad      uint16
+}
+
+func zigoDragNoticeToBacking(value DragNotice) uint32 {
+	var result uint64
+	result |= (uint64(value.Event) & 0xff) << 0
+	result |= (uint64(value.Accepted) & 0xff) << 8
+	result |= (uint64(zigoBoolToUint8(value.Answered)) & 0x1) << 16
+	result |= (uint64(value.Pad) & 0x7fff) << 17
+	return uint32(result)
+}
+
+// Backing returns the integer representation used by Zig.
+func (value DragNotice) Backing() uint32 { return zigoDragNoticeToBacking(value) }
+
+// DragNoticeFromBacking reconstructs a DragNotice from its Zig integer representation.
+func DragNoticeFromBacking(value uint32) DragNotice {
+	return DragNotice{
+		Event:    DragEvent(((uint64(value) >> 0) & 0xff)),
+		Accepted: DragOperation(((uint64(value) >> 8) & 0xff)),
+		Answered: ((uint64(value) >> 16) & 0x1) != 0,
+		Pad:      uint16(((uint64(value) >> 17) & 0x7fff)),
+	}
+}
+
 // CellFlags mirrors the Zig packed struct of the same name.
 type CellFlags struct {
 	Bold          bool
@@ -333,20 +363,6 @@ type GestureDragEvent struct {
 	Rectangle bool
 }
 
-// SgrAttribute mirrors the Zig `extern struct` of the same name.
-type SgrAttribute struct {
-	// Tag corresponds to the Zig field tag.
-	Tag SgrAttributeTag
-	// Value corresponds to the Zig field value.
-	Value uint32
-}
-
-// SgrAttribute is reinterpreted as raw.SgrAttributeData instead of copied, so the two
-// layouts must stay identical.
-var _ = [1]struct{}{}[unsafe.Sizeof(SgrAttribute{})-unsafe.Sizeof(raw.SgrAttributeData{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(SgrAttribute{}.Tag)-unsafe.Offsetof(raw.SgrAttributeData{}.Tag)]
-var _ = [1]struct{}{}[unsafe.Offsetof(SgrAttribute{}.Value)-unsafe.Offsetof(raw.SgrAttributeData{}.Value)]
-
 func zigoSnapshotProgressFromRaw(value raw.SnapshotProgressData) SnapshotProgress {
 	return SnapshotProgress{
 		Rows:      value.Rows,
@@ -525,6 +541,75 @@ func zigoGestureDragEventToRaw(value GestureDragEvent) raw.GestureDragEventData 
 	}
 }
 
+func zigoAttributeFromRaw(value raw.AttributeData) Attribute {
+	switch AttributeTag(value.Tag) {
+	case AttributeTagUnset:
+		return AttributeUnset()
+	case AttributeTagBold:
+		return AttributeBold()
+	case AttributeTagResetBold:
+		return AttributeResetBold()
+	case AttributeTagItalic:
+		return AttributeItalic()
+	case AttributeTagResetItalic:
+		return AttributeResetItalic()
+	case AttributeTagFaint:
+		return AttributeFaint()
+	case AttributeTagUnderline:
+		return AttributeUnderline(Underline(value.Underline))
+	case AttributeTagUnderlineColorRgb:
+		return AttributeUnderlineColorRgb(value.UnderlineColorRgb)
+	case AttributeTagUnderlineColor256:
+		return AttributeUnderlineColor256(value.UnderlineColor256)
+	case AttributeTagResetUnderlineColor:
+		return AttributeResetUnderlineColor()
+	case AttributeTagOverline:
+		return AttributeOverline()
+	case AttributeTagResetOverline:
+		return AttributeResetOverline()
+	case AttributeTagBlink:
+		return AttributeBlink()
+	case AttributeTagResetBlink:
+		return AttributeResetBlink()
+	case AttributeTagInverse:
+		return AttributeInverse()
+	case AttributeTagResetInverse:
+		return AttributeResetInverse()
+	case AttributeTagInvisible:
+		return AttributeInvisible()
+	case AttributeTagResetInvisible:
+		return AttributeResetInvisible()
+	case AttributeTagStrikethrough:
+		return AttributeStrikethrough()
+	case AttributeTagResetStrikethrough:
+		return AttributeResetStrikethrough()
+	case AttributeTagDirectColorFg:
+		return AttributeDirectColorFg(value.DirectColorFg)
+	case AttributeTagDirectColorBg:
+		return AttributeDirectColorBg(value.DirectColorBg)
+	case AttributeTagColor256Fg:
+		return AttributeColor256Fg(value.Color256Fg)
+	case AttributeTagColor256Bg:
+		return AttributeColor256Bg(value.Color256Bg)
+	case AttributeTagNamedFg:
+		return AttributeNamedFg(ColorName(value.NamedFg))
+	case AttributeTagNamedBg:
+		return AttributeNamedBg(ColorName(value.NamedBg))
+	case AttributeTagBrightNamedFg:
+		return AttributeBrightNamedFg(ColorName(value.BrightNamedFg))
+	case AttributeTagBrightNamedBg:
+		return AttributeBrightNamedBg(ColorName(value.BrightNamedBg))
+	case AttributeTagResetFg:
+		return AttributeResetFg()
+	case AttributeTagResetBg:
+		return AttributeResetBg()
+	case AttributeTagUnknown:
+		return AttributeUnknown()
+	default:
+		return Attribute{}
+	}
+}
+
 // Attribute is a tagged-union value passed to native code by copy.
 type Attribute struct {
 	tag               AttributeTag
@@ -543,6 +628,61 @@ type Attribute struct {
 
 // Tag returns the active Attribute variant.
 func (value Attribute) Tag() AttributeTag { return value.tag }
+
+// AsUnderline returns the underline payload and whether it is the active variant.
+func (value Attribute) AsUnderline() (Underline, bool) {
+	return value.underline, value.tag == AttributeTagUnderline
+}
+
+// AsUnderlineColorRgb returns the underline_color_rgb payload and whether it is the active variant.
+func (value Attribute) AsUnderlineColorRgb() (uint32, bool) {
+	return value.underlineColorRgb, value.tag == AttributeTagUnderlineColorRgb
+}
+
+// AsUnderlineColor256 returns the underline_color_256 payload and whether it is the active variant.
+func (value Attribute) AsUnderlineColor256() (uint8, bool) {
+	return value.underlineColor256, value.tag == AttributeTagUnderlineColor256
+}
+
+// AsDirectColorFg returns the direct_color_fg payload and whether it is the active variant.
+func (value Attribute) AsDirectColorFg() (uint32, bool) {
+	return value.directColorFg, value.tag == AttributeTagDirectColorFg
+}
+
+// AsDirectColorBg returns the direct_color_bg payload and whether it is the active variant.
+func (value Attribute) AsDirectColorBg() (uint32, bool) {
+	return value.directColorBg, value.tag == AttributeTagDirectColorBg
+}
+
+// AsColor256Fg returns the color_256_fg payload and whether it is the active variant.
+func (value Attribute) AsColor256Fg() (uint8, bool) {
+	return value.color256Fg, value.tag == AttributeTagColor256Fg
+}
+
+// AsColor256Bg returns the color_256_bg payload and whether it is the active variant.
+func (value Attribute) AsColor256Bg() (uint8, bool) {
+	return value.color256Bg, value.tag == AttributeTagColor256Bg
+}
+
+// AsNamedFg returns the named_fg payload and whether it is the active variant.
+func (value Attribute) AsNamedFg() (ColorName, bool) {
+	return value.namedFg, value.tag == AttributeTagNamedFg
+}
+
+// AsNamedBg returns the named_bg payload and whether it is the active variant.
+func (value Attribute) AsNamedBg() (ColorName, bool) {
+	return value.namedBg, value.tag == AttributeTagNamedBg
+}
+
+// AsBrightNamedFg returns the bright_named_fg payload and whether it is the active variant.
+func (value Attribute) AsBrightNamedFg() (ColorName, bool) {
+	return value.brightNamedFg, value.tag == AttributeTagBrightNamedFg
+}
+
+// AsBrightNamedBg returns the bright_named_bg payload and whether it is the active variant.
+func (value Attribute) AsBrightNamedBg() (ColorName, bool) {
+	return value.brightNamedBg, value.tag == AttributeTagBrightNamedBg
+}
 
 // AttributeUnset constructs the unset variant.
 func AttributeUnset() Attribute {
@@ -708,6 +848,16 @@ type ScrollViewport struct {
 
 // Tag returns the active ScrollViewport variant.
 func (value ScrollViewport) Tag() ScrollViewportTag { return value.tag }
+
+// AsDelta returns the delta payload and whether it is the active variant.
+func (value ScrollViewport) AsDelta() (int, bool) {
+	return value.delta, value.tag == ScrollViewportTagDelta
+}
+
+// AsRow returns the row payload and whether it is the active variant.
+func (value ScrollViewport) AsRow() (uint, bool) {
+	return value.row, value.tag == ScrollViewportTagRow
+}
 
 // ScrollViewportTop constructs the top variant.
 func ScrollViewportTop() ScrollViewport {

@@ -13,11 +13,9 @@ import (
 )
 
 // decodePNG answers ghostty's request to decode a PNG transmission. The bytes
-// are read off the pending request, and the reply is copied by the terminal,
-// so nothing here outlives the call.
-func decodePNG(n uint) {
-	data := make([]byte, n)
-	sys.PngRequestData(data)
+// arrive as a copy and the reply is copied by the terminal, so nothing here
+// outlives the call.
+func decodePNG(data []byte) {
 	decoded, err := png.Decode(bytes.NewReader(data))
 	if err != nil {
 		return // no reply: the transmission fails, as it would without a decoder

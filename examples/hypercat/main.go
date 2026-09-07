@@ -222,22 +222,22 @@ func (g *game) start() error {
 
 	// A clipboard write must be answered from inside the callback: it runs
 	// while Feed is still on the stack and the program is blocked on it.
-	if err := g.stream.OnClipboardWriteRequest(func() {
-		n, err := g.stream.ClipboardContentCount()
+	if err := g.stream.OnClipboardWriteRequest(func(req *gostty.ClipboardRequest) {
+		n, err := req.ContentCount()
 		if err == nil && n > 0 {
-			if data, err := g.stream.ClipboardContentData(0); err == nil {
+			if data, err := req.ContentData(0); err == nil {
 				g.clipboard = append(g.clipboard[:0], data...)
 			}
 		}
-		_ = g.stream.AllowClipboard(false)
+		_ = req.Allow(false)
 	}); err != nil {
 		return err
 	}
-	if err := g.stream.OnClipboardReadRequest(func() {
+	if err := g.stream.OnClipboardReadRequest(func(req *gostty.ClipboardRequest) {
 		// A read hands the running program whatever the user copied, so a real
 		// emulator would ask the user first. This one answers immediately,
 		// which is the wrong default for anything but a demo.
-		_ = g.stream.ReplyClipboardText(string(g.pasteText()), false)
+		_ = req.ReplyText(string(g.pasteText()), false)
 	}); err != nil {
 		return err
 	}

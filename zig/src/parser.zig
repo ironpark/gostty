@@ -313,78 +313,11 @@ pub fn freeOSCParser(self: *OSCParser) void {
 /// how they were separated is exactly this wide.
 const MAX_SGR_PARAMS: usize = @TypeOf(@as(vt.sgr.Parser, undefined).params_sep).bit_length;
 
-/// Which attribute a parsed SGR parameter selects: `Attribute`'s tag, spelled
-/// out as its own enum.
+/// How many attributes a CSI SGR parameter list yields, so a caller knows how
+/// many indices `sgrAttributeAt` answers. An empty list is the SGR reset, so
+/// it yields one. Refuses a list longer than ghostty's CSI parser records.
 ///
-/// The tag of a bound tagged union is generated for Go but has no name zigo can
-/// bind on the Zig side, so it is written out here and checked against
-/// `Attribute` at compile time. Nothing can drift: adding a variant to
-/// `Attribute` without adding it here fails the build.
-pub const SgrAttributeTag = enum(u8) {
-    unset,
-    bold,
-    reset_bold,
-    italic,
-    reset_italic,
-    faint,
-    underline,
-    underline_color_rgb,
-    underline_color_256,
-    reset_underline_color,
-    overline,
-    reset_overline,
-    blink,
-    reset_blink,
-    inverse,
-    reset_inverse,
-    invisible,
-    reset_invisible,
-    strikethrough,
-    reset_strikethrough,
-    direct_color_fg,
-    direct_color_bg,
-    color_256_fg,
-    color_256_bg,
-    named_fg,
-    named_bg,
-    bright_named_fg,
-    bright_named_bg,
-    reset_fg,
-    reset_bg,
-    unknown,
-
-    comptime {
-        const mirrored = @typeInfo(@This()).@"enum".fields;
-        const original = @typeInfo(terminal_.Attribute).@"union".fields;
-        if (mirrored.len != original.len) @compileError("SgrAttributeTag is out of step with Attribute");
-        for (mirrored, original) |a, b| {
-            if (!std.mem.eql(u8, a.name, b.name)) @compileError("SgrAttributeTag is out of step with Attribute at " ++ a.name);
-        }
-    }
-};
-
-/// One attribute a CSI SGR parameter list selected: an `Attribute` taken apart
-/// into its tag and its scalar payload.
-///
-/// It is not an `Attribute` because zigo can pass a tagged union into native
-/// code -- which is how `setAttribute` takes one -- but cannot hand a usable one
-/// back: a returned union arrives with its tag readable and its payload
-/// unreachable. The pair here carries both, and because the tags are the same
-/// list in the same order, the `Attribute<Tag>` constructor named after the tag
-/// rebuilds the attribute exactly.
-pub const SgrAttribute = extern struct {
-    tag: SgrAttributeTag,
-    /// Zero where the tag carries no payload. Otherwise an RGB colour as
-    /// `0xRRGGBB` for the direct-colour and underline-colour tags, a palette
-    /// index for the 256-colour tags, an `Underline` style for `underline`,
-    /// and a `ColorName` for the named-colour tags.
-    value: u32,
-};
-
-/// How many attributes a CSI SGR parameter list yields, for sizing the slice
-/// `sgrAttributes` fills. An empty list is the SGR reset, so it yields one.
-///
-/// See `sgrAttributes` for what `colon_mask` means.
+/// See `sgrAttributeAt` for what `colon_mask` means.
 pub fn sgrAttributeCount(params: []const u16, colon_mask: u32) !usize {
     var parser = try sgrParser(params, colon_mask);
     var count: usize = 0;
@@ -392,8 +325,9 @@ pub fn sgrAttributeCount(params: []const u16, colon_mask: u32) !usize {
     return count;
 }
 
-/// Parse a CSI SGR parameter list into `dst`, in order, and report how many
-/// attributes were written.
+/// The `index`th attribute a CSI SGR parameter list yields, as the same
+/// `Attribute` that `setAttribute` takes, so what the parser saw can be applied
+/// as it is.
 ///
 /// `params` is the parameter list of a `CSI ... m` sequence with the `m`
 /// dropped, and `colon_mask` says how the parameters were separated: bit `i`
@@ -405,38 +339,21 @@ pub fn sgrAttributeCount(params: []const u16, colon_mask: u32) !usize {
 /// `std.StaticBitSet` because a bitset has no C representation.
 ///
 /// A parameter ghostty does not implement yields `unknown` rather than being
-/// skipped, so the attributes line up with the sequence as written.
-pub fn sgrAttributes(params: []const u16, colon_mask: u32, dst: []SgrAttribute) !usize {
-    var parser = try sgrParser(params, colon_mask);
-    var written: usize = 0;
-    while (parser.next()) |attr| : (written += 1) {
-        if (written >= dst.len) return error.NoSpaceLeft;
-        dst[written] = decompose(terminal_.Attribute.fromVt(attr));
+/// skipped, so the attributes line up with the sequence as written. An index
+/// past the count `sgrAttributeCount` reports, or a list it refuses, also
+/// yields `unknown`: a tagged union cannot travel with an error, and the count
+/// is where the list is validated.
+///
+/// Indexed rather than filled into a slice because a tagged union cannot be a
+/// slice element across the boundary. The parse is a linear pass over at most
+/// `MAX_SGR_PARAMS` integers, so re-running it per index costs nothing.
+pub fn sgrAttributeAt(params: []const u16, colon_mask: u32, index: usize) terminal_.Attribute {
+    var parser = sgrParser(params, colon_mask) catch return .unknown;
+    var i: usize = 0;
+    while (parser.next()) |attr| : (i += 1) {
+        if (i == index) return terminal_.Attribute.fromVt(attr);
     }
-    return written;
-}
-
-fn decompose(attr: terminal_.Attribute) SgrAttribute {
-    return .{
-        .tag = @enumFromInt(@intFromEnum(attr)),
-        .value = switch (attr) {
-            .underline => |v| @intFromEnum(v),
-            .underline_color_rgb,
-            .direct_color_fg,
-            .direct_color_bg,
-            => |v| v,
-            .underline_color_256,
-            .color_256_fg,
-            .color_256_bg,
-            => |v| v,
-            .named_fg,
-            .named_bg,
-            .bright_named_fg,
-            .bright_named_bg,
-            => |v| @intFromEnum(v),
-            else => 0,
-        },
-    };
+    return .unknown;
 }
 
 fn sgrParser(params: []const u16, colon_mask: u32) !vt.sgr.Parser {

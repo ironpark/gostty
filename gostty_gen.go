@@ -460,6 +460,15 @@ func (s *Stream) Feed(bytes []byte) error {
 	return nil
 }
 
+// Write calls Feed, satisfying io.Writer.
+// The method takes the whole of p, so the count is len(p) whenever it succeeds.
+func (s *Stream) Write(p []byte) (int, error) {
+	if err := s.Feed(p); err != nil {
+		return 0, err
+	}
+	return len(p), nil
+}
+
 // NextEvent: Take the next event a feed produced, absent when the queue is empty.
 //
 // The payload accessors below describe the event this returned, until the
@@ -794,53 +803,6 @@ func (s *Stream) OnDrag(callback DragHandler) error {
 	return nil
 }
 
-// DragEvent: The event the running handler was called for. Only meaningful inside the
-// handler; `registration` outside one.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) DragEvent() (DragEvent, error) {
-	ptr, err := zigoCheckedPointer("Stream.DragEvent receiver", s)
-	if err != nil {
-		return 0, err
-	}
-	defer s.zigoRelease()
-	result, code := raw.StreamDragEvent(ptr)
-	if zigoCallbackPanicPending() {
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.DragEvent", s.zigoCallbackHandle(slot))
-		}
-	}
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Stream.DragEvent", code), s)
-	}
-	return DragEvent(result), nil
-}
-
-// DragAccepted: What the program answered about the drag, as of the event the handler is
-// running for. Null before it has answered, which is not the same as `none`
-// -- that is a refusal.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) DragAccepted() (DragOperation, bool, error) {
-	ptr, err := zigoCheckedPointer("Stream.DragAccepted receiver", s)
-	if err != nil {
-		return 0, false, err
-	}
-	defer s.zigoRelease()
-	result, zigoHas, code := raw.StreamDragAccepted(ptr)
-	if zigoCallbackPanicPending() {
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.DragAccepted", s.zigoCallbackHandle(slot))
-		}
-	}
-	if code != 0 {
-		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Stream.DragAccepted", code), s)
-	}
-	return DragOperation(result), zigoHas, nil
-}
-
 // DragActive: Whether a program is currently registered to accept drops.
 //
 // False is the normal state, and the answer to "should I hand this drag to
@@ -1050,13 +1012,13 @@ func (s *Stream) DragClearItems() error {
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) OnClipboardWriteRequest(callback DragHandler) error {
+func (s *Stream) OnClipboardWriteRequest(callback ClipboardHandler) error {
 	ptr, err := zigoCheckedPointer("Stream.OnClipboardWriteRequest receiver", s)
 	if err != nil {
 		return err
 	}
 	defer s.zigoRelease()
-	callbackHandle := zigoNewDragHandlerHandle(callback)
+	callbackHandle := zigoNewClipboardHandlerHandle(callback)
 	callbackHandleAdopted := false
 	defer func() {
 		if !callbackHandleAdopted {
@@ -1087,13 +1049,13 @@ func (s *Stream) OnClipboardWriteRequest(callback DragHandler) error {
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) OnClipboardReadRequest(callback DragHandler) error {
+func (s *Stream) OnClipboardReadRequest(callback ClipboardHandler) error {
 	ptr, err := zigoCheckedPointer("Stream.OnClipboardReadRequest receiver", s)
 	if err != nil {
 		return err
 	}
 	defer s.zigoRelease()
-	callbackHandle := zigoNewDragHandlerHandle(callback)
+	callbackHandle := zigoNewClipboardHandlerHandle(callback)
 	callbackHandleAdopted := false
 	defer func() {
 		if !callbackHandleAdopted {
@@ -1116,272 +1078,199 @@ func (s *Stream) OnClipboardReadRequest(callback DragHandler) error {
 	return nil
 }
 
-// ClipboardLocation: Which clipboard the pending request names.
+// Location: Which clipboard the request names.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) ClipboardLocation() (ClipboardLocation, error) {
-	ptr, err := zigoCheckedPointer("Stream.ClipboardLocation receiver", s)
+func (c *ClipboardRequest) Location() (ClipboardLocation, error) {
+	ptr, err := zigoCheckedPointer("ClipboardRequest.Location receiver", c)
 	if err != nil {
 		return 0, err
 	}
-	defer s.zigoRelease()
-	result, code := raw.StreamClipboardLocation(ptr)
-	if zigoCallbackPanicPending() {
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.ClipboardLocation", s.zigoCallbackHandle(slot))
-		}
-	}
+	defer c.zigoRelease()
+	result, code := raw.ClipboardRequestLocation(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Stream.ClipboardLocation", code), s)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("ClipboardRequest.Location", code), c)
 	}
 	return ClipboardLocation(result), nil
 }
 
-// ClipboardName: The requesting program's name, empty when the protocol carries none.
+// Name: The requesting program's name, empty when the protocol carries none.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) ClipboardName() (string, error) {
-	ptr, err := zigoCheckedPointer("Stream.ClipboardName receiver", s)
+func (c *ClipboardRequest) Name() (string, error) {
+	ptr, err := zigoCheckedPointer("ClipboardRequest.Name receiver", c)
 	if err != nil {
 		return "", err
 	}
-	defer s.zigoRelease()
-	result, code := raw.StreamClipboardName(ptr)
-	if zigoCallbackPanicPending() {
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.ClipboardName", s.zigoCallbackHandle(slot))
-		}
-	}
+	defer c.zigoRelease()
+	result, code := raw.ClipboardRequestName(ptr)
 	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("Stream.ClipboardName", code), s)
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("ClipboardRequest.Name", code), c)
 	}
 	return result, nil
 }
 
-// ClipboardGranted: True when the terminal already holds a session grant, so the embedder
+// Granted: True when the terminal already holds a session grant, so the embedder
 // should skip its permission prompt.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) ClipboardGranted() (bool, error) {
-	ptr, err := zigoCheckedPointer("Stream.ClipboardGranted receiver", s)
+func (c *ClipboardRequest) Granted() (bool, error) {
+	ptr, err := zigoCheckedPointer("ClipboardRequest.Granted receiver", c)
 	if err != nil {
 		return false, err
 	}
-	defer s.zigoRelease()
-	result, code := raw.StreamClipboardGranted(ptr)
-	if zigoCallbackPanicPending() {
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.ClipboardGranted", s.zigoCallbackHandle(slot))
-		}
-	}
+	defer c.zigoRelease()
+	result, code := raw.ClipboardRequestGranted(ptr)
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(zigoErrorForCode("Stream.ClipboardGranted", code), s)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("ClipboardRequest.Granted", code), c)
 	}
 	return result != 0, nil
 }
 
-// ClipboardCanRemember: True when the program supplied a session password, so a decision can be
+// CanRemember: True when the program supplied a session password, so a decision can be
 // remembered via the `remember` argument when answering.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) ClipboardCanRemember() (bool, error) {
-	ptr, err := zigoCheckedPointer("Stream.ClipboardCanRemember receiver", s)
+func (c *ClipboardRequest) CanRemember() (bool, error) {
+	ptr, err := zigoCheckedPointer("ClipboardRequest.CanRemember receiver", c)
 	if err != nil {
 		return false, err
 	}
-	defer s.zigoRelease()
-	result, code := raw.StreamClipboardCanRemember(ptr)
-	if zigoCallbackPanicPending() {
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.ClipboardCanRemember", s.zigoCallbackHandle(slot))
-		}
-	}
+	defer c.zigoRelease()
+	result, code := raw.ClipboardRequestCanRemember(ptr)
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(zigoErrorForCode("Stream.ClipboardCanRemember", code), s)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("ClipboardRequest.CanRemember", code), c)
 	}
 	return result != 0, nil
 }
 
-// ClipboardContentCount: How many representations a pending write carries. Zero clears the
-// destination.
+// ContentCount: How many representations a write carries. Zero clears the destination.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) ClipboardContentCount() (uint, error) {
-	ptr, err := zigoCheckedPointer("Stream.ClipboardContentCount receiver", s)
+func (c *ClipboardRequest) ContentCount() (uint, error) {
+	ptr, err := zigoCheckedPointer("ClipboardRequest.ContentCount receiver", c)
 	if err != nil {
 		return 0, err
 	}
-	defer s.zigoRelease()
-	result, code := raw.StreamClipboardContentCount(ptr)
-	if zigoCallbackPanicPending() {
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.ClipboardContentCount", s.zigoCallbackHandle(slot))
-		}
-	}
+	defer c.zigoRelease()
+	result, code := raw.ClipboardRequestContentCount(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Stream.ClipboardContentCount", code), s)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("ClipboardRequest.ContentCount", code), c)
 	}
 	return result, nil
 }
 
-// ClipboardContentMime: The MIME type of one representation of a pending write.
+// ContentMime: The MIME type of one representation of a write.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) ClipboardContentMime(index uint) (string, error) {
-	ptr, err := zigoCheckedPointer("Stream.ClipboardContentMime receiver", s)
+func (c *ClipboardRequest) ContentMime(index uint) (string, error) {
+	ptr, err := zigoCheckedPointer("ClipboardRequest.ContentMime receiver", c)
 	if err != nil {
 		return "", err
 	}
-	defer s.zigoRelease()
-	result, code := raw.StreamClipboardContentMime(ptr, index)
-	if zigoCallbackPanicPending() {
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.ClipboardContentMime", s.zigoCallbackHandle(slot))
-		}
-	}
+	defer c.zigoRelease()
+	result, code := raw.ClipboardRequestContentMime(ptr, index)
 	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("Stream.ClipboardContentMime", code), s)
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("ClipboardRequest.ContentMime", code), c)
 	}
 	return result, nil
 }
 
-// ClipboardContentData: The bytes of one representation of a pending write. Binary safe.
+// ContentData: The bytes of one representation of a write. Binary safe.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) ClipboardContentData(index uint) ([]byte, error) {
-	ptr, err := zigoCheckedPointer("Stream.ClipboardContentData receiver", s)
+func (c *ClipboardRequest) ContentData(index uint) ([]byte, error) {
+	ptr, err := zigoCheckedPointer("ClipboardRequest.ContentData receiver", c)
 	if err != nil {
 		return nil, err
 	}
-	defer s.zigoRelease()
-	result, code := raw.StreamClipboardContentData(ptr, index)
-	if zigoCallbackPanicPending() {
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.ClipboardContentData", s.zigoCallbackHandle(slot))
-		}
-	}
+	defer c.zigoRelease()
+	result, code := raw.ClipboardRequestContentData(ptr, index)
 	if code != 0 {
-		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Stream.ClipboardContentData", code), s)
+		return nil, zigoPoisonAfterPanic(zigoErrorForCode("ClipboardRequest.ContentData", code), c)
 	}
 	return result, nil
 }
 
-// ClipboardMimeCount: How many MIME types a pending read asks for, in order of preference.
+// MimeCount: How many MIME types a read asks for, in order of preference.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) ClipboardMimeCount() (uint, error) {
-	ptr, err := zigoCheckedPointer("Stream.ClipboardMimeCount receiver", s)
+func (c *ClipboardRequest) MimeCount() (uint, error) {
+	ptr, err := zigoCheckedPointer("ClipboardRequest.MimeCount receiver", c)
 	if err != nil {
 		return 0, err
 	}
-	defer s.zigoRelease()
-	result, code := raw.StreamClipboardMimeCount(ptr)
-	if zigoCallbackPanicPending() {
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.ClipboardMimeCount", s.zigoCallbackHandle(slot))
-		}
-	}
+	defer c.zigoRelease()
+	result, code := raw.ClipboardRequestMimeCount(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Stream.ClipboardMimeCount", code), s)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("ClipboardRequest.MimeCount", code), c)
 	}
 	return result, nil
 }
 
-// ClipboardMime: One of the MIME types a pending read asks for.
+// Mime: One of the MIME types a read asks for.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) ClipboardMime(index uint) (string, error) {
-	ptr, err := zigoCheckedPointer("Stream.ClipboardMime receiver", s)
+func (c *ClipboardRequest) Mime(index uint) (string, error) {
+	ptr, err := zigoCheckedPointer("ClipboardRequest.Mime receiver", c)
 	if err != nil {
 		return "", err
 	}
-	defer s.zigoRelease()
-	result, code := raw.StreamClipboardMime(ptr, index)
-	if zigoCallbackPanicPending() {
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.ClipboardMime", s.zigoCallbackHandle(slot))
-		}
-	}
+	defer c.zigoRelease()
+	result, code := raw.ClipboardRequestMime(ptr, index)
 	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("Stream.ClipboardMime", code), s)
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("ClipboardRequest.Mime", code), c)
 	}
 	return result, nil
 }
 
-// AllowClipboard: Accept a pending write. Answering a read this way serves empty text.
+// Allow: Accept a write. Answering a read this way serves empty text.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) AllowClipboard(remember bool) error {
-	ptr, err := zigoCheckedPointer("Stream.AllowClipboard receiver", s)
+func (c *ClipboardRequest) Allow(remember bool) error {
+	ptr, err := zigoCheckedPointer("ClipboardRequest.Allow receiver", c)
 	if err != nil {
 		return err
 	}
-	defer s.zigoRelease()
-	code := raw.StreamAllowClipboard(ptr, zigoBoolToUint8(remember))
-	if zigoCallbackPanicPending() {
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.AllowClipboard", s.zigoCallbackHandle(slot))
-		}
-	}
+	defer c.zigoRelease()
+	code := raw.ClipboardRequestAllow(ptr, zigoBoolToUint8(remember))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.AllowClipboard", code), s)
+		return zigoPoisonAfterPanic(zigoErrorForCode("ClipboardRequest.Allow", code), c)
 	}
 	return nil
 }
 
-// ReplyClipboardText: Serve a pending read with plain text.
+// ReplyText: Serve a read with plain text.
 //
 // `text` is borrowed for this call only; the terminal copies what it
 // needs before returning.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) ReplyClipboardText(text string, remember bool) error {
-	ptr, err := zigoCheckedPointer("Stream.ReplyClipboardText receiver", s)
+func (c *ClipboardRequest) ReplyText(text string, remember bool) error {
+	ptr, err := zigoCheckedPointer("ClipboardRequest.ReplyText receiver", c)
 	if err != nil {
 		return err
 	}
-	defer s.zigoRelease()
-	code := raw.StreamReplyClipboardText(ptr, text, zigoBoolToUint8(remember))
-	if zigoCallbackPanicPending() {
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.ReplyClipboardText", s.zigoCallbackHandle(slot))
-		}
-	}
+	defer c.zigoRelease()
+	code := raw.ClipboardRequestReplyText(ptr, text, zigoBoolToUint8(remember))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.ReplyClipboardText", code), s)
+		return zigoPoisonAfterPanic(zigoErrorForCode("ClipboardRequest.ReplyText", code), c)
 	}
 	return nil
 }
 
-// DenyClipboard: Refuse a pending request.
+// Deny: Refuse the request.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) DenyClipboard(reason ClipboardDenial) error {
-	ptr, err := zigoCheckedPointer("Stream.DenyClipboard receiver", s)
+func (c *ClipboardRequest) Deny(reason ClipboardDenial) error {
+	ptr, err := zigoCheckedPointer("ClipboardRequest.Deny receiver", c)
 	if err != nil {
 		return err
 	}
-	defer s.zigoRelease()
-	code := raw.StreamDenyClipboard(ptr, uint8(reason))
-	if zigoCallbackPanicPending() {
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.DenyClipboard", s.zigoCallbackHandle(slot))
-		}
-	}
+	defer c.zigoRelease()
+	code := raw.ClipboardRequestDeny(ptr, uint8(reason))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.DenyClipboard", code), s)
+		return zigoPoisonAfterPanic(zigoErrorForCode("ClipboardRequest.Deny", code), c)
 	}
 	return nil
 }
@@ -3624,10 +3513,11 @@ func NewOSCParser() (*OSCParser, error) {
 	return zigoNewOSCParser(result), nil
 }
 
-// SgrAttributeCount: How many attributes a CSI SGR parameter list yields, for sizing the slice
-// `sgrAttributes` fills. An empty list is the SGR reset, so it yields one.
+// SgrAttributeCount: How many attributes a CSI SGR parameter list yields, so a caller knows how
+// many indices `sgrAttributeAt` answers. An empty list is the SGR reset, so
+// it yields one. Refuses a list longer than ghostty's CSI parser records.
 //
-// See `sgrAttributes` for what `colon_mask` means.
+// See `sgrAttributeAt` for what `colon_mask` means.
 // Native failures are returned as generated error values.
 func SgrAttributeCount(params []uint16, colonMask uint32) (uint, error) {
 	result, code := raw.SgrAttributeCount(params, colonMask)
@@ -3637,8 +3527,9 @@ func SgrAttributeCount(params []uint16, colonMask uint32) (uint, error) {
 	return result, nil
 }
 
-// SgrAttributes: Parse a CSI SGR parameter list into `dst`, in order, and report how many
-// attributes were written.
+// SgrAttributeAt: The `index`th attribute a CSI SGR parameter list yields, as the same
+// `Attribute` that `setAttribute` takes, so what the parser saw can be applied
+// as it is.
 //
 // `params` is the parameter list of a `CSI ... m` sequence with the `m`
 // dropped, and `colon_mask` says how the parameters were separated: bit `i`
@@ -3650,18 +3541,21 @@ func SgrAttributeCount(params []uint16, colonMask uint32) (uint, error) {
 // `std.StaticBitSet` because a bitset has no C representation.
 //
 // A parameter ghostty does not implement yields `unknown` rather than being
-// skipped, so the attributes line up with the sequence as written.
-// Native failures are returned as generated error values.
-func SgrAttributes(params []uint16, colonMask uint32, dst []SgrAttribute) (uint, error) {
-	var dstRaw []raw.SgrAttributeData
-	if len(dst) != 0 {
-		dstRaw = unsafe.Slice((*raw.SgrAttributeData)(unsafe.Pointer(&dst[0])), len(dst))
-	}
-	result, code := raw.SgrAttributes(params, colonMask, dstRaw)
+// skipped, so the attributes line up with the sequence as written. An index
+// past the count `sgrAttributeCount` reports, or a list it refuses, also
+// yields `unknown`: a tagged union cannot travel with an error, and the count
+// is where the list is validated.
+//
+// Indexed rather than filled into a slice because a tagged union cannot be a
+// slice element across the boundary. The parse is a linear pass over at most
+// `MAX_SGR_PARAMS` integers, so re-running it per index costs nothing.
+// A native panic is returned as *NativePanicError.
+func SgrAttributeAt(params []uint16, colonMask uint32, index uint) (Attribute, error) {
+	result, code := raw.SgrAttributeAt(params, colonMask, index)
 	if code != 0 {
-		return 0, zigoErrorForCode("SgrAttributes", code)
+		return Attribute{}, zigoErrorForCode("SgrAttributeAt", code)
 	}
-	return result, nil
+	return zigoAttributeFromRaw(result), nil
 }
 
 // SelectAll: Select the whole screen. Returns false when there is nothing to select.

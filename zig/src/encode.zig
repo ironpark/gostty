@@ -2,9 +2,9 @@
 //! reading the pty expects.
 //!
 //! ghostty's own event types hold borrowed slices and modifiers with no C
-//! representation, so the ones here are the flattened equivalents. The `Key`
-//! helpers are free functions because `Key` is an enum, and zigo binds methods
-//! on structs and opaque types only.
+//! representation, so the ones here are the flattened equivalents. `Key`'s own
+//! methods are bound directly; only the two constructors that do not take a
+//! `Key` are re-exported here.
 const std = @import("std");
 const vt = @import("ghostty_vt");
 const common = @import("common.zig");
@@ -25,68 +25,13 @@ pub const KeyAction = enum(u8) {
     }
 };
 
-// `Key` is an enum, and zigo binds functions on structs and opaque types only,
-// so its helpers are re-exported as free functions here. They are for a
-// caller mapping platform key codes onto the enum, or deciding whether a
-// press can carry text.
+// The two `Key` constructors. They take a byte or a name rather than a key,
+// so they are package-level functions rather than methods; re-exported so
+// they keep the `Key` prefix in Go.
 
 /// The key for a printable ASCII byte, or null if none maps to it.
 pub fn keyFromASCII(ch: u8) ?Key {
     return Key.fromASCII(ch);
-}
-
-/// The Unicode codepoint the key produces on a US layout, if it has one.
-pub fn keyCodepoint(key: Key) ?u21 {
-    return key.codepoint();
-}
-
-/// True for keys that produce text on a US layout.
-pub fn keyPrintable(key: Key) bool {
-    return key.printable();
-}
-
-/// True for modifier keys such as shift, control and alt.
-pub fn keyModifier(key: Key) bool {
-    return key.modifier();
-}
-
-/// True for keys on the numeric keypad.
-pub fn keyKeypad(key: Key) bool {
-    return key.keypad();
-}
-
-/// True for shift on either side.
-pub fn keyLeftOrRightShift(key: Key) bool {
-    return key.leftOrRightShift();
-}
-
-/// True for alt on either side.
-pub fn keyLeftOrRightAlt(key: Key) bool {
-    return key.leftOrRightAlt();
-}
-
-/// True for the platform's primary modifier: command on macOS, control
-/// everywhere else. Which one that is was decided when the native library
-/// for this platform was built, so it needs no runtime check in Go.
-pub fn keyCtrlOrSuper(key: Key) bool {
-    return key.ctrlOrSuper();
-}
-
-/// True for keys a keybinding UI may remap by default.
-///
-/// False for the W3C "writing system" keys -- the letters, digits and
-/// punctuation -- because what those produce is decided by the user's layout,
-/// so a binding on one is not the same key for everyone. Everything else,
-/// function and navigation keys included, is fair game.
-pub fn keyShouldBeRemappable(key: Key) bool {
-    return key.shouldBeRemappable();
-}
-
-/// The W3C `KeyboardEvent.code` name for the key, such as "KeyA" or
-/// "ArrowUp", empty for a key with none. Static storage, so the string stays
-/// valid for the life of the process.
-pub fn keyW3C(key: Key) []const u8 {
-    return key.w3c();
 }
 
 /// The key a W3C `KeyboardEvent.code` name selects, or null if none does.

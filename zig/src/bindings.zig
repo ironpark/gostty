@@ -74,7 +74,7 @@ pub const bindings = zigo.define(.{
         .{
             .path = "sys",
             .doc = "Package sys installs the process-global hooks libghostty-vt cannot provide in a library build: a PNG decoder for Kitty graphics and a secure entropy source for Kitty clipboard grants.",
-            .types = &.{"Handler"},
+            .types = &.{ "PngDecodeHandler", "SecureRandomHandler" },
             .namespaces = &.{"sys"},
         },
         .{
@@ -155,11 +155,23 @@ pub const bindings = zigo.define(.{
         enumeration("DragOperation", .{ .text = true }),
         .{ .value = .{ .type = gostty.DragOperations } },
         .{ .value = .{ .type = gostty.DragMove } },
+        .{ .value = .{ .type = gostty.DragNotice } },
         callback("DragFn", "DragHandler"),
         enumeration("ClipboardLocation", .{ .text = true, .open = true }),
         enumeration("ClipboardDenial", .{}),
         callback("ClipboardFn", "ClipboardHandler"),
-        callback("SysFn", "Handler"),
+        .{ .handle = .{ .type = gostty.ClipboardRequest } },
+        // The PNG bytes are copied into Go before the callback runs, so the
+        // decoder may keep them.
+        .{ .callback = .{
+            .type = gostty.PngDecodeFn,
+            .name = "PngDecodeHandler",
+            .params = &.{.{ .semantic = .opaque_bytes }},
+            .retention = .retained,
+            .reentrancy = .allowed,
+            .thread = .caller,
+        } },
+        callback("SecureRandomFn", "SecureRandomHandler"),
         enumeration("Underline", .{}),
         enumeration("ColorName", .{ .text = true, .open = true }),
         .{ .tagged_union = .{ .type = gostty.Attribute } },
@@ -220,8 +232,6 @@ pub const bindings = zigo.define(.{
         enumeration("OSCCommand", .{ .text = true }),
         enumeration("OSCTerminator", .{ .text = true }),
         enumeration("SemanticPromptAction", .{ .text = true }),
-        enumeration("SgrAttributeTag", .{ .text = true }),
-        .{ .value = .{ .type = gostty.SgrAttribute } },
     },
     .functions = &.{
         .{ .path = "root.unicode.codepointWidth" },
@@ -255,7 +265,8 @@ pub const bindings = zigo.define(.{
         // an allocator when it tears down, so the terminal must outlive it.
         .{ .path = "root.newStream", .constructs = gostty.Stream, .child_of_receiver = true },
         .{ .path = "root.freeStream", .destroys = gostty.Stream },
-        .{ .path = "Stream.feed", .params = &.{bytes} },
+        // `.implements = .writer` adds `Write`, so `fmt.Fprintf(stream, ...)` feeds.
+        .{ .path = "Stream.feed", .params = &.{bytes}, .implements = .writer },
         // `Events` is the range-over-func form: `for event, err := range s.Events()`.
         .{ .path = "Stream.nextEvent", .iterator = .{ .name = "Events" } },
         .{ .path = "Stream.eventTitle" },
@@ -270,13 +281,10 @@ pub const bindings = zigo.define(.{
         .{ .path = "Stream.clearColorScheme" },
 
         // Kitty drag and drop. The handler takes its whole payload as
-        // arguments: everything is a scalar, so the signature carries it and
-        // there is nothing to read back afterwards -- which also means the
-        // acceptance is the one being reported rather than whatever a later
-        // event in the same feed replaced it with.
+        // arguments, so there is nothing to read back afterwards -- which also
+        // means the acceptance is the one being reported rather than whatever
+        // a later event in the same feed replaced it with.
         .{ .path = "root.onDrag" },
-        .{ .path = "root.dragEvent" },
-        .{ .path = "root.dragAccepted" },
         .{ .path = "root.dragActive" },
         .{ .path = "root.dragRegisteredMimes" },
         .{ .path = "root.dragClientAccepted" },
@@ -286,23 +294,23 @@ pub const bindings = zigo.define(.{
         .{ .path = "root.dragDrop" },
         .{ .path = "root.dragClearItems" },
         // A clipboard request runs while `feed` is on the stack, on the thread
-        // that called it, and the callback is expected to answer it by calling
-        // back into the same stream. Both facts are contracts a caller has to
-        // know, and they are declared on the callback type above.
+        // that called it, and the callback answers it through the request it
+        // is handed. Both facts are contracts a caller has to know, and they
+        // are declared on the callback type above.
         .{ .path = "Stream.onClipboardWriteRequest" },
         .{ .path = "Stream.onClipboardReadRequest" },
-        .{ .path = "Stream.clipboardLocation" },
-        .{ .path = "Stream.clipboardName" },
-        .{ .path = "Stream.clipboardGranted" },
-        .{ .path = "Stream.clipboardCanRemember" },
-        .{ .path = "Stream.clipboardContentCount" },
-        .{ .path = "Stream.clipboardContentMime" },
-        .{ .path = "Stream.clipboardContentData", .returns = .{ .semantic = .opaque_bytes } },
-        .{ .path = "Stream.clipboardMimeCount" },
-        .{ .path = "Stream.clipboardMime" },
-        .{ .path = "Stream.allowClipboard" },
-        .{ .path = "Stream.replyClipboardText" },
-        .{ .path = "Stream.denyClipboard" },
+        .{ .path = "ClipboardRequest.location" },
+        .{ .path = "ClipboardRequest.name" },
+        .{ .path = "ClipboardRequest.granted" },
+        .{ .path = "ClipboardRequest.canRemember" },
+        .{ .path = "ClipboardRequest.contentCount" },
+        .{ .path = "ClipboardRequest.contentMime" },
+        .{ .path = "ClipboardRequest.contentData", .returns = .{ .semantic = .opaque_bytes } },
+        .{ .path = "ClipboardRequest.mimeCount" },
+        .{ .path = "ClipboardRequest.mime" },
+        .{ .path = "ClipboardRequest.allow" },
+        .{ .path = "ClipboardRequest.replyText" },
+        .{ .path = "ClipboardRequest.deny" },
         .{ .path = "Stream.writeContinuation" },
         .{ .path = "Stream.hasReplies" },
         .{ .path = "Stream.writeSnapshot" },
@@ -448,7 +456,6 @@ pub const bindings = zigo.define(.{
         // same way a clipboard request is. They live in a namespace so that one
         // `clear` is the release zigo requires for the retained callbacks.
         .{ .path = "root.sys.onPngDecodeRequest" },
-        .{ .path = "root.sys.pngRequestData", .params = &.{out} },
         .{ .path = "root.sys.replyPngImage", .params = &.{ any, any, bytes } },
         .{ .path = "root.sys.onSecureRandomRequest" },
         .{ .path = "root.sys.clear" },
@@ -495,26 +502,23 @@ pub const bindings = zigo.define(.{
         .{ .path = "root.newOSCParser", .constructs = gostty.OSCParser },
         .{ .path = "root.freeOSCParser", .destroys = gostty.OSCParser },
         .{ .path = "root.sgrAttributeCount" },
-        .{ .path = "root.sgrAttributes", .params = &.{ any, any, out } },
+        .{ .path = "root.sgrAttributeAt" },
     },
     .methods = &.{
         // What a key is, for a caller deciding whether a press can carry text.
-        // These stay wrappers rather than binding ghostty's methods directly
-        // because they carry the documentation and shape the optionals; the
-        // group makes them methods on the enum all the same.
+        // ghostty's own methods on the enum, bound as Go value-receiver methods.
         .{
             .receiver = gostty.Key,
-            .strip_prefix = "key",
             .functions = &.{
-                .{ .path = "root.keyCodepoint", .covers = &.{"Key.codepoint"} },
-                .{ .path = "root.keyPrintable", .covers = &.{"Key.printable"} },
-                .{ .path = "root.keyModifier", .covers = &.{"Key.modifier"} },
-                .{ .path = "root.keyKeypad", .covers = &.{"Key.keypad"} },
-                .{ .path = "root.keyLeftOrRightShift", .covers = &.{"Key.leftOrRightShift"} },
-                .{ .path = "root.keyLeftOrRightAlt", .covers = &.{"Key.leftOrRightAlt"} },
-                .{ .path = "root.keyCtrlOrSuper", .covers = &.{"Key.ctrlOrSuper"} },
-                .{ .path = "root.keyShouldBeRemappable", .covers = &.{"Key.shouldBeRemappable"} },
-                .{ .path = "root.keyW3C", .covers = &.{"Key.w3c"} },
+                .{ .path = "Key.codepoint" },
+                .{ .path = "Key.printable" },
+                .{ .path = "Key.modifier" },
+                .{ .path = "Key.keypad" },
+                .{ .path = "Key.leftOrRightShift" },
+                .{ .path = "Key.leftOrRightAlt" },
+                .{ .path = "Key.ctrlOrSuper" },
+                .{ .path = "Key.shouldBeRemappable" },
+                .{ .path = "Key.w3c", .name = "W3C" },
             },
         },
         // Screen is ghostty's own type, so these cannot be written as methods

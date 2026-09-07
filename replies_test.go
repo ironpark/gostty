@@ -104,8 +104,8 @@ func TestDeviceAttributes(t *testing.T) {
 // the stream knows that from its own wiring rather than from a declaration.
 func TestDeviceAttributesClipboardDerived(t *testing.T) {
 	_, stream := newStreamPair(t, 20, 3)
-	if err := stream.OnClipboardReadRequest(func() {
-		_ = stream.DenyClipboard(ClipboardDenialDenied)
+	if err := stream.OnClipboardReadRequest(func(req *ClipboardRequest) {
+		_ = req.Deny(ClipboardDenialDenied)
 	}); err != nil {
 		t.Fatalf("OnClipboardReadRequest: %v", err)
 	}

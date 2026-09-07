@@ -188,51 +188,51 @@ func zg_zigo_stream_read(p0 *C.uint8_t, p1 C.size_t, p2 C.size_t) (result C.int3
 }
 
 //export zg_stream_on_drag_go_callback_callback
-func zg_stream_on_drag_go_callback_callback(p0 C.size_t) {
-	state := cgo.Handle(p0).Value().(*CallbackState)
+func zg_stream_on_drag_go_callback_callback(p0 C.uint32_t, p1 *C.uint8_t, p1_len C.size_t, p2 C.size_t) {
+	state := cgo.Handle(p2).Value().(*CallbackState)
 	defer func() {
 		if value := recover(); value != nil {
 			state.record(value)
 		}
 	}()
-	callback := state.Fn.(func())
-	callback()
+	callback := state.Fn.(func(uint32, string))
+	callback(uint32(p0), string(unsafe.Slice((*byte)(unsafe.Pointer(p1)), int(p1_len))))
 }
 
 //export zg_stream_on_clipboard_write_request_go_callback_callback
-func zg_stream_on_clipboard_write_request_go_callback_callback(p0 C.size_t) {
-	state := cgo.Handle(p0).Value().(*CallbackState)
-	defer func() {
-		if value := recover(); value != nil {
-			state.record(value)
-		}
-	}()
-	callback := state.Fn.(func())
-	callback()
-}
-
-//export zg_stream_on_clipboard_read_request_go_callback_callback
-func zg_stream_on_clipboard_read_request_go_callback_callback(p0 C.size_t) {
-	state := cgo.Handle(p0).Value().(*CallbackState)
-	defer func() {
-		if value := recover(); value != nil {
-			state.record(value)
-		}
-	}()
-	callback := state.Fn.(func())
-	callback()
-}
-
-//export zg_sys_on_png_decode_request_go_callback_callback
-func zg_sys_on_png_decode_request_go_callback_callback(p0 C.size_t, p1 C.size_t) {
+func zg_stream_on_clipboard_write_request_go_callback_callback(p0 unsafe.Pointer, p1 C.size_t) {
 	state := cgo.Handle(p1).Value().(*CallbackState)
 	defer func() {
 		if value := recover(); value != nil {
 			state.record(value)
 		}
 	}()
-	callback := state.Fn.(func(uint))
-	callback(uint(p0))
+	callback := state.Fn.(func(unsafe.Pointer))
+	callback(unsafe.Pointer(p0))
+}
+
+//export zg_stream_on_clipboard_read_request_go_callback_callback
+func zg_stream_on_clipboard_read_request_go_callback_callback(p0 unsafe.Pointer, p1 C.size_t) {
+	state := cgo.Handle(p1).Value().(*CallbackState)
+	defer func() {
+		if value := recover(); value != nil {
+			state.record(value)
+		}
+	}()
+	callback := state.Fn.(func(unsafe.Pointer))
+	callback(unsafe.Pointer(p0))
+}
+
+//export zg_sys_on_png_decode_request_go_callback_callback
+func zg_sys_on_png_decode_request_go_callback_callback(p0 *C.uint8_t, p0_len C.size_t, p1 C.size_t) {
+	state := cgo.Handle(p1).Value().(*CallbackState)
+	defer func() {
+		if value := recover(); value != nil {
+			state.record(value)
+		}
+	}()
+	callback := state.Fn.(func([]byte))
+	callback(append([]byte(nil), unsafe.Slice((*byte)(unsafe.Pointer(p0)), int(p0_len))...))
 }
 
 //export zg_sys_on_secure_random_request_go_callback_callback
@@ -611,21 +611,6 @@ func StreamOnDrag(self unsafe.Pointer, callbackHandle uintptr) int32 {
 	return code
 }
 
-// StreamDragEvent calls the generated C ABI wrapper for zg_stream_drag_event.
-func StreamDragEvent(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_stream_drag_event((*C.zg_stream)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// StreamDragAccepted calls the generated C ABI wrapper for zg_stream_drag_accepted.
-func StreamDragAccepted(self unsafe.Pointer) (uint8, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.uint8_t
-	code := int32(C.zg_stream_drag_accepted((*C.zg_stream)(self), &outResultHas, &outResult))
-	return uint8(outResult), outResultHas != 0, code
-}
-
 // StreamDragActive calls the generated C ABI wrapper for zg_stream_drag_active.
 func StreamDragActive(self unsafe.Pointer) (uint8, int32) {
 	var outResult C.uint8_t
@@ -709,101 +694,101 @@ func StreamOnClipboardReadRequest(self unsafe.Pointer, callbackHandle uintptr) i
 	return code
 }
 
-// StreamClipboardLocation calls the generated C ABI wrapper for zg_stream_clipboard_location.
-func StreamClipboardLocation(self unsafe.Pointer) (int32, int32) {
+// ClipboardRequestLocation calls the generated C ABI wrapper for zg_clipboard_request_location.
+func ClipboardRequestLocation(self unsafe.Pointer) (int32, int32) {
 	var outResult C.int32_t
-	code := int32(C.zg_stream_clipboard_location((*C.zg_stream)(self), &outResult))
+	code := int32(C.zg_clipboard_request_location((*C.zg_clipboard_request)(self), &outResult))
 	return int32(outResult), code
 }
 
-// StreamClipboardName calls the generated C ABI wrapper for zg_stream_clipboard_name.
-func StreamClipboardName(self unsafe.Pointer) (string, int32) {
+// ClipboardRequestName calls the generated C ABI wrapper for zg_clipboard_request_name.
+func ClipboardRequestName(self unsafe.Pointer) (string, int32) {
 	var outResultPtr *C.uint8_t
 	var outResultLen C.size_t
-	code := int32(C.zg_stream_clipboard_name((*C.zg_stream)(self), &outResultPtr, &outResultLen))
+	code := int32(C.zg_clipboard_request_name((*C.zg_clipboard_request)(self), &outResultPtr, &outResultLen))
 	if code != 0 {
 		return "", code
 	}
 	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
 }
 
-// StreamClipboardGranted calls the generated C ABI wrapper for zg_stream_clipboard_granted.
-func StreamClipboardGranted(self unsafe.Pointer) (uint8, int32) {
+// ClipboardRequestGranted calls the generated C ABI wrapper for zg_clipboard_request_granted.
+func ClipboardRequestGranted(self unsafe.Pointer) (uint8, int32) {
 	var outResult C.uint8_t
-	code := int32(C.zg_stream_clipboard_granted((*C.zg_stream)(self), &outResult))
+	code := int32(C.zg_clipboard_request_granted((*C.zg_clipboard_request)(self), &outResult))
 	return uint8(outResult), code
 }
 
-// StreamClipboardCanRemember calls the generated C ABI wrapper for zg_stream_clipboard_can_remember.
-func StreamClipboardCanRemember(self unsafe.Pointer) (uint8, int32) {
+// ClipboardRequestCanRemember calls the generated C ABI wrapper for zg_clipboard_request_can_remember.
+func ClipboardRequestCanRemember(self unsafe.Pointer) (uint8, int32) {
 	var outResult C.uint8_t
-	code := int32(C.zg_stream_clipboard_can_remember((*C.zg_stream)(self), &outResult))
+	code := int32(C.zg_clipboard_request_can_remember((*C.zg_clipboard_request)(self), &outResult))
 	return uint8(outResult), code
 }
 
-// StreamClipboardContentCount calls the generated C ABI wrapper for zg_stream_clipboard_content_count.
-func StreamClipboardContentCount(self unsafe.Pointer) (uint, int32) {
+// ClipboardRequestContentCount calls the generated C ABI wrapper for zg_clipboard_request_content_count.
+func ClipboardRequestContentCount(self unsafe.Pointer) (uint, int32) {
 	var outResult C.size_t
-	code := int32(C.zg_stream_clipboard_content_count((*C.zg_stream)(self), &outResult))
+	code := int32(C.zg_clipboard_request_content_count((*C.zg_clipboard_request)(self), &outResult))
 	return uint(outResult), code
 }
 
-// StreamClipboardContentMime calls the generated C ABI wrapper for zg_stream_clipboard_content_mime.
-func StreamClipboardContentMime(self unsafe.Pointer, index uint) (string, int32) {
+// ClipboardRequestContentMime calls the generated C ABI wrapper for zg_clipboard_request_content_mime.
+func ClipboardRequestContentMime(self unsafe.Pointer, index uint) (string, int32) {
 	var outResultPtr *C.uint8_t
 	var outResultLen C.size_t
-	code := int32(C.zg_stream_clipboard_content_mime((*C.zg_stream)(self), C.size_t(index), &outResultPtr, &outResultLen))
+	code := int32(C.zg_clipboard_request_content_mime((*C.zg_clipboard_request)(self), C.size_t(index), &outResultPtr, &outResultLen))
 	if code != 0 {
 		return "", code
 	}
 	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
 }
 
-// StreamClipboardContentData calls the generated C ABI wrapper for zg_stream_clipboard_content_data.
-func StreamClipboardContentData(self unsafe.Pointer, index uint) ([]uint8, int32) {
+// ClipboardRequestContentData calls the generated C ABI wrapper for zg_clipboard_request_content_data.
+func ClipboardRequestContentData(self unsafe.Pointer, index uint) ([]uint8, int32) {
 	var outResultPtr *C.uint8_t
 	var outResultLen C.size_t
-	code := int32(C.zg_stream_clipboard_content_data((*C.zg_stream)(self), C.size_t(index), &outResultPtr, &outResultLen))
+	code := int32(C.zg_clipboard_request_content_data((*C.zg_clipboard_request)(self), C.size_t(index), &outResultPtr, &outResultLen))
 	if code != 0 {
 		return nil, code
 	}
 	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
 }
 
-// StreamClipboardMimeCount calls the generated C ABI wrapper for zg_stream_clipboard_mime_count.
-func StreamClipboardMimeCount(self unsafe.Pointer) (uint, int32) {
+// ClipboardRequestMimeCount calls the generated C ABI wrapper for zg_clipboard_request_mime_count.
+func ClipboardRequestMimeCount(self unsafe.Pointer) (uint, int32) {
 	var outResult C.size_t
-	code := int32(C.zg_stream_clipboard_mime_count((*C.zg_stream)(self), &outResult))
+	code := int32(C.zg_clipboard_request_mime_count((*C.zg_clipboard_request)(self), &outResult))
 	return uint(outResult), code
 }
 
-// StreamClipboardMime calls the generated C ABI wrapper for zg_stream_clipboard_mime.
-func StreamClipboardMime(self unsafe.Pointer, index uint) (string, int32) {
+// ClipboardRequestMime calls the generated C ABI wrapper for zg_clipboard_request_mime.
+func ClipboardRequestMime(self unsafe.Pointer, index uint) (string, int32) {
 	var outResultPtr *C.uint8_t
 	var outResultLen C.size_t
-	code := int32(C.zg_stream_clipboard_mime((*C.zg_stream)(self), C.size_t(index), &outResultPtr, &outResultLen))
+	code := int32(C.zg_clipboard_request_mime((*C.zg_clipboard_request)(self), C.size_t(index), &outResultPtr, &outResultLen))
 	if code != 0 {
 		return "", code
 	}
 	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
 }
 
-// StreamAllowClipboard calls the generated C ABI wrapper for zg_stream_allow_clipboard.
-func StreamAllowClipboard(self unsafe.Pointer, remember uint8) int32 {
-	code := int32(C.zg_stream_allow_clipboard((*C.zg_stream)(self), C.uint8_t(remember)))
+// ClipboardRequestAllow calls the generated C ABI wrapper for zg_clipboard_request_allow.
+func ClipboardRequestAllow(self unsafe.Pointer, remember uint8) int32 {
+	code := int32(C.zg_clipboard_request_allow((*C.zg_clipboard_request)(self), C.uint8_t(remember)))
 	return code
 }
 
-// StreamReplyClipboardText calls the generated C ABI wrapper for zg_stream_reply_clipboard_text.
-func StreamReplyClipboardText(self unsafe.Pointer, text string, remember uint8) int32 {
+// ClipboardRequestReplyText calls the generated C ABI wrapper for zg_clipboard_request_reply_text.
+func ClipboardRequestReplyText(self unsafe.Pointer, text string, remember uint8) int32 {
 	textPtr := (*C.uint8_t)(zigoStringPtr(text))
-	code := int32(C.zg_stream_reply_clipboard_text((*C.zg_stream)(self), textPtr, C.size_t(len(text)), C.uint8_t(remember)))
+	code := int32(C.zg_clipboard_request_reply_text((*C.zg_clipboard_request)(self), textPtr, C.size_t(len(text)), C.uint8_t(remember)))
 	return code
 }
 
-// StreamDenyClipboard calls the generated C ABI wrapper for zg_stream_deny_clipboard.
-func StreamDenyClipboard(self unsafe.Pointer, reason uint8) int32 {
-	code := int32(C.zg_stream_deny_clipboard((*C.zg_stream)(self), C.uint8_t(reason)))
+// ClipboardRequestDeny calls the generated C ABI wrapper for zg_clipboard_request_deny.
+func ClipboardRequestDeny(self unsafe.Pointer, reason uint8) int32 {
+	code := int32(C.zg_clipboard_request_deny((*C.zg_clipboard_request)(self), C.uint8_t(reason)))
 	return code
 }
 
@@ -1482,12 +1467,6 @@ func SysOnPngDecodeRequest(callbackHandle uintptr) {
 	C.zg_sys_on_png_decode_request(C.size_t(callbackHandle))
 }
 
-// SysPngRequestData calls the generated C ABI wrapper for zg_sys_png_request_data.
-func SysPngRequestData(dst []uint8) uint {
-	dstPtr := (*C.uint8_t)(zigoSlicePtr(dst))
-	return uint(C.zg_sys_png_request_data(dstPtr, C.size_t(len(dst))))
-}
-
 // SysReplyPngImage calls the generated C ABI wrapper for zg_sys_reply_png_image.
 func SysReplyPngImage(width uint32, height uint32, rgba []uint8) int32 {
 	rgbaPtr := (*C.uint8_t)(zigoSlicePtr(rgba))
@@ -1702,13 +1681,25 @@ func SgrAttributeCount(params []uint16, colonMask uint32) (uint, int32) {
 	return uint(outResult), code
 }
 
-// SgrAttributes calls the generated C ABI wrapper for zg_sgr_attributes.
-func SgrAttributes(params []uint16, colonMask uint32, dst []SgrAttributeData) (uint, int32) {
+// SgrAttributeAt calls the generated C ABI wrapper for zg_sgr_attribute_at.
+func SgrAttributeAt(params []uint16, colonMask uint32, index uint) (AttributeData, int32) {
 	paramsPtr := (*C.uint16_t)(zigoSlicePtr(params))
-	dstPtr := (*C.zg_sgr_attribute)(zigoSlicePtr(dst))
-	var outResult C.size_t
-	code := int32(C.zg_sgr_attributes(paramsPtr, C.size_t(len(params)), C.uint32_t(colonMask), dstPtr, C.size_t(len(dst)), &outResult))
-	return uint(outResult), code
+	var outResult C.zg_attribute_snapshot_t
+	code := int32(C.zg_sgr_attribute_at(paramsPtr, C.size_t(len(params)), C.uint32_t(colonMask), C.size_t(index), &outResult))
+	return AttributeData{
+		Tag:               uint8(outResult.tag),
+		Underline:         uint8(outResult.underline),
+		UnderlineColorRgb: uint32(outResult.underline_color_rgb),
+		UnderlineColor256: uint8(outResult.underline_color_256),
+		DirectColorFg:     uint32(outResult.direct_color_fg),
+		DirectColorBg:     uint32(outResult.direct_color_bg),
+		Color256Fg:        uint8(outResult.color_256_fg),
+		Color256Bg:        uint8(outResult.color_256_bg),
+		NamedFg:           uint8(outResult.named_fg),
+		NamedBg:           uint8(outResult.named_bg),
+		BrightNamedFg:     uint8(outResult.bright_named_fg),
+		BrightNamedBg:     uint8(outResult.bright_named_bg),
+	}, code
 }
 
 // KeyCodepoint calls the generated C ABI wrapper for zg_key_codepoint.
@@ -2761,11 +2752,23 @@ type GestureDragEventData struct {
 	_         [7]byte
 }
 
-// SgrAttributeData mirrors the zg_sgr_attribute layout, padding included.
-type SgrAttributeData struct {
-	Tag   uint8
-	_     [3]byte
-	Value uint32
+// AttributeData mirrors the zg_attribute_snapshot_t layout, padding included.
+type AttributeData struct {
+	Tag               uint8
+	Underline         uint8
+	_                 [2]byte
+	UnderlineColorRgb uint32
+	UnderlineColor256 uint8
+	_                 [3]byte
+	DirectColorFg     uint32
+	DirectColorBg     uint32
+	Color256Fg        uint8
+	Color256Bg        uint8
+	NamedFg           uint8
+	NamedBg           uint8
+	BrightNamedFg     uint8
+	BrightNamedBg     uint8
+	_                 [2]byte
 }
 
 // SnapshotProgressData slices are copied from C memory as one run, so it must match zg_snapshot_progress byte for byte.
@@ -2905,7 +2908,17 @@ var _ = [1]struct{}{}[unsafe.Offsetof(GestureDragEventData{}.Xpos)-unsafe.Offset
 var _ = [1]struct{}{}[unsafe.Offsetof(GestureDragEventData{}.Ypos)-unsafe.Offsetof(C.zg_gesture_drag_event{}.ypos)]
 var _ = [1]struct{}{}[unsafe.Offsetof(GestureDragEventData{}.Rectangle)-unsafe.Offsetof(C.zg_gesture_drag_event{}.rectangle)]
 
-// SgrAttributeData slices are copied from C memory as one run, so it must match zg_sgr_attribute byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(SgrAttributeData{})-unsafe.Sizeof(C.zg_sgr_attribute{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(SgrAttributeData{}.Tag)-unsafe.Offsetof(C.zg_sgr_attribute{}.tag)]
-var _ = [1]struct{}{}[unsafe.Offsetof(SgrAttributeData{}.Value)-unsafe.Offsetof(C.zg_sgr_attribute{}.value)]
+// AttributeData slices are copied from C memory as one run, so it must match zg_attribute_snapshot_t byte for byte.
+var _ = [1]struct{}{}[unsafe.Sizeof(AttributeData{})-unsafe.Sizeof(C.zg_attribute_snapshot_t{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.Tag)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.tag)]
+var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.Underline)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.underline)]
+var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.UnderlineColorRgb)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.underline_color_rgb)]
+var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.UnderlineColor256)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.underline_color_256)]
+var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.DirectColorFg)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.direct_color_fg)]
+var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.DirectColorBg)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.direct_color_bg)]
+var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.Color256Fg)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.color_256_fg)]
+var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.Color256Bg)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.color_256_bg)]
+var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.NamedFg)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.named_fg)]
+var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.NamedBg)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.named_bg)]
+var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.BrightNamedFg)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.bright_named_fg)]
+var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.BrightNamedBg)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.bright_named_bg)]

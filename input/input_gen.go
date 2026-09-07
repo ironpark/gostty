@@ -139,57 +139,68 @@ func EncodePaste(writer io.Writer, terminal *zigo_default.Terminal, data []byte)
 	return nil
 }
 
-// Codepoint: The Unicode codepoint the key produces on a US layout, if it has one.
+// Codepoint: Returns the codepoint representing this key, or null if the key is not
+// printable
 func (k Key) Codepoint() (rune, bool) {
 	zigoResult, zigoHas := raw.KeyCodepoint(int32(k))
 	return rune(zigoResult), zigoHas
 }
 
-// Printable: True for keys that produce text on a US layout.
+// Printable: True if this key represents a printable character.
 func (k Key) Printable() bool {
 	return raw.KeyPrintable(int32(k)) != 0
 }
 
-// Modifier: True for modifier keys such as shift, control and alt.
+// Modifier: True if this key is a modifier.
 func (k Key) Modifier() bool {
 	return raw.KeyModifier(int32(k)) != 0
 }
 
-// Keypad: True for keys on the numeric keypad.
+// Keypad: Returns true if this is a keypad key.
 func (k Key) Keypad() bool {
 	return raw.KeyKeypad(int32(k)) != 0
 }
 
-// LeftOrRightShift: True for shift on either side.
+// LeftOrRightShift true if this key is either left or right shift.
 func (k Key) LeftOrRightShift() bool {
 	return raw.KeyLeftOrRightShift(int32(k)) != 0
 }
 
-// LeftOrRightAlt: True for alt on either side.
+// LeftOrRightAlt true if this key is either left or right alt.
 func (k Key) LeftOrRightAlt() bool {
 	return raw.KeyLeftOrRightAlt(int32(k)) != 0
 }
 
-// CtrlOrSuper: True for the platform's primary modifier: command on macOS, control
-// everywhere else. Which one that is was decided when the native library
-// for this platform was built, so it needs no runtime check in Go.
+// CtrlOrSuper true if this key is one of the left or right versions of super (MacOS)
+// or ctrl.
 func (k Key) CtrlOrSuper() bool {
 	return raw.KeyCtrlOrSuper(int32(k)) != 0
 }
 
-// ShouldBeRemappable: True for keys a keybinding UI may remap by default.
+// ShouldBeRemappable: Whether this key should be remappable by the operating system.
 //
-// False for the W3C "writing system" keys -- the letters, digits and
-// punctuation -- because what those produce is decided by the user's layout,
-// so a binding on one is not the same key for everyone. Everything else,
-// function and navigation keys included, is fair game.
+// On certain OSes (namely Linux and the BSDs) certain keys like the
+// functional keys are expected to be remappable by the user, such as
+// in the very common use case of swapping the Caps Lock key with the
+// Escape key with the XKB option `caps:swapescape`.
+//
+// However, the way XKB implements this is by essentially acting as a
+// software key remapper that destroys all information about the original
+// physical key, leading to very annoying bugs like #7309 where the
+// physical key `XKB_KEY_c` gets remapped into `XKB_KEY_Cyrillic_tse`,
+// which causes all of our physical key handling to completely break down.
+// _Very naughty._
+//
+// As a compromise, given that writing system keys (§3.1.1) comprise the
+// majority of keys that "change meaning [...] based on the current locale
+// and keyboard layout", we allow all other keys to be remapped by default
+// since they should be fairly harmless. We might consider making this
+// configurable, but for now this should at least placate most people.
 func (k Key) ShouldBeRemappable() bool {
 	return raw.KeyShouldBeRemappable(int32(k)) != 0
 }
 
-// W3C: The W3C `KeyboardEvent.code` name for the key, such as "KeyA" or
-// "ArrowUp", empty for a key with none. Static storage, so the string stays
-// valid for the life of the process.
+// W3C: Converts a Ghostty key enum value to a W3C key code.
 func (k Key) W3C() string {
 	return raw.KeyW3C(int32(k))
 }

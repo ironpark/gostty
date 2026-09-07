@@ -94,12 +94,132 @@ pub const ClipboardDenial = enum(u8) {
     }
 };
 
-/// Called while a feed is in flight, once per clipboard request.
+/// Called while a feed is in flight, once per clipboard request, with the
+/// request to answer. The request is valid until the callback returns; a
+/// request that is not answered by then is denied.
+pub const ClipboardFn = *const fn (request: *ClipboardRequest, userdata: usize) callconv(.c) void;
+
+/// One clipboard request from the running program: an OSC 52 or Kitty OSC
+/// 5522 write or read. Handed to the clipboard callback, which reads what it
+/// needs and answers with `allow`, `replyText` or `deny` before returning.
 ///
-/// The callback carries no payload: a zigo callback signature is a raw C
-/// signature, so slices would arrive as loose pointer and length pairs. It
-/// instead reads the pending request off the stream and answers it there.
-pub const ClipboardFn = *const fn (userdata: usize) callconv(.c) void;
+/// Lives inside the stream rather than on the stack so the handle Go holds
+/// stays valid; outside a callback nothing is pending and every accessor
+/// answers its zero value while every reply is a no-op.
+pub const ClipboardRequest = struct {
+    /// Borrowed for the duration of the effect call and nulled after.
+    write: ?vt.clipboard.Write = null,
+    read: ?vt.clipboard.Read = null,
+    /// Whether the callback answered. An unanswered request is denied so the
+    /// program is not left waiting.
+    answered: bool = false,
+
+    /// Which clipboard the request names.
+    pub fn location(self: *ClipboardRequest) ClipboardLocation {
+        if (self.write) |write| return write.location;
+        if (self.read) |read| return read.location;
+        return .standard;
+    }
+
+    /// The requesting program's name, empty when the protocol carries none.
+    pub fn name(self: *ClipboardRequest) []const u8 {
+        if (self.write) |write| return write.name;
+        if (self.read) |read| return read.name;
+        return "";
+    }
+
+    /// True when the terminal already holds a session grant, so the embedder
+    /// should skip its permission prompt.
+    pub fn granted(self: *ClipboardRequest) bool {
+        if (self.write) |write| return write.granted;
+        if (self.read) |read| return read.granted;
+        return false;
+    }
+
+    /// True when the program supplied a session password, so a decision can be
+    /// remembered via the `remember` argument when answering.
+    pub fn canRemember(self: *ClipboardRequest) bool {
+        if (self.write) |write| return write.can_remember;
+        if (self.read) |read| return read.can_remember;
+        return false;
+    }
+
+    /// How many representations a write carries. Zero clears the destination.
+    pub fn contentCount(self: *ClipboardRequest) usize {
+        const write = self.write orelse return 0;
+        return write.contents.len;
+    }
+
+    /// The MIME type of one representation of a write.
+    pub fn contentMime(self: *ClipboardRequest, index: usize) []const u8 {
+        const write = self.write orelse return "";
+        if (index >= write.contents.len) return "";
+        return write.contents[index].mime;
+    }
+
+    /// The bytes of one representation of a write. Binary safe.
+    pub fn contentData(self: *ClipboardRequest, index: usize) []const u8 {
+        const write = self.write orelse return "";
+        if (index >= write.contents.len) return "";
+        return write.contents[index].data;
+    }
+
+    /// How many MIME types a read asks for, in order of preference.
+    pub fn mimeCount(self: *ClipboardRequest) usize {
+        const read = self.read orelse return 0;
+        return read.mimes.len;
+    }
+
+    /// One of the MIME types a read asks for.
+    pub fn mime(self: *ClipboardRequest, index: usize) []const u8 {
+        const read = self.read orelse return "";
+        if (index >= read.mimes.len) return "";
+        return read.mimes[index];
+    }
+
+    /// Accept a write. Answering a read this way serves empty text.
+    pub fn allow(self: *ClipboardRequest, remember: bool) void {
+        if (self.answered) return;
+        if (self.write) |write| {
+            write.reply(.{ .success = .{ .remember = remember } });
+            self.answered = true;
+            return;
+        }
+        if (self.read) |read| {
+            read.reply(.{ .success = .{ .remember = remember } });
+            self.answered = true;
+        }
+    }
+
+    /// Serve a read with plain text.
+    ///
+    /// `text` is borrowed for this call only; the terminal copies what it
+    /// needs before returning.
+    pub fn replyText(self: *ClipboardRequest, text: []const u8, remember: bool) void {
+        if (self.answered) return;
+        const read = self.read orelse return;
+        const contents: [1]vt.clipboard.Content = .{.{
+            .mime = "text/plain",
+            .data = text,
+        }};
+        read.reply(.{ .success = .{
+            .contents = &contents,
+            .remember = remember,
+        } });
+        self.answered = true;
+    }
+
+    /// Refuse the request.
+    pub fn deny(self: *ClipboardRequest, reason: ClipboardDenial) void {
+        if (self.answered) return;
+        if (self.write) |write| {
+            write.reply(reason.toGhostty(vt.clipboard.Write.Result));
+        } else if (self.read) |read| {
+            read.reply(reason.toGhostty(vt.clipboard.Read.Result));
+        } else return;
+        self.answered = true;
+    }
+};
 
 /// A VT stream: parses escape sequences and applies them to a `Terminal`.
 ///
@@ -121,13 +241,9 @@ pub const Stream = struct {
     /// the program. Collected during a feed and drained by `writeReplies`.
     replies: std.ArrayList(u8) = .empty,
 
-    /// The clipboard request being answered, if a callback is running. Both
-    /// are borrowed for the duration of the effect call and nulled after.
-    pending_write: ?vt.clipboard.Write = null,
-    pending_read: ?vt.clipboard.Read = null,
-    /// Whether the callback answered. An unanswered request is denied so the
-    /// program is not left waiting.
-    answered: bool = false,
+    /// The clipboard request being answered, if a callback is running. Kept
+    /// here so the pointer the callback receives stays valid.
+    request: ClipboardRequest = .{},
 
     on_clipboard_write: ?ClipboardFn = null,
     write_userdata: usize = 0,
@@ -153,10 +269,6 @@ pub const Stream = struct {
     /// and the representations staged for the next drop.
     on_drag: ?@import("dnd.zig").DragFn = null,
     drag_userdata: usize = 0,
-    /// The event and answer the running drag handler was called for, captured
-    /// at effect time so a later event in the same feed cannot replace them.
-    drag_event: @import("dnd.zig").DragEvent = .registration,
-    drag_accepted: ?@import("dnd.zig").DragOperation = null,
     drag_items: std.ArrayList(vt.kitty.dnd.Item) = .empty,
     /// What `nextEvent` last handed out. Its payload stays readable until the
     /// following `nextEvent`.
@@ -258,11 +370,10 @@ pub const Stream = struct {
             write.reply(.denied);
             return;
         };
-        self.pending_write = write;
-        self.answered = false;
-        defer self.pending_write = null;
-        callback(self.write_userdata);
-        if (!self.answered) write.reply(.denied);
+        self.request = .{ .write = write };
+        defer self.request = .{};
+        callback(&self.request, self.write_userdata);
+        if (!self.request.answered) write.reply(.denied);
     }
 
     fn onClipboardRead(
@@ -274,11 +385,10 @@ pub const Stream = struct {
             read.reply(.denied);
             return;
         };
-        self.pending_read = read;
-        self.answered = false;
-        defer self.pending_read = null;
-        callback(self.read_userdata);
-        if (!self.answered) read.reply(.denied);
+        self.request = .{ .read = read };
+        defer self.request = .{};
+        callback(&self.request, self.read_userdata);
+        if (!self.request.answered) read.reply(.denied);
     }
 
     /// A sequence the library does not implement. The content is borrowed
@@ -546,113 +656,6 @@ pub const Stream = struct {
     ) void {
         self.on_clipboard_read = callback;
         self.read_userdata = userdata;
-    }
-
-    /// Which clipboard the pending request names.
-    pub fn clipboardLocation(self: *Stream) ClipboardLocation {
-        if (self.pending_write) |write| return write.location;
-        if (self.pending_read) |read| return read.location;
-        return .standard;
-    }
-
-    /// The requesting program's name, empty when the protocol carries none.
-    pub fn clipboardName(self: *Stream) []const u8 {
-        if (self.pending_write) |write| return write.name;
-        if (self.pending_read) |read| return read.name;
-        return "";
-    }
-
-    /// True when the terminal already holds a session grant, so the embedder
-    /// should skip its permission prompt.
-    pub fn clipboardGranted(self: *Stream) bool {
-        if (self.pending_write) |write| return write.granted;
-        if (self.pending_read) |read| return read.granted;
-        return false;
-    }
-
-    /// True when the program supplied a session password, so a decision can be
-    /// remembered via the `remember` argument when answering.
-    pub fn clipboardCanRemember(self: *Stream) bool {
-        if (self.pending_write) |write| return write.can_remember;
-        if (self.pending_read) |read| return read.can_remember;
-        return false;
-    }
-
-    /// How many representations a pending write carries. Zero clears the
-    /// destination.
-    pub fn clipboardContentCount(self: *Stream) usize {
-        const write = self.pending_write orelse return 0;
-        return write.contents.len;
-    }
-
-    /// The MIME type of one representation of a pending write.
-    pub fn clipboardContentMime(self: *Stream, index: usize) []const u8 {
-        const write = self.pending_write orelse return "";
-        if (index >= write.contents.len) return "";
-        return write.contents[index].mime;
-    }
-
-    /// The bytes of one representation of a pending write. Binary safe.
-    pub fn clipboardContentData(self: *Stream, index: usize) []const u8 {
-        const write = self.pending_write orelse return "";
-        if (index >= write.contents.len) return "";
-        return write.contents[index].data;
-    }
-
-    /// How many MIME types a pending read asks for, in order of preference.
-    pub fn clipboardMimeCount(self: *Stream) usize {
-        const read = self.pending_read orelse return 0;
-        return read.mimes.len;
-    }
-
-    /// One of the MIME types a pending read asks for.
-    pub fn clipboardMime(self: *Stream, index: usize) []const u8 {
-        const read = self.pending_read orelse return "";
-        if (index >= read.mimes.len) return "";
-        return read.mimes[index];
-    }
-
-    /// Accept a pending write. Answering a read this way serves empty text.
-    pub fn allowClipboard(self: *Stream, remember: bool) void {
-        if (self.answered) return;
-        if (self.pending_write) |write| {
-            write.reply(.{ .success = .{ .remember = remember } });
-            self.answered = true;
-            return;
-        }
-        if (self.pending_read) |read| {
-            read.reply(.{ .success = .{ .remember = remember } });
-            self.answered = true;
-        }
-    }
-
-    /// Serve a pending read with plain text.
-    ///
-    /// `text` is borrowed for this call only; the terminal copies what it
-    /// needs before returning.
-    pub fn replyClipboardText(self: *Stream, text: []const u8, remember: bool) void {
-        if (self.answered) return;
-        const read = self.pending_read orelse return;
-        const contents: [1]vt.clipboard.Content = .{.{
-            .mime = "text/plain",
-            .data = text,
-        }};
-        read.reply(.{ .success = .{
-            .contents = &contents,
-            .remember = remember,
-        } });
-        self.answered = true;
-    }
-
-    /// Refuse a pending request.
-    pub fn denyClipboard(self: *Stream, reason: ClipboardDenial) void {
-        if (self.answered) return;
-        if (self.pending_write) |write| {
-            write.reply(reason.toGhostty(vt.clipboard.Write.Result));
-        } else if (self.pending_read) |read| {
-            read.reply(reason.toGhostty(vt.clipboard.Read.Result));
-        } else return;
-        self.answered = true;
     }
 };
 

@@ -38,13 +38,8 @@ func transmitPNG(t *testing.T, s *Stream, id int, data []byte) {
 func installPNGDecoder(t *testing.T) *int {
 	t.Helper()
 	calls := new(int)
-	sys.OnPngDecodeRequest(func(n uint) {
+	sys.OnPngDecodeRequest(func(data []byte) {
 		*calls++
-		data := make([]byte, n)
-		if got := sys.PngRequestData(data); got != n {
-			t.Errorf("PngRequestData wrote %d, want %d", got, n)
-			return
-		}
 		img, err := png.Decode(bytes.NewReader(data))
 		if err != nil {
 			t.Errorf("png.Decode: %v", err)
@@ -108,7 +103,7 @@ func TestPngDecodedOnArrival(t *testing.T) {
 // having none, and a reply of the wrong size is refused before it can.
 func TestPngDecoderMustReply(t *testing.T) {
 	var sizeErr error
-	sys.OnPngDecodeRequest(func(n uint) {
+	sys.OnPngDecodeRequest(func([]byte) {
 		sizeErr = sys.ReplyPngImage(2, 2, []byte{1, 2, 3, 4})
 	})
 	t.Cleanup(sys.Clear)
@@ -134,7 +129,18 @@ func TestSysRepliesOutsideRequest(t *testing.T) {
 	sys.OnSecureRandomRequest(func(uint) {})
 	sys.Clear()
 	sys.Clear()
-	if n := sys.PngRequestData(make([]byte, 8)); n != 0 {
-		t.Errorf("PngRequestData outside a request wrote %d, want 0", n)
+}
+
+// The bytes the decoder receives are a copy, so keeping them past the call is
+// allowed and they still match what was transmitted.
+func TestPngBytesAreCopied(t *testing.T) {
+	var kept []byte
+	sys.OnPngDecodeRequest(func(data []byte) { kept = data })
+	t.Cleanup(sys.Clear)
+	_, stream := newStreamPair(t, 20, 5)
+	src := redPNG(t)
+	transmitPNG(t, stream, 8, src)
+	if !bytes.Equal(kept, src) {
+		t.Errorf("decoder received %d bytes, want the %d transmitted", len(kept), len(src))
 	}
 }

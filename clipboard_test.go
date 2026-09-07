@@ -7,7 +7,8 @@ import (
 )
 
 // A write must be answered from inside the callback, which runs while Feed is
-// still on the stack. Everything about the request is read off the stream.
+// still on the stack. Everything about the request is read off the request
+// the callback is handed.
 func TestClipboardWrite(t *testing.T) {
 	_, stream := newStreamPair(t, 20, 3)
 
@@ -18,32 +19,32 @@ func TestClipboardWrite(t *testing.T) {
 	}
 	var got []capture
 
-	err := stream.OnClipboardWriteRequest(func() {
-		loc, err := stream.ClipboardLocation()
+	err := stream.OnClipboardWriteRequest(func(req *ClipboardRequest) {
+		loc, err := req.Location()
 		if err != nil {
-			t.Errorf("ClipboardLocation: %v", err)
+			t.Errorf("Location: %v", err)
 			return
 		}
-		n, err := stream.ClipboardContentCount()
+		n, err := req.ContentCount()
 		if err != nil {
-			t.Errorf("ClipboardContentCount: %v", err)
+			t.Errorf("ContentCount: %v", err)
 			return
 		}
 		for i := uint(0); i < n; i++ {
-			mime, err := stream.ClipboardContentMime(i)
+			mime, err := req.ContentMime(i)
 			if err != nil {
-				t.Errorf("ClipboardContentMime: %v", err)
+				t.Errorf("ContentMime: %v", err)
 				return
 			}
-			data, err := stream.ClipboardContentData(i)
+			data, err := req.ContentData(i)
 			if err != nil {
-				t.Errorf("ClipboardContentData: %v", err)
+				t.Errorf("ContentData: %v", err)
 				return
 			}
 			got = append(got, capture{loc, mime, string(data)})
 		}
-		if err := stream.AllowClipboard(false); err != nil {
-			t.Errorf("AllowClipboard: %v", err)
+		if err := req.Allow(false); err != nil {
+			t.Errorf("Allow: %v", err)
 		}
 	})
 	if err != nil {
@@ -72,13 +73,13 @@ func TestClipboardRead(t *testing.T) {
 	term, stream := newStreamPair(t, 40, 3)
 
 	called := 0
-	err := stream.OnClipboardReadRequest(func() {
+	err := stream.OnClipboardReadRequest(func(req *ClipboardRequest) {
 		called++
-		if n, err := stream.ClipboardMimeCount(); err != nil || n == 0 {
-			t.Errorf("ClipboardMimeCount() = %d, %v; want at least one", n, err)
+		if n, err := req.MimeCount(); err != nil || n == 0 {
+			t.Errorf("MimeCount() = %d, %v; want at least one", n, err)
 		}
-		if err := stream.ReplyClipboardText("from go", false); err != nil {
-			t.Errorf("ReplyClipboardText: %v", err)
+		if err := req.ReplyText("from go", false); err != nil {
+			t.Errorf("ReplyText: %v", err)
 		}
 	})
 	if err != nil {
@@ -111,7 +112,7 @@ func TestClipboardDenied(t *testing.T) {
 	}
 
 	silent := 0
-	if err := stream.OnClipboardWriteRequest(func() { silent++ }); err != nil {
+	if err := stream.OnClipboardWriteRequest(func(*ClipboardRequest) { silent++ }); err != nil {
 		t.Fatalf("OnClipboardWriteRequest: %v", err)
 	}
 	feed(t, stream, "\x1b]52;c;"+payload+"\x07")
@@ -119,9 +120,9 @@ func TestClipboardDenied(t *testing.T) {
 		t.Errorf("callback ran %d times, want 1", silent)
 	}
 
-	if err := stream.OnClipboardWriteRequest(func() {
-		if err := stream.DenyClipboard(ClipboardDenialUnsupported); err != nil {
-			t.Errorf("DenyClipboard: %v", err)
+	if err := stream.OnClipboardWriteRequest(func(req *ClipboardRequest) {
+		if err := req.Deny(ClipboardDenialUnsupported); err != nil {
+			t.Errorf("Deny: %v", err)
 		}
 	}); err != nil {
 		t.Fatalf("OnClipboardWriteRequest: %v", err)
@@ -129,17 +130,30 @@ func TestClipboardDenied(t *testing.T) {
 	feed(t, stream, "\x1b]52;c;"+payload+"\x07")
 }
 
-// Nothing is pending outside a callback, so the accessors answer safely.
-func TestClipboardAccessorsOutsideCallback(t *testing.T) {
+// A request outlives its callback only as a handle: once the callback has
+// returned nothing is pending behind it, so the accessors answer their zero
+// values and a late reply is a no-op rather than a message to the program.
+func TestClipboardRequestAfterCallback(t *testing.T) {
 	_, stream := newStreamPair(t, 20, 3)
-	if n, err := stream.ClipboardContentCount(); err != nil || n != 0 {
-		t.Errorf("ClipboardContentCount() = %d, %v; want 0, nil", n, err)
+	var kept *ClipboardRequest
+	if err := stream.OnClipboardWriteRequest(func(req *ClipboardRequest) {
+		kept = req
+		_ = req.Allow(false)
+	}); err != nil {
+		t.Fatalf("OnClipboardWriteRequest: %v", err)
 	}
-	if name, err := stream.ClipboardName(); err != nil || len(name) != 0 {
-		t.Errorf("ClipboardName() = %q, %v; want empty, nil", name, err)
+	feed(t, stream, "\x1b]52;c;"+base64.StdEncoding.EncodeToString([]byte("x"))+"\x07")
+	if kept == nil {
+		t.Fatal("callback did not run")
 	}
-	if err := stream.AllowClipboard(false); err != nil {
-		t.Errorf("AllowClipboard() with nothing pending: %v", err)
+	if n, err := kept.ContentCount(); err != nil || n != 0 {
+		t.Errorf("ContentCount() after the callback = %d, %v; want 0, nil", n, err)
+	}
+	if name, err := kept.Name(); err != nil || len(name) != 0 {
+		t.Errorf("Name() after the callback = %q, %v; want empty, nil", name, err)
+	}
+	if err := kept.Allow(false); err != nil {
+		t.Errorf("Allow() with nothing pending: %v", err)
 	}
 }
 
@@ -163,14 +177,14 @@ func TestClipboardCallbackHandlesAreReleased(t *testing.T) {
 		defer stream.Close()
 
 		for i := 0; i < 5; i++ {
-			if err := stream.OnClipboardWriteRequest(func() {}); err != nil {
+			if err := stream.OnClipboardWriteRequest(func(*ClipboardRequest) {}); err != nil {
 				t.Fatalf("OnClipboardWriteRequest: %v", err)
 			}
 			if got, want := zigoActiveCallbackHandleCount(), before+1; got != want {
 				t.Fatalf("after %d registrations, %d handles live, want %d", i+1, got, want)
 			}
 		}
-		if err := stream.OnClipboardReadRequest(func() {}); err != nil {
+		if err := stream.OnClipboardReadRequest(func(*ClipboardRequest) {}); err != nil {
 			t.Fatalf("OnClipboardReadRequest: %v", err)
 		}
 		if got, want := zigoActiveCallbackHandleCount(), before+2; got != want {

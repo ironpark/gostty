@@ -5,30 +5,27 @@
 //! (a Kitty clipboard grant password). Both default to "unsupported": a PNG
 //! transmission is refused and a grant that needs a password fails.
 //!
-//! Each hook is answered the way a clipboard request is: the callback carries
-//! no payload, reads the pending request through the accessors, and replies
-//! before returning. A zigo callback signature is a raw C signature, so handing
-//! the bytes over directly would split every slice into a pointer and a length
-//! and leave a borrow in Go's hands.
+//! Each hook is answered from inside the callback, the way a clipboard request
+//! is: the callback receives the request and replies before returning.
 //!
-//! Bound as `root.sys.*`. The callback type stays at the root, because a zigo
-//! `.repr = .callback` entry names a type rather than a namespace.
+//! Bound as `root.sys.*`. The callback types stay at the root, because a zigo
+//! `.callback` entry names a type rather than a namespace.
 const std = @import("std");
 const vt = @import("ghostty_vt");
 
 const Allocator = std.mem.Allocator;
-const SysFn = @import("root.zig").SysFn;
+const root = @import("root.zig");
+const PngDecodeFn = root.PngDecodeFn;
+const SecureRandomFn = root.SecureRandomFn;
 
-var png_callback: ?SysFn = null;
+var png_callback: ?PngDecodeFn = null;
 var png_userdata: usize = 0;
-/// The PNG bytes of the request being answered, borrowed for the callback.
-var png_data: []const u8 = "";
 /// The allocator the decoded pixels must come from, set only while a request
 /// is pending. ghostty bounds it, so an oversized image fails the reply.
 var png_alloc: ?Allocator = null;
 var png_result: ?vt.sys.Image = null;
 
-var random_callback: ?SysFn = null;
+var random_callback: ?SecureRandomFn = null;
 var random_userdata: usize = 0;
 /// The buffer to fill, borrowed for the callback; empty when none is pending.
 var random_buffer: []u8 = &.{};
@@ -36,15 +33,13 @@ var random_filled: bool = false;
 
 fn decodePng(alloc: Allocator, data: []const u8) vt.sys.DecodeError!vt.sys.Image {
     const callback = png_callback orelse return error.InvalidData;
-    png_data = data;
     png_alloc = alloc;
     png_result = null;
     defer {
-        png_data = "";
         png_alloc = null;
         png_result = null;
     }
-    callback(data.len, png_userdata);
+    callback(data.ptr, data.len, png_userdata);
     return png_result orelse error.InvalidData;
 }
 
@@ -61,18 +56,10 @@ fn randomSecure(buffer: []u8) vt.sys.RandomSecureError!void {
 /// Kitty transmissions outright; with one, the image is decoded as it
 /// arrives and reaches `kittyImage` as `rgba`. Process-global, and read
 /// from whichever thread feeds a stream, so install it at startup.
-pub fn onPngDecodeRequest(callback: SysFn, userdata: usize) void {
+pub fn onPngDecodeRequest(callback: PngDecodeFn, userdata: usize) void {
     png_callback = callback;
     png_userdata = userdata;
     vt.sys.decode_png = &decodePng;
-}
-
-/// Copy the PNG bytes of the pending request into `dst` and return how many
-/// were written: all of them, or `dst.len` if shorter.
-pub fn pngRequestData(dst: []u8) usize {
-    const n = @min(dst.len, png_data.len);
-    @memcpy(dst[0..n], png_data[0..n]);
-    return n;
 }
 
 /// Answer the pending PNG request with decoded pixels, four bytes per pixel,
@@ -94,7 +81,7 @@ pub fn replyPngImage(width: u32, height: u32, rgba: []const u8) error{ NoPending
 /// fails rather than falling back to weaker randomness. Without one,
 /// ghostty draws from the platform through its own `std.Io`, so this is
 /// for embedders that want to control the source.
-pub fn onSecureRandomRequest(callback: SysFn, userdata: usize) void {
+pub fn onSecureRandomRequest(callback: SecureRandomFn, userdata: usize) void {
     random_callback = callback;
     random_userdata = userdata;
     vt.sys.random_secure = &randomSecure;

@@ -303,6 +303,8 @@ func zigoErrorForCode(operation string, code int32) error {
 		return &NativePanicError{Operation: operation, Message: raw.PanicMessage(code)}
 	}
 	switch code {
+	case -3:
+		return &Error{Code: -3, Name: "OmittedVariant", Operation: operation}
 	case 1:
 		return &Error{Code: 1, Name: "OutOfMemory", Operation: operation}
 	case 2:

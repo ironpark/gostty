@@ -43,11 +43,15 @@ pub fn freeString(gpa: Allocator, str: []const u8) void {
     gpa.free(str);
 }
 
-/// Answers a system request. `len` is the size of the request: the PNG's
-/// byte count, or how many random bytes are wanted. Returning without a
-/// reply fails the operation that needed it. `userdata` is last: that is
-/// where zigo expects the handle it passes back.
-pub const SysFn = *const fn (len: usize, userdata: usize) callconv(.c) void;
+/// Decodes the PNG bytes handed over. The callback answers with
+/// `sys.replyPngImage` before returning; returning without a reply fails the
+/// transmission. `userdata` is last: that is where zigo expects the handle it
+/// passes back.
+pub const PngDecodeFn = *const fn (data: [*]const u8, len: usize, userdata: usize) callconv(.c) void;
+
+/// Draws `len` bytes of secure entropy and answers with `sys.replySecureRandom`
+/// before returning; returning without a reply fails the operation.
+pub const SecureRandomFn = *const fn (len: usize, userdata: usize) callconv(.c) void;
 
 /// The hooks, grouped so that `clear` releases both callbacks at once. Bound
 /// as `root.sys.*`.
@@ -81,6 +85,7 @@ pub const ColorScheme = stream_.ColorScheme;
 pub const ClipboardLocation = stream_.ClipboardLocation;
 pub const ClipboardDenial = stream_.ClipboardDenial;
 pub const ClipboardFn = stream_.ClipboardFn;
+pub const ClipboardRequest = stream_.ClipboardRequest;
 pub const Stream = stream_.Stream;
 pub const newStream = stream_.newStream;
 pub const freeStream = stream_.freeStream;
@@ -110,10 +115,9 @@ pub const DragEvent = dnd_.DragEvent;
 pub const DragOperation = dnd_.DragOperation;
 pub const DragOperations = dnd_.DragOperations;
 pub const DragMove = dnd_.DragMove;
+pub const DragNotice = dnd_.DragNotice;
 pub const DragFn = dnd_.DragFn;
 pub const onDrag = dnd_.onDrag;
-pub const dragEvent = dnd_.dragEvent;
-pub const dragAccepted = dnd_.dragAccepted;
 pub const dragActive = dnd_.dragActive;
 pub const dragRegisteredMimes = dnd_.dragRegisteredMimes;
 pub const dragClientAccepted = dnd_.dragClientAccepted;
@@ -219,15 +223,6 @@ const encode_ = @import("encode.zig");
 pub const Key = encode_.Key;
 pub const KeyAction = encode_.KeyAction;
 pub const keyFromASCII = encode_.keyFromASCII;
-pub const keyCodepoint = encode_.keyCodepoint;
-pub const keyPrintable = encode_.keyPrintable;
-pub const keyModifier = encode_.keyModifier;
-pub const keyKeypad = encode_.keyKeypad;
-pub const keyLeftOrRightShift = encode_.keyLeftOrRightShift;
-pub const keyLeftOrRightAlt = encode_.keyLeftOrRightAlt;
-pub const keyCtrlOrSuper = encode_.keyCtrlOrSuper;
-pub const keyShouldBeRemappable = encode_.keyShouldBeRemappable;
-pub const keyW3C = encode_.keyW3C;
 pub const keyFromW3C = encode_.keyFromW3C;
 pub const FocusEvent = encode_.FocusEvent;
 pub const KeyMods = encode_.KeyMods;
@@ -356,7 +351,5 @@ pub const OSCTerminator = parser_.OSCTerminator;
 pub const SemanticPromptAction = parser_.SemanticPromptAction;
 pub const newOSCParser = parser_.newOSCParser;
 pub const freeOSCParser = parser_.freeOSCParser;
-pub const SgrAttributeTag = parser_.SgrAttributeTag;
-pub const SgrAttribute = parser_.SgrAttribute;
 pub const sgrAttributeCount = parser_.sgrAttributeCount;
-pub const sgrAttributes = parser_.sgrAttributes;
+pub const sgrAttributeAt = parser_.sgrAttributeAt;

@@ -14,22 +14,13 @@ func TestDragAndDrop(t *testing.T) {
 
 	type seen struct {
 		event       DragEvent
+		mimes       string
 		accepted    DragOperation
 		hasAccepted bool
 	}
 	var events []seen
-	if err := stream.OnDrag(func() {
-		ev, err := stream.DragEvent()
-		if err != nil {
-			t.Errorf("DragEvent: %v", err)
-			return
-		}
-		accepted, ok, err := stream.DragAccepted()
-		if err != nil {
-			t.Errorf("DragAccepted: %v", err)
-			return
-		}
-		events = append(events, seen{ev, accepted, ok})
+	if err := stream.OnDrag(func(n DragNotice, mimes string) {
+		events = append(events, seen{n.Event, mimes, n.Accepted, n.Answered})
 	}); err != nil {
 		t.Fatalf("OnDrag: %v", err)
 	}
@@ -50,6 +41,9 @@ func TestDragAndDrop(t *testing.T) {
 	feed(t, stream, "\x1b]72;t=a;image/png text/plain\x1b\\")
 	if len(events) != 1 || events[0].event != DragEventRegistration {
 		t.Fatalf("events after registration = %+v, want one registration", events)
+	}
+	if events[0].mimes != "image/png text/plain" {
+		t.Errorf("registration carried mimes %q, want the registered list", events[0].mimes)
 	}
 	if active, err := stream.DragActive(); err != nil || !active {
 		t.Fatalf("DragActive() after registration = %v, %v; want true", active, err)
@@ -120,6 +114,9 @@ func TestDragAndDrop(t *testing.T) {
 	feed(t, stream, "\x1b]72;t=A\x1b\\")
 	if len(events) != 1 || events[0].event != DragEventRegistration {
 		t.Fatalf("events after unregistration = %+v, want one registration", events)
+	}
+	if events[0].mimes != "" {
+		t.Errorf("unregistration carried mimes %q, want none", events[0].mimes)
 	}
 	if active, err := stream.DragActive(); err != nil || active {
 		t.Errorf("DragActive() after unregistration = %v, %v; want false", active, err)

@@ -239,24 +239,24 @@ func TestOSCParserGarbage(t *testing.T) {
 	}
 }
 
-func parseSGR(t *testing.T, params []uint16, colonMask uint32) []SgrAttribute {
+func parseSGR(t *testing.T, params []uint16, colonMask uint32) []Attribute {
 	t.Helper()
 	n, err := SgrAttributeCount(params, colonMask)
 	if err != nil {
 		t.Fatalf("SgrAttributeCount(%v): %v", params, err)
 	}
-	out := make([]SgrAttribute, n)
-	written, err := SgrAttributes(params, colonMask, out)
-	if err != nil {
-		t.Fatalf("SgrAttributes(%v): %v", params, err)
-	}
-	if written != n {
-		t.Fatalf("SgrAttributes wrote %d attributes, want the %d SgrAttributeCount promised", written, n)
+	out := make([]Attribute, n)
+	for i := range out {
+		attr, err := SgrAttributeAt(params, colonMask, uint(i))
+		if err != nil {
+			t.Fatalf("SgrAttributeAt(%v, %d): %v", params, i, err)
+		}
+		out[i] = attr
 	}
 	return out
 }
 
-func expectSGR(t *testing.T, got []SgrAttribute, want ...SgrAttribute) {
+func expectSGR(t *testing.T, got []Attribute, want ...Attribute) {
 	t.Helper()
 	if len(got) != len(want) {
 		t.Fatalf("parsed %d attributes (%v), want %d (%v)", len(got), got, len(want), want)
@@ -270,77 +270,68 @@ func expectSGR(t *testing.T, got []SgrAttribute, want ...SgrAttribute) {
 
 // An empty parameter list is the SGR reset.
 func TestSGREmptyIsUnset(t *testing.T) {
-	expectSGR(t, parseSGR(t, nil, 0), SgrAttribute{Tag: SgrAttributeTagUnset})
+	expectSGR(t, parseSGR(t, nil, 0), AttributeUnset())
 }
 
 func TestSGRSimpleAttributes(t *testing.T) {
 	// CSI 1;3;4;7 m
 	expectSGR(t, parseSGR(t, []uint16{1, 3, 4, 7}, 0),
-		SgrAttribute{Tag: SgrAttributeTagBold},
-		SgrAttribute{Tag: SgrAttributeTagItalic},
-		SgrAttribute{Tag: SgrAttributeTagUnderline, Value: uint32(UnderlineSingle)},
-		SgrAttribute{Tag: SgrAttributeTagInverse},
+		AttributeBold(),
+		AttributeItalic(),
+		AttributeUnderline(UnderlineSingle),
+		AttributeInverse(),
 	)
 }
 
 func TestSGRNamedAndPaletteColors(t *testing.T) {
 	// CSI 31;42;91;5 m -- the last is blink, not a colour.
 	expectSGR(t, parseSGR(t, []uint16{31, 42, 91, 5}, 0),
-		SgrAttribute{Tag: SgrAttributeTagNamedFg, Value: uint32(ColorNameRed)},
-		SgrAttribute{Tag: SgrAttributeTagNamedBg, Value: uint32(ColorNameGreen)},
-		SgrAttribute{Tag: SgrAttributeTagBrightNamedFg, Value: uint32(ColorNameBrightRed)},
-		SgrAttribute{Tag: SgrAttributeTagBlink},
+		AttributeNamedFg(ColorNameRed),
+		AttributeNamedBg(ColorNameGreen),
+		AttributeBrightNamedFg(ColorNameBrightRed),
+		AttributeBlink(),
 	)
 
 	// CSI 38;5;200 m and CSI 48;5;17 m
-	expectSGR(t, parseSGR(t, []uint16{38, 5, 200}, 0),
-		SgrAttribute{Tag: SgrAttributeTagColor256Fg, Value: 200})
-	expectSGR(t, parseSGR(t, []uint16{48, 5, 17}, 0),
-		SgrAttribute{Tag: SgrAttributeTagColor256Bg, Value: 17})
+	expectSGR(t, parseSGR(t, []uint16{38, 5, 200}, 0), AttributeColor256Fg(200))
+	expectSGR(t, parseSGR(t, []uint16{48, 5, 17}, 0), AttributeColor256Bg(17))
 }
 
 // 4;3 is two attributes; 4:3 is one curly underline. The colon mask is what
 // tells them apart.
 func TestSGRColonUnderlineStyle(t *testing.T) {
 	expectSGR(t, parseSGR(t, []uint16{4, 3}, 0),
-		SgrAttribute{Tag: SgrAttributeTagUnderline, Value: uint32(UnderlineSingle)},
-		SgrAttribute{Tag: SgrAttributeTagItalic},
+		AttributeUnderline(UnderlineSingle),
+		AttributeItalic(),
 	)
 
 	// Parameter 0 is followed by a colon.
-	expectSGR(t, parseSGR(t, []uint16{4, 3}, 1<<0),
-		SgrAttribute{Tag: SgrAttributeTagUnderline, Value: uint32(UnderlineCurly)})
-	expectSGR(t, parseSGR(t, []uint16{4, 0}, 1<<0),
-		SgrAttribute{Tag: SgrAttributeTagUnderline, Value: uint32(UnderlineNone)})
-	expectSGR(t, parseSGR(t, []uint16{4, 5}, 1<<0),
-		SgrAttribute{Tag: SgrAttributeTagUnderline, Value: uint32(UnderlineDashed)})
+	expectSGR(t, parseSGR(t, []uint16{4, 3}, 1<<0), AttributeUnderline(UnderlineCurly))
+	expectSGR(t, parseSGR(t, []uint16{4, 0}, 1<<0), AttributeUnderline(UnderlineNone))
+	expectSGR(t, parseSGR(t, []uint16{4, 5}, 1<<0), AttributeUnderline(UnderlineDashed))
 }
 
 func TestSGRTruecolor(t *testing.T) {
 	const orange = uint32(0xFF8800)
 
 	// Semicolon form: CSI 38;2;255;136;0 m
-	expectSGR(t, parseSGR(t, []uint16{38, 2, 255, 136, 0}, 0),
-		SgrAttribute{Tag: SgrAttributeTagDirectColorFg, Value: orange})
-	expectSGR(t, parseSGR(t, []uint16{48, 2, 255, 136, 0}, 0),
-		SgrAttribute{Tag: SgrAttributeTagDirectColorBg, Value: orange})
+	expectSGR(t, parseSGR(t, []uint16{38, 2, 255, 136, 0}, 0), AttributeDirectColorFg(orange))
+	expectSGR(t, parseSGR(t, []uint16{48, 2, 255, 136, 0}, 0), AttributeDirectColorBg(orange))
 
 	// Colon form with the colour-space id: CSI 38:2::255:136:0 m. Every
 	// parameter but the last is followed by a colon.
-	expectSGR(t, parseSGR(t, []uint16{38, 2, 0, 255, 136, 0}, 0b011111),
-		SgrAttribute{Tag: SgrAttributeTagDirectColorFg, Value: orange})
+	expectSGR(t, parseSGR(t, []uint16{38, 2, 0, 255, 136, 0}, 0b011111), AttributeDirectColorFg(orange))
 
 	// Underline colour: CSI 58:2::255:136:0 m
-	expectSGR(t, parseSGR(t, []uint16{58, 2, 0, 255, 136, 0}, 0b011111),
-		SgrAttribute{Tag: SgrAttributeTagUnderlineColorRgb, Value: orange})
+	expectSGR(t, parseSGR(t, []uint16{58, 2, 0, 255, 136, 0}, 0b011111), AttributeUnderlineColorRgb(orange))
 }
 
 func TestSGRResets(t *testing.T) {
 	expectSGR(t, parseSGR(t, []uint16{0, 22, 39, 49}, 0),
-		SgrAttribute{Tag: SgrAttributeTagUnset},
-		SgrAttribute{Tag: SgrAttributeTagResetBold},
-		SgrAttribute{Tag: SgrAttributeTagResetFg},
-		SgrAttribute{Tag: SgrAttributeTagResetBg},
+		AttributeUnset(),
+		AttributeResetBold(),
+		AttributeResetFg(),
+		AttributeResetBg(),
 	)
 }
 
@@ -348,23 +339,21 @@ func TestSGRResets(t *testing.T) {
 // attributes still line up with the sequence as written.
 func TestSGRUnknown(t *testing.T) {
 	expectSGR(t, parseSGR(t, []uint16{1, 1234, 3}, 0),
-		SgrAttribute{Tag: SgrAttributeTagBold},
-		SgrAttribute{Tag: SgrAttributeTagUnknown},
-		SgrAttribute{Tag: SgrAttributeTagItalic},
+		AttributeBold(),
+		AttributeUnknown(),
+		AttributeItalic(),
 	)
 }
 
-// The tags are Attribute's own, in Attribute's order, so the constructor named
-// after a tag rebuilds the attribute the parser saw.
-func TestSGRRebuildsAttribute(t *testing.T) {
+// The parser hands back the same Attribute SetAttribute takes, payload
+// included, so what it saw applies as it is.
+func TestSGRAttributeApplies(t *testing.T) {
 	got := parseSGR(t, []uint16{38, 5, 200}, 0)
-	attr := AttributeColor256Fg(uint8(got[0].Value))
-	if uint8(attr.Tag()) != uint8(got[0].Tag) {
-		t.Fatalf("Attribute tag = %v, SGR tag = %v", attr.Tag(), got[0].Tag)
+	if idx, ok := got[0].AsColor256Fg(); !ok || idx != 200 {
+		t.Fatalf("AsColor256Fg() = %d, %v; want 200, true", idx, ok)
 	}
-
 	term := newTerm(t, 10, 2)
-	if err := term.SetAttribute(attr); err != nil {
+	if err := term.SetAttribute(got[0]); err != nil {
 		t.Fatalf("SetAttribute: %v", err)
 	}
 }
@@ -380,10 +369,16 @@ func TestSGRTooManyParams(t *testing.T) {
 	}
 }
 
-// A destination shorter than the sequence is an error rather than a silent
-// truncation, so a caller cannot mistake a partial list for the whole one.
-func TestSGRDestinationTooShort(t *testing.T) {
-	if _, err := SgrAttributes([]uint16{1, 3, 4}, 0, make([]SgrAttribute, 2)); err == nil {
-		t.Fatal("SgrAttributes accepted a destination shorter than the parameter list")
+// An index past the count, or a list the count refuses, yields unknown: a
+// tagged union cannot travel with an error, and the count is where the list is
+// validated.
+func TestSGRAttributeAtOutOfRange(t *testing.T) {
+	attr, err := SgrAttributeAt([]uint16{1, 3, 4}, 0, 3)
+	if err != nil || attr != AttributeUnknown() {
+		t.Fatalf("SgrAttributeAt past the end = %v, %v; want unknown", attr, err)
+	}
+	attr, err = SgrAttributeAt(make([]uint16, 25), 0, 0)
+	if err != nil || attr != AttributeUnknown() {
+		t.Fatalf("SgrAttributeAt on a refused list = %v, %v; want unknown", attr, err)
 	}
 }
