@@ -3,6 +3,8 @@
 package input
 
 import (
+	"fmt"
+	"strings"
 	"unsafe"
 
 	"github.com/ironpark/gostty/internal/raw"
@@ -46,6 +48,38 @@ func KeyModsFromBacking(value uint8) KeyMods {
 		Padding:  uint8(((uint64(value) >> 6) & 0x3)),
 	}
 }
+
+// String names the set members of KeyMods, joined by "|". A member left at
+// its zero value is not named, so the zero KeyMods is "none".
+func (value KeyMods) String() string {
+	var parts []string
+	if value.Shift {
+		parts = append(parts, "Shift")
+	}
+	if value.Ctrl {
+		parts = append(parts, "Ctrl")
+	}
+	if value.Alt {
+		parts = append(parts, "Alt")
+	}
+	if value.Super {
+		parts = append(parts, "Super")
+	}
+	if value.CapsLock {
+		parts = append(parts, "CapsLock")
+	}
+	if value.NumLock {
+		parts = append(parts, "NumLock")
+	}
+	if len(parts) == 0 {
+		return "none"
+	}
+	return strings.Join(parts, "|")
+}
+
+// KeyMods satisfies fmt.Stringer as a value, which is the form `%v` is
+// handed; a pointer receiver would stop this compiling.
+var _ fmt.Stringer = KeyMods{}
 
 // KeyEvent mirrors the Zig `extern struct` of the same name.
 type KeyEvent struct {

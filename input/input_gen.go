@@ -11,134 +11,6 @@ import (
 	"github.com/ironpark/gostty/internal/raw"
 )
 
-// EncodeKey: Encode a key event for `terminal`, whose modes decide the encoding. `utf8`
-// is the text the key produced, empty when it produced none.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func EncodeKey(writer io.Writer, terminal *zigo_default.Terminal, event KeyEvent, utf8 string) error {
-	if writer == nil {
-		return &StreamError{Operation: "EncodeKey", Parameter: "writer", Err: ErrNilStream}
-	}
-	terminalPtr, err := zigoCheckedPointer("EncodeKey parameter terminal", terminal)
-	if err != nil {
-		return err
-	}
-	defer lifecycle.Release(terminal)
-	writerHandle := zigoNewWriterStreamHandle(writer)
-	defer zigoDeleteCallbackHandle(writerHandle)
-	code := raw.EncodeKey(uintptr(writerHandle), terminalPtr, zigoKeyEventToRaw(event), utf8)
-	if zigoCallbackPanicPending() {
-		zigoRethrowCallbackPanic("EncodeKey", writerHandle)
-	}
-	if err := zigoStreamError("EncodeKey", "writer", writerHandle); err != nil {
-		return err
-	}
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("EncodeKey", code), terminal)
-	}
-	return nil
-}
-
-// EncodeMouse: Encode a mouse event for `terminal`, whose reporting mode and format decide
-// whether anything is written at all.
-//
-// `any_button_pressed` should include this event, so a press reports true.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func EncodeMouse(writer io.Writer, terminal *zigo_default.Terminal, event MouseEvent, size RenderSize, anyButtonPressed bool) error {
-	if writer == nil {
-		return &StreamError{Operation: "EncodeMouse", Parameter: "writer", Err: ErrNilStream}
-	}
-	terminalPtr, err := zigoCheckedPointer("EncodeMouse parameter terminal", terminal)
-	if err != nil {
-		return err
-	}
-	defer lifecycle.Release(terminal)
-	writerHandle := zigoNewWriterStreamHandle(writer)
-	defer zigoDeleteCallbackHandle(writerHandle)
-	code := raw.EncodeMouse(uintptr(writerHandle), terminalPtr, zigoMouseEventToRaw(event), zigoRenderSizeToRaw(size), zigoBoolToUint8(anyButtonPressed))
-	if zigoCallbackPanicPending() {
-		zigoRethrowCallbackPanic("EncodeMouse", writerHandle)
-	}
-	if err := zigoStreamError("EncodeMouse", "writer", writerHandle); err != nil {
-		return err
-	}
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("EncodeMouse", code), terminal)
-	}
-	return nil
-}
-
-// KeyFromAscii: The key for a printable ASCII byte, or null if none maps to it.
-func KeyFromAscii(ch uint8) (Key, bool) {
-	zigoResult, zigoHas := raw.KeyFromAscii(ch)
-	return Key(zigoResult), zigoHas
-}
-
-// KeyFromW3C: The key a W3C `KeyboardEvent.code` name selects, or null if none does.
-// For an embedder mapping browser or Electron key events onto the enum.
-func KeyFromW3C(w3cCode string) (Key, bool) {
-	zigoResult, zigoHas := raw.KeyFromW3C(w3cCode)
-	return Key(zigoResult), zigoHas
-}
-
-// EncodeFocus calls the Zig function encodeFocus.
-// Native failures are returned as generated error values.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func EncodeFocus(writer io.Writer, event FocusEvent) error {
-	if writer == nil {
-		return &StreamError{Operation: "EncodeFocus", Parameter: "writer", Err: ErrNilStream}
-	}
-	writerHandle := zigoNewWriterStreamHandle(writer)
-	defer zigoDeleteCallbackHandle(writerHandle)
-	code := raw.InputEncodeFocus(uintptr(writerHandle), uint8(event))
-	if zigoCallbackPanicPending() {
-		zigoRethrowCallbackPanic("EncodeFocus", writerHandle)
-	}
-	if err := zigoStreamError("EncodeFocus", "writer", writerHandle); err != nil {
-		return err
-	}
-	if code != 0 {
-		return zigoErrorForCode("EncodeFocus", code)
-	}
-	return nil
-}
-
-// IsSafePaste calls the Zig function isSafePaste.
-func IsSafePaste(data []byte) bool {
-	return raw.InputIsSafePaste(data) != 0
-}
-
-// EncodePaste: Encode `data` for pasting into `terminal`, respecting bracketed paste mode.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func EncodePaste(writer io.Writer, terminal *zigo_default.Terminal, data []byte) error {
-	if writer == nil {
-		return &StreamError{Operation: "EncodePaste", Parameter: "writer", Err: ErrNilStream}
-	}
-	terminalPtr, err := zigoCheckedPointer("EncodePaste parameter terminal", terminal)
-	if err != nil {
-		return err
-	}
-	defer lifecycle.Release(terminal)
-	writerHandle := zigoNewWriterStreamHandle(writer)
-	defer zigoDeleteCallbackHandle(writerHandle)
-	code := raw.EncodePaste(uintptr(writerHandle), terminalPtr, data)
-	if zigoCallbackPanicPending() {
-		zigoRethrowCallbackPanic("EncodePaste", writerHandle)
-	}
-	if err := zigoStreamError("EncodePaste", "writer", writerHandle); err != nil {
-		return err
-	}
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("EncodePaste", code), terminal)
-	}
-	return nil
-}
-
 // Codepoint: Returns the codepoint representing this key, or null if the key is not
 // printable
 func (k Key) Codepoint() (rune, bool) {
@@ -203,4 +75,143 @@ func (k Key) ShouldBeRemappable() bool {
 // W3C: Converts a Ghostty key enum value to a W3C key code.
 func (k Key) W3C() string {
 	return raw.KeyW3C(int32(k))
+}
+
+// EncodeKey: Encode a key event for `terminal`, whose modes decide the encoding. `utf8`
+// is the text the key produced, empty when it produced none.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func EncodeKey(writer io.Writer, terminal *zigo_default.Terminal, event KeyEvent, utf8 string) error {
+	if writer == nil {
+		return &StreamError{Operation: "EncodeKey", Parameter: "writer", Err: ErrNilStream}
+	}
+	terminalPtr, err := zigoCheckedPointer("EncodeKey parameter terminal", terminal)
+	if err != nil {
+		return err
+	}
+	defer lifecycle.Release(terminal)
+	writerHandle := zigoNewWriterStreamHandle(writer)
+	defer zigoDeleteCallbackHandle(writerHandle)
+	code := raw.EncodeKey(uintptr(writerHandle), terminalPtr, zigoKeyEventToRaw(event), utf8)
+	if zigoCallbackPanicPending() {
+		zigoRethrowCallbackPanic("EncodeKey", writerHandle)
+	}
+	if err := zigoStreamError("EncodeKey", "writer", writerHandle); err != nil {
+		return err
+	}
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("EncodeKey", code), terminal)
+	}
+	return nil
+}
+
+// EncodeMouse: Encode a mouse event for `terminal`, whose reporting mode and format decide
+// whether anything is written at all.
+//
+// `any_button_pressed` should include this event, so a press reports true.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func EncodeMouse(writer io.Writer, terminal *zigo_default.Terminal, event MouseEvent, size RenderSize, anyButtonPressed bool) error {
+	if writer == nil {
+		return &StreamError{Operation: "EncodeMouse", Parameter: "writer", Err: ErrNilStream}
+	}
+	terminalPtr, err := zigoCheckedPointer("EncodeMouse parameter terminal", terminal)
+	if err != nil {
+		return err
+	}
+	defer lifecycle.Release(terminal)
+	writerHandle := zigoNewWriterStreamHandle(writer)
+	defer zigoDeleteCallbackHandle(writerHandle)
+	code := raw.EncodeMouse(uintptr(writerHandle), terminalPtr, zigoMouseEventToRaw(event), zigoRenderSizeToRaw(size), zigoBoolToUint8(anyButtonPressed))
+	if zigoCallbackPanicPending() {
+		zigoRethrowCallbackPanic("EncodeMouse", writerHandle)
+	}
+	if err := zigoStreamError("EncodeMouse", "writer", writerHandle); err != nil {
+		return err
+	}
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("EncodeMouse", code), terminal)
+	}
+	return nil
+}
+
+// KeyFromAscii: Converts an ASCII character to a key, if possible. This returns
+// null if the character is unknown.
+//
+// Note that this can't distinguish between physical keys, i.e. '0'
+// may be from the number row or the keypad, but it always maps
+// to '.zero'.
+//
+// This is what we want, we want people to create keybindings that
+// are independent of the physical key.
+func KeyFromAscii(ch uint8) (Key, bool) {
+	zigoResult, zigoHas := raw.KeyKeyFromAscii(ch)
+	return Key(zigoResult), zigoHas
+}
+
+// KeyFromW3C: Converts a W3C key code to a Ghostty key enum value.
+//
+// All required W3C key codes are supported, but there are a number of
+// non-standard key codes that are not supported. In the case the value is
+// invalid or unsupported, this function will return null.
+func KeyFromW3C(w3cCode string) (Key, bool) {
+	zigoResult, zigoHas := raw.KeyKeyFromW3C(w3cCode)
+	return Key(zigoResult), zigoHas
+}
+
+// EncodeFocus calls the Zig function encodeFocus.
+// Native failures are returned as generated error values.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func EncodeFocus(writer io.Writer, event FocusEvent) error {
+	if writer == nil {
+		return &StreamError{Operation: "EncodeFocus", Parameter: "writer", Err: ErrNilStream}
+	}
+	writerHandle := zigoNewWriterStreamHandle(writer)
+	defer zigoDeleteCallbackHandle(writerHandle)
+	code := raw.InputEncodeFocus(uintptr(writerHandle), uint8(event))
+	if zigoCallbackPanicPending() {
+		zigoRethrowCallbackPanic("EncodeFocus", writerHandle)
+	}
+	if err := zigoStreamError("EncodeFocus", "writer", writerHandle); err != nil {
+		return err
+	}
+	if code != 0 {
+		return zigoErrorForCode("EncodeFocus", code)
+	}
+	return nil
+}
+
+// IsSafePaste calls the Zig function isSafePaste.
+func IsSafePaste(data []byte) bool {
+	return raw.InputIsSafePaste(data) != 0
+}
+
+// EncodePaste: Encode `data` for pasting into `terminal`, respecting bracketed paste mode.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func EncodePaste(writer io.Writer, terminal *zigo_default.Terminal, data []byte) error {
+	if writer == nil {
+		return &StreamError{Operation: "EncodePaste", Parameter: "writer", Err: ErrNilStream}
+	}
+	terminalPtr, err := zigoCheckedPointer("EncodePaste parameter terminal", terminal)
+	if err != nil {
+		return err
+	}
+	defer lifecycle.Release(terminal)
+	writerHandle := zigoNewWriterStreamHandle(writer)
+	defer zigoDeleteCallbackHandle(writerHandle)
+	code := raw.EncodePaste(uintptr(writerHandle), terminalPtr, data)
+	if zigoCallbackPanicPending() {
+		zigoRethrowCallbackPanic("EncodePaste", writerHandle)
+	}
+	if err := zigoStreamError("EncodePaste", "writer", writerHandle); err != nil {
+		return err
+	}
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("EncodePaste", code), terminal)
+	}
+	return nil
 }

@@ -222,8 +222,6 @@ const encode_ = @import("encode.zig");
 
 pub const Key = encode_.Key;
 pub const KeyAction = encode_.KeyAction;
-pub const keyFromASCII = encode_.keyFromASCII;
-pub const keyFromW3C = encode_.keyFromW3C;
 pub const FocusEvent = encode_.FocusEvent;
 pub const KeyMods = encode_.KeyMods;
 pub const KeyEvent = encode_.KeyEvent;
@@ -296,8 +294,6 @@ pub const gestureAutoscrollTick = gesture_.gestureAutoscrollTick;
 pub const gestureDeepPress = gesture_.gestureDeepPress;
 pub const gestureRelease = gesture_.gestureRelease;
 pub const gestureReset = gesture_.gestureReset;
-pub const gestureClickCount = gesture_.gestureClickCount;
-pub const gestureDragged = gesture_.gestureDragged;
 
 // Tracked cell references.
 const gridref_ = @import("gridref.zig");
@@ -322,10 +318,7 @@ const state_ = @import("state.zig");
 pub const ScrollRegion = state_.ScrollRegion;
 pub const scrollRegion = state_.scrollRegion;
 pub const charset = state_.charset;
-pub const charsetGL = state_.charsetGL;
-pub const charsetGR = state_.charsetGR;
 pub const charsetSingleShift = state_.charsetSingleShift;
-pub const protectedMode = state_.protectedMode;
 pub const MouseTracking = state_.MouseTracking;
 pub const mouseTracking = state_.mouseTracking;
 pub const mouseTrackingSendsMotion = state_.mouseTrackingSendsMotion;

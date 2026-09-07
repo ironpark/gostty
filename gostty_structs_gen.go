@@ -3,6 +3,8 @@
 package gostty
 
 import (
+	"fmt"
+	"strings"
 	"unsafe"
 
 	"github.com/ironpark/gostty/internal/raw"
@@ -35,6 +37,26 @@ func DragOperationsFromBacking(value uint8) DragOperations {
 	}
 }
 
+// String names the set members of DragOperations, joined by "|". A member left at
+// its zero value is not named, so the zero DragOperations is "none".
+func (value DragOperations) String() string {
+	var parts []string
+	if value.Copy {
+		parts = append(parts, "Copy")
+	}
+	if value.Move {
+		parts = append(parts, "Move")
+	}
+	if len(parts) == 0 {
+		return "none"
+	}
+	return strings.Join(parts, "|")
+}
+
+// DragOperations satisfies fmt.Stringer as a value, which is the form `%v` is
+// handed; a pointer receiver would stop this compiling.
+var _ fmt.Stringer = DragOperations{}
+
 // DragNotice mirrors the Zig packed struct of the same name.
 type DragNotice struct {
 	Event    DragEvent
@@ -64,6 +86,29 @@ func DragNoticeFromBacking(value uint32) DragNotice {
 		Pad:      uint16(((uint64(value) >> 17) & 0x7fff)),
 	}
 }
+
+// String names the set members of DragNotice, joined by "|". A member left at
+// its zero value is not named, so the zero DragNotice is "none".
+func (value DragNotice) String() string {
+	var parts []string
+	if value.Event != 0 {
+		parts = append(parts, fmt.Sprintf("Event:%v", value.Event))
+	}
+	if value.Accepted != 0 {
+		parts = append(parts, fmt.Sprintf("Accepted:%v", value.Accepted))
+	}
+	if value.Answered {
+		parts = append(parts, "Answered")
+	}
+	if len(parts) == 0 {
+		return "none"
+	}
+	return strings.Join(parts, "|")
+}
+
+// DragNotice satisfies fmt.Stringer as a value, which is the form `%v` is
+// handed; a pointer receiver would stop this compiling.
+var _ fmt.Stringer = DragNotice{}
 
 // CellFlags mirrors the Zig packed struct of the same name.
 type CellFlags struct {
@@ -119,6 +164,53 @@ func CellFlagsFromBacking(value uint32) CellFlags {
 	}
 }
 
+// String names the set members of CellFlags, joined by "|". A member left at
+// its zero value is not named, so the zero CellFlags is "none".
+func (value CellFlags) String() string {
+	var parts []string
+	if value.Bold {
+		parts = append(parts, "Bold")
+	}
+	if value.Italic {
+		parts = append(parts, "Italic")
+	}
+	if value.Faint {
+		parts = append(parts, "Faint")
+	}
+	if value.Blink {
+		parts = append(parts, "Blink")
+	}
+	if value.Inverse {
+		parts = append(parts, "Inverse")
+	}
+	if value.Invisible {
+		parts = append(parts, "Invisible")
+	}
+	if value.Strikethrough {
+		parts = append(parts, "Strikethrough")
+	}
+	if value.Overline {
+		parts = append(parts, "Overline")
+	}
+	if value.Underline != 0 {
+		parts = append(parts, fmt.Sprintf("Underline:%v", value.Underline))
+	}
+	if value.Wide != 0 {
+		parts = append(parts, fmt.Sprintf("Wide:%v", value.Wide))
+	}
+	if value.Selected {
+		parts = append(parts, "Selected")
+	}
+	if len(parts) == 0 {
+		return "none"
+	}
+	return strings.Join(parts, "|")
+}
+
+// CellFlags satisfies fmt.Stringer as a value, which is the form `%v` is
+// handed; a pointer receiver would stop this compiling.
+var _ fmt.Stringer = CellFlags{}
+
 // GridPoint mirrors the Zig `extern struct` of the same name.
 type GridPoint struct {
 	// X corresponds to the Zig field x.
@@ -132,6 +224,15 @@ type GridPoint struct {
 var _ = [1]struct{}{}[unsafe.Sizeof(GridPoint{})-unsafe.Sizeof(raw.GridPointData{})]
 var _ = [1]struct{}{}[unsafe.Offsetof(GridPoint{}.X)-unsafe.Offsetof(raw.GridPointData{}.X)]
 var _ = [1]struct{}{}[unsafe.Offsetof(GridPoint{}.Y)-unsafe.Offsetof(raw.GridPointData{}.Y)]
+
+// String renders GridPoint as its type name and its fields.
+func (value GridPoint) String() string {
+	return fmt.Sprintf("GridPoint{X:%v, Y:%v}", value.X, value.Y)
+}
+
+// GridPoint satisfies fmt.Stringer as a value, which is the form `%v` is
+// handed; a pointer receiver would stop this compiling.
+var _ fmt.Stringer = GridPoint{}
 
 // SnapshotProgress mirrors the Zig `extern struct` of the same name.
 type SnapshotProgress struct {
@@ -163,6 +264,15 @@ type Selection struct {
 	// Rectangle corresponds to the Zig field rectangle.
 	Rectangle bool
 }
+
+// String renders Selection as its type name and its fields.
+func (value Selection) String() string {
+	return fmt.Sprintf("Selection{StartX:%v, StartY:%v, EndX:%v, EndY:%v, Rectangle:%v}", value.StartX, value.StartY, value.EndX, value.EndY, value.Rectangle)
+}
+
+// Selection satisfies fmt.Stringer as a value, which is the form `%v` is
+// handed; a pointer receiver would stop this compiling.
+var _ fmt.Stringer = Selection{}
 
 // FormatOptions mirrors the Zig `extern struct` of the same name.
 type FormatOptions struct {
@@ -313,6 +423,15 @@ var _ = [1]struct{}{}[unsafe.Offsetof(ScrollRegion{}.Top)-unsafe.Offsetof(raw.Sc
 var _ = [1]struct{}{}[unsafe.Offsetof(ScrollRegion{}.Bottom)-unsafe.Offsetof(raw.ScrollRegionData{}.Bottom)]
 var _ = [1]struct{}{}[unsafe.Offsetof(ScrollRegion{}.Left)-unsafe.Offsetof(raw.ScrollRegionData{}.Left)]
 var _ = [1]struct{}{}[unsafe.Offsetof(ScrollRegion{}.Right)-unsafe.Offsetof(raw.ScrollRegionData{}.Right)]
+
+// String renders ScrollRegion as its type name and its fields.
+func (value ScrollRegion) String() string {
+	return fmt.Sprintf("ScrollRegion{Top:%v, Bottom:%v, Left:%v, Right:%v}", value.Top, value.Bottom, value.Left, value.Right)
+}
+
+// ScrollRegion satisfies fmt.Stringer as a value, which is the form `%v` is
+// handed; a pointer receiver would stop this compiling.
+var _ fmt.Stringer = ScrollRegion{}
 
 // GestureGeometry mirrors the Zig `extern struct` of the same name.
 type GestureGeometry struct {

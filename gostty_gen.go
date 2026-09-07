@@ -224,6 +224,57 @@ func (te *Terminal) PasswordInput() (bool, error) {
 	return result != 0, nil
 }
 
+// CharsetGl: The slot GL resolves to: the set used for codepoints up to 127.
+// Zig field: Terminal.screens.active.charset.gl.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) CharsetGl() (CharsetSlot, error) {
+	ptr, err := zigoCheckedPointer("Terminal.CharsetGl receiver", te)
+	if err != nil {
+		return 0, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalCharsetGl(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CharsetGl", code), te)
+	}
+	return CharsetSlot(result), nil
+}
+
+// CharsetGr: The slot GR resolves to: the set used for 8-bit printable codepoints.
+// Zig field: Terminal.screens.active.charset.gr.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) CharsetGr() (CharsetSlot, error) {
+	ptr, err := zigoCheckedPointer("Terminal.CharsetGr receiver", te)
+	if err != nil {
+		return 0, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalCharsetGr(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CharsetGr", code), te)
+	}
+	return CharsetSlot(result), nil
+}
+
+// ProtectedMode: The most recent protected mode (DECSCA or the older SPA/EPA) on the active screen. This never returns to off once set, until the screen is reset: ECH and friends key off the most recent mode, not the current pen.
+// Zig field: Terminal.screens.active.protected_mode.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) ProtectedMode() (ProtectedMode, error) {
+	ptr, err := zigoCheckedPointer("Terminal.ProtectedMode receiver", te)
+	if err != nil {
+		return 0, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalProtectedMode(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ProtectedMode", code), te)
+	}
+	return ProtectedMode(result), nil
+}
+
 // Failed: True once a sequence failed in a way the terminal could not absorb, such as an allocation failure. Streams are best-effort and keep going.
 // Zig field: Stream.inner.handler.semantic_failure.
 // It returns *HandleError if a required handle is nil or closed.
@@ -361,43 +412,38 @@ func (k *KittyImages) Generation() (uint64, error) {
 	return result, nil
 }
 
-// CodepointWidth: Returns the terminal display width of a codepoint in terminal
-// grid cells: 0, 1, or 2.
-//
-// This is the same width table the terminal uses when laying out
-// printed text: 0 for zero-width codepoints (controls, combining
-// marks, default-ignorables, surrogates), 2 for wide codepoints
-// (East Asian Wide/Fullwidth, regional indicators, clamped at 2),
-// and 1 otherwise.
-//
-// This operates on a single codepoint and cannot account for
-// grapheme-cluster-level width rules (VS16, combining sequences);
-// callers needing cluster-accurate widths should use graphemeWidth().
-// Summing per-codepoint widths is only correct when mode 2027 is
-// disabled.
+// ClickCount: How many clicks the current sequence is at: 0 before any press, then 1, 2 or 3. What an emulator switches on to decide what a click means.
+// Zig field: Gesture.inner.left_click_count.
+// It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-func CodepointWidth(cp rune) (uint8, error) {
-	if cp < 0 || cp > 1114111 {
-		return 0, &RangeError{Operation: "CodepointWidth", Parameter: "cp", Type: "codepoint"}
+func (g *Gesture) ClickCount() (uint8, error) {
+	ptr, err := zigoCheckedPointer("Gesture.ClickCount receiver", g)
+	if err != nil {
+		return 0, err
 	}
-	result, code := raw.UnicodeCodepointWidth(uint32(cp))
+	defer g.zigoRelease()
+	result, code := raw.GestureClickCount(ptr)
 	if code != 0 {
-		return 0, zigoErrorForCode("CodepointWidth", code)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Gesture.ClickCount", code), g)
 	}
 	return result, nil
 }
 
-// GraphemeWidth: The display width of a grapheme cluster given as codepoints.
-//
-// Wrapped because `vt.unicode.graphemeWidth` is generic over the codepoint
-// integer type, and a generic function has no signature to bind.
-func GraphemeWidth(cps []rune) (uint8, error) {
-	for _, zigoValue := range cps {
-		if zigoValue < 0 || zigoValue > 1114111 {
-			return 0, &RangeError{Operation: "GraphemeWidth", Parameter: "cps", Type: "codepoint"}
-		}
+// Dragged: Whether the pointer has left the pressed cell during this gesture. Read it on release: a click that never dragged is the one that should follow a hyperlink or move the shell cursor, rather than one that happened to end where it started after a round trip.
+// Zig field: Gesture.inner.left_click_dragged.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (g *Gesture) Dragged() (bool, error) {
+	ptr, err := zigoCheckedPointer("Gesture.Dragged receiver", g)
+	if err != nil {
+		return false, err
 	}
-	return raw.GraphemeWidth(zigoRunesToUint32(cps)), nil
+	defer g.zigoRelease()
+	result, code := raw.GestureDragged(ptr)
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Gesture.Dragged", code), g)
+	}
+	return result != 0, nil
 }
 
 // NewTerminal: Begin a transaction from a type=write packet.
@@ -436,6 +482,1986 @@ func (te *Terminal) NewStream(continuationMaxBytes uint) (*Stream, error) {
 	}
 	zigoChildCreated = true
 	return zigoNewStream(result, zigoChildParent, []zigoCallbackHandle{0, 0, 0}), nil
+}
+
+// NewSearch: Start searching `t` for `needle`, which is copied.
+//
+// The search is fed once here, so it has seen the terminal before it is
+// returned and `tick` can make progress immediately. Returned by value, like
+// `Terminal.init`: zigo boxes the result and frees the box in `close`.
+// The caller must call Close on the returned handle.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) NewSearch(needleUnowned string) (*Search, error) {
+	ptr, zigoChildParent, err := te.zigoAcquireChild("Terminal.NewSearch receiver")
+	if err != nil {
+		return nil, err
+	}
+	zigoChildCreated := false
+	defer func() {
+		te.zigoRelease()
+		if !zigoChildCreated {
+			zigoChildParent.ZigoDropChild()
+		}
+	}()
+	result, code := raw.TerminalNewSearch(ptr, needleUnowned)
+	if code != 0 {
+		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.NewSearch", code), te)
+	}
+	zigoChildCreated = true
+	return zigoNewSearch(result, zigoChildParent), nil
+}
+
+// NewGesture: Start a selection gesture over `t`, with ghostty's standard click behaviors:
+// single click clears, double selects a word, triple selects a line.
+//
+// Returned by value, like `Terminal.init`: zigo boxes it and frees the box in
+// `Close`.
+// The caller must call Close on the returned handle.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) NewGesture() (*Gesture, error) {
+	ptr, zigoChildParent, err := te.zigoAcquireChild("Terminal.NewGesture receiver")
+	if err != nil {
+		return nil, err
+	}
+	zigoChildCreated := false
+	defer func() {
+		te.zigoRelease()
+		if !zigoChildCreated {
+			zigoChildParent.ZigoDropChild()
+		}
+	}()
+	result, code := raw.TerminalNewGesture(ptr)
+	if code != 0 {
+		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.NewGesture", code), te)
+	}
+	zigoChildCreated = true
+	return zigoNewGesture(result, zigoChildParent), nil
+}
+
+// NewGridRef: Start tracking the cell at `x`, `y` in the coordinate system `tag` names,
+// on the active screen. `error.OutOfBounds` if there is no such cell.
+//
+// Returned by value, like `Terminal.init`: zigo boxes the result and frees
+// the box in `close`.
+// The caller must call Close on the returned handle.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) NewGridRef(tag PointTag, x uint16, y uint32) (*GridRef, error) {
+	ptr, zigoChildParent, err := te.zigoAcquireChild("Terminal.NewGridRef receiver")
+	if err != nil {
+		return nil, err
+	}
+	zigoChildCreated := false
+	defer func() {
+		te.zigoRelease()
+		if !zigoChildCreated {
+			zigoChildParent.ZigoDropChild()
+		}
+	}()
+	result, code := raw.TerminalNewGridRef(ptr, uint8(tag), x, y)
+	if code != 0 {
+		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.NewGridRef", code), te)
+	}
+	zigoChildCreated = true
+	return zigoNewGridRef(result, zigoChildParent), nil
+}
+
+// PrintString: Print UTF-8 encoded string to the terminal.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) PrintString(str string) error {
+	ptr, err := zigoCheckedPointer("Terminal.PrintString receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalPrintString(ptr, str)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PrintString", code), te)
+	}
+	return nil
+}
+
+// PlainString: Return the current string value of the terminal. Newlines are
+// encoded as "\n". This omits any formatting such as fg/bg.
+//
+// The caller must free the string.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) PlainString() (string, error) {
+	ptr, err := zigoCheckedPointer("Terminal.PlainString receiver", te)
+	if err != nil {
+		return "", err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalPlainString(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PlainString", code), te)
+	}
+	return result, nil
+}
+
+// Print: Copy of testing.print (not public)
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) Print(c rune) error {
+	if c < 0 || c > 1114111 {
+		return &RangeError{Operation: "Terminal.Print", Parameter: "c", Type: "codepoint"}
+	}
+	ptr, err := zigoCheckedPointer("Terminal.Print receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalPrint(ptr, uint32(c))
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Print", code), te)
+	}
+	return nil
+}
+
+// PrintRepeat: Print the previous printed character a repeated amount of times.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) PrintRepeat(countReq uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.PrintRepeat receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalPrintRepeat(ptr, countReq)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PrintRepeat", code), te)
+	}
+	return nil
+}
+
+// PrintSlice: Print multiple codepoints to the terminal at once. This is
+// semantically identical to calling `print` for each codepoint in
+// order, but is much faster because it can batch cell writes and
+// hoist per-codepoint checks out of the hot loop.
+//
+// The codepoints must all be printable: it is illegal for any
+// codepoint in this slice to be a C0 control character. Therefore,
+// this should only be called as a result of a proper VT parser
+// (like our own).
+//
+// This is optimized for the common case: ASCII, soft-wrap, etc.
+// Sequences of codepoints that require special handling (e.g. wide characters,
+// grapheme clustering) are handled correctly but fall back to the
+// slower per-codepoint path. They're less common and this is optimized
+// for the aforementioned cases.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) PrintSlice(cps []rune) error {
+	for _, zigoValue := range cps {
+		if zigoValue < 0 || zigoValue > 1114111 {
+			return &RangeError{Operation: "Terminal.PrintSlice", Parameter: "cps", Type: "codepoint"}
+		}
+	}
+	ptr, err := zigoCheckedPointer("Terminal.PrintSlice receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalPrintSlice(ptr, zigoRunesToUint32(cps))
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PrintSlice", code), te)
+	}
+	return nil
+}
+
+// SetCursorStyle: Change the cursor's current shape and blink behavior.
+//
+// The terminal parser uses this for DECSCUSR (`CSI Ps SP q`), but the behavior
+// is general: `.default` selects the configured defaults, while any other
+// value selects a concrete appearance until it is changed again or reset.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SetCursorStyle(value CursorStyleReq) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetCursorStyle receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetCursorStyle(ptr, uint8(value))
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetCursorStyle", code), te)
+	}
+	return nil
+}
+
+// SetCursorPos: Set Cursor Position. Move cursor to the position indicated
+// by row and column (1-indexed). If column is 0, it is adjusted to 1.
+// If column is greater than the right-most column it is adjusted to
+// the right-most column. If row is 0, it is adjusted to 1. If row is
+// greater than the bottom-most row it is adjusted to the bottom-most
+// row.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SetCursorPos(rowReq uint, colReq uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetCursorPos receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetCursorPos(ptr, rowReq, colReq)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetCursorPos", code), te)
+	}
+	return nil
+}
+
+// CarriageReturn: Carriage return moves the cursor to the first column.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) CarriageReturn() error {
+	ptr, err := zigoCheckedPointer("Terminal.CarriageReturn receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalCarriageReturn(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CarriageReturn", code), te)
+	}
+	return nil
+}
+
+// MustCarriageReturn calls CarriageReturn and panics with its typed error on failure.
+func (te *Terminal) MustCarriageReturn() { zigoMustSucceed(te.CarriageReturn()) }
+
+// Linefeed moves the cursor to the next line.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) Linefeed() error {
+	ptr, err := zigoCheckedPointer("Terminal.Linefeed receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalLinefeed(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Linefeed", code), te)
+	}
+	return nil
+}
+
+// Backspace moves the cursor back a column (but not less than 0).
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) Backspace() error {
+	ptr, err := zigoCheckedPointer("Terminal.Backspace receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalBackspace(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Backspace", code), te)
+	}
+	return nil
+}
+
+// MustBackspace calls Backspace and panics with its typed error on failure.
+func (te *Terminal) MustBackspace() { zigoMustSucceed(te.Backspace()) }
+
+// CursorIsAtPrompt: Returns true if the cursor is currently at a prompt. Another way to look
+// at this is it returns false if the shell is currently outputting something.
+// This requires shell integration (semantic prompt integration).
+//
+// If the shell integration doesn't exist, this will always return false.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) CursorIsAtPrompt() (bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.CursorIsAtPrompt receiver", te)
+	if err != nil {
+		return false, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalCursorIsAtPrompt(ptr)
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorIsAtPrompt", code), te)
+	}
+	return result != 0, nil
+}
+
+// MustCursorIsAtPrompt calls CursorIsAtPrompt and panics with its typed error on failure.
+func (te *Terminal) MustCursorIsAtPrompt() bool { return zigoMustValue(te.CursorIsAtPrompt()) }
+
+// FullReset: Full reset.
+//
+// This will attempt to free the existing screen memory but if that fails
+// this will reuse the existing memory. In the latter case, memory may
+// be wasted (since its unused) but it isn't leaked.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) FullReset() error {
+	ptr, err := zigoCheckedPointer("Terminal.FullReset receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalFullReset(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.FullReset", code), te)
+	}
+	return nil
+}
+
+// MustFullReset calls FullReset and panics with its typed error on failure.
+func (te *Terminal) MustFullReset() { zigoMustSucceed(te.FullReset()) }
+
+// CursorUp: Move the cursor up amount lines. If amount is greater than the maximum
+// move distance then it is internally adjusted to the maximum. If amount is
+// 0, adjust it to 1.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) CursorUp(countReq uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.CursorUp receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalCursorUp(ptr, countReq)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorUp", code), te)
+	}
+	return nil
+}
+
+// MustCursorUp calls CursorUp and panics with its typed error on failure.
+func (te *Terminal) MustCursorUp(countReq uint) { zigoMustSucceed(te.CursorUp(countReq)) }
+
+// CursorDown: Move the cursor down amount lines. If amount is greater than the maximum
+// move distance then it is internally adjusted to the maximum. This sequence
+// will not scroll the screen or scroll region. If amount is 0, adjust it to 1.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) CursorDown(countReq uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.CursorDown receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalCursorDown(ptr, countReq)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorDown", code), te)
+	}
+	return nil
+}
+
+// MustCursorDown calls CursorDown and panics with its typed error on failure.
+func (te *Terminal) MustCursorDown(countReq uint) { zigoMustSucceed(te.CursorDown(countReq)) }
+
+// CursorLeft: Move the cursor to the left amount cells. If amount is 0, adjust it to 1.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) CursorLeft(countReq uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.CursorLeft receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalCursorLeft(ptr, countReq)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorLeft", code), te)
+	}
+	return nil
+}
+
+// MustCursorLeft calls CursorLeft and panics with its typed error on failure.
+func (te *Terminal) MustCursorLeft(countReq uint) { zigoMustSucceed(te.CursorLeft(countReq)) }
+
+// CursorRight: Move the cursor right amount columns. If amount is greater than the
+// maximum move distance then it is internally adjusted to the maximum.
+// This sequence will not scroll the screen or scroll region. If amount is
+// 0, adjust it to 1.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) CursorRight(countReq uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.CursorRight receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalCursorRight(ptr, countReq)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorRight", code), te)
+	}
+	return nil
+}
+
+// MustCursorRight calls CursorRight and panics with its typed error on failure.
+func (te *Terminal) MustCursorRight(countReq uint) { zigoMustSucceed(te.CursorRight(countReq)) }
+
+// SaveCursor: Save cursor position and further state.
+//
+// The primary and alternate screen have distinct save state. One saved state
+// is kept per screen (main / alternative). If for the current screen state
+// was already saved it is overwritten.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SaveCursor() error {
+	ptr, err := zigoCheckedPointer("Terminal.SaveCursor receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSaveCursor(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SaveCursor", code), te)
+	}
+	return nil
+}
+
+// RestoreCursor: Restore cursor position and other state.
+//
+// The primary and alternate screen have distinct save state.
+// If no save was done before values are reset to their initial values.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) RestoreCursor() error {
+	ptr, err := zigoCheckedPointer("Terminal.RestoreCursor receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalRestoreCursor(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.RestoreCursor", code), te)
+	}
+	return nil
+}
+
+// Index: Move the cursor to the next line in the scrolling region, possibly scrolling.
+//
+// If the cursor is outside of the scrolling region: move the cursor one line
+// down if it is not on the bottom-most line of the screen.
+//
+// If the cursor is inside the scrolling region:
+// If the cursor is on the bottom-most line of the scrolling region:
+// invoke scroll up with amount=1
+// If the cursor is not on the bottom-most line of the scrolling region:
+// move the cursor one line down
+//
+// This unsets the pending wrap state without wrapping.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) Index() error {
+	ptr, err := zigoCheckedPointer("Terminal.Index receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalIndex(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Index", code), te)
+	}
+	return nil
+}
+
+// ReverseIndex: Move the cursor to the previous line in the scrolling region, possibly
+// scrolling.
+//
+// If the cursor is outside of the scrolling region, move the cursor one
+// line up if it is not on the top-most line of the screen.
+//
+// If the cursor is inside the scrolling region:
+//
+// * If the cursor is on the top-most line of the scrolling region:
+// invoke scroll down with amount=1
+// * If the cursor is not on the top-most line of the scrolling region:
+// move the cursor one line up
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) ReverseIndex() error {
+	ptr, err := zigoCheckedPointer("Terminal.ReverseIndex receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalReverseIndex(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ReverseIndex", code), te)
+	}
+	return nil
+}
+
+// SwitchScreen: Switch to the given screen type (alternate or primary).
+//
+// This does NOT handle behaviors such as clearing the screen,
+// copying the cursor, etc. This should be handled by downstream
+// callers.
+//
+// After calling this function, the `self.screen` field will point
+// to the current screen, and the returned value will be the previous
+// screen. If the return value is null, then the screen was not
+// switched because it was already the active screen.
+//
+// Note: This is written in a generic way so that we can support
+// more than two screens in the future if needed. There isn't
+// currently a spec for this, but it is something I think might
+// be useful in the future.
+// The returned reference remains valid only while its parent handle remains open.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) SwitchScreen(key ScreenKey) (*Screen, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.SwitchScreen receiver", te)
+	if err != nil {
+		return nil, false, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalSwitchScreen(ptr, uint8(key))
+	if code != 0 {
+		return nil, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SwitchScreen", code), te)
+	}
+	if result == nil {
+		return nil, false, nil
+	}
+	return zigoNewBorrowedScreen(result, te), true, nil
+}
+
+// SwitchScreenMode: Switch screen via a mode switch (e.g. mode 47, 1047, 1049).
+// This is a much more opinionated operation than `switchScreen`
+// since it also handles the behaviors of the specific mode,
+// such as clearing the screen, saving/restoring the cursor,
+// etc.
+//
+// This should be used for legacy compatibility with VT protocols,
+// but more modern usage should use `switchScreen` instead and handle
+// details like clearing the screen, cursor saving, etc. manually.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) SwitchScreenMode(mode SwitchScreenMode, enabled bool) error {
+	ptr, err := zigoCheckedPointer("Terminal.SwitchScreenMode receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSwitchScreenMode(ptr, uint8(mode), zigoBoolToUint8(enabled))
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SwitchScreenMode", code), te)
+	}
+	return nil
+}
+
+// ActiveScreen: The screen the terminal is currently writing to.
+// The returned reference remains valid only while its parent handle remains open.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) ActiveScreen() (*Screen, error) {
+	ptr, err := zigoCheckedPointer("Terminal.ActiveScreen receiver", te)
+	if err != nil {
+		return nil, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalActiveScreen(ptr)
+	if code != 0 {
+		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ActiveScreen", code), te)
+	}
+	return zigoNewBorrowedScreen(result, te), nil
+}
+
+// Screen: A specific screen, or absent if the terminal has not created it yet. The
+// alternate screen only exists once something has switched to it.
+// The returned reference remains valid only while its parent handle remains open.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) Screen(key ScreenKey) (*Screen, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.Screen receiver", te)
+	if err != nil {
+		return nil, false, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalScreen(ptr, uint8(key))
+	if code != 0 {
+		return nil, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Screen", code), te)
+	}
+	if result == nil {
+		return nil, false, nil
+	}
+	return zigoNewBorrowedScreen(result, te), true, nil
+}
+
+// PrintAttributesInto: Write the cursor's current SGR attributes into `dst` as a DECRPSS response
+// body, and report how many bytes were written.
+//
+// Wrapped because ghostty returns a slice into the caller's buffer, and zigo
+// reports a written count instead.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) PrintAttributesInto(dst []byte) (uint, error) {
+	ptr, err := zigoCheckedPointer("Terminal.PrintAttributesInto receiver", te)
+	if err != nil {
+		return 0, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalPrintAttributesInto(ptr, dst)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PrintAttributesInto", code), te)
+	}
+	return result, nil
+}
+
+// HistoryString: The scrollback contents, oldest row first, newline separated.
+//
+// Wrapped because the region is chosen with `point.Point`, a tagged union
+// carrying a coordinate, which zigo cannot take by value.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) HistoryString() (string, error) {
+	ptr, err := zigoCheckedPointer("Terminal.HistoryString receiver", te)
+	if err != nil {
+		return "", err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalHistoryString(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("Terminal.HistoryString", code), te)
+	}
+	return result, nil
+}
+
+// HorizontalTab: Horizontal tab moves the cursor to the next tabstop, clearing
+// the screen to the left the tabstop.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) HorizontalTab() error {
+	ptr, err := zigoCheckedPointer("Terminal.HorizontalTab receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalHorizontalTab(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.HorizontalTab", code), te)
+	}
+	return nil
+}
+
+// HorizontalTabBack: Same as horizontalTab but moves to the previous tabstop instead of the next.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) HorizontalTabBack() error {
+	ptr, err := zigoCheckedPointer("Terminal.HorizontalTabBack receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalHorizontalTabBack(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.HorizontalTabBack", code), te)
+	}
+	return nil
+}
+
+// TabSet: Set a tab stop on the current cursor.
+// TODO: test
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) TabSet() error {
+	ptr, err := zigoCheckedPointer("Terminal.TabSet receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalTabSet(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.TabSet", code), te)
+	}
+	return nil
+}
+
+// TabReset: TODO: test
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) TabReset() error {
+	ptr, err := zigoCheckedPointer("Terminal.TabReset receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalTabReset(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.TabReset", code), te)
+	}
+	return nil
+}
+
+// TabClear: Clear tab stops.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) TabClear(cmd TabClear) error {
+	ptr, err := zigoCheckedPointer("Terminal.TabClear receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalTabClear(ptr, uint8(cmd))
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.TabClear", code), te)
+	}
+	return nil
+}
+
+// SetTabstop: Put a tabstop at an absolute column.
+//
+// Unlike `tabSet`, which is HTS and acts on the cursor's column, this does not
+// move or read the cursor.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SetTabstop(col uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetTabstop receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetTabstop(ptr, col)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetTabstop", code), te)
+	}
+	return nil
+}
+
+// UnsetTabstop: Remove the tabstop at an absolute column, if there is one.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) UnsetTabstop(col uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.UnsetTabstop receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalUnsetTabstop(ptr, col)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.UnsetTabstop", code), te)
+	}
+	return nil
+}
+
+// ResetTabstops: Clear every tabstop and put one every `interval` columns.
+//
+// An interval of zero just clears them all. The terminal's own default is 8.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) ResetTabstops(interval uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.ResetTabstops receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalResetTabstops(ptr, interval)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetTabstops", code), te)
+	}
+	return nil
+}
+
+// ScrollUp: Removes amount lines from the top of the scroll region. The remaining lines
+// to the bottom margin are shifted up and space from the bottom margin up
+// is filled with empty lines.
+//
+// The new lines are created according to the current SGR state.
+//
+// Does not change the (absolute) cursor position.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) ScrollUp(count uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.ScrollUp receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalScrollUp(ptr, count)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ScrollUp", code), te)
+	}
+	return nil
+}
+
+// ScrollDown: Scroll the text down by one row.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) ScrollDown(count uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.ScrollDown receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalScrollDown(ptr, count)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ScrollDown", code), te)
+	}
+	return nil
+}
+
+// SetTopAndBottomMargin: Set Top and Bottom Margins If bottom is not specified, 0 or bigger than
+// the number of the bottom-most row, it is adjusted to the number of the
+// bottom most row.
+//
+// If top < bottom set the top and bottom row of the scroll region according
+// to top and bottom and move the cursor to the top-left cell of the display
+// (when in cursor origin mode is set to the top-left cell of the scroll region).
+//
+// Otherwise: Set the top and bottom row of the scroll region to the top-most
+// and bottom-most line of the screen.
+//
+// Top and bottom are 1-indexed.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SetTopAndBottomMargin(topReq uint, bottomReq uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetTopAndBottomMargin receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetTopAndBottomMargin(ptr, topReq, bottomReq)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetTopAndBottomMargin", code), te)
+	}
+	return nil
+}
+
+// SetLeftAndRightMargin: DECSLRM
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SetLeftAndRightMargin(leftReq uint, rightReq uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetLeftAndRightMargin receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetLeftAndRightMargin(ptr, leftReq, rightReq)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetLeftAndRightMargin", code), te)
+	}
+	return nil
+}
+
+// ScrollViewport: Scroll the viewport of the terminal grid.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) ScrollViewport(behavior ScrollViewport) error {
+	ptr, err := zigoCheckedPointer("Terminal.ScrollViewport receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalScrollViewport(ptr, uint8(behavior.tag), behavior.delta, behavior.row)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ScrollViewport", code), te)
+	}
+	return nil
+}
+
+// SetScrollbackMaxBytes: Limit the primary screen's scrollback to `max` bytes. Zero disables
+// scrollback and erases retained history.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SetScrollbackMaxBytes(max uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetScrollbackMaxBytes receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetScrollbackMaxBytes(ptr, max)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetScrollbackMaxBytes", code), te)
+	}
+	return nil
+}
+
+// ClearScrollbackMaxBytes: Remove the primary screen's scrollback byte limit.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) ClearScrollbackMaxBytes() error {
+	ptr, err := zigoCheckedPointer("Terminal.ClearScrollbackMaxBytes receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalClearScrollbackMaxBytes(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ClearScrollbackMaxBytes", code), te)
+	}
+	return nil
+}
+
+// SetScrollbackMaxLines: Limit the primary screen's scrollback to `max` physical lines.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SetScrollbackMaxLines(max uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetScrollbackMaxLines receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetScrollbackMaxLines(ptr, max)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetScrollbackMaxLines", code), te)
+	}
+	return nil
+}
+
+// ClearScrollbackMaxLines: Remove the primary screen's scrollback line limit.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) ClearScrollbackMaxLines() error {
+	ptr, err := zigoCheckedPointer("Terminal.ClearScrollbackMaxLines receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalClearScrollbackMaxLines(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ClearScrollbackMaxLines", code), te)
+	}
+	return nil
+}
+
+// InsertLines: Insert amount lines at the current cursor row. The contents of the line
+// at the current cursor row and below (to the bottom-most line in the
+// scrolling region) are shifted down by amount lines. The contents of the
+// amount bottom-most lines in the scroll region are lost.
+//
+// This unsets the pending wrap state without wrapping. If the current cursor
+// position is outside of the current scroll region it does nothing.
+//
+// If amount is greater than the remaining number of lines in the scrolling
+// region it is adjusted down (still allowing for scrolling out every remaining
+// line in the scrolling region)
+//
+// In left and right margin mode the margins are respected; lines are only
+// scrolled in the scroll region.
+//
+// All cleared space is colored according to the current SGR state.
+//
+// Moves the cursor to the left margin.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) InsertLines(count uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.InsertLines receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalInsertLines(ptr, count)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.InsertLines", code), te)
+	}
+	return nil
+}
+
+// DeleteLines: Removes amount lines from the current cursor row down. The remaining lines
+// to the bottom margin are shifted up and space from the bottom margin up is
+// filled with empty lines.
+//
+// If the current cursor position is outside of the current scroll region it
+// does nothing. If amount is greater than the remaining number of lines in the
+// scrolling region it is adjusted down.
+//
+// In left and right margin mode the margins are respected; lines are only
+// scrolled in the scroll region.
+//
+// If the cell movement splits a multi cell character that character cleared,
+// by replacing it by spaces, keeping its current attributes. All other
+// cleared space is colored according to the current SGR state.
+//
+// Moves the cursor to the left margin.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) DeleteLines(count uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.DeleteLines receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalDeleteLines(ptr, count)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.DeleteLines", code), te)
+	}
+	return nil
+}
+
+// InsertBlanks: Inserts spaces at current cursor position moving existing cell contents
+// to the right. The contents of the count right-most columns in the scroll
+// region are lost. The cursor position is not changed.
+//
+// This unsets the pending wrap state without wrapping.
+//
+// The inserted cells are colored according to the current SGR state.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) InsertBlanks(count uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.InsertBlanks receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalInsertBlanks(ptr, count)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.InsertBlanks", code), te)
+	}
+	return nil
+}
+
+// DeleteChars: Removes amount characters from the current cursor position to the right.
+// The remaining characters are shifted to the left and space from the right
+// margin is filled with spaces.
+//
+// If amount is greater than the remaining number of characters in the
+// scrolling region, it is adjusted down.
+//
+// Does not change the cursor position.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) DeleteChars(countReq uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.DeleteChars receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalDeleteChars(ptr, countReq)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.DeleteChars", code), te)
+	}
+	return nil
+}
+
+// EraseChars calls the Zig function Terminal.eraseChars.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) EraseChars(countReq uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.EraseChars receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalEraseChars(ptr, countReq)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.EraseChars", code), te)
+	}
+	return nil
+}
+
+// EraseLine: Erase the line.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) EraseLine(mode EraseLine, protectedReq bool) error {
+	ptr, err := zigoCheckedPointer("Terminal.EraseLine receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalEraseLine(ptr, uint8(mode), zigoBoolToUint8(protectedReq))
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.EraseLine", code), te)
+	}
+	return nil
+}
+
+// EraseDisplay: Erase the display.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) EraseDisplay(mode EraseDisplay, protectedReq bool) error {
+	ptr, err := zigoCheckedPointer("Terminal.EraseDisplay receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalEraseDisplay(ptr, uint8(mode), zigoBoolToUint8(protectedReq))
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.EraseDisplay", code), te)
+	}
+	return nil
+}
+
+// Decaln: Resets all margins and fills the whole screen with the character 'E'
+//
+// Sets the cursor to the top left corner.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) Decaln() error {
+	ptr, err := zigoCheckedPointer("Terminal.Decaln receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalDecaln(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Decaln", code), te)
+	}
+	return nil
+}
+
+// Resize: Change the viewport size, leaving the pixel geometry alone.
+//
+// Wrapped because `vt.Terminal.Resize` carries a nested optional struct for
+// the cell size in pixels, which has no C representation.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) Resize(width uint16, height uint16) error {
+	ptr, err := zigoCheckedPointer("Terminal.Resize receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalResize(ptr, width, height)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Resize", code), te)
+	}
+	return nil
+}
+
+// ResizeCells: Change the viewport size and tell the terminal how many pixels a cell is.
+//
+// The pixel geometry is only used by the parts of the protocol that measure in
+// pixels -- Kitty graphics placements above all -- and is zero until it is set,
+// which leaves every image sized zero. A renderer that draws images should
+// resize with this rather than `resize`: the terminal stores the pixel size of
+// the whole grid, so it goes stale as soon as the column count changes.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) ResizeCells(width uint16, height uint16, cellWidth uint32, cellHeight uint32) error {
+	ptr, err := zigoCheckedPointer("Terminal.ResizeCells receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalResizeCells(ptr, width, height, cellWidth, cellHeight)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResizeCells", code), te)
+	}
+	return nil
+}
+
+// Format the active area -- the rows on screen, not the scrollback -- with
+// the terminal's colors and, for styled output, its palette, modes and
+// other state a replay needs. `Screen.format` covers the scrollback too.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (te *Terminal) Format(opts FormatOptions, writer io.Writer) error {
+	if writer == nil {
+		return &StreamError{Operation: "Terminal.Format", Parameter: "writer", Err: ErrNilStream}
+	}
+	ptr, err := zigoCheckedPointer("Terminal.Format receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	writerHandle := zigoNewWriterStreamHandle(writer)
+	defer zigoDeleteCallbackHandle(writerHandle)
+	code := raw.TerminalFormat(ptr, zigoFormatOptionsToRaw(opts), uintptr(writerHandle))
+	if zigoCallbackPanicPending() {
+		zigoRethrowCallbackPanic("Terminal.Format", writerHandle)
+	}
+	if err := zigoStreamError("Terminal.Format", "writer", writerHandle); err != nil {
+		return err
+	}
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Format", code), te)
+	}
+	return nil
+}
+
+// SetPwd: Set the pwd for the terminal.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) SetPwd(pwd string) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetPwd receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetPwd(ptr, pwd)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetPwd", code), te)
+	}
+	return nil
+}
+
+// GetPwd: Returns the pwd for the terminal, if any. The memory is owned by the
+// Terminal and is not copied. It is safe until a reset or setPwd.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) GetPwd() (string, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.GetPwd receiver", te)
+	if err != nil {
+		return "", false, err
+	}
+	defer te.zigoRelease()
+	result, zigoHas, code := raw.TerminalGetPwd(ptr)
+	if code != 0 {
+		return "", false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.GetPwd", code), te)
+	}
+	return result, zigoHas, nil
+}
+
+// GetTitle: Returns the title for the terminal, if any. The memory is owned by the
+// Terminal and is not copied. It is safe until a reset or setTitle.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) GetTitle() (string, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.GetTitle receiver", te)
+	if err != nil {
+		return "", false, err
+	}
+	defer te.zigoRelease()
+	result, zigoHas, code := raw.TerminalGetTitle(ptr)
+	if code != 0 {
+		return "", false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.GetTitle", code), te)
+	}
+	return result, zigoHas, nil
+}
+
+// SetTitle: Set the title for the terminal, as set by escape sequences (e.g. OSC 0/2).
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) SetTitle(t string) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetTitle receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetTitle(ptr, t)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetTitle", code), te)
+	}
+	return nil
+}
+
+// BackgroundColor: The current background color: what OSC 11 set, else the default.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) BackgroundColor() (uint32, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.BackgroundColor receiver", te)
+	if err != nil {
+		return 0, false, err
+	}
+	defer te.zigoRelease()
+	result, zigoHas, code := raw.TerminalBackgroundColor(ptr)
+	if code != 0 {
+		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.BackgroundColor", code), te)
+	}
+	return result, zigoHas, nil
+}
+
+// ForegroundColor: The current foreground color: what OSC 10 set, else the default.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) ForegroundColor() (uint32, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.ForegroundColor receiver", te)
+	if err != nil {
+		return 0, false, err
+	}
+	defer te.zigoRelease()
+	result, zigoHas, code := raw.TerminalForegroundColor(ptr)
+	if code != 0 {
+		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ForegroundColor", code), te)
+	}
+	return result, zigoHas, nil
+}
+
+// CursorColor: The current cursor color, if one was set or configured. Null means the
+// cursor takes the foreground color.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) CursorColor() (uint32, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.CursorColor receiver", te)
+	if err != nil {
+		return 0, false, err
+	}
+	defer te.zigoRelease()
+	result, zigoHas, code := raw.TerminalCursorColor(ptr)
+	if code != 0 {
+		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorColor", code), te)
+	}
+	return result, zigoHas, nil
+}
+
+// PaletteColors: Copy the current 256-color palette into `dst` and return how many entries
+// were written: 256, or `dst.len` if shorter.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) PaletteColors(dst []uint32) (uint, error) {
+	ptr, err := zigoCheckedPointer("Terminal.PaletteColors receiver", te)
+	if err != nil {
+		return 0, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalPaletteColors(ptr, dst)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PaletteColors", code), te)
+	}
+	return result, nil
+}
+
+// ModeEnabled: Whether `mode` is currently on.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) ModeEnabled(mode Mode) (bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.ModeEnabled receiver", te)
+	if err != nil {
+		return false, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalModeEnabled(ptr, uint16(mode))
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ModeEnabled", code), te)
+	}
+	return result != 0, nil
+}
+
+// SetMode: Turn `mode` on or off. This flips the state only; the side effects the
+// parser performs when a program changes a mode -- switching screens for
+// 1049, resizing for 132-column -- do not run. Use `switchScreenMode` and
+// `deccolm` for those.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SetMode(mode Mode, value bool) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetMode receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetMode(ptr, uint16(mode), zigoBoolToUint8(value))
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetMode", code), te)
+	}
+	return nil
+}
+
+// SetAttribute: Apply an SGR attribute to the cursor's pen. Everything printed afterwards
+// carries it until it is reset.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) SetAttribute(attr Attribute) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetAttribute receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetAttribute(ptr, uint8(attr.tag), uint8(attr.underline), attr.underlineColorRgb, attr.underlineColor256, attr.directColorFg, attr.directColorBg, attr.color256Fg, attr.color256Bg, uint8(attr.namedFg), uint8(attr.namedBg), uint8(attr.brightNamedFg), uint8(attr.brightNamedBg))
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetAttribute", code), te)
+	}
+	return nil
+}
+
+// SetProtectedMode: Set the character protection mode for the terminal.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SetProtectedMode(mode ProtectedMode) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetProtectedMode receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetProtectedMode(ptr, uint8(mode))
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetProtectedMode", code), te)
+	}
+	return nil
+}
+
+// ConfigureCharset: Set the charset into the given slot.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) ConfigureCharset(slot CharsetSlot, set Charset) error {
+	ptr, err := zigoCheckedPointer("Terminal.ConfigureCharset receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalConfigureCharset(ptr, uint8(slot), uint8(set))
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ConfigureCharset", code), te)
+	}
+	return nil
+}
+
+// InvokeCharset: Invoke the charset in slot into the active slot. If single is true,
+// then this will only be invoked for a single character.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) InvokeCharset(active CharsetActiveSlot, slot CharsetSlot, single bool) error {
+	ptr, err := zigoCheckedPointer("Terminal.InvokeCharset receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalInvokeCharset(ptr, uint8(active), uint8(slot), zigoBoolToUint8(single))
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.InvokeCharset", code), te)
+	}
+	return nil
+}
+
+// Deccolm changes the terminal width between 80 and 132 columns. This
+// function call will do NOTHING unless `setDeccolmSupported` has been
+// called with "true".
+//
+// This breaks the expectation around modern terminals that they resize
+// with the window. This will fix the grid at either 80 or 132 columns.
+// The rows will continue to be variable.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) Deccolm(mode DeccolmMode) error {
+	ptr, err := zigoCheckedPointer("Terminal.Deccolm receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalDeccolm(ptr, uint8(mode))
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Deccolm", code), te)
+	}
+	return nil
+}
+
+// CompressionActivity: Return the current compression activity value.
+//
+// Callers should schedule a `compress` call whenever this value changes. The
+// direction of the change has no meaning; this is an opaque change token
+// rather than a monotonic sequence exposed by Terminal.
+//
+// It is up to the terminal what it decides to compress, but currently
+// we compress cold (non-viewed, non-editable) scrollback history on
+// the primary screen.
+//
+// Note that compression requires specific system features, namely
+// the ability to retain virtual memory allocations while discarding their
+// physical memory backings. Callers must still use `compress` to determine
+// whether compression is supported on the current target.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) CompressionActivity() (uint64, error) {
+	ptr, err := zigoCheckedPointer("Terminal.CompressionActivity receiver", te)
+	if err != nil {
+		return 0, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalCompressionActivity(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CompressionActivity", code), te)
+	}
+	return result, nil
+}
+
+// SetDefaultBackgroundColor: Set the configured default background: the value in effect until OSC 11
+// overrides it and again after OSC 111 resets it.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SetDefaultBackgroundColor(rgb uint32) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetDefaultBackgroundColor receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetDefaultBackgroundColor(ptr, rgb)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultBackgroundColor", code), te)
+	}
+	return nil
+}
+
+// SetDefaultForegroundColor: Set the configured default foreground. See `setDefaultBackgroundColor`.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SetDefaultForegroundColor(rgb uint32) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetDefaultForegroundColor receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetDefaultForegroundColor(ptr, rgb)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultForegroundColor", code), te)
+	}
+	return nil
+}
+
+// SetDefaultCursorColor: Set the configured default cursor color. See `setDefaultBackgroundColor`.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SetDefaultCursorColor(rgb uint32) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetDefaultCursorColor receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetDefaultCursorColor(ptr, rgb)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultCursorColor", code), te)
+	}
+	return nil
+}
+
+// SetDefaultCursorStyle: Change the default cursor shape.
+//
+// If the cursor currently follows its defaults, the visible shape changes
+// immediately. Otherwise the new shape is saved for the next reset or default
+// selection, such as DECSCUSR `CSI 0 SP q`.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SetDefaultCursorStyle(configuredStyle CursorStyle) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetDefaultCursorStyle receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetDefaultCursorStyle(ptr, uint8(configuredStyle))
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultCursorStyle", code), te)
+	}
+	return nil
+}
+
+// SetDefaultCursorBlink: Set the default cursor blink. Applied immediately only when the cursor
+// currently follows its defaults; otherwise saved for the next reset.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SetDefaultCursorBlink(blink bool) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetDefaultCursorBlink receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetDefaultCursorBlink(ptr, zigoBoolToUint8(blink))
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultCursorBlink", code), te)
+	}
+	return nil
+}
+
+// ResetDefaultCursorBlink: Return the default cursor blink to the emulator default (blinking).
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) ResetDefaultCursorBlink() error {
+	ptr, err := zigoCheckedPointer("Terminal.ResetDefaultCursorBlink receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalResetDefaultCursorBlink(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetDefaultCursorBlink", code), te)
+	}
+	return nil
+}
+
+// PaletteColor: Read one entry of the 256 color palette as `0xRRGGBB`.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) PaletteColor(idx uint8) (uint32, error) {
+	ptr, err := zigoCheckedPointer("Terminal.PaletteColor receiver", te)
+	if err != nil {
+		return 0, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalPaletteColor(ptr, idx)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PaletteColor", code), te)
+	}
+	return result, nil
+}
+
+// SetPaletteColor: Override one palette entry, as OSC 4 does.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SetPaletteColor(idx uint8, rgb uint32) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetPaletteColor receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetPaletteColor(ptr, idx, rgb)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetPaletteColor", code), te)
+	}
+	return nil
+}
+
+// ResetPaletteColor: Drop the override on one palette entry, restoring its default.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) ResetPaletteColor(idx uint8) error {
+	ptr, err := zigoCheckedPointer("Terminal.ResetPaletteColor receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalResetPaletteColor(ptr, idx)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetPaletteColor", code), te)
+	}
+	return nil
+}
+
+// ResetPalette: Drop every palette override.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) ResetPalette() error {
+	ptr, err := zigoCheckedPointer("Terminal.ResetPalette receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalResetPalette(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetPalette", code), te)
+	}
+	return nil
+}
+
+// SetDefaultPaletteColor: Change what one palette entry resets *to*, which is the embedder's
+// configured theme rather than anything a program asked for.
+//
+// An entry a program has already overridden keeps that override; it is the
+// value `resetPaletteColor` will later restore that moves. ghostty only
+// offers this a whole palette at a time, so the single entry is edited into a
+// copy of the current defaults.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) SetDefaultPaletteColor(idx uint8, rgb uint32) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetDefaultPaletteColor receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetDefaultPaletteColor(ptr, idx, rgb)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultPaletteColor", code), te)
+	}
+	return nil
+}
+
+// ResetDefaultPalette: Restore the built-in xterm palette as the default, preserving overrides.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) ResetDefaultPalette() error {
+	ptr, err := zigoCheckedPointer("Terminal.ResetDefaultPalette receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalResetDefaultPalette(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetDefaultPalette", code), te)
+	}
+	return nil
+}
+
+// SetDefaultMode: Set a mode and make that value the one `resetModes` and `fullReset` return
+// to.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SetDefaultMode(mode Mode, value bool) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetDefaultMode receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetDefaultMode(ptr, uint16(mode), zigoBoolToUint8(value))
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultMode", code), te)
+	}
+	return nil
+}
+
+// ResetModes: Return every mode to its default and discard the XTSAVE slots.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) ResetModes() error {
+	ptr, err := zigoCheckedPointer("Terminal.ResetModes receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalResetModes(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetModes", code), te)
+	}
+	return nil
+}
+
+// SaveMode: Save a mode's current value, as XTSAVE (CSI ? Pm s) does.
+//
+// There is one slot per mode, so saving twice without restoring loses the
+// first value.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SaveMode(mode Mode) error {
+	ptr, err := zigoCheckedPointer("Terminal.SaveMode receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSaveMode(ptr, uint16(mode))
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SaveMode", code), te)
+	}
+	return nil
+}
+
+// RestoreMode: Restore a mode from its XTSAVE slot and report the value restored.
+//
+// A mode that was never saved restores to false, which is the slot's initial
+// state rather than the mode's default.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) RestoreMode(mode Mode) (bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.RestoreMode receiver", te)
+	if err != nil {
+		return false, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalRestoreMode(ptr, uint16(mode))
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.RestoreMode", code), te)
+	}
+	return result != 0, nil
+}
+
+// SetKittyGraphicsSizeLimit: Set the storage size limit for Kitty graphics across all screens.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) SetKittyGraphicsSizeLimit(limit uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetKittyGraphicsSizeLimit receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetKittyGraphicsSizeLimit(ptr, limit)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetKittyGraphicsSizeLimit", code), te)
+	}
+	return nil
+}
+
+// SetKittyGraphicsLoadingLimits: Choose which mediums a program may transmit a Kitty image over.
+//
+// The default is direct transmission only: the pixels arrive base64-encoded in
+// the escape sequence itself. The other three mediums make the terminal read
+// something the program names -- an arbitrary path, a path under `temp_dir`,
+// or a POSIX shared memory object -- so each is a decision about how much a
+// program on the pty is trusted with the embedder's filesystem. An empty
+// `temp_dir` disables the temporary file medium.
+//
+// ghostty borrows `temp_dir` rather than copying it, so a copy is made here
+// and the previous one released. The last copy is released by nothing: it
+// lives as long as the terminal, and ghostty's `deinit` does not know it is
+// owned.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) SetKittyGraphicsLoadingLimits(file bool, tempDir string, sharedMemory bool) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetKittyGraphicsLoadingLimits receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetKittyGraphicsLoadingLimits(ptr, zigoBoolToUint8(file), tempDir, zigoBoolToUint8(sharedMemory))
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetKittyGraphicsLoadingLimits", code), te)
+	}
+	return nil
+}
+
+// KittyImage: Look up an image on the active screen by id.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) KittyImage(imageID uint32) (KittyImage, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.KittyImage receiver", te)
+	if err != nil {
+		return KittyImage{}, false, err
+	}
+	defer te.zigoRelease()
+	result, zigoHas, code := raw.TerminalKittyImage(ptr, imageID)
+	if code != 0 {
+		return KittyImage{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.KittyImage", code), te)
+	}
+	return zigoKittyImageFromRaw(result), zigoHas, nil
+}
+
+// KittyImageData: Copy an image's pixels into `dst` and report how many bytes were written,
+// or zero if there is no such image.
+//
+// The bytes are as the program transmitted them, decompressed: a PNG is still
+// a PNG, and it is the renderer that decodes it. For an animated image these
+// are the current frame's, which is why the generation stamp moves when the
+// frame does.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) KittyImageData(imageID uint32, dst []byte) (uint, error) {
+	ptr, err := zigoCheckedPointer("Terminal.KittyImageData receiver", te)
+	if err != nil {
+		return 0, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalKittyImageData(ptr, imageID, dst)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.KittyImageData", code), te)
+	}
+	return result, nil
+}
+
+// ScrollRegion: The current scrolling region.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) ScrollRegion() (ScrollRegion, error) {
+	ptr, err := zigoCheckedPointer("Terminal.ScrollRegion receiver", te)
+	if err != nil {
+		return ScrollRegion{}, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalScrollRegion(ptr)
+	if code != 0 {
+		return ScrollRegion{}, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ScrollRegion", code), te)
+	}
+	return zigoScrollRegionFromRaw(result), nil
+}
+
+// Charset: The character set configured in one slot, as SCS set it.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) Charset(slot CharsetSlot) (Charset, error) {
+	ptr, err := zigoCheckedPointer("Terminal.Charset receiver", te)
+	if err != nil {
+		return 0, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalCharset(ptr, uint8(slot))
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Charset", code), te)
+	}
+	return Charset(result), nil
+}
+
+// CharsetSingleShift: The slot a pending single shift (SS2/SS3) will use for exactly one
+// character, or absent if none is pending.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) CharsetSingleShift() (CharsetSlot, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.CharsetSingleShift receiver", te)
+	if err != nil {
+		return 0, false, err
+	}
+	defer te.zigoRelease()
+	result, zigoHas, code := raw.TerminalCharsetSingleShift(ptr)
+	if code != 0 {
+		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CharsetSingleShift", code), te)
+	}
+	return CharsetSlot(result), zigoHas, nil
+}
+
+// MouseTracking: The tracking mode currently in effect.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) MouseTracking() (MouseTracking, error) {
+	ptr, err := zigoCheckedPointer("Terminal.MouseTracking receiver", te)
+	if err != nil {
+		return 0, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalMouseTracking(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.MouseTracking", code), te)
+	}
+	return MouseTracking(result), nil
+}
+
+// MouseTrackingSendsMotion: Whether the current tracking mode reports motion as well as buttons.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) MouseTrackingSendsMotion() (bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.MouseTrackingSendsMotion receiver", te)
+	if err != nil {
+		return false, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalMouseTrackingSendsMotion(ptr)
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.MouseTrackingSendsMotion", code), te)
+	}
+	return result != 0, nil
+}
+
+// MouseReportFormat: The report encoding currently in effect.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) MouseReportFormat() (MouseReportFormat, error) {
+	ptr, err := zigoCheckedPointer("Terminal.MouseReportFormat receiver", te)
+	if err != nil {
+		return 0, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalMouseReportFormat(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.MouseReportFormat", code), te)
+	}
+	return MouseReportFormat(result), nil
+}
+
+// ModeReport: The DECRPM state of a mode, by its number.
+//
+// `ansi` distinguishes the two namespaces: false is a DEC private mode
+// (`CSI ? Pd $ p`), true is an ANSI mode (`CSI Pd $ p`). Modes are taken as
+// numbers rather than as an enum on purpose -- the point of the query is to
+// learn whether a number is implemented at all, which an exhaustive enum
+// could never express.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) ModeReport(mode uint16, ansi bool) (ModeReport, error) {
+	ptr, err := zigoCheckedPointer("Terminal.ModeReport receiver", te)
+	if err != nil {
+		return 0, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalModeReport(ptr, mode, zigoBoolToUint8(ansi))
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ModeReport", code), te)
+	}
+	return ModeReport(result), nil
+}
+
+// CellAt: The cell at `x`, `y` of the active screen, in the coordinate system `tag`
+// names, without tracking it. Null if there is no such cell. For a read
+// that happens once, such as what is under a click; a cell that is read
+// again after the terminal changes wants a `GridRef`.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) CellAt(tag PointTag, x uint16, y uint32) (RenderCell, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.CellAt receiver", te)
+	if err != nil {
+		return RenderCell{}, false, err
+	}
+	defer te.zigoRelease()
+	result, zigoHas, code := raw.TerminalCellAt(ptr, uint8(tag), x, y)
+	if code != 0 {
+		return RenderCell{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CellAt", code), te)
+	}
+	return zigoRenderCellFromRaw(result), zigoHas, nil
+}
+
+// HyperlinkAt: The hyperlink URI of the cell at `x`, `y` of the active screen, or null
+// when the cell is not a link or there is no such cell.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (te *Terminal) HyperlinkAt(tag PointTag, x uint16, y uint32) (string, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.HyperlinkAt receiver", te)
+	if err != nil {
+		return "", false, err
+	}
+	defer te.zigoRelease()
+	result, zigoHas, code := raw.TerminalHyperlinkAt(ptr, uint8(tag), x, y)
+	if code != 0 {
+		return "", false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.HyperlinkAt", code), te)
+	}
+	return result, zigoHas, nil
 }
 
 // Feed bytes to the parser, applying them to the terminal.
@@ -1078,6 +3104,134 @@ func (s *Stream) OnClipboardReadRequest(callback ClipboardHandler) error {
 	return nil
 }
 
+// WriteContinuation: Write the unfinished sequence suffix, when continuation tracking is on.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Stream) WriteContinuation(writer io.Writer) error {
+	if writer == nil {
+		return &StreamError{Operation: "Stream.WriteContinuation", Parameter: "writer", Err: ErrNilStream}
+	}
+	ptr, err := zigoCheckedPointer("Stream.WriteContinuation receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	writerHandle := zigoNewWriterStreamHandle(writer)
+	defer zigoDeleteCallbackHandle(writerHandle)
+	code := raw.StreamWriteContinuation(ptr, uintptr(writerHandle))
+	if zigoCallbackPanicPending() {
+		zigoRethrowCallbackPanic("Stream.WriteContinuation", writerHandle)
+		for slot := range 3 {
+			zigoRethrowCallbackPanic("Stream.WriteContinuation", s.zigoCallbackHandle(slot))
+		}
+	}
+	if err := zigoStreamError("Stream.WriteContinuation", "writer", writerHandle); err != nil {
+		return err
+	}
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.WriteContinuation", code), s)
+	}
+	return nil
+}
+
+// HasReplies: Whether the terminal has answered a query since the last `writeReplies`.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Stream) HasReplies() (bool, error) {
+	ptr, err := zigoCheckedPointer("Stream.HasReplies receiver", s)
+	if err != nil {
+		return false, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.StreamHasReplies(ptr)
+	if zigoCallbackPanicPending() {
+		for slot := range 3 {
+			zigoRethrowCallbackPanic("Stream.HasReplies", s.zigoCallbackHandle(slot))
+		}
+	}
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Stream.HasReplies", code), s)
+	}
+	return result != 0, nil
+}
+
+// MustHasReplies calls HasReplies and panics with its typed error on failure.
+func (s *Stream) MustHasReplies() bool { return zigoMustValue(s.HasReplies()) }
+
+// WriteSnapshot: Write a snapshot of the terminal this stream feeds, with the
+// stream's unfinished sequence so a restored stream can pick up
+// mid-sequence.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Stream) WriteSnapshot(writer io.Writer) error {
+	if writer == nil {
+		return &StreamError{Operation: "Stream.WriteSnapshot", Parameter: "writer", Err: ErrNilStream}
+	}
+	ptr, err := zigoCheckedPointer("Stream.WriteSnapshot receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	writerHandle := zigoNewWriterStreamHandle(writer)
+	defer zigoDeleteCallbackHandle(writerHandle)
+	code := raw.StreamWriteSnapshot(ptr, uintptr(writerHandle))
+	if zigoCallbackPanicPending() {
+		zigoRethrowCallbackPanic("Stream.WriteSnapshot", writerHandle)
+		for slot := range 3 {
+			zigoRethrowCallbackPanic("Stream.WriteSnapshot", s.zigoCallbackHandle(slot))
+		}
+	}
+	if err := zigoStreamError("Stream.WriteSnapshot", "writer", writerHandle); err != nil {
+		return err
+	}
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.WriteSnapshot", code), s)
+	}
+	return nil
+}
+
+// WriteReplies: Write everything the terminal has answered to `writer` and forget it.
+//
+// These are the terminal's own replies -- device status, Kitty graphics
+// acknowledgements, size reports -- and they go back to the program the
+// same way a keystroke does. Nothing is written from inside a feed, so
+// this belongs next to it: feed, then drain.
+// Replies are cleared only after the writer flushes successfully. On
+// failure the whole batch is kept; retrying a partially completed write
+// can repeat bytes the writer already accepted.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Stream) WriteReplies(writer io.Writer) error {
+	if writer == nil {
+		return &StreamError{Operation: "Stream.WriteReplies", Parameter: "writer", Err: ErrNilStream}
+	}
+	ptr, err := zigoCheckedPointer("Stream.WriteReplies receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	writerHandle := zigoNewWriterStreamHandle(writer)
+	defer zigoDeleteCallbackHandle(writerHandle)
+	code := raw.StreamWriteReplies(ptr, uintptr(writerHandle))
+	if zigoCallbackPanicPending() {
+		zigoRethrowCallbackPanic("Stream.WriteReplies", writerHandle)
+		for slot := range 3 {
+			zigoRethrowCallbackPanic("Stream.WriteReplies", s.zigoCallbackHandle(slot))
+		}
+	}
+	if err := zigoStreamError("Stream.WriteReplies", "writer", writerHandle); err != nil {
+		return err
+	}
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.WriteReplies", code), s)
+	}
+	return nil
+}
+
 // Location: Which clipboard the request names.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
@@ -1176,22 +3330,6 @@ func (c *ClipboardRequest) ContentMime(index uint) (string, error) {
 	return result, nil
 }
 
-// ContentData: The bytes of one representation of a write. Binary safe.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (c *ClipboardRequest) ContentData(index uint) ([]byte, error) {
-	ptr, err := zigoCheckedPointer("ClipboardRequest.ContentData receiver", c)
-	if err != nil {
-		return nil, err
-	}
-	defer c.zigoRelease()
-	result, code := raw.ClipboardRequestContentData(ptr, index)
-	if code != 0 {
-		return nil, zigoPoisonAfterPanic(zigoErrorForCode("ClipboardRequest.ContentData", code), c)
-	}
-	return result, nil
-}
-
 // MimeCount: How many MIME types a read asks for, in order of preference.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
@@ -1275,389 +3413,20 @@ func (c *ClipboardRequest) Deny(reason ClipboardDenial) error {
 	return nil
 }
 
-// WriteContinuation: Write the unfinished sequence suffix, when continuation tracking is on.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) WriteContinuation(writer io.Writer) error {
-	if writer == nil {
-		return &StreamError{Operation: "Stream.WriteContinuation", Parameter: "writer", Err: ErrNilStream}
-	}
-	ptr, err := zigoCheckedPointer("Stream.WriteContinuation receiver", s)
-	if err != nil {
-		return err
-	}
-	defer s.zigoRelease()
-	writerHandle := zigoNewWriterStreamHandle(writer)
-	defer zigoDeleteCallbackHandle(writerHandle)
-	code := raw.StreamWriteContinuation(ptr, uintptr(writerHandle))
-	if zigoCallbackPanicPending() {
-		zigoRethrowCallbackPanic("Stream.WriteContinuation", writerHandle)
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.WriteContinuation", s.zigoCallbackHandle(slot))
-		}
-	}
-	if err := zigoStreamError("Stream.WriteContinuation", "writer", writerHandle); err != nil {
-		return err
-	}
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.WriteContinuation", code), s)
-	}
-	return nil
-}
-
-// HasReplies: Whether the terminal has answered a query since the last `writeReplies`.
+// ContentData: The bytes of one representation of a write. Binary safe.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) HasReplies() (bool, error) {
-	ptr, err := zigoCheckedPointer("Stream.HasReplies receiver", s)
-	if err != nil {
-		return false, err
-	}
-	defer s.zigoRelease()
-	result, code := raw.StreamHasReplies(ptr)
-	if zigoCallbackPanicPending() {
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.HasReplies", s.zigoCallbackHandle(slot))
-		}
-	}
-	if code != 0 {
-		return false, zigoPoisonAfterPanic(zigoErrorForCode("Stream.HasReplies", code), s)
-	}
-	return result != 0, nil
-}
-
-// WriteSnapshot: Write a snapshot of the terminal this stream feeds, with the
-// stream's unfinished sequence so a restored stream can pick up
-// mid-sequence.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) WriteSnapshot(writer io.Writer) error {
-	if writer == nil {
-		return &StreamError{Operation: "Stream.WriteSnapshot", Parameter: "writer", Err: ErrNilStream}
-	}
-	ptr, err := zigoCheckedPointer("Stream.WriteSnapshot receiver", s)
-	if err != nil {
-		return err
-	}
-	defer s.zigoRelease()
-	writerHandle := zigoNewWriterStreamHandle(writer)
-	defer zigoDeleteCallbackHandle(writerHandle)
-	code := raw.StreamWriteSnapshot(ptr, uintptr(writerHandle))
-	if zigoCallbackPanicPending() {
-		zigoRethrowCallbackPanic("Stream.WriteSnapshot", writerHandle)
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.WriteSnapshot", s.zigoCallbackHandle(slot))
-		}
-	}
-	if err := zigoStreamError("Stream.WriteSnapshot", "writer", writerHandle); err != nil {
-		return err
-	}
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.WriteSnapshot", code), s)
-	}
-	return nil
-}
-
-// WriteReplies: Write everything the terminal has answered to `writer` and forget it.
-//
-// These are the terminal's own replies -- device status, Kitty graphics
-// acknowledgements, size reports -- and they go back to the program the
-// same way a keystroke does. Nothing is written from inside a feed, so
-// this belongs next to it: feed, then drain.
-// Replies are cleared only after the writer flushes successfully. On
-// failure the whole batch is kept; retrying a partially completed write
-// can repeat bytes the writer already accepted.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) WriteReplies(writer io.Writer) error {
-	if writer == nil {
-		return &StreamError{Operation: "Stream.WriteReplies", Parameter: "writer", Err: ErrNilStream}
-	}
-	ptr, err := zigoCheckedPointer("Stream.WriteReplies receiver", s)
-	if err != nil {
-		return err
-	}
-	defer s.zigoRelease()
-	writerHandle := zigoNewWriterStreamHandle(writer)
-	defer zigoDeleteCallbackHandle(writerHandle)
-	code := raw.StreamWriteReplies(ptr, uintptr(writerHandle))
-	if zigoCallbackPanicPending() {
-		zigoRethrowCallbackPanic("Stream.WriteReplies", writerHandle)
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.WriteReplies", s.zigoCallbackHandle(slot))
-		}
-	}
-	if err := zigoStreamError("Stream.WriteReplies", "writer", writerHandle); err != nil {
-		return err
-	}
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.WriteReplies", code), s)
-	}
-	return nil
-}
-
-// PrintString: Print UTF-8 encoded string to the terminal.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) PrintString(str string) error {
-	ptr, err := zigoCheckedPointer("Terminal.PrintString receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalPrintString(ptr, str)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PrintString", code), te)
-	}
-	return nil
-}
-
-// PlainString: Return the current string value of the terminal. Newlines are
-// encoded as "\n". This omits any formatting such as fg/bg.
-//
-// The caller must free the string.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) PlainString() (string, error) {
-	ptr, err := zigoCheckedPointer("Terminal.PlainString receiver", te)
-	if err != nil {
-		return "", err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalPlainString(ptr)
-	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PlainString", code), te)
-	}
-	return result, nil
-}
-
-// SetCursorStyle: Change the cursor's current shape and blink behavior.
-//
-// The terminal parser uses this for DECSCUSR (`CSI Ps SP q`), but the behavior
-// is general: `.default` selects the configured defaults, while any other
-// value selects a concrete appearance until it is changed again or reset.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetCursorStyle(value CursorStyleReq) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetCursorStyle receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetCursorStyle(ptr, uint8(value))
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetCursorStyle", code), te)
-	}
-	return nil
-}
-
-// SetCursorPos: Set Cursor Position. Move cursor to the position indicated
-// by row and column (1-indexed). If column is 0, it is adjusted to 1.
-// If column is greater than the right-most column it is adjusted to
-// the right-most column. If row is 0, it is adjusted to 1. If row is
-// greater than the bottom-most row it is adjusted to the bottom-most
-// row.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetCursorPos(rowReq uint, colReq uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetCursorPos receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetCursorPos(ptr, rowReq, colReq)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetCursorPos", code), te)
-	}
-	return nil
-}
-
-// CarriageReturn: Carriage return moves the cursor to the first column.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) CarriageReturn() error {
-	ptr, err := zigoCheckedPointer("Terminal.CarriageReturn receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalCarriageReturn(ptr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CarriageReturn", code), te)
-	}
-	return nil
-}
-
-// Linefeed moves the cursor to the next line.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) Linefeed() error {
-	ptr, err := zigoCheckedPointer("Terminal.Linefeed receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalLinefeed(ptr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Linefeed", code), te)
-	}
-	return nil
-}
-
-// Backspace moves the cursor back a column (but not less than 0).
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) Backspace() error {
-	ptr, err := zigoCheckedPointer("Terminal.Backspace receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalBackspace(ptr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Backspace", code), te)
-	}
-	return nil
-}
-
-// CursorIsAtPrompt: Returns true if the cursor is currently at a prompt. Another way to look
-// at this is it returns false if the shell is currently outputting something.
-// This requires shell integration (semantic prompt integration).
-//
-// If the shell integration doesn't exist, this will always return false.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) CursorIsAtPrompt() (bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.CursorIsAtPrompt receiver", te)
-	if err != nil {
-		return false, err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalCursorIsAtPrompt(ptr)
-	if code != 0 {
-		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorIsAtPrompt", code), te)
-	}
-	return result != 0, nil
-}
-
-// FullReset: Full reset.
-//
-// This will attempt to free the existing screen memory but if that fails
-// this will reuse the existing memory. In the latter case, memory may
-// be wasted (since its unused) but it isn't leaked.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) FullReset() error {
-	ptr, err := zigoCheckedPointer("Terminal.FullReset receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalFullReset(ptr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.FullReset", code), te)
-	}
-	return nil
-}
-
-// SwitchScreen: Switch to the given screen type (alternate or primary).
-//
-// This does NOT handle behaviors such as clearing the screen,
-// copying the cursor, etc. This should be handled by downstream
-// callers.
-//
-// After calling this function, the `self.screen` field will point
-// to the current screen, and the returned value will be the previous
-// screen. If the return value is null, then the screen was not
-// switched because it was already the active screen.
-//
-// Note: This is written in a generic way so that we can support
-// more than two screens in the future if needed. There isn't
-// currently a spec for this, but it is something I think might
-// be useful in the future.
-// The returned reference remains valid only while its parent handle remains open.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) SwitchScreen(key ScreenKey) (*Screen, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.SwitchScreen receiver", te)
-	if err != nil {
-		return nil, false, err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalSwitchScreen(ptr, uint8(key))
-	if code != 0 {
-		return nil, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SwitchScreen", code), te)
-	}
-	if result == nil {
-		return nil, false, nil
-	}
-	return zigoNewBorrowedScreen(result, te), true, nil
-}
-
-// SwitchScreenMode: Switch screen via a mode switch (e.g. mode 47, 1047, 1049).
-// This is a much more opinionated operation than `switchScreen`
-// since it also handles the behaviors of the specific mode,
-// such as clearing the screen, saving/restoring the cursor,
-// etc.
-//
-// This should be used for legacy compatibility with VT protocols,
-// but more modern usage should use `switchScreen` instead and handle
-// details like clearing the screen, cursor saving, etc. manually.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) SwitchScreenMode(mode SwitchScreenMode, enabled bool) error {
-	ptr, err := zigoCheckedPointer("Terminal.SwitchScreenMode receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSwitchScreenMode(ptr, uint8(mode), zigoBoolToUint8(enabled))
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SwitchScreenMode", code), te)
-	}
-	return nil
-}
-
-// ActiveScreen: The screen the terminal is currently writing to.
-// The returned reference remains valid only while its parent handle remains open.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ActiveScreen() (*Screen, error) {
-	ptr, err := zigoCheckedPointer("Terminal.ActiveScreen receiver", te)
+func (c *ClipboardRequest) ContentData(index uint) ([]byte, error) {
+	ptr, err := zigoCheckedPointer("ClipboardRequest.ContentData receiver", c)
 	if err != nil {
 		return nil, err
 	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalActiveScreen(ptr)
+	defer c.zigoRelease()
+	result, code := raw.ClipboardRequestContentData(ptr, index)
 	if code != 0 {
-		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ActiveScreen", code), te)
+		return nil, zigoPoisonAfterPanic(zigoErrorForCode("ClipboardRequest.ContentData", code), c)
 	}
-	return zigoNewBorrowedScreen(result, te), nil
-}
-
-// Screen: A specific screen, or absent if the terminal has not created it yet. The
-// alternate screen only exists once something has switched to it.
-// The returned reference remains valid only while its parent handle remains open.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) Screen(key ScreenKey) (*Screen, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.Screen receiver", te)
-	if err != nil {
-		return nil, false, err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalScreen(ptr, uint8(key))
-	if code != 0 {
-		return nil, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Screen", code), te)
-	}
-	if result == nil {
-		return nil, false, nil
-	}
-	return zigoNewBorrowedScreen(result, te), true, nil
+	return result, nil
 }
 
 // ViewportIsBottom: Returns true if the viewport is scrolled to the bottom of the screen.
@@ -1675,6 +3444,9 @@ func (s *Screen) ViewportIsBottom() (bool, error) {
 	}
 	return result != 0, nil
 }
+
+// MustViewportIsBottom calls ViewportIsBottom and panics with its typed error on failure.
+func (s *Screen) MustViewportIsBottom() bool { return zigoMustValue(s.ViewportIsBottom()) }
 
 // ClearSelection: Same as select(null) but can't fail.
 // It returns *HandleError if a required handle is nil or closed.
@@ -1707,1919 +3479,6 @@ func (s *Screen) EndHyperlink() error {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Screen.EndHyperlink", code), s)
 	}
 	return nil
-}
-
-// NewSearch: Start searching `t` for `needle`, which is copied.
-//
-// The search is fed once here, so it has seen the terminal before it is
-// returned and `tick` can make progress immediately. Returned by value, like
-// `Terminal.init`: zigo boxes the result and frees the box in `close`.
-// The caller must call Close on the returned handle.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) NewSearch(needleUnowned string) (*Search, error) {
-	ptr, zigoChildParent, err := te.zigoAcquireChild("Terminal.NewSearch receiver")
-	if err != nil {
-		return nil, err
-	}
-	zigoChildCreated := false
-	defer func() {
-		te.zigoRelease()
-		if !zigoChildCreated {
-			zigoChildParent.ZigoDropChild()
-		}
-	}()
-	result, code := raw.TerminalNewSearch(ptr, needleUnowned)
-	if code != 0 {
-		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.NewSearch", code), te)
-	}
-	zigoChildCreated = true
-	return zigoNewSearch(result, zigoChildParent), nil
-}
-
-// PrintAttributesInto: Write the cursor's current SGR attributes into `dst` as a DECRPSS response
-// body, and report how many bytes were written.
-//
-// Wrapped because ghostty returns a slice into the caller's buffer, and zigo
-// reports a written count instead.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) PrintAttributesInto(dst []byte) (uint, error) {
-	ptr, err := zigoCheckedPointer("Terminal.PrintAttributesInto receiver", te)
-	if err != nil {
-		return 0, err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalPrintAttributesInto(ptr, dst)
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PrintAttributesInto", code), te)
-	}
-	return result, nil
-}
-
-// HistoryString: The scrollback contents, oldest row first, newline separated.
-//
-// Wrapped because the region is chosen with `point.Point`, a tagged union
-// carrying a coordinate, which zigo cannot take by value.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) HistoryString() (string, error) {
-	ptr, err := zigoCheckedPointer("Terminal.HistoryString receiver", te)
-	if err != nil {
-		return "", err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalHistoryString(ptr)
-	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("Terminal.HistoryString", code), te)
-	}
-	return result, nil
-}
-
-// CursorUp: Move the cursor up amount lines. If amount is greater than the maximum
-// move distance then it is internally adjusted to the maximum. If amount is
-// 0, adjust it to 1.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) CursorUp(countReq uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.CursorUp receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalCursorUp(ptr, countReq)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorUp", code), te)
-	}
-	return nil
-}
-
-// CursorDown: Move the cursor down amount lines. If amount is greater than the maximum
-// move distance then it is internally adjusted to the maximum. This sequence
-// will not scroll the screen or scroll region. If amount is 0, adjust it to 1.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) CursorDown(countReq uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.CursorDown receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalCursorDown(ptr, countReq)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorDown", code), te)
-	}
-	return nil
-}
-
-// CursorLeft: Move the cursor to the left amount cells. If amount is 0, adjust it to 1.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) CursorLeft(countReq uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.CursorLeft receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalCursorLeft(ptr, countReq)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorLeft", code), te)
-	}
-	return nil
-}
-
-// CursorRight: Move the cursor right amount columns. If amount is greater than the
-// maximum move distance then it is internally adjusted to the maximum.
-// This sequence will not scroll the screen or scroll region. If amount is
-// 0, adjust it to 1.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) CursorRight(countReq uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.CursorRight receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalCursorRight(ptr, countReq)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorRight", code), te)
-	}
-	return nil
-}
-
-// SaveCursor: Save cursor position and further state.
-//
-// The primary and alternate screen have distinct save state. One saved state
-// is kept per screen (main / alternative). If for the current screen state
-// was already saved it is overwritten.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SaveCursor() error {
-	ptr, err := zigoCheckedPointer("Terminal.SaveCursor receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSaveCursor(ptr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SaveCursor", code), te)
-	}
-	return nil
-}
-
-// RestoreCursor: Restore cursor position and other state.
-//
-// The primary and alternate screen have distinct save state.
-// If no save was done before values are reset to their initial values.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) RestoreCursor() error {
-	ptr, err := zigoCheckedPointer("Terminal.RestoreCursor receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalRestoreCursor(ptr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.RestoreCursor", code), te)
-	}
-	return nil
-}
-
-// Index: Move the cursor to the next line in the scrolling region, possibly scrolling.
-//
-// If the cursor is outside of the scrolling region: move the cursor one line
-// down if it is not on the bottom-most line of the screen.
-//
-// If the cursor is inside the scrolling region:
-// If the cursor is on the bottom-most line of the scrolling region:
-// invoke scroll up with amount=1
-// If the cursor is not on the bottom-most line of the scrolling region:
-// move the cursor one line down
-//
-// This unsets the pending wrap state without wrapping.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) Index() error {
-	ptr, err := zigoCheckedPointer("Terminal.Index receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalIndex(ptr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Index", code), te)
-	}
-	return nil
-}
-
-// ReverseIndex: Move the cursor to the previous line in the scrolling region, possibly
-// scrolling.
-//
-// If the cursor is outside of the scrolling region, move the cursor one
-// line up if it is not on the top-most line of the screen.
-//
-// If the cursor is inside the scrolling region:
-//
-// * If the cursor is on the top-most line of the scrolling region:
-// invoke scroll down with amount=1
-// * If the cursor is not on the top-most line of the scrolling region:
-// move the cursor one line up
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ReverseIndex() error {
-	ptr, err := zigoCheckedPointer("Terminal.ReverseIndex receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalReverseIndex(ptr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ReverseIndex", code), te)
-	}
-	return nil
-}
-
-// HorizontalTab: Horizontal tab moves the cursor to the next tabstop, clearing
-// the screen to the left the tabstop.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) HorizontalTab() error {
-	ptr, err := zigoCheckedPointer("Terminal.HorizontalTab receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalHorizontalTab(ptr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.HorizontalTab", code), te)
-	}
-	return nil
-}
-
-// HorizontalTabBack: Same as horizontalTab but moves to the previous tabstop instead of the next.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) HorizontalTabBack() error {
-	ptr, err := zigoCheckedPointer("Terminal.HorizontalTabBack receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalHorizontalTabBack(ptr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.HorizontalTabBack", code), te)
-	}
-	return nil
-}
-
-// TabSet: Set a tab stop on the current cursor.
-// TODO: test
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) TabSet() error {
-	ptr, err := zigoCheckedPointer("Terminal.TabSet receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalTabSet(ptr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.TabSet", code), te)
-	}
-	return nil
-}
-
-// TabReset: TODO: test
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) TabReset() error {
-	ptr, err := zigoCheckedPointer("Terminal.TabReset receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalTabReset(ptr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.TabReset", code), te)
-	}
-	return nil
-}
-
-// TabClear: Clear tab stops.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) TabClear(cmd TabClear) error {
-	ptr, err := zigoCheckedPointer("Terminal.TabClear receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalTabClear(ptr, uint8(cmd))
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.TabClear", code), te)
-	}
-	return nil
-}
-
-// ScrollUp: Removes amount lines from the top of the scroll region. The remaining lines
-// to the bottom margin are shifted up and space from the bottom margin up
-// is filled with empty lines.
-//
-// The new lines are created according to the current SGR state.
-//
-// Does not change the (absolute) cursor position.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) ScrollUp(count uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.ScrollUp receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalScrollUp(ptr, count)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ScrollUp", code), te)
-	}
-	return nil
-}
-
-// ScrollDown: Scroll the text down by one row.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ScrollDown(count uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.ScrollDown receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalScrollDown(ptr, count)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ScrollDown", code), te)
-	}
-	return nil
-}
-
-// SetTopAndBottomMargin: Set Top and Bottom Margins If bottom is not specified, 0 or bigger than
-// the number of the bottom-most row, it is adjusted to the number of the
-// bottom most row.
-//
-// If top < bottom set the top and bottom row of the scroll region according
-// to top and bottom and move the cursor to the top-left cell of the display
-// (when in cursor origin mode is set to the top-left cell of the scroll region).
-//
-// Otherwise: Set the top and bottom row of the scroll region to the top-most
-// and bottom-most line of the screen.
-//
-// Top and bottom are 1-indexed.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetTopAndBottomMargin(topReq uint, bottomReq uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetTopAndBottomMargin receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetTopAndBottomMargin(ptr, topReq, bottomReq)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetTopAndBottomMargin", code), te)
-	}
-	return nil
-}
-
-// SetLeftAndRightMargin: DECSLRM
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetLeftAndRightMargin(leftReq uint, rightReq uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetLeftAndRightMargin receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetLeftAndRightMargin(ptr, leftReq, rightReq)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetLeftAndRightMargin", code), te)
-	}
-	return nil
-}
-
-// SetScrollbackMaxBytes: Limit the primary screen's scrollback to `max` bytes. Zero disables
-// scrollback and erases retained history.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetScrollbackMaxBytes(max uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetScrollbackMaxBytes receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetScrollbackMaxBytes(ptr, max)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetScrollbackMaxBytes", code), te)
-	}
-	return nil
-}
-
-// ClearScrollbackMaxBytes: Remove the primary screen's scrollback byte limit.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ClearScrollbackMaxBytes() error {
-	ptr, err := zigoCheckedPointer("Terminal.ClearScrollbackMaxBytes receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalClearScrollbackMaxBytes(ptr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ClearScrollbackMaxBytes", code), te)
-	}
-	return nil
-}
-
-// SetScrollbackMaxLines: Limit the primary screen's scrollback to `max` physical lines.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetScrollbackMaxLines(max uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetScrollbackMaxLines receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetScrollbackMaxLines(ptr, max)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetScrollbackMaxLines", code), te)
-	}
-	return nil
-}
-
-// ClearScrollbackMaxLines: Remove the primary screen's scrollback line limit.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ClearScrollbackMaxLines() error {
-	ptr, err := zigoCheckedPointer("Terminal.ClearScrollbackMaxLines receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalClearScrollbackMaxLines(ptr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ClearScrollbackMaxLines", code), te)
-	}
-	return nil
-}
-
-// InsertLines: Insert amount lines at the current cursor row. The contents of the line
-// at the current cursor row and below (to the bottom-most line in the
-// scrolling region) are shifted down by amount lines. The contents of the
-// amount bottom-most lines in the scroll region are lost.
-//
-// This unsets the pending wrap state without wrapping. If the current cursor
-// position is outside of the current scroll region it does nothing.
-//
-// If amount is greater than the remaining number of lines in the scrolling
-// region it is adjusted down (still allowing for scrolling out every remaining
-// line in the scrolling region)
-//
-// In left and right margin mode the margins are respected; lines are only
-// scrolled in the scroll region.
-//
-// All cleared space is colored according to the current SGR state.
-//
-// Moves the cursor to the left margin.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) InsertLines(count uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.InsertLines receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalInsertLines(ptr, count)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.InsertLines", code), te)
-	}
-	return nil
-}
-
-// DeleteLines: Removes amount lines from the current cursor row down. The remaining lines
-// to the bottom margin are shifted up and space from the bottom margin up is
-// filled with empty lines.
-//
-// If the current cursor position is outside of the current scroll region it
-// does nothing. If amount is greater than the remaining number of lines in the
-// scrolling region it is adjusted down.
-//
-// In left and right margin mode the margins are respected; lines are only
-// scrolled in the scroll region.
-//
-// If the cell movement splits a multi cell character that character cleared,
-// by replacing it by spaces, keeping its current attributes. All other
-// cleared space is colored according to the current SGR state.
-//
-// Moves the cursor to the left margin.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) DeleteLines(count uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.DeleteLines receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalDeleteLines(ptr, count)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.DeleteLines", code), te)
-	}
-	return nil
-}
-
-// InsertBlanks: Inserts spaces at current cursor position moving existing cell contents
-// to the right. The contents of the count right-most columns in the scroll
-// region are lost. The cursor position is not changed.
-//
-// This unsets the pending wrap state without wrapping.
-//
-// The inserted cells are colored according to the current SGR state.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) InsertBlanks(count uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.InsertBlanks receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalInsertBlanks(ptr, count)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.InsertBlanks", code), te)
-	}
-	return nil
-}
-
-// DeleteChars: Removes amount characters from the current cursor position to the right.
-// The remaining characters are shifted to the left and space from the right
-// margin is filled with spaces.
-//
-// If amount is greater than the remaining number of characters in the
-// scrolling region, it is adjusted down.
-//
-// Does not change the cursor position.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) DeleteChars(countReq uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.DeleteChars receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalDeleteChars(ptr, countReq)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.DeleteChars", code), te)
-	}
-	return nil
-}
-
-// EraseChars calls the Zig function Terminal.eraseChars.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) EraseChars(countReq uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.EraseChars receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalEraseChars(ptr, countReq)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.EraseChars", code), te)
-	}
-	return nil
-}
-
-// EraseLine: Erase the line.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) EraseLine(mode EraseLine, protectedReq bool) error {
-	ptr, err := zigoCheckedPointer("Terminal.EraseLine receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalEraseLine(ptr, uint8(mode), zigoBoolToUint8(protectedReq))
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.EraseLine", code), te)
-	}
-	return nil
-}
-
-// EraseDisplay: Erase the display.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) EraseDisplay(mode EraseDisplay, protectedReq bool) error {
-	ptr, err := zigoCheckedPointer("Terminal.EraseDisplay receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalEraseDisplay(ptr, uint8(mode), zigoBoolToUint8(protectedReq))
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.EraseDisplay", code), te)
-	}
-	return nil
-}
-
-// Decaln: Resets all margins and fills the whole screen with the character 'E'
-//
-// Sets the cursor to the top left corner.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) Decaln() error {
-	ptr, err := zigoCheckedPointer("Terminal.Decaln receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalDecaln(ptr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Decaln", code), te)
-	}
-	return nil
-}
-
-// Print: Copy of testing.print (not public)
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) Print(c rune) error {
-	if c < 0 || c > 1114111 {
-		return &RangeError{Operation: "Terminal.Print", Parameter: "c", Type: "codepoint"}
-	}
-	ptr, err := zigoCheckedPointer("Terminal.Print receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalPrint(ptr, uint32(c))
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Print", code), te)
-	}
-	return nil
-}
-
-// PrintRepeat: Print the previous printed character a repeated amount of times.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) PrintRepeat(countReq uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.PrintRepeat receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalPrintRepeat(ptr, countReq)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PrintRepeat", code), te)
-	}
-	return nil
-}
-
-// PrintSlice: Print multiple codepoints to the terminal at once. This is
-// semantically identical to calling `print` for each codepoint in
-// order, but is much faster because it can batch cell writes and
-// hoist per-codepoint checks out of the hot loop.
-//
-// The codepoints must all be printable: it is illegal for any
-// codepoint in this slice to be a C0 control character. Therefore,
-// this should only be called as a result of a proper VT parser
-// (like our own).
-//
-// This is optimized for the common case: ASCII, soft-wrap, etc.
-// Sequences of codepoints that require special handling (e.g. wide characters,
-// grapheme clustering) are handled correctly but fall back to the
-// slower per-codepoint path. They're less common and this is optimized
-// for the aforementioned cases.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) PrintSlice(cps []rune) error {
-	for _, zigoValue := range cps {
-		if zigoValue < 0 || zigoValue > 1114111 {
-			return &RangeError{Operation: "Terminal.PrintSlice", Parameter: "cps", Type: "codepoint"}
-		}
-	}
-	ptr, err := zigoCheckedPointer("Terminal.PrintSlice receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalPrintSlice(ptr, zigoRunesToUint32(cps))
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PrintSlice", code), te)
-	}
-	return nil
-}
-
-// Format the active area -- the rows on screen, not the scrollback -- with
-// the terminal's colors and, for styled output, its palette, modes and
-// other state a replay needs. `Screen.format` covers the scrollback too.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (te *Terminal) Format(opts FormatOptions, writer io.Writer) error {
-	if writer == nil {
-		return &StreamError{Operation: "Terminal.Format", Parameter: "writer", Err: ErrNilStream}
-	}
-	ptr, err := zigoCheckedPointer("Terminal.Format receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	writerHandle := zigoNewWriterStreamHandle(writer)
-	defer zigoDeleteCallbackHandle(writerHandle)
-	code := raw.TerminalFormat(ptr, zigoFormatOptionsToRaw(opts), uintptr(writerHandle))
-	if zigoCallbackPanicPending() {
-		zigoRethrowCallbackPanic("Terminal.Format", writerHandle)
-	}
-	if err := zigoStreamError("Terminal.Format", "writer", writerHandle); err != nil {
-		return err
-	}
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Format", code), te)
-	}
-	return nil
-}
-
-// DecodeSnapshot: Decode a snapshot from `reader`. `max_continuation_bytes` bounds the
-// unfinished-sequence suffix the snapshot may carry.
-//
-// Wrapped because ghostty's `decode` takes an options struct; returned by
-// value so zigo boxes it and `Snapshot.deinit` frees it.
-// The caller must call Close on the returned handle.
-// Native failures are returned as generated error values.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func DecodeSnapshot(reader io.Reader, maxContinuationBytes uint) (*Snapshot, error) {
-	if reader == nil {
-		return nil, &StreamError{Operation: "DecodeSnapshot", Parameter: "reader", Err: ErrNilStream}
-	}
-	readerHandle := zigoNewReaderStreamHandle(reader)
-	defer zigoDeleteCallbackHandle(readerHandle)
-	readerData := zigoReaderBytes(reader)
-	result, code := raw.DecodeSnapshot(uintptr(readerHandle), readerData, maxContinuationBytes)
-	if zigoCallbackPanicPending() {
-		zigoRethrowCallbackPanic("DecodeSnapshot", readerHandle)
-	}
-	if err := zigoStreamError("DecodeSnapshot", "reader", readerHandle); err != nil {
-		return nil, err
-	}
-	if code != 0 {
-		return nil, zigoErrorForCode("DecodeSnapshot", code)
-	}
-	return zigoNewSnapshot(result), nil
-}
-
-// NewSnapshotDecoder: Start decoding `data`, which is copied.
-//
-// Nothing is read until `snapshotDecoderReady`.
-// The caller must call Close on the returned handle.
-// Native failures are returned as generated error values.
-func NewSnapshotDecoder(data []byte) (*SnapshotDecoder, error) {
-	result, code := raw.NewSnapshotDecoder(data)
-	if code != 0 {
-		return nil, zigoErrorForCode("NewSnapshotDecoder", code)
-	}
-	return zigoNewSnapshotDecoder(result), nil
-}
-
-// BackgroundColor: The current background color: what OSC 11 set, else the default.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) BackgroundColor() (uint32, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.BackgroundColor receiver", te)
-	if err != nil {
-		return 0, false, err
-	}
-	defer te.zigoRelease()
-	result, zigoHas, code := raw.TerminalBackgroundColor(ptr)
-	if code != 0 {
-		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.BackgroundColor", code), te)
-	}
-	return result, zigoHas, nil
-}
-
-// ForegroundColor: The current foreground color: what OSC 10 set, else the default.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ForegroundColor() (uint32, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.ForegroundColor receiver", te)
-	if err != nil {
-		return 0, false, err
-	}
-	defer te.zigoRelease()
-	result, zigoHas, code := raw.TerminalForegroundColor(ptr)
-	if code != 0 {
-		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ForegroundColor", code), te)
-	}
-	return result, zigoHas, nil
-}
-
-// CursorColor: The current cursor color, if one was set or configured. Null means the
-// cursor takes the foreground color.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) CursorColor() (uint32, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.CursorColor receiver", te)
-	if err != nil {
-		return 0, false, err
-	}
-	defer te.zigoRelease()
-	result, zigoHas, code := raw.TerminalCursorColor(ptr)
-	if code != 0 {
-		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorColor", code), te)
-	}
-	return result, zigoHas, nil
-}
-
-// PaletteColors: Copy the current 256-color palette into `dst` and return how many entries
-// were written: 256, or `dst.len` if shorter.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) PaletteColors(dst []uint32) (uint, error) {
-	ptr, err := zigoCheckedPointer("Terminal.PaletteColors receiver", te)
-	if err != nil {
-		return 0, err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalPaletteColors(ptr, dst)
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PaletteColors", code), te)
-	}
-	return result, nil
-}
-
-// SetDefaultBackgroundColor: Set the configured default background: the value in effect until OSC 11
-// overrides it and again after OSC 111 resets it.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetDefaultBackgroundColor(rgb uint32) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetDefaultBackgroundColor receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetDefaultBackgroundColor(ptr, rgb)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultBackgroundColor", code), te)
-	}
-	return nil
-}
-
-// SetDefaultForegroundColor: Set the configured default foreground. See `setDefaultBackgroundColor`.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetDefaultForegroundColor(rgb uint32) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetDefaultForegroundColor receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetDefaultForegroundColor(ptr, rgb)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultForegroundColor", code), te)
-	}
-	return nil
-}
-
-// SetDefaultCursorColor: Set the configured default cursor color. See `setDefaultBackgroundColor`.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetDefaultCursorColor(rgb uint32) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetDefaultCursorColor receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetDefaultCursorColor(ptr, rgb)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultCursorColor", code), te)
-	}
-	return nil
-}
-
-// ModeEnabled: Whether `mode` is currently on.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ModeEnabled(mode Mode) (bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.ModeEnabled receiver", te)
-	if err != nil {
-		return false, err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalModeEnabled(ptr, uint16(mode))
-	if code != 0 {
-		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ModeEnabled", code), te)
-	}
-	return result != 0, nil
-}
-
-// SetMode: Turn `mode` on or off. This flips the state only; the side effects the
-// parser performs when a program changes a mode -- switching screens for
-// 1049, resizing for 132-column -- do not run. Use `switchScreenMode` and
-// `deccolm` for those.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetMode(mode Mode, value bool) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetMode receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetMode(ptr, uint16(mode), zigoBoolToUint8(value))
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetMode", code), te)
-	}
-	return nil
-}
-
-// SetPwd: Set the pwd for the terminal.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) SetPwd(pwd string) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetPwd receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetPwd(ptr, pwd)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetPwd", code), te)
-	}
-	return nil
-}
-
-// GetPwd: Returns the pwd for the terminal, if any. The memory is owned by the
-// Terminal and is not copied. It is safe until a reset or setPwd.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) GetPwd() (string, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.GetPwd receiver", te)
-	if err != nil {
-		return "", false, err
-	}
-	defer te.zigoRelease()
-	result, zigoHas, code := raw.TerminalGetPwd(ptr)
-	if code != 0 {
-		return "", false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.GetPwd", code), te)
-	}
-	return result, zigoHas, nil
-}
-
-// GetTitle: Returns the title for the terminal, if any. The memory is owned by the
-// Terminal and is not copied. It is safe until a reset or setTitle.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) GetTitle() (string, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.GetTitle receiver", te)
-	if err != nil {
-		return "", false, err
-	}
-	defer te.zigoRelease()
-	result, zigoHas, code := raw.TerminalGetTitle(ptr)
-	if code != 0 {
-		return "", false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.GetTitle", code), te)
-	}
-	return result, zigoHas, nil
-}
-
-// SetTitle: Set the title for the terminal, as set by escape sequences (e.g. OSC 0/2).
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) SetTitle(t string) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetTitle receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetTitle(ptr, t)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetTitle", code), te)
-	}
-	return nil
-}
-
-// SetAttribute: Apply an SGR attribute to the cursor's pen. Everything printed afterwards
-// carries it until it is reset.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) SetAttribute(attr Attribute) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetAttribute receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetAttribute(ptr, uint8(attr.tag), uint8(attr.underline), attr.underlineColorRgb, attr.underlineColor256, attr.directColorFg, attr.directColorBg, attr.color256Fg, attr.color256Bg, uint8(attr.namedFg), uint8(attr.namedBg), uint8(attr.brightNamedFg), uint8(attr.brightNamedBg))
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetAttribute", code), te)
-	}
-	return nil
-}
-
-// SetProtectedMode: Set the character protection mode for the terminal.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetProtectedMode(mode ProtectedMode) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetProtectedMode receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetProtectedMode(ptr, uint8(mode))
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetProtectedMode", code), te)
-	}
-	return nil
-}
-
-// SetDefaultCursorStyle: Change the default cursor shape.
-//
-// If the cursor currently follows its defaults, the visible shape changes
-// immediately. Otherwise the new shape is saved for the next reset or default
-// selection, such as DECSCUSR `CSI 0 SP q`.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetDefaultCursorStyle(configuredStyle CursorStyle) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetDefaultCursorStyle receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetDefaultCursorStyle(ptr, uint8(configuredStyle))
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultCursorStyle", code), te)
-	}
-	return nil
-}
-
-// SetDefaultCursorBlink: Set the default cursor blink. Applied immediately only when the cursor
-// currently follows its defaults; otherwise saved for the next reset.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetDefaultCursorBlink(blink bool) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetDefaultCursorBlink receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetDefaultCursorBlink(ptr, zigoBoolToUint8(blink))
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultCursorBlink", code), te)
-	}
-	return nil
-}
-
-// ResetDefaultCursorBlink: Return the default cursor blink to the emulator default (blinking).
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ResetDefaultCursorBlink() error {
-	ptr, err := zigoCheckedPointer("Terminal.ResetDefaultCursorBlink receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalResetDefaultCursorBlink(ptr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetDefaultCursorBlink", code), te)
-	}
-	return nil
-}
-
-// ConfigureCharset: Set the charset into the given slot.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ConfigureCharset(slot CharsetSlot, set Charset) error {
-	ptr, err := zigoCheckedPointer("Terminal.ConfigureCharset receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalConfigureCharset(ptr, uint8(slot), uint8(set))
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ConfigureCharset", code), te)
-	}
-	return nil
-}
-
-// InvokeCharset: Invoke the charset in slot into the active slot. If single is true,
-// then this will only be invoked for a single character.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) InvokeCharset(active CharsetActiveSlot, slot CharsetSlot, single bool) error {
-	ptr, err := zigoCheckedPointer("Terminal.InvokeCharset receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalInvokeCharset(ptr, uint8(active), uint8(slot), zigoBoolToUint8(single))
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.InvokeCharset", code), te)
-	}
-	return nil
-}
-
-// Deccolm changes the terminal width between 80 and 132 columns. This
-// function call will do NOTHING unless `setDeccolmSupported` has been
-// called with "true".
-//
-// This breaks the expectation around modern terminals that they resize
-// with the window. This will fix the grid at either 80 or 132 columns.
-// The rows will continue to be variable.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) Deccolm(mode DeccolmMode) error {
-	ptr, err := zigoCheckedPointer("Terminal.Deccolm receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalDeccolm(ptr, uint8(mode))
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Deccolm", code), te)
-	}
-	return nil
-}
-
-// ScrollViewport: Scroll the viewport of the terminal grid.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ScrollViewport(behavior ScrollViewport) error {
-	ptr, err := zigoCheckedPointer("Terminal.ScrollViewport receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalScrollViewport(ptr, uint8(behavior.tag), behavior.delta, behavior.row)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ScrollViewport", code), te)
-	}
-	return nil
-}
-
-// CompressionActivity: Return the current compression activity value.
-//
-// Callers should schedule a `compress` call whenever this value changes. The
-// direction of the change has no meaning; this is an opaque change token
-// rather than a monotonic sequence exposed by Terminal.
-//
-// It is up to the terminal what it decides to compress, but currently
-// we compress cold (non-viewed, non-editable) scrollback history on
-// the primary screen.
-//
-// Note that compression requires specific system features, namely
-// the ability to retain virtual memory allocations while discarding their
-// physical memory backings. Callers must still use `compress` to determine
-// whether compression is supported on the current target.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) CompressionActivity() (uint64, error) {
-	ptr, err := zigoCheckedPointer("Terminal.CompressionActivity receiver", te)
-	if err != nil {
-		return 0, err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalCompressionActivity(ptr)
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CompressionActivity", code), te)
-	}
-	return result, nil
-}
-
-// Resize: Change the viewport size, leaving the pixel geometry alone.
-//
-// Wrapped because `vt.Terminal.Resize` carries a nested optional struct for
-// the cell size in pixels, which has no C representation.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) Resize(width uint16, height uint16) error {
-	ptr, err := zigoCheckedPointer("Terminal.Resize receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalResize(ptr, width, height)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Resize", code), te)
-	}
-	return nil
-}
-
-// ResizeCells: Change the viewport size and tell the terminal how many pixels a cell is.
-//
-// The pixel geometry is only used by the parts of the protocol that measure in
-// pixels -- Kitty graphics placements above all -- and is zero until it is set,
-// which leaves every image sized zero. A renderer that draws images should
-// resize with this rather than `resize`: the terminal stores the pixel size of
-// the whole grid, so it goes stale as soon as the column count changes.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) ResizeCells(width uint16, height uint16, cellWidth uint32, cellHeight uint32) error {
-	ptr, err := zigoCheckedPointer("Terminal.ResizeCells receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalResizeCells(ptr, width, height, cellWidth, cellHeight)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResizeCells", code), te)
-	}
-	return nil
-}
-
-// NewRenderState: An empty render state, filled by the first `RenderState.update`. Returned
-// by value so zigo boxes it and `RenderState.deinit` frees it; ghostty spells
-// the empty state as a constant, which has no function to bind.
-// The caller must call Close on the returned handle.
-// A native panic is returned as *NativePanicError.
-func NewRenderState() (*RenderState, error) {
-	result, code := raw.NewRenderState()
-	if code != 0 {
-		return nil, zigoErrorForCode("NewRenderState", code)
-	}
-	return zigoNewRenderState(result), nil
-}
-
-// Update the columns/rows for the grid based on the given screen and
-// cell size.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (r *RenderState) Update(t *Terminal) error {
-	ptr, err := zigoCheckedPointer("RenderState.Update receiver", r)
-	if err != nil {
-		return err
-	}
-	defer r.zigoRelease()
-	tPtr, err := zigoCheckedPointer("RenderState.Update parameter t", t)
-	if err != nil {
-		return err
-	}
-	defer lifecycle.Release(t)
-	code := raw.RenderStateUpdate(ptr, tPtr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Update", code), r, t)
-	}
-	return nil
-}
-
-// Clean: Mark all render-state data as consumed by the renderer.
-//
-// This clears both the global dirty state and every per-row dirty flag.
-// Callers that only consume part of a frame should clear the two layers
-// individually instead.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (r *RenderState) Clean() error {
-	ptr, err := zigoCheckedPointer("RenderState.Clean receiver", r)
-	if err != nil {
-		return err
-	}
-	defer r.zigoRelease()
-	code := raw.RenderStateClean(ptr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Clean", code), r)
-	}
-	return nil
-}
-
-// NewKittyImages creates a caller-owned KittyImages.
-// The caller must call Close on the returned handle.
-// Native failures are returned as generated error values.
-func NewKittyImages() (*KittyImages, error) {
-	result, code := raw.NewKittyImages()
-	if code != 0 {
-		return nil, zigoErrorForCode("NewKittyImages", code)
-	}
-	return zigoNewKittyImages(result), nil
-}
-
-// SetKittyGraphicsSizeLimit: Set the storage size limit for Kitty graphics across all screens.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetKittyGraphicsSizeLimit(limit uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetKittyGraphicsSizeLimit receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetKittyGraphicsSizeLimit(ptr, limit)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetKittyGraphicsSizeLimit", code), te)
-	}
-	return nil
-}
-
-// SetKittyGraphicsLoadingLimits: Choose which mediums a program may transmit a Kitty image over.
-//
-// The default is direct transmission only: the pixels arrive base64-encoded in
-// the escape sequence itself. The other three mediums make the terminal read
-// something the program names -- an arbitrary path, a path under `temp_dir`,
-// or a POSIX shared memory object -- so each is a decision about how much a
-// program on the pty is trusted with the embedder's filesystem. An empty
-// `temp_dir` disables the temporary file medium.
-//
-// ghostty borrows `temp_dir` rather than copying it, so a copy is made here
-// and the previous one released. The last copy is released by nothing: it
-// lives as long as the terminal, and ghostty's `deinit` does not know it is
-// owned.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) SetKittyGraphicsLoadingLimits(file bool, tempDir string, sharedMemory bool) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetKittyGraphicsLoadingLimits receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetKittyGraphicsLoadingLimits(ptr, zigoBoolToUint8(file), tempDir, zigoBoolToUint8(sharedMemory))
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetKittyGraphicsLoadingLimits", code), te)
-	}
-	return nil
-}
-
-// KittyImage: Look up an image on the active screen by id.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) KittyImage(imageID uint32) (KittyImage, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.KittyImage receiver", te)
-	if err != nil {
-		return KittyImage{}, false, err
-	}
-	defer te.zigoRelease()
-	result, zigoHas, code := raw.TerminalKittyImage(ptr, imageID)
-	if code != 0 {
-		return KittyImage{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.KittyImage", code), te)
-	}
-	return zigoKittyImageFromRaw(result), zigoHas, nil
-}
-
-// KittyImageData: Copy an image's pixels into `dst` and report how many bytes were written,
-// or zero if there is no such image.
-//
-// The bytes are as the program transmitted them, decompressed: a PNG is still
-// a PNG, and it is the renderer that decodes it. For an animated image these
-// are the current frame's, which is why the generation stamp moves when the
-// frame does.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) KittyImageData(imageID uint32, dst []byte) (uint, error) {
-	ptr, err := zigoCheckedPointer("Terminal.KittyImageData receiver", te)
-	if err != nil {
-		return 0, err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalKittyImageData(ptr, imageID, dst)
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.KittyImageData", code), te)
-	}
-	return result, nil
-}
-
-// PaletteColor: Read one entry of the 256 color palette as `0xRRGGBB`.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) PaletteColor(idx uint8) (uint32, error) {
-	ptr, err := zigoCheckedPointer("Terminal.PaletteColor receiver", te)
-	if err != nil {
-		return 0, err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalPaletteColor(ptr, idx)
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PaletteColor", code), te)
-	}
-	return result, nil
-}
-
-// SetPaletteColor: Override one palette entry, as OSC 4 does.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetPaletteColor(idx uint8, rgb uint32) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetPaletteColor receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetPaletteColor(ptr, idx, rgb)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetPaletteColor", code), te)
-	}
-	return nil
-}
-
-// ResetPaletteColor: Drop the override on one palette entry, restoring its default.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ResetPaletteColor(idx uint8) error {
-	ptr, err := zigoCheckedPointer("Terminal.ResetPaletteColor receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalResetPaletteColor(ptr, idx)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetPaletteColor", code), te)
-	}
-	return nil
-}
-
-// ResetPalette: Drop every palette override.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ResetPalette() error {
-	ptr, err := zigoCheckedPointer("Terminal.ResetPalette receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalResetPalette(ptr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetPalette", code), te)
-	}
-	return nil
-}
-
-// SetDefaultPaletteColor: Change what one palette entry resets *to*, which is the embedder's
-// configured theme rather than anything a program asked for.
-//
-// An entry a program has already overridden keeps that override; it is the
-// value `resetPaletteColor` will later restore that moves. ghostty only
-// offers this a whole palette at a time, so the single entry is edited into a
-// copy of the current defaults.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) SetDefaultPaletteColor(idx uint8, rgb uint32) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetDefaultPaletteColor receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetDefaultPaletteColor(ptr, idx, rgb)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultPaletteColor", code), te)
-	}
-	return nil
-}
-
-// ResetDefaultPalette: Restore the built-in xterm palette as the default, preserving overrides.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ResetDefaultPalette() error {
-	ptr, err := zigoCheckedPointer("Terminal.ResetDefaultPalette receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalResetDefaultPalette(ptr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetDefaultPalette", code), te)
-	}
-	return nil
-}
-
-// SetDefaultMode: Set a mode and make that value the one `resetModes` and `fullReset` return
-// to.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetDefaultMode(mode Mode, value bool) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetDefaultMode receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetDefaultMode(ptr, uint16(mode), zigoBoolToUint8(value))
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultMode", code), te)
-	}
-	return nil
-}
-
-// ResetModes: Return every mode to its default and discard the XTSAVE slots.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ResetModes() error {
-	ptr, err := zigoCheckedPointer("Terminal.ResetModes receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalResetModes(ptr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetModes", code), te)
-	}
-	return nil
-}
-
-// SaveMode: Save a mode's current value, as XTSAVE (CSI ? Pm s) does.
-//
-// There is one slot per mode, so saving twice without restoring loses the
-// first value.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SaveMode(mode Mode) error {
-	ptr, err := zigoCheckedPointer("Terminal.SaveMode receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSaveMode(ptr, uint16(mode))
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SaveMode", code), te)
-	}
-	return nil
-}
-
-// RestoreMode: Restore a mode from its XTSAVE slot and report the value restored.
-//
-// A mode that was never saved restores to false, which is the slot's initial
-// state rather than the mode's default.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) RestoreMode(mode Mode) (bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.RestoreMode receiver", te)
-	if err != nil {
-		return false, err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalRestoreMode(ptr, uint16(mode))
-	if code != 0 {
-		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.RestoreMode", code), te)
-	}
-	return result != 0, nil
-}
-
-// SetTabstop: Put a tabstop at an absolute column.
-//
-// Unlike `tabSet`, which is HTS and acts on the cursor's column, this does not
-// move or read the cursor.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetTabstop(col uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetTabstop receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetTabstop(ptr, col)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetTabstop", code), te)
-	}
-	return nil
-}
-
-// UnsetTabstop: Remove the tabstop at an absolute column, if there is one.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) UnsetTabstop(col uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.UnsetTabstop receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalUnsetTabstop(ptr, col)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.UnsetTabstop", code), te)
-	}
-	return nil
-}
-
-// ResetTabstops: Clear every tabstop and put one every `interval` columns.
-//
-// An interval of zero just clears them all. The terminal's own default is 8.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ResetTabstops(interval uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.ResetTabstops receiver", te)
-	if err != nil {
-		return err
-	}
-	defer te.zigoRelease()
-	code := raw.TerminalResetTabstops(ptr, interval)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetTabstops", code), te)
-	}
-	return nil
-}
-
-// ScrollRegion: The current scrolling region.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ScrollRegion() (ScrollRegion, error) {
-	ptr, err := zigoCheckedPointer("Terminal.ScrollRegion receiver", te)
-	if err != nil {
-		return ScrollRegion{}, err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalScrollRegion(ptr)
-	if code != 0 {
-		return ScrollRegion{}, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ScrollRegion", code), te)
-	}
-	return zigoScrollRegionFromRaw(result), nil
-}
-
-// Charset: The character set configured in one slot, as SCS set it.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) Charset(slot CharsetSlot) (Charset, error) {
-	ptr, err := zigoCheckedPointer("Terminal.Charset receiver", te)
-	if err != nil {
-		return 0, err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalCharset(ptr, uint8(slot))
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Charset", code), te)
-	}
-	return Charset(result), nil
-}
-
-// CharsetGl: The slot GL resolves to: the set used for codepoints up to 127.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) CharsetGl() (CharsetSlot, error) {
-	ptr, err := zigoCheckedPointer("Terminal.CharsetGl receiver", te)
-	if err != nil {
-		return 0, err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalCharsetGl(ptr)
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CharsetGl", code), te)
-	}
-	return CharsetSlot(result), nil
-}
-
-// CharsetGr: The slot GR resolves to: the set used for 8-bit printable codepoints.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) CharsetGr() (CharsetSlot, error) {
-	ptr, err := zigoCheckedPointer("Terminal.CharsetGr receiver", te)
-	if err != nil {
-		return 0, err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalCharsetGr(ptr)
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CharsetGr", code), te)
-	}
-	return CharsetSlot(result), nil
-}
-
-// CharsetSingleShift: The slot a pending single shift (SS2/SS3) will use for exactly one
-// character, or absent if none is pending.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) CharsetSingleShift() (CharsetSlot, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.CharsetSingleShift receiver", te)
-	if err != nil {
-		return 0, false, err
-	}
-	defer te.zigoRelease()
-	result, zigoHas, code := raw.TerminalCharsetSingleShift(ptr)
-	if code != 0 {
-		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CharsetSingleShift", code), te)
-	}
-	return CharsetSlot(result), zigoHas, nil
-}
-
-// ProtectedMode: The most recent protected mode (DECSCA or the older SPA/EPA) on the active
-// screen. This never returns to `off` once set, until the screen is reset:
-// ECH and friends key off the most recent mode, not the current pen.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ProtectedMode() (ProtectedMode, error) {
-	ptr, err := zigoCheckedPointer("Terminal.ProtectedMode receiver", te)
-	if err != nil {
-		return 0, err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalProtectedMode(ptr)
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ProtectedMode", code), te)
-	}
-	return ProtectedMode(result), nil
-}
-
-// MouseTracking: The tracking mode currently in effect.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) MouseTracking() (MouseTracking, error) {
-	ptr, err := zigoCheckedPointer("Terminal.MouseTracking receiver", te)
-	if err != nil {
-		return 0, err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalMouseTracking(ptr)
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.MouseTracking", code), te)
-	}
-	return MouseTracking(result), nil
-}
-
-// MouseTrackingSendsMotion: Whether the current tracking mode reports motion as well as buttons.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) MouseTrackingSendsMotion() (bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.MouseTrackingSendsMotion receiver", te)
-	if err != nil {
-		return false, err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalMouseTrackingSendsMotion(ptr)
-	if code != 0 {
-		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.MouseTrackingSendsMotion", code), te)
-	}
-	return result != 0, nil
-}
-
-// MouseReportFormat: The report encoding currently in effect.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) MouseReportFormat() (MouseReportFormat, error) {
-	ptr, err := zigoCheckedPointer("Terminal.MouseReportFormat receiver", te)
-	if err != nil {
-		return 0, err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalMouseReportFormat(ptr)
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.MouseReportFormat", code), te)
-	}
-	return MouseReportFormat(result), nil
-}
-
-// ModeReport: The DECRPM state of a mode, by its number.
-//
-// `ansi` distinguishes the two namespaces: false is a DEC private mode
-// (`CSI ? Pd $ p`), true is an ANSI mode (`CSI Pd $ p`). Modes are taken as
-// numbers rather than as an enum on purpose -- the point of the query is to
-// learn whether a number is implemented at all, which an exhaustive enum
-// could never express.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ModeReport(mode uint16, ansi bool) (ModeReport, error) {
-	ptr, err := zigoCheckedPointer("Terminal.ModeReport receiver", te)
-	if err != nil {
-		return 0, err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalModeReport(ptr, mode, zigoBoolToUint8(ansi))
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ModeReport", code), te)
-	}
-	return ModeReport(result), nil
-}
-
-// NewGesture: Start a selection gesture over `t`, with ghostty's standard click behaviors:
-// single click clears, double selects a word, triple selects a line.
-//
-// Returned by value, like `Terminal.init`: zigo boxes it and frees the box in
-// `Close`.
-// The caller must call Close on the returned handle.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) NewGesture() (*Gesture, error) {
-	ptr, zigoChildParent, err := te.zigoAcquireChild("Terminal.NewGesture receiver")
-	if err != nil {
-		return nil, err
-	}
-	zigoChildCreated := false
-	defer func() {
-		te.zigoRelease()
-		if !zigoChildCreated {
-			zigoChildParent.ZigoDropChild()
-		}
-	}()
-	result, code := raw.TerminalNewGesture(ptr)
-	if code != 0 {
-		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.NewGesture", code), te)
-	}
-	zigoChildCreated = true
-	return zigoNewGesture(result, zigoChildParent), nil
-}
-
-// NewGridRef: Start tracking the cell at `x`, `y` in the coordinate system `tag` names,
-// on the active screen. `error.OutOfBounds` if there is no such cell.
-//
-// Returned by value, like `Terminal.init`: zigo boxes the result and frees
-// the box in `close`.
-// The caller must call Close on the returned handle.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) NewGridRef(tag PointTag, x uint16, y uint32) (*GridRef, error) {
-	ptr, zigoChildParent, err := te.zigoAcquireChild("Terminal.NewGridRef receiver")
-	if err != nil {
-		return nil, err
-	}
-	zigoChildCreated := false
-	defer func() {
-		te.zigoRelease()
-		if !zigoChildCreated {
-			zigoChildParent.ZigoDropChild()
-		}
-	}()
-	result, code := raw.TerminalNewGridRef(ptr, uint8(tag), x, y)
-	if code != 0 {
-		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.NewGridRef", code), te)
-	}
-	zigoChildCreated = true
-	return zigoNewGridRef(result, zigoChildParent), nil
-}
-
-// CellAt: The cell at `x`, `y` of the active screen, in the coordinate system `tag`
-// names, without tracking it. Null if there is no such cell. For a read
-// that happens once, such as what is under a click; a cell that is read
-// again after the terminal changes wants a `GridRef`.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) CellAt(tag PointTag, x uint16, y uint32) (RenderCell, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.CellAt receiver", te)
-	if err != nil {
-		return RenderCell{}, false, err
-	}
-	defer te.zigoRelease()
-	result, zigoHas, code := raw.TerminalCellAt(ptr, uint8(tag), x, y)
-	if code != 0 {
-		return RenderCell{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CellAt", code), te)
-	}
-	return zigoRenderCellFromRaw(result), zigoHas, nil
-}
-
-// HyperlinkAt: The hyperlink URI of the cell at `x`, `y` of the active screen, or null
-// when the cell is not a link or there is no such cell.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (te *Terminal) HyperlinkAt(tag PointTag, x uint16, y uint32) (string, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.HyperlinkAt receiver", te)
-	if err != nil {
-		return "", false, err
-	}
-	defer te.zigoRelease()
-	result, zigoHas, code := raw.TerminalHyperlinkAt(ptr, uint8(tag), x, y)
-	if code != 0 {
-		return "", false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.HyperlinkAt", code), te)
-	}
-	return result, zigoHas, nil
-}
-
-// NewOSCParser: Create a standalone OSC parser.
-//
-// The parser is given an allocator, so the sequences that are allowed to grow
-// past ghostty's 2 KiB inline buffer -- OSC 52 clipboard writes, mainly -- are
-// parsed rather than dropped.
-// The caller must call Close on the returned handle.
-// Native failures are returned as generated error values.
-func NewOSCParser() (*OSCParser, error) {
-	result, code := raw.NewOscParser()
-	if code != 0 {
-		return nil, zigoErrorForCode("NewOSCParser", code)
-	}
-	return zigoNewOSCParser(result), nil
-}
-
-// SgrAttributeCount: How many attributes a CSI SGR parameter list yields, so a caller knows how
-// many indices `sgrAttributeAt` answers. An empty list is the SGR reset, so
-// it yields one. Refuses a list longer than ghostty's CSI parser records.
-//
-// See `sgrAttributeAt` for what `colon_mask` means.
-// Native failures are returned as generated error values.
-func SgrAttributeCount(params []uint16, colonMask uint32) (uint, error) {
-	result, code := raw.SgrAttributeCount(params, colonMask)
-	if code != 0 {
-		return 0, zigoErrorForCode("SgrAttributeCount", code)
-	}
-	return result, nil
-}
-
-// SgrAttributeAt: The `index`th attribute a CSI SGR parameter list yields, as the same
-// `Attribute` that `setAttribute` takes, so what the parser saw can be applied
-// as it is.
-//
-// `params` is the parameter list of a `CSI ... m` sequence with the `m`
-// dropped, and `colon_mask` says how the parameters were separated: bit `i`
-// set means parameter `i` was followed by a colon rather than a semicolon,
-// which is ghostty's own convention for the bitset. That distinction is not
-// cosmetic -- `4;3` is underline then italic while `4:3` is a curly underline,
-// and `38;2;r;g;b` and `38:2::r:g:b` are both truecolor -- so it has to be
-// carried explicitly. A mask is used rather than ghostty's own
-// `std.StaticBitSet` because a bitset has no C representation.
-//
-// A parameter ghostty does not implement yields `unknown` rather than being
-// skipped, so the attributes line up with the sequence as written. An index
-// past the count `sgrAttributeCount` reports, or a list it refuses, also
-// yields `unknown`: a tagged union cannot travel with an error, and the count
-// is where the list is validated.
-//
-// Indexed rather than filled into a slice because a tagged union cannot be a
-// slice element across the boundary. The parse is a linear pass over at most
-// `MAX_SGR_PARAMS` integers, so re-running it per index costs nothing.
-// A native panic is returned as *NativePanicError.
-func SgrAttributeAt(params []uint16, colonMask uint32, index uint) (Attribute, error) {
-	result, code := raw.SgrAttributeAt(params, colonMask, index)
-	if code != 0 {
-		return Attribute{}, zigoErrorForCode("SgrAttributeAt", code)
-	}
-	return zigoAttributeFromRaw(result), nil
 }
 
 // SelectAll: Select the whole screen. Returns false when there is nothing to select.
@@ -4146,6 +4005,202 @@ func (s *Search) SelectedIndex() (uint, bool, error) {
 	return result, zigoHas, nil
 }
 
+// HasValue: Whether the reference still names a cell. False after a reset, or after
+// the scrollback limit pruned the page the cell was on.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (g *GridRef) HasValue() (bool, error) {
+	ptr, err := zigoCheckedPointer("GridRef.HasValue receiver", g)
+	if err != nil {
+		return false, err
+	}
+	defer g.zigoRelease()
+	result, code := raw.GridRefHasValue(ptr)
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("GridRef.HasValue", code), g)
+	}
+	return result != 0, nil
+}
+
+// Point: Where the cell is now, in the coordinate system `tag` names. Null when the
+// reference is empty, or when the cell is outside that system -- a cell in
+// the scrollback has no `active` position, and one scrolled off screen has
+// no `viewport` position.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (g *GridRef) Point(tag PointTag) (GridPoint, bool, error) {
+	ptr, err := zigoCheckedPointer("GridRef.Point receiver", g)
+	if err != nil {
+		return GridPoint{}, false, err
+	}
+	defer g.zigoRelease()
+	result, zigoHas, code := raw.GridRefPoint(ptr, uint8(tag))
+	if code != 0 {
+		return GridPoint{}, false, zigoPoisonAfterPanic(zigoErrorForCode("GridRef.Point", code), g)
+	}
+	return zigoGridPointFromRaw(result), zigoHas, nil
+}
+
+// Set: Point the reference at another cell of the active screen, clearing an
+// empty state. Returns false, leaving the reference as it was, if there is no
+// such cell.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (g *GridRef) Set(tag PointTag, x uint16, y uint32) (bool, error) {
+	ptr, err := zigoCheckedPointer("GridRef.Set receiver", g)
+	if err != nil {
+		return false, err
+	}
+	defer g.zigoRelease()
+	result, code := raw.GridRefSet(ptr, uint8(tag), x, y)
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("GridRef.Set", code), g)
+	}
+	return result != 0, nil
+}
+
+// Cell: The cell, with its colors resolved the way `RenderState` resolves them.
+// Null when the reference is empty. `selected` is never set: the selection
+// is a property of a frame, not of a cell.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (g *GridRef) Cell() (RenderCell, bool, error) {
+	ptr, err := zigoCheckedPointer("GridRef.Cell receiver", g)
+	if err != nil {
+		return RenderCell{}, false, err
+	}
+	defer g.zigoRelease()
+	result, zigoHas, code := raw.GridRefCell(ptr)
+	if code != 0 {
+		return RenderCell{}, false, zigoPoisonAfterPanic(zigoErrorForCode("GridRef.Cell", code), g)
+	}
+	return zigoRenderCellFromRaw(result), zigoHas, nil
+}
+
+// Graphemes: The codepoints of the cell: the base codepoint followed by any combining
+// marks or ZWJ sequence members, which `RenderCell.codepoint` alone drops.
+// Copies them into `dst` and returns how many were written; zero for an
+// empty cell or an empty reference. `error.NoSpaceLeft` if `dst` is shorter
+// than the cluster.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (g *GridRef) Graphemes(dst []rune) (uint, error) {
+	ptr, err := zigoCheckedPointer("GridRef.Graphemes receiver", g)
+	if err != nil {
+		return 0, err
+	}
+	defer g.zigoRelease()
+	result, code := raw.GridRefGraphemes(ptr, zigoRunesToUint32(dst))
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("GridRef.Graphemes", code), g)
+	}
+	return result, nil
+}
+
+// HyperlinkUri: The URI of the hyperlink (OSC 8) the cell is part of, or null when the
+// cell is not a link or the reference is empty.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (g *GridRef) HyperlinkUri() (string, bool, error) {
+	ptr, err := zigoCheckedPointer("GridRef.HyperlinkUri receiver", g)
+	if err != nil {
+		return "", false, err
+	}
+	defer g.zigoRelease()
+	result, zigoHas, code := raw.GridRefHyperlinkUri(ptr)
+	if code != 0 {
+		return "", false, zigoPoisonAfterPanic(zigoErrorForCode("GridRef.HyperlinkUri", code), g)
+	}
+	return result, zigoHas, nil
+}
+
+// DecodeSnapshot: Decode a snapshot from `reader`. `max_continuation_bytes` bounds the
+// unfinished-sequence suffix the snapshot may carry.
+//
+// Wrapped because ghostty's `decode` takes an options struct; returned by
+// value so zigo boxes it and `Snapshot.deinit` frees it.
+// The caller must call Close on the returned handle.
+// Native failures are returned as generated error values.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func DecodeSnapshot(reader io.Reader, maxContinuationBytes uint) (*Snapshot, error) {
+	if reader == nil {
+		return nil, &StreamError{Operation: "DecodeSnapshot", Parameter: "reader", Err: ErrNilStream}
+	}
+	readerHandle := zigoNewReaderStreamHandle(reader)
+	defer zigoDeleteCallbackHandle(readerHandle)
+	readerData := zigoReaderBytes(reader)
+	result, code := raw.DecodeSnapshot(uintptr(readerHandle), readerData, maxContinuationBytes)
+	if zigoCallbackPanicPending() {
+		zigoRethrowCallbackPanic("DecodeSnapshot", readerHandle)
+	}
+	if err := zigoStreamError("DecodeSnapshot", "reader", readerHandle); err != nil {
+		return nil, err
+	}
+	if code != 0 {
+		return nil, zigoErrorForCode("DecodeSnapshot", code)
+	}
+	return zigoNewSnapshot(result), nil
+}
+
+// RestoreInto: Replace `term` with the terminal the snapshot holds: its size, screens,
+// scrollback, modes and colors. The snapshot gives its terminal up once;
+// a second call fails. Streams on `term` keep pointing at it, but their
+// parser state belongs to the old contents, so open a new stream and feed
+// it `continuation` before any new input.
+//
+// zigo allows one constructor per handle and `newTerminal` is it, so a
+// restore fills a terminal the caller made rather than returning one.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+func (s *Snapshot) RestoreInto(term *Terminal) error {
+	ptr, err := zigoCheckedPointer("Snapshot.RestoreInto receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	termPtr, err := zigoCheckedPointer("Snapshot.RestoreInto parameter term", term)
+	if err != nil {
+		return err
+	}
+	defer lifecycle.Release(term)
+	code := raw.SnapshotRestoreInto(ptr, termPtr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Snapshot.RestoreInto", code), s, term)
+	}
+	return nil
+}
+
+// Continuation: The bytes of the unfinished sequence the snapshot was taken in, empty
+// when the stream was at ground. Feed them to the restored terminal's
+// stream before any new input.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (s *Snapshot) Continuation() ([]byte, error) {
+	ptr, err := zigoCheckedPointer("Snapshot.Continuation receiver", s)
+	if err != nil {
+		return nil, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.SnapshotContinuation(ptr)
+	if code != 0 {
+		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Snapshot.Continuation", code), s)
+	}
+	return result, nil
+}
+
+// NewSnapshotDecoder: Start decoding `data`, which is copied.
+//
+// Nothing is read until `snapshotDecoderReady`.
+// The caller must call Close on the returned handle.
+// Native failures are returned as generated error values.
+func NewSnapshotDecoder(data []byte) (*SnapshotDecoder, error) {
+	result, code := raw.NewSnapshotDecoder(data)
+	if code != 0 {
+		return nil, zigoErrorForCode("NewSnapshotDecoder", code)
+	}
+	return zigoNewSnapshotDecoder(result), nil
+}
+
 // Ready: Decode as far as the READY marker: everything a terminal needs to be drawn.
 //
 // `max_continuation_bytes` bounds the unfinished-sequence suffix. After this
@@ -4231,64 +4286,59 @@ func (s *SnapshotDecoder) Next(term *Terminal) (SnapshotProgress, bool, error) {
 	return zigoSnapshotProgressFromRaw(result), zigoHas, nil
 }
 
-// RestoreInto: Replace `term` with the terminal the snapshot holds: its size, screens,
-// scrollback, modes and colors. The snapshot gives its terminal up once;
-// a second call fails. Streams on `term` keep pointing at it, but their
-// parser state belongs to the old contents, so open a new stream and feed
-// it `continuation` before any new input.
-//
-// zigo allows one constructor per handle and `newTerminal` is it, so a
-// restore fills a terminal the caller made rather than returning one.
+// NewRenderState: An empty render state, filled by the first `RenderState.update`. Returned
+// by value so zigo boxes it and `RenderState.deinit` frees it; ghostty spells
+// the empty state as a constant, which has no function to bind.
+// The caller must call Close on the returned handle.
+// A native panic is returned as *NativePanicError.
+func NewRenderState() (*RenderState, error) {
+	result, code := raw.NewRenderState()
+	if code != 0 {
+		return nil, zigoErrorForCode("NewRenderState", code)
+	}
+	return zigoNewRenderState(result), nil
+}
+
+// Update the columns/rows for the grid based on the given screen and
+// cell size.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
-func (s *Snapshot) RestoreInto(term *Terminal) error {
-	ptr, err := zigoCheckedPointer("Snapshot.RestoreInto receiver", s)
+func (r *RenderState) Update(t *Terminal) error {
+	ptr, err := zigoCheckedPointer("RenderState.Update receiver", r)
 	if err != nil {
 		return err
 	}
-	defer s.zigoRelease()
-	termPtr, err := zigoCheckedPointer("Snapshot.RestoreInto parameter term", term)
+	defer r.zigoRelease()
+	tPtr, err := zigoCheckedPointer("RenderState.Update parameter t", t)
 	if err != nil {
 		return err
 	}
-	defer lifecycle.Release(term)
-	code := raw.SnapshotRestoreInto(ptr, termPtr)
+	defer lifecycle.Release(t)
+	code := raw.RenderStateUpdate(ptr, tPtr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Snapshot.RestoreInto", code), s, term)
+		return zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Update", code), r, t)
 	}
 	return nil
 }
 
-// Continuation: The bytes of the unfinished sequence the snapshot was taken in, empty
-// when the stream was at ground. Feed them to the restored terminal's
-// stream before any new input.
+// Clean: Mark all render-state data as consumed by the renderer.
+//
+// This clears both the global dirty state and every per-row dirty flag.
+// Callers that only consume part of a frame should clear the two layers
+// individually instead.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-func (s *Snapshot) Continuation() ([]byte, error) {
-	ptr, err := zigoCheckedPointer("Snapshot.Continuation receiver", s)
+func (r *RenderState) Clean() error {
+	ptr, err := zigoCheckedPointer("RenderState.Clean receiver", r)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	defer s.zigoRelease()
-	result, code := raw.SnapshotContinuation(ptr)
+	defer r.zigoRelease()
+	code := raw.RenderStateClean(ptr)
 	if code != 0 {
-		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Snapshot.Continuation", code), s)
+		return zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Clean", code), r)
 	}
-	return result, nil
-}
-
-// Default: The color's default value as `0xRRGGBB`, or null when the name has none.
-//
-// Only the sixteen named colors have one. The enum is open because every
-// other 256-color palette index is a valid value, and those take their
-// color from the palette rather than from a default; read them with
-// `paletteColors`.
-//
-// Wrapped because ghostty returns `color.RGB`, a `packed struct(u24)` with
-// no C representation, behind an error union.
-func (c ColorName) Default() (uint32, bool) {
-	zigoResult, zigoHas := raw.ColorNameDefault(uint8(c))
-	return zigoResult, zigoHas
+	return nil
 }
 
 // CellCount: How many `RenderCell`s `renderCells` needs: `rows * cols`.
@@ -4520,6 +4570,17 @@ func (r *RenderState) HyperlinkAt(x uint16, y uint16) (string, bool, error) {
 		return "", false, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.HyperlinkAt", code), r)
 	}
 	return result, zigoHas, nil
+}
+
+// NewKittyImages creates a caller-owned KittyImages.
+// The caller must call Close on the returned handle.
+// Native failures are returned as generated error values.
+func NewKittyImages() (*KittyImages, error) {
+	result, code := raw.NewKittyImages()
+	if code != 0 {
+		return nil, zigoErrorForCode("NewKittyImages", code)
+	}
+	return zigoNewKittyImages(result), nil
 }
 
 // Update: Rebuild the snapshot from `term`'s active screen.
@@ -4800,150 +4861,19 @@ func (g *Gesture) Reset() error {
 	return nil
 }
 
-// ClickCount: How many clicks the current sequence is at: 0 before any press, then 1, 2
-// or 3. What an emulator switches on to decide what a click means.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (g *Gesture) ClickCount() (uint8, error) {
-	ptr, err := zigoCheckedPointer("Gesture.ClickCount receiver", g)
-	if err != nil {
-		return 0, err
-	}
-	defer g.zigoRelease()
-	result, code := raw.GestureClickCount(ptr)
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Gesture.ClickCount", code), g)
-	}
-	return result, nil
-}
-
-// Dragged: Whether the pointer has left the pressed cell during this gesture.
+// NewOSCParser: Create a standalone OSC parser.
 //
-// Read it on release: a click that never dragged is the one that should follow
-// a hyperlink or move the shell cursor, rather than one that happened to end
-// where it started after a round trip.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (g *Gesture) Dragged() (bool, error) {
-	ptr, err := zigoCheckedPointer("Gesture.Dragged receiver", g)
-	if err != nil {
-		return false, err
-	}
-	defer g.zigoRelease()
-	result, code := raw.GestureDragged(ptr)
-	if code != 0 {
-		return false, zigoPoisonAfterPanic(zigoErrorForCode("Gesture.Dragged", code), g)
-	}
-	return result != 0, nil
-}
-
-// HasValue: Whether the reference still names a cell. False after a reset, or after
-// the scrollback limit pruned the page the cell was on.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (g *GridRef) HasValue() (bool, error) {
-	ptr, err := zigoCheckedPointer("GridRef.HasValue receiver", g)
-	if err != nil {
-		return false, err
-	}
-	defer g.zigoRelease()
-	result, code := raw.GridRefHasValue(ptr)
-	if code != 0 {
-		return false, zigoPoisonAfterPanic(zigoErrorForCode("GridRef.HasValue", code), g)
-	}
-	return result != 0, nil
-}
-
-// Point: Where the cell is now, in the coordinate system `tag` names. Null when the
-// reference is empty, or when the cell is outside that system -- a cell in
-// the scrollback has no `active` position, and one scrolled off screen has
-// no `viewport` position.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (g *GridRef) Point(tag PointTag) (GridPoint, bool, error) {
-	ptr, err := zigoCheckedPointer("GridRef.Point receiver", g)
-	if err != nil {
-		return GridPoint{}, false, err
-	}
-	defer g.zigoRelease()
-	result, zigoHas, code := raw.GridRefPoint(ptr, uint8(tag))
-	if code != 0 {
-		return GridPoint{}, false, zigoPoisonAfterPanic(zigoErrorForCode("GridRef.Point", code), g)
-	}
-	return zigoGridPointFromRaw(result), zigoHas, nil
-}
-
-// Set: Point the reference at another cell of the active screen, clearing an
-// empty state. Returns false, leaving the reference as it was, if there is no
-// such cell.
-// It returns *HandleError if a required handle is nil or closed.
+// The parser is given an allocator, so the sequences that are allowed to grow
+// past ghostty's 2 KiB inline buffer -- OSC 52 clipboard writes, mainly -- are
+// parsed rather than dropped.
+// The caller must call Close on the returned handle.
 // Native failures are returned as generated error values.
-func (g *GridRef) Set(tag PointTag, x uint16, y uint32) (bool, error) {
-	ptr, err := zigoCheckedPointer("GridRef.Set receiver", g)
-	if err != nil {
-		return false, err
-	}
-	defer g.zigoRelease()
-	result, code := raw.GridRefSet(ptr, uint8(tag), x, y)
+func NewOSCParser() (*OSCParser, error) {
+	result, code := raw.NewOscParser()
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(zigoErrorForCode("GridRef.Set", code), g)
+		return nil, zigoErrorForCode("NewOSCParser", code)
 	}
-	return result != 0, nil
-}
-
-// Cell: The cell, with its colors resolved the way `RenderState` resolves them.
-// Null when the reference is empty. `selected` is never set: the selection
-// is a property of a frame, not of a cell.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (g *GridRef) Cell() (RenderCell, bool, error) {
-	ptr, err := zigoCheckedPointer("GridRef.Cell receiver", g)
-	if err != nil {
-		return RenderCell{}, false, err
-	}
-	defer g.zigoRelease()
-	result, zigoHas, code := raw.GridRefCell(ptr)
-	if code != 0 {
-		return RenderCell{}, false, zigoPoisonAfterPanic(zigoErrorForCode("GridRef.Cell", code), g)
-	}
-	return zigoRenderCellFromRaw(result), zigoHas, nil
-}
-
-// Graphemes: The codepoints of the cell: the base codepoint followed by any combining
-// marks or ZWJ sequence members, which `RenderCell.codepoint` alone drops.
-// Copies them into `dst` and returns how many were written; zero for an
-// empty cell or an empty reference. `error.NoSpaceLeft` if `dst` is shorter
-// than the cluster.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (g *GridRef) Graphemes(dst []rune) (uint, error) {
-	ptr, err := zigoCheckedPointer("GridRef.Graphemes receiver", g)
-	if err != nil {
-		return 0, err
-	}
-	defer g.zigoRelease()
-	result, code := raw.GridRefGraphemes(ptr, zigoRunesToUint32(dst))
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("GridRef.Graphemes", code), g)
-	}
-	return result, nil
-}
-
-// HyperlinkUri: The URI of the hyperlink (OSC 8) the cell is part of, or null when the
-// cell is not a link or the reference is empty.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-func (g *GridRef) HyperlinkUri() (string, bool, error) {
-	ptr, err := zigoCheckedPointer("GridRef.HyperlinkUri receiver", g)
-	if err != nil {
-		return "", false, err
-	}
-	defer g.zigoRelease()
-	result, zigoHas, code := raw.GridRefHyperlinkUri(ptr)
-	if code != 0 {
-		return "", false, zigoPoisonAfterPanic(zigoErrorForCode("GridRef.HyperlinkUri", code), g)
-	}
-	return result, zigoHas, nil
+	return zigoNewOSCParser(result), nil
 }
 
 // Feed bytes to the parser, applying them to the terminal.
@@ -4960,6 +4890,23 @@ func (o *OSCParser) Feed(bytes []byte) error {
 		return zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.Feed", code), o)
 	}
 	return nil
+}
+
+// ClipboardData: OSC 52: the base64 payload to put on the clipboard, or a bare `?` when
+// the program is asking to read the clipboard rather than to write it.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) ClipboardData() (string, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.ClipboardData receiver", o)
+	if err != nil {
+		return "", err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserClipboardData(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.ClipboardData", code), o)
+	}
+	return result, nil
 }
 
 // End: Finish the sequence and report whether it named a command.
@@ -5129,23 +5076,6 @@ func (o *OSCParser) NotificationBody() (string, error) {
 	return result, nil
 }
 
-// ClipboardData: OSC 52: the base64 payload to put on the clipboard, or a bare `?` when
-// the program is asking to read the clipboard rather than to write it.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (o *OSCParser) ClipboardData() (string, error) {
-	ptr, err := zigoCheckedPointer("OSCParser.ClipboardData receiver", o)
-	if err != nil {
-		return "", err
-	}
-	defer o.zigoRelease()
-	result, code := raw.OscParserClipboardData(ptr)
-	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.ClipboardData", code), o)
-	}
-	return result, nil
-}
-
 // ClipboardSelection: OSC 52: which selection the request names, as the protocol's own
 // character (`c` for clipboard, `p` for primary, `s` for the configured
 // default), or zero for any other command.
@@ -5243,6 +5173,104 @@ func (o *OSCParser) ProgressValue() (int16, error) {
 		return 0, zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.ProgressValue", code), o)
 	}
 	return result, nil
+}
+
+// Default: The color's default value as `0xRRGGBB`, or null when the name has none.
+//
+// Only the sixteen named colors have one. The enum is open because every
+// other 256-color palette index is a valid value, and those take their
+// color from the palette rather than from a default; read them with
+// `paletteColors`.
+//
+// Wrapped because ghostty returns `color.RGB`, a `packed struct(u24)` with
+// no C representation, behind an error union.
+func (c ColorName) Default() (uint32, bool) {
+	zigoResult, zigoHas := raw.ColorNameDefault(uint8(c))
+	return zigoResult, zigoHas
+}
+
+// CodepointWidth: Returns the terminal display width of a codepoint in terminal
+// grid cells: 0, 1, or 2.
+//
+// This is the same width table the terminal uses when laying out
+// printed text: 0 for zero-width codepoints (controls, combining
+// marks, default-ignorables, surrogates), 2 for wide codepoints
+// (East Asian Wide/Fullwidth, regional indicators, clamped at 2),
+// and 1 otherwise.
+//
+// This operates on a single codepoint and cannot account for
+// grapheme-cluster-level width rules (VS16, combining sequences);
+// callers needing cluster-accurate widths should use graphemeWidth().
+// Summing per-codepoint widths is only correct when mode 2027 is
+// disabled.
+// A native panic is returned as *NativePanicError.
+func CodepointWidth(cp rune) (uint8, error) {
+	if cp < 0 || cp > 1114111 {
+		return 0, &RangeError{Operation: "CodepointWidth", Parameter: "cp", Type: "codepoint"}
+	}
+	result, code := raw.UnicodeCodepointWidth(uint32(cp))
+	if code != 0 {
+		return 0, zigoErrorForCode("CodepointWidth", code)
+	}
+	return result, nil
+}
+
+// GraphemeWidth: The display width of a grapheme cluster given as codepoints.
+//
+// Wrapped because `vt.unicode.graphemeWidth` is generic over the codepoint
+// integer type, and a generic function has no signature to bind.
+func GraphemeWidth(cps []rune) (uint8, error) {
+	for _, zigoValue := range cps {
+		if zigoValue < 0 || zigoValue > 1114111 {
+			return 0, &RangeError{Operation: "GraphemeWidth", Parameter: "cps", Type: "codepoint"}
+		}
+	}
+	return raw.GraphemeWidth(zigoRunesToUint32(cps)), nil
+}
+
+// SgrAttributeCount: How many attributes a CSI SGR parameter list yields, so a caller knows how
+// many indices `sgrAttributeAt` answers. An empty list is the SGR reset, so
+// it yields one. Refuses a list longer than ghostty's CSI parser records.
+//
+// See `sgrAttributeAt` for what `colon_mask` means.
+// Native failures are returned as generated error values.
+func SgrAttributeCount(params []uint16, colonMask uint32) (uint, error) {
+	result, code := raw.SgrAttributeCount(params, colonMask)
+	if code != 0 {
+		return 0, zigoErrorForCode("SgrAttributeCount", code)
+	}
+	return result, nil
+}
+
+// SgrAttributeAt: The `index`th attribute a CSI SGR parameter list yields, as the same
+// `Attribute` that `setAttribute` takes, so what the parser saw can be applied
+// as it is.
+//
+// `params` is the parameter list of a `CSI ... m` sequence with the `m`
+// dropped, and `colon_mask` says how the parameters were separated: bit `i`
+// set means parameter `i` was followed by a colon rather than a semicolon,
+// which is ghostty's own convention for the bitset. That distinction is not
+// cosmetic -- `4;3` is underline then italic while `4:3` is a curly underline,
+// and `38;2;r;g;b` and `38:2::r:g:b` are both truecolor -- so it has to be
+// carried explicitly. A mask is used rather than ghostty's own
+// `std.StaticBitSet` because a bitset has no C representation.
+//
+// A parameter ghostty does not implement yields `unknown` rather than being
+// skipped, so the attributes line up with the sequence as written. An index
+// past the count `sgrAttributeCount` reports, or a list it refuses, also
+// yields `unknown`: a tagged union cannot travel with an error, and the count
+// is where the list is validated.
+//
+// Indexed rather than filled into a slice because a tagged union cannot be a
+// slice element across the boundary. The parse is a linear pass over at most
+// `MAX_SGR_PARAMS` integers, so re-running it per index costs nothing.
+// A native panic is returned as *NativePanicError.
+func SgrAttributeAt(params []uint16, colonMask uint32, index uint) (Attribute, error) {
+	result, code := raw.SgrAttributeAt(params, colonMask, index)
+	if code != 0 {
+		return Attribute{}, zigoErrorForCode("SgrAttributeAt", code)
+	}
+	return zigoAttributeFromRaw(result), nil
 }
 
 // zigoRunesToUint32 views a []rune as the []uint32 the raw layer takes, without copying.

@@ -20,6 +20,205 @@ func (err *EnumParseError) Error() string {
 	return "zigo: " + err.Type + ": unknown value " + strconv.Quote(err.Text)
 }
 
+// ColorName represents the corresponding Zig open enum; values outside the named constants are valid.
+type ColorName uint8
+
+const (
+	// ColorNameBlack corresponds to the Zig tag black.
+	ColorNameBlack ColorName = 0
+	// ColorNameRed corresponds to the Zig tag red.
+	ColorNameRed ColorName = 1
+	// ColorNameGreen corresponds to the Zig tag green.
+	ColorNameGreen ColorName = 2
+	// ColorNameYellow corresponds to the Zig tag yellow.
+	ColorNameYellow ColorName = 3
+	// ColorNameBlue corresponds to the Zig tag blue.
+	ColorNameBlue ColorName = 4
+	// ColorNameMagenta corresponds to the Zig tag magenta.
+	ColorNameMagenta ColorName = 5
+	// ColorNameCyan corresponds to the Zig tag cyan.
+	ColorNameCyan ColorName = 6
+	// ColorNameWhite corresponds to the Zig tag white.
+	ColorNameWhite ColorName = 7
+	// ColorNameBrightBlack corresponds to the Zig tag bright_black.
+	ColorNameBrightBlack ColorName = 8
+	// ColorNameBrightRed corresponds to the Zig tag bright_red.
+	ColorNameBrightRed ColorName = 9
+	// ColorNameBrightGreen corresponds to the Zig tag bright_green.
+	ColorNameBrightGreen ColorName = 10
+	// ColorNameBrightYellow corresponds to the Zig tag bright_yellow.
+	ColorNameBrightYellow ColorName = 11
+	// ColorNameBrightBlue corresponds to the Zig tag bright_blue.
+	ColorNameBrightBlue ColorName = 12
+	// ColorNameBrightMagenta corresponds to the Zig tag bright_magenta.
+	ColorNameBrightMagenta ColorName = 13
+	// ColorNameBrightCyan corresponds to the Zig tag bright_cyan.
+	ColorNameBrightCyan ColorName = 14
+	// ColorNameBrightWhite corresponds to the Zig tag bright_white.
+	ColorNameBrightWhite ColorName = 15
+)
+
+// String returns the Zig tag name.
+func (value ColorName) String() string {
+	switch value {
+	case ColorNameBlack:
+		return "black"
+	case ColorNameRed:
+		return "red"
+	case ColorNameGreen:
+		return "green"
+	case ColorNameYellow:
+		return "yellow"
+	case ColorNameBlue:
+		return "blue"
+	case ColorNameMagenta:
+		return "magenta"
+	case ColorNameCyan:
+		return "cyan"
+	case ColorNameWhite:
+		return "white"
+	case ColorNameBrightBlack:
+		return "bright_black"
+	case ColorNameBrightRed:
+		return "bright_red"
+	case ColorNameBrightGreen:
+		return "bright_green"
+	case ColorNameBrightYellow:
+		return "bright_yellow"
+	case ColorNameBrightBlue:
+		return "bright_blue"
+	case ColorNameBrightMagenta:
+		return "bright_magenta"
+	case ColorNameBrightCyan:
+		return "bright_cyan"
+	case ColorNameBrightWhite:
+		return "bright_white"
+	default:
+		return "ColorName(" + strconv.Itoa(int(value)) + ")"
+	}
+}
+
+// ParseColorName returns the ColorName named by text, which is a Zig tag name.
+// Values outside the named constants are accepted in the ColorName(N) spelling String returns.
+func ParseColorName(text string) (ColorName, error) {
+	switch text {
+	case "black":
+		return ColorNameBlack, nil
+	case "red":
+		return ColorNameRed, nil
+	case "green":
+		return ColorNameGreen, nil
+	case "yellow":
+		return ColorNameYellow, nil
+	case "blue":
+		return ColorNameBlue, nil
+	case "magenta":
+		return ColorNameMagenta, nil
+	case "cyan":
+		return ColorNameCyan, nil
+	case "white":
+		return ColorNameWhite, nil
+	case "bright_black":
+		return ColorNameBrightBlack, nil
+	case "bright_red":
+		return ColorNameBrightRed, nil
+	case "bright_green":
+		return ColorNameBrightGreen, nil
+	case "bright_yellow":
+		return ColorNameBrightYellow, nil
+	case "bright_blue":
+		return ColorNameBrightBlue, nil
+	case "bright_magenta":
+		return ColorNameBrightMagenta, nil
+	case "bright_cyan":
+		return ColorNameBrightCyan, nil
+	case "bright_white":
+		return ColorNameBrightWhite, nil
+	}
+	if strings.HasPrefix(text, "ColorName(") && strings.HasSuffix(text, ")") {
+		if number, err := strconv.ParseUint(text[len("ColorName("):len(text)-1], 10, 8); err == nil {
+			return ColorName(number), nil
+		}
+	}
+	return 0, &EnumParseError{Type: "ColorName", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value ColorName) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseColorName.
+func (value *ColorName) UnmarshalText(text []byte) error {
+	parsed, err := ParseColorName(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// ColorNameValues returns a fresh slice of known values in declaration order.
+func ColorNameValues() []ColorName {
+	return []ColorName{
+		ColorNameBlack,
+		ColorNameRed,
+		ColorNameGreen,
+		ColorNameYellow,
+		ColorNameBlue,
+		ColorNameMagenta,
+		ColorNameCyan,
+		ColorNameWhite,
+		ColorNameBrightBlack,
+		ColorNameBrightRed,
+		ColorNameBrightGreen,
+		ColorNameBrightYellow,
+		ColorNameBrightBlue,
+		ColorNameBrightMagenta,
+		ColorNameBrightCyan,
+		ColorNameBrightWhite,
+	}
+}
+
+// IsKnown reports whether value is an exported tag; unknown open-enum values return false.
+func (value ColorName) IsKnown() bool {
+	switch value {
+	case ColorNameBlack:
+		return true
+	case ColorNameRed:
+		return true
+	case ColorNameGreen:
+		return true
+	case ColorNameYellow:
+		return true
+	case ColorNameBlue:
+		return true
+	case ColorNameMagenta:
+		return true
+	case ColorNameCyan:
+		return true
+	case ColorNameWhite:
+		return true
+	case ColorNameBrightBlack:
+		return true
+	case ColorNameBrightRed:
+		return true
+	case ColorNameBrightGreen:
+		return true
+	case ColorNameBrightYellow:
+		return true
+	case ColorNameBrightBlue:
+		return true
+	case ColorNameBrightMagenta:
+		return true
+	case ColorNameBrightCyan:
+		return true
+	case ColorNameBrightWhite:
+		return true
+	}
+	return false
+}
+
 // PointTag represents the corresponding Zig enum.
 type PointTag uint8
 
@@ -282,6 +481,31 @@ func (value *EraseLine) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// EraseLineValues returns a fresh slice of known values in declaration order.
+func EraseLineValues() []EraseLine {
+	return []EraseLine{
+		EraseLineRight,
+		EraseLineLeft,
+		EraseLineComplete,
+		EraseLineRightUnlessPendingWrap,
+	}
+}
+
+// IsKnown reports whether value is an exported tag; unknown open-enum values return false.
+func (value EraseLine) IsKnown() bool {
+	switch value {
+	case EraseLineRight:
+		return true
+	case EraseLineLeft:
+		return true
+	case EraseLineComplete:
+		return true
+	case EraseLineRightUnlessPendingWrap:
+		return true
+	}
+	return false
+}
+
 // TabClear represents the corresponding Zig open enum; values outside the named constants are valid.
 type TabClear uint8
 
@@ -334,6 +558,25 @@ func (value *TabClear) UnmarshalText(text []byte) error {
 	}
 	*value = parsed
 	return nil
+}
+
+// TabClearValues returns a fresh slice of known values in declaration order.
+func TabClearValues() []TabClear {
+	return []TabClear{
+		TabClearCurrent,
+		TabClearAll,
+	}
+}
+
+// IsKnown reports whether value is an exported tag; unknown open-enum values return false.
+func (value TabClear) IsKnown() bool {
+	switch value {
+	case TabClearCurrent:
+		return true
+	case TabClearAll:
+		return true
+	}
+	return false
 }
 
 // ProtectedMode represents the corresponding Zig enum.
@@ -702,6 +945,148 @@ func (value *Mode) UnmarshalText(text []byte) error {
 	}
 	*value = parsed
 	return nil
+}
+
+// ModeValues returns a fresh slice of known values in declaration order.
+func ModeValues() []Mode {
+	return []Mode{
+		ModeDisableKeyboard,
+		ModeInsert,
+		ModeSendReceiveMode,
+		ModeLinefeed,
+		ModeCursorKeys,
+		Mode132Column,
+		ModeSlowScroll,
+		ModeReverseColors,
+		ModeOrigin,
+		ModeWraparound,
+		ModeAutorepeat,
+		ModeMouseEventX10,
+		ModeCursorBlinking,
+		ModeCursorVisible,
+		ModeEnableMode3,
+		ModeReverseWrap,
+		ModeAltScreenLegacy,
+		ModeKeypadKeys,
+		ModeBackarrowKeyMode,
+		ModeEnableLeftAndRightMargin,
+		ModeMouseEventNormal,
+		ModeMouseEventButton,
+		ModeMouseEventAny,
+		ModeFocusEvent,
+		ModeMouseFormatUTF8,
+		ModeMouseFormatSgr,
+		ModeMouseAlternateScroll,
+		ModeMouseFormatUrxvt,
+		ModeMouseFormatSgrPixels,
+		ModeIgnoreKeypadWithNumlock,
+		ModeAltEscPrefix,
+		ModeAltSendsEscape,
+		ModeReverseWrapExtended,
+		ModeAltScreen,
+		ModeSaveCursor,
+		ModeAltScreenSaveCursorClearEnter,
+		ModeBracketedPaste,
+		ModeSynchronizedOutput,
+		ModeGraphemeCluster,
+		ModeReportColorScheme,
+		ModeReportVisibility,
+		ModeInBandSizeReports,
+		ModeKittyPasteEvents,
+	}
+}
+
+// IsKnown reports whether value is an exported tag; unknown open-enum values return false.
+func (value Mode) IsKnown() bool {
+	switch value {
+	case ModeDisableKeyboard:
+		return true
+	case ModeInsert:
+		return true
+	case ModeSendReceiveMode:
+		return true
+	case ModeLinefeed:
+		return true
+	case ModeCursorKeys:
+		return true
+	case Mode132Column:
+		return true
+	case ModeSlowScroll:
+		return true
+	case ModeReverseColors:
+		return true
+	case ModeOrigin:
+		return true
+	case ModeWraparound:
+		return true
+	case ModeAutorepeat:
+		return true
+	case ModeMouseEventX10:
+		return true
+	case ModeCursorBlinking:
+		return true
+	case ModeCursorVisible:
+		return true
+	case ModeEnableMode3:
+		return true
+	case ModeReverseWrap:
+		return true
+	case ModeAltScreenLegacy:
+		return true
+	case ModeKeypadKeys:
+		return true
+	case ModeBackarrowKeyMode:
+		return true
+	case ModeEnableLeftAndRightMargin:
+		return true
+	case ModeMouseEventNormal:
+		return true
+	case ModeMouseEventButton:
+		return true
+	case ModeMouseEventAny:
+		return true
+	case ModeFocusEvent:
+		return true
+	case ModeMouseFormatUTF8:
+		return true
+	case ModeMouseFormatSgr:
+		return true
+	case ModeMouseAlternateScroll:
+		return true
+	case ModeMouseFormatUrxvt:
+		return true
+	case ModeMouseFormatSgrPixels:
+		return true
+	case ModeIgnoreKeypadWithNumlock:
+		return true
+	case ModeAltEscPrefix:
+		return true
+	case ModeAltSendsEscape:
+		return true
+	case ModeReverseWrapExtended:
+		return true
+	case ModeAltScreen:
+		return true
+	case ModeSaveCursor:
+		return true
+	case ModeAltScreenSaveCursorClearEnter:
+		return true
+	case ModeBracketedPaste:
+		return true
+	case ModeSynchronizedOutput:
+		return true
+	case ModeGraphemeCluster:
+		return true
+	case ModeReportColorScheme:
+		return true
+	case ModeReportVisibility:
+		return true
+	case ModeInBandSizeReports:
+		return true
+	case ModeKittyPasteEvents:
+		return true
+	}
+	return false
 }
 
 // FormatterFormat represents the corresponding Zig enum.
@@ -1220,6 +1605,28 @@ func (value *ClipboardLocation) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// ClipboardLocationValues returns a fresh slice of known values in declaration order.
+func ClipboardLocationValues() []ClipboardLocation {
+	return []ClipboardLocation{
+		ClipboardLocationStandard,
+		ClipboardLocationSelection,
+		ClipboardLocationPrimary,
+	}
+}
+
+// IsKnown reports whether value is an exported tag; unknown open-enum values return false.
+func (value ClipboardLocation) IsKnown() bool {
+	switch value {
+	case ClipboardLocationStandard:
+		return true
+	case ClipboardLocationSelection:
+		return true
+	case ClipboardLocationPrimary:
+		return true
+	}
+	return false
+}
+
 // ClipboardDenial represents the corresponding Zig enum.
 type ClipboardDenial uint8
 
@@ -1286,144 +1693,6 @@ func (value Underline) String() string {
 	default:
 		return "Underline(" + strconv.Itoa(int(value)) + ")"
 	}
-}
-
-// ColorName represents the corresponding Zig open enum; values outside the named constants are valid.
-type ColorName uint8
-
-const (
-	// ColorNameBlack corresponds to the Zig tag black.
-	ColorNameBlack ColorName = 0
-	// ColorNameRed corresponds to the Zig tag red.
-	ColorNameRed ColorName = 1
-	// ColorNameGreen corresponds to the Zig tag green.
-	ColorNameGreen ColorName = 2
-	// ColorNameYellow corresponds to the Zig tag yellow.
-	ColorNameYellow ColorName = 3
-	// ColorNameBlue corresponds to the Zig tag blue.
-	ColorNameBlue ColorName = 4
-	// ColorNameMagenta corresponds to the Zig tag magenta.
-	ColorNameMagenta ColorName = 5
-	// ColorNameCyan corresponds to the Zig tag cyan.
-	ColorNameCyan ColorName = 6
-	// ColorNameWhite corresponds to the Zig tag white.
-	ColorNameWhite ColorName = 7
-	// ColorNameBrightBlack corresponds to the Zig tag bright_black.
-	ColorNameBrightBlack ColorName = 8
-	// ColorNameBrightRed corresponds to the Zig tag bright_red.
-	ColorNameBrightRed ColorName = 9
-	// ColorNameBrightGreen corresponds to the Zig tag bright_green.
-	ColorNameBrightGreen ColorName = 10
-	// ColorNameBrightYellow corresponds to the Zig tag bright_yellow.
-	ColorNameBrightYellow ColorName = 11
-	// ColorNameBrightBlue corresponds to the Zig tag bright_blue.
-	ColorNameBrightBlue ColorName = 12
-	// ColorNameBrightMagenta corresponds to the Zig tag bright_magenta.
-	ColorNameBrightMagenta ColorName = 13
-	// ColorNameBrightCyan corresponds to the Zig tag bright_cyan.
-	ColorNameBrightCyan ColorName = 14
-	// ColorNameBrightWhite corresponds to the Zig tag bright_white.
-	ColorNameBrightWhite ColorName = 15
-)
-
-// String returns the Zig tag name.
-func (value ColorName) String() string {
-	switch value {
-	case ColorNameBlack:
-		return "black"
-	case ColorNameRed:
-		return "red"
-	case ColorNameGreen:
-		return "green"
-	case ColorNameYellow:
-		return "yellow"
-	case ColorNameBlue:
-		return "blue"
-	case ColorNameMagenta:
-		return "magenta"
-	case ColorNameCyan:
-		return "cyan"
-	case ColorNameWhite:
-		return "white"
-	case ColorNameBrightBlack:
-		return "bright_black"
-	case ColorNameBrightRed:
-		return "bright_red"
-	case ColorNameBrightGreen:
-		return "bright_green"
-	case ColorNameBrightYellow:
-		return "bright_yellow"
-	case ColorNameBrightBlue:
-		return "bright_blue"
-	case ColorNameBrightMagenta:
-		return "bright_magenta"
-	case ColorNameBrightCyan:
-		return "bright_cyan"
-	case ColorNameBrightWhite:
-		return "bright_white"
-	default:
-		return "ColorName(" + strconv.Itoa(int(value)) + ")"
-	}
-}
-
-// ParseColorName returns the ColorName named by text, which is a Zig tag name.
-// Values outside the named constants are accepted in the ColorName(N) spelling String returns.
-func ParseColorName(text string) (ColorName, error) {
-	switch text {
-	case "black":
-		return ColorNameBlack, nil
-	case "red":
-		return ColorNameRed, nil
-	case "green":
-		return ColorNameGreen, nil
-	case "yellow":
-		return ColorNameYellow, nil
-	case "blue":
-		return ColorNameBlue, nil
-	case "magenta":
-		return ColorNameMagenta, nil
-	case "cyan":
-		return ColorNameCyan, nil
-	case "white":
-		return ColorNameWhite, nil
-	case "bright_black":
-		return ColorNameBrightBlack, nil
-	case "bright_red":
-		return ColorNameBrightRed, nil
-	case "bright_green":
-		return ColorNameBrightGreen, nil
-	case "bright_yellow":
-		return ColorNameBrightYellow, nil
-	case "bright_blue":
-		return ColorNameBrightBlue, nil
-	case "bright_magenta":
-		return ColorNameBrightMagenta, nil
-	case "bright_cyan":
-		return ColorNameBrightCyan, nil
-	case "bright_white":
-		return ColorNameBrightWhite, nil
-	}
-	if strings.HasPrefix(text, "ColorName(") && strings.HasSuffix(text, ")") {
-		if number, err := strconv.ParseUint(text[len("ColorName("):len(text)-1], 10, 8); err == nil {
-			return ColorName(number), nil
-		}
-	}
-	return 0, &EnumParseError{Type: "ColorName", Text: text}
-}
-
-// MarshalText implements encoding.TextMarshaler with the String spelling.
-func (value ColorName) MarshalText() ([]byte, error) {
-	return []byte(value.String()), nil
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler with ParseColorName.
-func (value *ColorName) UnmarshalText(text []byte) error {
-	parsed, err := ParseColorName(string(text))
-	if err != nil {
-		return err
-	}
-	*value = parsed
-	return nil
 }
 
 // AttributeTag represents the corresponding Zig enum.

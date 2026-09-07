@@ -25,20 +25,6 @@ pub const KeyAction = enum(u8) {
     }
 };
 
-// The two `Key` constructors. They take a byte or a name rather than a key,
-// so they are package-level functions rather than methods; re-exported so
-// they keep the `Key` prefix in Go.
-
-/// The key for a printable ASCII byte, or null if none maps to it.
-pub fn keyFromASCII(ch: u8) ?Key {
-    return Key.fromASCII(ch);
-}
-
-/// The key a W3C `KeyboardEvent.code` name selects, or null if none does.
-/// For an embedder mapping browser or Electron key events onto the enum.
-pub fn keyFromW3C(w3c_code: []const u8) ?Key {
-    return Key.fromW3C(w3c_code);
-}
 pub const FocusEvent = vt.input.FocusEvent;
 
 /// The modifiers held during a key or mouse event.

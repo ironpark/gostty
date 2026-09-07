@@ -322,21 +322,6 @@ pub fn gestureReset(self: *Gesture) void {
     self.inner.reset(self.terminal);
 }
 
-/// How many clicks the current sequence is at: 0 before any press, then 1, 2
-/// or 3. What an emulator switches on to decide what a click means.
-pub fn gestureClickCount(self: *Gesture) u8 {
-    return self.inner.left_click_count;
-}
-
-/// Whether the pointer has left the pressed cell during this gesture.
-///
-/// Read it on release: a click that never dragged is the one that should follow
-/// a hyperlink or move the shell cursor, rather than one that happened to end
-/// where it started after a round trip.
-pub fn gestureDragged(self: *Gesture) bool {
-    return self.inner.left_click_dragged;
-}
-
 /// ghostty's selections hold page pins, which cannot cross the C ABI; screen
 /// coordinates are the same information. Null if the pins have already been
 /// scrolled out of the page list, which the caller handles the same as no

@@ -36,27 +36,10 @@ pub fn charset(self: *Terminal, slot: vt.CharsetSlot) vt.Charset {
     return self.screens.active.charset.charsets.get(slot);
 }
 
-/// The slot GL resolves to: the set used for codepoints up to 127.
-pub fn charsetGL(self: *Terminal) vt.CharsetSlot {
-    return self.screens.active.charset.gl;
-}
-
-/// The slot GR resolves to: the set used for 8-bit printable codepoints.
-pub fn charsetGR(self: *Terminal) vt.CharsetSlot {
-    return self.screens.active.charset.gr;
-}
-
 /// The slot a pending single shift (SS2/SS3) will use for exactly one
 /// character, or absent if none is pending.
 pub fn charsetSingleShift(self: *Terminal) ?vt.CharsetSlot {
     return self.screens.active.charset.single_shift;
-}
-
-/// The most recent protected mode (DECSCA or the older SPA/EPA) on the active
-/// screen. This never returns to `off` once set, until the screen is reset:
-/// ECH and friends key off the most recent mode, not the current pen.
-pub fn protectedMode(self: *Terminal) vt.ProtectedMode {
-    return self.screens.active.protected_mode;
 }
 
 /// How the terminal reports mouse activity.

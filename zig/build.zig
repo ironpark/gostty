@@ -66,10 +66,29 @@ pub fn build(b: *std.Build) void {
     });
     gostty.addImport("ghostty_vt", ghostty_vt);
 
+    // Generator plugins. They add to the generated Go surface and nothing
+    // else: the shim, the C header and the raw package are out of their reach,
+    // so adding one here cannot move the ABI. `name` is what `bindings.zig`
+    // imports the plugin under, and the generator compiles the file against
+    // its own `plugin`/`abi`/`semantic` rather than taking a module, so the
+    // declaration and the generator agree on one set of option types.
+    // `satisfies` and `enumkit` ship with zigo, so they are taken from the
+    // dependency rather than vendored: they are the generator's own plugins,
+    // versioned with it, and copying them here would be two more files to move
+    // on every bump.
+    const zigo_dep = b.dependency("zigo", .{});
+    const plugins = [_]zigo.PluginModule{
+        .{ .name = "stringer", .root_source_file = b.path("plugins/stringer/src/plugin.zig") },
+        .{ .name = "must", .root_source_file = b.path("plugins/must/src/plugin.zig") },
+        .{ .name = "satisfies", .root_source_file = zigo_dep.path("plugins/satisfies/src/plugin.zig") },
+        .{ .name = "enumkit", .root_source_file = zigo_dep.path("plugins/enumkit/src/plugin.zig") },
+    };
+
     const bindings = zigo.addGoBindings(b, .{
         .name = "gostty",
         .module = gostty,
         .bindings = b.path("src/bindings.zig"),
+        .plugins = &plugins,
         // Parameter names and doc comments are read from source. Naming the
         // root here lets zigo walk the imported module graph too, so ghostty's
         // own declarations arrive with their real parameter names rather than

@@ -1109,6 +1109,547 @@ func (value *Key) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// KeyValues returns a fresh slice of known values in declaration order.
+func KeyValues() []Key {
+	return []Key{
+		KeyUnidentified,
+		KeyBackquote,
+		KeyBackslash,
+		KeyBracketLeft,
+		KeyBracketRight,
+		KeyComma,
+		KeyDigit0,
+		KeyDigit1,
+		KeyDigit2,
+		KeyDigit3,
+		KeyDigit4,
+		KeyDigit5,
+		KeyDigit6,
+		KeyDigit7,
+		KeyDigit8,
+		KeyDigit9,
+		KeyEqual,
+		KeyIntlBackslash,
+		KeyIntlRo,
+		KeyIntlYen,
+		KeyKeyA,
+		KeyKeyB,
+		KeyKeyC,
+		KeyKeyD,
+		KeyKeyE,
+		KeyKeyF,
+		KeyKeyG,
+		KeyKeyH,
+		KeyKeyI,
+		KeyKeyJ,
+		KeyKeyK,
+		KeyKeyL,
+		KeyKeyM,
+		KeyKeyN,
+		KeyKeyO,
+		KeyKeyP,
+		KeyKeyQ,
+		KeyKeyR,
+		KeyKeyS,
+		KeyKeyT,
+		KeyKeyU,
+		KeyKeyV,
+		KeyKeyW,
+		KeyKeyX,
+		KeyKeyY,
+		KeyKeyZ,
+		KeyMinus,
+		KeyPeriod,
+		KeyQuote,
+		KeySemicolon,
+		KeySlash,
+		KeyAltLeft,
+		KeyAltRight,
+		KeyBackspace,
+		KeyCapsLock,
+		KeyContextMenu,
+		KeyControlLeft,
+		KeyControlRight,
+		KeyEnter,
+		KeyMetaLeft,
+		KeyMetaRight,
+		KeyShiftLeft,
+		KeyShiftRight,
+		KeySpace,
+		KeyTab,
+		KeyConvert,
+		KeyKanaMode,
+		KeyNonConvert,
+		KeyDelete,
+		KeyEnd,
+		KeyHelp,
+		KeyHome,
+		KeyInsert,
+		KeyPageDown,
+		KeyPageUp,
+		KeyArrowDown,
+		KeyArrowLeft,
+		KeyArrowRight,
+		KeyArrowUp,
+		KeyNumLock,
+		KeyNumpad0,
+		KeyNumpad1,
+		KeyNumpad2,
+		KeyNumpad3,
+		KeyNumpad4,
+		KeyNumpad5,
+		KeyNumpad6,
+		KeyNumpad7,
+		KeyNumpad8,
+		KeyNumpad9,
+		KeyNumpadAdd,
+		KeyNumpadBackspace,
+		KeyNumpadClear,
+		KeyNumpadClearEntry,
+		KeyNumpadComma,
+		KeyNumpadDecimal,
+		KeyNumpadDivide,
+		KeyNumpadEnter,
+		KeyNumpadEqual,
+		KeyNumpadMemoryAdd,
+		KeyNumpadMemoryClear,
+		KeyNumpadMemoryRecall,
+		KeyNumpadMemoryStore,
+		KeyNumpadMemorySubtract,
+		KeyNumpadMultiply,
+		KeyNumpadParenLeft,
+		KeyNumpadParenRight,
+		KeyNumpadSubtract,
+		KeyNumpadSeparator,
+		KeyNumpadUp,
+		KeyNumpadDown,
+		KeyNumpadRight,
+		KeyNumpadLeft,
+		KeyNumpadBegin,
+		KeyNumpadHome,
+		KeyNumpadEnd,
+		KeyNumpadInsert,
+		KeyNumpadDelete,
+		KeyNumpadPageUp,
+		KeyNumpadPageDown,
+		KeyEscape,
+		KeyF1,
+		KeyF2,
+		KeyF3,
+		KeyF4,
+		KeyF5,
+		KeyF6,
+		KeyF7,
+		KeyF8,
+		KeyF9,
+		KeyF10,
+		KeyF11,
+		KeyF12,
+		KeyF13,
+		KeyF14,
+		KeyF15,
+		KeyF16,
+		KeyF17,
+		KeyF18,
+		KeyF19,
+		KeyF20,
+		KeyF21,
+		KeyF22,
+		KeyF23,
+		KeyF24,
+		KeyF25,
+		KeyFn,
+		KeyFnLock,
+		KeyPrintScreen,
+		KeyScrollLock,
+		KeyPause,
+		KeyBrowserBack,
+		KeyBrowserFavorites,
+		KeyBrowserForward,
+		KeyBrowserHome,
+		KeyBrowserRefresh,
+		KeyBrowserSearch,
+		KeyBrowserStop,
+		KeyEject,
+		KeyLaunchApp1,
+		KeyLaunchApp2,
+		KeyLaunchMail,
+		KeyMediaPlayPause,
+		KeyMediaSelect,
+		KeyMediaStop,
+		KeyMediaTrackNext,
+		KeyMediaTrackPrevious,
+		KeyPower,
+		KeySleep,
+		KeyAudioVolumeDown,
+		KeyAudioVolumeMute,
+		KeyAudioVolumeUp,
+		KeyWakeUp,
+		KeyCopy,
+		KeyCut,
+		KeyPaste,
+	}
+}
+
+// IsKnown reports whether value is an exported tag; unknown open-enum values return false.
+func (value Key) IsKnown() bool {
+	switch value {
+	case KeyUnidentified:
+		return true
+	case KeyBackquote:
+		return true
+	case KeyBackslash:
+		return true
+	case KeyBracketLeft:
+		return true
+	case KeyBracketRight:
+		return true
+	case KeyComma:
+		return true
+	case KeyDigit0:
+		return true
+	case KeyDigit1:
+		return true
+	case KeyDigit2:
+		return true
+	case KeyDigit3:
+		return true
+	case KeyDigit4:
+		return true
+	case KeyDigit5:
+		return true
+	case KeyDigit6:
+		return true
+	case KeyDigit7:
+		return true
+	case KeyDigit8:
+		return true
+	case KeyDigit9:
+		return true
+	case KeyEqual:
+		return true
+	case KeyIntlBackslash:
+		return true
+	case KeyIntlRo:
+		return true
+	case KeyIntlYen:
+		return true
+	case KeyKeyA:
+		return true
+	case KeyKeyB:
+		return true
+	case KeyKeyC:
+		return true
+	case KeyKeyD:
+		return true
+	case KeyKeyE:
+		return true
+	case KeyKeyF:
+		return true
+	case KeyKeyG:
+		return true
+	case KeyKeyH:
+		return true
+	case KeyKeyI:
+		return true
+	case KeyKeyJ:
+		return true
+	case KeyKeyK:
+		return true
+	case KeyKeyL:
+		return true
+	case KeyKeyM:
+		return true
+	case KeyKeyN:
+		return true
+	case KeyKeyO:
+		return true
+	case KeyKeyP:
+		return true
+	case KeyKeyQ:
+		return true
+	case KeyKeyR:
+		return true
+	case KeyKeyS:
+		return true
+	case KeyKeyT:
+		return true
+	case KeyKeyU:
+		return true
+	case KeyKeyV:
+		return true
+	case KeyKeyW:
+		return true
+	case KeyKeyX:
+		return true
+	case KeyKeyY:
+		return true
+	case KeyKeyZ:
+		return true
+	case KeyMinus:
+		return true
+	case KeyPeriod:
+		return true
+	case KeyQuote:
+		return true
+	case KeySemicolon:
+		return true
+	case KeySlash:
+		return true
+	case KeyAltLeft:
+		return true
+	case KeyAltRight:
+		return true
+	case KeyBackspace:
+		return true
+	case KeyCapsLock:
+		return true
+	case KeyContextMenu:
+		return true
+	case KeyControlLeft:
+		return true
+	case KeyControlRight:
+		return true
+	case KeyEnter:
+		return true
+	case KeyMetaLeft:
+		return true
+	case KeyMetaRight:
+		return true
+	case KeyShiftLeft:
+		return true
+	case KeyShiftRight:
+		return true
+	case KeySpace:
+		return true
+	case KeyTab:
+		return true
+	case KeyConvert:
+		return true
+	case KeyKanaMode:
+		return true
+	case KeyNonConvert:
+		return true
+	case KeyDelete:
+		return true
+	case KeyEnd:
+		return true
+	case KeyHelp:
+		return true
+	case KeyHome:
+		return true
+	case KeyInsert:
+		return true
+	case KeyPageDown:
+		return true
+	case KeyPageUp:
+		return true
+	case KeyArrowDown:
+		return true
+	case KeyArrowLeft:
+		return true
+	case KeyArrowRight:
+		return true
+	case KeyArrowUp:
+		return true
+	case KeyNumLock:
+		return true
+	case KeyNumpad0:
+		return true
+	case KeyNumpad1:
+		return true
+	case KeyNumpad2:
+		return true
+	case KeyNumpad3:
+		return true
+	case KeyNumpad4:
+		return true
+	case KeyNumpad5:
+		return true
+	case KeyNumpad6:
+		return true
+	case KeyNumpad7:
+		return true
+	case KeyNumpad8:
+		return true
+	case KeyNumpad9:
+		return true
+	case KeyNumpadAdd:
+		return true
+	case KeyNumpadBackspace:
+		return true
+	case KeyNumpadClear:
+		return true
+	case KeyNumpadClearEntry:
+		return true
+	case KeyNumpadComma:
+		return true
+	case KeyNumpadDecimal:
+		return true
+	case KeyNumpadDivide:
+		return true
+	case KeyNumpadEnter:
+		return true
+	case KeyNumpadEqual:
+		return true
+	case KeyNumpadMemoryAdd:
+		return true
+	case KeyNumpadMemoryClear:
+		return true
+	case KeyNumpadMemoryRecall:
+		return true
+	case KeyNumpadMemoryStore:
+		return true
+	case KeyNumpadMemorySubtract:
+		return true
+	case KeyNumpadMultiply:
+		return true
+	case KeyNumpadParenLeft:
+		return true
+	case KeyNumpadParenRight:
+		return true
+	case KeyNumpadSubtract:
+		return true
+	case KeyNumpadSeparator:
+		return true
+	case KeyNumpadUp:
+		return true
+	case KeyNumpadDown:
+		return true
+	case KeyNumpadRight:
+		return true
+	case KeyNumpadLeft:
+		return true
+	case KeyNumpadBegin:
+		return true
+	case KeyNumpadHome:
+		return true
+	case KeyNumpadEnd:
+		return true
+	case KeyNumpadInsert:
+		return true
+	case KeyNumpadDelete:
+		return true
+	case KeyNumpadPageUp:
+		return true
+	case KeyNumpadPageDown:
+		return true
+	case KeyEscape:
+		return true
+	case KeyF1:
+		return true
+	case KeyF2:
+		return true
+	case KeyF3:
+		return true
+	case KeyF4:
+		return true
+	case KeyF5:
+		return true
+	case KeyF6:
+		return true
+	case KeyF7:
+		return true
+	case KeyF8:
+		return true
+	case KeyF9:
+		return true
+	case KeyF10:
+		return true
+	case KeyF11:
+		return true
+	case KeyF12:
+		return true
+	case KeyF13:
+		return true
+	case KeyF14:
+		return true
+	case KeyF15:
+		return true
+	case KeyF16:
+		return true
+	case KeyF17:
+		return true
+	case KeyF18:
+		return true
+	case KeyF19:
+		return true
+	case KeyF20:
+		return true
+	case KeyF21:
+		return true
+	case KeyF22:
+		return true
+	case KeyF23:
+		return true
+	case KeyF24:
+		return true
+	case KeyF25:
+		return true
+	case KeyFn:
+		return true
+	case KeyFnLock:
+		return true
+	case KeyPrintScreen:
+		return true
+	case KeyScrollLock:
+		return true
+	case KeyPause:
+		return true
+	case KeyBrowserBack:
+		return true
+	case KeyBrowserFavorites:
+		return true
+	case KeyBrowserForward:
+		return true
+	case KeyBrowserHome:
+		return true
+	case KeyBrowserRefresh:
+		return true
+	case KeyBrowserSearch:
+		return true
+	case KeyBrowserStop:
+		return true
+	case KeyEject:
+		return true
+	case KeyLaunchApp1:
+		return true
+	case KeyLaunchApp2:
+		return true
+	case KeyLaunchMail:
+		return true
+	case KeyMediaPlayPause:
+		return true
+	case KeyMediaSelect:
+		return true
+	case KeyMediaStop:
+		return true
+	case KeyMediaTrackNext:
+		return true
+	case KeyMediaTrackPrevious:
+		return true
+	case KeyPower:
+		return true
+	case KeySleep:
+		return true
+	case KeyAudioVolumeDown:
+		return true
+	case KeyAudioVolumeMute:
+		return true
+	case KeyAudioVolumeUp:
+		return true
+	case KeyWakeUp:
+		return true
+	case KeyCopy:
+		return true
+	case KeyCut:
+		return true
+	case KeyPaste:
+		return true
+	}
+	return false
+}
+
 // KeyAction represents the corresponding Zig enum.
 type KeyAction uint8
 
