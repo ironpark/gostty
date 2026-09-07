@@ -11,8 +11,6 @@ const common = @import("common.zig");
 
 const Allocator = std.mem.Allocator;
 const Terminal = common.Terminal;
-const Screen = common.Screen;
-const io = common.io;
 const packColor = common.packColor;
 const unpackColor = common.unpackColor;
 const Underline = common.Underline;

@@ -215,13 +215,15 @@ pub const OSCParser = struct {
     /// accessors leave every slot empty: their kind is the whole payload.
     fn capture(self: *OSCParser, cmd: *const vt.osc.Command) void {
         // ghostty's tag enum is a `lib.Enum`, so the mirror is matched by name
-        // rather than by value. The two lists are in the same order, but a new
-        // upstream command inserted in the middle should widen `OSCCommand`,
-        // not shift every kind Go already knows.
-        self.kind = std.meta.stringToEnum(
-            OSCCommand,
-            @tagName(cmd.*),
-        ) orelse .invalid;
+        // rather than by value, resolved at compile time per tag. A new
+        // upstream command that `OSCCommand` does not list yet is `invalid`
+        // rather than a shift of every kind Go already knows.
+        self.kind = switch (cmd.*) {
+            inline else => |_, tag| if (@hasField(OSCCommand, @tagName(tag)))
+                @field(OSCCommand, @tagName(tag))
+            else
+                .invalid,
+        };
 
         switch (cmd.*) {
             .change_window_title => |v| self.window_title = self.dupe(v),
@@ -309,7 +311,7 @@ pub fn freeOSCParser(self: *OSCParser) void {
 /// functions will accept. This is ghostty's own limit, not one added here: its
 /// CSI parser stops recording after this many, and the colon bitset that says
 /// how they were separated is exactly this wide.
-pub const MAX_SGR_PARAMS: usize = @TypeOf(@as(vt.sgr.Parser, undefined).params_sep).bit_length;
+const MAX_SGR_PARAMS: usize = @TypeOf(@as(vt.sgr.Parser, undefined).params_sep).bit_length;
 
 /// Which attribute a parsed SGR parameter selects: `Attribute`'s tag, spelled
 /// out as its own enum.

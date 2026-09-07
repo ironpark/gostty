@@ -9,13 +9,7 @@ const std = @import("std");
 const vt = @import("ghostty_vt");
 const common = @import("common.zig");
 
-const Allocator = std.mem.Allocator;
 const Terminal = common.Terminal;
-const Screen = common.Screen;
-const io = common.io;
-const packColor = common.packColor;
-const unpackColor = common.unpackColor;
-const Underline = common.Underline;
 
 pub const Key = vt.input.Key;
 /// What happened to the key. Declared here rather than re-exported so that
@@ -27,11 +21,7 @@ pub const KeyAction = enum(u8) {
     repeat,
 
     fn toGhostty(self: KeyAction) vt.input.KeyAction {
-        return switch (self) {
-            .press => .press,
-            .release => .release,
-            .repeat => .repeat,
-        };
+        return common.mirror(vt.input.KeyAction, self);
     }
 };
 

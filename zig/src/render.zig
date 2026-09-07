@@ -9,11 +9,7 @@ const vt = @import("ghostty_vt");
 const common = @import("common.zig");
 
 const Allocator = std.mem.Allocator;
-const Terminal = common.Terminal;
-const Screen = common.Screen;
-const io = common.io;
 const packColor = common.packColor;
-const unpackColor = common.unpackColor;
 const Underline = common.Underline;
 
 // -- Rendering -------------------------------------------------------------
@@ -84,7 +80,8 @@ pub fn renderCells(self: *RenderState, dst: []RenderCell) !usize {
     const width: usize = self.cols;
     const total = @as(usize, self.rows) * width;
     if (dst.len < total) return error.NoSpaceLeft;
-    for (0..self.rows) |y| fillRow(self, y, dst[y * width .. (y + 1) * width]);
+    const defaults = rowDefaults(self);
+    for (0..self.rows) |y| fillRow(self, defaults, y, dst[y * width .. (y + 1) * width]);
     return total;
 }
 
@@ -95,24 +92,31 @@ pub fn renderRowCells(self: *RenderState, y: u16, dst: []RenderCell) !usize {
     if (y >= self.rows) return 0;
     const width: usize = self.cols;
     if (dst.len < width) return error.NoSpaceLeft;
-    fillRow(self, y, dst[0..width]);
+    fillRow(self, rowDefaults(self), y, dst[0..width]);
     return width;
 }
 
-fn fillRow(self: *RenderState, y: usize, dst: []RenderCell) void {
-    const fg_default = packColor(self.colors.foreground);
-    const bg_default = packColor(self.colors.background);
+/// What every cell of a frame starts from: the colors the terminal falls back
+/// to, resolved once per frame rather than once per row.
+const RowDefaults = struct { fg: u32, bg: u32 };
+
+fn rowDefaults(self: *RenderState) RowDefaults {
+    return .{
+        .fg = packColor(self.colors.foreground),
+        .bg = packColor(self.colors.background),
+    };
+}
+
+fn fillRow(self: *RenderState, defaults: RowDefaults, y: usize, dst: []RenderCell) void {
     const row = self.row_data.items(.cells)[y];
-    const sel = self.row_data.items(.selection)[y];
     const raw = row.items(.raw);
     const styles = row.items(.style);
-    for (raw, styles, 0..) |cell, style, x| {
-        if (x >= dst.len) break;
-        const out = &dst[x];
+    const n = @min(raw.len, dst.len);
+    for (raw[0..n], styles[0..n], dst[0..n]) |cell, style, *out| {
         out.* = .{
             .codepoint = 0,
-            .fg = fg_default,
-            .bg = bg_default,
+            .fg = defaults.fg,
+            .bg = defaults.bg,
             .flags = .{ .wide = cell.wide },
         };
 
@@ -128,12 +132,6 @@ fn fillRow(self: *RenderState, y: usize, dst: []RenderCell) void {
             }),
         }
 
-        if (sel) |range| {
-            if (x >= range[0] and x <= range[1]) {
-                out.flags.selected = true;
-            }
-        }
-
         // `style` is only meaningful when the cell carries a style id;
         // the default-styled cells keep the defaults filled in above.
         if (cell.style_id != 0) {
@@ -146,6 +144,15 @@ fn fillRow(self: *RenderState, y: usize, dst: []RenderCell) void {
                 out.bg = tmp;
             }
         }
+    }
+
+    // The selection is one span per row, so mark it in one pass over the span
+    // rather than testing every cell against it.
+    if (self.row_data.items(.selection)[y]) |range| {
+        const end = @min(@as(usize, range[1]) + 1, n);
+        if (range[0] < end) for (dst[range[0]..end]) |*out| {
+            out.flags.selected = true;
+        };
     }
 }
 

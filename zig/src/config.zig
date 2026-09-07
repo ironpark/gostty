@@ -10,32 +10,22 @@
 //! ABI scalars, so each one is wrapped here.
 const std = @import("std");
 const vt = @import("ghostty_vt");
+const common = @import("common.zig");
 
 const Allocator = std.mem.Allocator;
-const Terminal = vt.Terminal;
+const Terminal = common.Terminal;
+const packColor = common.packColor;
+const unpackColor = common.unpackColor;
 const Mode = vt.Mode;
-
-/// Unpack a `0xRRGGBB` color, the convention every color parameter here uses.
-fn rgbFromInt(v: u32) vt.color.RGB {
-    return .{
-        .r = @truncate(v >> 16),
-        .g = @truncate(v >> 8),
-        .b = @truncate(v),
-    };
-}
-
-fn intFromRgb(c: vt.color.RGB) u32 {
-    return (@as(u32, c.r) << 16) | (@as(u32, c.g) << 8) | c.b;
-}
 
 /// Read one entry of the 256 color palette as `0xRRGGBB`.
 pub fn paletteColor(self: *Terminal, idx: u8) u32 {
-    return intFromRgb(self.colors.palette.current[idx]);
+    return packColor(self.colors.palette.current[idx]);
 }
 
 /// Override one palette entry, as OSC 4 does.
 pub fn setPaletteColor(self: *Terminal, idx: u8, rgb: u32) void {
-    self.colors.palette.set(idx, rgbFromInt(rgb));
+    self.colors.palette.set(idx, unpackColor(rgb));
 }
 
 /// Drop the override on one palette entry, restoring its default.
@@ -57,7 +47,7 @@ pub fn resetPalette(self: *Terminal) void {
 /// copy of the current defaults.
 pub fn setDefaultPaletteColor(self: *Terminal, gpa: Allocator, idx: u8, rgb: u32) !void {
     var def = self.colors.palette.original.*;
-    def[idx] = rgbFromInt(rgb);
+    def[idx] = unpackColor(rgb);
     try self.colors.palette.changeDefault(gpa, def);
 }
 

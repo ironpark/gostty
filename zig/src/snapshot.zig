@@ -10,11 +10,7 @@ const common = @import("common.zig");
 
 const Allocator = std.mem.Allocator;
 const Terminal = common.Terminal;
-const Screen = common.Screen;
 const io = common.io;
-const packColor = common.packColor;
-const unpackColor = common.unpackColor;
-const Underline = common.Underline;
 
 // Snapshots: ghostty's binary representation of a whole terminal, active
 // state first so a restored terminal renders before its history arrives.
@@ -48,6 +44,12 @@ pub fn snapshotRestoreInto(self: *Snapshot, gpa: Allocator, term: *Terminal) err
     const restored = self.toOwned();
     term.deinit(gpa);
     term.* = restored;
+}
+
+// `Snapshot` is the decoded form itself, so the decoder's entry points
+// delegate here rather than restate the one-shot rule.
+comptime {
+    std.debug.assert(Snapshot == vt.snapshot.Decoded);
 }
 
 /// The bytes of the unfinished sequence the snapshot was taken in, empty
@@ -146,19 +148,13 @@ pub fn snapshotDecoderReady(self: *SnapshotDecoder, gpa: Allocator, max_continua
 /// same one-shot rule applies, and `next` wants the same terminal afterwards.
 pub fn snapshotDecoderRestoreInto(self: *SnapshotDecoder, gpa: Allocator, term: *Terminal) error{TerminalTaken}!void {
     const decoded = if (self.decoded) |*d| d else return error.TerminalTaken;
-    if (decoded.terminal == null) return error.TerminalTaken;
-    const restored = decoded.toOwned();
-    term.deinit(gpa);
-    term.* = restored;
+    return snapshotRestoreInto(decoded, gpa, term);
 }
 
 /// The unfinished sequence the snapshot was taken in, empty at ground.
 pub fn snapshotDecoderContinuation(self: *SnapshotDecoder) []const u8 {
-    const decoded = self.decoded orelse return "";
-    return switch (decoded.continuation) {
-        .ground => "",
-        .bytes => |bytes| bytes,
-    };
+    const decoded = if (self.decoded) |*d| d else return "";
+    return snapshotContinuation(decoded);
 }
 
 /// Decode one page of history and prepend it to its screen in `term`, which

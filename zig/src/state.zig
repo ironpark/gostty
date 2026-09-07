@@ -5,8 +5,9 @@
 //! bytes: what did that sequence actually leave behind? The setters for most of
 //! it are already bound; these are the matching gets.
 const vt = @import("ghostty_vt");
+const common = @import("common.zig");
 
-const Terminal = vt.Terminal;
+const Terminal = common.Terminal;
 
 /// The margins DECSTBM and DECSLRM set, 0-indexed and inclusive.
 ///
@@ -64,8 +65,7 @@ pub fn protectedMode(self: *Terminal) vt.ProtectedMode {
 /// DEC modes select tracking and the last one written wins, so the modes alone
 /// cannot tell you which is in effect.
 ///
-/// A plain mirror of ghostty's `mouse.Event`, which is built by `lib.Enum` and
-/// so has no name a binding can use.
+/// A mirror of ghostty's `mouse.Event`; see `common.mirror`.
 pub const MouseTracking = enum(u8) {
     /// No reporting.
     none,
@@ -81,13 +81,7 @@ pub const MouseTracking = enum(u8) {
 
 /// The tracking mode currently in effect.
 pub fn mouseTracking(self: *Terminal) MouseTracking {
-    return switch (self.flags.mouse_event) {
-        .none => .none,
-        .x10 => .x10,
-        .normal => .normal,
-        .button => .button,
-        .any => .any,
-    };
+    return common.mirror(MouseTracking, self.flags.mouse_event);
 }
 
 /// Whether the current tracking mode reports motion as well as buttons.
@@ -102,8 +96,7 @@ pub fn mouseTrackingSendsMotion(self: *Terminal) bool {
 
 /// The encoding used for mouse reports.
 ///
-/// A plain mirror of ghostty's `mouse.Format`, for the same reason as
-/// `MouseTracking`.
+/// A mirror of ghostty's `mouse.Format`.
 pub const MouseReportFormat = enum(u8) {
     /// The original single-byte encoding, coordinates offset by 32.
     x10,
@@ -119,13 +112,7 @@ pub const MouseReportFormat = enum(u8) {
 
 /// The report encoding currently in effect.
 pub fn mouseReportFormat(self: *Terminal) MouseReportFormat {
-    return switch (self.flags.mouse_format) {
-        .x10 => .x10,
-        .utf8 => .utf8,
-        .sgr => .sgr,
-        .urxvt => .urxvt,
-        .sgr_pixels => .sgr_pixels,
-    };
+    return common.mirror(MouseReportFormat, self.flags.mouse_format);
 }
 
 /// What a DECRQM query of a mode would answer.
@@ -152,11 +139,5 @@ pub fn modeReport(self: *Terminal, mode: u16, ansi: bool) ModeReport {
         .value = @truncate(mode),
         .ansi = ansi,
     });
-    return switch (report.state) {
-        .not_recognized => .not_recognized,
-        .set => .set,
-        .reset => .reset,
-        .permanently_set => .permanently_set,
-        .permanently_reset => .permanently_reset,
-    };
+    return common.mirror(ModeReport, report.state);
 }

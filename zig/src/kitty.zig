@@ -14,11 +14,6 @@ const common = @import("common.zig");
 
 const Allocator = std.mem.Allocator;
 const Terminal = common.Terminal;
-const Screen = common.Screen;
-const io = common.io;
-const packColor = common.packColor;
-const unpackColor = common.unpackColor;
-const Underline = common.Underline;
 
 const kitty = vt.kitty.graphics;
 
@@ -26,8 +21,8 @@ const kitty = vt.kitty.graphics;
 ///
 /// Ours rather than ghostty's: ghostty's has a backing type chosen for
 /// compactness (three bits, at the time of writing), which cannot appear in an
-/// extern struct. The tags and their order are the same, and the conversion is
-/// a `switch`, so a tag added upstream is a compile error here rather than a
+/// extern struct. The tags are the same, and `common.mirror` checks that at
+/// compile time, so a tag added upstream is a build error here rather than a
 /// silent renumbering.
 pub const KittyFormat = enum(u8) {
     /// Three bytes per pixel.
@@ -52,20 +47,11 @@ pub const KittyCompression = enum(u8) {
 };
 
 fn kittyFormat(f: @FieldType(kitty.Image, "format")) KittyFormat {
-    return switch (f) {
-        .rgb => .rgb,
-        .rgba => .rgba,
-        .png => .png,
-        .gray_alpha => .gray_alpha,
-        .gray => .gray,
-    };
+    return common.mirror(KittyFormat, f);
 }
 
 fn kittyCompression(c: @FieldType(kitty.Image, "compression")) KittyCompression {
-    return switch (c) {
-        .none => .none,
-        .zlib_deflate => .zlib_deflate,
-    };
+    return common.mirror(KittyCompression, c);
 }
 
 /// Where a placement is drawn relative to the cell background and the text.
@@ -193,6 +179,12 @@ pub fn kittyUpdate(self: *KittyImages, term: *Terminal) !void {
     const storage = &term.screens.active.kitty_images;
     self.generation = storage.generation;
 
+    // The viewport's top-left corner on the screen-absolute axis is the same
+    // for every placement, so it is resolved once here rather than per one.
+    // Absent, every pinned placement is off screen; virtual ones still count.
+    const pages = &term.screens.active.pages;
+    const viewport_top: ?usize = if (pages.pointFromPin(.screen, pages.getTopLeft(.viewport))) |p| p.screen.y else null;
+
     var it = storage.placements.iterator();
     while (it.next()) |entry| {
         const key = entry.key_ptr;
@@ -201,7 +193,7 @@ pub fn kittyUpdate(self: *KittyImages, term: *Terminal) !void {
 
         // A virtual placement is laid out by the cells that reference it, so
         // there is no position to resolve and nothing to clip against.
-        const resolved = kittyViewportPos(storage, placement, image, term);
+        const resolved = kittyViewportPos(storage, placement, image, term, viewport_top);
         const virtual = switch (resolved) {
             .virtual => true,
             .offscreen => continue,
@@ -209,11 +201,14 @@ pub fn kittyUpdate(self: *KittyImages, term: *Terminal) !void {
         };
         const pos: KittyPos.Coord = switch (resolved) {
             .at => |value| value,
-            else => .{ .col = 0, .row = 0 },
+            else => blk: {
+                const g = placement.gridSize(image.*, term);
+                break :blk .{ .col = 0, .row = 0, .grid = .{ .cols = g.cols, .rows = g.rows } };
+            },
         };
+        const grid = pos.grid;
 
         const size = placement.pixelSize(image.*, term);
-        const grid = placement.gridSize(image.*, term);
         const source = placement.sourceRect(image.*);
 
         try self.items.append(self.gpa, .{
@@ -251,14 +246,17 @@ pub fn kittyUpdate(self: *KittyImages, term: *Terminal) !void {
 
 /// What resolving a placement's position against the viewport produced.
 const KittyPos = union(enum) {
-    /// The top-left corner, in viewport cells.
+    /// The top-left corner, in viewport cells, and the placement's size in
+    /// cells, which the clip test already had to compute.
     at: Coord,
     /// Placed by the cells that reference it, so there is no position here.
     virtual,
     /// Off the viewport, or anchored to text the scrollback has dropped.
     offscreen,
 
-    const Coord = struct { col: i32, row: i32 };
+    const Coord = struct { col: i32, row: i32, grid: GridSize };
+    /// ghostty spells this as an anonymous struct return, so it is named here.
+    const GridSize = struct { cols: u32, rows: u32 };
 };
 
 /// Where a placement's top-left corner is, relative to the viewport.
@@ -273,6 +271,7 @@ fn kittyViewportPos(
     placement: *const kitty.ImageStorage.Placement,
     image: *const kitty.Image,
     term: *Terminal,
+    viewport_top: ?usize,
 ) KittyPos {
     // A placement positioned relative to another one has no pin of its own: it
     // hangs off its parent's, at an accumulated offset. A chain that ends at a
@@ -300,10 +299,10 @@ fn kittyViewportPos(
 
     const pages = &term.screens.active.pages;
     const pin_point = pages.pointFromPin(.screen, pin.*) orelse return .offscreen;
-    const top_left = pages.pointFromPin(.screen, pages.getTopLeft(.viewport)) orelse return .offscreen;
+    const top = viewport_top orelse return .offscreen;
 
     const row: i32 = (@as(i32, @intCast(pin_point.screen.y)) -
-        @as(i32, @intCast(top_left.screen.y))) +| row_offset;
+        @as(i32, @intCast(top))) +| row_offset;
     const col: i32 = @as(i32, @intCast(pin_point.screen.x)) +| col_offset;
 
     // Off the top, off the bottom, or pushed off either side by a relative
@@ -317,7 +316,7 @@ fn kittyViewportPos(
     if (@as(i64, row) + height <= 0 or row >= @as(i32, term.rows)) return .offscreen;
     if (@as(i64, col) + width <= 0 or col >= @as(i32, term.cols)) return .offscreen;
 
-    return .{ .at = .{ .col = col, .row = row } };
+    return .{ .at = .{ .col = col, .row = row, .grid = .{ .cols = grid.cols, .rows = grid.rows } } };
 }
 
 /// How many placements `kittyPlacements` will write.

@@ -33,6 +33,28 @@ fn enumeration(comptime name: []const u8, comptime opts: struct {
     };
 }
 
+/// One Go callback type. Every callback here is retained by the stream that
+/// takes it, may re-enter the bindings, and runs on the thread that fed the
+/// bytes; the name is required because a function-pointer alias has none of
+/// its own to derive.
+fn callback(comptime decl: []const u8, comptime go_name: []const u8) struct {
+    type: type,
+    repr: @TypeOf(.enum_literal),
+    name: []const u8,
+    retention: @TypeOf(.enum_literal),
+    reentrancy: @TypeOf(.enum_literal),
+    thread: @TypeOf(.enum_literal),
+} {
+    return .{
+        .type = @field(gostty, decl),
+        .repr = .callback,
+        .name = go_name,
+        .retention = .retained,
+        .reentrancy = .allowed,
+        .thread = .caller,
+    };
+}
+
 pub const bindings = zigo.define(.{
     .root = gostty,
     .allocator = .smp_allocator,
@@ -72,6 +94,8 @@ pub const bindings = zigo.define(.{
             // belong to the root package -- pulling them in here would make
             // the two packages import each other.
             .types = .{ "Key*", "MouseAction", "MouseButton", "MouseEvent", "FocusEvent", "RenderSize" },
+            // Plain names, unlike the entries below: these select which of the
+            // already-declared functions move here, they do not declare any.
             .functions = .{
                 "root.encodeKey",
                 "root.encodeMouse",
@@ -138,11 +162,11 @@ pub const bindings = zigo.define(.{
         enumeration("DragOperation", .{ .text = true }),
         .{ .type = gostty.DragOperations, .repr = .value },
         .{ .type = gostty.DragMove, .repr = .value },
-        .{ .type = gostty.DragFn, .repr = .callback, .name = "DragHandler", .retention = .retained, .reentrancy = .allowed, .thread = .caller },
+        callback("DragFn", "DragHandler"),
         enumeration("ClipboardLocation", .{ .text = true, .open = true }),
         enumeration("ClipboardDenial", .{}),
-        .{ .type = gostty.ClipboardFn, .repr = .callback, .name = "ClipboardHandler", .retention = .retained, .reentrancy = .allowed, .thread = .caller },
-        .{ .type = gostty.SysFn, .repr = .callback, .name = "Handler", .retention = .retained, .reentrancy = .allowed, .thread = .caller },
+        callback("ClipboardFn", "ClipboardHandler"),
+        callback("SysFn", "Handler"),
         enumeration("Underline", .{}),
         enumeration("ColorName", .{ .text = true, .open = true }),
         .{ .type = gostty.Attribute, .repr = .tagged_union },
@@ -334,17 +358,17 @@ pub const bindings = zigo.define(.{
             .strip_prefix = "screen",
             .functions = .{
                 .{ .path = "root.screenSelectAll", .covers = "Screen.selectAll" },
-                "root.screenHasSelection",
+                .{ .path = "root.screenHasSelection" },
                 .{ .path = "root.screenSelectRange", .covers = "Screen.select" },
 
                 .{ .path = "root.screenSelectWord", .covers = "Screen.selectWord" },
                 .{ .path = "root.screenSelectLine", .covers = "Screen.selectLine" },
                 .{ .path = "root.screenSelectOutput", .covers = "Screen.selectOutput" },
                 .{ .path = "root.screenSelectionString", .returns = .caller, .covers = "Screen.selectionString" },
-                "root.screenSelection",
+                .{ .path = "root.screenSelection" },
                 .{ .path = "root.screenSetSelection" },
-                "root.screenViewportTop",
-                "root.screenScrollbar",
+                .{ .path = "root.screenViewportTop" },
+                .{ .path = "root.screenScrollbar" },
                 .{ .path = "root.screenFormat" },
                 .{ .path = "root.screenFormatSelection" },
                 .{ .path = "root.screenSelectionContains" },
@@ -366,10 +390,10 @@ pub const bindings = zigo.define(.{
             .strip_prefix = "search",
             .functions = .{
                 .{ .path = "root.searchNeedle" },
-                "root.searchStatus",
-                "root.searchTick",
+                .{ .path = "root.searchStatus" },
+                .{ .path = "root.searchTick" },
                 .{ .path = "root.searchFeed", .params = .{"active_dirty"} },
-                "root.searchAll",
+                .{ .path = "root.searchAll" },
                 .{ .path = "root.searchSelect", .params = .{ "to", "scroll" } },
                 .{ .path = "root.searchMatchCount" },
                 .{
@@ -382,8 +406,8 @@ pub const bindings = zigo.define(.{
                     .params = .{"dst"},
                     .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
                 },
-                "root.searchSelectedMatch",
-                "root.searchSelectedIndex",
+                .{ .path = "root.searchSelectedMatch" },
+                .{ .path = "root.searchSelectedIndex" },
             },
         },
         .{
@@ -511,21 +535,21 @@ pub const bindings = zigo.define(.{
             .receiver = "RenderState",
             .strip_prefix = "render",
             .functions = .{
-                "root.renderCellCount",
+                .{ .path = "root.renderCellCount" },
                 .{
                     .path = "root.renderCells",
                     .params = .{"dst"},
                     .param_meta = .{ .dst = .{ .direction = .out, .written = .@"return" } },
                 },
-                "root.renderBackground",
-                "root.renderForeground",
-                "root.renderCursorX",
-                "root.renderCursorY",
-                "root.renderCursorWideTail",
-                "root.renderCursorColor",
+                .{ .path = "root.renderBackground" },
+                .{ .path = "root.renderForeground" },
+                .{ .path = "root.renderCursorX" },
+                .{ .path = "root.renderCursorY" },
+                .{ .path = "root.renderCursorWideTail" },
+                .{ .path = "root.renderCursorColor" },
                 // Partial redraw: which rows changed, one row's cells, and
                 // marking them drawn.
-                "root.renderDirty",
+                .{ .path = "root.renderDirty" },
                 .{
                     .path = "root.renderDirtyRows",
                     .params = .{"dst"},
@@ -556,7 +580,7 @@ pub const bindings = zigo.define(.{
             .strip_prefix = "kitty",
             .functions = .{
                 .{ .path = "root.kittyUpdate", .params = .{"term"} },
-                "root.kittyPlacementCount",
+                .{ .path = "root.kittyPlacementCount" },
                 .{
                     .path = "root.kittyPlacements",
                     .params = .{"dst"},
@@ -633,13 +657,13 @@ pub const bindings = zigo.define(.{
                 .{ .path = "root.gestureSetGeometry" },
                 .{ .path = "root.gesturePress" },
                 .{ .path = "root.gestureDrag" },
-                "root.gestureAutoscroll",
+                .{ .path = "root.gestureAutoscroll" },
                 .{ .path = "root.gestureAutoscrollTick" },
                 .{ .path = "root.gestureDeepPress" },
                 .{ .path = "root.gestureRelease" },
                 .{ .path = "root.gestureReset" },
-                "root.gestureClickCount",
-                "root.gestureDragged",
+                .{ .path = "root.gestureClickCount" },
+                .{ .path = "root.gestureDragged" },
             },
         },
 
@@ -654,8 +678,8 @@ pub const bindings = zigo.define(.{
             .functions = .{
                 .{ .path = "root.OSCParser.feed", .params = .{"bytes"}, .param_meta = .{ .bytes = .{ .semantic = .opaque_bytes } } },
                 .{ .path = "root.OSCParser.end", .params = .{"terminator"} },
-                "root.OSCParser.reset",
-                "root.OSCParser.command",
+                .{ .path = "root.OSCParser.reset" },
+                .{ .path = "root.OSCParser.command" },
                 // The strings below are borrowed from the parser and stay valid
                 // only until the next feed, end or reset, which is why none of
                 // them declare a release function.
@@ -667,12 +691,12 @@ pub const bindings = zigo.define(.{
                 .{ .path = "root.OSCParser.notificationTitle" },
                 .{ .path = "root.OSCParser.notificationBody" },
                 .{ .path = "root.OSCParser.clipboardData" },
-                "root.OSCParser.clipboardSelection",
+                .{ .path = "root.OSCParser.clipboardSelection" },
                 .{ .path = "root.OSCParser.mouseShape" },
-                "root.OSCParser.semanticPromptAction",
+                .{ .path = "root.OSCParser.semanticPromptAction" },
                 .{ .path = "root.OSCParser.semanticPromptOptions" },
-                "root.OSCParser.progressState",
-                "root.OSCParser.progressValue",
+                .{ .path = "root.OSCParser.progressState" },
+                .{ .path = "root.OSCParser.progressValue" },
             },
         },
         .{ .path = "root.sgrAttributeCount" },

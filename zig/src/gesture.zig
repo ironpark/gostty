@@ -42,12 +42,7 @@ pub const GestureBehavior = enum(u8) {
     output,
 
     fn toGhostty(self: GestureBehavior) Inner.Behavior {
-        return switch (self) {
-            .cell => .cell,
-            .word => .word,
-            .line => .line,
-            .output => .output,
-        };
+        return common.mirror(Inner.Behavior, self);
     }
 };
 
@@ -269,11 +264,7 @@ pub fn gestureDrag(self: *Gesture, d: GestureDragEvent) ?Selection {
 /// Which way an active drag wants the viewport scrolled, `none` when it does
 /// not. Read it after every `Drag` to start or stop the autoscroll timer.
 pub fn gestureAutoscroll(self: *Gesture) GestureAutoscrollDirection {
-    return switch (self.inner.left_drag_autoscroll) {
-        .none => .none,
-        .up => .up,
-        .down => .down,
-    };
+    return common.mirror(GestureAutoscrollDirection, self.inner.left_drag_autoscroll);
 }
 
 /// Scroll the viewport one row in the autoscroll direction and continue the

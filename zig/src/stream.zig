@@ -13,11 +13,6 @@ const common = @import("common.zig");
 
 const Allocator = std.mem.Allocator;
 const Terminal = common.Terminal;
-const Screen = common.Screen;
-const io = common.io;
-const packColor = common.packColor;
-const unpackColor = common.unpackColor;
-const Underline = common.Underline;
 
 /// Something a running program asked the embedder to do, rather than a change
 /// to terminal state.
@@ -86,6 +81,17 @@ pub const ClipboardDenial = enum(u8) {
     busy,
     /// Reading or writing the clipboard failed.
     io_error,
+
+    /// The failure arm of a ghostty reply, which spells the same four reasons
+    /// in two `Result` unions, one per direction.
+    fn toGhostty(self: ClipboardDenial, comptime Result: type) Result {
+        return switch (self) {
+            .denied => .denied,
+            .unsupported => .unsupported,
+            .busy => .busy,
+            .io_error => .io_error,
+        };
+    }
 };
 
 /// Called while a feed is in flight, once per clipboard request.
@@ -107,6 +113,9 @@ pub const Stream = struct {
 
     /// Events collected during a feed, oldest first.
     queue: std.ArrayList(Queued) = .empty,
+    /// Events before this index have been handed out; `nextEvent` reads from
+    /// here rather than shifting the array on every event.
+    queue_head: usize = 0,
 
     /// Bytes the terminal answered a query with, waiting to be written back to
     /// the program. Collected during a feed and drained by `writeReplies`.
@@ -174,11 +183,6 @@ pub const Stream = struct {
         }
     };
 
-    fn fromHandler(handler: *vt.TerminalStream.Handler) *Stream {
-        const inner: *vt.TerminalStream = @fieldParentPtr("handler", handler);
-        return @fieldParentPtr("inner", inner);
-    }
-
     /// Dropping an event beats failing the feed: the terminal state the same
     /// sequence produced has already been applied.
     fn push(self: *Stream, event: Queued) void {
@@ -186,22 +190,22 @@ pub const Stream = struct {
     }
 
     fn onBell(handler: *vt.TerminalStream.Handler) void {
-        fromHandler(handler).push(.{ .kind = .bell });
+        streamFromHandler(handler).push(.{ .kind = .bell });
     }
 
     fn onTitleChanged(handler: *vt.TerminalStream.Handler) void {
-        fromHandler(handler).push(.{ .kind = .title_changed });
+        streamFromHandler(handler).push(.{ .kind = .title_changed });
     }
 
     fn onPwdChanged(handler: *vt.TerminalStream.Handler) void {
-        fromHandler(handler).push(.{ .kind = .pwd_changed });
+        streamFromHandler(handler).push(.{ .kind = .pwd_changed });
     }
 
     fn onDesktopNotification(
         handler: *vt.TerminalStream.Handler,
         notification: vt.TerminalStream.Action.ShowDesktopNotification,
     ) void {
-        const self = fromHandler(handler);
+        const self = streamFromHandler(handler);
         const title = self.gpa.dupe(u8, notification.title) catch return;
         const body = self.gpa.dupe(u8, notification.body) catch {
             self.gpa.free(title);
@@ -214,7 +218,7 @@ pub const Stream = struct {
         handler: *vt.TerminalStream.Handler,
         report: vt.osc.Command.ProgressReport,
     ) void {
-        fromHandler(handler).push(.{
+        streamFromHandler(handler).push(.{
             .kind = .progress_report,
             .progress_state = report.state,
             .progress = report.progress orelse 255,
@@ -226,7 +230,7 @@ pub const Stream = struct {
     /// so they are copied out and handed over after the feed like the events;
     /// writing to the pty from inside a feed would reenter the caller.
     fn onWritePty(handler: *vt.TerminalStream.Handler, data: []const u8) void {
-        const self = fromHandler(handler);
+        const self = streamFromHandler(handler);
         // A dropped reply leaves the program waiting, but so does failing the
         // feed, and this way the rest of the screen still arrives.
         self.replies.appendSlice(self.gpa, data) catch {};
@@ -249,7 +253,7 @@ pub const Stream = struct {
         handler: *vt.TerminalStream.Handler,
         write: vt.clipboard.Write,
     ) void {
-        const self = fromHandler(handler);
+        const self = streamFromHandler(handler);
         const callback = self.on_clipboard_write orelse {
             write.reply(.denied);
             return;
@@ -265,7 +269,7 @@ pub const Stream = struct {
         handler: *vt.TerminalStream.Handler,
         read: vt.clipboard.Read,
     ) void {
-        const self = fromHandler(handler);
+        const self = streamFromHandler(handler);
         const callback = self.on_clipboard_read orelse {
             read.reply(.denied);
             return;
@@ -283,7 +287,7 @@ pub const Stream = struct {
         handler: *vt.TerminalStream.Handler,
         value: vt.UnknownSequence,
     ) void {
-        const self = fromHandler(handler);
+        const self = streamFromHandler(handler);
         const content = switch (value) {
             .apc => |apc| apc.content,
         };
@@ -300,7 +304,7 @@ pub const Stream = struct {
     /// installed -- an embedder should not have to declare a fact about its
     /// own wiring.
     fn onDeviceAttributes(handler: *vt.TerminalStream.Handler) Attributes {
-        const self = fromHandler(handler);
+        const self = streamFromHandler(handler);
         var n: usize = 0;
         self.da_features[n] = .ansi_color;
         n += 1;
@@ -312,17 +316,17 @@ pub const Stream = struct {
     }
 
     fn onXtversion(handler: *vt.TerminalStream.Handler) []const u8 {
-        const self = fromHandler(handler);
+        const self = streamFromHandler(handler);
         return self.version_buf[0..self.version_len];
     }
 
     fn onEnquiry(handler: *vt.TerminalStream.Handler) []const u8 {
-        const self = fromHandler(handler);
+        const self = streamFromHandler(handler);
         return self.enquiry_buf[0..self.enquiry_len];
     }
 
     fn onColorScheme(handler: *vt.TerminalStream.Handler) ?ColorScheme {
-        return fromHandler(handler).color_scheme;
+        return streamFromHandler(handler).color_scheme;
     }
 
     fn effects() vt.TerminalStream.Handler.Effects {
@@ -404,8 +408,14 @@ pub const Stream = struct {
             event.deinit(self.gpa);
             self.current = null;
         }
-        if (self.queue.items.len == 0) return null;
-        const event = self.queue.orderedRemove(0);
+        if (self.queue_head == self.queue.items.len) {
+            // Drained: reuse the buffer from the front for the next feed.
+            self.queue.clearRetainingCapacity();
+            self.queue_head = 0;
+            return null;
+        }
+        const event = self.queue.items[self.queue_head];
+        self.queue_head += 1;
         self.current = event;
         return event.kind;
     }
@@ -638,24 +648,11 @@ pub const Stream = struct {
     pub fn denyClipboard(self: *Stream, reason: ClipboardDenial) void {
         if (self.answered) return;
         if (self.pending_write) |write| {
-            write.reply(switch (reason) {
-                .denied => .denied,
-                .unsupported => .unsupported,
-                .busy => .busy,
-                .io_error => .io_error,
-            });
-            self.answered = true;
-            return;
-        }
-        if (self.pending_read) |read| {
-            read.reply(switch (reason) {
-                .denied => .denied,
-                .unsupported => .unsupported,
-                .busy => .busy,
-                .io_error => .io_error,
-            });
-            self.answered = true;
-        }
+            write.reply(reason.toGhostty(vt.clipboard.Write.Result));
+        } else if (self.pending_read) |read| {
+            read.reply(reason.toGhostty(vt.clipboard.Read.Result));
+        } else return;
+        self.answered = true;
     }
 };
 
@@ -690,9 +687,9 @@ pub fn newStream(gpa: Allocator, terminal: *Terminal, continuation_max_bytes: us
 
 /// Destroys a stream created by `newStream`.
 pub fn freeStream(self: *Stream, gpa: Allocator) void {
-    @import("dnd.zig").clearDragItems(self);
+    @import("dnd.zig").dragClearItems(self);
     self.drag_items.deinit(gpa);
-    for (self.queue.items) |event| event.deinit(gpa);
+    for (self.queue.items[self.queue_head..]) |event| event.deinit(gpa);
     self.queue.deinit(gpa);
     self.replies.deinit(gpa);
     if (self.current) |event| event.deinit(gpa);

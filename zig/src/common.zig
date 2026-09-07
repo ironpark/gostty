@@ -35,6 +35,28 @@ pub const Screen = vt.Screen;
 /// carries the same field for a rendered cell.
 pub const Underline = vt.Attribute.Underline;
 
+/// Convert an enum to the one that mirrors it, by tag name.
+///
+/// ghostty builds many of its enums through `lib.Enum`, or on a backing type
+/// too narrow for an extern struct, so this binding declares a plain `enum(u8)`
+/// beside each one and converts at the boundary. Matching by name keeps the
+/// two lists in step at compile time in both directions: a tag added or
+/// renamed on either side stops the build here rather than silently mapping
+/// to something else. The declarations may still list the tags in different
+/// orders; only the names must agree.
+pub fn mirror(comptime To: type, from: anytype) To {
+    const From = @TypeOf(from);
+    comptime {
+        const a = std.meta.fieldNames(From);
+        const b = std.meta.fieldNames(To);
+        if (a.len != b.len) @compileError(@typeName(To) ++ " is out of step with " ++ @typeName(From));
+        for (a) |name| if (!@hasField(To, name)) @compileError(@typeName(To) ++ " is missing " ++ name);
+    }
+    return switch (from) {
+        inline else => |tag| @field(To, @tagName(tag)),
+    };
+}
+
 // Colours are `0xRRGGBB` everywhere the binding hands one over, so a renderer
 // keeps a single representation.
 

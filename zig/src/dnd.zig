@@ -18,7 +18,6 @@ const vt = @import("ghostty_vt");
 const common = @import("common.zig");
 const stream_mod = @import("stream.zig");
 
-const Allocator = std.mem.Allocator;
 const Terminal = common.Terminal;
 const Stream = stream_mod.Stream;
 const dnd = vt.kitty.dnd;
@@ -93,21 +92,11 @@ pub const DragMove = extern struct {
 pub const DragFn = *const fn (userdata: usize) callconv(.c) void;
 
 fn toEvent(event: dnd.Event) DragEvent {
-    return switch (event) {
-        .registration => .registration,
-        .acceptance => .acceptance,
-        .concluded_none => .concluded_none,
-        .concluded_copy => .concluded_copy,
-        .concluded_move => .concluded_move,
-    };
+    return common.mirror(DragEvent, event);
 }
 
 fn toOperation(op: dnd.Operation) DragOperation {
-    return switch (op) {
-        .none => .none,
-        .copy => .copy,
-        .move => .move,
-    };
+    return common.mirror(DragOperation, op);
 }
 
 /// The effect ghostty calls. The acceptance is captured here, while the event
@@ -182,7 +171,7 @@ pub fn dragMove(self: *Stream, ev: DragMove, mimes: []const u8) !void {
     var list = mimeList(mimes);
     var buf: [1024]u8 = undefined;
     var writer: std.Io.Writer = .fixed(&buf);
-    try state.dragMove(allocatorOf(self), &writer, ev.toGhostty(), list.slice());
+    try state.dragMove(self.gpa, &writer, ev.toGhostty(), list.slice());
     try appendReply(self, writer.buffered());
 }
 
@@ -193,7 +182,7 @@ pub fn dragLeave(self: *Stream) !void {
     const state = terminalOf(self).kitty_dnd orelse return;
     var buf: [256]u8 = undefined;
     var writer: std.Io.Writer = .fixed(&buf);
-    try state.dragLeave(allocatorOf(self), &writer);
+    try state.dragLeave(self.gpa, &writer);
     try appendReply(self, writer.buffered());
 }
 
@@ -205,7 +194,7 @@ pub fn dragLeave(self: *Stream) !void {
 /// `dragDrop`. The bytes are copied.
 pub fn dragAddItem(self: *Stream, mime: []const u8, data: []const u8) !void {
     if (self.drag_items.items.len >= dnd.State.max_items) return error.NoSpaceLeft;
-    const gpa = allocatorOf(self);
+    const gpa = self.gpa;
     const mime_copy = try gpa.dupe(u8, mime);
     errdefer gpa.free(mime_copy);
     const data_copy = try gpa.dupe(u8, data);
@@ -219,22 +208,18 @@ pub fn dragAddItem(self: *Stream, mime: []const u8, data: []const u8) !void {
 /// wants and concluded, which arrives as a `concluded_*` event. The staging
 /// list is emptied either way, so a failed drop does not leak into the next.
 pub fn dragDrop(self: *Stream, ev: DragMove) !void {
-    defer clearDragItems(self);
+    defer dragClearItems(self);
     const state = terminalOf(self).kitty_dnd orelse return;
     var buf: [1024]u8 = undefined;
     var writer: std.Io.Writer = .fixed(&buf);
-    try state.dragDrop(allocatorOf(self), &writer, ev.toGhostty(), self.drag_items.items);
+    try state.dragDrop(self.gpa, &writer, ev.toGhostty(), self.drag_items.items);
     try appendReply(self, writer.buffered());
 }
 
 /// Drop the staged representations without sending anything. For a drag the
 /// window system cancelled after the embedder had already staged it.
 pub fn dragClearItems(self: *Stream) void {
-    clearDragItems(self);
-}
-
-pub fn clearDragItems(self: *Stream) void {
-    const gpa = allocatorOf(self);
+    const gpa = self.gpa;
     for (self.drag_items.items) |item| {
         gpa.free(item.mime);
         gpa.free(item.data);
@@ -266,10 +251,6 @@ fn mimeList(mimes: []const u8) MimeList {
 
 fn terminalOf(self: *Stream) *Terminal {
     return self.inner.handler.terminal;
-}
-
-fn allocatorOf(self: *Stream) Allocator {
-    return self.gpa;
 }
 
 fn appendReply(self: *Stream, bytes: []const u8) !void {

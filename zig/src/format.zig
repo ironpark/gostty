@@ -3,13 +3,8 @@ const std = @import("std");
 const vt = @import("ghostty_vt");
 const common = @import("common.zig");
 
-const Allocator = std.mem.Allocator;
 const Terminal = common.Terminal;
 const Screen = common.Screen;
-const io = common.io;
-const packColor = common.packColor;
-const unpackColor = common.unpackColor;
-const Underline = common.Underline;
 const screen = @import("screen.zig");
 const Selection = screen.Selection;
 const selectionToPins = screen.selectionToPins;
@@ -27,11 +22,7 @@ pub const FormatterFormat = enum(u8) {
     html,
 
     fn toGhostty(self: FormatterFormat) vt.formatter.Format {
-        return switch (self) {
-            .plain => .plain,
-            .vt => .vt,
-            .html => .html,
-        };
+        return common.mirror(vt.formatter.Format, self);
     }
 };
 
