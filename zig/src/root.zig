@@ -345,11 +345,9 @@ pub const setKittyGraphicsLoadingLimits = config_.setKittyGraphicsLoadingLimits;
 // terminal behind them.
 //
 // `OSCParser`'s own methods are bound as `root.OSCParser.<name>` rather than
-// through one alias each. zigo checks every public declaration in this file
-// against every binding entry at comptime, so the cost of the surface grows
-// with the product of the two, and eighteen more names here is enough to
-// exhaust Zig's branch budget inside the generator. Reaching the methods
-// through the type they already live on costs nothing.
+// through one alias each. An alias carries no doc comment of its own, so
+// going through one costs every method its documentation; naming the method
+// where it is declared keeps it.
 const parser_ = @import("parser.zig");
 
 pub const OSCParser = parser_.OSCParser;
