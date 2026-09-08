@@ -1,6 +1,6 @@
 //go:build darwin
 
-package main
+package keys
 
 import (
 	"github.com/ebitengine/purego"
@@ -27,21 +27,22 @@ const (
 	kCGEventFlagMaskCommand   = 0x00100000
 )
 
-func currentMods() mods {
+// Current reports the modifier state for this frame.
+func Current() Mods {
 	if cgEventSourceFlagsState != nil {
 		flags := cgEventSourceFlagsState(0) // kCGEventSourceStateCombinedSessionState
-		return mods{
-			shift: flags&kCGEventFlagMaskShift != 0,
-			ctrl:  flags&kCGEventFlagMaskControl != 0,
-			alt:   flags&kCGEventFlagMaskAlternate != 0,
-			super: flags&kCGEventFlagMaskCommand != 0,
+		return Mods{
+			Shift: flags&kCGEventFlagMaskShift != 0,
+			Ctrl:  flags&kCGEventFlagMaskControl != 0,
+			Alt:   flags&kCGEventFlagMaskAlternate != 0,
+			Super: flags&kCGEventFlagMaskCommand != 0,
 		}
 	}
-	return mods{
-		shift: ebiten.IsKeyPressed(ebiten.KeyShift),
-		ctrl:  ebiten.IsKeyPressed(ebiten.KeyControl),
-		alt:   ebiten.IsKeyPressed(ebiten.KeyAlt),
-		super: ebiten.IsKeyPressed(ebiten.KeyMeta),
+	return Mods{
+		Shift: ebiten.IsKeyPressed(ebiten.KeyShift),
+		Ctrl:  ebiten.IsKeyPressed(ebiten.KeyControl),
+		Alt:   ebiten.IsKeyPressed(ebiten.KeyAlt),
+		Super: ebiten.IsKeyPressed(ebiten.KeyMeta),
 	}
 }
 
@@ -75,7 +76,13 @@ var darwinKeyCodes = map[ebiten.Key]uint16{
 	ebiten.KeyF12:         0x6F,
 }
 
-func isKeyPhysicallyPressed(key ebiten.Key) bool {
+// PhysicallyPressed reports whether the key is really down.
+//
+// Ebitengine keeps reporting a key as pressed after a Command chord releases
+// it, because macOS does not deliver the key-up while Command is held. Asking
+// CoreGraphics for the hardware state is what stops one Cmd+K from repeating
+// for as long as the window has focus.
+func PhysicallyPressed(key ebiten.Key) bool {
 	if vk, ok := darwinKeyCodes[key]; ok && cgEventSourceKeyState != nil {
 		return cgEventSourceKeyState(0, vk)
 	}

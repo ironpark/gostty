@@ -4,6 +4,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/ironpark/gostty"
+	"github.com/ironpark/gostty/examples/hypercat/keys"
 	"github.com/ironpark/gostty/input"
 )
 
@@ -34,8 +35,8 @@ var mouseButtons = [...]struct {
 // Holding Shift takes the mouse back for the window, which is the convention
 // every emulator follows: it is the only way to select text in a full-screen
 // program that has grabbed the mouse.
-func (g *game) reportMouse(m mods) (bool, error) {
-	if m.shift {
+func (g *game) reportMouse(m keys.Mods) (bool, error) {
+	if m.Shift {
 		g.mouseGrabbed = false
 		return false, nil
 	}
@@ -108,7 +109,7 @@ const linesPerNotch = 3
 // Ebitengine reports a continuous offset rather than notches, so it is
 // accumulated: a trackpad that reports a tenth of a line at a time still ends
 // up scrolling.
-func (g *game) handleWheel(m mods) error {
+func (g *game) handleWheel(m keys.Mods) error {
 	_, dy := ebiten.Wheel()
 	g.wheel += dy
 	notches := int(g.wheel) // truncates toward zero, so the remainder is kept
@@ -120,7 +121,7 @@ func (g *game) handleWheel(m mods) error {
 	// Shift takes the wheel back for the window, the same way it takes back a
 	// drag: it is the only way to reach the scrollback of a program that has
 	// grabbed the mouse.
-	if !m.shift {
+	if !m.Shift {
 		taken, err := g.reportWheel(notches, m)
 		if err != nil || taken {
 			return err
@@ -140,7 +141,7 @@ func (g *game) handleWheel(m mods) error {
 
 // reportWheel offers the wheel to the program as the button presses the
 // protocol represents it with, and reports whether it took them.
-func (g *game) reportWheel(notches int, m mods) (bool, error) {
+func (g *game) reportWheel(notches int, m keys.Mods) (bool, error) {
 	button := input.MouseButtonFour // up
 	if notches < 0 {
 		button, notches = input.MouseButtonFive, -notches
@@ -170,28 +171,21 @@ func (g *game) wheelAsArrows(notches int) error {
 	}
 	g.out = g.out[:0]
 	for range notches * linesPerNotch {
-		if err := g.sendKey(key, nil, mods{}); err != nil {
+		if err := g.sendKey(key, nil, keys.Mods{}); err != nil {
 			return err
 		}
 	}
-	if len(g.out) == 0 {
-		return nil
-	}
-	// Written here rather than left for handleInput, which clears the buffer
-	// before it starts.
-	_, err := g.ptmx.Write(g.out)
-	g.out = g.out[:0]
-	return err
+	return g.flushKeys()
 }
 
 // encodeMouse describes one event to the binding and appends whatever it
 // encodes -- which may be nothing -- to this frame's report.
-func (g *game) encodeMouse(action input.MouseAction, button input.MouseButton, hasButton bool, px, py int, m mods, anyPressed bool) error {
+func (g *game) encodeMouse(action input.MouseAction, button input.MouseButton, hasButton bool, px, py int, m keys.Mods, anyPressed bool) error {
 	ev := input.MouseEvent{
 		Action:    action,
 		Button:    button,
 		HasButton: hasButton,
-		Mods:      m.keyMods(),
+		Mods:      m.KeyMods(),
 		X:         float32(px),
 		Y:         float32(py),
 	}

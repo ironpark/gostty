@@ -105,7 +105,7 @@ func (g *game) drawRowBackground(dst *ebiten.Image, row int) {
 			end++
 		}
 		if bg != g.bg {
-			vector.DrawFilledRect(dst,
+			vector.FillRect(dst,
 				float32(float64(start)*g.fonts.cellW), float32(float64(row)*g.fonts.cellH),
 				float32(float64(end-start)*g.fonts.cellW), float32(g.fonts.cellH),
 				bg, false)
@@ -172,7 +172,7 @@ func (g *game) drawRowGlyphs(dst *ebiten.Image, row int) {
 // overline. Where they go is a font metric, so it comes from the font set.
 func (g *game) decorate(screen *ebiten.Image, flags gostty.CellFlags, x, y, width float64, fg color.RGBA) {
 	line := func(dy float64) {
-		vector.DrawFilledRect(screen, float32(x), float32(y+dy),
+		vector.FillRect(screen, float32(x), float32(y+dy),
 			float32(width), float32(g.fonts.lineH), fg, false)
 	}
 	switch flags.Underline {
@@ -246,12 +246,12 @@ func (g *game) drawCursor(screen *ebiten.Image) {
 
 	switch g.cursor.style {
 	case gostty.CursorStyleBar:
-		vector.DrawFilledRect(screen, float32(x), float32(y), thickness, float32(g.fonts.cellH), g.fg, false)
+		vector.FillRect(screen, float32(x), float32(y), thickness, float32(g.fonts.cellH), g.fg, false)
 	case gostty.CursorStyleUnderline:
-		vector.DrawFilledRect(screen, float32(x), float32(y+g.fonts.cellH)-thickness,
+		vector.FillRect(screen, float32(x), float32(y+g.fonts.cellH)-thickness,
 			float32(g.fonts.cellW), thickness, g.fg, false)
 	default: // block
-		vector.DrawFilledRect(screen, float32(x), float32(y),
+		vector.FillRect(screen, float32(x), float32(y),
 			float32(g.fonts.cellW), float32(g.fonts.cellH), g.fg, false)
 		// Redraw the glyph in the background color so it stays legible.
 		if i := int(g.cursor.y)*g.cols + int(g.cursor.x); i < len(g.cells) {

@@ -6,6 +6,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/ironpark/gostty/examples/hypercat/keys"
 	"golang.design/x/clipboard"
 )
 
@@ -39,7 +40,7 @@ var wordBoundaries = []rune{
 // works out what that means for wrapped lines, wide characters and the
 // scrollback. What comes back is the selected text and, through the render
 // state, a per-cell flag to draw with.
-func (g *game) handleMouse(m mods) error {
+func (g *game) handleMouse(m keys.Mods) error {
 	// The program gets first refusal. When it has asked for the mouse, the
 	// pointer is its input device and not this window's selection tool.
 	if reported, err := g.reportMouse(m); err != nil || reported {
@@ -75,7 +76,7 @@ func (g *game) handleMouse(m mods) error {
 		_, err = screen.SelectRange(
 			uint16(g.sel.ax), uint16(g.sel.ay),
 			uint16(col), uint16(row),
-			m.alt,
+			m.Alt,
 		)
 		return err
 	}

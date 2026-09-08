@@ -17,8 +17,14 @@ This example demonstrates:
 
 ```text
 shell --pty--> Stream.Feed --> Terminal --> RenderState --> Ebitengine
-shell <--pty-- input.EncodeKey <-- KeyEvent <-- Ebitengine
+shell <--pty-- input.EncodeKey <-- KeyEvent <-- keys.Reader <-- Ebitengine
 ```
+
+Two subpackages keep the parts that are not about the bindings out of the way.
+`keys` reads a frame of keyboard state -- Ebitengine's key set, the macOS call
+that says whether a key is really down, and the repeat policy an emulator has
+to invent -- and reports which terminal keys were pressed; `input.go` is what
+hypercat then does with them. `thecat` is the cat.
 
 ## Controls
 

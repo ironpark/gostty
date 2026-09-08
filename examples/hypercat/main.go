@@ -27,6 +27,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/ironpark/gostty"
+	"github.com/ironpark/gostty/examples/hypercat/keys"
 	"github.com/ironpark/gostty/examples/hypercat/thecat"
 	"github.com/ironpark/gostty/sys"
 	"golang.design/x/clipboard"
@@ -181,12 +182,13 @@ type game struct {
 	focused            bool
 	focusedFrames      int
 
-	// Per-frame input scratch, reused so a keystroke allocates nothing.
-	chars   []rune
-	pressed []ebiten.Key
-	utf8    []byte
-	out     []byte
-	enc     outputWriter
+	// Per-frame input scratch, reused so a keystroke allocates nothing. The
+	// reader answers for the shell; `chars` is the search bar's, which wants
+	// the runes themselves rather than key events.
+	keys  keys.Reader
+	chars []rune
+	out   []byte
+	enc   outputWriter
 }
 
 // cursorState is what Draw needs to paint the cursor, read once per frame.
@@ -348,7 +350,7 @@ func (g *game) Update() error {
 	// Input before the refresh, so a selection made this frame is drawn this
 	// frame rather than one behind. The modifier state is read once and shared:
 	// the mouse needs Alt for block selection and the keyboard needs all four.
-	m := currentMods()
+	m := keys.Current()
 	if err := g.reportFocus(); err != nil {
 		return err
 	}

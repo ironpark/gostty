@@ -11,6 +11,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/ironpark/gostty"
+	"github.com/ironpark/gostty/examples/hypercat/keys"
 )
 
 // The two panels this window puts over the grid: a search bar and a settings
@@ -71,9 +72,9 @@ func (u *ui) closeSearch() {
 
 // handleUI runs the panel that has the keyboard. Returns whether it took the
 // frame's input; when it did, nothing goes to the shell.
-func (g *game) handleUI(m mods) (bool, error) {
+func (g *game) handleUI(m keys.Mods) (bool, error) {
 	// Opening is a binding this window keeps for itself, like copy and paste.
-	if (m.ctrl && m.shift) || m.super {
+	if (m.Ctrl && m.Shift) || m.Super {
 		switch {
 		case inpututil.IsKeyJustPressed(ebiten.KeyF):
 			return true, g.openSearch()
@@ -121,7 +122,7 @@ func (g *game) closeUI() error {
 	return nil
 }
 
-func (g *game) searchKeys(m mods) error {
+func (g *game) searchKeys(m keys.Mods) error {
 	changed := false
 	g.chars = ebiten.AppendInputChars(g.chars[:0])
 	for _, r := range g.chars {
@@ -131,7 +132,7 @@ func (g *game) searchKeys(m mods) error {
 		g.ui.query = append(g.ui.query, r)
 		changed = true
 	}
-	if repeating(inpututil.KeyPressDuration(ebiten.KeyBackspace)) && len(g.ui.query) > 0 {
+	if keys.Repeating(inpututil.KeyPressDuration(ebiten.KeyBackspace)) && len(g.ui.query) > 0 {
 		g.ui.query = g.ui.query[:len(g.ui.query)-1]
 		changed = true
 	}
@@ -148,7 +149,7 @@ func (g *game) searchKeys(m mods) error {
 		// `next` walks backwards in time -- towards the top of the scrollback
 		// -- because that is the direction a search through what already
 		// happened goes.
-		if m.shift {
+		if m.Shift {
 			return g.moveMatch(gostty.SearchDirectionPrev)
 		}
 		return g.moveMatch(gostty.SearchDirectionNext)
@@ -529,7 +530,7 @@ func (g *game) drawSearch(screen *ebiten.Image) {
 	x := g.drawText(screen, "/", 4, y+4, theme.accent)
 	x = g.drawText(screen, string(g.ui.query), x, y+4, theme.text)
 	// A block for the caret, in the same cell grid as everything else.
-	vector.DrawFilledRect(screen, float32(x), float32(y+4),
+	vector.FillRect(screen, float32(x), float32(y+4),
 		float32(g.fonts.cellW), float32(g.fonts.cellH), theme.accent, false)
 	g.drawText(screen, count, x+2*g.fonts.cellW, y+4, theme.dim)
 }
@@ -619,7 +620,7 @@ func (g *game) catLabel() string {
 
 func (g *game) panel(screen *ebiten.Image, x, y, w, h float64) {
 	theme := g.currentTheme()
-	vector.DrawFilledRect(screen, float32(x), float32(y), float32(w), float32(h), theme.panel, false)
+	vector.FillRect(screen, float32(x), float32(y), float32(w), float32(h), theme.panel, false)
 	vector.StrokeRect(screen, float32(x), float32(y), float32(w), float32(h), 1, theme.border, false)
 }
 
