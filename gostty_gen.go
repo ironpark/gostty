@@ -34,7 +34,7 @@ func (te *Terminal) Cols() (uint16, error) {
 }
 
 // MustCols calls Cols and panics with its typed error on failure.
-func (te *Terminal) MustCols() uint16 { return zigoMustValue(te.Cols()) }
+func (te *Terminal) MustCols() uint16 { return gosttyMustValue(te.Cols()) }
 
 // Rows: The number of populated rows, read without touching page memory.
 // Zig field: Terminal.rows.
@@ -54,7 +54,7 @@ func (te *Terminal) Rows() (uint16, error) {
 }
 
 // MustRows calls Rows and panics with its typed error on failure.
-func (te *Terminal) MustRows() uint16 { return zigoMustValue(te.Rows()) }
+func (te *Terminal) MustRows() uint16 { return gosttyMustValue(te.Rows()) }
 
 // CursorX returns the Zig field Terminal.screens.active.cursor.x.
 // It returns *HandleError if a required handle is nil or closed.
@@ -73,7 +73,7 @@ func (te *Terminal) CursorX() (uint16, error) {
 }
 
 // MustCursorX calls CursorX and panics with its typed error on failure.
-func (te *Terminal) MustCursorX() uint16 { return zigoMustValue(te.CursorX()) }
+func (te *Terminal) MustCursorX() uint16 { return gosttyMustValue(te.CursorX()) }
 
 // CursorY returns the Zig field Terminal.screens.active.cursor.y.
 // It returns *HandleError if a required handle is nil or closed.
@@ -92,7 +92,7 @@ func (te *Terminal) CursorY() (uint16, error) {
 }
 
 // MustCursorY calls CursorY and panics with its typed error on failure.
-func (te *Terminal) MustCursorY() uint16 { return zigoMustValue(te.CursorY()) }
+func (te *Terminal) MustCursorY() uint16 { return gosttyMustValue(te.CursorY()) }
 
 // CursorStyle returns the Zig field Terminal.screens.active.cursor.cursor_style.
 // It returns *HandleError if a required handle is nil or closed.
@@ -1017,7 +1017,7 @@ func (te *Terminal) CarriageReturn() error {
 }
 
 // MustCarriageReturn calls CarriageReturn and panics with its typed error on failure.
-func (te *Terminal) MustCarriageReturn() { zigoMustSucceed(te.CarriageReturn()) }
+func (te *Terminal) MustCarriageReturn() { gosttyMustSucceed(te.CarriageReturn()) }
 
 // Linefeed moves the cursor to the next line.
 // It returns *HandleError if a required handle is nil or closed.
@@ -1052,7 +1052,7 @@ func (te *Terminal) Backspace() error {
 }
 
 // MustBackspace calls Backspace and panics with its typed error on failure.
-func (te *Terminal) MustBackspace() { zigoMustSucceed(te.Backspace()) }
+func (te *Terminal) MustBackspace() { gosttyMustSucceed(te.Backspace()) }
 
 // CursorIsAtPrompt: Returns true if the cursor is currently at a prompt. Another way to look
 // at this is it returns false if the shell is currently outputting something.
@@ -1075,7 +1075,7 @@ func (te *Terminal) CursorIsAtPrompt() (bool, error) {
 }
 
 // MustCursorIsAtPrompt calls CursorIsAtPrompt and panics with its typed error on failure.
-func (te *Terminal) MustCursorIsAtPrompt() bool { return zigoMustValue(te.CursorIsAtPrompt()) }
+func (te *Terminal) MustCursorIsAtPrompt() bool { return gosttyMustValue(te.CursorIsAtPrompt()) }
 
 // FullReset: Full reset.
 //
@@ -1098,7 +1098,7 @@ func (te *Terminal) FullReset() error {
 }
 
 // MustFullReset calls FullReset and panics with its typed error on failure.
-func (te *Terminal) MustFullReset() { zigoMustSucceed(te.FullReset()) }
+func (te *Terminal) MustFullReset() { gosttyMustSucceed(te.FullReset()) }
 
 // CursorUp: Move the cursor up amount lines. If amount is greater than the maximum
 // move distance then it is internally adjusted to the maximum. If amount is
@@ -1119,7 +1119,7 @@ func (te *Terminal) CursorUp(countReq uint) error {
 }
 
 // MustCursorUp calls CursorUp and panics with its typed error on failure.
-func (te *Terminal) MustCursorUp(countReq uint) { zigoMustSucceed(te.CursorUp(countReq)) }
+func (te *Terminal) MustCursorUp(countReq uint) { gosttyMustSucceed(te.CursorUp(countReq)) }
 
 // CursorDown: Move the cursor down amount lines. If amount is greater than the maximum
 // move distance then it is internally adjusted to the maximum. This sequence
@@ -1140,7 +1140,7 @@ func (te *Terminal) CursorDown(countReq uint) error {
 }
 
 // MustCursorDown calls CursorDown and panics with its typed error on failure.
-func (te *Terminal) MustCursorDown(countReq uint) { zigoMustSucceed(te.CursorDown(countReq)) }
+func (te *Terminal) MustCursorDown(countReq uint) { gosttyMustSucceed(te.CursorDown(countReq)) }
 
 // CursorLeft: Move the cursor to the left amount cells. If amount is 0, adjust it to 1.
 // It returns *HandleError if a required handle is nil or closed.
@@ -1159,7 +1159,7 @@ func (te *Terminal) CursorLeft(countReq uint) error {
 }
 
 // MustCursorLeft calls CursorLeft and panics with its typed error on failure.
-func (te *Terminal) MustCursorLeft(countReq uint) { zigoMustSucceed(te.CursorLeft(countReq)) }
+func (te *Terminal) MustCursorLeft(countReq uint) { gosttyMustSucceed(te.CursorLeft(countReq)) }
 
 // CursorRight: Move the cursor right amount columns. If amount is greater than the
 // maximum move distance then it is internally adjusted to the maximum.
@@ -1181,7 +1181,7 @@ func (te *Terminal) CursorRight(countReq uint) error {
 }
 
 // MustCursorRight calls CursorRight and panics with its typed error on failure.
-func (te *Terminal) MustCursorRight(countReq uint) { zigoMustSucceed(te.CursorRight(countReq)) }
+func (te *Terminal) MustCursorRight(countReq uint) { gosttyMustSucceed(te.CursorRight(countReq)) }
 
 // SaveCursor: Save cursor position and further state.
 //
@@ -2750,7 +2750,7 @@ func (s *Screen) ViewportIsBottom() (bool, error) {
 }
 
 // MustViewportIsBottom calls ViewportIsBottom and panics with its typed error on failure.
-func (s *Screen) MustViewportIsBottom() bool { return zigoMustValue(s.ViewportIsBottom()) }
+func (s *Screen) MustViewportIsBottom() bool { return gosttyMustValue(s.ViewportIsBottom()) }
 
 // ClearSelection: Same as select(null) but can't fail.
 // It returns *HandleError if a required handle is nil or closed.
@@ -4485,7 +4485,7 @@ func (s *Stream) HasReplies() (bool, error) {
 }
 
 // MustHasReplies calls HasReplies and panics with its typed error on failure.
-func (s *Stream) MustHasReplies() bool { return zigoMustValue(s.HasReplies()) }
+func (s *Stream) MustHasReplies() bool { return gosttyMustValue(s.HasReplies()) }
 
 // WriteSnapshot: Write a snapshot of the terminal this stream feeds, with the
 // stream's unfinished sequence so a restored stream can pick up

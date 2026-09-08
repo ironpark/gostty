@@ -12,7 +12,6 @@
 //! wants only what is set (`Bold|Underline:Single`); a coordinate or a
 //! geometry wants every field (`GridPoint{X:3, Y:4}`).
 const std = @import("std");
-const diagnostic = @import("diagnostic");
 const naming = @import("naming");
 const plugin_api = @import("plugin");
 const semantic = @import("semantic");
@@ -46,7 +45,8 @@ pub const plugin: plugin_api.Plugin = .{
     // A `String()` needs fields to name, which only a value struct has here;
     // the generator already writes one for every enum.
     .targets = &.{.value},
-    .validateAll = validateDocument,
+    .min_contract = .{ .major = 2, .minor = 0 },
+    .validate = validateDocument,
     .type_hook = typeHook,
     // Written by the renderings below. The frame adds an import only to a
     // file whose body really spells the qualifier, so a package of pure bool
@@ -169,9 +169,9 @@ fn omits(options: Options, field_name: []const u8) bool {
 /// a compile error in generated code, or -- worse -- as a `String` that
 /// silently stopped naming a field the binding renamed. Every offending
 /// declaration is reported, so one run names them all.
-fn validateDocument(allocator: std.mem.Allocator, document: semantic.Semantic) ![]const diagnostic.Diagnostic {
-    var issues: std.ArrayList(diagnostic.Diagnostic) = .empty;
-    errdefer issues.deinit(allocator);
+fn validateDocument(context: plugin_api.ValidateContext) !void {
+    const allocator = context.allocator;
+    const document = context.document;
     for (document.types) |declaration| {
         // A declaration of the wrong kind never reaches here: `.targets` says
         // this plugin takes a value struct, so asking an enum or a handle for
@@ -182,7 +182,7 @@ fn validateDocument(allocator: std.mem.Allocator, document: semantic.Semantic) !
         // nothing, and the field appears in the output without anyone asking.
         for (options.omit) |omitted| {
             if (fieldNamed(declaration, omitted) != null) continue;
-            try issues.append(allocator, .{
+            try context.diagnose(.{
                 .severity = .@"error",
                 .code = name ++ "003",
                 .message = try std.fmt.allocPrint(
@@ -198,7 +198,7 @@ fn validateDocument(allocator: std.mem.Allocator, document: semantic.Semantic) !
         for (declaration.fields) |field| {
             if (omits(options, field.name)) continue;
             if (flagRenderable(field.type.?)) continue;
-            try issues.append(allocator, .{
+            try context.diagnose(.{
                 .severity = .@"error",
                 .code = name ++ "004",
                 .message = try std.fmt.allocPrint(
@@ -211,7 +211,6 @@ fn validateDocument(allocator: std.mem.Allocator, document: semantic.Semantic) !
             });
         }
     }
-    return issues.toOwnedSlice(allocator);
 }
 
 fn fieldNamed(declaration: semantic.TypeDecl, field_name: []const u8) ?semantic.TypeField {

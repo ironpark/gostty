@@ -2,25 +2,25 @@
 
 package gostty
 
-// zigoMustSucceed panics with a typed error, for a Must variant of a
+// gosttyMustSucceed panics with a typed error, for a Must variant of a
 // function whose only result is the error.
-func zigoMustSucceed(err error) {
+func gosttyMustSucceed(err error) {
 	if err != nil {
 		panic(err)
 	}
 }
 
-// zigoMustValue panics with a typed error, for a Must variant with one result.
-func zigoMustValue[T any](value T, err error) T {
+// gosttyMustValue panics with a typed error, for a Must variant with one result.
+func gosttyMustValue[T any](value T, err error) T {
 	if err != nil {
 		panic(err)
 	}
 	return value
 }
 
-// zigoMustMatch panics with a typed error, for a Must variant whose result
+// gosttyMustMatch panics with a typed error, for a Must variant whose result
 // carries a presence flag beside the value.
-func zigoMustMatch[T any](value T, matched bool, err error) (T, bool) {
+func gosttyMustMatch[T any](value T, matched bool, err error) (T, bool) {
 	if err != nil {
 		panic(err)
 	}

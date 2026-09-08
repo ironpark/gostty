@@ -67,28 +67,18 @@ pub fn build(b: *std.Build) void {
     gostty.addImport("ghostty_vt", ghostty_vt);
     gostty.addImport("terminal_options", ghostty_vt.import_table.get("terminal_options").?);
     const manifest = @import("build.zig.zon");
-    const metadata = b.addOptions();
     const ghostty_url = manifest.dependencies.ghostty.url;
-    metadata.addOption([]const u8, "ghostty_revision", ghostty_url[std.mem.lastIndexOfScalar(u8, ghostty_url, '#').? + 1 ..]);
-    const zigo_url = manifest.dependencies.zigo.url;
-    const version_start = std.mem.lastIndexOfScalar(u8, zigo_url, '/').? + 1;
-    metadata.addOption([]const u8, "zigo_version", zigo_url[version_start .. zigo_url.len - ".tar.gz".len]);
-    metadata.addOption([]const u8, "optimize", @tagName(optimize));
-    gostty.addOptions("build_metadata", metadata);
+    const build_info_config = zigo.configJson(b, .{
+        .ghostty_revision = ghostty_url[std.mem.lastIndexOfScalar(u8, ghostty_url, '#').? + 1 ..],
+        .zigo_version = "local",
+        .optimize = @tagName(optimize),
+    });
 
-    // Generator plugins. They add to the generated Go surface and nothing
-    // else: the shim, the C header and the raw package are out of their reach,
-    // so adding one here cannot move the ABI. `name` is what `bindings.zig`
-    // imports the plugin under, and the generator compiles the file against
-    // its own `plugin`/`abi`/`semantic` rather than taking a module, so the
-    // declaration and the generator agree on one set of option types.
-    // `satisfies` and `enumkit` ship with zigo, so they are taken from the
-    // dependency rather than vendored: they are the generator's own plugins,
-    // versioned with it, and copying them here would be two more files to move
-    // on every bump.
+    // Compile declarations and generators against the same public plugin contract.
+    // Shared plugins come directly from the local zigo dependency.
     const zigo_dep = b.dependency("zigo", .{});
     const plugins = [_]zigo.PluginModule{
-        .{ .name = "build_info", .root_source_file = b.path("plugins/build_info/src/plugin.zig") },
+        .{ .name = "build_info", .root_source_file = b.path("plugins/build_info/src/plugin.zig"), .config = build_info_config },
         .{ .name = "convenience", .root_source_file = b.path("plugins/convenience/src/plugin.zig") },
         .{ .name = "stringer", .root_source_file = b.path("plugins/stringer/src/plugin.zig") },
         .{ .name = "must", .root_source_file = b.path("plugins/must/src/plugin.zig") },

@@ -376,6 +376,5 @@ pub const RenderColors = render_.RenderColors;
 pub const renderCursor = render_.renderCursor;
 pub const renderColors = render_.renderColors;
 pub const FeedBoundary = stream_.FeedBoundary;
-pub const build_metadata = @import("build_metadata");
 
 pub const build_features = @import("terminal_options");

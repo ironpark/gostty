@@ -1,0 +1,8 @@
+{
+  "ghostty_revision": "492300cad104195411d12217dd22f1cd05f31376",
+  "zigo_version": "local",
+  "optimize": "ReleaseSafe",
+  "simd": true,
+  "kitty_graphics": true,
+  "tmux_control_mode": false
+}

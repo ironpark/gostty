@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "files": [
+    {
+      "path": "shim.zig",
+      "kind": "native"
+    },
+    {
+      "path": "panic.c",
+      "kind": "native"
+    },
+    {
+      "path": "zigo_gostty.h",
+      "kind": "native"
+    },
+    {
+      "path": "internal/raw/raw_gen.go",
+      "kind": "go"
+    },
+    {
+      "path": "internal/lifecycle/lifecycle_gen.go",
+      "kind": "go"
+    },
+    {
+      "path": "gostty_gen.go",
+      "kind": "go"
+    },
+    {
+      "path": "gostty_enums_gen.go",
+      "kind": "go"
+    },
+    {
+      "path": "gostty_structs_gen.go",
+      "kind": "go"
+    },
+    {
+      "path": "gostty_handles_gen.go",
+      "kind": "go"
+    },
+    {
+      "path": "gostty_runtime_gen.go",
+      "kind": "go"
+    },
+    {
+      "path": "gostty_errors_gen.go",
+      "kind": "go"
+    },
+    {
+      "path": "zigo_must_gen.go",
+      "kind": "go"
+    },
+    {
+      "path": "sys/sys_gen.go",
+      "kind": "go"
+    },
+    {
+      "path": "sys/sys_runtime_gen.go",
+      "kind": "go"
+    },
+    {
+      "path": "sys/sys_errors_gen.go",
+      "kind": "go"
+    },
+    {
+      "path": "input/input_gen.go",
+      "kind": "go"
+    },
+    {
+      "path": "input/input_enums_gen.go",
+      "kind": "go"
+    },
+    {
+      "path": "input/input_structs_gen.go",
+      "kind": "go"
+    },
+    {
+      "path": "input/input_runtime_gen.go",
+      "kind": "go"
+    },
+    {
+      "path": "input/input_errors_gen.go",
+      "kind": "go"
+    },
+    {
+      "path": "zigo_build_info_gen.go",
+      "kind": "go"
+    },
+    {
+      "path": "build-info.json",
+      "kind": "artifact"
+    },
+    {
+      "path": "errors.lock.json",
+      "kind": "native"
+    }
+  ]
+}

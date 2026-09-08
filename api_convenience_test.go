@@ -3,7 +3,9 @@ package gostty
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
+	"os"
 	"strings"
 	"testing"
 )
@@ -263,6 +265,24 @@ func TestBuildInfo(t *testing.T) {
 	}
 	if info != GetBuildInfo() {
 		t.Fatal("build metadata is not stable")
+	}
+	data, err := os.ReadFile("build-info.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var artifact struct {
+		GhosttyRevision string `json:"ghostty_revision"`
+		ZigoVersion     string `json:"zigo_version"`
+		Optimize        string `json:"optimize"`
+		SIMD            bool   `json:"simd"`
+		KittyGraphics   bool   `json:"kitty_graphics"`
+		TmuxControlMode bool   `json:"tmux_control_mode"`
+	}
+	if err := json.Unmarshal(data, &artifact); err != nil {
+		t.Fatal(err)
+	}
+	if BuildInfo(artifact) != info {
+		t.Fatalf("artifact %+v differs from Go build information %+v", artifact, info)
 	}
 }
 

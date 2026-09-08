@@ -12102,9 +12102,6 @@
           "feature": "terminal_config"
         },
         "BUILD_INFO": {
-          "ghostty_revision": "492300cad104195411d12217dd22f1cd05f31376",
-          "zigo_version": "0.20.0",
-          "optimize": "ReleaseSafe",
           "simd": true,
           "kitty_graphics": true,
           "tmux_control_mode": false
@@ -12733,7 +12730,7 @@
         "signed": false
       },
       "text": true,
-      "zig_path": "terminal.modes.Mode__enum_40276"
+      "zig_path": "terminal.modes.Mode__enum_40382"
     },
     {
       "exhaustive": true,

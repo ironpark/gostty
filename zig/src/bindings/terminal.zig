@@ -55,9 +55,6 @@ const Terminal = api.handle("Terminal", .{
     \\operations. Callbacks may answer their supplied request but must not
     \\recursively feed, resize, reset or close the same terminal.
 ).use(convenience.plugin, .{ .feature = .terminal_config }).use(p.build_info.plugin, .{
-    .ghostty_revision = gostty.build_metadata.ghostty_revision,
-    .zigo_version = gostty.build_metadata.zigo_version,
-    .optimize = gostty.build_metadata.optimize,
     .simd = gostty.build_features.simd,
     .kitty_graphics = gostty.build_features.kitty_graphics,
     .tmux_control_mode = gostty.build_features.tmux_control_mode,

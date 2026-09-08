@@ -3,7 +3,6 @@
 const std = @import("std");
 const plugin_api = @import("plugin");
 const semantic = @import("semantic");
-const diagnostic = @import("diagnostic");
 
 pub const Feature = enum { terminal_config, clipboard_reply };
 pub const Options = struct { feature: Feature };
@@ -12,7 +11,8 @@ pub const plugin: plugin_api.Plugin = .{
     .name = "CONVENIENCE",
     .TypeOptions = Options,
     .targets = &.{.handle},
-    .validateAll = validateDocument,
+    .min_contract = .{ .major = 2, .minor = 0 },
+    .validate = validateDocument,
     .type_hook = typeHook,
 };
 
@@ -52,9 +52,9 @@ fn requirements(feature: Feature) []const Requirement {
     };
 }
 
-fn validateDocument(allocator: std.mem.Allocator, document: semantic.Semantic) ![]const diagnostic.Diagnostic {
-    var issues: std.ArrayList(diagnostic.Diagnostic) = .empty;
-    errdefer issues.deinit(allocator);
+fn validateDocument(context: plugin_api.ValidateContext) !void {
+    const allocator = context.allocator;
+    const document = context.document;
     for (document.types) |declaration| {
         const options = try plugin_api.readOptions(plugin, .type, allocator, declaration.ext) orelse continue;
         const expected = switch (options.feature) {
@@ -62,7 +62,7 @@ fn validateDocument(allocator: std.mem.Allocator, document: semantic.Semantic) !
             .clipboard_reply => "ClipboardRequest",
         };
         if (!std.mem.eql(u8, declaration.name, expected) or declaration.package != null) {
-            try issues.append(allocator, .{
+            try context.diagnose(.{
                 .severity = .@"error",
                 .code = "CONVENIENCE002",
                 .message = try std.fmt.allocPrint(allocator, "{s} requires root-package {s}", .{ @tagName(options.feature), expected }),
@@ -72,7 +72,7 @@ fn validateDocument(allocator: std.mem.Allocator, document: semantic.Semantic) !
         }
         for (requirements(options.feature)) |required| {
             if (try hasMethod(allocator, document, required)) continue;
-            try issues.append(allocator, .{
+            try context.diagnose(.{
                 .severity = .@"error",
                 .code = "CONVENIENCE003",
                 .message = try std.fmt.allocPrint(allocator, "{s} requires {s}.{s}", .{ @tagName(options.feature), required.owner, required.method }),
@@ -81,7 +81,6 @@ fn validateDocument(allocator: std.mem.Allocator, document: semantic.Semantic) !
             });
         }
     }
-    return issues.toOwnedSlice(allocator);
 }
 
 fn hasMethod(allocator: std.mem.Allocator, document: semantic.Semantic, required: Requirement) !bool {
