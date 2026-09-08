@@ -352,6 +352,14 @@ func TerminalCharsetGr(self unsafe.Pointer) (uint8, int32) {
 	return uint8(outResult), code
 }
 
+// TerminalCharsetSingleShift calls the generated C ABI wrapper for zg_terminal_charset_single_shift.
+func TerminalCharsetSingleShift(self unsafe.Pointer) (uint8, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.uint8_t
+	code := int32(C.zg_terminal_charset_single_shift((*C.zg_terminal)(self), &outResultHas, &outResult))
+	return uint8(outResult), outResultHas != 0, code
+}
+
 // TerminalProtectedMode calls the generated C ABI wrapper for zg_terminal_protected_mode.
 func TerminalProtectedMode(self unsafe.Pointer) (uint8, int32) {
 	var outResult C.uint8_t
@@ -427,6 +435,151 @@ func GestureDragged(self unsafe.Pointer) (uint8, int32) {
 	var outResult C.uint8_t
 	code := int32(C.zg_gesture_dragged((*C.zg_gesture)(self), &outResult))
 	return uint8(outResult), code
+}
+
+// OscParserCommand calls the generated C ABI wrapper for zg_osc_parser_command.
+func OscParserCommand(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_osc_parser_command((*C.zg_osc_parser)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// OscParserWindowTitle calls the generated C ABI wrapper for zg_osc_parser_window_title.
+func OscParserWindowTitle(self unsafe.Pointer) (string, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_osc_parser_window_title((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return "", code
+	}
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
+}
+
+// OscParserIcon calls the generated C ABI wrapper for zg_osc_parser_icon.
+func OscParserIcon(self unsafe.Pointer) (string, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_osc_parser_icon((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return "", code
+	}
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
+}
+
+// OscParserPwd calls the generated C ABI wrapper for zg_osc_parser_pwd.
+func OscParserPwd(self unsafe.Pointer) (string, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_osc_parser_pwd((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return "", code
+	}
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
+}
+
+// OscParserHyperlinkUri calls the generated C ABI wrapper for zg_osc_parser_hyperlink_uri.
+func OscParserHyperlinkUri(self unsafe.Pointer) (string, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_osc_parser_hyperlink_uri((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return "", code
+	}
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
+}
+
+// OscParserHyperlinkID calls the generated C ABI wrapper for zg_osc_parser_hyperlink_id.
+func OscParserHyperlinkID(self unsafe.Pointer) (string, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_osc_parser_hyperlink_id((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return "", code
+	}
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
+}
+
+// OscParserNotificationTitle calls the generated C ABI wrapper for zg_osc_parser_notification_title.
+func OscParserNotificationTitle(self unsafe.Pointer) (string, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_osc_parser_notification_title((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return "", code
+	}
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
+}
+
+// OscParserNotificationBody calls the generated C ABI wrapper for zg_osc_parser_notification_body.
+func OscParserNotificationBody(self unsafe.Pointer) (string, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_osc_parser_notification_body((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return "", code
+	}
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
+}
+
+// OscParserClipboardData calls the generated C ABI wrapper for zg_osc_parser_clipboard_data.
+func OscParserClipboardData(self unsafe.Pointer) (string, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_osc_parser_clipboard_data((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return "", code
+	}
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
+}
+
+// OscParserClipboardSelection calls the generated C ABI wrapper for zg_osc_parser_clipboard_selection.
+func OscParserClipboardSelection(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_osc_parser_clipboard_selection((*C.zg_osc_parser)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// OscParserMouseShape calls the generated C ABI wrapper for zg_osc_parser_mouse_shape.
+func OscParserMouseShape(self unsafe.Pointer) (string, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_osc_parser_mouse_shape((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return "", code
+	}
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
+}
+
+// OscParserSemanticPromptAction calls the generated C ABI wrapper for zg_osc_parser_semantic_prompt_action.
+func OscParserSemanticPromptAction(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_osc_parser_semantic_prompt_action((*C.zg_osc_parser)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// OscParserSemanticPromptOptions calls the generated C ABI wrapper for zg_osc_parser_semantic_prompt_options.
+func OscParserSemanticPromptOptions(self unsafe.Pointer) (string, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_osc_parser_semantic_prompt_options((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return "", code
+	}
+	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
+}
+
+// OscParserProgressState calls the generated C ABI wrapper for zg_osc_parser_progress_state.
+func OscParserProgressState(self unsafe.Pointer) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_osc_parser_progress_state((*C.zg_osc_parser)(self), &outResult))
+	return uint8(outResult), code
+}
+
+// OscParserProgressValue calls the generated C ABI wrapper for zg_osc_parser_progress_value.
+func OscParserProgressValue(self unsafe.Pointer) (int16, int32) {
+	var outResult C.int16_t
+	code := int32(C.zg_osc_parser_progress_value((*C.zg_osc_parser)(self), &outResult))
+	return int16(outResult), code
 }
 
 // SysOnPngDecodeRequest calls the generated C ABI wrapper for zg_sys_on_png_decode_request.
@@ -544,18 +697,18 @@ func EncodeMouse(writerHandle uintptr, terminal unsafe.Pointer, event MouseEvent
 	return code
 }
 
-// KeyKeyFromAscii calls the generated C ABI wrapper for zg_key_key_from_ascii.
+// KeyKeyFromAscii calls the generated C ABI wrapper for zg_key_from_ascii.
 func KeyKeyFromAscii(ch uint8) (int32, bool) {
 	var outResult C.int32_t
-	outResultHas := C.zg_key_key_from_ascii(C.uint8_t(ch), &outResult) != 0
+	outResultHas := C.zg_key_from_ascii(C.uint8_t(ch), &outResult) != 0
 	return int32(outResult), outResultHas
 }
 
-// KeyKeyFromW3C calls the generated C ABI wrapper for zg_key_key_from_w3_c.
+// KeyKeyFromW3C calls the generated C ABI wrapper for zg_key_from_w3c.
 func KeyKeyFromW3C(w3cCode string) (int32, bool) {
 	w3cCodePtr := (*C.uint8_t)(zigoStringPtr(w3cCode))
 	var outResult C.int32_t
-	outResultHas := C.zg_key_key_from_w3_c(w3cCodePtr, C.size_t(len(w3cCode)), &outResult) != 0
+	outResultHas := C.zg_key_from_w3c(w3cCodePtr, C.size_t(len(w3cCode)), &outResult) != 0
 	return int32(outResult), outResultHas
 }
 
@@ -1256,14 +1409,6 @@ func TerminalCharset(self unsafe.Pointer, slot uint8) (uint8, int32) {
 	var outResult C.uint8_t
 	code := int32(C.zg_terminal_charset((*C.zg_terminal)(self), C.uint8_t(slot), &outResult))
 	return uint8(outResult), code
-}
-
-// TerminalCharsetSingleShift calls the generated C ABI wrapper for zg_terminal_charset_single_shift.
-func TerminalCharsetSingleShift(self unsafe.Pointer) (uint8, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.uint8_t
-	code := int32(C.zg_terminal_charset_single_shift((*C.zg_terminal)(self), &outResultHas, &outResult))
-	return uint8(outResult), outResultHas != 0, code
 }
 
 // TerminalMouseTracking calls the generated C ABI wrapper for zg_terminal_mouse_tracking.
@@ -2486,17 +2631,6 @@ func OscParserFeed(self unsafe.Pointer, bytes []uint8) int32 {
 	return code
 }
 
-// OscParserClipboardData calls the generated C ABI wrapper for zg_osc_parser_clipboard_data.
-func OscParserClipboardData(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_osc_parser_clipboard_data((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
-	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
 // OscParserEnd calls the generated C ABI wrapper for zg_osc_parser_end.
 func OscParserEnd(self unsafe.Pointer, terminator uint8) (uint8, int32) {
 	var outResult C.uint8_t
@@ -2508,140 +2642,6 @@ func OscParserEnd(self unsafe.Pointer, terminator uint8) (uint8, int32) {
 func OscParserReset(self unsafe.Pointer) int32 {
 	code := int32(C.zg_osc_parser_reset((*C.zg_osc_parser)(self)))
 	return code
-}
-
-// OscParserCommand calls the generated C ABI wrapper for zg_osc_parser_command.
-func OscParserCommand(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_osc_parser_command((*C.zg_osc_parser)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// OscParserWindowTitle calls the generated C ABI wrapper for zg_osc_parser_window_title.
-func OscParserWindowTitle(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_osc_parser_window_title((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
-	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// OscParserIcon calls the generated C ABI wrapper for zg_osc_parser_icon.
-func OscParserIcon(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_osc_parser_icon((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
-	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// OscParserPwd calls the generated C ABI wrapper for zg_osc_parser_pwd.
-func OscParserPwd(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_osc_parser_pwd((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
-	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// OscParserHyperlinkUri calls the generated C ABI wrapper for zg_osc_parser_hyperlink_uri.
-func OscParserHyperlinkUri(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_osc_parser_hyperlink_uri((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
-	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// OscParserHyperlinkID calls the generated C ABI wrapper for zg_osc_parser_hyperlink_id.
-func OscParserHyperlinkID(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_osc_parser_hyperlink_id((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
-	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// OscParserNotificationTitle calls the generated C ABI wrapper for zg_osc_parser_notification_title.
-func OscParserNotificationTitle(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_osc_parser_notification_title((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
-	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// OscParserNotificationBody calls the generated C ABI wrapper for zg_osc_parser_notification_body.
-func OscParserNotificationBody(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_osc_parser_notification_body((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
-	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// OscParserClipboardSelection calls the generated C ABI wrapper for zg_osc_parser_clipboard_selection.
-func OscParserClipboardSelection(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_osc_parser_clipboard_selection((*C.zg_osc_parser)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// OscParserMouseShape calls the generated C ABI wrapper for zg_osc_parser_mouse_shape.
-func OscParserMouseShape(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_osc_parser_mouse_shape((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
-	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// OscParserSemanticPromptAction calls the generated C ABI wrapper for zg_osc_parser_semantic_prompt_action.
-func OscParserSemanticPromptAction(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_osc_parser_semantic_prompt_action((*C.zg_osc_parser)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// OscParserSemanticPromptOptions calls the generated C ABI wrapper for zg_osc_parser_semantic_prompt_options.
-func OscParserSemanticPromptOptions(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_osc_parser_semantic_prompt_options((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
-	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// OscParserProgressState calls the generated C ABI wrapper for zg_osc_parser_progress_state.
-func OscParserProgressState(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_osc_parser_progress_state((*C.zg_osc_parser)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// OscParserProgressValue calls the generated C ABI wrapper for zg_osc_parser_progress_value.
-func OscParserProgressValue(self unsafe.Pointer) (int16, int32) {
-	var outResult C.int16_t
-	code := int32(C.zg_osc_parser_progress_value((*C.zg_osc_parser)(self), &outResult))
-	return int16(outResult), code
 }
 
 // ColorNameDefault calls the generated C ABI wrapper for zg_color_name_default.

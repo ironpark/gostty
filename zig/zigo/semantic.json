@@ -62,6 +62,9 @@
         "setter": false
       },
       "doc": "The current column count, read without touching page memory.",
+      "ext": {
+        "MUSTOPT": {}
+      },
       "name": "cols",
       "ownership": "borrowed",
       "params": [],
@@ -80,6 +83,9 @@
         "setter": false
       },
       "doc": "The number of populated rows, read without touching page memory.",
+      "ext": {
+        "MUSTOPT": {}
+      },
       "name": "rows",
       "ownership": "borrowed",
       "params": [],
@@ -97,6 +103,9 @@
         "path": "screens.active.cursor.x",
         "setter": false
       },
+      "ext": {
+        "MUSTOPT": {}
+      },
       "name": "cursorX",
       "ownership": "borrowed",
       "params": [],
@@ -113,6 +122,9 @@
       "field_access": {
         "path": "screens.active.cursor.y",
         "setter": false
+      },
+      "ext": {
+        "MUSTOPT": {}
       },
       "name": "cursorY",
       "ownership": "borrowed",
@@ -294,6 +306,25 @@
     },
     {
       "field_access": {
+        "path": "screens.active.charset.single_shift",
+        "setter": false
+      },
+      "doc": "The slot a pending single shift (SS2/SS3) will use for exactly one character, or absent if none is pending.",
+      "name": "charsetSingleShift",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Terminal",
+      "return": {
+        "child": {
+          "kind": "enum",
+          "ref": "CharsetSlot"
+        },
+        "kind": "optional"
+      },
+      "symbol": "zg_terminal_charset_single_shift"
+    },
+    {
+      "field_access": {
         "path": "screens.active.protected_mode",
         "setter": false
       },
@@ -465,6 +496,320 @@
         "kind": "bool"
       },
       "symbol": "zg_gesture_dragged"
+    },
+    {
+      "field_access": {
+        "path": "kind",
+        "setter": false
+      },
+      "doc": "The last command parsed, or `invalid` if `end` has not said yes.",
+      "name": "command",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "OSCParser",
+      "return": {
+        "kind": "enum",
+        "ref": "OSCCommand"
+      },
+      "symbol": "zg_osc_parser_command"
+    },
+    {
+      "field_access": {
+        "path": "window_title",
+        "setter": false
+      },
+      "doc": "OSC 0 and OSC 2: the window title. ghostty does not decode it. Under title mode 0 the bytes are hex, and otherwise they are UTF-8 or latin1 depending on how the terminal was set up, which only the embedder knows.",
+      "name": "windowTitle",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "OSCParser",
+      "return": {
+        "const": true,
+        "element": {
+          "bits": 8,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "slice"
+      },
+      "return_semantic": "utf8_string",
+      "symbol": "zg_osc_parser_window_title"
+    },
+    {
+      "field_access": {
+        "path": "icon_name",
+        "setter": false
+      },
+      "doc": "OSC 1: the icon name. Not well defined by any specification, and ghostty itself ignores it.",
+      "name": "icon",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "OSCParser",
+      "return": {
+        "const": true,
+        "element": {
+          "bits": 8,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "slice"
+      },
+      "return_semantic": "utf8_string",
+      "symbol": "zg_osc_parser_icon"
+    },
+    {
+      "field_access": {
+        "path": "pwd_value",
+        "setter": false
+      },
+      "doc": "OSC 7: the shell's working directory, as a `file://` URL. ghostty does not check that it is one, and neither does this.",
+      "name": "pwd",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "OSCParser",
+      "return": {
+        "const": true,
+        "element": {
+          "bits": 8,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "slice"
+      },
+      "return_semantic": "utf8_string",
+      "symbol": "zg_osc_parser_pwd"
+    },
+    {
+      "field_access": {
+        "path": "hyperlink_uri",
+        "setter": false
+      },
+      "doc": "OSC 8: the link target.",
+      "name": "hyperlinkURI",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "OSCParser",
+      "return": {
+        "const": true,
+        "element": {
+          "bits": 8,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "slice"
+      },
+      "return_semantic": "utf8_string",
+      "symbol": "zg_osc_parser_hyperlink_uri"
+    },
+    {
+      "field_access": {
+        "path": "hyperlink_id",
+        "setter": false
+      },
+      "doc": "OSC 8: the link's `id=` parameter, empty when it carried none. Two runs sharing an id are one link even when they are not adjacent.",
+      "name": "hyperlinkID",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "OSCParser",
+      "return": {
+        "const": true,
+        "element": {
+          "bits": 8,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "slice"
+      },
+      "return_semantic": "utf8_string",
+      "symbol": "zg_osc_parser_hyperlink_id"
+    },
+    {
+      "field_access": {
+        "path": "notification_title",
+        "setter": false
+      },
+      "doc": "OSC 9 and OSC 777: the notification title.",
+      "name": "notificationTitle",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "OSCParser",
+      "return": {
+        "const": true,
+        "element": {
+          "bits": 8,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "slice"
+      },
+      "return_semantic": "utf8_string",
+      "symbol": "zg_osc_parser_notification_title"
+    },
+    {
+      "field_access": {
+        "path": "notification_body",
+        "setter": false
+      },
+      "doc": "OSC 9 and OSC 777: the notification body.",
+      "name": "notificationBody",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "OSCParser",
+      "return": {
+        "const": true,
+        "element": {
+          "bits": 8,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "slice"
+      },
+      "return_semantic": "utf8_string",
+      "symbol": "zg_osc_parser_notification_body"
+    },
+    {
+      "field_access": {
+        "path": "clipboard_data",
+        "setter": false
+      },
+      "doc": "OSC 52: the base64 payload to put on the clipboard, or a bare `?` when the program is asking to read the clipboard rather than to write it.",
+      "name": "clipboardData",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "OSCParser",
+      "return": {
+        "const": true,
+        "element": {
+          "bits": 8,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "slice"
+      },
+      "return_semantic": "utf8_string",
+      "symbol": "zg_osc_parser_clipboard_data"
+    },
+    {
+      "field_access": {
+        "path": "clipboard_kind",
+        "setter": false
+      },
+      "doc": "OSC 52: which selection the request names, as the protocol's own character (`c` for clipboard, `p` for primary, `s` for the configured default), or zero for any other command.",
+      "name": "clipboardSelection",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "OSCParser",
+      "return": {
+        "bits": 8,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "symbol": "zg_osc_parser_clipboard_selection"
+    },
+    {
+      "field_access": {
+        "path": "mouse_shape",
+        "setter": false
+      },
+      "doc": "OSC 22: the pointer shape, usually a W3C CSS cursor name. ghostty parses whatever string is given without validating it.",
+      "name": "mouseShape",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "OSCParser",
+      "return": {
+        "const": true,
+        "element": {
+          "bits": 8,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "slice"
+      },
+      "return_semantic": "utf8_string",
+      "symbol": "zg_osc_parser_mouse_shape"
+    },
+    {
+      "field_access": {
+        "path": "prompt_action",
+        "setter": false
+      },
+      "doc": "OSC 133: which prompt boundary this sequence marks.",
+      "name": "semanticPromptAction",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "OSCParser",
+      "return": {
+        "kind": "enum",
+        "ref": "SemanticPromptAction"
+      },
+      "symbol": "zg_osc_parser_semantic_prompt_action"
+    },
+    {
+      "field_access": {
+        "path": "prompt_options",
+        "setter": false
+      },
+      "doc": "OSC 133: the raw, unvalidated option string that followed the action.",
+      "name": "semanticPromptOptions",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "OSCParser",
+      "return": {
+        "const": true,
+        "element": {
+          "bits": 8,
+          "is_usize": false,
+          "kind": "int",
+          "signed": false
+        },
+        "kind": "slice"
+      },
+      "return_semantic": "utf8_string",
+      "symbol": "zg_osc_parser_semantic_prompt_options"
+    },
+    {
+      "field_access": {
+        "path": "progress_state",
+        "setter": false
+      },
+      "doc": "OSC 9;4: what the program says about its progress.",
+      "name": "progressState",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "OSCParser",
+      "return": {
+        "kind": "enum",
+        "ref": "ProgressState"
+      },
+      "symbol": "zg_osc_parser_progress_state"
+    },
+    {
+      "field_access": {
+        "path": "progress",
+        "setter": false
+      },
+      "doc": "OSC 9;4: percent complete, or -1 when the report carried no percentage.",
+      "name": "progressValue",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "OSCParser",
+      "return": {
+        "bits": 16,
+        "is_usize": false,
+        "kind": "int",
+        "signed": true
+      },
+      "symbol": "zg_osc_parser_progress_value"
     },
     {
       "doc": "Install the PNG decoder. Until one is installed ghostty refuses PNG\nKitty transmissions outright; with one, the image is decoded as it\narrives and reaches `kittyImage` as `rgba`. Process-global, and read\nfrom whichever thread feeds a stream, so install it at startup.",
@@ -1143,7 +1488,8 @@
         "column": 12
       },
       "zig_path": "Key.fromASCII",
-      "symbol": "zg_key_key_from_ascii"
+      "symbol": "zg_key_from_ascii",
+      "custom_symbol": true
     },
     {
       "doc": "Converts a W3C key code to a Ghostty key enum value.\n\nAll required W3C key codes are supported, but there are a number of\nnon-standard key codes that are not supported. In the case the value is\ninvalid or unsupported, this function will return null.",
@@ -1187,7 +1533,8 @@
         "column": 12
       },
       "zig_path": "Key.fromW3C",
-      "symbol": "zg_key_key_from_w3_c"
+      "symbol": "zg_key_from_w3c",
+      "custom_symbol": true
     },
     {
       "name": "encodeFocus",
@@ -4991,27 +5338,6 @@
       "symbol": "zg_terminal_charset"
     },
     {
-      "doc": "The slot a pending single shift (SS2/SS3) will use for exactly one\ncharacter, or absent if none is pending.",
-      "name": "charsetSingleShift",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Terminal",
-      "return": {
-        "child": {
-          "kind": "enum",
-          "ref": "CharsetSlot"
-        },
-        "kind": "optional"
-      },
-      "source": {
-        "path": "state.zig",
-        "line": 41,
-        "column": 8
-      },
-      "zig_path": "charsetSingleShift",
-      "symbol": "zg_terminal_charset_single_shift"
-    },
-    {
       "doc": "The tracking mode currently in effect.",
       "name": "mouseTracking",
       "ownership": "borrowed",
@@ -5023,7 +5349,7 @@
       },
       "source": {
         "path": "state.zig",
-        "line": 66,
+        "line": 60,
         "column": 8
       },
       "zig_path": "mouseTracking",
@@ -5040,7 +5366,7 @@
       },
       "source": {
         "path": "state.zig",
-        "line": 71,
+        "line": 65,
         "column": 8
       },
       "zig_path": "mouseTrackingSendsMotion",
@@ -5058,7 +5384,7 @@
       },
       "source": {
         "path": "state.zig",
-        "line": 97,
+        "line": 91,
         "column": 8
       },
       "zig_path": "mouseReportFormat",
@@ -5075,7 +5401,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 120,
+            "line": 114,
             "column": 36
           },
           "type": {
@@ -5091,7 +5417,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 120,
+            "line": 114,
             "column": 47
           },
           "type": {
@@ -5106,7 +5432,7 @@
       },
       "source": {
         "path": "state.zig",
-        "line": 120,
+        "line": 114,
         "column": 8
       },
       "zig_path": "modeReport",
@@ -9849,7 +10175,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 294,
+            "line": 208,
             "column": 21
           },
           "type": {
@@ -9871,7 +10197,7 @@
       },
       "source": {
         "path": "parser.zig",
-        "line": 294,
+        "line": 208,
         "column": 8
       },
       "symbol": "zg_new_osc_parser"
@@ -9887,7 +10213,7 @@
       },
       "source": {
         "path": "parser.zig",
-        "line": 301,
+        "line": 215,
         "column": 8
       },
       "zig_path": "freeOSCParser",
@@ -9929,30 +10255,6 @@
         "column": 12
       },
       "symbol": "zg_osc_parser_feed"
-    },
-    {
-      "doc": "OSC 52: the base64 payload to put on the clipboard, or a bare `?` when\nthe program is asking to read the clipboard rather than to write it.",
-      "name": "clipboardData",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "OSCParser",
-      "return": {
-        "const": true,
-        "element": {
-          "bits": 8,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "slice"
-      },
-      "return_semantic": "utf8_string",
-      "source": {
-        "path": "parser.zig",
-        "line": 177,
-        "column": 12
-      },
-      "symbol": "zg_osc_parser_clipboard_data"
     },
     {
       "doc": "Finish the sequence and report whether it named a command.",
@@ -10000,311 +10302,6 @@
         "column": 12
       },
       "symbol": "zg_osc_parser_reset"
-    },
-    {
-      "doc": "The last command parsed, or `invalid` if `end` has not said yes.",
-      "name": "command",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "OSCParser",
-      "return": {
-        "kind": "enum",
-        "ref": "OSCCommand"
-      },
-      "source": {
-        "path": "parser.zig",
-        "line": 129,
-        "column": 12
-      },
-      "symbol": "zg_osc_parser_command"
-    },
-    {
-      "doc": "OSC 0 and OSC 2: the window title.\n\nghostty does not decode it. Under title mode 0 the bytes are hex, and\notherwise they are UTF-8 or latin1 depending on how the terminal was\nset up, which only the embedder knows.",
-      "name": "windowTitle",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "OSCParser",
-      "return": {
-        "const": true,
-        "element": {
-          "bits": 8,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "slice"
-      },
-      "return_semantic": "utf8_string",
-      "source": {
-        "path": "parser.zig",
-        "line": 138,
-        "column": 12
-      },
-      "symbol": "zg_osc_parser_window_title"
-    },
-    {
-      "doc": "OSC 1: the icon name. Not well defined by any specification, and\nghostty itself ignores it.",
-      "name": "icon",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "OSCParser",
-      "return": {
-        "const": true,
-        "element": {
-          "bits": 8,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "slice"
-      },
-      "return_semantic": "utf8_string",
-      "source": {
-        "path": "parser.zig",
-        "line": 144,
-        "column": 12
-      },
-      "symbol": "zg_osc_parser_icon"
-    },
-    {
-      "doc": "OSC 7: the shell's working directory, as a `file://` URL. ghostty does\nnot check that it is one, and neither does this.",
-      "name": "pwd",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "OSCParser",
-      "return": {
-        "const": true,
-        "element": {
-          "bits": 8,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "slice"
-      },
-      "return_semantic": "utf8_string",
-      "source": {
-        "path": "parser.zig",
-        "line": 150,
-        "column": 12
-      },
-      "symbol": "zg_osc_parser_pwd"
-    },
-    {
-      "doc": "OSC 8: the link target.",
-      "name": "hyperlinkURI",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "OSCParser",
-      "return": {
-        "const": true,
-        "element": {
-          "bits": 8,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "slice"
-      },
-      "return_semantic": "utf8_string",
-      "source": {
-        "path": "parser.zig",
-        "line": 155,
-        "column": 12
-      },
-      "symbol": "zg_osc_parser_hyperlink_uri"
-    },
-    {
-      "doc": "OSC 8: the link's `id=` parameter, empty when it carried none. Two runs\nsharing an id are one link even when they are not adjacent.",
-      "name": "hyperlinkID",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "OSCParser",
-      "return": {
-        "const": true,
-        "element": {
-          "bits": 8,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "slice"
-      },
-      "return_semantic": "utf8_string",
-      "source": {
-        "path": "parser.zig",
-        "line": 161,
-        "column": 12
-      },
-      "symbol": "zg_osc_parser_hyperlink_id"
-    },
-    {
-      "doc": "OSC 9 and OSC 777: the notification title.",
-      "name": "notificationTitle",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "OSCParser",
-      "return": {
-        "const": true,
-        "element": {
-          "bits": 8,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "slice"
-      },
-      "return_semantic": "utf8_string",
-      "source": {
-        "path": "parser.zig",
-        "line": 166,
-        "column": 12
-      },
-      "symbol": "zg_osc_parser_notification_title"
-    },
-    {
-      "doc": "OSC 9 and OSC 777: the notification body.",
-      "name": "notificationBody",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "OSCParser",
-      "return": {
-        "const": true,
-        "element": {
-          "bits": 8,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "slice"
-      },
-      "return_semantic": "utf8_string",
-      "source": {
-        "path": "parser.zig",
-        "line": 171,
-        "column": 12
-      },
-      "symbol": "zg_osc_parser_notification_body"
-    },
-    {
-      "doc": "OSC 52: which selection the request names, as the protocol's own\ncharacter (`c` for clipboard, `p` for primary, `s` for the configured\ndefault), or zero for any other command.",
-      "name": "clipboardSelection",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "OSCParser",
-      "return": {
-        "bits": 8,
-        "is_usize": false,
-        "kind": "int",
-        "signed": false
-      },
-      "source": {
-        "path": "parser.zig",
-        "line": 184,
-        "column": 12
-      },
-      "symbol": "zg_osc_parser_clipboard_selection"
-    },
-    {
-      "doc": "OSC 22: the pointer shape, usually a W3C CSS cursor name. ghostty\nparses whatever string is given without validating it.",
-      "name": "mouseShape",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "OSCParser",
-      "return": {
-        "const": true,
-        "element": {
-          "bits": 8,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "slice"
-      },
-      "return_semantic": "utf8_string",
-      "source": {
-        "path": "parser.zig",
-        "line": 190,
-        "column": 12
-      },
-      "symbol": "zg_osc_parser_mouse_shape"
-    },
-    {
-      "doc": "OSC 133: which prompt boundary this sequence marks.",
-      "name": "semanticPromptAction",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "OSCParser",
-      "return": {
-        "kind": "enum",
-        "ref": "SemanticPromptAction"
-      },
-      "source": {
-        "path": "parser.zig",
-        "line": 195,
-        "column": 12
-      },
-      "symbol": "zg_osc_parser_semantic_prompt_action"
-    },
-    {
-      "doc": "OSC 133: the raw, unvalidated option string that followed the action.",
-      "name": "semanticPromptOptions",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "OSCParser",
-      "return": {
-        "const": true,
-        "element": {
-          "bits": 8,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "slice"
-      },
-      "return_semantic": "utf8_string",
-      "source": {
-        "path": "parser.zig",
-        "line": 200,
-        "column": 12
-      },
-      "symbol": "zg_osc_parser_semantic_prompt_options"
-    },
-    {
-      "doc": "OSC 9;4: what the program says about its progress.",
-      "name": "progressState",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "OSCParser",
-      "return": {
-        "kind": "enum",
-        "ref": "ProgressState"
-      },
-      "source": {
-        "path": "parser.zig",
-        "line": 205,
-        "column": 12
-      },
-      "symbol": "zg_osc_parser_progress_state"
-    },
-    {
-      "doc": "OSC 9;4: percent complete, or -1 when the report carried no percentage.",
-      "name": "progressValue",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "OSCParser",
-      "return": {
-        "bits": 16,
-        "is_usize": false,
-        "kind": "int",
-        "signed": true
-      },
-      "source": {
-        "path": "parser.zig",
-        "line": 210,
-        "column": 12
-      },
-      "symbol": "zg_osc_parser_progress_value"
     },
     {
       "covers": [
@@ -10472,7 +10469,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 321,
+            "line": 235,
             "column": 26
           },
           "type": {
@@ -10492,7 +10489,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 321,
+            "line": 235,
             "column": 47
           },
           "type": {
@@ -10517,7 +10514,7 @@
       },
       "source": {
         "path": "parser.zig",
-        "line": 321,
+        "line": 235,
         "column": 8
       },
       "symbol": "zg_sgr_attribute_count"
@@ -10533,7 +10530,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 350,
+            "line": 264,
             "column": 23
           },
           "type": {
@@ -10553,7 +10550,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 350,
+            "line": 264,
             "column": 44
           },
           "type": {
@@ -10569,7 +10566,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 350,
+            "line": 264,
             "column": 61
           },
           "type": {
@@ -10586,7 +10583,7 @@
       },
       "source": {
         "path": "parser.zig",
-        "line": 350,
+        "line": 264,
         "column": 8
       },
       "symbol": "zg_sgr_attribute_at"
@@ -12469,7 +12466,7 @@
         "signed": false
       },
       "text": true,
-      "zig_path": "terminal.modes.Mode__enum_39848"
+      "zig_path": "terminal.modes.Mode__enum_39936"
     },
     {
       "exhaustive": true,

@@ -31,6 +31,9 @@ func (te *Terminal) Cols() (uint16, error) {
 	return result, nil
 }
 
+// MustCols calls Cols and panics with its typed error on failure.
+func (te *Terminal) MustCols() uint16 { return zigoMustValue(te.Cols()) }
+
 // Rows: The number of populated rows, read without touching page memory.
 // Zig field: Terminal.rows.
 // It returns *HandleError if a required handle is nil or closed.
@@ -48,6 +51,9 @@ func (te *Terminal) Rows() (uint16, error) {
 	return result, nil
 }
 
+// MustRows calls Rows and panics with its typed error on failure.
+func (te *Terminal) MustRows() uint16 { return zigoMustValue(te.Rows()) }
+
 // CursorX returns the Zig field Terminal.screens.active.cursor.x.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
@@ -64,6 +70,9 @@ func (te *Terminal) CursorX() (uint16, error) {
 	return result, nil
 }
 
+// MustCursorX calls CursorX and panics with its typed error on failure.
+func (te *Terminal) MustCursorX() uint16 { return zigoMustValue(te.CursorX()) }
+
 // CursorY returns the Zig field Terminal.screens.active.cursor.y.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
@@ -79,6 +88,9 @@ func (te *Terminal) CursorY() (uint16, error) {
 	}
 	return result, nil
 }
+
+// MustCursorY calls CursorY and panics with its typed error on failure.
+func (te *Terminal) MustCursorY() uint16 { return zigoMustValue(te.CursorY()) }
 
 // CursorStyle returns the Zig field Terminal.screens.active.cursor.cursor_style.
 // It returns *HandleError if a required handle is nil or closed.
@@ -256,6 +268,23 @@ func (te *Terminal) CharsetGr() (CharsetSlot, error) {
 		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CharsetGr", code), te)
 	}
 	return CharsetSlot(result), nil
+}
+
+// CharsetSingleShift: The slot a pending single shift (SS2/SS3) will use for exactly one character, or absent if none is pending.
+// Zig field: Terminal.screens.active.charset.single_shift.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (te *Terminal) CharsetSingleShift() (CharsetSlot, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.CharsetSingleShift receiver", te)
+	if err != nil {
+		return 0, false, err
+	}
+	defer te.zigoRelease()
+	result, zigoHas, code := raw.TerminalCharsetSingleShift(ptr)
+	if code != 0 {
+		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CharsetSingleShift", code), te)
+	}
+	return CharsetSlot(result), zigoHas, nil
 }
 
 // ProtectedMode: The most recent protected mode (DECSCA or the older SPA/EPA) on the active screen. This never returns to off once set, until the screen is reset: ECH and friends key off the most recent mode, not the current pen.
@@ -444,6 +473,261 @@ func (g *Gesture) Dragged() (bool, error) {
 		return false, zigoPoisonAfterPanic(zigoErrorForCode("Gesture.Dragged", code), g)
 	}
 	return result != 0, nil
+}
+
+// Command: The last command parsed, or `invalid` if `end` has not said yes.
+// Zig field: OSCParser.kind.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) Command() (OSCCommand, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.Command receiver", o)
+	if err != nil {
+		return 0, err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserCommand(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.Command", code), o)
+	}
+	return OSCCommand(result), nil
+}
+
+// WindowTitle: OSC 0 and OSC 2: the window title. ghostty does not decode it. Under title mode 0 the bytes are hex, and otherwise they are UTF-8 or latin1 depending on how the terminal was set up, which only the embedder knows.
+// Zig field: OSCParser.window_title.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) WindowTitle() (string, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.WindowTitle receiver", o)
+	if err != nil {
+		return "", err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserWindowTitle(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.WindowTitle", code), o)
+	}
+	return result, nil
+}
+
+// Icon: OSC 1: the icon name. Not well defined by any specification, and ghostty itself ignores it.
+// Zig field: OSCParser.icon_name.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) Icon() (string, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.Icon receiver", o)
+	if err != nil {
+		return "", err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserIcon(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.Icon", code), o)
+	}
+	return result, nil
+}
+
+// Pwd: OSC 7: the shell's working directory, as a `file://` URL. ghostty does not check that it is one, and neither does this.
+// Zig field: OSCParser.pwd_value.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) Pwd() (string, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.Pwd receiver", o)
+	if err != nil {
+		return "", err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserPwd(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.Pwd", code), o)
+	}
+	return result, nil
+}
+
+// HyperlinkUri: OSC 8: the link target.
+// Zig field: OSCParser.hyperlink_uri.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) HyperlinkUri() (string, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.HyperlinkUri receiver", o)
+	if err != nil {
+		return "", err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserHyperlinkUri(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.HyperlinkUri", code), o)
+	}
+	return result, nil
+}
+
+// HyperlinkID: OSC 8: the link's `id=` parameter, empty when it carried none. Two runs sharing an id are one link even when they are not adjacent.
+// Zig field: OSCParser.hyperlink_id.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) HyperlinkID() (string, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.HyperlinkID receiver", o)
+	if err != nil {
+		return "", err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserHyperlinkID(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.HyperlinkID", code), o)
+	}
+	return result, nil
+}
+
+// NotificationTitle: OSC 9 and OSC 777: the notification title.
+// Zig field: OSCParser.notification_title.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) NotificationTitle() (string, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.NotificationTitle receiver", o)
+	if err != nil {
+		return "", err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserNotificationTitle(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.NotificationTitle", code), o)
+	}
+	return result, nil
+}
+
+// NotificationBody: OSC 9 and OSC 777: the notification body.
+// Zig field: OSCParser.notification_body.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) NotificationBody() (string, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.NotificationBody receiver", o)
+	if err != nil {
+		return "", err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserNotificationBody(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.NotificationBody", code), o)
+	}
+	return result, nil
+}
+
+// ClipboardData: OSC 52: the base64 payload to put on the clipboard, or a bare `?` when the program is asking to read the clipboard rather than to write it.
+// Zig field: OSCParser.clipboard_data.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) ClipboardData() (string, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.ClipboardData receiver", o)
+	if err != nil {
+		return "", err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserClipboardData(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.ClipboardData", code), o)
+	}
+	return result, nil
+}
+
+// ClipboardSelection: OSC 52: which selection the request names, as the protocol's own character (`c` for clipboard, `p` for primary, `s` for the configured default), or zero for any other command.
+// Zig field: OSCParser.clipboard_kind.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) ClipboardSelection() (uint8, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.ClipboardSelection receiver", o)
+	if err != nil {
+		return 0, err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserClipboardSelection(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.ClipboardSelection", code), o)
+	}
+	return result, nil
+}
+
+// MouseShape: OSC 22: the pointer shape, usually a W3C CSS cursor name. ghostty parses whatever string is given without validating it.
+// Zig field: OSCParser.mouse_shape.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) MouseShape() (string, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.MouseShape receiver", o)
+	if err != nil {
+		return "", err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserMouseShape(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.MouseShape", code), o)
+	}
+	return result, nil
+}
+
+// SemanticPromptAction: OSC 133: which prompt boundary this sequence marks.
+// Zig field: OSCParser.prompt_action.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) SemanticPromptAction() (SemanticPromptAction, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.SemanticPromptAction receiver", o)
+	if err != nil {
+		return 0, err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserSemanticPromptAction(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.SemanticPromptAction", code), o)
+	}
+	return SemanticPromptAction(result), nil
+}
+
+// SemanticPromptOptions: OSC 133: the raw, unvalidated option string that followed the action.
+// Zig field: OSCParser.prompt_options.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) SemanticPromptOptions() (string, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.SemanticPromptOptions receiver", o)
+	if err != nil {
+		return "", err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserSemanticPromptOptions(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.SemanticPromptOptions", code), o)
+	}
+	return result, nil
+}
+
+// ProgressState: OSC 9;4: what the program says about its progress.
+// Zig field: OSCParser.progress_state.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) ProgressState() (ProgressState, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.ProgressState receiver", o)
+	if err != nil {
+		return 0, err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserProgressState(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.ProgressState", code), o)
+	}
+	return ProgressState(result), nil
+}
+
+// ProgressValue: OSC 9;4: percent complete, or -1 when the report carried no percentage.
+// Zig field: OSCParser.progress.
+// It returns *HandleError if a required handle is nil or closed.
+// A native panic is returned as *NativePanicError.
+func (o *OSCParser) ProgressValue() (int16, error) {
+	ptr, err := zigoCheckedPointer("OSCParser.ProgressValue receiver", o)
+	if err != nil {
+		return 0, err
+	}
+	defer o.zigoRelease()
+	result, code := raw.OscParserProgressValue(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.ProgressValue", code), o)
+	}
+	return result, nil
 }
 
 // NewTerminal: Initialize a new terminal.
@@ -2339,23 +2623,6 @@ func (te *Terminal) Charset(slot CharsetSlot) (Charset, error) {
 		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Charset", code), te)
 	}
 	return Charset(result), nil
-}
-
-// CharsetSingleShift: The slot a pending single shift (SS2/SS3) will use for exactly one
-// character, or absent if none is pending.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) CharsetSingleShift() (CharsetSlot, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.CharsetSingleShift receiver", te)
-	if err != nil {
-		return 0, false, err
-	}
-	defer te.zigoRelease()
-	result, zigoHas, code := raw.TerminalCharsetSingleShift(ptr)
-	if code != 0 {
-		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CharsetSingleShift", code), te)
-	}
-	return CharsetSlot(result), zigoHas, nil
 }
 
 // MouseTracking: The tracking mode currently in effect.
@@ -4901,23 +5168,6 @@ func (o *OSCParser) Feed(bytes []byte) error {
 	return nil
 }
 
-// ClipboardData: OSC 52: the base64 payload to put on the clipboard, or a bare `?` when
-// the program is asking to read the clipboard rather than to write it.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (o *OSCParser) ClipboardData() (string, error) {
-	ptr, err := zigoCheckedPointer("OSCParser.ClipboardData receiver", o)
-	if err != nil {
-		return "", err
-	}
-	defer o.zigoRelease()
-	result, code := raw.OscParserClipboardData(ptr)
-	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.ClipboardData", code), o)
-	}
-	return result, nil
-}
-
 // End: Finish the sequence and report whether it named a command.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
@@ -4948,240 +5198,6 @@ func (o *OSCParser) Reset() error {
 		return zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.Reset", code), o)
 	}
 	return nil
-}
-
-// Command: The last command parsed, or `invalid` if `end` has not said yes.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (o *OSCParser) Command() (OSCCommand, error) {
-	ptr, err := zigoCheckedPointer("OSCParser.Command receiver", o)
-	if err != nil {
-		return 0, err
-	}
-	defer o.zigoRelease()
-	result, code := raw.OscParserCommand(ptr)
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.Command", code), o)
-	}
-	return OSCCommand(result), nil
-}
-
-// WindowTitle: OSC 0 and OSC 2: the window title.
-//
-// ghostty does not decode it. Under title mode 0 the bytes are hex, and
-// otherwise they are UTF-8 or latin1 depending on how the terminal was
-// set up, which only the embedder knows.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (o *OSCParser) WindowTitle() (string, error) {
-	ptr, err := zigoCheckedPointer("OSCParser.WindowTitle receiver", o)
-	if err != nil {
-		return "", err
-	}
-	defer o.zigoRelease()
-	result, code := raw.OscParserWindowTitle(ptr)
-	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.WindowTitle", code), o)
-	}
-	return result, nil
-}
-
-// Icon: OSC 1: the icon name. Not well defined by any specification, and
-// ghostty itself ignores it.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (o *OSCParser) Icon() (string, error) {
-	ptr, err := zigoCheckedPointer("OSCParser.Icon receiver", o)
-	if err != nil {
-		return "", err
-	}
-	defer o.zigoRelease()
-	result, code := raw.OscParserIcon(ptr)
-	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.Icon", code), o)
-	}
-	return result, nil
-}
-
-// Pwd: OSC 7: the shell's working directory, as a `file://` URL. ghostty does
-// not check that it is one, and neither does this.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (o *OSCParser) Pwd() (string, error) {
-	ptr, err := zigoCheckedPointer("OSCParser.Pwd receiver", o)
-	if err != nil {
-		return "", err
-	}
-	defer o.zigoRelease()
-	result, code := raw.OscParserPwd(ptr)
-	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.Pwd", code), o)
-	}
-	return result, nil
-}
-
-// HyperlinkUri: OSC 8: the link target.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (o *OSCParser) HyperlinkUri() (string, error) {
-	ptr, err := zigoCheckedPointer("OSCParser.HyperlinkUri receiver", o)
-	if err != nil {
-		return "", err
-	}
-	defer o.zigoRelease()
-	result, code := raw.OscParserHyperlinkUri(ptr)
-	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.HyperlinkUri", code), o)
-	}
-	return result, nil
-}
-
-// HyperlinkID: OSC 8: the link's `id=` parameter, empty when it carried none. Two runs
-// sharing an id are one link even when they are not adjacent.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (o *OSCParser) HyperlinkID() (string, error) {
-	ptr, err := zigoCheckedPointer("OSCParser.HyperlinkID receiver", o)
-	if err != nil {
-		return "", err
-	}
-	defer o.zigoRelease()
-	result, code := raw.OscParserHyperlinkID(ptr)
-	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.HyperlinkID", code), o)
-	}
-	return result, nil
-}
-
-// NotificationTitle: OSC 9 and OSC 777: the notification title.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (o *OSCParser) NotificationTitle() (string, error) {
-	ptr, err := zigoCheckedPointer("OSCParser.NotificationTitle receiver", o)
-	if err != nil {
-		return "", err
-	}
-	defer o.zigoRelease()
-	result, code := raw.OscParserNotificationTitle(ptr)
-	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.NotificationTitle", code), o)
-	}
-	return result, nil
-}
-
-// NotificationBody: OSC 9 and OSC 777: the notification body.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (o *OSCParser) NotificationBody() (string, error) {
-	ptr, err := zigoCheckedPointer("OSCParser.NotificationBody receiver", o)
-	if err != nil {
-		return "", err
-	}
-	defer o.zigoRelease()
-	result, code := raw.OscParserNotificationBody(ptr)
-	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.NotificationBody", code), o)
-	}
-	return result, nil
-}
-
-// ClipboardSelection: OSC 52: which selection the request names, as the protocol's own
-// character (`c` for clipboard, `p` for primary, `s` for the configured
-// default), or zero for any other command.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (o *OSCParser) ClipboardSelection() (uint8, error) {
-	ptr, err := zigoCheckedPointer("OSCParser.ClipboardSelection receiver", o)
-	if err != nil {
-		return 0, err
-	}
-	defer o.zigoRelease()
-	result, code := raw.OscParserClipboardSelection(ptr)
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.ClipboardSelection", code), o)
-	}
-	return result, nil
-}
-
-// MouseShape: OSC 22: the pointer shape, usually a W3C CSS cursor name. ghostty
-// parses whatever string is given without validating it.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (o *OSCParser) MouseShape() (string, error) {
-	ptr, err := zigoCheckedPointer("OSCParser.MouseShape receiver", o)
-	if err != nil {
-		return "", err
-	}
-	defer o.zigoRelease()
-	result, code := raw.OscParserMouseShape(ptr)
-	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.MouseShape", code), o)
-	}
-	return result, nil
-}
-
-// SemanticPromptAction: OSC 133: which prompt boundary this sequence marks.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (o *OSCParser) SemanticPromptAction() (SemanticPromptAction, error) {
-	ptr, err := zigoCheckedPointer("OSCParser.SemanticPromptAction receiver", o)
-	if err != nil {
-		return 0, err
-	}
-	defer o.zigoRelease()
-	result, code := raw.OscParserSemanticPromptAction(ptr)
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.SemanticPromptAction", code), o)
-	}
-	return SemanticPromptAction(result), nil
-}
-
-// SemanticPromptOptions: OSC 133: the raw, unvalidated option string that followed the action.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (o *OSCParser) SemanticPromptOptions() (string, error) {
-	ptr, err := zigoCheckedPointer("OSCParser.SemanticPromptOptions receiver", o)
-	if err != nil {
-		return "", err
-	}
-	defer o.zigoRelease()
-	result, code := raw.OscParserSemanticPromptOptions(ptr)
-	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.SemanticPromptOptions", code), o)
-	}
-	return result, nil
-}
-
-// ProgressState: OSC 9;4: what the program says about its progress.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (o *OSCParser) ProgressState() (ProgressState, error) {
-	ptr, err := zigoCheckedPointer("OSCParser.ProgressState receiver", o)
-	if err != nil {
-		return 0, err
-	}
-	defer o.zigoRelease()
-	result, code := raw.OscParserProgressState(ptr)
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.ProgressState", code), o)
-	}
-	return ProgressState(result), nil
-}
-
-// ProgressValue: OSC 9;4: percent complete, or -1 when the report carried no percentage.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (o *OSCParser) ProgressValue() (int16, error) {
-	ptr, err := zigoCheckedPointer("OSCParser.ProgressValue receiver", o)
-	if err != nil {
-		return 0, err
-	}
-	defer o.zigoRelease()
-	result, code := raw.OscParserProgressValue(ptr)
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("OSCParser.ProgressValue", code), o)
-	}
-	return result, nil
 }
 
 // Default: The color's default value as `0xRRGGBB`, or null when the name has none.

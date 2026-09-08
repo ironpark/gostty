@@ -36,12 +36,6 @@ pub fn charset(self: *Terminal, slot: vt.CharsetSlot) vt.Charset {
     return self.screens.active.charset.charsets.get(slot);
 }
 
-/// The slot a pending single shift (SS2/SS3) will use for exactly one
-/// character, or absent if none is pending.
-pub fn charsetSingleShift(self: *Terminal) ?vt.CharsetSlot {
-    return self.screens.active.charset.single_shift;
-}
-
 /// How the terminal reports mouse activity.
 ///
 /// This is the resolved tracking mode rather than any one mode flag: several

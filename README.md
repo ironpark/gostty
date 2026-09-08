@@ -324,7 +324,9 @@ Most of libghostty-vt is bound directly: `Terminal`, `Screen`, `RenderState`
 and `Snapshot` are ghostty's own types and their methods become Go methods with
 nothing in between, including their `init`/`deinit` lifecycles,
 while `.fields` and `.flatten` in `bindings.zig` cover plain field reads and
-`Terminal.init`. What is left in `root.zig` is the shapes that cannot cross a C
+`Terminal.init`. A field accessor reaches optionals and slices as well as
+scalars, so the whole of `OSCParser`'s payload surface is paths rather than
+fifteen bodies that would each return one field. What is left in `root.zig` is the shapes that cannot cross a C
 ABI directly:
 
 - an `std.Io` value, because ghostty ships `TinyIo` as a type rather than a
@@ -364,7 +366,9 @@ surface.
   error. zigo has these built in, but as one switch for the whole package, which
   would have doubled the API surface -- the reason they were left off. As a
   plugin the variant goes only on the methods whose Zig result carries no error
-  at all, so the one way they fail is a handle the caller already closed. The
+  at all, so the one way they fail is a handle the caller already closed. Field
+  accessors take it too, through `HandleField.extend`, which is how `MustCols`
+  exists. The
   variant never spells its own signature: it renders the one the generator just
   wrote for the checked method and takes `error` off the end, so the two cannot
   drift.

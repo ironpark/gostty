@@ -48,6 +48,13 @@ fn withMust(comptime entry: zigo.Entry) zigo.Entry {
     return entry.use(must.plugin, .{});
 }
 
+/// The same policy for a field accessor. A field has no body to fail in, so
+/// the only errors are the handle ones above, and these are the reads a caller
+/// makes often enough that branching on them at every call is noise.
+fn mustField(comptime field: zigo.HandleField) zigo.HandleField {
+    return field.extend(must.plugin, .{});
+}
+
 /// One Go enum.
 ///
 /// `.text` asks for `Parse<Enum>`, `MarshalText` and `UnmarshalText`, so the
@@ -108,10 +115,10 @@ const Terminal = api.handle("Terminal", .{
         // Read straight off the terminal rather than through ghostty's `cols()`
         // and `rows()`, which is where these two sentences come from: the
         // accessor's doc is not the field's, so it is spelled here.
-        .{ .path = "cols", .doc = "The current column count, read without touching page memory." },
-        .{ .path = "rows", .doc = "The number of populated rows, read without touching page memory." },
-        .{ .path = "screens.active.cursor.x", .name = "cursorX" },
-        .{ .path = "screens.active.cursor.y", .name = "cursorY" },
+        mustField(.{ .path = "cols", .doc = "The current column count, read without touching page memory." }),
+        mustField(.{ .path = "rows", .doc = "The number of populated rows, read without touching page memory." }),
+        mustField(.{ .path = "screens.active.cursor.x", .name = "cursorX" }),
+        mustField(.{ .path = "screens.active.cursor.y", .name = "cursorY" }),
         .{ .path = "screens.active.cursor.cursor_style", .name = "cursorStyle" },
         .{ .path = "screens.active_key", .name = "activeScreenKey" },
         // The LCF: set once printing has filled the last column, so the next
@@ -124,11 +131,12 @@ const Terminal = api.handle("Terminal", .{
         .{ .path = "flags.visible", .name = "visible" },
         .{ .path = "flags.password_input", .name = "passwordInput" },
         // Charset state and the protected mode are plain reads off the active
-        // screen, so they are paths rather than three wrappers that would
-        // forward to exactly these fields. `charset` and `charsetSingleShift`
-        // stay functions: one takes a slot, the other returns an optional.
+        // screen, so they are paths rather than wrappers that would forward to
+        // exactly these fields. Only `charset` stays a function: it takes a
+        // slot, so there is no one field for it to be.
         .{ .path = "screens.active.charset.gl", .name = "charsetGL", .doc = "The slot GL resolves to: the set used for codepoints up to 127." },
         .{ .path = "screens.active.charset.gr", .name = "charsetGR", .doc = "The slot GR resolves to: the set used for 8-bit printable codepoints." },
+        .{ .path = "screens.active.charset.single_shift", .name = "charsetSingleShift", .doc = "The slot a pending single shift (SS2/SS3) will use for exactly one character, or absent if none is pending." },
         .{ .path = "screens.active.protected_mode", .name = "protectedMode", .doc = "The most recent protected mode (DECSCA or the older SPA/EPA) on the active screen. This never returns to off once set, until the screen is reset: ECH and friends key off the most recent mode, not the current pen." },
     },
 }).context();
@@ -158,7 +166,32 @@ const Gesture = api.handle("Gesture", .{ .fields = &.{
     .{ .path = "inner.left_click_count", .name = "clickCount", .doc = "How many clicks the current sequence is at: 0 before any press, then 1, 2 or 3. What an emulator switches on to decide what a click means." },
     .{ .path = "inner.left_click_dragged", .name = "dragged", .doc = "Whether the pointer has left the pressed cell during this gesture. Read it on release: a click that never dragged is the one that should follow a hyperlink or move the shell cursor, rather than one that happened to end where it started after a round trip." },
 } }).context();
-const OSCParser = api.handle("OSCParser", .{}).context();
+// Every payload the parser exposes is a field it filled during `end`, so the
+// accessors are paths rather than fifteen bodies that would each return one
+// field. The documentation moves here with them: a field accessor takes its
+// Go doc from `.doc` and nothing else.
+const OSCParser = api.handle("OSCParser", .{
+    .fields = &.{
+        .{ .path = "kind", .name = "command", .doc = "The last command parsed, or `invalid` if `end` has not said yes." },
+        .{ .path = "window_title", .name = "windowTitle", .doc = "OSC 0 and OSC 2: the window title. ghostty does not decode it. Under title mode 0 the bytes are hex, and otherwise they are UTF-8 or latin1 depending on how the terminal was set up, which only the embedder knows." },
+        .{ .path = "icon_name", .name = "icon", .doc = "OSC 1: the icon name. Not well defined by any specification, and ghostty itself ignores it." },
+        .{ .path = "pwd_value", .name = "pwd", .doc = "OSC 7: the shell's working directory, as a `file://` URL. ghostty does not check that it is one, and neither does this." },
+        .{ .path = "hyperlink_uri", .name = "hyperlinkURI", .doc = "OSC 8: the link target." },
+        .{ .path = "hyperlink_id", .name = "hyperlinkID", .doc = "OSC 8: the link's `id=` parameter, empty when it carried none. Two runs sharing an id are one link even when they are not adjacent." },
+        .{ .path = "notification_title", .name = "notificationTitle", .doc = "OSC 9 and OSC 777: the notification title." },
+        .{ .path = "notification_body", .name = "notificationBody", .doc = "OSC 9 and OSC 777: the notification body." },
+        // OSC 52 carries its payload base64-encoded and this parser hands it over
+        // as it arrived, so what comes back is that encoding rather than the bytes
+        // inside it. `ClipboardRequest.contentData` is the decoded form.
+        .{ .path = "clipboard_data", .name = "clipboardData", .doc = "OSC 52: the base64 payload to put on the clipboard, or a bare `?` when the program is asking to read the clipboard rather than to write it." },
+        .{ .path = "clipboard_kind", .name = "clipboardSelection", .doc = "OSC 52: which selection the request names, as the protocol's own character (`c` for clipboard, `p` for primary, `s` for the configured default), or zero for any other command." },
+        .{ .path = "mouse_shape", .name = "mouseShape", .doc = "OSC 22: the pointer shape, usually a W3C CSS cursor name. ghostty parses whatever string is given without validating it." },
+        .{ .path = "prompt_action", .name = "semanticPromptAction", .doc = "OSC 133: which prompt boundary this sequence marks." },
+        .{ .path = "prompt_options", .name = "semanticPromptOptions", .doc = "OSC 133: the raw, unvalidated option string that followed the action." },
+        .{ .path = "progress_state", .name = "progressState", .doc = "OSC 9;4: what the program says about its progress." },
+        .{ .path = "progress", .name = "progressValue", .doc = "OSC 9;4: percent complete, or -1 when the report carried no percentage." },
+    },
+}).context();
 const Key = enumeration("Key", .{ .text = true, .kit = true }).context();
 const ColorName = enumeration("ColorName", .{ .text = true, .open = true, .kit = true }).context();
 
@@ -326,7 +359,6 @@ const terminal_group = Terminal.define(&.{
     // resolved values no single mode flag reports.
     api.func("scrollRegion", .{}),
     api.func("charset", .{}),
-    api.func("charsetSingleShift", .{}),
     api.func("mouseTracking", .{}),
     api.func("mouseTrackingSendsMotion", .{}),
     api.func("mouseReportFormat", .{}),
@@ -559,33 +591,7 @@ const osc_group = OSCParser.define(&[_]zigo.Entry{
     api.func("newOSCParser", .{ .role = .{ .constructor = .{ .type = OSCParser.typeRef() } } }),
     api.func("freeOSCParser", .{ .role = .{ .destructor = OSCParser.typeRef() } }),
     OSCParser.func("feed", .{ .params = &.{raw(1)} }),
-    // OSC 52 carries its payload base64-encoded and this parser hands it over
-    // as it arrived, so what comes back is that encoding rather than the bytes
-    // inside it. `ClipboardRequest.contentData` is the decoded form.
-    OSCParser.func("clipboardData", .{}),
-} ++ OSCParser.funcs(.{
-    .names = &.{
-        "end",
-        "reset",
-        "command",
-        // The strings below are borrowed from the parser and stay valid only until
-        // the next feed, end or reset, which is why none of them declare a release
-        // function.
-        "windowTitle",
-        "icon",
-        "pwd",
-        "hyperlinkURI",
-        "hyperlinkID",
-        "notificationTitle",
-        "notificationBody",
-        "clipboardSelection",
-        "mouseShape",
-        "semanticPromptAction",
-        "semanticPromptOptions",
-        "progressState",
-        "progressValue",
-    },
-}));
+} ++ OSCParser.funcs(.{ .names = &.{ "end", "reset" } }));
 
 // A root wrapper, not one of ghostty's own methods on the enum; the receiver
 // comes from the owning type of this group and the wrapper's first argument.
@@ -664,12 +670,13 @@ const input_package = zigo.package(.{
         // ghostty's own constructors, bound where they are declared rather
         // than through a wrapper that would only forward: the documentation
         // and the behaviour are then theirs, and there is no second body to
-        // drift. `.name` is what keeps the `Key` prefix in Go. The cost is a
-        // stutter in the internal symbol, `zg_key_key_from_ascii`, which no
-        // caller outside the generated raw package ever names.
-        Key.func("fromASCII", .{ .name = "keyFromASCII" }),
+        // drift. `.name` is what keeps the `Key` prefix in Go, and `.symbol`
+        // stops the owner and the Go name from both spelling `key` into the
+        // exported C name.
+        Key.func("fromASCII", .{ .name = "keyFromASCII", .symbol = "zg_key_from_ascii" }),
         Key.func("fromW3C", .{
             .name = "keyFromW3C",
+            .symbol = "zg_key_from_w3c",
             .params = &.{.{ .index = 0, .go_name = "w3cCode" }},
         }),
         // ghostty's own encoders, reached through the `input` namespace.

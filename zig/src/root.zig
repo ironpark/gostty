@@ -318,7 +318,6 @@ const state_ = @import("state.zig");
 pub const ScrollRegion = state_.ScrollRegion;
 pub const scrollRegion = state_.scrollRegion;
 pub const charset = state_.charset;
-pub const charsetSingleShift = state_.charsetSingleShift;
 pub const MouseTracking = state_.MouseTracking;
 pub const mouseTracking = state_.mouseTracking;
 pub const mouseTrackingSendsMotion = state_.mouseTrackingSendsMotion;
