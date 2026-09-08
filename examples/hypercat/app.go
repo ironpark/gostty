@@ -34,36 +34,34 @@ func (app *terminalApp) current() *terminalTab {
 }
 
 func (app *terminalApp) addTab() error {
-	previous := app.current()
-	tab := &terminalTab{
-		owner: app, clipboardState: &app.clipboardState,
-		dsf: app.dsf, cols: initialCols, rows: initialRows,
-	}
-	if previous != nil {
-		tab.settings = tabSettings{families: previous.settings.families, family: previous.settings.family, size: previous.settings.size, theme: previous.settings.theme}
-		tab.fonts, tab.emoji = previous.fonts, previous.emoji
-		tab.cols, tab.rows = previous.cols, previous.rows
-	} else {
-		tab.settings.families = fonts.Discover()
-		family, index := fonts.DefaultFamily(tab.settings.families)
-		tab.settings.family, tab.settings.size = index, fonts.DefaultSize
-		tab.fonts = fonts.Load(family, fonts.DefaultSize*tab.dsf)
-		tab.emoji = fonts.LoadEmoji()
-	}
+	tab := app.newTab(app.current())
 	if err := tab.start(); err != nil {
 		tab.close()
 		return err
-	}
-	if previous != nil {
-		if tab.cat != nil && previous.cat != nil {
-			tab.cat.SetEnabled(previous.cat.Enabled())
-			tab.cat.SetHyper(previous.cat.Hyper())
-		}
 	}
 	app.tabs = append(app.tabs, tab)
 	app.selectTab(len(app.tabs) - 1)
 	app.layoutTabs()
 	return nil
+}
+
+// newTab builds a tab that opens looking like the one it was opened from:
+// same fonts, settings, and grid. The first tab discovers the fonts itself.
+func (app *terminalApp) newTab(previous *terminalTab) *terminalTab {
+	tab := &terminalTab{
+		owner: app, clipboardState: &app.clipboardState,
+		dsf: app.dsf, cols: initialCols, rows: initialRows,
+	}
+	if previous != nil {
+		tab.settings = previous.settings
+		tab.fonts, tab.emoji = previous.fonts, previous.emoji
+		tab.cols, tab.rows = previous.cols, previous.rows
+		return tab
+	}
+	tab.settings = defaultSettings()
+	tab.fonts = fonts.Load(tab.settings.currentFamily(), tab.settings.size*tab.dsf)
+	tab.emoji = fonts.LoadEmoji()
+	return tab
 }
 
 func (app *terminalApp) selectTab(index int) {
@@ -78,8 +76,13 @@ func (app *terminalApp) selectTab(index int) {
 	app.active = index
 	tab := app.current()
 	tab.focusedFrames = 0
-	tab.redrawAll = true
+	tab.redraw.markAll()
 	tab.retitle()
+}
+
+// cycleTab selects the tab `step` away from the active one, wrapping.
+func (app *terminalApp) cycleTab(step int) {
+	app.selectTab(wrap(app.active+step, len(app.tabs)))
 }
 
 func (app *terminalApp) closeTab(index int) {
@@ -155,35 +158,40 @@ func (app *terminalApp) Update() error {
 	return tab.updateInput()
 }
 
+// handleTabs consumes the window's own input -- tab shortcuts and the tab
+// bar -- before it can reach a shell, and reports whether it did.
 func (app *terminalApp) handleTabs(m keys.Mods) (bool, error) {
 	if consumed, err := app.handleTabKeys(m, inpututil.IsKeyJustPressed); consumed || err != nil {
 		return consumed, err
 	}
-	x, y := ebiten.CursorPosition()
-	if y >= 0 && y < int(app.barHeight()) {
-		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-			layout := app.tabBar.Layout(app.width, app.dsf, app.active, len(app.tabs))
-			action := layout.Hit(float64(x), float64(y))
-			switch action.Kind {
-			case ui.TabAdd:
-				return true, app.addTab()
-			case ui.TabClose:
-				app.closeTab(action.Index)
-			case ui.TabSelect:
-				app.selectTab(action.Index)
-			}
+	return app.handleTabBar()
+}
 
-			return true, nil
+// handleTabBar answers clicks and wheel turns over the bar.
+func (app *terminalApp) handleTabBar() (bool, error) {
+	x, y := ebiten.CursorPosition()
+	if y < 0 || y >= int(app.barHeight()) {
+		return false, nil
+	}
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		layout := app.tabBar.Layout(app.width, app.dsf, app.active, len(app.tabs))
+		action := layout.Hit(float64(x), float64(y))
+		switch action.Kind {
+		case ui.TabAdd:
+			return true, app.addTab()
+		case ui.TabClose:
+			app.closeTab(action.Index)
+		case ui.TabSelect:
+			app.selectTab(action.Index)
 		}
-		_, wheel := ebiten.Wheel()
-		if wheel != 0 {
-			step := 1
-			if wheel > 0 {
-				step = -1
-			}
-			app.selectTab((app.active + step + len(app.tabs)) % len(app.tabs))
-			return true, nil
-		}
+		return true, nil
+	}
+	if _, wheel := ebiten.Wheel(); wheel > 0 {
+		app.cycleTab(-1)
+		return true, nil
+	} else if wheel < 0 {
+		app.cycleTab(1)
+		return true, nil
 	}
 	return false, nil
 }
@@ -210,11 +218,11 @@ func (app *terminalApp) handleTabKeys(m keys.Mods, pressed func(ebiten.Key) bool
 		}
 	}
 	if m.Ctrl && pressed(ebiten.KeyTab) {
-		step := 1
 		if m.Shift {
-			step = -1
+			app.cycleTab(-1)
+		} else {
+			app.cycleTab(1)
 		}
-		app.selectTab((app.active + step + len(app.tabs)) % len(app.tabs))
 		return true, nil
 	}
 	return false, nil

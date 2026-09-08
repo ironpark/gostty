@@ -32,6 +32,16 @@ func (tab *terminalTab) startCat() {
 		return
 	}
 	tab.cat = cat
+	tab.cat.SetMode(tab.settings.cat)
+}
+
+// setCatMode keeps the setting and the companion in step. The setting is what
+// a new tab inherits; the companion is what draws.
+func (tab *terminalTab) setCatMode(mode thecat.Mode) {
+	tab.settings.cat = mode
+	if tab.cat != nil {
+		tab.cat.SetMode(mode)
+	}
 }
 
 func (tab *terminalTab) updateCat() {
@@ -39,6 +49,8 @@ func (tab *terminalTab) updateCat() {
 	tab.cat.Update(tab.catGrid(), x, y, 1.0/float64(ebiten.TPS()))
 }
 
+// pokeCat reports whether this frame's click landed on the cat, which opens
+// the settings rather than starting a selection.
 func (tab *terminalTab) pokeCat() bool {
 	if !inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		return false
@@ -47,7 +59,7 @@ func (tab *terminalTab) pokeCat() bool {
 	if !tab.cat.PokeAt(x, y) {
 		return false
 	}
-	_ = tab.openSettings()
+	tab.panels.OpenSettings()
 	return true
 }
 

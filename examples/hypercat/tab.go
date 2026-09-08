@@ -21,8 +21,9 @@ type terminalTab struct {
 	vt     *gostty.Terminal
 	stream *gostty.Stream
 	state  *gostty.RenderState
-	images *gostty.KittyImages
 	cells  []gostty.RenderCell
+	// Kitty graphics: the placements for this frame and their textures.
+	images *imageCache
 	// Search matches in the viewport, one bool per cell, refreshed with the
 	// cells so the highlight never lags the text under it.
 	matchCells []bool
@@ -32,12 +33,9 @@ type terminalTab struct {
 
 	// Partial redraw. The grid is drawn into two layers, backgrounds and
 	// glyphs, so Kitty images can sit between them; a row is redrawn only
-	// when the render state says it changed, or when something drawn from
-	// this side -- theme, font, match highlight -- did.
+	// when it is in the redraw set.
 	bgLayer, textLayer *ebiten.Image
-	rowDirty           []bool
-	dirtyRows          []uint16
-	redrawAll          bool
+	redraw             redrawSet
 
 	// The process side.
 	shell *shellSession
@@ -78,15 +76,8 @@ type terminalTab struct {
 	// The cat that walks on this tab's output.
 	cat *thecat.Companion
 
-	// Kitty graphics: the placements for this frame and the textures they
-	// point at, kept across frames and keyed by the image's generation.
-	placements []gostty.KittyPlacement
-	textures   map[uint32]*texture
-	imageBuf   []byte
-
 	// Mouse and focus reporting: what the program is told about the pointer,
 	// as opposed to what the window does with it itself.
-	report             []byte
 	mouseCol, mouseRow int
 	wheel              float64
 	mouseGrabbed       bool
@@ -95,11 +86,11 @@ type terminalTab struct {
 
 	// Per-frame input scratch, reused so a keystroke allocates nothing. The
 	// reader answers for the shell; `chars` is the search bar's, which wants
-	// the runes themselves rather than key events.
-	keys  keys.Reader
-	chars []rune
-	out   []byte
-	enc   outputWriter
+	// the runes themselves rather than key events. `out` is what the keys
+	// encode to, `report` what the mouse and focus do.
+	keys        keys.Reader
+	chars       []rune
+	out, report frameBuffer
 }
 
 // cursorState is what Draw needs to paint the cursor, read once per frame.
@@ -156,17 +147,20 @@ func (tab *terminalTab) updateInput() error {
 		if err != nil {
 			return err
 		}
-		// A click on the cat is the cat's, not the shell's: it must not also start
-		// a selection or be reported to the program.
-		if _, y := tab.cursorPosition(); y < 0 && !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		// The pointer above the grid is the tab bar's; a drag released there
+		// ends. A click on the cat is the cat's, not the shell's: it must not
+		// also start a selection or be reported to the program.
+		_, y := tab.cursorPosition()
+		onGrid := y >= 0
+		if !onGrid && !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 			tab.sel.dragging = false
 		}
-		if _, y := tab.cursorPosition(); y >= 0 && !tab.pokeCat() {
+		if onGrid && !tab.pokeCat() {
 			if err := tab.handleMouse(m); err != nil {
 				return err
 			}
 		}
-		if _, y := tab.cursorPosition(); y >= 0 {
+		if onGrid {
 			if err := tab.handleWheel(m); err != nil {
 				return err
 			}

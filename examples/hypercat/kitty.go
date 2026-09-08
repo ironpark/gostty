@@ -42,6 +42,16 @@ func decodePNG(data []byte) {
 // placement sized in cells (`c=`/`r=`) is measured in pixels through it, so
 // resizes go through `ResizeCells` rather than `Resize`.
 
+// imageCache is a tab's side of the protocol: the placements for this frame
+// and the textures they point at, kept across frames and keyed by image id.
+type imageCache struct {
+	vt         *gostty.Terminal
+	snapshot   *gostty.KittyImages
+	placements []gostty.KittyPlacement
+	textures   map[uint32]*texture
+	buf        []byte
+}
+
 // texture is one uploaded image, kept until its generation moves.
 type texture struct {
 	generation uint64
@@ -51,81 +61,102 @@ type texture struct {
 	live bool
 }
 
-// refreshImages rebuilds the placement snapshot for this frame.
-func (tab *terminalTab) refreshImages() error {
-	if err := tab.images.Update(tab.vt); err != nil {
+func newImageCache(vt *gostty.Terminal) (*imageCache, error) {
+	snapshot, err := gostty.NewKittyImages()
+	if err != nil {
+		return nil, err
+	}
+	return &imageCache{vt: vt, snapshot: snapshot, textures: make(map[uint32]*texture)}, nil
+}
+
+func (c *imageCache) close() {
+	if c == nil {
+		return
+	}
+	for _, tex := range c.textures {
+		if tex.image != nil {
+			tex.image.Deallocate()
+		}
+	}
+	clear(c.textures)
+	_ = c.snapshot.Close()
+}
+
+// refresh rebuilds the placement snapshot for this frame.
+func (c *imageCache) refresh() error {
+	if err := c.snapshot.Update(c.vt); err != nil {
 		return fmt.Errorf("kitty update: %w", err)
 	}
-	n, err := tab.images.PlacementCount()
+	n, err := c.snapshot.PlacementCount()
 	if err != nil {
 		return err
 	}
-	if uint(cap(tab.placements)) < n {
-		tab.placements = make([]gostty.KittyPlacement, n)
+	if uint(cap(c.placements)) < n {
+		c.placements = make([]gostty.KittyPlacement, n)
 	}
-	tab.placements = tab.placements[:n]
+	c.placements = c.placements[:n]
 	if n > 0 {
-		if _, err := tab.images.Placements(tab.placements); err != nil {
+		if _, err := c.snapshot.Placements(c.placements); err != nil {
 			return fmt.Errorf("kitty placements: %w", err)
 		}
 	}
-	return tab.uploadImages()
+	return c.upload()
 }
 
-// uploadImages makes sure every image referred to this frame has a texture, and
+// upload makes sure every image referred to this frame has a texture, and
 // drops the textures nothing refers to any more.
-func (tab *terminalTab) uploadImages() error {
-	for id := range tab.textures {
-		tab.textures[id].live = false
+func (c *imageCache) upload() error {
+	for id := range c.textures {
+		c.textures[id].live = false
 	}
-	for _, p := range tab.placements {
+	for _, p := range c.placements {
 		if p.Virtual {
 			continue
 		}
-		info, ok, err := tab.vt.KittyImage(p.ImageID)
+		info, ok, err := c.vt.KittyImage(p.ImageID)
 		if err != nil {
 			return err
 		}
 		if !ok {
 			continue
 		}
-		cached, hit := tab.textures[p.ImageID]
+		cached, hit := c.textures[p.ImageID]
 		if hit && cached.generation == info.Generation {
 			cached.live = true
 			continue
 		}
-		img, err := tab.decodeImage(p.ImageID, info)
+		img, err := c.decode(p.ImageID, info)
 		if err != nil {
 			// A malformed or unsupported image is the program's problem, not a
 			// reason to stop drawing. Cache the failure as a nil texture so it
 			// is not decoded again every frame.
 			img = nil
 		}
-		tab.textures[p.ImageID] = &texture{generation: info.Generation, image: img, live: true}
+		c.textures[p.ImageID] = &texture{generation: info.Generation, image: img, live: true}
 	}
-	for id, tex := range tab.textures {
+	for id, tex := range c.textures {
 		if !tex.live {
-			delete(tab.textures, id)
+			delete(c.textures, id)
 		}
 	}
 	return nil
 }
 
-// decodeImage pulls one image's bytes out of the terminal and turns them into
+// decode pulls one image's bytes out of the terminal and turns them into
 // something Ebitengine can draw.
-func (tab *terminalTab) decodeImage(id uint32, info gostty.KittyImage) (*ebiten.Image, error) {
+func (c *imageCache) decode(id uint32, info gostty.KittyImage) (*ebiten.Image, error) {
 	if info.DataLen == 0 {
 		return nil, fmt.Errorf("image %d has no data", id)
 	}
-	if uint64(cap(tab.imageBuf)) < info.DataLen {
-		tab.imageBuf = make([]byte, info.DataLen)
+	if uint64(cap(c.buf)) < info.DataLen {
+		c.buf = make([]byte, info.DataLen)
 	}
-	tab.imageBuf = tab.imageBuf[:info.DataLen]
-	n, err := tab.vt.KittyImageData(id, tab.imageBuf)
+	c.buf = c.buf[:info.DataLen]
+	n, err := c.vt.KittyImageData(id, c.buf)
 	if err != nil {
 		return nil, err
 	}
-	data := tab.imageBuf[:n]
+	data := c.buf[:n]
 
 	// The bytes are raw samples in the format ghostty stored them in. A PNG
 	// never gets here: the decoder installed at startup (`decodePNG`) turns
@@ -182,18 +213,19 @@ func rawToRGBA(data []byte, info gostty.KittyImage) (*image.RGBA, error) {
 	return out, nil
 }
 
-// drawImages draws the placements of one layer. The snapshot is already sorted
-// by z, so each layer is a slice of it, drawn in order.
+// draw paints the placements of one layer. The snapshot is already sorted by
+// z, so each layer is a slice of it, drawn in order. Cell size turns the
+// placement's grid position into pixels.
 //
 // Virtual placements are skipped: they are positioned by the cells that
 // reference them through unicode placeholders, and this example does not scan
 // for those, so it has nowhere to put them.
-func (tab *terminalTab) drawImages(screen *ebiten.Image, layer gostty.KittyLayer) {
-	for _, p := range tab.placements {
+func (c *imageCache) draw(screen *ebiten.Image, layer gostty.KittyLayer, cellW, cellH float64) {
+	for _, p := range c.placements {
 		if p.Layer != layer || p.Virtual {
 			continue
 		}
-		tex, ok := tab.textures[p.ImageID]
+		tex, ok := c.textures[p.ImageID]
 		if !ok || tex.image == nil {
 			continue
 		}
@@ -212,8 +244,8 @@ func (tab *terminalTab) drawImages(screen *ebiten.Image, layer gostty.KittyLayer
 		op := &ebiten.DrawImageOptions{Filter: ebiten.FilterLinear}
 		op.GeoM.Scale(float64(p.PixelWidth)/float64(w), float64(p.PixelHeight)/float64(h))
 		op.GeoM.Translate(
-			float64(p.ViewportCol)*tab.fonts.CellWidth+float64(p.XOffset),
-			float64(p.ViewportRow)*tab.fonts.CellHeight+float64(p.YOffset),
+			float64(p.ViewportCol)*cellW+float64(p.XOffset),
+			float64(p.ViewportRow)*cellH+float64(p.YOffset),
 		)
 		screen.DrawImage(src, op)
 	}

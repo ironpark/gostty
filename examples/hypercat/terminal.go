@@ -5,8 +5,6 @@ import (
 )
 
 func (tab *terminalTab) start() error {
-	tab.enc = outputWriter{tab: tab}
-
 	var err error
 	if tab.vt, err = gostty.NewTerminal(uint16(tab.cols), uint16(tab.rows)); err != nil {
 		return err
@@ -19,10 +17,9 @@ func (tab *terminalTab) start() error {
 	if tab.state, err = gostty.NewRenderState(); err != nil {
 		return err
 	}
-	if tab.images, err = gostty.NewKittyImages(); err != nil {
+	if tab.images, err = newImageCache(tab.vt); err != nil {
 		return err
 	}
-	tab.textures = make(map[uint32]*texture)
 
 	if err := tab.configureStream(); err != nil {
 		return err
@@ -49,13 +46,7 @@ func (tab *terminalTab) close() {
 		tab.textLayer.Deallocate()
 		tab.textLayer = nil
 	}
-	for _, tex := range tab.textures {
-		if tex.image != nil {
-			tex.image.Deallocate()
-		}
-	}
-	clear(tab.textures)
-	_ = tab.images.Close()
+	tab.images.close()
 	_ = tab.state.Close()
 	_ = tab.stream.Close()
 	_ = tab.vt.Close()

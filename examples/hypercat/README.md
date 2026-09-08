@@ -41,12 +41,19 @@ The main package is organized around the terminal's frame and resource lifecycle
 - `terminal.go` creates and releases terminal resources and configures the stream.
 - `session.go` owns the shell process, PTY, and cancellable output reader.
 - `events.go` handles terminal events such as title, bell, and progress.
-- `viewport.go` refreshes cells, dirty rows, colors, and the cursor.
+- `viewport.go` refreshes cells, colors, and the cursor, and owns `redrawSet`,
+  the rows the next frame has to repaint from either side of the boundary.
 - `layout.go` keeps the terminal and PTY sizes aligned with the window.
-- `mascot.go` connects terminal cells and settings actions to `thecat.Companion`.
+- `input.go` encodes keys through a per-frame `frameBuffer`; `report.go` does
+  the same for mouse and focus events the program has asked for.
+- `mouse.go` owns selection and the clipboard.
+- `render.go` draws the grid layers, cursor, and decorations.
+- `kitty.go` owns `imageCache`: the Kitty placement snapshot and its textures.
+- `mascot.go` connects terminal cells and the inherited `thecat.Mode` to `thecat.Companion`.
 - `ui_bridge.go` translates input and UI actions and connects the text renderer.
 - `search.go` owns native search handles, scanning, and match selection.
-- `settings.go` applies terminal settings and supplies display labels.
+- `settings.go` holds `tabSettings`, the one value a new tab inherits, and applies
+  each panel row.
 - `ui/search.go`, `ui/settings.go`, and `ui/tabbar.go` define the components.
 - `ui/panels.go` routes panel input; `ui/canvas.go` and `ui/theme.go` share drawing and colors.
 - `font_settings.go` applies the selected font and display scale to a tab.

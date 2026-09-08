@@ -49,7 +49,7 @@ func (tab *terminalTab) reportMouse(m keys.Mods) (bool, error) {
 		}
 	}
 
-	tab.report = tab.report[:0]
+	tab.report.reset()
 	for _, b := range mouseButtons {
 		switch {
 		case inpututil.IsMouseButtonJustPressed(b.ebiten):
@@ -90,10 +90,7 @@ func (tab *terminalTab) reportMouse(m keys.Mods) (bool, error) {
 	if len(tab.report) == 0 {
 		return tab.mouseGrabbed && pressed, nil
 	}
-	if _, err := tab.shell.pty.Write(tab.report); err != nil {
-		return false, err
-	}
-	return true, nil
+	return true, tab.report.flush(tab.shell.pty)
 }
 
 // How many lines one notch of the wheel moves, when this window is the one
@@ -148,7 +145,7 @@ func (tab *terminalTab) reportWheel(notches int, m keys.Mods) (bool, error) {
 	}
 	px, py := tab.cursorPosition()
 
-	tab.report = tab.report[:0]
+	tab.report.reset()
 	for range notches {
 		if err := tab.encodeMouse(input.MouseActionPress, button, true, px, py, m, false); err != nil {
 			return false, err
@@ -157,8 +154,7 @@ func (tab *terminalTab) reportWheel(notches int, m keys.Mods) (bool, error) {
 	if len(tab.report) == 0 {
 		return false, nil
 	}
-	_, err := tab.shell.pty.Write(tab.report)
-	return true, err
+	return true, tab.report.flush(tab.shell.pty)
 }
 
 // wheelAsArrows turns the wheel into arrow keys, which is what the alternate
@@ -169,13 +165,13 @@ func (tab *terminalTab) wheelAsArrows(notches int) error {
 	if notches < 0 {
 		key, notches = input.KeyArrowDown, -notches
 	}
-	tab.out = tab.out[:0]
+	tab.out.reset()
 	for range notches * linesPerNotch {
 		if err := tab.sendKey(key, nil, keys.Mods{}); err != nil {
 			return err
 		}
 	}
-	return tab.flushKeys()
+	return tab.out.flush(tab.shell.pty)
 }
 
 // encodeMouse describes one event to the binding and appends whatever it
@@ -189,7 +185,7 @@ func (tab *terminalTab) encodeMouse(action input.MouseAction, button input.Mouse
 		X:         float32(px),
 		Y:         float32(py),
 	}
-	return input.EncodeMouse(reportWriter{tab: tab}, tab.vt, ev, tab.renderSize(), anyPressed)
+	return input.EncodeMouse(&tab.report, tab.vt, ev, tab.renderSize(), anyPressed)
 }
 
 // renderSize describes the window to the encoder, which needs it to turn a
@@ -224,14 +220,12 @@ func (tab *terminalTab) reportFocus(focused bool) error {
 			if focused {
 				event = input.FocusEventGained
 			}
-			tab.report = tab.report[:0]
-			if err := input.EncodeFocus(reportWriter{tab: tab}, event); err != nil {
+			tab.report.reset()
+			if err := input.EncodeFocus(&tab.report, event); err != nil {
 				return err
 			}
-			if len(tab.report) > 0 {
-				if _, err := tab.shell.pty.Write(tab.report); err != nil {
-					return err
-				}
+			if err := tab.report.flush(tab.shell.pty); err != nil {
+				return err
 			}
 		}
 	}
@@ -239,13 +233,4 @@ func (tab *terminalTab) reportFocus(focused bool) error {
 		tab.focusedFrames++
 	}
 	return nil
-}
-
-// reportWriter appends to the frame's report buffer, so an event that the
-// program did not ask for costs nothing but a call.
-type reportWriter struct{ tab *terminalTab }
-
-func (w reportWriter) Write(p []byte) (int, error) {
-	w.tab.report = append(w.tab.report, p...)
-	return len(p), nil
 }

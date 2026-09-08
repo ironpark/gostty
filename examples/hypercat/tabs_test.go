@@ -11,6 +11,7 @@ import (
 	"github.com/ironpark/gostty"
 	"github.com/ironpark/gostty/examples/hypercat/fonts"
 	"github.com/ironpark/gostty/examples/hypercat/keys"
+	"github.com/ironpark/gostty/examples/hypercat/thecat"
 )
 
 func newTabTestApp(t *testing.T) *terminalApp {
@@ -36,6 +37,7 @@ func TestTabsKeepIndependentTerminalsAndShareClipboard(t *testing.T) {
 	app := newTabTestApp(t)
 	first := app.current()
 	first.panels.Search.Query = []rune("first search")
+	first.setCatMode(thecat.ModeHyper)
 	if err := app.addTab(); err != nil {
 		t.Fatal(err)
 	}
@@ -45,6 +47,12 @@ func TestTabsKeepIndependentTerminalsAndShareClipboard(t *testing.T) {
 	}
 	if len(second.panels.Search.Query) != 0 {
 		t.Fatal("search state leaked to new tab")
+	}
+	if second.settings.cat != thecat.ModeHyper || (second.cat != nil && second.cat.Mode() != thecat.ModeHyper) {
+		t.Fatal("new tab did not inherit the cat mode")
+	}
+	if second.fonts != first.fonts || second.settings.size != first.settings.size {
+		t.Fatal("new tab did not inherit the fonts")
 	}
 	if err := first.stream.Feed([]byte("first")); err != nil {
 		t.Fatal(err)

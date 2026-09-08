@@ -38,15 +38,16 @@ func (tab *terminalTab) Draw(screen *ebiten.Image) {
 	// A placement's layer says where in the stack it belongs, which is the
 	// whole reason the protocol gives it a z: under the cell backgrounds,
 	// between them and the text, or over the text.
-	tab.drawImages(screen, gostty.KittyLayerBelowBg)
+	cellW, cellH := tab.fonts.CellWidth, tab.fonts.CellHeight
+	tab.images.draw(screen, gostty.KittyLayerBelowBg, cellW, cellH)
 	if tab.bgLayer != nil {
 		screen.DrawImage(tab.bgLayer, nil)
 	}
-	tab.drawImages(screen, gostty.KittyLayerBelowText)
+	tab.images.draw(screen, gostty.KittyLayerBelowText, cellW, cellH)
 	if tab.textLayer != nil {
 		screen.DrawImage(tab.textLayer, nil)
 	}
-	tab.drawImages(screen, gostty.KittyLayerAboveText)
+	tab.images.draw(screen, gostty.KittyLayerAboveText, cellW, cellH)
 	tab.drawCursor(screen)
 	tab.drawCat(screen)
 	tab.drawUI(screen)
@@ -68,27 +69,25 @@ func (tab *terminalTab) drawGrid() {
 		}
 		tab.bgLayer = ebiten.NewImage(w, h)
 		tab.textLayer = ebiten.NewImage(w, h)
-		tab.redrawAll = true
+		tab.redraw.markAll()
 	}
-	if tab.redrawAll {
+	if tab.redraw.all {
 		tab.bgLayer.Clear()
 		tab.textLayer.Clear()
 		for row := 0; row < tab.rows; row++ {
 			tab.drawRow(row)
 		}
-		tab.redrawAll = false
-		clear(tab.rowDirty)
+		tab.redraw.clear()
 		return
 	}
-	for row, dirty := range tab.rowDirty {
-		if !dirty || row >= tab.rows {
+	for row := range tab.rows {
+		if !tab.redraw.take(row) {
 			continue
 		}
 		rect := image.Rect(0, int(float64(row)*tab.fonts.CellHeight), w, int(float64(row+1)*tab.fonts.CellHeight)+1)
 		tab.bgLayer.SubImage(rect).(*ebiten.Image).Clear()
 		tab.textLayer.SubImage(rect).(*ebiten.Image).Clear()
 		tab.drawRow(row)
-		tab.rowDirty[row] = false
 	}
 }
 

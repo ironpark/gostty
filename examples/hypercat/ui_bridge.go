@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -58,8 +57,6 @@ func (tab *terminalTab) applyUIActions(result ui.Actions) (bool, error) {
 	return result.Consumed, nil
 }
 
-func (tab *terminalTab) openSettings() error { tab.panels.OpenSettings(); return nil }
-
 func (tab *terminalTab) currentTheme() ui.Theme { return ui.ThemeAt(tab.settings.theme) }
 func (tab *terminalTab) colorScheme() gostty.ColorScheme {
 	if tab.currentTheme().Light(tab.terminalBg) {
@@ -82,7 +79,7 @@ func (tab *terminalTab) canvas(screen *ebiten.Image) ui.Canvas {
 func (tab *terminalTab) drawUI(screen *ebiten.Image) {
 	values := ui.SettingsValues{}
 	if tab.panels.Mode == ui.Settings {
-		values = ui.SettingsValues{tab.fontLabel(), fmt.Sprintf("%.0f px", tab.settings.size), tab.themeLabel(), tab.catLabel()}
+		values = tab.settingsValues()
 	}
 	tab.panels.Draw(tab.canvas(screen), values)
 }

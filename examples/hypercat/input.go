@@ -1,12 +1,40 @@
 package main
 
 import (
+	"io"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/ironpark/gostty"
 	"github.com/ironpark/gostty/examples/hypercat/keys"
 	"github.com/ironpark/gostty/input"
 )
+
+// frameBuffer collects what one frame's encoders write before it goes to the
+// pty. EncodeKey and EncodeMouse write at most a few bytes each, and a
+// bytes.Buffer per event is more machinery than that deserves; one of these
+// lives on the tab so nothing is allocated per key or per report.
+//
+// Every path that encodes into one truncates it first rather than trusting the
+// last one to have emptied it. That is also what discards a partial encode left
+// behind by an error.
+type frameBuffer []byte
+
+func (b *frameBuffer) Write(p []byte) (int, error) {
+	*b = append(*b, p...)
+	return len(p), nil
+}
+
+func (b *frameBuffer) reset() { *b = (*b)[:0] }
+
+// flush writes the buffer to the pty, if anything was encoded into it.
+func (b *frameBuffer) flush(w io.Writer) error {
+	if len(*b) == 0 {
+		return nil
+	}
+	_, err := w.Write(*b)
+	return err
+}
 
 // handleInput turns this frame's key presses into bytes for the pty.
 //
@@ -16,7 +44,7 @@ import (
 // terminal, so this only has to say which key was pressed. Which keys those are
 // is the `keys` package's problem.
 func (tab *terminalTab) handleInput(m keys.Mods) error {
-	tab.out = tab.out[:0]
+	tab.out.reset()
 
 	// Copy and paste are the two bindings this emulator keeps for itself.
 	// Ctrl+Shift+C/V, or Cmd+C/V where that is the convention.
@@ -50,36 +78,12 @@ func (tab *terminalTab) handleInput(m keys.Mods) error {
 	if err := tab.vt.ScrollViewport(gostty.ScrollViewportBottom()); err != nil {
 		return err
 	}
-	return tab.flushKeys()
-}
-
-// flushKeys writes whatever the key encoders appended to the frame's buffer.
-//
-// The buffer is shared by every path that encodes keys -- typing, and the wheel
-// turning into arrow keys on the alternate screen -- so each one truncates it
-// before it starts rather than trusting the last one to have emptied it. That
-// is also what discards a partial encode left behind by an error.
-func (tab *terminalTab) flushKeys() error {
-	if len(tab.out) == 0 {
-		return nil
-	}
-	_, err := tab.shell.pty.Write(tab.out)
-	return err
+	return tab.out.flush(tab.shell.pty)
 }
 
 // sendKey describes one key press to the binding and appends whatever it
 // encodes to this frame's output.
 func (tab *terminalTab) sendKey(key input.Key, text []byte, m keys.Mods) error {
 	ev := input.KeyEvent{Action: input.KeyActionPress, Key: key, Mods: m.KeyMods()}
-	return input.EncodeKey(tab.enc, tab.vt, ev, string(text))
-}
-
-// outputWriter appends to the frame's output buffer. EncodeKey writes at most a
-// few bytes and a bytes.Buffer per keystroke is more machinery than that
-// deserves; one of these lives on the tab so nothing is allocated per key.
-type outputWriter struct{ tab *terminalTab }
-
-func (w outputWriter) Write(p []byte) (int, error) {
-	w.tab.out = append(w.tab.out, p...)
-	return len(p), nil
+	return input.EncodeKey(&tab.out, tab.vt, ev, string(text))
 }

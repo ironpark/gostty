@@ -130,18 +130,14 @@ func (tab *terminalTab) refreshMatches() error {
 // frame. The highlight is drawn here, not by the terminal, so the render
 // state's own dirty flags do not know about it.
 func (tab *terminalTab) markMatchChanges(prev []bool) {
-	for i := range tab.matchCells {
-		was := i < len(prev) && prev[i]
-		if was != tab.matchCells[i] && tab.cols > 0 {
-			row := i / tab.cols
-			if row < len(tab.rowDirty) {
-				tab.rowDirty[row] = true
-			}
-		}
+	if tab.cols == 0 {
+		return
 	}
-	for i := len(tab.matchCells); i < len(prev); i++ {
-		if prev[i] && tab.cols > 0 && i/tab.cols < len(tab.rowDirty) {
-			tab.rowDirty[i/tab.cols] = true
+	for i := range max(len(prev), len(tab.matchCells)) {
+		was := i < len(prev) && prev[i]
+		is := i < len(tab.matchCells) && tab.matchCells[i]
+		if was != is {
+			tab.redraw.mark(i / tab.cols)
 		}
 	}
 }

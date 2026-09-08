@@ -13,7 +13,7 @@ func (tab *terminalTab) setFont(family int, size float64) error {
 	if len(tab.settings.families) == 0 {
 		return nil
 	}
-	family = min(max(family, 0), len(tab.settings.families)-1)
+	family = tab.settings.clampFamily(family)
 	if family == tab.settings.family && size == tab.settings.size {
 		return nil
 	}
@@ -29,12 +29,8 @@ func (tab *terminalTab) setFont(family int, size float64) error {
 // scale factor. This is also called when the window moves to a display with a
 // different one.
 func (tab *terminalTab) applyFont() {
-	tab.redrawAll = true
-	var family *fonts.Family
-	if len(tab.settings.families) > 0 {
-		family = tab.settings.families[min(tab.settings.family, len(tab.settings.families)-1)]
-	}
-	tab.fonts = fonts.Load(family, tab.settings.size*tab.dsf)
+	tab.redraw.markAll()
+	tab.fonts = fonts.Load(tab.settings.currentFamily(), tab.settings.size*tab.dsf)
 	// The grid is measured in cells and the cell just changed shape, so the
 	// window holds a different number of them. Layout is where that is worked
 	// out; this only has to say that the answer it cached is stale, because the

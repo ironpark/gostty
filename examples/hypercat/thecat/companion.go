@@ -33,7 +33,52 @@ func NewCompanion(grid GridWorld) (*Companion, error) {
 	return &Companion{Cat: cat, GridWorld: grid, enabled: true}, nil
 }
 
+// Mode is the companion's setting: on, tireless, or hidden. The zero value is
+// the default, so a companion built without one still gets a cat.
+type Mode int
+
+const (
+	ModeOn Mode = iota
+	ModeHyper
+	ModeOff
+	modeCount
+)
+
+// Step wraps around the modes in either direction.
+func (m Mode) Step(delta int) Mode {
+	n := int(modeCount)
+	return Mode(((int(m)+delta)%n + n) % n)
+}
+
+func (m Mode) String() string {
+	switch m {
+	case ModeHyper:
+		return "hyper"
+	case ModeOff:
+		return "off"
+	default:
+		return "on"
+	}
+}
+
 func (c *Companion) Enabled() bool { return c != nil && c.enabled }
+
+// Mode derives the setting from the two switches it drives.
+func (c *Companion) Mode() Mode {
+	switch {
+	case !c.Enabled():
+		return ModeOff
+	case c.Hyper():
+		return ModeHyper
+	default:
+		return ModeOn
+	}
+}
+
+func (c *Companion) SetMode(m Mode) {
+	c.SetEnabled(m != ModeOff)
+	c.SetHyper(m == ModeHyper)
+}
 
 func (c *Companion) SetEnabled(on bool) {
 	c.enabled = on
