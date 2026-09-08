@@ -13,6 +13,9 @@ import "github.com/ironpark/gostty/internal/raw"
 // Callback callback thread: caller; it runs on the thread that initiated the native call.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
 func OnPngDecodeRequest(callback PngDecodeHandler) {
+	if callback == nil {
+		panic(&CallbackError{Operation: "OnPngDecodeRequest", Callback: "callback", Err: ErrNilCallback})
+	}
 	callbackHandle := zigoNewPngDecodeHandlerHandle(callback)
 	raw.SysOnPngDecodeRequest(uintptr(callbackHandle))
 	if zigoCallbackPanicPending() {
@@ -40,6 +43,9 @@ func ReplyPngImage(width uint32, height uint32, rgba []byte) error {
 // Callback callback thread: caller; it runs on the thread that initiated the native call.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
 func OnSecureRandomRequest(callback SecureRandomHandler) {
+	if callback == nil {
+		panic(&CallbackError{Operation: "OnSecureRandomRequest", Callback: "callback", Err: ErrNilCallback})
+	}
 	callbackHandle := zigoNewSecureRandomHandlerHandle(callback)
 	raw.SysOnSecureRandomRequest(uintptr(callbackHandle))
 	if zigoCallbackPanicPending() {

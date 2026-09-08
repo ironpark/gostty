@@ -58,44 +58,31 @@ const (
 	ColorNameBrightWhite ColorName = 15
 )
 
+var zigoColorNameNames = [16]string{
+	0:  "black",
+	1:  "red",
+	2:  "green",
+	3:  "yellow",
+	4:  "blue",
+	5:  "magenta",
+	6:  "cyan",
+	7:  "white",
+	8:  "bright_black",
+	9:  "bright_red",
+	10: "bright_green",
+	11: "bright_yellow",
+	12: "bright_blue",
+	13: "bright_magenta",
+	14: "bright_cyan",
+	15: "bright_white",
+}
+
 // String returns the Zig tag name.
 func (value ColorName) String() string {
-	switch value {
-	case ColorNameBlack:
-		return "black"
-	case ColorNameRed:
-		return "red"
-	case ColorNameGreen:
-		return "green"
-	case ColorNameYellow:
-		return "yellow"
-	case ColorNameBlue:
-		return "blue"
-	case ColorNameMagenta:
-		return "magenta"
-	case ColorNameCyan:
-		return "cyan"
-	case ColorNameWhite:
-		return "white"
-	case ColorNameBrightBlack:
-		return "bright_black"
-	case ColorNameBrightRed:
-		return "bright_red"
-	case ColorNameBrightGreen:
-		return "bright_green"
-	case ColorNameBrightYellow:
-		return "bright_yellow"
-	case ColorNameBrightBlue:
-		return "bright_blue"
-	case ColorNameBrightMagenta:
-		return "bright_magenta"
-	case ColorNameBrightCyan:
-		return "bright_cyan"
-	case ColorNameBrightWhite:
-		return "bright_white"
-	default:
-		return "ColorName(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 15 {
+		return zigoColorNameNames[uint64(value)]
 	}
+	return "ColorName(" + strconv.Itoa(int(value)) + ")"
 }
 
 // ParseColorName returns the ColorName named by text, which is a Zig tag name.
@@ -182,41 +169,7 @@ func ColorNameValues() []ColorName {
 
 // IsKnown reports whether value is an exported tag; unknown open-enum values return false.
 func (value ColorName) IsKnown() bool {
-	switch value {
-	case ColorNameBlack:
-		return true
-	case ColorNameRed:
-		return true
-	case ColorNameGreen:
-		return true
-	case ColorNameYellow:
-		return true
-	case ColorNameBlue:
-		return true
-	case ColorNameMagenta:
-		return true
-	case ColorNameCyan:
-		return true
-	case ColorNameWhite:
-		return true
-	case ColorNameBrightBlack:
-		return true
-	case ColorNameBrightRed:
-		return true
-	case ColorNameBrightGreen:
-		return true
-	case ColorNameBrightYellow:
-		return true
-	case ColorNameBrightBlue:
-		return true
-	case ColorNameBrightMagenta:
-		return true
-	case ColorNameBrightCyan:
-		return true
-	case ColorNameBrightWhite:
-		return true
-	}
-	return false
+	return value >= 0 && value <= 15
 }
 
 // PointTag represents the corresponding Zig enum.
@@ -233,20 +186,19 @@ const (
 	PointTagHistory PointTag = 3
 )
 
+var zigoPointTagNames = [4]string{
+	0: "active",
+	1: "viewport",
+	2: "screen",
+	3: "history",
+}
+
 // String returns the Zig tag name.
 func (value PointTag) String() string {
-	switch value {
-	case PointTagActive:
-		return "active"
-	case PointTagViewport:
-		return "viewport"
-	case PointTagScreen:
-		return "screen"
-	case PointTagHistory:
-		return "history"
-	default:
-		return "PointTag(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 3 {
+		return zigoPointTagNames[uint64(value)]
 	}
+	return "PointTag(" + strconv.Itoa(int(value)) + ")"
 }
 
 // ParsePointTag returns the PointTag named by text, which is a Zig tag name.
@@ -293,20 +245,19 @@ const (
 	CursorStyleBlockHollow CursorStyle = 3
 )
 
+var zigoCursorStyleNames = [4]string{
+	0: "bar",
+	1: "block",
+	2: "underline",
+	3: "block_hollow",
+}
+
 // String returns the Zig tag name.
 func (value CursorStyle) String() string {
-	switch value {
-	case CursorStyleBar:
-		return "bar"
-	case CursorStyleBlock:
-		return "block"
-	case CursorStyleUnderline:
-		return "underline"
-	case CursorStyleBlockHollow:
-		return "block_hollow"
-	default:
-		return "CursorStyle(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 3 {
+		return zigoCursorStyleNames[uint64(value)]
 	}
+	return "CursorStyle(" + strconv.Itoa(int(value)) + ")"
 }
 
 // ParseCursorStyle returns the CursorStyle named by text, which is a Zig tag name.
@@ -359,26 +310,22 @@ const (
 	CursorStyleReqSteadyBar CursorStyleReq = 6
 )
 
+var zigoCursorStyleReqNames = [7]string{
+	0: "default",
+	1: "blinking_block",
+	2: "steady_block",
+	3: "blinking_underline",
+	4: "steady_underline",
+	5: "blinking_bar",
+	6: "steady_bar",
+}
+
 // String returns the Zig tag name.
 func (value CursorStyleReq) String() string {
-	switch value {
-	case CursorStyleReqDefault:
-		return "default"
-	case CursorStyleReqBlinkingBlock:
-		return "blinking_block"
-	case CursorStyleReqSteadyBlock:
-		return "steady_block"
-	case CursorStyleReqBlinkingUnderline:
-		return "blinking_underline"
-	case CursorStyleReqSteadyUnderline:
-		return "steady_underline"
-	case CursorStyleReqBlinkingBar:
-		return "blinking_bar"
-	case CursorStyleReqSteadyBar:
-		return "steady_bar"
-	default:
-		return "CursorStyleReq(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 6 {
+		return zigoCursorStyleReqNames[uint64(value)]
 	}
+	return "CursorStyleReq(" + strconv.Itoa(int(value)) + ")"
 }
 
 // EraseDisplay represents the corresponding Zig enum.
@@ -410,9 +357,8 @@ func (value EraseDisplay) String() string {
 		return "scrollback"
 	case EraseDisplayScrollComplete:
 		return "scroll_complete"
-	default:
-		return "EraseDisplay(" + strconv.Itoa(int(value)) + ")"
 	}
+	return "EraseDisplay(" + strconv.Itoa(int(value)) + ")"
 }
 
 // EraseLine represents the corresponding Zig open enum; values outside the named constants are valid.
@@ -429,20 +375,21 @@ const (
 	EraseLineRightUnlessPendingWrap EraseLine = 4
 )
 
+var zigoEraseLineNames = [5]string{
+	0: "right",
+	1: "left",
+	2: "complete",
+	4: "right_unless_pending_wrap",
+}
+
 // String returns the Zig tag name.
 func (value EraseLine) String() string {
-	switch value {
-	case EraseLineRight:
-		return "right"
-	case EraseLineLeft:
-		return "left"
-	case EraseLineComplete:
-		return "complete"
-	case EraseLineRightUnlessPendingWrap:
-		return "right_unless_pending_wrap"
-	default:
-		return "EraseLine(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 4 {
+		if name := zigoEraseLineNames[uint64(value)]; name != "" {
+			return name
+		}
 	}
+	return "EraseLine(" + strconv.Itoa(int(value)) + ")"
 }
 
 // ParseEraseLine returns the EraseLine named by text, which is a Zig tag name.
@@ -516,16 +463,19 @@ const (
 	TabClearAll TabClear = 3
 )
 
+var zigoTabClearNames = [4]string{
+	0: "current",
+	3: "all",
+}
+
 // String returns the Zig tag name.
 func (value TabClear) String() string {
-	switch value {
-	case TabClearCurrent:
-		return "current"
-	case TabClearAll:
-		return "all"
-	default:
-		return "TabClear(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 3 {
+		if name := zigoTabClearNames[uint64(value)]; name != "" {
+			return name
+		}
 	}
+	return "TabClear(" + strconv.Itoa(int(value)) + ")"
 }
 
 // ParseTabClear returns the TabClear named by text, which is a Zig tag name.
@@ -591,18 +541,18 @@ const (
 	ProtectedModeDec ProtectedMode = 2
 )
 
+var zigoProtectedModeNames = [3]string{
+	0: "off",
+	1: "iso",
+	2: "dec",
+}
+
 // String returns the Zig tag name.
 func (value ProtectedMode) String() string {
-	switch value {
-	case ProtectedModeOff:
-		return "off"
-	case ProtectedModeIso:
-		return "iso"
-	case ProtectedModeDec:
-		return "dec"
-	default:
-		return "ProtectedMode(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 2 {
+		return zigoProtectedModeNames[uint64(value)]
 	}
+	return "ProtectedMode(" + strconv.Itoa(int(value)) + ")"
 }
 
 // ScreenKey represents the corresponding Zig enum.
@@ -615,16 +565,17 @@ const (
 	ScreenKeyAlternate ScreenKey = 1
 )
 
+var zigoScreenKeyNames = [2]string{
+	0: "primary",
+	1: "alternate",
+}
+
 // String returns the Zig tag name.
 func (value ScreenKey) String() string {
-	switch value {
-	case ScreenKeyPrimary:
-		return "primary"
-	case ScreenKeyAlternate:
-		return "alternate"
-	default:
-		return "ScreenKey(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 1 {
+		return zigoScreenKeyNames[uint64(value)]
 	}
+	return "ScreenKey(" + strconv.Itoa(int(value)) + ")"
 }
 
 // SwitchScreenMode represents the corresponding Zig enum.
@@ -639,18 +590,18 @@ const (
 	SwitchScreenMode1049 SwitchScreenMode = 2
 )
 
+var zigoSwitchScreenModeNames = [3]string{
+	0: "47",
+	1: "1047",
+	2: "1049",
+}
+
 // String returns the Zig tag name.
 func (value SwitchScreenMode) String() string {
-	switch value {
-	case SwitchScreenMode47:
-		return "47"
-	case SwitchScreenMode1047:
-		return "1047"
-	case SwitchScreenMode1049:
-		return "1049"
-	default:
-		return "SwitchScreenMode(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 2 {
+		return zigoSwitchScreenModeNames[uint64(value)]
 	}
+	return "SwitchScreenMode(" + strconv.Itoa(int(value)) + ")"
 }
 
 // Mode represents the corresponding Zig enum.
@@ -834,9 +785,8 @@ func (value Mode) String() string {
 		return "in_band_size_reports"
 	case ModeKittyPasteEvents:
 		return "kitty_paste_events"
-	default:
-		return "Mode(" + strconv.Itoa(int(value)) + ")"
 	}
+	return "Mode(" + strconv.Itoa(int(value)) + ")"
 }
 
 // ParseMode returns the Mode named by text, which is a Zig tag name.
@@ -1101,18 +1051,18 @@ const (
 	FormatterFormatHtml FormatterFormat = 2
 )
 
+var zigoFormatterFormatNames = [3]string{
+	0: "plain",
+	1: "vt",
+	2: "html",
+}
+
 // String returns the Zig tag name.
 func (value FormatterFormat) String() string {
-	switch value {
-	case FormatterFormatPlain:
-		return "plain"
-	case FormatterFormatVt:
-		return "vt"
-	case FormatterFormatHtml:
-		return "html"
-	default:
-		return "FormatterFormat(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 2 {
+		return zigoFormatterFormatNames[uint64(value)]
 	}
+	return "FormatterFormat(" + strconv.Itoa(int(value)) + ")"
 }
 
 // ParseFormatterFormat returns the FormatterFormat named by text, which is a Zig tag name.
@@ -1169,32 +1119,25 @@ const (
 	SelectionAdjustmentEndOfLine SelectionAdjustment = 9
 )
 
+var zigoSelectionAdjustmentNames = [10]string{
+	0: "left",
+	1: "right",
+	2: "up",
+	3: "down",
+	4: "home",
+	5: "end",
+	6: "page_up",
+	7: "page_down",
+	8: "beginning_of_line",
+	9: "end_of_line",
+}
+
 // String returns the Zig tag name.
 func (value SelectionAdjustment) String() string {
-	switch value {
-	case SelectionAdjustmentLeft:
-		return "left"
-	case SelectionAdjustmentRight:
-		return "right"
-	case SelectionAdjustmentUp:
-		return "up"
-	case SelectionAdjustmentDown:
-		return "down"
-	case SelectionAdjustmentHome:
-		return "home"
-	case SelectionAdjustmentEnd:
-		return "end"
-	case SelectionAdjustmentPageUp:
-		return "page_up"
-	case SelectionAdjustmentPageDown:
-		return "page_down"
-	case SelectionAdjustmentBeginningOfLine:
-		return "beginning_of_line"
-	case SelectionAdjustmentEndOfLine:
-		return "end_of_line"
-	default:
-		return "SelectionAdjustment(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 9 {
+		return zigoSelectionAdjustmentNames[uint64(value)]
 	}
+	return "SelectionAdjustment(" + strconv.Itoa(int(value)) + ")"
 }
 
 // ParseSelectionAdjustment returns the SelectionAdjustment named by text, which is a Zig tag name.
@@ -1239,424 +1182,6 @@ func (value *SelectionAdjustment) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// StreamEvent represents the corresponding Zig enum.
-type StreamEvent uint8
-
-const (
-	// StreamEventBell corresponds to the Zig tag bell.
-	StreamEventBell StreamEvent = 0
-	// StreamEventTitleChanged corresponds to the Zig tag title_changed.
-	StreamEventTitleChanged StreamEvent = 1
-	// StreamEventPwdChanged corresponds to the Zig tag pwd_changed.
-	StreamEventPwdChanged StreamEvent = 2
-	// StreamEventDesktopNotification corresponds to the Zig tag desktop_notification.
-	StreamEventDesktopNotification StreamEvent = 3
-	// StreamEventProgressReport corresponds to the Zig tag progress_report.
-	StreamEventProgressReport StreamEvent = 4
-	// StreamEventUnknownSequence corresponds to the Zig tag unknown_sequence.
-	StreamEventUnknownSequence StreamEvent = 5
-)
-
-// String returns the Zig tag name.
-func (value StreamEvent) String() string {
-	switch value {
-	case StreamEventBell:
-		return "bell"
-	case StreamEventTitleChanged:
-		return "title_changed"
-	case StreamEventPwdChanged:
-		return "pwd_changed"
-	case StreamEventDesktopNotification:
-		return "desktop_notification"
-	case StreamEventProgressReport:
-		return "progress_report"
-	case StreamEventUnknownSequence:
-		return "unknown_sequence"
-	default:
-		return "StreamEvent(" + strconv.Itoa(int(value)) + ")"
-	}
-}
-
-// ParseStreamEvent returns the StreamEvent named by text, which is a Zig tag name.
-func ParseStreamEvent(text string) (StreamEvent, error) {
-	switch text {
-	case "bell":
-		return StreamEventBell, nil
-	case "title_changed":
-		return StreamEventTitleChanged, nil
-	case "pwd_changed":
-		return StreamEventPwdChanged, nil
-	case "desktop_notification":
-		return StreamEventDesktopNotification, nil
-	case "progress_report":
-		return StreamEventProgressReport, nil
-	case "unknown_sequence":
-		return StreamEventUnknownSequence, nil
-	}
-	return 0, &EnumParseError{Type: "StreamEvent", Text: text}
-}
-
-// MarshalText implements encoding.TextMarshaler with the String spelling.
-func (value StreamEvent) MarshalText() ([]byte, error) {
-	return []byte(value.String()), nil
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler with ParseStreamEvent.
-func (value *StreamEvent) UnmarshalText(text []byte) error {
-	parsed, err := ParseStreamEvent(string(text))
-	if err != nil {
-		return err
-	}
-	*value = parsed
-	return nil
-}
-
-// ProgressState represents the corresponding Zig enum.
-type ProgressState uint8
-
-const (
-	// ProgressStateRemove corresponds to the Zig tag remove.
-	ProgressStateRemove ProgressState = 0
-	// ProgressStateSet corresponds to the Zig tag set.
-	ProgressStateSet ProgressState = 1
-	// ProgressStateError corresponds to the Zig tag error.
-	ProgressStateError ProgressState = 2
-	// ProgressStateIndeterminate corresponds to the Zig tag indeterminate.
-	ProgressStateIndeterminate ProgressState = 3
-	// ProgressStatePause corresponds to the Zig tag pause.
-	ProgressStatePause ProgressState = 4
-)
-
-// String returns the Zig tag name.
-func (value ProgressState) String() string {
-	switch value {
-	case ProgressStateRemove:
-		return "remove"
-	case ProgressStateSet:
-		return "set"
-	case ProgressStateError:
-		return "error"
-	case ProgressStateIndeterminate:
-		return "indeterminate"
-	case ProgressStatePause:
-		return "pause"
-	default:
-		return "ProgressState(" + strconv.Itoa(int(value)) + ")"
-	}
-}
-
-// ParseProgressState returns the ProgressState named by text, which is a Zig tag name.
-func ParseProgressState(text string) (ProgressState, error) {
-	switch text {
-	case "remove":
-		return ProgressStateRemove, nil
-	case "set":
-		return ProgressStateSet, nil
-	case "error":
-		return ProgressStateError, nil
-	case "indeterminate":
-		return ProgressStateIndeterminate, nil
-	case "pause":
-		return ProgressStatePause, nil
-	}
-	return 0, &EnumParseError{Type: "ProgressState", Text: text}
-}
-
-// MarshalText implements encoding.TextMarshaler with the String spelling.
-func (value ProgressState) MarshalText() ([]byte, error) {
-	return []byte(value.String()), nil
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler with ParseProgressState.
-func (value *ProgressState) UnmarshalText(text []byte) error {
-	parsed, err := ParseProgressState(string(text))
-	if err != nil {
-		return err
-	}
-	*value = parsed
-	return nil
-}
-
-// ColorScheme represents the corresponding Zig enum.
-type ColorScheme uint8
-
-const (
-	// ColorSchemeLight corresponds to the Zig tag light.
-	ColorSchemeLight ColorScheme = 0
-	// ColorSchemeDark corresponds to the Zig tag dark.
-	ColorSchemeDark ColorScheme = 1
-)
-
-// String returns the Zig tag name.
-func (value ColorScheme) String() string {
-	switch value {
-	case ColorSchemeLight:
-		return "light"
-	case ColorSchemeDark:
-		return "dark"
-	default:
-		return "ColorScheme(" + strconv.Itoa(int(value)) + ")"
-	}
-}
-
-// ParseColorScheme returns the ColorScheme named by text, which is a Zig tag name.
-func ParseColorScheme(text string) (ColorScheme, error) {
-	switch text {
-	case "light":
-		return ColorSchemeLight, nil
-	case "dark":
-		return ColorSchemeDark, nil
-	}
-	return 0, &EnumParseError{Type: "ColorScheme", Text: text}
-}
-
-// MarshalText implements encoding.TextMarshaler with the String spelling.
-func (value ColorScheme) MarshalText() ([]byte, error) {
-	return []byte(value.String()), nil
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler with ParseColorScheme.
-func (value *ColorScheme) UnmarshalText(text []byte) error {
-	parsed, err := ParseColorScheme(string(text))
-	if err != nil {
-		return err
-	}
-	*value = parsed
-	return nil
-}
-
-// DragEvent represents the corresponding Zig enum.
-type DragEvent uint8
-
-const (
-	// DragEventRegistration corresponds to the Zig tag registration.
-	DragEventRegistration DragEvent = 0
-	// DragEventAcceptance corresponds to the Zig tag acceptance.
-	DragEventAcceptance DragEvent = 1
-	// DragEventConcludedNone corresponds to the Zig tag concluded_none.
-	DragEventConcludedNone DragEvent = 2
-	// DragEventConcludedCopy corresponds to the Zig tag concluded_copy.
-	DragEventConcludedCopy DragEvent = 3
-	// DragEventConcludedMove corresponds to the Zig tag concluded_move.
-	DragEventConcludedMove DragEvent = 4
-)
-
-// String returns the Zig tag name.
-func (value DragEvent) String() string {
-	switch value {
-	case DragEventRegistration:
-		return "registration"
-	case DragEventAcceptance:
-		return "acceptance"
-	case DragEventConcludedNone:
-		return "concluded_none"
-	case DragEventConcludedCopy:
-		return "concluded_copy"
-	case DragEventConcludedMove:
-		return "concluded_move"
-	default:
-		return "DragEvent(" + strconv.Itoa(int(value)) + ")"
-	}
-}
-
-// ParseDragEvent returns the DragEvent named by text, which is a Zig tag name.
-func ParseDragEvent(text string) (DragEvent, error) {
-	switch text {
-	case "registration":
-		return DragEventRegistration, nil
-	case "acceptance":
-		return DragEventAcceptance, nil
-	case "concluded_none":
-		return DragEventConcludedNone, nil
-	case "concluded_copy":
-		return DragEventConcludedCopy, nil
-	case "concluded_move":
-		return DragEventConcludedMove, nil
-	}
-	return 0, &EnumParseError{Type: "DragEvent", Text: text}
-}
-
-// MarshalText implements encoding.TextMarshaler with the String spelling.
-func (value DragEvent) MarshalText() ([]byte, error) {
-	return []byte(value.String()), nil
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler with ParseDragEvent.
-func (value *DragEvent) UnmarshalText(text []byte) error {
-	parsed, err := ParseDragEvent(string(text))
-	if err != nil {
-		return err
-	}
-	*value = parsed
-	return nil
-}
-
-// DragOperation represents the corresponding Zig enum.
-type DragOperation uint8
-
-const (
-	// DragOperationNone corresponds to the Zig tag none.
-	DragOperationNone DragOperation = 0
-	// DragOperationCopy corresponds to the Zig tag copy.
-	DragOperationCopy DragOperation = 1
-	// DragOperationMove corresponds to the Zig tag move.
-	DragOperationMove DragOperation = 2
-)
-
-// String returns the Zig tag name.
-func (value DragOperation) String() string {
-	switch value {
-	case DragOperationNone:
-		return "none"
-	case DragOperationCopy:
-		return "copy"
-	case DragOperationMove:
-		return "move"
-	default:
-		return "DragOperation(" + strconv.Itoa(int(value)) + ")"
-	}
-}
-
-// ParseDragOperation returns the DragOperation named by text, which is a Zig tag name.
-func ParseDragOperation(text string) (DragOperation, error) {
-	switch text {
-	case "none":
-		return DragOperationNone, nil
-	case "copy":
-		return DragOperationCopy, nil
-	case "move":
-		return DragOperationMove, nil
-	}
-	return 0, &EnumParseError{Type: "DragOperation", Text: text}
-}
-
-// MarshalText implements encoding.TextMarshaler with the String spelling.
-func (value DragOperation) MarshalText() ([]byte, error) {
-	return []byte(value.String()), nil
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler with ParseDragOperation.
-func (value *DragOperation) UnmarshalText(text []byte) error {
-	parsed, err := ParseDragOperation(string(text))
-	if err != nil {
-		return err
-	}
-	*value = parsed
-	return nil
-}
-
-// ClipboardLocation represents the corresponding Zig open enum; values outside the named constants are valid.
-type ClipboardLocation int32
-
-const (
-	// ClipboardLocationStandard corresponds to the Zig tag standard.
-	ClipboardLocationStandard ClipboardLocation = 0
-	// ClipboardLocationSelection corresponds to the Zig tag selection.
-	ClipboardLocationSelection ClipboardLocation = 1
-	// ClipboardLocationPrimary corresponds to the Zig tag primary.
-	ClipboardLocationPrimary ClipboardLocation = 2
-)
-
-// String returns the Zig tag name.
-func (value ClipboardLocation) String() string {
-	switch value {
-	case ClipboardLocationStandard:
-		return "standard"
-	case ClipboardLocationSelection:
-		return "selection"
-	case ClipboardLocationPrimary:
-		return "primary"
-	default:
-		return "ClipboardLocation(" + strconv.Itoa(int(value)) + ")"
-	}
-}
-
-// ParseClipboardLocation returns the ClipboardLocation named by text, which is a Zig tag name.
-// Values outside the named constants are accepted in the ClipboardLocation(N) spelling String returns.
-func ParseClipboardLocation(text string) (ClipboardLocation, error) {
-	switch text {
-	case "standard":
-		return ClipboardLocationStandard, nil
-	case "selection":
-		return ClipboardLocationSelection, nil
-	case "primary":
-		return ClipboardLocationPrimary, nil
-	}
-	if strings.HasPrefix(text, "ClipboardLocation(") && strings.HasSuffix(text, ")") {
-		if number, err := strconv.ParseInt(text[len("ClipboardLocation("):len(text)-1], 10, 32); err == nil {
-			return ClipboardLocation(number), nil
-		}
-	}
-	return 0, &EnumParseError{Type: "ClipboardLocation", Text: text}
-}
-
-// MarshalText implements encoding.TextMarshaler with the String spelling.
-func (value ClipboardLocation) MarshalText() ([]byte, error) {
-	return []byte(value.String()), nil
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler with ParseClipboardLocation.
-func (value *ClipboardLocation) UnmarshalText(text []byte) error {
-	parsed, err := ParseClipboardLocation(string(text))
-	if err != nil {
-		return err
-	}
-	*value = parsed
-	return nil
-}
-
-// ClipboardLocationValues returns a fresh slice of known values in declaration order.
-func ClipboardLocationValues() []ClipboardLocation {
-	return []ClipboardLocation{
-		ClipboardLocationStandard,
-		ClipboardLocationSelection,
-		ClipboardLocationPrimary,
-	}
-}
-
-// IsKnown reports whether value is an exported tag; unknown open-enum values return false.
-func (value ClipboardLocation) IsKnown() bool {
-	switch value {
-	case ClipboardLocationStandard:
-		return true
-	case ClipboardLocationSelection:
-		return true
-	case ClipboardLocationPrimary:
-		return true
-	}
-	return false
-}
-
-// ClipboardDenial represents the corresponding Zig enum.
-type ClipboardDenial uint8
-
-const (
-	// ClipboardDenialDenied corresponds to the Zig tag denied.
-	ClipboardDenialDenied ClipboardDenial = 0
-	// ClipboardDenialUnsupported corresponds to the Zig tag unsupported.
-	ClipboardDenialUnsupported ClipboardDenial = 1
-	// ClipboardDenialBusy corresponds to the Zig tag busy.
-	ClipboardDenialBusy ClipboardDenial = 2
-	// ClipboardDenialIoError corresponds to the Zig tag io_error.
-	ClipboardDenialIoError ClipboardDenial = 3
-)
-
-// String returns the Zig tag name.
-func (value ClipboardDenial) String() string {
-	switch value {
-	case ClipboardDenialDenied:
-		return "denied"
-	case ClipboardDenialUnsupported:
-		return "unsupported"
-	case ClipboardDenialBusy:
-		return "busy"
-	case ClipboardDenialIoError:
-		return "io_error"
-	default:
-		return "ClipboardDenial(" + strconv.Itoa(int(value)) + ")"
-	}
-}
-
 // Underline represents the corresponding Zig enum.
 type Underline uint8
 
@@ -1675,24 +1200,21 @@ const (
 	UnderlineDashed Underline = 5
 )
 
+var zigoUnderlineNames = [6]string{
+	0: "none",
+	1: "single",
+	2: "double",
+	3: "curly",
+	4: "dotted",
+	5: "dashed",
+}
+
 // String returns the Zig tag name.
 func (value Underline) String() string {
-	switch value {
-	case UnderlineNone:
-		return "none"
-	case UnderlineSingle:
-		return "single"
-	case UnderlineDouble:
-		return "double"
-	case UnderlineCurly:
-		return "curly"
-	case UnderlineDotted:
-		return "dotted"
-	case UnderlineDashed:
-		return "dashed"
-	default:
-		return "Underline(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 5 {
+		return zigoUnderlineNames[uint64(value)]
 	}
+	return "Underline(" + strconv.Itoa(int(value)) + ")"
 }
 
 // AttributeTag represents the corresponding Zig enum.
@@ -1763,74 +1285,46 @@ const (
 	AttributeTagUnknown AttributeTag = 30
 )
 
+var zigoAttributeTagNames = [31]string{
+	0:  "unset",
+	1:  "bold",
+	2:  "reset_bold",
+	3:  "italic",
+	4:  "reset_italic",
+	5:  "faint",
+	6:  "underline",
+	7:  "underline_color_rgb",
+	8:  "underline_color_256",
+	9:  "reset_underline_color",
+	10: "overline",
+	11: "reset_overline",
+	12: "blink",
+	13: "reset_blink",
+	14: "inverse",
+	15: "reset_inverse",
+	16: "invisible",
+	17: "reset_invisible",
+	18: "strikethrough",
+	19: "reset_strikethrough",
+	20: "direct_color_fg",
+	21: "direct_color_bg",
+	22: "color_256_fg",
+	23: "color_256_bg",
+	24: "named_fg",
+	25: "named_bg",
+	26: "bright_named_fg",
+	27: "bright_named_bg",
+	28: "reset_fg",
+	29: "reset_bg",
+	30: "unknown",
+}
+
 // String returns the Zig tag name.
 func (value AttributeTag) String() string {
-	switch value {
-	case AttributeTagUnset:
-		return "unset"
-	case AttributeTagBold:
-		return "bold"
-	case AttributeTagResetBold:
-		return "reset_bold"
-	case AttributeTagItalic:
-		return "italic"
-	case AttributeTagResetItalic:
-		return "reset_italic"
-	case AttributeTagFaint:
-		return "faint"
-	case AttributeTagUnderline:
-		return "underline"
-	case AttributeTagUnderlineColorRgb:
-		return "underline_color_rgb"
-	case AttributeTagUnderlineColor256:
-		return "underline_color_256"
-	case AttributeTagResetUnderlineColor:
-		return "reset_underline_color"
-	case AttributeTagOverline:
-		return "overline"
-	case AttributeTagResetOverline:
-		return "reset_overline"
-	case AttributeTagBlink:
-		return "blink"
-	case AttributeTagResetBlink:
-		return "reset_blink"
-	case AttributeTagInverse:
-		return "inverse"
-	case AttributeTagResetInverse:
-		return "reset_inverse"
-	case AttributeTagInvisible:
-		return "invisible"
-	case AttributeTagResetInvisible:
-		return "reset_invisible"
-	case AttributeTagStrikethrough:
-		return "strikethrough"
-	case AttributeTagResetStrikethrough:
-		return "reset_strikethrough"
-	case AttributeTagDirectColorFg:
-		return "direct_color_fg"
-	case AttributeTagDirectColorBg:
-		return "direct_color_bg"
-	case AttributeTagColor256Fg:
-		return "color_256_fg"
-	case AttributeTagColor256Bg:
-		return "color_256_bg"
-	case AttributeTagNamedFg:
-		return "named_fg"
-	case AttributeTagNamedBg:
-		return "named_bg"
-	case AttributeTagBrightNamedFg:
-		return "bright_named_fg"
-	case AttributeTagBrightNamedBg:
-		return "bright_named_bg"
-	case AttributeTagResetFg:
-		return "reset_fg"
-	case AttributeTagResetBg:
-		return "reset_bg"
-	case AttributeTagUnknown:
-		return "unknown"
-	default:
-		return "AttributeTag(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 30 {
+		return zigoAttributeTagNames[uint64(value)]
 	}
+	return "AttributeTag(" + strconv.Itoa(int(value)) + ")"
 }
 
 // SearchDirection represents the corresponding Zig enum.
@@ -1843,16 +1337,17 @@ const (
 	SearchDirectionPrev SearchDirection = 1
 )
 
+var zigoSearchDirectionNames = [2]string{
+	0: "next",
+	1: "prev",
+}
+
 // String returns the Zig tag name.
 func (value SearchDirection) String() string {
-	switch value {
-	case SearchDirectionNext:
-		return "next"
-	case SearchDirectionPrev:
-		return "prev"
-	default:
-		return "SearchDirection(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 1 {
+		return zigoSearchDirectionNames[uint64(value)]
 	}
+	return "SearchDirection(" + strconv.Itoa(int(value)) + ")"
 }
 
 // SearchScroll represents the corresponding Zig enum.
@@ -1865,16 +1360,17 @@ const (
 	SearchScrollNone SearchScroll = 1
 )
 
+var zigoSearchScrollNames = [2]string{
+	0: "if_needed",
+	1: "none",
+}
+
 // String returns the Zig tag name.
 func (value SearchScroll) String() string {
-	switch value {
-	case SearchScrollIfNeeded:
-		return "if_needed"
-	case SearchScrollNone:
-		return "none"
-	default:
-		return "SearchScroll(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 1 {
+		return zigoSearchScrollNames[uint64(value)]
 	}
+	return "SearchScroll(" + strconv.Itoa(int(value)) + ")"
 }
 
 // SearchState represents the corresponding Zig enum.
@@ -1889,18 +1385,18 @@ const (
 	SearchStateComplete SearchState = 2
 )
 
+var zigoSearchStateNames = [3]string{
+	0: "running",
+	1: "feed_required",
+	2: "complete",
+}
+
 // String returns the Zig tag name.
 func (value SearchState) String() string {
-	switch value {
-	case SearchStateRunning:
-		return "running"
-	case SearchStateFeedRequired:
-		return "feed_required"
-	case SearchStateComplete:
-		return "complete"
-	default:
-		return "SearchState(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 2 {
+		return zigoSearchStateNames[uint64(value)]
 	}
+	return "SearchState(" + strconv.Itoa(int(value)) + ")"
 }
 
 // SearchProgress represents the corresponding Zig enum.
@@ -1915,18 +1411,18 @@ const (
 	SearchProgressBlocked SearchProgress = 2
 )
 
+var zigoSearchProgressNames = [3]string{
+	0: "complete",
+	1: "progress",
+	2: "blocked",
+}
+
 // String returns the Zig tag name.
 func (value SearchProgress) String() string {
-	switch value {
-	case SearchProgressComplete:
-		return "complete"
-	case SearchProgressProgress:
-		return "progress"
-	case SearchProgressBlocked:
-		return "blocked"
-	default:
-		return "SearchProgress(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 2 {
+		return zigoSearchProgressNames[uint64(value)]
 	}
+	return "SearchProgress(" + strconv.Itoa(int(value)) + ")"
 }
 
 // Charset represents the corresponding Zig enum.
@@ -1943,20 +1439,19 @@ const (
 	CharsetDecSpecial Charset = 3
 )
 
+var zigoCharsetNames = [4]string{
+	0: "utf8",
+	1: "ascii",
+	2: "british",
+	3: "dec_special",
+}
+
 // String returns the Zig tag name.
 func (value Charset) String() string {
-	switch value {
-	case CharsetUTF8:
-		return "utf8"
-	case CharsetAscii:
-		return "ascii"
-	case CharsetBritish:
-		return "british"
-	case CharsetDecSpecial:
-		return "dec_special"
-	default:
-		return "Charset(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 3 {
+		return zigoCharsetNames[uint64(value)]
 	}
+	return "Charset(" + strconv.Itoa(int(value)) + ")"
 }
 
 // CharsetSlot represents the corresponding Zig enum.
@@ -1973,20 +1468,19 @@ const (
 	CharsetSlotG3 CharsetSlot = 3
 )
 
+var zigoCharsetSlotNames = [4]string{
+	0: "G0",
+	1: "G1",
+	2: "G2",
+	3: "G3",
+}
+
 // String returns the Zig tag name.
 func (value CharsetSlot) String() string {
-	switch value {
-	case CharsetSlotG0:
-		return "G0"
-	case CharsetSlotG1:
-		return "G1"
-	case CharsetSlotG2:
-		return "G2"
-	case CharsetSlotG3:
-		return "G3"
-	default:
-		return "CharsetSlot(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 3 {
+		return zigoCharsetSlotNames[uint64(value)]
 	}
+	return "CharsetSlot(" + strconv.Itoa(int(value)) + ")"
 }
 
 // CharsetActiveSlot represents the corresponding Zig enum.
@@ -1999,16 +1493,17 @@ const (
 	CharsetActiveSlotGr CharsetActiveSlot = 1
 )
 
+var zigoCharsetActiveSlotNames = [2]string{
+	0: "GL",
+	1: "GR",
+}
+
 // String returns the Zig tag name.
 func (value CharsetActiveSlot) String() string {
-	switch value {
-	case CharsetActiveSlotGl:
-		return "GL"
-	case CharsetActiveSlotGr:
-		return "GR"
-	default:
-		return "CharsetActiveSlot(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 1 {
+		return zigoCharsetActiveSlotNames[uint64(value)]
 	}
+	return "CharsetActiveSlot(" + strconv.Itoa(int(value)) + ")"
 }
 
 // DeccolmMode represents the corresponding Zig enum.
@@ -2021,16 +1516,17 @@ const (
 	DeccolmMode132Cols DeccolmMode = 1
 )
 
+var zigoDeccolmModeNames = [2]string{
+	0: "80_cols",
+	1: "132_cols",
+}
+
 // String returns the Zig tag name.
 func (value DeccolmMode) String() string {
-	switch value {
-	case DeccolmMode80Cols:
-		return "80_cols"
-	case DeccolmMode132Cols:
-		return "132_cols"
-	default:
-		return "DeccolmMode(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 1 {
+		return zigoDeccolmModeNames[uint64(value)]
 	}
+	return "DeccolmMode(" + strconv.Itoa(int(value)) + ")"
 }
 
 // ScrollViewportTag represents the corresponding Zig enum.
@@ -2047,186 +1543,19 @@ const (
 	ScrollViewportTagRow ScrollViewportTag = 3
 )
 
+var zigoScrollViewportTagNames = [4]string{
+	0: "top",
+	1: "bottom",
+	2: "delta",
+	3: "row",
+}
+
 // String returns the Zig tag name.
 func (value ScrollViewportTag) String() string {
-	switch value {
-	case ScrollViewportTagTop:
-		return "top"
-	case ScrollViewportTagBottom:
-		return "bottom"
-	case ScrollViewportTagDelta:
-		return "delta"
-	case ScrollViewportTagRow:
-		return "row"
-	default:
-		return "ScrollViewportTag(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 3 {
+		return zigoScrollViewportTagNames[uint64(value)]
 	}
-}
-
-// CellWidth represents the corresponding Zig enum.
-type CellWidth uint8
-
-const (
-	// CellWidthNarrow corresponds to the Zig tag narrow.
-	CellWidthNarrow CellWidth = 0
-	// CellWidthWide corresponds to the Zig tag wide.
-	CellWidthWide CellWidth = 1
-	// CellWidthSpacerTail corresponds to the Zig tag spacer_tail.
-	CellWidthSpacerTail CellWidth = 2
-	// CellWidthSpacerHead corresponds to the Zig tag spacer_head.
-	CellWidthSpacerHead CellWidth = 3
-)
-
-// String returns the Zig tag name.
-func (value CellWidth) String() string {
-	switch value {
-	case CellWidthNarrow:
-		return "narrow"
-	case CellWidthWide:
-		return "wide"
-	case CellWidthSpacerTail:
-		return "spacer_tail"
-	case CellWidthSpacerHead:
-		return "spacer_head"
-	default:
-		return "CellWidth(" + strconv.Itoa(int(value)) + ")"
-	}
-}
-
-// RenderDirty represents the corresponding Zig enum.
-type RenderDirty uint8
-
-const (
-	// RenderDirtyClean corresponds to the Zig tag clean.
-	RenderDirtyClean RenderDirty = 0
-	// RenderDirtyPartial corresponds to the Zig tag partial.
-	RenderDirtyPartial RenderDirty = 1
-	// RenderDirtyFull corresponds to the Zig tag full.
-	RenderDirtyFull RenderDirty = 2
-)
-
-// String returns the Zig tag name.
-func (value RenderDirty) String() string {
-	switch value {
-	case RenderDirtyClean:
-		return "clean"
-	case RenderDirtyPartial:
-		return "partial"
-	case RenderDirtyFull:
-		return "full"
-	default:
-		return "RenderDirty(" + strconv.Itoa(int(value)) + ")"
-	}
-}
-
-// KittyLayer represents the corresponding Zig enum.
-type KittyLayer uint8
-
-const (
-	// KittyLayerBelowBg corresponds to the Zig tag below_bg.
-	KittyLayerBelowBg KittyLayer = 0
-	// KittyLayerBelowText corresponds to the Zig tag below_text.
-	KittyLayerBelowText KittyLayer = 1
-	// KittyLayerAboveText corresponds to the Zig tag above_text.
-	KittyLayerAboveText KittyLayer = 2
-)
-
-// String returns the Zig tag name.
-func (value KittyLayer) String() string {
-	switch value {
-	case KittyLayerBelowBg:
-		return "below_bg"
-	case KittyLayerBelowText:
-		return "below_text"
-	case KittyLayerAboveText:
-		return "above_text"
-	default:
-		return "KittyLayer(" + strconv.Itoa(int(value)) + ")"
-	}
-}
-
-// ParseKittyLayer returns the KittyLayer named by text, which is a Zig tag name.
-func ParseKittyLayer(text string) (KittyLayer, error) {
-	switch text {
-	case "below_bg":
-		return KittyLayerBelowBg, nil
-	case "below_text":
-		return KittyLayerBelowText, nil
-	case "above_text":
-		return KittyLayerAboveText, nil
-	}
-	return 0, &EnumParseError{Type: "KittyLayer", Text: text}
-}
-
-// MarshalText implements encoding.TextMarshaler with the String spelling.
-func (value KittyLayer) MarshalText() ([]byte, error) {
-	return []byte(value.String()), nil
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler with ParseKittyLayer.
-func (value *KittyLayer) UnmarshalText(text []byte) error {
-	parsed, err := ParseKittyLayer(string(text))
-	if err != nil {
-		return err
-	}
-	*value = parsed
-	return nil
-}
-
-// KittyFormat represents the corresponding Zig enum.
-type KittyFormat uint8
-
-const (
-	// KittyFormatRgb corresponds to the Zig tag rgb.
-	KittyFormatRgb KittyFormat = 0
-	// KittyFormatRgba corresponds to the Zig tag rgba.
-	KittyFormatRgba KittyFormat = 1
-	// KittyFormatPng corresponds to the Zig tag png.
-	KittyFormatPng KittyFormat = 2
-	// KittyFormatGrayAlpha corresponds to the Zig tag gray_alpha.
-	KittyFormatGrayAlpha KittyFormat = 3
-	// KittyFormatGray corresponds to the Zig tag gray.
-	KittyFormatGray KittyFormat = 4
-)
-
-// String returns the Zig tag name.
-func (value KittyFormat) String() string {
-	switch value {
-	case KittyFormatRgb:
-		return "rgb"
-	case KittyFormatRgba:
-		return "rgba"
-	case KittyFormatPng:
-		return "png"
-	case KittyFormatGrayAlpha:
-		return "gray_alpha"
-	case KittyFormatGray:
-		return "gray"
-	default:
-		return "KittyFormat(" + strconv.Itoa(int(value)) + ")"
-	}
-}
-
-// KittyCompression represents the corresponding Zig enum.
-type KittyCompression uint8
-
-const (
-	// KittyCompressionNone corresponds to the Zig tag none.
-	KittyCompressionNone KittyCompression = 0
-	// KittyCompressionZlibDeflate corresponds to the Zig tag zlib_deflate.
-	KittyCompressionZlibDeflate KittyCompression = 1
-)
-
-// String returns the Zig tag name.
-func (value KittyCompression) String() string {
-	switch value {
-	case KittyCompressionNone:
-		return "none"
-	case KittyCompressionZlibDeflate:
-		return "zlib_deflate"
-	default:
-		return "KittyCompression(" + strconv.Itoa(int(value)) + ")"
-	}
+	return "ScrollViewportTag(" + strconv.Itoa(int(value)) + ")"
 }
 
 // MouseTracking represents the corresponding Zig enum.
@@ -2245,22 +1574,20 @@ const (
 	MouseTrackingAny MouseTracking = 4
 )
 
+var zigoMouseTrackingNames = [5]string{
+	0: "none",
+	1: "x10",
+	2: "normal",
+	3: "button",
+	4: "any",
+}
+
 // String returns the Zig tag name.
 func (value MouseTracking) String() string {
-	switch value {
-	case MouseTrackingNone:
-		return "none"
-	case MouseTrackingX10:
-		return "x10"
-	case MouseTrackingNormal:
-		return "normal"
-	case MouseTrackingButton:
-		return "button"
-	case MouseTrackingAny:
-		return "any"
-	default:
-		return "MouseTracking(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 4 {
+		return zigoMouseTrackingNames[uint64(value)]
 	}
+	return "MouseTracking(" + strconv.Itoa(int(value)) + ")"
 }
 
 // ParseMouseTracking returns the MouseTracking named by text, which is a Zig tag name.
@@ -2311,22 +1638,20 @@ const (
 	MouseReportFormatSgrPixels MouseReportFormat = 4
 )
 
+var zigoMouseReportFormatNames = [5]string{
+	0: "x10",
+	1: "utf8",
+	2: "sgr",
+	3: "urxvt",
+	4: "sgr_pixels",
+}
+
 // String returns the Zig tag name.
 func (value MouseReportFormat) String() string {
-	switch value {
-	case MouseReportFormatX10:
-		return "x10"
-	case MouseReportFormatUTF8:
-		return "utf8"
-	case MouseReportFormatSgr:
-		return "sgr"
-	case MouseReportFormatUrxvt:
-		return "urxvt"
-	case MouseReportFormatSgrPixels:
-		return "sgr_pixels"
-	default:
-		return "MouseReportFormat(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 4 {
+		return zigoMouseReportFormatNames[uint64(value)]
 	}
+	return "MouseReportFormat(" + strconv.Itoa(int(value)) + ")"
 }
 
 // ParseMouseReportFormat returns the MouseReportFormat named by text, which is a Zig tag name.
@@ -2377,22 +1702,20 @@ const (
 	ModeReportPermanentlyReset ModeReport = 4
 )
 
+var zigoModeReportNames = [5]string{
+	0: "not_recognized",
+	1: "set",
+	2: "reset",
+	3: "permanently_set",
+	4: "permanently_reset",
+}
+
 // String returns the Zig tag name.
 func (value ModeReport) String() string {
-	switch value {
-	case ModeReportNotRecognized:
-		return "not_recognized"
-	case ModeReportSet:
-		return "set"
-	case ModeReportReset:
-		return "reset"
-	case ModeReportPermanentlySet:
-		return "permanently_set"
-	case ModeReportPermanentlyReset:
-		return "permanently_reset"
-	default:
-		return "ModeReport(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 4 {
+		return zigoModeReportNames[uint64(value)]
 	}
+	return "ModeReport(" + strconv.Itoa(int(value)) + ")"
 }
 
 // ParseModeReport returns the ModeReport named by text, which is a Zig tag name.
@@ -2441,20 +1764,19 @@ const (
 	GestureBehaviorOutput GestureBehavior = 3
 )
 
+var zigoGestureBehaviorNames = [4]string{
+	0: "cell",
+	1: "word",
+	2: "line",
+	3: "output",
+}
+
 // String returns the Zig tag name.
 func (value GestureBehavior) String() string {
-	switch value {
-	case GestureBehaviorCell:
-		return "cell"
-	case GestureBehaviorWord:
-		return "word"
-	case GestureBehaviorLine:
-		return "line"
-	case GestureBehaviorOutput:
-		return "output"
-	default:
-		return "GestureBehavior(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 3 {
+		return zigoGestureBehaviorNames[uint64(value)]
 	}
+	return "GestureBehavior(" + strconv.Itoa(int(value)) + ")"
 }
 
 // ParseGestureBehavior returns the GestureBehavior named by text, which is a Zig tag name.
@@ -2499,18 +1821,18 @@ const (
 	GestureAutoscrollDirectionDown GestureAutoscrollDirection = 2
 )
 
+var zigoGestureAutoscrollDirectionNames = [3]string{
+	0: "none",
+	1: "up",
+	2: "down",
+}
+
 // String returns the Zig tag name.
 func (value GestureAutoscrollDirection) String() string {
-	switch value {
-	case GestureAutoscrollDirectionNone:
-		return "none"
-	case GestureAutoscrollDirectionUp:
-		return "up"
-	case GestureAutoscrollDirectionDown:
-		return "down"
-	default:
-		return "GestureAutoscrollDirection(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 2 {
+		return zigoGestureAutoscrollDirectionNames[uint64(value)]
 	}
+	return "GestureAutoscrollDirection(" + strconv.Itoa(int(value)) + ")"
 }
 
 // ParseGestureAutoscrollDirection returns the GestureAutoscrollDirection named by text, which is a Zig tag name.
@@ -2539,6 +1861,409 @@ func (value *GestureAutoscrollDirection) UnmarshalText(text []byte) error {
 	}
 	*value = parsed
 	return nil
+}
+
+// StreamEvent represents the corresponding Zig enum.
+type StreamEvent uint8
+
+const (
+	// StreamEventBell corresponds to the Zig tag bell.
+	StreamEventBell StreamEvent = 0
+	// StreamEventTitleChanged corresponds to the Zig tag title_changed.
+	StreamEventTitleChanged StreamEvent = 1
+	// StreamEventPwdChanged corresponds to the Zig tag pwd_changed.
+	StreamEventPwdChanged StreamEvent = 2
+	// StreamEventDesktopNotification corresponds to the Zig tag desktop_notification.
+	StreamEventDesktopNotification StreamEvent = 3
+	// StreamEventProgressReport corresponds to the Zig tag progress_report.
+	StreamEventProgressReport StreamEvent = 4
+	// StreamEventUnknownSequence corresponds to the Zig tag unknown_sequence.
+	StreamEventUnknownSequence StreamEvent = 5
+)
+
+var zigoStreamEventNames = [6]string{
+	0: "bell",
+	1: "title_changed",
+	2: "pwd_changed",
+	3: "desktop_notification",
+	4: "progress_report",
+	5: "unknown_sequence",
+}
+
+// String returns the Zig tag name.
+func (value StreamEvent) String() string {
+	if value >= 0 && value <= 5 {
+		return zigoStreamEventNames[uint64(value)]
+	}
+	return "StreamEvent(" + strconv.Itoa(int(value)) + ")"
+}
+
+// ParseStreamEvent returns the StreamEvent named by text, which is a Zig tag name.
+func ParseStreamEvent(text string) (StreamEvent, error) {
+	switch text {
+	case "bell":
+		return StreamEventBell, nil
+	case "title_changed":
+		return StreamEventTitleChanged, nil
+	case "pwd_changed":
+		return StreamEventPwdChanged, nil
+	case "desktop_notification":
+		return StreamEventDesktopNotification, nil
+	case "progress_report":
+		return StreamEventProgressReport, nil
+	case "unknown_sequence":
+		return StreamEventUnknownSequence, nil
+	}
+	return 0, &EnumParseError{Type: "StreamEvent", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value StreamEvent) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseStreamEvent.
+func (value *StreamEvent) UnmarshalText(text []byte) error {
+	parsed, err := ParseStreamEvent(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// ProgressState represents the corresponding Zig enum.
+type ProgressState uint8
+
+const (
+	// ProgressStateRemove corresponds to the Zig tag remove.
+	ProgressStateRemove ProgressState = 0
+	// ProgressStateSet corresponds to the Zig tag set.
+	ProgressStateSet ProgressState = 1
+	// ProgressStateError corresponds to the Zig tag error.
+	ProgressStateError ProgressState = 2
+	// ProgressStateIndeterminate corresponds to the Zig tag indeterminate.
+	ProgressStateIndeterminate ProgressState = 3
+	// ProgressStatePause corresponds to the Zig tag pause.
+	ProgressStatePause ProgressState = 4
+)
+
+var zigoProgressStateNames = [5]string{
+	0: "remove",
+	1: "set",
+	2: "error",
+	3: "indeterminate",
+	4: "pause",
+}
+
+// String returns the Zig tag name.
+func (value ProgressState) String() string {
+	if value >= 0 && value <= 4 {
+		return zigoProgressStateNames[uint64(value)]
+	}
+	return "ProgressState(" + strconv.Itoa(int(value)) + ")"
+}
+
+// ParseProgressState returns the ProgressState named by text, which is a Zig tag name.
+func ParseProgressState(text string) (ProgressState, error) {
+	switch text {
+	case "remove":
+		return ProgressStateRemove, nil
+	case "set":
+		return ProgressStateSet, nil
+	case "error":
+		return ProgressStateError, nil
+	case "indeterminate":
+		return ProgressStateIndeterminate, nil
+	case "pause":
+		return ProgressStatePause, nil
+	}
+	return 0, &EnumParseError{Type: "ProgressState", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value ProgressState) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseProgressState.
+func (value *ProgressState) UnmarshalText(text []byte) error {
+	parsed, err := ParseProgressState(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// ColorScheme represents the corresponding Zig enum.
+type ColorScheme uint8
+
+const (
+	// ColorSchemeLight corresponds to the Zig tag light.
+	ColorSchemeLight ColorScheme = 0
+	// ColorSchemeDark corresponds to the Zig tag dark.
+	ColorSchemeDark ColorScheme = 1
+)
+
+var zigoColorSchemeNames = [2]string{
+	0: "light",
+	1: "dark",
+}
+
+// String returns the Zig tag name.
+func (value ColorScheme) String() string {
+	if value >= 0 && value <= 1 {
+		return zigoColorSchemeNames[uint64(value)]
+	}
+	return "ColorScheme(" + strconv.Itoa(int(value)) + ")"
+}
+
+// ParseColorScheme returns the ColorScheme named by text, which is a Zig tag name.
+func ParseColorScheme(text string) (ColorScheme, error) {
+	switch text {
+	case "light":
+		return ColorSchemeLight, nil
+	case "dark":
+		return ColorSchemeDark, nil
+	}
+	return 0, &EnumParseError{Type: "ColorScheme", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value ColorScheme) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseColorScheme.
+func (value *ColorScheme) UnmarshalText(text []byte) error {
+	parsed, err := ParseColorScheme(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// DragEvent represents the corresponding Zig enum.
+type DragEvent uint8
+
+const (
+	// DragEventRegistration corresponds to the Zig tag registration.
+	DragEventRegistration DragEvent = 0
+	// DragEventAcceptance corresponds to the Zig tag acceptance.
+	DragEventAcceptance DragEvent = 1
+	// DragEventConcludedNone corresponds to the Zig tag concluded_none.
+	DragEventConcludedNone DragEvent = 2
+	// DragEventConcludedCopy corresponds to the Zig tag concluded_copy.
+	DragEventConcludedCopy DragEvent = 3
+	// DragEventConcludedMove corresponds to the Zig tag concluded_move.
+	DragEventConcludedMove DragEvent = 4
+)
+
+var zigoDragEventNames = [5]string{
+	0: "registration",
+	1: "acceptance",
+	2: "concluded_none",
+	3: "concluded_copy",
+	4: "concluded_move",
+}
+
+// String returns the Zig tag name.
+func (value DragEvent) String() string {
+	if value >= 0 && value <= 4 {
+		return zigoDragEventNames[uint64(value)]
+	}
+	return "DragEvent(" + strconv.Itoa(int(value)) + ")"
+}
+
+// ParseDragEvent returns the DragEvent named by text, which is a Zig tag name.
+func ParseDragEvent(text string) (DragEvent, error) {
+	switch text {
+	case "registration":
+		return DragEventRegistration, nil
+	case "acceptance":
+		return DragEventAcceptance, nil
+	case "concluded_none":
+		return DragEventConcludedNone, nil
+	case "concluded_copy":
+		return DragEventConcludedCopy, nil
+	case "concluded_move":
+		return DragEventConcludedMove, nil
+	}
+	return 0, &EnumParseError{Type: "DragEvent", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value DragEvent) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseDragEvent.
+func (value *DragEvent) UnmarshalText(text []byte) error {
+	parsed, err := ParseDragEvent(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// DragOperation represents the corresponding Zig enum.
+type DragOperation uint8
+
+const (
+	// DragOperationNone corresponds to the Zig tag none.
+	DragOperationNone DragOperation = 0
+	// DragOperationCopy corresponds to the Zig tag copy.
+	DragOperationCopy DragOperation = 1
+	// DragOperationMove corresponds to the Zig tag move.
+	DragOperationMove DragOperation = 2
+)
+
+var zigoDragOperationNames = [3]string{
+	0: "none",
+	1: "copy",
+	2: "move",
+}
+
+// String returns the Zig tag name.
+func (value DragOperation) String() string {
+	if value >= 0 && value <= 2 {
+		return zigoDragOperationNames[uint64(value)]
+	}
+	return "DragOperation(" + strconv.Itoa(int(value)) + ")"
+}
+
+// ParseDragOperation returns the DragOperation named by text, which is a Zig tag name.
+func ParseDragOperation(text string) (DragOperation, error) {
+	switch text {
+	case "none":
+		return DragOperationNone, nil
+	case "copy":
+		return DragOperationCopy, nil
+	case "move":
+		return DragOperationMove, nil
+	}
+	return 0, &EnumParseError{Type: "DragOperation", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value DragOperation) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseDragOperation.
+func (value *DragOperation) UnmarshalText(text []byte) error {
+	parsed, err := ParseDragOperation(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// ClipboardLocation represents the corresponding Zig open enum; values outside the named constants are valid.
+type ClipboardLocation int32
+
+const (
+	// ClipboardLocationStandard corresponds to the Zig tag standard.
+	ClipboardLocationStandard ClipboardLocation = 0
+	// ClipboardLocationSelection corresponds to the Zig tag selection.
+	ClipboardLocationSelection ClipboardLocation = 1
+	// ClipboardLocationPrimary corresponds to the Zig tag primary.
+	ClipboardLocationPrimary ClipboardLocation = 2
+)
+
+var zigoClipboardLocationNames = [3]string{
+	0: "standard",
+	1: "selection",
+	2: "primary",
+}
+
+// String returns the Zig tag name.
+func (value ClipboardLocation) String() string {
+	if value >= 0 && value <= 2 {
+		return zigoClipboardLocationNames[uint64(value)]
+	}
+	return "ClipboardLocation(" + strconv.Itoa(int(value)) + ")"
+}
+
+// ParseClipboardLocation returns the ClipboardLocation named by text, which is a Zig tag name.
+// Values outside the named constants are accepted in the ClipboardLocation(N) spelling String returns.
+func ParseClipboardLocation(text string) (ClipboardLocation, error) {
+	switch text {
+	case "standard":
+		return ClipboardLocationStandard, nil
+	case "selection":
+		return ClipboardLocationSelection, nil
+	case "primary":
+		return ClipboardLocationPrimary, nil
+	}
+	if strings.HasPrefix(text, "ClipboardLocation(") && strings.HasSuffix(text, ")") {
+		if number, err := strconv.ParseInt(text[len("ClipboardLocation("):len(text)-1], 10, 32); err == nil {
+			return ClipboardLocation(number), nil
+		}
+	}
+	return 0, &EnumParseError{Type: "ClipboardLocation", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value ClipboardLocation) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseClipboardLocation.
+func (value *ClipboardLocation) UnmarshalText(text []byte) error {
+	parsed, err := ParseClipboardLocation(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// ClipboardLocationValues returns a fresh slice of known values in declaration order.
+func ClipboardLocationValues() []ClipboardLocation {
+	return []ClipboardLocation{
+		ClipboardLocationStandard,
+		ClipboardLocationSelection,
+		ClipboardLocationPrimary,
+	}
+}
+
+// IsKnown reports whether value is an exported tag; unknown open-enum values return false.
+func (value ClipboardLocation) IsKnown() bool {
+	return value >= 0 && value <= 2
+}
+
+// ClipboardDenial represents the corresponding Zig enum.
+type ClipboardDenial uint8
+
+const (
+	// ClipboardDenialDenied corresponds to the Zig tag denied.
+	ClipboardDenialDenied ClipboardDenial = 0
+	// ClipboardDenialUnsupported corresponds to the Zig tag unsupported.
+	ClipboardDenialUnsupported ClipboardDenial = 1
+	// ClipboardDenialBusy corresponds to the Zig tag busy.
+	ClipboardDenialBusy ClipboardDenial = 2
+	// ClipboardDenialIoError corresponds to the Zig tag io_error.
+	ClipboardDenialIoError ClipboardDenial = 3
+)
+
+var zigoClipboardDenialNames = [4]string{
+	0: "denied",
+	1: "unsupported",
+	2: "busy",
+	3: "io_error",
+}
+
+// String returns the Zig tag name.
+func (value ClipboardDenial) String() string {
+	if value >= 0 && value <= 3 {
+		return zigoClipboardDenialNames[uint64(value)]
+	}
+	return "ClipboardDenial(" + strconv.Itoa(int(value)) + ")"
 }
 
 // OSCCommand represents the corresponding Zig enum.
@@ -2601,66 +2326,42 @@ const (
 	OSCCommandKittyDesktopNotification OSCCommand = 26
 )
 
+var zigoOSCCommandNames = [27]string{
+	0:  "invalid",
+	1:  "change_window_title",
+	2:  "change_window_icon",
+	3:  "semantic_prompt",
+	4:  "clipboard_contents",
+	5:  "report_pwd",
+	6:  "mouse_shape",
+	7:  "color_operation",
+	8:  "kitty_color_protocol",
+	9:  "show_desktop_notification",
+	10: "hyperlink_start",
+	11: "hyperlink_end",
+	12: "conemu_sleep",
+	13: "conemu_show_message_box",
+	14: "conemu_change_tab_title",
+	15: "conemu_progress_report",
+	16: "conemu_wait_input",
+	17: "conemu_guimacro",
+	18: "conemu_run_process",
+	19: "conemu_output_environment_variable",
+	20: "conemu_xterm_emulation",
+	21: "conemu_comment",
+	22: "kitty_text_sizing",
+	23: "kitty_clipboard_protocol",
+	24: "kitty_dnd_protocol",
+	25: "context_signal",
+	26: "kitty_desktop_notification",
+}
+
 // String returns the Zig tag name.
 func (value OSCCommand) String() string {
-	switch value {
-	case OSCCommandInvalid:
-		return "invalid"
-	case OSCCommandChangeWindowTitle:
-		return "change_window_title"
-	case OSCCommandChangeWindowIcon:
-		return "change_window_icon"
-	case OSCCommandSemanticPrompt:
-		return "semantic_prompt"
-	case OSCCommandClipboardContents:
-		return "clipboard_contents"
-	case OSCCommandReportPwd:
-		return "report_pwd"
-	case OSCCommandMouseShape:
-		return "mouse_shape"
-	case OSCCommandColorOperation:
-		return "color_operation"
-	case OSCCommandKittyColorProtocol:
-		return "kitty_color_protocol"
-	case OSCCommandShowDesktopNotification:
-		return "show_desktop_notification"
-	case OSCCommandHyperlinkStart:
-		return "hyperlink_start"
-	case OSCCommandHyperlinkEnd:
-		return "hyperlink_end"
-	case OSCCommandConemuSleep:
-		return "conemu_sleep"
-	case OSCCommandConemuShowMessageBox:
-		return "conemu_show_message_box"
-	case OSCCommandConemuChangeTabTitle:
-		return "conemu_change_tab_title"
-	case OSCCommandConemuProgressReport:
-		return "conemu_progress_report"
-	case OSCCommandConemuWaitInput:
-		return "conemu_wait_input"
-	case OSCCommandConemuGuimacro:
-		return "conemu_guimacro"
-	case OSCCommandConemuRunProcess:
-		return "conemu_run_process"
-	case OSCCommandConemuOutputEnvironmentVariable:
-		return "conemu_output_environment_variable"
-	case OSCCommandConemuXtermEmulation:
-		return "conemu_xterm_emulation"
-	case OSCCommandConemuComment:
-		return "conemu_comment"
-	case OSCCommandKittyTextSizing:
-		return "kitty_text_sizing"
-	case OSCCommandKittyClipboardProtocol:
-		return "kitty_clipboard_protocol"
-	case OSCCommandKittyDndProtocol:
-		return "kitty_dnd_protocol"
-	case OSCCommandContextSignal:
-		return "context_signal"
-	case OSCCommandKittyDesktopNotification:
-		return "kitty_desktop_notification"
-	default:
-		return "OSCCommand(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 26 {
+		return zigoOSCCommandNames[uint64(value)]
 	}
+	return "OSCCommand(" + strconv.Itoa(int(value)) + ")"
 }
 
 // ParseOSCCommand returns the OSCCommand named by text, which is a Zig tag name.
@@ -2749,16 +2450,17 @@ const (
 	OSCTerminatorBel OSCTerminator = 1
 )
 
+var zigoOSCTerminatorNames = [2]string{
+	0: "st",
+	1: "bel",
+}
+
 // String returns the Zig tag name.
 func (value OSCTerminator) String() string {
-	switch value {
-	case OSCTerminatorSt:
-		return "st"
-	case OSCTerminatorBel:
-		return "bel"
-	default:
-		return "OSCTerminator(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 1 {
+		return zigoOSCTerminatorNames[uint64(value)]
 	}
+	return "OSCTerminator(" + strconv.Itoa(int(value)) + ")"
 }
 
 // ParseOSCTerminator returns the OSCTerminator named by text, which is a Zig tag name.
@@ -2809,28 +2511,23 @@ const (
 	SemanticPromptActionEndCommand SemanticPromptAction = 7
 )
 
+var zigoSemanticPromptActionNames = [8]string{
+	0: "fresh_line",
+	1: "fresh_line_new_prompt",
+	2: "new_command",
+	3: "prompt_start",
+	4: "end_prompt_start_input",
+	5: "end_prompt_start_input_terminate_eol",
+	6: "end_input_start_output",
+	7: "end_command",
+}
+
 // String returns the Zig tag name.
 func (value SemanticPromptAction) String() string {
-	switch value {
-	case SemanticPromptActionFreshLine:
-		return "fresh_line"
-	case SemanticPromptActionFreshLineNewPrompt:
-		return "fresh_line_new_prompt"
-	case SemanticPromptActionNewCommand:
-		return "new_command"
-	case SemanticPromptActionPromptStart:
-		return "prompt_start"
-	case SemanticPromptActionEndPromptStartInput:
-		return "end_prompt_start_input"
-	case SemanticPromptActionEndPromptStartInputTerminateEol:
-		return "end_prompt_start_input_terminate_eol"
-	case SemanticPromptActionEndInputStartOutput:
-		return "end_input_start_output"
-	case SemanticPromptActionEndCommand:
-		return "end_command"
-	default:
-		return "SemanticPromptAction(" + strconv.Itoa(int(value)) + ")"
+	if value >= 0 && value <= 7 {
+		return zigoSemanticPromptActionNames[uint64(value)]
 	}
+	return "SemanticPromptAction(" + strconv.Itoa(int(value)) + ")"
 }
 
 // ParseSemanticPromptAction returns the SemanticPromptAction named by text, which is a Zig tag name.
@@ -2869,4 +2566,168 @@ func (value *SemanticPromptAction) UnmarshalText(text []byte) error {
 	}
 	*value = parsed
 	return nil
+}
+
+// CellWidth represents the corresponding Zig enum.
+type CellWidth uint8
+
+const (
+	// CellWidthNarrow corresponds to the Zig tag narrow.
+	CellWidthNarrow CellWidth = 0
+	// CellWidthWide corresponds to the Zig tag wide.
+	CellWidthWide CellWidth = 1
+	// CellWidthSpacerTail corresponds to the Zig tag spacer_tail.
+	CellWidthSpacerTail CellWidth = 2
+	// CellWidthSpacerHead corresponds to the Zig tag spacer_head.
+	CellWidthSpacerHead CellWidth = 3
+)
+
+var zigoCellWidthNames = [4]string{
+	0: "narrow",
+	1: "wide",
+	2: "spacer_tail",
+	3: "spacer_head",
+}
+
+// String returns the Zig tag name.
+func (value CellWidth) String() string {
+	if value >= 0 && value <= 3 {
+		return zigoCellWidthNames[uint64(value)]
+	}
+	return "CellWidth(" + strconv.Itoa(int(value)) + ")"
+}
+
+// RenderDirty represents the corresponding Zig enum.
+type RenderDirty uint8
+
+const (
+	// RenderDirtyClean corresponds to the Zig tag clean.
+	RenderDirtyClean RenderDirty = 0
+	// RenderDirtyPartial corresponds to the Zig tag partial.
+	RenderDirtyPartial RenderDirty = 1
+	// RenderDirtyFull corresponds to the Zig tag full.
+	RenderDirtyFull RenderDirty = 2
+)
+
+var zigoRenderDirtyNames = [3]string{
+	0: "clean",
+	1: "partial",
+	2: "full",
+}
+
+// String returns the Zig tag name.
+func (value RenderDirty) String() string {
+	if value >= 0 && value <= 2 {
+		return zigoRenderDirtyNames[uint64(value)]
+	}
+	return "RenderDirty(" + strconv.Itoa(int(value)) + ")"
+}
+
+// KittyLayer represents the corresponding Zig enum.
+type KittyLayer uint8
+
+const (
+	// KittyLayerBelowBg corresponds to the Zig tag below_bg.
+	KittyLayerBelowBg KittyLayer = 0
+	// KittyLayerBelowText corresponds to the Zig tag below_text.
+	KittyLayerBelowText KittyLayer = 1
+	// KittyLayerAboveText corresponds to the Zig tag above_text.
+	KittyLayerAboveText KittyLayer = 2
+)
+
+var zigoKittyLayerNames = [3]string{
+	0: "below_bg",
+	1: "below_text",
+	2: "above_text",
+}
+
+// String returns the Zig tag name.
+func (value KittyLayer) String() string {
+	if value >= 0 && value <= 2 {
+		return zigoKittyLayerNames[uint64(value)]
+	}
+	return "KittyLayer(" + strconv.Itoa(int(value)) + ")"
+}
+
+// ParseKittyLayer returns the KittyLayer named by text, which is a Zig tag name.
+func ParseKittyLayer(text string) (KittyLayer, error) {
+	switch text {
+	case "below_bg":
+		return KittyLayerBelowBg, nil
+	case "below_text":
+		return KittyLayerBelowText, nil
+	case "above_text":
+		return KittyLayerAboveText, nil
+	}
+	return 0, &EnumParseError{Type: "KittyLayer", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value KittyLayer) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseKittyLayer.
+func (value *KittyLayer) UnmarshalText(text []byte) error {
+	parsed, err := ParseKittyLayer(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// KittyFormat represents the corresponding Zig enum.
+type KittyFormat uint8
+
+const (
+	// KittyFormatRgb corresponds to the Zig tag rgb.
+	KittyFormatRgb KittyFormat = 0
+	// KittyFormatRgba corresponds to the Zig tag rgba.
+	KittyFormatRgba KittyFormat = 1
+	// KittyFormatPng corresponds to the Zig tag png.
+	KittyFormatPng KittyFormat = 2
+	// KittyFormatGrayAlpha corresponds to the Zig tag gray_alpha.
+	KittyFormatGrayAlpha KittyFormat = 3
+	// KittyFormatGray corresponds to the Zig tag gray.
+	KittyFormatGray KittyFormat = 4
+)
+
+var zigoKittyFormatNames = [5]string{
+	0: "rgb",
+	1: "rgba",
+	2: "png",
+	3: "gray_alpha",
+	4: "gray",
+}
+
+// String returns the Zig tag name.
+func (value KittyFormat) String() string {
+	if value >= 0 && value <= 4 {
+		return zigoKittyFormatNames[uint64(value)]
+	}
+	return "KittyFormat(" + strconv.Itoa(int(value)) + ")"
+}
+
+// KittyCompression represents the corresponding Zig enum.
+type KittyCompression uint8
+
+const (
+	// KittyCompressionNone corresponds to the Zig tag none.
+	KittyCompressionNone KittyCompression = 0
+	// KittyCompressionZlibDeflate corresponds to the Zig tag zlib_deflate.
+	KittyCompressionZlibDeflate KittyCompression = 1
+)
+
+var zigoKittyCompressionNames = [2]string{
+	0: "none",
+	1: "zlib_deflate",
+}
+
+// String returns the Zig tag name.
+func (value KittyCompression) String() string {
+	if value >= 0 && value <= 1 {
+		return zigoKittyCompressionNames[uint64(value)]
+	}
+	return "KittyCompression(" + strconv.Itoa(int(value)) + ")"
 }

@@ -1,0 +1,139 @@
+// TerminalConfig configures a new terminal. Cols and Rows must be nonzero.
+// Nil optional fields retain native defaults; pointers distinguish an explicit
+// zero or false from an omitted setting. Configuration is copied during creation.
+type TerminalConfig struct {
+	Cols, Rows         uint16
+	ScrollbackMaxBytes *uint   // Zero disables scrollback immediately.
+	ScrollbackMaxLines *uint   // Pruned at native page boundaries, not an exact row cap.
+	BackgroundColor    *uint32 // Default 0xRRGGBB.
+	ForegroundColor    *uint32 // Default 0xRRGGBB.
+	CursorColor        *uint32 // Default 0xRRGGBB.
+	CursorBlink        *bool
+	ModeDefaults       []ModeDefault
+}
+
+// ModeDefault sets both the current value and reset default of a mode.
+type ModeDefault struct {
+	Mode    Mode
+	Enabled bool
+}
+
+// NewTerminalWithConfig creates and configures a terminal. A failed setting
+// closes the newly created terminal; no partially configured handle escapes.
+func NewTerminalWithConfig(cfg TerminalConfig) (_ *Terminal, err error) {
+	if cfg.Cols == 0 {
+		return nil, &RangeError{Operation: "NewTerminalWithConfig", Parameter: "Cols", Type: "nonzero cell count"}
+	}
+	if cfg.Rows == 0 {
+		return nil, &RangeError{Operation: "NewTerminalWithConfig", Parameter: "Rows", Type: "nonzero cell count"}
+	}
+	term, err := NewTerminal(cfg.Cols, cfg.Rows)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err != nil {
+			_ = term.Close()
+		}
+	}()
+	if cfg.ScrollbackMaxBytes != nil {
+		if err = term.SetScrollbackMaxBytes(*cfg.ScrollbackMaxBytes); err != nil {
+			return nil, err
+		}
+	}
+	if cfg.ScrollbackMaxLines != nil {
+		if err = term.SetScrollbackMaxLines(*cfg.ScrollbackMaxLines); err != nil {
+			return nil, err
+		}
+	}
+	if cfg.BackgroundColor != nil {
+		if err = term.SetDefaultBackgroundColor(*cfg.BackgroundColor); err != nil {
+			return nil, err
+		}
+	}
+	if cfg.ForegroundColor != nil {
+		if err = term.SetDefaultForegroundColor(*cfg.ForegroundColor); err != nil {
+			return nil, err
+		}
+	}
+	if cfg.CursorColor != nil {
+		if err = term.SetDefaultCursorColor(*cfg.CursorColor); err != nil {
+			return nil, err
+		}
+	}
+	if cfg.CursorBlink != nil {
+		if err = term.SetDefaultCursorBlink(*cfg.CursorBlink); err != nil {
+			return nil, err
+		}
+	}
+	for _, mode := range cfg.ModeDefaults {
+		if !mode.Mode.IsKnown() {
+			return nil, &RangeError{Operation: "NewTerminalWithConfig", Parameter: "ModeDefaults", Type: "known Mode"}
+		}
+		if err = term.SetDefaultMode(mode.Mode, mode.Enabled); err != nil {
+			return nil, err
+		}
+	}
+	return term, nil
+}
+
+// StreamConfig configures the parser and its embedder identity. Zero limits
+// disable continuation tracking and unknown-sequence capture respectively.
+// A nil Version leaves Ghostty's identity unchanged. Callbacks run synchronously;
+// only request-response calls may reenter the active terminal's bindings.
+type StreamConfig struct {
+	ContinuationMaxBytes uint
+	UnknownMaxBytes      uint
+	Version              *VersionReport
+	EnquiryResponse      string
+	ColorScheme          *ColorScheme
+	ClipboardRead        ClipboardHandler
+	ClipboardWrite       ClipboardHandler
+}
+
+// VersionReport is the application identity returned by XTVERSION.
+type VersionReport struct{ Name, Version string }
+
+// NewStreamWithConfig creates a child stream and applies all settings before
+// returning it. On failure it closes the stream and releases the parent claim.
+func (t *Terminal) NewStreamWithConfig(cfg StreamConfig) (_ *Stream, err error) {
+	s, err := t.NewStream(cfg.ContinuationMaxBytes)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err != nil {
+			_ = s.Close()
+		}
+	}()
+	if err = s.SetUnknownMaxBytes(cfg.UnknownMaxBytes); err != nil {
+		return nil, err
+	}
+	if cfg.Version != nil {
+		if err = s.SetVersionReport(cfg.Version.Name, cfg.Version.Version); err != nil {
+			return nil, err
+		}
+	}
+	if err = s.SetEnquiryResponse(cfg.EnquiryResponse); err != nil {
+		return nil, err
+	}
+	if cfg.ColorScheme != nil {
+		if *cfg.ColorScheme != ColorSchemeDark && *cfg.ColorScheme != ColorSchemeLight {
+			return nil, &RangeError{Operation: "Terminal.NewStreamWithConfig", Parameter: "ColorScheme", Type: "ColorScheme"}
+		}
+		if err = s.ColorSchemeChanged(*cfg.ColorScheme); err != nil {
+			return nil, err
+		}
+	}
+	if cfg.ClipboardRead != nil {
+		if err = s.OnClipboardReadRequest(cfg.ClipboardRead); err != nil {
+			return nil, err
+		}
+	}
+	if cfg.ClipboardWrite != nil {
+		if err = s.OnClipboardWriteRequest(cfg.ClipboardWrite); err != nil {
+			return nil, err
+		}
+	}
+	return s, nil
+}

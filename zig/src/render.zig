@@ -294,3 +294,54 @@ pub fn renderCursorWideTail(self: *RenderState) ?bool {
 pub fn renderCursorColor(self: *RenderState) ?u32 {
     return packColor(self.colors.cursor orelse return null);
 }
+
+/// Cursor metadata copied from one render snapshot. Coordinates and wide_tail
+/// are meaningful only when viewport_has_value is true.
+pub const RenderCursor = packed struct(u64) {
+    x: u16 = 0,
+    y: u16 = 0,
+    viewport_has_value: bool = false,
+    wide_tail: bool = false,
+    visible: bool = false,
+    blinking: bool = false,
+    password_input: bool = false,
+    style: common.CursorStyle = .block,
+    _pad: u25 = 0,
+};
+
+/// Resolved frame colors, all 0xRRGGBB. Cursor is meaningful only when
+/// cursor_has_value is true. Palette reads remain on Terminal.
+pub const RenderColors = extern struct {
+    background: u32,
+    foreground: u32,
+    cursor: u32,
+    cursor_has_value: bool,
+};
+
+/// Copy all cursor metadata in one boundary crossing. Reading this value does
+/// not touch the terminal; serialize reads with Update and Close on this state.
+pub fn renderCursor(self: *RenderState) RenderCursor {
+    var result: RenderCursor = .{
+        .visible = self.cursor.visible,
+        .blinking = self.cursor.blinking,
+        .password_input = self.cursor.password_input,
+        .style = self.cursor.visual_style,
+    };
+    if (self.cursor.viewport) |vp| {
+        result.x = vp.x;
+        result.y = vp.y;
+        result.viewport_has_value = true;
+        result.wide_tail = vp.wide_tail;
+    }
+    return result;
+}
+
+/// Copy the resolved colors of this frame in one boundary crossing.
+pub fn renderColors(self: *RenderState) RenderColors {
+    return .{
+        .background = renderBackground(self),
+        .foreground = renderForeground(self),
+        .cursor = renderCursorColor(self) orelse 0,
+        .cursor_has_value = self.colors.cursor != null,
+    };
+}

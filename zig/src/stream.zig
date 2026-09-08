@@ -25,9 +25,9 @@ const Terminal = common.Terminal;
 pub const StreamEvent = enum(u8) {
     /// BEL. No payload.
     bell,
-    /// OSC 0/2. The new title is on the terminal.
+    /// OSC 0/2. The title at the time of the change is on eventTitle.
     title_changed,
-    /// OSC 7. The new working directory is on the terminal.
+    /// OSC 7. The directory at the time of the change is on eventPwd.
     pwd_changed,
     /// OSC 9 or 777. `eventTitle` and `eventBody` carry the text.
     desktop_notification,
@@ -66,6 +66,25 @@ const max_version_bytes = 256;
 const max_enquiry_bytes = 255;
 
 /// How far along an OSC 9;4 progress report says the program is.
+/// Event is an owned copy in Go. Payloads remain valid after Feed, the next
+/// event, or Close. Only fields associated with Kind are populated.
+/// In Zig these slices borrow Stream.current until the next queue advance;
+/// zigo materializes them before returning to Go.
+pub const Event = struct {
+    kind: StreamEvent = .bell,
+    title: []const u8 = "",
+    pwd: []const u8 = "",
+    body: []const u8 = "",
+    sequence: []const u8 = "",
+    progress_state: ProgressState = .remove,
+    progress: u8 = 0,
+    has_progress: bool = false,
+};
+
+/// EventRecord preserves the explicit presence form of the event API.
+/// Value is meaningful when Present.
+pub const EventRecord = struct { value: Event = .{}, present: bool = false };
+
 pub const ProgressState = vt.osc.Command.ProgressReport.State;
 
 /// Which clipboard a request names.
@@ -113,6 +132,43 @@ pub const ClipboardRequest = struct {
     /// Whether the callback answered. An unanswered request is denied so the
     /// program is not left waiting.
     answered: bool = false,
+    /// Owned representations staged until the read is answered or returns.
+    staged: std.ArrayList(vt.clipboard.Content) = .empty,
+
+    fn clearContents(self: *ClipboardRequest, gpa: Allocator) void {
+        for (self.staged.items) |content| {
+            gpa.free(content.mime);
+            gpa.free(content.data);
+        }
+        self.staged.clearRetainingCapacity();
+    }
+
+    /// Stage a MIME representation for a read. Both arguments are copied.
+    /// Nothing is sent until ReplyContents. Outside an unanswered read this
+    /// is a no-op, like the other reply methods.
+    pub fn addContent(self: *ClipboardRequest, gpa: Allocator, mime_type: []const u8, data: []const u8) !void {
+        if (self.answered or self.read == null) return;
+        const mime_copy = try gpa.dupe(u8, mime_type);
+        errdefer gpa.free(mime_copy);
+        const data_copy = try gpa.dupe(u8, data);
+        errdefer gpa.free(data_copy);
+        try self.staged.append(gpa, .{ .mime = mime_copy, .data = data_copy });
+    }
+
+    /// Discard staged read representations without answering the request.
+    pub fn clearReplyContents(self: *ClipboardRequest, gpa: Allocator) void {
+        self.clearContents(gpa);
+    }
+
+    /// Answer a read atomically with all staged representations. An empty
+    /// list is an explicit empty successful response. The callback must call
+    /// this before returning; staged contents alone do not approve a read.
+    pub fn replyContents(self: *ClipboardRequest, remember: bool) void {
+        if (self.answered) return;
+        const read = self.read orelse return;
+        read.reply(.{ .success = .{ .contents = self.staged.items, .remember = remember } });
+        self.answered = true;
+    }
 
     /// Which clipboard the request names.
     pub fn location(self: *ClipboardRequest) ClipboardLocation {
@@ -276,8 +332,10 @@ pub const Stream = struct {
 
     const Queued = struct {
         kind: StreamEvent,
-        /// Notification title. Owned.
+        /// Title change or notification title. Owned.
         title: []const u8 = "",
+        /// Working directory captured at emission. Owned.
+        pwd: []const u8 = "",
         /// Notification body. Owned.
         body: []const u8 = "",
         /// An unknown sequence's content. Owned. Kept apart from `body` so
@@ -290,6 +348,7 @@ pub const Stream = struct {
 
         fn deinit(self: Queued, gpa: Allocator) void {
             gpa.free(self.title);
+            gpa.free(self.pwd);
             gpa.free(self.body);
             gpa.free(self.sequence);
         }
@@ -306,11 +365,15 @@ pub const Stream = struct {
     }
 
     fn onTitleChanged(handler: *vt.TerminalStream.Handler) void {
-        streamFromHandler(handler).push(.{ .kind = .title_changed });
+        const self = streamFromHandler(handler);
+        const title = self.gpa.dupe(u8, handler.terminal.getTitle() orelse "") catch return;
+        self.push(.{ .kind = .title_changed, .title = title });
     }
 
     fn onPwdChanged(handler: *vt.TerminalStream.Handler) void {
-        streamFromHandler(handler).push(.{ .kind = .pwd_changed });
+        const self = streamFromHandler(handler);
+        const pwd = self.gpa.dupe(u8, handler.terminal.getPwd() orelse "") catch return;
+        self.push(.{ .kind = .pwd_changed, .pwd = pwd });
     }
 
     fn onDesktopNotification(
@@ -371,7 +434,11 @@ pub const Stream = struct {
             return;
         };
         self.request = .{ .write = write };
-        defer self.request = .{};
+        defer {
+            self.request.clearContents(self.gpa);
+            self.request.staged.deinit(self.gpa);
+            self.request = .{};
+        }
         callback(&self.request, self.write_userdata);
         if (!self.request.answered) write.reply(.denied);
     }
@@ -386,7 +453,11 @@ pub const Stream = struct {
             return;
         };
         self.request = .{ .read = read };
-        defer self.request = .{};
+        defer {
+            self.request.clearContents(self.gpa);
+            self.request.staged.deinit(self.gpa);
+            self.request = .{};
+        }
         callback(&self.request, self.read_userdata);
         if (!self.request.answered) read.reply(.denied);
     }
@@ -467,6 +538,19 @@ pub const Stream = struct {
         self.inner.nextSlice(bytes);
     }
 
+    /// Whether the parser is between UTF-8 codepoints and VT sequences.
+    pub fn atGround(self: *Stream) bool {
+        return self.inner.ground();
+    }
+
+    /// Consume only through the next parser ground boundary. Already at ground
+    /// consumes zero bytes. If no boundary is reached, consumes the entire
+    /// input and returns reached=false. Only consumed bytes produce effects.
+    pub fn feedUntilGround(self: *Stream, data: []const u8) FeedBoundary {
+        const consumed = self.inner.nextSliceUntilGround(data);
+        return .{ .consumed = consumed orelse data.len, .reached = consumed != null };
+    }
+
     /// Whether the terminal has answered a query since the last `writeReplies`.
     pub fn hasReplies(self: *Stream) bool {
         return self.replies.items.len > 0;
@@ -530,7 +614,39 @@ pub const Stream = struct {
         return event.kind;
     }
 
-    /// The current event's notification title, empty for other events.
+    /// Consume one queued event and materialize its complete payload in one
+    /// binding call. Shares the queue and current payload with NextEvent.
+    pub fn nextEventValue(self: *Stream) ?Event {
+        const kind = self.nextEvent() orelse return null;
+        const queued = self.current.?;
+        var event: Event = .{ .kind = kind };
+        switch (kind) {
+            .title_changed => event.title = queued.title,
+            .pwd_changed => event.pwd = queued.pwd,
+            .desktop_notification => {
+                event.title = queued.title;
+                event.body = queued.body;
+            },
+            .unknown_sequence => event.sequence = queued.sequence,
+            .progress_report => {
+                event.progress_state = queued.progress_state;
+                if (self.eventProgress()) |progress| {
+                    event.progress = progress;
+                    event.has_progress = true;
+                }
+            },
+            else => {},
+        }
+        return event;
+    }
+
+    /// Explicit presence form of NextEventValue, retained for compatibility.
+    pub fn nextEventRecord(self: *Stream) EventRecord {
+        const event = self.nextEventValue() orelse return .{};
+        return .{ .value = event, .present = true };
+    }
+
+    /// The current event's title, for title changes and desktop notifications.
     pub fn eventTitle(self: *Stream) []const u8 {
         const event = self.current orelse return "";
         return event.title;
@@ -540,6 +656,12 @@ pub const Stream = struct {
     pub fn eventBody(self: *Stream) []const u8 {
         const event = self.current orelse return "";
         return event.body;
+    }
+
+    /// The directory captured when the current pwd-change event occurred.
+    pub fn eventPwd(self: *Stream) []const u8 {
+        const event = self.current orelse return "";
+        return event.pwd;
     }
 
     pub fn eventProgressState(self: *Stream) ProgressState {
@@ -699,3 +821,9 @@ pub fn freeStream(self: *Stream, gpa: Allocator) void {
     self.inner.deinit();
     gpa.destroy(self);
 }
+
+/// Result of a bounded parser feed. Consumed is valid even if Reached is false.
+pub const FeedBoundary = extern struct {
+    consumed: usize,
+    reached: bool,
+};

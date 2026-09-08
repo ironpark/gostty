@@ -1,0 +1,24 @@
+// ClipboardContent is one MIME representation of a single logical clipboard value.
+// Data is binary-safe and may be empty.
+type ClipboardContent struct {
+	MIME string
+	Data []byte
+}
+
+// Reply answers a pending read atomically with the supplied representations.
+// It replaces any staged contents. Inputs are copied before the native reply;
+// they may be reused after this call. Call only inside the clipboard callback.
+// On staging failure nothing is sent, and staged data is discarded. Returning
+// from the callback without a successful reply or explicit denial denies it.
+func (r *ClipboardRequest) Reply(contents []ClipboardContent, remember bool) error {
+	if err := r.ClearReplyContents(); err != nil {
+		return err
+	}
+	for _, content := range contents {
+		if err := r.AddContent(content.MIME, content.Data); err != nil {
+			_ = r.ClearReplyContents()
+			return err
+		}
+	}
+	return r.ReplyContents(remember)
+}

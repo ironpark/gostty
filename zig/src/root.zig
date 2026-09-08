@@ -43,6 +43,11 @@ pub fn freeString(gpa: Allocator, str: []const u8) void {
     gpa.free(str);
 }
 
+/// Releases a zigo materialized transfer buffer allocated with smp_allocator.
+pub fn freeBuffer(gpa: Allocator, buffer: []u8) void {
+    gpa.free(buffer);
+}
+
 /// Decodes the PNG bytes handed over. The callback answers with
 /// `sys.replyPngImage` before returning; returning without a reply fails the
 /// transmission. `userdata` is last: that is where zigo expects the handle it
@@ -79,6 +84,8 @@ pub const Underline = common_.Underline;
 // The VT stream: bytes in, terminal state and events out.
 const stream_ = @import("stream.zig");
 
+pub const Event = stream_.Event;
+pub const EventRecord = stream_.EventRecord;
 pub const StreamEvent = stream_.StreamEvent;
 pub const ProgressState = stream_.ProgressState;
 pub const ColorScheme = stream_.ColorScheme;
@@ -362,3 +369,13 @@ pub const newOSCParser = parser_.newOSCParser;
 pub const freeOSCParser = parser_.freeOSCParser;
 pub const sgrAttributeCount = parser_.sgrAttributeCount;
 pub const sgrAttributeAt = parser_.sgrAttributeAt;
+
+// Batch metadata and parser boundary results.
+pub const RenderCursor = render_.RenderCursor;
+pub const RenderColors = render_.RenderColors;
+pub const renderCursor = render_.renderCursor;
+pub const renderColors = render_.renderColors;
+pub const FeedBoundary = stream_.FeedBoundary;
+pub const build_metadata = @import("build_metadata");
+
+pub const build_features = @import("terminal_options");

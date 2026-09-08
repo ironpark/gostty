@@ -46,7 +46,7 @@ pub const plugin: plugin_api.Plugin = .{
     // A `String()` needs fields to name, which only a value struct has here;
     // the generator already writes one for every enum.
     .targets = &.{.value},
-    .validate = validateDocument,
+    .validateAll = validateDocument,
     .type_hook = typeHook,
     // Written by the renderings below. The frame adds an import only to a
     // file whose body really spells the qualifier, so a package of pure bool
@@ -167,8 +167,11 @@ fn omits(options: Options, field_name: []const u8) bool {
 
 /// The rules exist because every one of them would otherwise reach the user as
 /// a compile error in generated code, or -- worse -- as a `String` that
-/// silently stopped naming a field the binding renamed.
-fn validateDocument(allocator: std.mem.Allocator, document: semantic.Semantic) !?diagnostic.Diagnostic {
+/// silently stopped naming a field the binding renamed. Every offending
+/// declaration is reported, so one run names them all.
+fn validateDocument(allocator: std.mem.Allocator, document: semantic.Semantic) ![]const diagnostic.Diagnostic {
+    var issues: std.ArrayList(diagnostic.Diagnostic) = .empty;
+    errdefer issues.deinit(allocator);
     for (document.types) |declaration| {
         // A declaration of the wrong kind never reaches here: `.targets` says
         // this plugin takes a value struct, so asking an enum or a handle for
@@ -179,7 +182,7 @@ fn validateDocument(allocator: std.mem.Allocator, document: semantic.Semantic) !
         // nothing, and the field appears in the output without anyone asking.
         for (options.omit) |omitted| {
             if (fieldNamed(declaration, omitted) != null) continue;
-            return .{
+            try issues.append(allocator, .{
                 .severity = .@"error",
                 .code = name ++ "003",
                 .message = try std.fmt.allocPrint(
@@ -189,13 +192,13 @@ fn validateDocument(allocator: std.mem.Allocator, document: semantic.Semantic) !
                 ),
                 .site = .{ .path = "semantic.json", .declaration = declaration.name },
                 .hint = "`omit` names Zig fields, in the Zig spelling; check the field still exists under that name",
-            };
+            });
         }
         if (options.style != .flags) continue;
         for (declaration.fields) |field| {
             if (omits(options, field.name)) continue;
             if (flagRenderable(field.type.?)) continue;
-            return .{
+            try issues.append(allocator, .{
                 .severity = .@"error",
                 .code = name ++ "004",
                 .message = try std.fmt.allocPrint(
@@ -205,10 +208,10 @@ fn validateDocument(allocator: std.mem.Allocator, document: semantic.Semantic) !
                 ),
                 .site = .{ .path = "semantic.json", .declaration = declaration.name },
                 .hint = "the `flags` style takes bool, integer and enum fields; use `.style = .fields`, which names every field unconditionally",
-            };
+            });
         }
     }
-    return null;
+    return issues.toOwnedSlice(allocator);
 }
 
 fn fieldNamed(declaration: semantic.TypeDecl, field_name: []const u8) ?semantic.TypeField {

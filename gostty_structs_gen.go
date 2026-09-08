@@ -3,12 +3,105 @@
 package gostty
 
 import (
+	"encoding/binary"
 	"fmt"
 	"strings"
 	"unsafe"
 
 	"github.com/ironpark/gostty/internal/raw"
 )
+
+// Event is an owned Go snapshot of the Zig struct of the same name.
+type Event struct {
+	Kind          StreamEvent
+	Title         string
+	Pwd           string
+	Body          string
+	Sequence      []byte
+	ProgressState ProgressState
+	Progress      uint8
+	HasProgress   bool
+}
+
+// EventRecord is an owned Go snapshot of the Zig struct of the same name.
+type EventRecord struct {
+	Value   Event
+	Present bool
+}
+
+const zigoMaterializedMagicVersion = uint64(0x00024f47495a)
+
+func zigoMaterializedU64(buffer []byte, offset uint64) uint64 {
+	if offset > uint64(len(buffer)) || uint64(len(buffer))-offset < 8 {
+		panic("zigo: invalid materialized result buffer")
+	}
+	return binary.LittleEndian.Uint64(buffer[int(offset) : int(offset)+8])
+}
+
+func zigoMaterializedBytes(buffer []byte, offset, length uint64) []byte {
+	if offset > uint64(len(buffer)) || length > uint64(len(buffer))-offset {
+		panic("zigo: invalid materialized result buffer")
+	}
+	return buffer[int(offset):int(offset+length)]
+}
+
+// zigoMaterializedWord reads a little-endian value of width bytes.
+func zigoMaterializedWord(buffer []byte, offset, width uint64) uint64 {
+	var value uint64
+	for i, b := range zigoMaterializedBytes(buffer, offset, width) {
+		value |= uint64(b) << (8 * uint(i))
+	}
+	return value
+}
+
+func zigoMaterializedHeader(buffer []byte, layout uint64) (uint64, uint64) {
+	if len(buffer) < 40 || zigoMaterializedU64(buffer, 0) != zigoMaterializedMagicVersion ||
+		zigoMaterializedU64(buffer, 8) != layout || zigoMaterializedU64(buffer, 32) != uint64(len(buffer)) {
+		panic("zigo: invalid materialized result buffer")
+	}
+	return zigoMaterializedU64(buffer, 24), zigoMaterializedU64(buffer, 16)
+}
+
+func zigoDecodeEventBuffer(buffer []byte) Event {
+	offset, count := zigoMaterializedHeader(buffer, 0)
+	if count != 1 {
+		panic("zigo: invalid materialized result buffer")
+	}
+	var result Event
+	zigoDecodeEventInto(buffer, offset, &result)
+	return result
+}
+
+func zigoDecodeEventInto(buffer []byte, offset uint64, result *Event) {
+	_ = zigoMaterializedBytes(buffer, offset, 80)
+	result.Kind = StreamEvent(zigoMaterializedWord(buffer, offset+0, 1))
+	result.Title = string(zigoMaterializedBytes(buffer, zigoMaterializedU64(buffer, offset+8), zigoMaterializedU64(buffer, offset+8+8)))
+	result.Pwd = string(zigoMaterializedBytes(buffer, zigoMaterializedU64(buffer, offset+24), zigoMaterializedU64(buffer, offset+24+8)))
+	result.Body = string(zigoMaterializedBytes(buffer, zigoMaterializedU64(buffer, offset+40), zigoMaterializedU64(buffer, offset+40+8)))
+	result.Sequence = append([]byte(nil), zigoMaterializedBytes(buffer, zigoMaterializedU64(buffer, offset+56), zigoMaterializedU64(buffer, offset+56+8))...)
+	result.ProgressState = ProgressState(zigoMaterializedWord(buffer, offset+72, 1))
+	result.Progress = uint8(zigoMaterializedWord(buffer, offset+73, 1))
+	result.HasProgress = zigoMaterializedWord(buffer, offset+74, 1) != 0
+}
+
+func zigoDecodeEventRecordBuffer(buffer []byte) EventRecord {
+	offset, count := zigoMaterializedHeader(buffer, 1)
+	if count != 1 {
+		panic("zigo: invalid materialized result buffer")
+	}
+	var result EventRecord
+	zigoDecodeEventRecordInto(buffer, offset, &result)
+	return result
+}
+
+func zigoDecodeEventRecordInto(buffer []byte, offset uint64, result *EventRecord) {
+	_ = zigoMaterializedBytes(buffer, offset, 16)
+	{
+		zigoOff0 := zigoMaterializedU64(buffer, offset+0)
+		zigoDecodeEventInto(buffer, zigoOff0, &result.Value)
+	}
+	result.Present = zigoMaterializedWord(buffer, offset+8, 1) != 0
+}
 
 // DragOperations mirrors the Zig packed struct of the same name.
 type DragOperations struct {
@@ -109,6 +202,51 @@ func (value DragNotice) String() string {
 // DragNotice satisfies fmt.Stringer as a value, which is the form `%v` is
 // handed; a pointer receiver would stop this compiling.
 var _ fmt.Stringer = DragNotice{}
+
+// RenderCursor mirrors the Zig packed struct of the same name.
+type RenderCursor struct {
+	X                uint16
+	Y                uint16
+	ViewportHasValue bool
+	WideTail         bool
+	Visible          bool
+	Blinking         bool
+	PasswordInput    bool
+	Style            CursorStyle
+	Pad              uint32
+}
+
+func zigoRenderCursorToBacking(value RenderCursor) uint64 {
+	var result uint64
+	result |= (uint64(value.X) & 0xffff) << 0
+	result |= (uint64(value.Y) & 0xffff) << 16
+	result |= (uint64(zigoBoolToUint8(value.ViewportHasValue)) & 0x1) << 32
+	result |= (uint64(zigoBoolToUint8(value.WideTail)) & 0x1) << 33
+	result |= (uint64(zigoBoolToUint8(value.Visible)) & 0x1) << 34
+	result |= (uint64(zigoBoolToUint8(value.Blinking)) & 0x1) << 35
+	result |= (uint64(zigoBoolToUint8(value.PasswordInput)) & 0x1) << 36
+	result |= (uint64(value.Style) & 0x3) << 37
+	result |= (uint64(value.Pad) & 0x1ffffff) << 39
+	return uint64(result)
+}
+
+// Backing returns the integer representation used by Zig.
+func (value RenderCursor) Backing() uint64 { return zigoRenderCursorToBacking(value) }
+
+// RenderCursorFromBacking reconstructs a RenderCursor from its Zig integer representation.
+func RenderCursorFromBacking(value uint64) RenderCursor {
+	return RenderCursor{
+		X:                uint16(((uint64(value) >> 0) & 0xffff)),
+		Y:                uint16(((uint64(value) >> 16) & 0xffff)),
+		ViewportHasValue: ((uint64(value) >> 32) & 0x1) != 0,
+		WideTail:         ((uint64(value) >> 33) & 0x1) != 0,
+		Visible:          ((uint64(value) >> 34) & 0x1) != 0,
+		Blinking:         ((uint64(value) >> 35) & 0x1) != 0,
+		PasswordInput:    ((uint64(value) >> 36) & 0x1) != 0,
+		Style:            CursorStyle(((uint64(value) >> 37) & 0x3)),
+		Pad:              uint32(((uint64(value) >> 39) & 0x1ffffff)),
+	}
+}
 
 // CellFlags mirrors the Zig packed struct of the same name.
 type CellFlags struct {
@@ -234,23 +372,6 @@ func (value GridPoint) String() string {
 // handed; a pointer receiver would stop this compiling.
 var _ fmt.Stringer = GridPoint{}
 
-// SnapshotProgress mirrors the Zig `extern struct` of the same name.
-type SnapshotProgress struct {
-	// Rows corresponds to the Zig field rows.
-	Rows uint64
-	// Remaining corresponds to the Zig field remaining.
-	Remaining uint32
-	// Pad corresponds to the Zig field _pad.
-	Pad uint32
-}
-
-// SnapshotProgress is reinterpreted as raw.SnapshotProgressData instead of copied, so the two
-// layouts must stay identical.
-var _ = [1]struct{}{}[unsafe.Sizeof(SnapshotProgress{})-unsafe.Sizeof(raw.SnapshotProgressData{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgress{}.Rows)-unsafe.Offsetof(raw.SnapshotProgressData{}.Rows)]
-var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgress{}.Remaining)-unsafe.Offsetof(raw.SnapshotProgressData{}.Remaining)]
-var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgress{}.Pad)-unsafe.Offsetof(raw.SnapshotProgressData{}.Pad)]
-
 // Selection mirrors the Zig `extern struct` of the same name.
 type Selection struct {
 	// StartX corresponds to the Zig field start_x.
@@ -292,20 +413,6 @@ type FormatOptions struct {
 	ResolvePalette bool
 }
 
-// DragMove mirrors the Zig `extern struct` of the same name.
-type DragMove struct {
-	// CellX corresponds to the Zig field cell_x.
-	CellX uint32
-	// CellY corresponds to the Zig field cell_y.
-	CellY uint32
-	// PixelX corresponds to the Zig field pixel_x.
-	PixelX int32
-	// PixelY corresponds to the Zig field pixel_y.
-	PixelY int32
-	// Operations corresponds to the Zig field operations.
-	Operations DragOperations
-}
-
 // Scrollbar mirrors the Zig `extern struct` of the same name.
 type Scrollbar struct {
 	// Total corresponds to the Zig field total.
@@ -322,87 +429,6 @@ var _ = [1]struct{}{}[unsafe.Sizeof(Scrollbar{})-unsafe.Sizeof(raw.ScrollbarData
 var _ = [1]struct{}{}[unsafe.Offsetof(Scrollbar{}.Total)-unsafe.Offsetof(raw.ScrollbarData{}.Total)]
 var _ = [1]struct{}{}[unsafe.Offsetof(Scrollbar{}.Offset)-unsafe.Offsetof(raw.ScrollbarData{}.Offset)]
 var _ = [1]struct{}{}[unsafe.Offsetof(Scrollbar{}.Len)-unsafe.Offsetof(raw.ScrollbarData{}.Len)]
-
-// RenderCell mirrors the Zig `extern struct` of the same name.
-type RenderCell struct {
-	// Codepoint corresponds to the Zig field codepoint.
-	Codepoint rune
-	// Fg corresponds to the Zig field fg.
-	Fg uint32
-	// Bg corresponds to the Zig field bg.
-	Bg uint32
-	// Flags corresponds to the Zig field flags.
-	Flags CellFlags
-}
-
-// KittyPlacement mirrors the Zig `extern struct` of the same name.
-type KittyPlacement struct {
-	// ImageID corresponds to the Zig field image_id.
-	ImageID uint32
-	// PlacementID corresponds to the Zig field placement_id.
-	PlacementID uint32
-	// ViewportCol corresponds to the Zig field viewport_col.
-	ViewportCol int32
-	// ViewportRow corresponds to the Zig field viewport_row.
-	ViewportRow int32
-	// XOffset corresponds to the Zig field x_offset.
-	XOffset uint32
-	// YOffset corresponds to the Zig field y_offset.
-	YOffset uint32
-	// PixelWidth corresponds to the Zig field pixel_width.
-	PixelWidth uint32
-	// PixelHeight corresponds to the Zig field pixel_height.
-	PixelHeight uint32
-	// GridCols corresponds to the Zig field grid_cols.
-	GridCols uint32
-	// GridRows corresponds to the Zig field grid_rows.
-	GridRows uint32
-	// SourceX corresponds to the Zig field source_x.
-	SourceX uint32
-	// SourceY corresponds to the Zig field source_y.
-	SourceY uint32
-	// SourceWidth corresponds to the Zig field source_width.
-	SourceWidth uint32
-	// SourceHeight corresponds to the Zig field source_height.
-	SourceHeight uint32
-	// Z corresponds to the Zig field z.
-	Z int32
-	// Layer corresponds to the Zig field layer.
-	Layer KittyLayer
-	// Virtual corresponds to the Zig field virtual.
-	Virtual bool
-	// Pad corresponds to the Zig field _pad.
-	Pad uint16
-}
-
-// KittyImage mirrors the Zig `extern struct` of the same name.
-type KittyImage struct {
-	// Generation corresponds to the Zig field generation.
-	Generation uint64
-	// DataLen corresponds to the Zig field data_len.
-	DataLen uint64
-	// Width corresponds to the Zig field width.
-	Width uint32
-	// Height corresponds to the Zig field height.
-	Height uint32
-	// Format corresponds to the Zig field format.
-	Format KittyFormat
-	// Compression corresponds to the Zig field compression.
-	Compression KittyCompression
-	// Pad corresponds to the Zig field _pad.
-	Pad uint16
-}
-
-// KittyImage is reinterpreted as raw.KittyImageData instead of copied, so the two
-// layouts must stay identical.
-var _ = [1]struct{}{}[unsafe.Sizeof(KittyImage{})-unsafe.Sizeof(raw.KittyImageData{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Generation)-unsafe.Offsetof(raw.KittyImageData{}.Generation)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.DataLen)-unsafe.Offsetof(raw.KittyImageData{}.DataLen)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Width)-unsafe.Offsetof(raw.KittyImageData{}.Width)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Height)-unsafe.Offsetof(raw.KittyImageData{}.Height)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Format)-unsafe.Offsetof(raw.KittyImageData{}.Format)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Compression)-unsafe.Offsetof(raw.KittyImageData{}.Compression)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Pad)-unsafe.Offsetof(raw.KittyImageData{}.Pad)]
 
 // ScrollRegion mirrors the Zig `extern struct` of the same name.
 type ScrollRegion struct {
@@ -496,18 +522,142 @@ type GestureDragEvent struct {
 	Rectangle bool
 }
 
+// DragMove mirrors the Zig `extern struct` of the same name.
+type DragMove struct {
+	// CellX corresponds to the Zig field cell_x.
+	CellX uint32
+	// CellY corresponds to the Zig field cell_y.
+	CellY uint32
+	// PixelX corresponds to the Zig field pixel_x.
+	PixelX int32
+	// PixelY corresponds to the Zig field pixel_y.
+	PixelY int32
+	// Operations corresponds to the Zig field operations.
+	Operations DragOperations
+}
+
+// FeedBoundary mirrors the Zig `extern struct` of the same name.
+type FeedBoundary struct {
+	// Consumed corresponds to the Zig field consumed.
+	Consumed uint
+	// Reached corresponds to the Zig field reached.
+	Reached bool
+}
+
+// SnapshotProgress mirrors the Zig `extern struct` of the same name.
+type SnapshotProgress struct {
+	// Rows corresponds to the Zig field rows.
+	Rows uint64
+	// Remaining corresponds to the Zig field remaining.
+	Remaining uint32
+	// Pad corresponds to the Zig field _pad.
+	Pad uint32
+}
+
+// SnapshotProgress is reinterpreted as raw.SnapshotProgressData instead of copied, so the two
+// layouts must stay identical.
+var _ = [1]struct{}{}[unsafe.Sizeof(SnapshotProgress{})-unsafe.Sizeof(raw.SnapshotProgressData{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgress{}.Rows)-unsafe.Offsetof(raw.SnapshotProgressData{}.Rows)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgress{}.Remaining)-unsafe.Offsetof(raw.SnapshotProgressData{}.Remaining)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgress{}.Pad)-unsafe.Offsetof(raw.SnapshotProgressData{}.Pad)]
+
+// RenderColors mirrors the Zig `extern struct` of the same name.
+type RenderColors struct {
+	// Background corresponds to the Zig field background.
+	Background uint32
+	// Foreground corresponds to the Zig field foreground.
+	Foreground uint32
+	// Cursor corresponds to the Zig field cursor.
+	Cursor uint32
+	// CursorHasValue corresponds to the Zig field cursor_has_value.
+	CursorHasValue bool
+}
+
+// RenderCell mirrors the Zig `extern struct` of the same name.
+type RenderCell struct {
+	// Codepoint corresponds to the Zig field codepoint.
+	Codepoint rune
+	// Fg corresponds to the Zig field fg.
+	Fg uint32
+	// Bg corresponds to the Zig field bg.
+	Bg uint32
+	// Flags corresponds to the Zig field flags.
+	Flags CellFlags
+}
+
+// KittyPlacement mirrors the Zig `extern struct` of the same name.
+type KittyPlacement struct {
+	// ImageID corresponds to the Zig field image_id.
+	ImageID uint32
+	// PlacementID corresponds to the Zig field placement_id.
+	PlacementID uint32
+	// ViewportCol corresponds to the Zig field viewport_col.
+	ViewportCol int32
+	// ViewportRow corresponds to the Zig field viewport_row.
+	ViewportRow int32
+	// XOffset corresponds to the Zig field x_offset.
+	XOffset uint32
+	// YOffset corresponds to the Zig field y_offset.
+	YOffset uint32
+	// PixelWidth corresponds to the Zig field pixel_width.
+	PixelWidth uint32
+	// PixelHeight corresponds to the Zig field pixel_height.
+	PixelHeight uint32
+	// GridCols corresponds to the Zig field grid_cols.
+	GridCols uint32
+	// GridRows corresponds to the Zig field grid_rows.
+	GridRows uint32
+	// SourceX corresponds to the Zig field source_x.
+	SourceX uint32
+	// SourceY corresponds to the Zig field source_y.
+	SourceY uint32
+	// SourceWidth corresponds to the Zig field source_width.
+	SourceWidth uint32
+	// SourceHeight corresponds to the Zig field source_height.
+	SourceHeight uint32
+	// Z corresponds to the Zig field z.
+	Z int32
+	// Layer corresponds to the Zig field layer.
+	Layer KittyLayer
+	// Virtual corresponds to the Zig field virtual.
+	Virtual bool
+	// Pad corresponds to the Zig field _pad.
+	Pad uint16
+}
+
+// KittyImage mirrors the Zig `extern struct` of the same name.
+type KittyImage struct {
+	// Generation corresponds to the Zig field generation.
+	Generation uint64
+	// DataLen corresponds to the Zig field data_len.
+	DataLen uint64
+	// Width corresponds to the Zig field width.
+	Width uint32
+	// Height corresponds to the Zig field height.
+	Height uint32
+	// Format corresponds to the Zig field format.
+	Format KittyFormat
+	// Compression corresponds to the Zig field compression.
+	Compression KittyCompression
+	// Pad corresponds to the Zig field _pad.
+	Pad uint16
+}
+
+// KittyImage is reinterpreted as raw.KittyImageData instead of copied, so the two
+// layouts must stay identical.
+var _ = [1]struct{}{}[unsafe.Sizeof(KittyImage{})-unsafe.Sizeof(raw.KittyImageData{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Generation)-unsafe.Offsetof(raw.KittyImageData{}.Generation)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.DataLen)-unsafe.Offsetof(raw.KittyImageData{}.DataLen)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Width)-unsafe.Offsetof(raw.KittyImageData{}.Width)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Height)-unsafe.Offsetof(raw.KittyImageData{}.Height)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Format)-unsafe.Offsetof(raw.KittyImageData{}.Format)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Compression)-unsafe.Offsetof(raw.KittyImageData{}.Compression)]
+var _ = [1]struct{}{}[unsafe.Offsetof(KittyImage{}.Pad)-unsafe.Offsetof(raw.KittyImageData{}.Pad)]
+
 func zigoGridPointFromRaw(value raw.GridPointData) GridPoint {
 	return GridPoint{
 		X: value.X,
 		Y: value.Y,
-	}
-}
-
-func zigoSnapshotProgressFromRaw(value raw.SnapshotProgressData) SnapshotProgress {
-	return SnapshotProgress{
-		Rows:      value.Rows,
-		Remaining: value.Remaining,
-		Pad:       value.Pad,
 	}
 }
 
@@ -555,6 +705,54 @@ func zigoFormatOptionsToRaw(value FormatOptions) raw.FormatOptionsData {
 	}
 }
 
+func zigoScrollbarFromRaw(value raw.ScrollbarData) Scrollbar {
+	return Scrollbar{
+		Total:  value.Total,
+		Offset: value.Offset,
+		Len:    value.Len,
+	}
+}
+
+func zigoScrollRegionFromRaw(value raw.ScrollRegionData) ScrollRegion {
+	return ScrollRegion{
+		Top:    value.Top,
+		Bottom: value.Bottom,
+		Left:   value.Left,
+		Right:  value.Right,
+	}
+}
+
+func zigoGestureGeometryToRaw(value GestureGeometry) raw.GestureGeometryData {
+	return raw.GestureGeometryData{
+		Columns:      value.Columns,
+		CellWidth:    value.CellWidth,
+		PaddingLeft:  value.PaddingLeft,
+		ScreenHeight: value.ScreenHeight,
+	}
+}
+
+func zigoGesturePressEventToRaw(value GesturePressEvent) raw.GesturePressEventData {
+	return raw.GesturePressEventData{
+		X:                value.X,
+		Y:                value.Y,
+		Xpos:             value.Xpos,
+		Ypos:             value.Ypos,
+		MaxDistance:      value.MaxDistance,
+		RepeatIntervalNs: value.RepeatIntervalNs,
+		TimeNs:           value.TimeNs,
+	}
+}
+
+func zigoGestureDragEventToRaw(value GestureDragEvent) raw.GestureDragEventData {
+	return raw.GestureDragEventData{
+		X:         value.X,
+		Y:         value.Y,
+		Xpos:      value.Xpos,
+		Ypos:      value.Ypos,
+		Rectangle: zigoBoolToUint8(value.Rectangle),
+	}
+}
+
 func zigoDragMoveToRaw(value DragMove) raw.DragMoveData {
 	return raw.DragMoveData{
 		CellX:      value.CellX,
@@ -565,11 +763,27 @@ func zigoDragMoveToRaw(value DragMove) raw.DragMoveData {
 	}
 }
 
-func zigoScrollbarFromRaw(value raw.ScrollbarData) Scrollbar {
-	return Scrollbar{
-		Total:  value.Total,
-		Offset: value.Offset,
-		Len:    value.Len,
+func zigoFeedBoundaryFromRaw(value raw.FeedBoundaryData) FeedBoundary {
+	return FeedBoundary{
+		Consumed: value.Consumed,
+		Reached:  value.Reached != 0,
+	}
+}
+
+func zigoSnapshotProgressFromRaw(value raw.SnapshotProgressData) SnapshotProgress {
+	return SnapshotProgress{
+		Rows:      value.Rows,
+		Remaining: value.Remaining,
+		Pad:       value.Pad,
+	}
+}
+
+func zigoRenderColorsFromRaw(value raw.RenderColorsData) RenderColors {
+	return RenderColors{
+		Background:     value.Background,
+		Foreground:     value.Foreground,
+		Cursor:         value.Cursor,
+		CursorHasValue: value.CursorHasValue != 0,
 	}
 }
 
@@ -638,46 +852,6 @@ func zigoKittyImageFromRaw(value raw.KittyImageData) KittyImage {
 		Format:      KittyFormat(value.Format),
 		Compression: KittyCompression(value.Compression),
 		Pad:         value.Pad,
-	}
-}
-
-func zigoScrollRegionFromRaw(value raw.ScrollRegionData) ScrollRegion {
-	return ScrollRegion{
-		Top:    value.Top,
-		Bottom: value.Bottom,
-		Left:   value.Left,
-		Right:  value.Right,
-	}
-}
-
-func zigoGestureGeometryToRaw(value GestureGeometry) raw.GestureGeometryData {
-	return raw.GestureGeometryData{
-		Columns:      value.Columns,
-		CellWidth:    value.CellWidth,
-		PaddingLeft:  value.PaddingLeft,
-		ScreenHeight: value.ScreenHeight,
-	}
-}
-
-func zigoGesturePressEventToRaw(value GesturePressEvent) raw.GesturePressEventData {
-	return raw.GesturePressEventData{
-		X:                value.X,
-		Y:                value.Y,
-		Xpos:             value.Xpos,
-		Ypos:             value.Ypos,
-		MaxDistance:      value.MaxDistance,
-		RepeatIntervalNs: value.RepeatIntervalNs,
-		TimeNs:           value.TimeNs,
-	}
-}
-
-func zigoGestureDragEventToRaw(value GestureDragEvent) raw.GestureDragEventData {
-	return raw.GestureDragEventData{
-		X:         value.X,
-		Y:         value.Y,
-		Xpos:      value.Xpos,
-		Ypos:      value.Ypos,
-		Rectangle: zigoBoolToUint8(value.Rectangle),
 	}
 }
 

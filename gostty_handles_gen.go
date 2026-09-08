@@ -12,7 +12,11 @@ import (
 	"github.com/ironpark/gostty/internal/raw"
 )
 
-// Terminal is a caller-owned native handle. Call Close when it is no longer needed.
+// Terminal owns mutable terminal state. Serialize all calls, including
+// getters, with calls on its streams, screens, searches, gestures and grid
+// references. Handle locks protect lifetime only; they do not serialize native
+// operations. Callbacks may answer their supplied request but must not
+// recursively feed, resize, reset or close the same terminal.
 type Terminal struct {
 	ptr      unsafe.Pointer
 	mu       sync.Mutex
@@ -180,292 +184,144 @@ func (te *Terminal) zigoTakeLocked() (zigoTerminalCleanupState, bool) {
 	return state, true
 }
 
-// Stream is a caller-owned native handle. Call Close when it is no longer needed.
-type Stream struct {
-	ptr             unsafe.Pointer
-	mu              sync.Mutex
-	active          int
-	closed          bool
-	poison          *NativePanicError
-	parent          zigoChildHandle
-	callbackHandles []zigoCallbackHandle
-	cleanup         runtime.Cleanup
+// TerminalConfig configures a new terminal. Cols and Rows must be nonzero.
+// Nil optional fields retain native defaults; pointers distinguish an explicit
+// zero or false from an omitted setting. Configuration is copied during creation.
+type TerminalConfig struct {
+	Cols, Rows         uint16
+	ScrollbackMaxBytes *uint   // Zero disables scrollback immediately.
+	ScrollbackMaxLines *uint   // Pruned at native page boundaries, not an exact row cap.
+	BackgroundColor    *uint32 // Default 0xRRGGBB.
+	ForegroundColor    *uint32 // Default 0xRRGGBB.
+	CursorColor        *uint32 // Default 0xRRGGBB.
+	CursorBlink        *bool
+	ModeDefaults       []ModeDefault
 }
 
-func (s *Stream) zigoCallbackHandle(slot int) zigoCallbackHandle {
-	s.mu.Lock()
-	handle := s.callbackHandles[slot]
-	s.mu.Unlock()
-	return handle
+// ModeDefault sets both the current value and reset default of a mode.
+type ModeDefault struct {
+	Mode    Mode
+	Enabled bool
 }
 
-// zigoReplaceCallbackHandle swaps one generation-time callback slot under the handle lock.
-func (s *Stream) zigoReplaceCallbackHandle(slot int, handle zigoCallbackHandle) zigoCallbackHandle {
-	s.mu.Lock()
-	previous := s.callbackHandles[slot]
-	s.callbackHandles[slot] = handle
-	s.mu.Unlock()
-	return previous
-}
-
-// zigoAcquire pins s and its parent open for one native call.
-func (s *Stream) zigoAcquire(operation string) (unsafe.Pointer, error) {
-	if s == nil {
-		return nil, &HandleError{Operation: operation}
+// NewTerminalWithConfig creates and configures a terminal. A failed setting
+// closes the newly created terminal; no partially configured handle escapes.
+func NewTerminalWithConfig(cfg TerminalConfig) (_ *Terminal, err error) {
+	if cfg.Cols == 0 {
+		return nil, &RangeError{Operation: "NewTerminalWithConfig", Parameter: "Cols", Type: "nonzero cell count"}
 	}
-	s.mu.Lock()
-	parent := s.parent
-	s.mu.Unlock()
-	if parent != nil {
-		if _, err := parent.ZigoAcquire(operation); err != nil {
+	if cfg.Rows == 0 {
+		return nil, &RangeError{Operation: "NewTerminalWithConfig", Parameter: "Rows", Type: "nonzero cell count"}
+	}
+	term, err := NewTerminal(cfg.Cols, cfg.Rows)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err != nil {
+			_ = term.Close()
+		}
+	}()
+	if cfg.ScrollbackMaxBytes != nil {
+		if err = term.SetScrollbackMaxBytes(*cfg.ScrollbackMaxBytes); err != nil {
 			return nil, err
 		}
 	}
-	s.mu.Lock()
-	var err error
-	switch {
-	case s.closed || s.ptr == nil:
-		err = &HandleError{Operation: operation}
-	case s.poison != nil:
-		err = s.poison.Poisoned(operation)
-	default:
-		s.active++
-	}
-	ptr := s.ptr
-	s.mu.Unlock()
-	if err != nil {
-		if parent != nil {
-			parent.ZigoRelease()
-		}
-		return nil, err
-	}
-	return ptr, nil
-}
-
-func (s *Stream) zigoRelease() {
-	if s == nil {
-		return
-	}
-	s.mu.Lock()
-	s.active--
-	parent := s.parent
-	state, release := s.zigoTakeLocked()
-	s.mu.Unlock()
-	if release {
-		zigoCleanupStream(state)
-	}
-	if parent != nil {
-		parent.ZigoRelease()
-	}
-}
-
-// zigoPoison marks s unusable: a Zig panic unwound through native frames
-// without running their defers, so the state behind it is unknown.
-func (s *Stream) zigoPoison(cause *NativePanicError) {
-	if s == nil {
-		return
-	}
-	s.mu.Lock()
-	parent := s.parent
-	if s.poison == nil {
-		s.poison = cause
-		s.cleanup.Stop()
-	}
-	s.mu.Unlock()
-	if parent != nil {
-		parent.ZigoPoison(cause)
-	}
-}
-
-// ZigoAcquire implements the shared lifecycle handle contract.
-func (s *Stream) ZigoAcquire(operation string) (unsafe.Pointer, error) {
-	return s.zigoAcquire(operation)
-}
-
-// ZigoRelease implements the shared lifecycle handle contract.
-func (s *Stream) ZigoRelease() { s.zigoRelease() }
-
-// ZigoPoison implements the shared lifecycle handle contract.
-func (s *Stream) ZigoPoison(cause *NativePanicError) { s.zigoPoison(cause) }
-
-type zigoStreamCleanupState struct {
-	ptr             unsafe.Pointer
-	parent          zigoChildHandle
-	callbackHandles []zigoCallbackHandle
-}
-
-func zigoNewStream(ptr unsafe.Pointer, parent zigoChildHandle, callbackHandles []zigoCallbackHandle) *Stream {
-	value := &Stream{ptr: ptr, parent: parent, callbackHandles: callbackHandles}
-	state := zigoStreamCleanupState{ptr: ptr, parent: parent, callbackHandles: callbackHandles}
-	value.cleanup = runtime.AddCleanup(value, zigoCleanupStream, state)
-	return value
-}
-
-func zigoCleanupStream(state zigoStreamCleanupState) {
-	if state.ptr != nil {
-		raw.StreamFreeStream(state.ptr)
-	}
-	for _, handle := range state.callbackHandles {
-		zigoDeleteCallbackHandle(handle)
-	}
-	if state.parent != nil {
-		state.parent.ZigoDropChild()
-	}
-}
-
-// Close releases the native Stream resources. It is safe to call more than once.
-// The error result is always nil; it exists so Stream satisfies io.Closer.
-// Close does not wait: a call still inside native keeps the resources until it
-// returns, and every call made after Close fails with *HandleError.
-func (s *Stream) Close() error {
-	if s == nil {
-		return nil
-	}
-	s.mu.Lock()
-	if s.closed {
-		s.mu.Unlock()
-		return nil
-	}
-	s.closed = true
-	s.cleanup.Stop()
-	state, release := s.zigoTakeLocked()
-	s.mu.Unlock()
-	if release {
-		zigoCleanupStream(state)
-	}
-	runtime.KeepAlive(s)
-	return nil
-}
-
-// zigoTakeLocked hands out what is left to release once s is closed and no
-// call is inside native; mu must be held. A poisoned handle keeps its native
-// object: releasing state a panic left half-changed could fault, so it leaks.
-func (s *Stream) zigoTakeLocked() (zigoStreamCleanupState, bool) {
-	if !s.closed || s.active != 0 || s.ptr == nil {
-		return zigoStreamCleanupState{}, false
-	}
-	state := zigoStreamCleanupState{ptr: s.ptr, callbackHandles: s.callbackHandles, parent: s.parent}
-	s.ptr = nil
-	s.callbackHandles = nil
-	s.parent = nil
-	if s.poison != nil {
-		state.ptr = nil
-	}
-	return state, true
-}
-
-// Stream satisfies io.WriteCloser; this assertion stops compiling the day it does not.
-var _ io.WriteCloser = (*Stream)(nil)
-
-// ClipboardRequest represents a native Zig handle.
-type ClipboardRequest struct {
-	ptr    unsafe.Pointer
-	mu     sync.Mutex
-	active int
-	closed bool
-	poison *NativePanicError
-	owner  zigoHandle
-}
-
-func zigoNewBorrowedClipboardRequest(ptr unsafe.Pointer, owner zigoHandle) *ClipboardRequest {
-	return &ClipboardRequest{ptr: ptr, owner: owner}
-}
-
-// zigoAcquire pins c and its parent open for one native call.
-func (c *ClipboardRequest) zigoAcquire(operation string) (unsafe.Pointer, error) {
-	if c == nil {
-		return nil, &HandleError{Operation: operation}
-	}
-	c.mu.Lock()
-	parent := c.owner
-	c.mu.Unlock()
-	if parent != nil {
-		if _, err := parent.ZigoAcquire(operation); err != nil {
+	if cfg.ScrollbackMaxLines != nil {
+		if err = term.SetScrollbackMaxLines(*cfg.ScrollbackMaxLines); err != nil {
 			return nil, err
 		}
 	}
-	c.mu.Lock()
-	var err error
-	switch {
-	case c.closed || c.ptr == nil:
-		err = &HandleError{Operation: operation}
-	case c.poison != nil:
-		err = c.poison.Poisoned(operation)
-	default:
-		c.active++
-	}
-	ptr := c.ptr
-	c.mu.Unlock()
-	if err != nil {
-		if parent != nil {
-			parent.ZigoRelease()
+	if cfg.BackgroundColor != nil {
+		if err = term.SetDefaultBackgroundColor(*cfg.BackgroundColor); err != nil {
+			return nil, err
 		}
+	}
+	if cfg.ForegroundColor != nil {
+		if err = term.SetDefaultForegroundColor(*cfg.ForegroundColor); err != nil {
+			return nil, err
+		}
+	}
+	if cfg.CursorColor != nil {
+		if err = term.SetDefaultCursorColor(*cfg.CursorColor); err != nil {
+			return nil, err
+		}
+	}
+	if cfg.CursorBlink != nil {
+		if err = term.SetDefaultCursorBlink(*cfg.CursorBlink); err != nil {
+			return nil, err
+		}
+	}
+	for _, mode := range cfg.ModeDefaults {
+		if !mode.Mode.IsKnown() {
+			return nil, &RangeError{Operation: "NewTerminalWithConfig", Parameter: "ModeDefaults", Type: "known Mode"}
+		}
+		if err = term.SetDefaultMode(mode.Mode, mode.Enabled); err != nil {
+			return nil, err
+		}
+	}
+	return term, nil
+}
+
+// StreamConfig configures the parser and its embedder identity. Zero limits
+// disable continuation tracking and unknown-sequence capture respectively.
+// A nil Version leaves Ghostty's identity unchanged. Callbacks run synchronously;
+// only request-response calls may reenter the active terminal's bindings.
+type StreamConfig struct {
+	ContinuationMaxBytes uint
+	UnknownMaxBytes      uint
+	Version              *VersionReport
+	EnquiryResponse      string
+	ColorScheme          *ColorScheme
+	ClipboardRead        ClipboardHandler
+	ClipboardWrite       ClipboardHandler
+}
+
+// VersionReport is the application identity returned by XTVERSION.
+type VersionReport struct{ Name, Version string }
+
+// NewStreamWithConfig creates a child stream and applies all settings before
+// returning it. On failure it closes the stream and releases the parent claim.
+func (t *Terminal) NewStreamWithConfig(cfg StreamConfig) (_ *Stream, err error) {
+	s, err := t.NewStream(cfg.ContinuationMaxBytes)
+	if err != nil {
 		return nil, err
 	}
-	return ptr, nil
-}
-
-func (c *ClipboardRequest) zigoRelease() {
-	if c == nil {
-		return
+	defer func() {
+		if err != nil {
+			_ = s.Close()
+		}
+	}()
+	if err = s.SetUnknownMaxBytes(cfg.UnknownMaxBytes); err != nil {
+		return nil, err
 	}
-	c.mu.Lock()
-	c.active--
-	parent := c.owner
-	c.mu.Unlock()
-	if parent != nil {
-		parent.ZigoRelease()
+	if cfg.Version != nil {
+		if err = s.SetVersionReport(cfg.Version.Name, cfg.Version.Version); err != nil {
+			return nil, err
+		}
 	}
-}
-
-// zigoPoison marks c unusable: a Zig panic unwound through native frames
-// without running their defers, so the state behind it is unknown.
-func (c *ClipboardRequest) zigoPoison(cause *NativePanicError) {
-	if c == nil {
-		return
+	if err = s.SetEnquiryResponse(cfg.EnquiryResponse); err != nil {
+		return nil, err
 	}
-	c.mu.Lock()
-	parent := c.owner
-	if c.poison == nil {
-		c.poison = cause
+	if cfg.ColorScheme != nil {
+		if *cfg.ColorScheme != ColorSchemeDark && *cfg.ColorScheme != ColorSchemeLight {
+			return nil, &RangeError{Operation: "Terminal.NewStreamWithConfig", Parameter: "ColorScheme", Type: "ColorScheme"}
+		}
+		if err = s.ColorSchemeChanged(*cfg.ColorScheme); err != nil {
+			return nil, err
+		}
 	}
-	c.mu.Unlock()
-	if parent != nil {
-		parent.ZigoPoison(cause)
+	if cfg.ClipboardRead != nil {
+		if err = s.OnClipboardReadRequest(cfg.ClipboardRead); err != nil {
+			return nil, err
+		}
 	}
-}
-
-// ZigoAcquire implements the shared lifecycle handle contract.
-func (c *ClipboardRequest) ZigoAcquire(operation string) (unsafe.Pointer, error) {
-	return c.zigoAcquire(operation)
-}
-
-// ZigoRelease implements the shared lifecycle handle contract.
-func (c *ClipboardRequest) ZigoRelease() { c.zigoRelease() }
-
-// ZigoPoison implements the shared lifecycle handle contract.
-func (c *ClipboardRequest) ZigoPoison(cause *NativePanicError) { c.zigoPoison(cause) }
-
-// Close detaches this borrowed ClipboardRequest view without releasing native resources.
-func (c *ClipboardRequest) Close() error {
-	if c == nil {
-		return nil
+	if cfg.ClipboardWrite != nil {
+		if err = s.OnClipboardWriteRequest(cfg.ClipboardWrite); err != nil {
+			return nil, err
+		}
 	}
-	c.mu.Lock()
-	if c.closed {
-		c.mu.Unlock()
-		return nil
-	}
-	if c.active != 0 {
-		active := c.active
-		c.mu.Unlock()
-		return &HandleInUseError{Operation: "ClipboardRequest.Close", Children: active}
-	}
-	c.closed = true
-	c.ptr = nil
-	c.owner = nil
-	c.mu.Unlock()
-	return nil
+	return s, nil
 }
 
 // Screen represents a native Zig handle.
@@ -883,6 +739,597 @@ func (g *GridRef) zigoTakeLocked() (zigoGridRefCleanupState, bool) {
 	return state, true
 }
 
+// Gesture is a caller-owned native handle. Call Close when it is no longer needed.
+type Gesture struct {
+	ptr     unsafe.Pointer
+	mu      sync.Mutex
+	active  int
+	closed  bool
+	poison  *NativePanicError
+	parent  zigoChildHandle
+	cleanup runtime.Cleanup
+}
+
+// zigoAcquire pins g and its parent open for one native call.
+func (g *Gesture) zigoAcquire(operation string) (unsafe.Pointer, error) {
+	if g == nil {
+		return nil, &HandleError{Operation: operation}
+	}
+	g.mu.Lock()
+	parent := g.parent
+	g.mu.Unlock()
+	if parent != nil {
+		if _, err := parent.ZigoAcquire(operation); err != nil {
+			return nil, err
+		}
+	}
+	g.mu.Lock()
+	var err error
+	switch {
+	case g.closed || g.ptr == nil:
+		err = &HandleError{Operation: operation}
+	case g.poison != nil:
+		err = g.poison.Poisoned(operation)
+	default:
+		g.active++
+	}
+	ptr := g.ptr
+	g.mu.Unlock()
+	if err != nil {
+		if parent != nil {
+			parent.ZigoRelease()
+		}
+		return nil, err
+	}
+	return ptr, nil
+}
+
+func (g *Gesture) zigoRelease() {
+	if g == nil {
+		return
+	}
+	g.mu.Lock()
+	g.active--
+	parent := g.parent
+	state, release := g.zigoTakeLocked()
+	g.mu.Unlock()
+	if release {
+		zigoCleanupGesture(state)
+	}
+	if parent != nil {
+		parent.ZigoRelease()
+	}
+}
+
+// zigoPoison marks g unusable: a Zig panic unwound through native frames
+// without running their defers, so the state behind it is unknown.
+func (g *Gesture) zigoPoison(cause *NativePanicError) {
+	if g == nil {
+		return
+	}
+	g.mu.Lock()
+	parent := g.parent
+	if g.poison == nil {
+		g.poison = cause
+		g.cleanup.Stop()
+	}
+	g.mu.Unlock()
+	if parent != nil {
+		parent.ZigoPoison(cause)
+	}
+}
+
+// ZigoAcquire implements the shared lifecycle handle contract.
+func (g *Gesture) ZigoAcquire(operation string) (unsafe.Pointer, error) {
+	return g.zigoAcquire(operation)
+}
+
+// ZigoRelease implements the shared lifecycle handle contract.
+func (g *Gesture) ZigoRelease() { g.zigoRelease() }
+
+// ZigoPoison implements the shared lifecycle handle contract.
+func (g *Gesture) ZigoPoison(cause *NativePanicError) { g.zigoPoison(cause) }
+
+type zigoGestureCleanupState struct {
+	ptr    unsafe.Pointer
+	parent zigoChildHandle
+}
+
+func zigoNewGesture(ptr unsafe.Pointer, parent zigoChildHandle) *Gesture {
+	value := &Gesture{ptr: ptr, parent: parent}
+	state := zigoGestureCleanupState{ptr: ptr, parent: parent}
+	value.cleanup = runtime.AddCleanup(value, zigoCleanupGesture, state)
+	return value
+}
+
+func zigoCleanupGesture(state zigoGestureCleanupState) {
+	if state.ptr != nil {
+		raw.GestureGestureClose(state.ptr)
+	}
+	if state.parent != nil {
+		state.parent.ZigoDropChild()
+	}
+}
+
+// Close releases the native Gesture resources. It is safe to call more than once.
+// The error result is always nil; it exists so Gesture satisfies io.Closer.
+// Close does not wait: a call still inside native keeps the resources until it
+// returns, and every call made after Close fails with *HandleError.
+func (g *Gesture) Close() error {
+	if g == nil {
+		return nil
+	}
+	g.mu.Lock()
+	if g.closed {
+		g.mu.Unlock()
+		return nil
+	}
+	g.closed = true
+	g.cleanup.Stop()
+	state, release := g.zigoTakeLocked()
+	g.mu.Unlock()
+	if release {
+		zigoCleanupGesture(state)
+	}
+	runtime.KeepAlive(g)
+	return nil
+}
+
+// zigoTakeLocked hands out what is left to release once g is closed and no
+// call is inside native; mu must be held. A poisoned handle keeps its native
+// object: releasing state a panic left half-changed could fault, so it leaks.
+func (g *Gesture) zigoTakeLocked() (zigoGestureCleanupState, bool) {
+	if !g.closed || g.active != 0 || g.ptr == nil {
+		return zigoGestureCleanupState{}, false
+	}
+	state := zigoGestureCleanupState{ptr: g.ptr, parent: g.parent}
+	g.ptr = nil
+	g.parent = nil
+	if g.poison != nil {
+		state.ptr = nil
+	}
+	return state, true
+}
+
+// Stream parses VT bytes into its parent terminal. Serialize complete calls,
+// including event iteration, with all other calls touching the parent or its
+// children. Callbacks run synchronously; only request-response operations may
+// reenter the active terminal's bindings. Close the stream before its parent
+// terminal.
+type Stream struct {
+	ptr             unsafe.Pointer
+	mu              sync.Mutex
+	active          int
+	closed          bool
+	poison          *NativePanicError
+	parent          zigoChildHandle
+	callbackHandles []zigoCallbackHandle
+	cleanup         runtime.Cleanup
+}
+
+func (s *Stream) zigoCallbackHandle(slot int) zigoCallbackHandle {
+	s.mu.Lock()
+	handle := s.callbackHandles[slot]
+	s.mu.Unlock()
+	return handle
+}
+
+// zigoReplaceCallbackHandle swaps one generation-time callback slot under the handle lock.
+func (s *Stream) zigoReplaceCallbackHandle(slot int, handle zigoCallbackHandle) zigoCallbackHandle {
+	s.mu.Lock()
+	previous := s.callbackHandles[slot]
+	s.callbackHandles[slot] = handle
+	s.mu.Unlock()
+	return previous
+}
+
+// zigoAcquire pins s and its parent open for one native call.
+func (s *Stream) zigoAcquire(operation string) (unsafe.Pointer, error) {
+	if s == nil {
+		return nil, &HandleError{Operation: operation}
+	}
+	s.mu.Lock()
+	parent := s.parent
+	s.mu.Unlock()
+	if parent != nil {
+		if _, err := parent.ZigoAcquire(operation); err != nil {
+			return nil, err
+		}
+	}
+	s.mu.Lock()
+	var err error
+	switch {
+	case s.closed || s.ptr == nil:
+		err = &HandleError{Operation: operation}
+	case s.poison != nil:
+		err = s.poison.Poisoned(operation)
+	default:
+		s.active++
+	}
+	ptr := s.ptr
+	s.mu.Unlock()
+	if err != nil {
+		if parent != nil {
+			parent.ZigoRelease()
+		}
+		return nil, err
+	}
+	return ptr, nil
+}
+
+func (s *Stream) zigoRelease() {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	s.active--
+	parent := s.parent
+	state, release := s.zigoTakeLocked()
+	s.mu.Unlock()
+	if release {
+		zigoCleanupStream(state)
+	}
+	if parent != nil {
+		parent.ZigoRelease()
+	}
+}
+
+// zigoPoison marks s unusable: a Zig panic unwound through native frames
+// without running their defers, so the state behind it is unknown.
+func (s *Stream) zigoPoison(cause *NativePanicError) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	parent := s.parent
+	if s.poison == nil {
+		s.poison = cause
+		s.cleanup.Stop()
+	}
+	s.mu.Unlock()
+	if parent != nil {
+		parent.ZigoPoison(cause)
+	}
+}
+
+// ZigoAcquire implements the shared lifecycle handle contract.
+func (s *Stream) ZigoAcquire(operation string) (unsafe.Pointer, error) {
+	return s.zigoAcquire(operation)
+}
+
+// ZigoRelease implements the shared lifecycle handle contract.
+func (s *Stream) ZigoRelease() { s.zigoRelease() }
+
+// ZigoPoison implements the shared lifecycle handle contract.
+func (s *Stream) ZigoPoison(cause *NativePanicError) { s.zigoPoison(cause) }
+
+type zigoStreamCleanupState struct {
+	ptr             unsafe.Pointer
+	parent          zigoChildHandle
+	callbackHandles []zigoCallbackHandle
+}
+
+func zigoNewStream(ptr unsafe.Pointer, parent zigoChildHandle, callbackHandles []zigoCallbackHandle) *Stream {
+	value := &Stream{ptr: ptr, parent: parent, callbackHandles: callbackHandles}
+	state := zigoStreamCleanupState{ptr: ptr, parent: parent, callbackHandles: callbackHandles}
+	value.cleanup = runtime.AddCleanup(value, zigoCleanupStream, state)
+	return value
+}
+
+func zigoCleanupStream(state zigoStreamCleanupState) {
+	if state.ptr != nil {
+		raw.StreamFreeStream(state.ptr)
+	}
+	for _, handle := range state.callbackHandles {
+		zigoDeleteCallbackHandle(handle)
+	}
+	if state.parent != nil {
+		state.parent.ZigoDropChild()
+	}
+}
+
+// Close releases the native Stream resources. It is safe to call more than once.
+// The error result is always nil; it exists so Stream satisfies io.Closer.
+// Close does not wait: a call still inside native keeps the resources until it
+// returns, and every call made after Close fails with *HandleError.
+func (s *Stream) Close() error {
+	if s == nil {
+		return nil
+	}
+	s.mu.Lock()
+	if s.closed {
+		s.mu.Unlock()
+		return nil
+	}
+	s.closed = true
+	s.cleanup.Stop()
+	state, release := s.zigoTakeLocked()
+	s.mu.Unlock()
+	if release {
+		zigoCleanupStream(state)
+	}
+	runtime.KeepAlive(s)
+	return nil
+}
+
+// zigoTakeLocked hands out what is left to release once s is closed and no
+// call is inside native; mu must be held. A poisoned handle keeps its native
+// object: releasing state a panic left half-changed could fault, so it leaks.
+func (s *Stream) zigoTakeLocked() (zigoStreamCleanupState, bool) {
+	if !s.closed || s.active != 0 || s.ptr == nil {
+		return zigoStreamCleanupState{}, false
+	}
+	state := zigoStreamCleanupState{ptr: s.ptr, callbackHandles: s.callbackHandles, parent: s.parent}
+	s.ptr = nil
+	s.callbackHandles = nil
+	s.parent = nil
+	if s.poison != nil {
+		state.ptr = nil
+	}
+	return state, true
+}
+
+// Stream satisfies io.WriteCloser; this assertion stops compiling the day it does not.
+var _ io.WriteCloser = (*Stream)(nil)
+
+// ClipboardRequest represents a native Zig handle.
+type ClipboardRequest struct {
+	ptr    unsafe.Pointer
+	mu     sync.Mutex
+	active int
+	closed bool
+	poison *NativePanicError
+	owner  zigoHandle
+}
+
+func zigoNewBorrowedClipboardRequest(ptr unsafe.Pointer, owner zigoHandle) *ClipboardRequest {
+	return &ClipboardRequest{ptr: ptr, owner: owner}
+}
+
+// zigoAcquire pins c and its parent open for one native call.
+func (c *ClipboardRequest) zigoAcquire(operation string) (unsafe.Pointer, error) {
+	if c == nil {
+		return nil, &HandleError{Operation: operation}
+	}
+	c.mu.Lock()
+	parent := c.owner
+	c.mu.Unlock()
+	if parent != nil {
+		if _, err := parent.ZigoAcquire(operation); err != nil {
+			return nil, err
+		}
+	}
+	c.mu.Lock()
+	var err error
+	switch {
+	case c.closed || c.ptr == nil:
+		err = &HandleError{Operation: operation}
+	case c.poison != nil:
+		err = c.poison.Poisoned(operation)
+	default:
+		c.active++
+	}
+	ptr := c.ptr
+	c.mu.Unlock()
+	if err != nil {
+		if parent != nil {
+			parent.ZigoRelease()
+		}
+		return nil, err
+	}
+	return ptr, nil
+}
+
+func (c *ClipboardRequest) zigoRelease() {
+	if c == nil {
+		return
+	}
+	c.mu.Lock()
+	c.active--
+	parent := c.owner
+	c.mu.Unlock()
+	if parent != nil {
+		parent.ZigoRelease()
+	}
+}
+
+// zigoPoison marks c unusable: a Zig panic unwound through native frames
+// without running their defers, so the state behind it is unknown.
+func (c *ClipboardRequest) zigoPoison(cause *NativePanicError) {
+	if c == nil {
+		return
+	}
+	c.mu.Lock()
+	parent := c.owner
+	if c.poison == nil {
+		c.poison = cause
+	}
+	c.mu.Unlock()
+	if parent != nil {
+		parent.ZigoPoison(cause)
+	}
+}
+
+// ZigoAcquire implements the shared lifecycle handle contract.
+func (c *ClipboardRequest) ZigoAcquire(operation string) (unsafe.Pointer, error) {
+	return c.zigoAcquire(operation)
+}
+
+// ZigoRelease implements the shared lifecycle handle contract.
+func (c *ClipboardRequest) ZigoRelease() { c.zigoRelease() }
+
+// ZigoPoison implements the shared lifecycle handle contract.
+func (c *ClipboardRequest) ZigoPoison(cause *NativePanicError) { c.zigoPoison(cause) }
+
+// Close detaches this borrowed ClipboardRequest view without releasing native resources.
+func (c *ClipboardRequest) Close() error {
+	if c == nil {
+		return nil
+	}
+	c.mu.Lock()
+	if c.closed {
+		c.mu.Unlock()
+		return nil
+	}
+	if c.active != 0 {
+		active := c.active
+		c.mu.Unlock()
+		return &HandleInUseError{Operation: "ClipboardRequest.Close", Children: active}
+	}
+	c.closed = true
+	c.ptr = nil
+	c.owner = nil
+	c.mu.Unlock()
+	return nil
+}
+
+// ClipboardContent is one MIME representation of a single logical clipboard value.
+// Data is binary-safe and may be empty.
+type ClipboardContent struct {
+	MIME string
+	Data []byte
+}
+
+// Reply answers a pending read atomically with the supplied representations.
+// It replaces any staged contents. Inputs are copied before the native reply;
+// they may be reused after this call. Call only inside the clipboard callback.
+// On staging failure nothing is sent, and staged data is discarded. Returning
+// from the callback without a successful reply or explicit denial denies it.
+func (r *ClipboardRequest) Reply(contents []ClipboardContent, remember bool) error {
+	if err := r.ClearReplyContents(); err != nil {
+		return err
+	}
+	for _, content := range contents {
+		if err := r.AddContent(content.MIME, content.Data); err != nil {
+			_ = r.ClearReplyContents()
+			return err
+		}
+	}
+	return r.ReplyContents(remember)
+}
+
+// OSCParser is a caller-owned native handle. Call Close when it is no longer needed.
+type OSCParser struct {
+	ptr     unsafe.Pointer
+	mu      sync.Mutex
+	active  int
+	closed  bool
+	poison  *NativePanicError
+	cleanup runtime.Cleanup
+}
+
+// zigoAcquire pins o open for one native call and hands back its pointer;
+// the call ends with zigoRelease. A nil, closed, or poisoned handle is the error.
+func (o *OSCParser) zigoAcquire(operation string) (unsafe.Pointer, error) {
+	if o == nil {
+		return nil, &HandleError{Operation: operation}
+	}
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if o.closed || o.ptr == nil {
+		return nil, &HandleError{Operation: operation}
+	}
+	if o.poison != nil {
+		return nil, o.poison.Poisoned(operation)
+	}
+	o.active++
+	return o.ptr, nil
+}
+
+func (o *OSCParser) zigoRelease() {
+	if o == nil {
+		return
+	}
+	o.mu.Lock()
+	o.active--
+	state, release := o.zigoTakeLocked()
+	o.mu.Unlock()
+	if release {
+		zigoCleanupOSCParser(state)
+	}
+}
+
+// zigoPoison marks o unusable: a Zig panic unwound through native frames
+// without running their defers, so the state behind it is unknown.
+func (o *OSCParser) zigoPoison(cause *NativePanicError) {
+	if o == nil {
+		return
+	}
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if o.poison == nil {
+		o.poison = cause
+		o.cleanup.Stop()
+	}
+}
+
+// ZigoAcquire implements the shared lifecycle handle contract.
+func (o *OSCParser) ZigoAcquire(operation string) (unsafe.Pointer, error) {
+	return o.zigoAcquire(operation)
+}
+
+// ZigoRelease implements the shared lifecycle handle contract.
+func (o *OSCParser) ZigoRelease() { o.zigoRelease() }
+
+// ZigoPoison implements the shared lifecycle handle contract.
+func (o *OSCParser) ZigoPoison(cause *NativePanicError) { o.zigoPoison(cause) }
+
+type zigoOSCParserCleanupState struct {
+	ptr unsafe.Pointer
+}
+
+func zigoNewOSCParser(ptr unsafe.Pointer) *OSCParser {
+	value := &OSCParser{ptr: ptr}
+	state := zigoOSCParserCleanupState{ptr: ptr}
+	value.cleanup = runtime.AddCleanup(value, zigoCleanupOSCParser, state)
+	return value
+}
+
+func zigoCleanupOSCParser(state zigoOSCParserCleanupState) {
+	if state.ptr != nil {
+		raw.OscParserFreeOscParser(state.ptr)
+	}
+}
+
+// Close releases the native OSCParser resources. It is safe to call more than once.
+// The error result is always nil; it exists so OSCParser satisfies io.Closer.
+// Close does not wait: a call still inside native keeps the resources until it
+// returns, and every call made after Close fails with *HandleError.
+func (o *OSCParser) Close() error {
+	if o == nil {
+		return nil
+	}
+	o.mu.Lock()
+	if o.closed {
+		o.mu.Unlock()
+		return nil
+	}
+	o.closed = true
+	o.cleanup.Stop()
+	state, release := o.zigoTakeLocked()
+	o.mu.Unlock()
+	if release {
+		zigoCleanupOSCParser(state)
+	}
+	runtime.KeepAlive(o)
+	return nil
+}
+
+// zigoTakeLocked hands out what is left to release once o is closed and no
+// call is inside native; mu must be held. A poisoned handle keeps its native
+// object: releasing state a panic left half-changed could fault, so it leaks.
+func (o *OSCParser) zigoTakeLocked() (zigoOSCParserCleanupState, bool) {
+	if !o.closed || o.active != 0 || o.ptr == nil {
+		return zigoOSCParserCleanupState{}, false
+	}
+	state := zigoOSCParserCleanupState{ptr: o.ptr}
+	o.ptr = nil
+	if o.poison != nil {
+		state.ptr = nil
+	}
+	return state, true
+}
+
 // Snapshot is a caller-owned native handle. Call Close when it is no longer needed.
 type Snapshot struct {
 	ptr     unsafe.Pointer
@@ -1127,7 +1574,11 @@ func (s *SnapshotDecoder) zigoTakeLocked() (zigoSnapshotDecoderCleanupState, boo
 	return state, true
 }
 
-// RenderState is a caller-owned native handle. Call Close when it is no longer needed.
+// RenderState owns a render snapshot. Update requires exclusive access to both
+// the terminal and this state. After Update, reads do not touch the terminal,
+// but must be serialized with Update, Clean and Close on this state. Copied
+// cell, cursor and color values can be retained across updates. Call Clean
+// only after successfully drawing the frame.
 type RenderState struct {
 	ptr     unsafe.Pointer
 	mu      sync.Mutex
@@ -1366,280 +1817,6 @@ func (k *KittyImages) zigoTakeLocked() (zigoKittyImagesCleanupState, bool) {
 	state := zigoKittyImagesCleanupState{ptr: k.ptr}
 	k.ptr = nil
 	if k.poison != nil {
-		state.ptr = nil
-	}
-	return state, true
-}
-
-// Gesture is a caller-owned native handle. Call Close when it is no longer needed.
-type Gesture struct {
-	ptr     unsafe.Pointer
-	mu      sync.Mutex
-	active  int
-	closed  bool
-	poison  *NativePanicError
-	parent  zigoChildHandle
-	cleanup runtime.Cleanup
-}
-
-// zigoAcquire pins g and its parent open for one native call.
-func (g *Gesture) zigoAcquire(operation string) (unsafe.Pointer, error) {
-	if g == nil {
-		return nil, &HandleError{Operation: operation}
-	}
-	g.mu.Lock()
-	parent := g.parent
-	g.mu.Unlock()
-	if parent != nil {
-		if _, err := parent.ZigoAcquire(operation); err != nil {
-			return nil, err
-		}
-	}
-	g.mu.Lock()
-	var err error
-	switch {
-	case g.closed || g.ptr == nil:
-		err = &HandleError{Operation: operation}
-	case g.poison != nil:
-		err = g.poison.Poisoned(operation)
-	default:
-		g.active++
-	}
-	ptr := g.ptr
-	g.mu.Unlock()
-	if err != nil {
-		if parent != nil {
-			parent.ZigoRelease()
-		}
-		return nil, err
-	}
-	return ptr, nil
-}
-
-func (g *Gesture) zigoRelease() {
-	if g == nil {
-		return
-	}
-	g.mu.Lock()
-	g.active--
-	parent := g.parent
-	state, release := g.zigoTakeLocked()
-	g.mu.Unlock()
-	if release {
-		zigoCleanupGesture(state)
-	}
-	if parent != nil {
-		parent.ZigoRelease()
-	}
-}
-
-// zigoPoison marks g unusable: a Zig panic unwound through native frames
-// without running their defers, so the state behind it is unknown.
-func (g *Gesture) zigoPoison(cause *NativePanicError) {
-	if g == nil {
-		return
-	}
-	g.mu.Lock()
-	parent := g.parent
-	if g.poison == nil {
-		g.poison = cause
-		g.cleanup.Stop()
-	}
-	g.mu.Unlock()
-	if parent != nil {
-		parent.ZigoPoison(cause)
-	}
-}
-
-// ZigoAcquire implements the shared lifecycle handle contract.
-func (g *Gesture) ZigoAcquire(operation string) (unsafe.Pointer, error) {
-	return g.zigoAcquire(operation)
-}
-
-// ZigoRelease implements the shared lifecycle handle contract.
-func (g *Gesture) ZigoRelease() { g.zigoRelease() }
-
-// ZigoPoison implements the shared lifecycle handle contract.
-func (g *Gesture) ZigoPoison(cause *NativePanicError) { g.zigoPoison(cause) }
-
-type zigoGestureCleanupState struct {
-	ptr    unsafe.Pointer
-	parent zigoChildHandle
-}
-
-func zigoNewGesture(ptr unsafe.Pointer, parent zigoChildHandle) *Gesture {
-	value := &Gesture{ptr: ptr, parent: parent}
-	state := zigoGestureCleanupState{ptr: ptr, parent: parent}
-	value.cleanup = runtime.AddCleanup(value, zigoCleanupGesture, state)
-	return value
-}
-
-func zigoCleanupGesture(state zigoGestureCleanupState) {
-	if state.ptr != nil {
-		raw.GestureGestureClose(state.ptr)
-	}
-	if state.parent != nil {
-		state.parent.ZigoDropChild()
-	}
-}
-
-// Close releases the native Gesture resources. It is safe to call more than once.
-// The error result is always nil; it exists so Gesture satisfies io.Closer.
-// Close does not wait: a call still inside native keeps the resources until it
-// returns, and every call made after Close fails with *HandleError.
-func (g *Gesture) Close() error {
-	if g == nil {
-		return nil
-	}
-	g.mu.Lock()
-	if g.closed {
-		g.mu.Unlock()
-		return nil
-	}
-	g.closed = true
-	g.cleanup.Stop()
-	state, release := g.zigoTakeLocked()
-	g.mu.Unlock()
-	if release {
-		zigoCleanupGesture(state)
-	}
-	runtime.KeepAlive(g)
-	return nil
-}
-
-// zigoTakeLocked hands out what is left to release once g is closed and no
-// call is inside native; mu must be held. A poisoned handle keeps its native
-// object: releasing state a panic left half-changed could fault, so it leaks.
-func (g *Gesture) zigoTakeLocked() (zigoGestureCleanupState, bool) {
-	if !g.closed || g.active != 0 || g.ptr == nil {
-		return zigoGestureCleanupState{}, false
-	}
-	state := zigoGestureCleanupState{ptr: g.ptr, parent: g.parent}
-	g.ptr = nil
-	g.parent = nil
-	if g.poison != nil {
-		state.ptr = nil
-	}
-	return state, true
-}
-
-// OSCParser is a caller-owned native handle. Call Close when it is no longer needed.
-type OSCParser struct {
-	ptr     unsafe.Pointer
-	mu      sync.Mutex
-	active  int
-	closed  bool
-	poison  *NativePanicError
-	cleanup runtime.Cleanup
-}
-
-// zigoAcquire pins o open for one native call and hands back its pointer;
-// the call ends with zigoRelease. A nil, closed, or poisoned handle is the error.
-func (o *OSCParser) zigoAcquire(operation string) (unsafe.Pointer, error) {
-	if o == nil {
-		return nil, &HandleError{Operation: operation}
-	}
-	o.mu.Lock()
-	defer o.mu.Unlock()
-	if o.closed || o.ptr == nil {
-		return nil, &HandleError{Operation: operation}
-	}
-	if o.poison != nil {
-		return nil, o.poison.Poisoned(operation)
-	}
-	o.active++
-	return o.ptr, nil
-}
-
-func (o *OSCParser) zigoRelease() {
-	if o == nil {
-		return
-	}
-	o.mu.Lock()
-	o.active--
-	state, release := o.zigoTakeLocked()
-	o.mu.Unlock()
-	if release {
-		zigoCleanupOSCParser(state)
-	}
-}
-
-// zigoPoison marks o unusable: a Zig panic unwound through native frames
-// without running their defers, so the state behind it is unknown.
-func (o *OSCParser) zigoPoison(cause *NativePanicError) {
-	if o == nil {
-		return
-	}
-	o.mu.Lock()
-	defer o.mu.Unlock()
-	if o.poison == nil {
-		o.poison = cause
-		o.cleanup.Stop()
-	}
-}
-
-// ZigoAcquire implements the shared lifecycle handle contract.
-func (o *OSCParser) ZigoAcquire(operation string) (unsafe.Pointer, error) {
-	return o.zigoAcquire(operation)
-}
-
-// ZigoRelease implements the shared lifecycle handle contract.
-func (o *OSCParser) ZigoRelease() { o.zigoRelease() }
-
-// ZigoPoison implements the shared lifecycle handle contract.
-func (o *OSCParser) ZigoPoison(cause *NativePanicError) { o.zigoPoison(cause) }
-
-type zigoOSCParserCleanupState struct {
-	ptr unsafe.Pointer
-}
-
-func zigoNewOSCParser(ptr unsafe.Pointer) *OSCParser {
-	value := &OSCParser{ptr: ptr}
-	state := zigoOSCParserCleanupState{ptr: ptr}
-	value.cleanup = runtime.AddCleanup(value, zigoCleanupOSCParser, state)
-	return value
-}
-
-func zigoCleanupOSCParser(state zigoOSCParserCleanupState) {
-	if state.ptr != nil {
-		raw.OscParserFreeOscParser(state.ptr)
-	}
-}
-
-// Close releases the native OSCParser resources. It is safe to call more than once.
-// The error result is always nil; it exists so OSCParser satisfies io.Closer.
-// Close does not wait: a call still inside native keeps the resources until it
-// returns, and every call made after Close fails with *HandleError.
-func (o *OSCParser) Close() error {
-	if o == nil {
-		return nil
-	}
-	o.mu.Lock()
-	if o.closed {
-		o.mu.Unlock()
-		return nil
-	}
-	o.closed = true
-	o.cleanup.Stop()
-	state, release := o.zigoTakeLocked()
-	o.mu.Unlock()
-	if release {
-		zigoCleanupOSCParser(state)
-	}
-	runtime.KeepAlive(o)
-	return nil
-}
-
-// zigoTakeLocked hands out what is left to release once o is closed and no
-// call is inside native; mu must be held. A poisoned handle keeps its native
-// object: releasing state a panic left half-changed could fault, so it leaks.
-func (o *OSCParser) zigoTakeLocked() (zigoOSCParserCleanupState, bool) {
-	if !o.closed || o.active != 0 || o.ptr == nil {
-		return zigoOSCParserCleanupState{}, false
-	}
-	state := zigoOSCParserCleanupState{ptr: o.ptr}
-	o.ptr = nil
-	if o.poison != nil {
 		state.ptr = nil
 	}
 	return state, true

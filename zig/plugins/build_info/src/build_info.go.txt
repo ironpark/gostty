@@ -1,0 +1,11 @@
+// BuildInfo identifies the source and optimization of the bundled native archives.
+// It does not describe runtime hooks such as the optional PNG decoder.
+type BuildInfo struct {
+	GhosttyRevision string // Pinned Ghostty source commit.
+	ZigoVersion     string // Binding generator version.
+	Optimize        string // Zig optimization mode, such as ReleaseSafe.
+	SIMD            bool   // SIMD acceleration compiled in.
+	KittyGraphics   bool   // Kitty graphics compiled in; PNG still needs a hook.
+	TmuxControlMode bool   // Tmux control mode compiled in.
+}
+

@@ -212,17 +212,10 @@ typedef int32_t zg_mouse_button;
 #define ZG_MOUSE_BUTTON_ELEVEN 11
 
 typedef struct zg_terminal zg_terminal;
-typedef struct zg_stream zg_stream;
-typedef struct zg_clipboard_request zg_clipboard_request;
 typedef struct zg_screen zg_screen;
 typedef struct zg_search zg_search;
 typedef struct zg_grid_ref zg_grid_ref;
-typedef struct zg_snapshot zg_snapshot;
-typedef struct zg_snapshot_decoder zg_snapshot_decoder;
-typedef struct zg_render_state zg_render_state;
-typedef struct zg_kitty_images zg_kitty_images;
 typedef struct zg_gesture zg_gesture;
-typedef struct zg_osc_parser zg_osc_parser;
 typedef uint8_t zg_color_name;
 #define ZG_COLOR_NAME_BLACK 0
 #define ZG_COLOR_NAME_RED 1
@@ -355,48 +348,6 @@ typedef uint8_t zg_selection_adjustment;
 #define ZG_SELECTION_ADJUSTMENT_BEGINNING_OF_LINE 8
 #define ZG_SELECTION_ADJUSTMENT_END_OF_LINE 9
 
-typedef uint8_t zg_stream_event;
-#define ZG_STREAM_EVENT_BELL 0
-#define ZG_STREAM_EVENT_TITLE_CHANGED 1
-#define ZG_STREAM_EVENT_PWD_CHANGED 2
-#define ZG_STREAM_EVENT_DESKTOP_NOTIFICATION 3
-#define ZG_STREAM_EVENT_PROGRESS_REPORT 4
-#define ZG_STREAM_EVENT_UNKNOWN_SEQUENCE 5
-
-typedef uint8_t zg_progress_state;
-#define ZG_PROGRESS_STATE_REMOVE 0
-#define ZG_PROGRESS_STATE_SET 1
-#define ZG_PROGRESS_STATE_ERROR 2
-#define ZG_PROGRESS_STATE_INDETERMINATE 3
-#define ZG_PROGRESS_STATE_PAUSE 4
-
-typedef uint8_t zg_color_scheme;
-#define ZG_COLOR_SCHEME_LIGHT 0
-#define ZG_COLOR_SCHEME_DARK 1
-
-typedef uint8_t zg_drag_event;
-#define ZG_DRAG_EVENT_REGISTRATION 0
-#define ZG_DRAG_EVENT_ACCEPTANCE 1
-#define ZG_DRAG_EVENT_CONCLUDED_NONE 2
-#define ZG_DRAG_EVENT_CONCLUDED_COPY 3
-#define ZG_DRAG_EVENT_CONCLUDED_MOVE 4
-
-typedef uint8_t zg_drag_operation;
-#define ZG_DRAG_OPERATION_NONE 0
-#define ZG_DRAG_OPERATION_COPY 1
-#define ZG_DRAG_OPERATION_MOVE 2
-
-typedef int32_t zg_clipboard_location;
-#define ZG_CLIPBOARD_LOCATION_STANDARD 0
-#define ZG_CLIPBOARD_LOCATION_SELECTION 1
-#define ZG_CLIPBOARD_LOCATION_PRIMARY 2
-
-typedef uint8_t zg_clipboard_denial;
-#define ZG_CLIPBOARD_DENIAL_DENIED 0
-#define ZG_CLIPBOARD_DENIAL_UNSUPPORTED 1
-#define ZG_CLIPBOARD_DENIAL_BUSY 2
-#define ZG_CLIPBOARD_DENIAL_IO_ERROR 3
-
 typedef uint8_t zg_underline;
 #define ZG_UNDERLINE_NONE 0
 #define ZG_UNDERLINE_SINGLE 1
@@ -482,33 +433,6 @@ typedef uint8_t zg_scroll_viewport_tag;
 #define ZG_SCROLL_VIEWPORT_TAG_DELTA 2
 #define ZG_SCROLL_VIEWPORT_TAG_ROW 3
 
-typedef uint8_t zg_cell_width;
-#define ZG_CELL_WIDTH_NARROW 0
-#define ZG_CELL_WIDTH_WIDE 1
-#define ZG_CELL_WIDTH_SPACER_TAIL 2
-#define ZG_CELL_WIDTH_SPACER_HEAD 3
-
-typedef uint8_t zg_render_dirty;
-#define ZG_RENDER_DIRTY_CLEAN 0
-#define ZG_RENDER_DIRTY_PARTIAL 1
-#define ZG_RENDER_DIRTY_FULL 2
-
-typedef uint8_t zg_kitty_layer;
-#define ZG_KITTY_LAYER_BELOW_BG 0
-#define ZG_KITTY_LAYER_BELOW_TEXT 1
-#define ZG_KITTY_LAYER_ABOVE_TEXT 2
-
-typedef uint8_t zg_kitty_format;
-#define ZG_KITTY_FORMAT_RGB 0
-#define ZG_KITTY_FORMAT_RGBA 1
-#define ZG_KITTY_FORMAT_PNG 2
-#define ZG_KITTY_FORMAT_GRAY_ALPHA 3
-#define ZG_KITTY_FORMAT_GRAY 4
-
-typedef uint8_t zg_kitty_compression;
-#define ZG_KITTY_COMPRESSION_NONE 0
-#define ZG_KITTY_COMPRESSION_ZLIB_DEFLATE 1
-
 typedef uint8_t zg_mouse_tracking;
 #define ZG_MOUSE_TRACKING_NONE 0
 #define ZG_MOUSE_TRACKING_X10 1
@@ -540,6 +464,51 @@ typedef uint8_t zg_gesture_autoscroll_direction;
 #define ZG_GESTURE_AUTOSCROLL_DIRECTION_NONE 0
 #define ZG_GESTURE_AUTOSCROLL_DIRECTION_UP 1
 #define ZG_GESTURE_AUTOSCROLL_DIRECTION_DOWN 2
+
+typedef struct zg_stream zg_stream;
+typedef struct zg_clipboard_request zg_clipboard_request;
+typedef struct zg_osc_parser zg_osc_parser;
+typedef uint8_t zg_stream_event;
+#define ZG_STREAM_EVENT_BELL 0
+#define ZG_STREAM_EVENT_TITLE_CHANGED 1
+#define ZG_STREAM_EVENT_PWD_CHANGED 2
+#define ZG_STREAM_EVENT_DESKTOP_NOTIFICATION 3
+#define ZG_STREAM_EVENT_PROGRESS_REPORT 4
+#define ZG_STREAM_EVENT_UNKNOWN_SEQUENCE 5
+
+typedef uint8_t zg_progress_state;
+#define ZG_PROGRESS_STATE_REMOVE 0
+#define ZG_PROGRESS_STATE_SET 1
+#define ZG_PROGRESS_STATE_ERROR 2
+#define ZG_PROGRESS_STATE_INDETERMINATE 3
+#define ZG_PROGRESS_STATE_PAUSE 4
+
+typedef uint8_t zg_color_scheme;
+#define ZG_COLOR_SCHEME_LIGHT 0
+#define ZG_COLOR_SCHEME_DARK 1
+
+typedef uint8_t zg_drag_event;
+#define ZG_DRAG_EVENT_REGISTRATION 0
+#define ZG_DRAG_EVENT_ACCEPTANCE 1
+#define ZG_DRAG_EVENT_CONCLUDED_NONE 2
+#define ZG_DRAG_EVENT_CONCLUDED_COPY 3
+#define ZG_DRAG_EVENT_CONCLUDED_MOVE 4
+
+typedef uint8_t zg_drag_operation;
+#define ZG_DRAG_OPERATION_NONE 0
+#define ZG_DRAG_OPERATION_COPY 1
+#define ZG_DRAG_OPERATION_MOVE 2
+
+typedef int32_t zg_clipboard_location;
+#define ZG_CLIPBOARD_LOCATION_STANDARD 0
+#define ZG_CLIPBOARD_LOCATION_SELECTION 1
+#define ZG_CLIPBOARD_LOCATION_PRIMARY 2
+
+typedef uint8_t zg_clipboard_denial;
+#define ZG_CLIPBOARD_DENIAL_DENIED 0
+#define ZG_CLIPBOARD_DENIAL_UNSUPPORTED 1
+#define ZG_CLIPBOARD_DENIAL_BUSY 2
+#define ZG_CLIPBOARD_DENIAL_IO_ERROR 3
 
 typedef uint8_t zg_osc_command;
 #define ZG_OSC_COMMAND_INVALID 0
@@ -583,6 +552,37 @@ typedef uint8_t zg_semantic_prompt_action;
 #define ZG_SEMANTIC_PROMPT_ACTION_END_PROMPT_START_INPUT_TERMINATE_EOL 5
 #define ZG_SEMANTIC_PROMPT_ACTION_END_INPUT_START_OUTPUT 6
 #define ZG_SEMANTIC_PROMPT_ACTION_END_COMMAND 7
+
+typedef struct zg_snapshot zg_snapshot;
+typedef struct zg_snapshot_decoder zg_snapshot_decoder;
+typedef struct zg_render_state zg_render_state;
+typedef struct zg_kitty_images zg_kitty_images;
+typedef uint8_t zg_cell_width;
+#define ZG_CELL_WIDTH_NARROW 0
+#define ZG_CELL_WIDTH_WIDE 1
+#define ZG_CELL_WIDTH_SPACER_TAIL 2
+#define ZG_CELL_WIDTH_SPACER_HEAD 3
+
+typedef uint8_t zg_render_dirty;
+#define ZG_RENDER_DIRTY_CLEAN 0
+#define ZG_RENDER_DIRTY_PARTIAL 1
+#define ZG_RENDER_DIRTY_FULL 2
+
+typedef uint8_t zg_kitty_layer;
+#define ZG_KITTY_LAYER_BELOW_BG 0
+#define ZG_KITTY_LAYER_BELOW_TEXT 1
+#define ZG_KITTY_LAYER_ABOVE_TEXT 2
+
+typedef uint8_t zg_kitty_format;
+#define ZG_KITTY_FORMAT_RGB 0
+#define ZG_KITTY_FORMAT_RGBA 1
+#define ZG_KITTY_FORMAT_PNG 2
+#define ZG_KITTY_FORMAT_GRAY_ALPHA 3
+#define ZG_KITTY_FORMAT_GRAY 4
+
+typedef uint8_t zg_kitty_compression;
+#define ZG_KITTY_COMPRESSION_NONE 0
+#define ZG_KITTY_COMPRESSION_ZLIB_DEFLATE 1
 
 // ELF and Mach-O export every non-static symbol of a shared library;
 // COFF exports nothing without an explicit annotation, so a DLL built
@@ -629,12 +629,6 @@ typedef struct zg_grid_point {
     uint32_t y;
 } zg_grid_point;
 
-typedef struct zg_snapshot_progress {
-    uint64_t rows;
-    uint32_t remaining;
-    uint32_t _pad;
-} zg_snapshot_progress;
-
 typedef struct zg_selection {
     uint16_t start_x;
     uint32_t start_y;
@@ -653,6 +647,44 @@ typedef struct zg_format_options {
     uint8_t resolve_palette;
 } zg_format_options;
 
+typedef struct zg_scrollbar {
+    uint64_t total;
+    uint64_t offset;
+    uint64_t len;
+} zg_scrollbar;
+
+typedef struct zg_scroll_region {
+    uint16_t top;
+    uint16_t bottom;
+    uint16_t left;
+    uint16_t right;
+} zg_scroll_region;
+
+typedef struct zg_gesture_geometry {
+    uint32_t columns;
+    uint32_t cell_width;
+    uint32_t padding_left;
+    uint32_t screen_height;
+} zg_gesture_geometry;
+
+typedef struct zg_gesture_press_event {
+    uint16_t x;
+    uint16_t y;
+    double xpos;
+    double ypos;
+    double max_distance;
+    uint64_t repeat_interval_ns;
+    int64_t time_ns;
+} zg_gesture_press_event;
+
+typedef struct zg_gesture_drag_event {
+    uint16_t x;
+    uint16_t y;
+    double xpos;
+    double ypos;
+    uint8_t rectangle;
+} zg_gesture_drag_event;
+
 typedef struct zg_drag_move {
     uint32_t cell_x;
     uint32_t cell_y;
@@ -661,11 +693,23 @@ typedef struct zg_drag_move {
     uint8_t operations;
 } zg_drag_move;
 
-typedef struct zg_scrollbar {
-    uint64_t total;
-    uint64_t offset;
-    uint64_t len;
-} zg_scrollbar;
+typedef struct zg_feed_boundary {
+    size_t consumed;
+    uint8_t reached;
+} zg_feed_boundary;
+
+typedef struct zg_snapshot_progress {
+    uint64_t rows;
+    uint32_t remaining;
+    uint32_t _pad;
+} zg_snapshot_progress;
+
+typedef struct zg_render_colors {
+    uint32_t background;
+    uint32_t foreground;
+    uint32_t cursor;
+    uint8_t cursor_has_value;
+} zg_render_colors;
 
 typedef struct zg_render_cell {
     uint32_t codepoint;
@@ -705,38 +749,6 @@ typedef struct zg_kitty_image {
     uint16_t _pad;
 } zg_kitty_image;
 
-typedef struct zg_scroll_region {
-    uint16_t top;
-    uint16_t bottom;
-    uint16_t left;
-    uint16_t right;
-} zg_scroll_region;
-
-typedef struct zg_gesture_geometry {
-    uint32_t columns;
-    uint32_t cell_width;
-    uint32_t padding_left;
-    uint32_t screen_height;
-} zg_gesture_geometry;
-
-typedef struct zg_gesture_press_event {
-    uint16_t x;
-    uint16_t y;
-    double xpos;
-    double ypos;
-    double max_distance;
-    uint64_t repeat_interval_ns;
-    int64_t time_ns;
-} zg_gesture_press_event;
-
-typedef struct zg_gesture_drag_event {
-    uint16_t x;
-    uint16_t y;
-    double xpos;
-    double ypos;
-    uint8_t rectangle;
-} zg_gesture_drag_event;
-
 typedef struct zg_attribute_snapshot_t {
     zg_attribute_tag tag;
     zg_underline underline;
@@ -769,16 +781,9 @@ ZIGO_EXPORT int32_t zg_terminal_charset_gl(const zg_terminal * self, uint8_t * o
 ZIGO_EXPORT int32_t zg_terminal_charset_gr(const zg_terminal * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_charset_single_shift(const zg_terminal * self, uint8_t * out_result_has, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_protected_mode(const zg_terminal * self, uint8_t * out_result);
-ZIGO_EXPORT int32_t zg_stream_failed(const zg_stream * self, uint8_t * out_result);
-ZIGO_EXPORT int32_t zg_render_state_rows(const zg_render_state * self, uint16_t * out_result);
-ZIGO_EXPORT int32_t zg_render_state_cols(const zg_render_state * self, uint16_t * out_result);
-ZIGO_EXPORT int32_t zg_render_state_cursor_visible(const zg_render_state * self, uint8_t * out_result);
-ZIGO_EXPORT int32_t zg_render_state_cursor_style(const zg_render_state * self, uint8_t * out_result);
-ZIGO_EXPORT int32_t zg_render_state_cursor_blinking(const zg_render_state * self, uint8_t * out_result);
-ZIGO_EXPORT int32_t zg_render_state_cursor_password_input(const zg_render_state * self, uint8_t * out_result);
-ZIGO_EXPORT int32_t zg_kitty_images_generation(const zg_kitty_images * self, uint64_t * out_result);
 ZIGO_EXPORT int32_t zg_gesture_click_count(const zg_gesture * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_gesture_dragged(const zg_gesture * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_stream_failed(const zg_stream * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_osc_parser_command(const zg_osc_parser * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_osc_parser_window_title(const zg_osc_parser * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
 ZIGO_EXPORT int32_t zg_osc_parser_icon(const zg_osc_parser * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
@@ -794,6 +799,13 @@ ZIGO_EXPORT int32_t zg_osc_parser_semantic_prompt_action(const zg_osc_parser * s
 ZIGO_EXPORT int32_t zg_osc_parser_semantic_prompt_options(const zg_osc_parser * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
 ZIGO_EXPORT int32_t zg_osc_parser_progress_state(const zg_osc_parser * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_osc_parser_progress_value(const zg_osc_parser * self, int16_t * out_result);
+ZIGO_EXPORT int32_t zg_render_state_rows(const zg_render_state * self, uint16_t * out_result);
+ZIGO_EXPORT int32_t zg_render_state_cols(const zg_render_state * self, uint16_t * out_result);
+ZIGO_EXPORT int32_t zg_render_state_cursor_visible(const zg_render_state * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_render_state_cursor_style(const zg_render_state * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_render_state_cursor_blinking(const zg_render_state * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_render_state_cursor_password_input(const zg_render_state * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_kitty_images_generation(const zg_kitty_images * self, uint64_t * out_result);
 ZIGO_EXPORT void zg_sys_on_png_decode_request(size_t userdata);
 ZIGO_EXPORT int32_t zg_sys_reply_png_image(uint32_t width, uint32_t height, const uint8_t * rgba_ptr, size_t rgba_len);
 ZIGO_EXPORT void zg_sys_on_secure_random_request(size_t userdata);
@@ -919,46 +931,6 @@ ZIGO_EXPORT int32_t zg_terminal_mouse_report_format(zg_terminal * self, uint8_t 
 ZIGO_EXPORT int32_t zg_terminal_mode_report(zg_terminal * self, uint16_t mode, uint8_t ansi, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_cell_at(zg_terminal * self, uint8_t tag, uint16_t x, uint32_t y, uint8_t * out_result_has, zg_render_cell * out_result);
 ZIGO_EXPORT int32_t zg_terminal_hyperlink_at(zg_terminal * self, uint8_t tag, uint16_t x, uint32_t y, const uint8_t * * out_result_ptr, size_t * out_result_len);
-ZIGO_EXPORT int32_t zg_stream_free_stream(zg_stream * self);
-ZIGO_EXPORT int32_t zg_stream_feed(zg_stream * self, const uint8_t * bytes_ptr, size_t bytes_len);
-ZIGO_EXPORT int32_t zg_stream_next_event(zg_stream * self, uint8_t * out_result_has, uint8_t * out_result);
-ZIGO_EXPORT int32_t zg_stream_event_title(zg_stream * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
-ZIGO_EXPORT int32_t zg_stream_event_body(zg_stream * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
-ZIGO_EXPORT int32_t zg_stream_event_progress_state(zg_stream * self, uint8_t * out_result);
-ZIGO_EXPORT int32_t zg_stream_event_progress(zg_stream * self, uint8_t * out_result_has, uint8_t * out_result);
-ZIGO_EXPORT int32_t zg_stream_event_sequence(zg_stream * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
-ZIGO_EXPORT int32_t zg_stream_set_unknown_max_bytes(zg_stream * self, size_t max);
-ZIGO_EXPORT int32_t zg_stream_set_version_report(zg_stream * self, const uint8_t * name_ptr, size_t name_len, const uint8_t * version_ptr, size_t version_len);
-ZIGO_EXPORT int32_t zg_stream_set_enquiry_response(zg_stream * self, const uint8_t * reply_ptr, size_t reply_len);
-ZIGO_EXPORT int32_t zg_stream_color_scheme_changed(zg_stream * self, uint8_t scheme);
-ZIGO_EXPORT int32_t zg_stream_clear_color_scheme(zg_stream * self);
-ZIGO_EXPORT int32_t zg_stream_on_drag(zg_stream * self, size_t userdata);
-ZIGO_EXPORT int32_t zg_stream_drag_active(zg_stream * self, uint8_t * out_result);
-ZIGO_EXPORT int32_t zg_stream_drag_registered_mimes(zg_stream * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
-ZIGO_EXPORT int32_t zg_stream_drag_client_accepted(zg_stream * self, uint8_t * out_result_has, uint8_t * out_result);
-ZIGO_EXPORT int32_t zg_stream_drag_move(zg_stream * self, const zg_drag_move * ev, const uint8_t * mimes_ptr, size_t mimes_len);
-ZIGO_EXPORT int32_t zg_stream_drag_leave(zg_stream * self);
-ZIGO_EXPORT int32_t zg_stream_drag_add_item(zg_stream * self, const uint8_t * mime_ptr, size_t mime_len, const uint8_t * data_ptr, size_t data_len);
-ZIGO_EXPORT int32_t zg_stream_drag_drop(zg_stream * self, const zg_drag_move * ev);
-ZIGO_EXPORT int32_t zg_stream_drag_clear_items(zg_stream * self);
-ZIGO_EXPORT int32_t zg_stream_on_clipboard_write_request(zg_stream * self, size_t userdata);
-ZIGO_EXPORT int32_t zg_stream_on_clipboard_read_request(zg_stream * self, size_t userdata);
-ZIGO_EXPORT int32_t zg_stream_write_continuation(zg_stream * self, size_t writer_userdata);
-ZIGO_EXPORT int32_t zg_stream_has_replies(zg_stream * self, uint8_t * out_result);
-ZIGO_EXPORT int32_t zg_stream_write_snapshot(zg_stream * self, size_t writer_userdata);
-ZIGO_EXPORT int32_t zg_stream_write_replies(zg_stream * self, size_t writer_userdata);
-ZIGO_EXPORT int32_t zg_clipboard_request_location(zg_clipboard_request * self, int32_t * out_result);
-ZIGO_EXPORT int32_t zg_clipboard_request_name(zg_clipboard_request * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
-ZIGO_EXPORT int32_t zg_clipboard_request_granted(zg_clipboard_request * self, uint8_t * out_result);
-ZIGO_EXPORT int32_t zg_clipboard_request_can_remember(zg_clipboard_request * self, uint8_t * out_result);
-ZIGO_EXPORT int32_t zg_clipboard_request_content_count(zg_clipboard_request * self, size_t * out_result);
-ZIGO_EXPORT int32_t zg_clipboard_request_content_mime(zg_clipboard_request * self, size_t index, const uint8_t * * out_result_ptr, size_t * out_result_len);
-ZIGO_EXPORT int32_t zg_clipboard_request_mime_count(zg_clipboard_request * self, size_t * out_result);
-ZIGO_EXPORT int32_t zg_clipboard_request_mime(zg_clipboard_request * self, size_t index, const uint8_t * * out_result_ptr, size_t * out_result_len);
-ZIGO_EXPORT int32_t zg_clipboard_request_allow(zg_clipboard_request * self, uint8_t remember);
-ZIGO_EXPORT int32_t zg_clipboard_request_reply_text(zg_clipboard_request * self, const uint8_t * text_ptr, size_t text_len, uint8_t remember);
-ZIGO_EXPORT int32_t zg_clipboard_request_deny(zg_clipboard_request * self, uint8_t reason);
-ZIGO_EXPORT int32_t zg_clipboard_request_content_data(zg_clipboard_request * self, size_t index, const uint8_t * * out_result_ptr, size_t * out_result_len);
 ZIGO_EXPORT int32_t zg_screen_viewport_is_bottom(const zg_screen * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_screen_clear_selection(zg_screen * self);
 ZIGO_EXPORT int32_t zg_screen_end_hyperlink(zg_screen * self);
@@ -997,6 +969,71 @@ ZIGO_EXPORT int32_t zg_grid_ref_set(zg_grid_ref * self, uint8_t tag, uint16_t x,
 ZIGO_EXPORT int32_t zg_grid_ref_cell(zg_grid_ref * self, uint8_t * out_result_has, zg_render_cell * out_result);
 ZIGO_EXPORT int32_t zg_grid_ref_graphemes(zg_grid_ref * self, uint32_t * dst_ptr, size_t dst_len, size_t * out_result);
 ZIGO_EXPORT int32_t zg_grid_ref_hyperlink_uri(zg_grid_ref * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_gesture_gesture_close(zg_gesture * self);
+ZIGO_EXPORT int32_t zg_gesture_set_behaviors(zg_gesture * self, uint8_t single_click, uint8_t double_click, uint8_t triple_click);
+ZIGO_EXPORT int32_t zg_gesture_set_word_boundaries(zg_gesture * self, const uint32_t * boundaries_ptr, size_t boundaries_len);
+ZIGO_EXPORT int32_t zg_gesture_set_geometry(zg_gesture * self, const zg_gesture_geometry * geometry);
+ZIGO_EXPORT int32_t zg_gesture_press(zg_gesture * self, const zg_gesture_press_event * p, uint8_t * out_result_has, zg_selection * out_result);
+ZIGO_EXPORT int32_t zg_gesture_drag(zg_gesture * self, const zg_gesture_drag_event * d, uint8_t * out_result_has, zg_selection * out_result);
+ZIGO_EXPORT int32_t zg_gesture_autoscroll(zg_gesture * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_gesture_autoscroll_tick(zg_gesture * self, const zg_gesture_drag_event * d, uint8_t * out_result_has, zg_selection * out_result);
+ZIGO_EXPORT int32_t zg_gesture_deep_press(zg_gesture * self, uint8_t * out_result_has, zg_selection * out_result);
+ZIGO_EXPORT int32_t zg_gesture_release(zg_gesture * self, uint16_t x, uint16_t y);
+ZIGO_EXPORT int32_t zg_gesture_reset(zg_gesture * self);
+ZIGO_EXPORT uint8_t zg_color_name_default(uint8_t self, uint32_t * out_result);
+ZIGO_EXPORT int32_t zg_stream_free_stream(zg_stream * self);
+ZIGO_EXPORT int32_t zg_stream_at_ground(zg_stream * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_stream_feed_until_ground(zg_stream * self, const uint8_t * data_ptr, size_t data_len, zg_feed_boundary * out_result);
+ZIGO_EXPORT int32_t zg_stream_feed(zg_stream * self, const uint8_t * bytes_ptr, size_t bytes_len);
+ZIGO_EXPORT int32_t zg_stream_next_event(zg_stream * self, uint8_t * out_result_has, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_stream_next_event_value(zg_stream * self, uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_stream_next_event_record(zg_stream * self, uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_stream_event_title(zg_stream * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_stream_event_body(zg_stream * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_stream_event_progress_state(zg_stream * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_stream_event_progress(zg_stream * self, uint8_t * out_result_has, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_stream_event_pwd(zg_stream * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_stream_event_sequence(zg_stream * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_stream_set_unknown_max_bytes(zg_stream * self, size_t max);
+ZIGO_EXPORT int32_t zg_stream_set_version_report(zg_stream * self, const uint8_t * name_ptr, size_t name_len, const uint8_t * version_ptr, size_t version_len);
+ZIGO_EXPORT int32_t zg_stream_set_enquiry_response(zg_stream * self, const uint8_t * reply_ptr, size_t reply_len);
+ZIGO_EXPORT int32_t zg_stream_color_scheme_changed(zg_stream * self, uint8_t scheme);
+ZIGO_EXPORT int32_t zg_stream_clear_color_scheme(zg_stream * self);
+ZIGO_EXPORT int32_t zg_stream_on_drag(zg_stream * self, size_t userdata);
+ZIGO_EXPORT int32_t zg_stream_drag_active(zg_stream * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_stream_drag_registered_mimes(zg_stream * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_stream_drag_client_accepted(zg_stream * self, uint8_t * out_result_has, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_stream_drag_move(zg_stream * self, const zg_drag_move * ev, const uint8_t * mimes_ptr, size_t mimes_len);
+ZIGO_EXPORT int32_t zg_stream_drag_leave(zg_stream * self);
+ZIGO_EXPORT int32_t zg_stream_drag_add_item(zg_stream * self, const uint8_t * mime_ptr, size_t mime_len, const uint8_t * data_ptr, size_t data_len);
+ZIGO_EXPORT int32_t zg_stream_drag_drop(zg_stream * self, const zg_drag_move * ev);
+ZIGO_EXPORT int32_t zg_stream_drag_clear_items(zg_stream * self);
+ZIGO_EXPORT int32_t zg_stream_on_clipboard_write_request(zg_stream * self, size_t userdata);
+ZIGO_EXPORT int32_t zg_stream_on_clipboard_read_request(zg_stream * self, size_t userdata);
+ZIGO_EXPORT int32_t zg_stream_write_continuation(zg_stream * self, size_t writer_userdata);
+ZIGO_EXPORT int32_t zg_stream_has_replies(zg_stream * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_stream_write_snapshot(zg_stream * self, size_t writer_userdata);
+ZIGO_EXPORT int32_t zg_stream_write_replies(zg_stream * self, size_t writer_userdata);
+ZIGO_EXPORT int32_t zg_clipboard_request_location(zg_clipboard_request * self, int32_t * out_result);
+ZIGO_EXPORT int32_t zg_clipboard_request_name(zg_clipboard_request * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_clipboard_request_granted(zg_clipboard_request * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_clipboard_request_can_remember(zg_clipboard_request * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_clipboard_request_content_count(zg_clipboard_request * self, size_t * out_result);
+ZIGO_EXPORT int32_t zg_clipboard_request_content_mime(zg_clipboard_request * self, size_t index, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_clipboard_request_mime_count(zg_clipboard_request * self, size_t * out_result);
+ZIGO_EXPORT int32_t zg_clipboard_request_mime(zg_clipboard_request * self, size_t index, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_clipboard_request_allow(zg_clipboard_request * self, uint8_t remember);
+ZIGO_EXPORT int32_t zg_clipboard_request_reply_text(zg_clipboard_request * self, const uint8_t * text_ptr, size_t text_len, uint8_t remember);
+ZIGO_EXPORT int32_t zg_clipboard_request_clear_reply_contents(zg_clipboard_request * self);
+ZIGO_EXPORT int32_t zg_clipboard_request_reply_contents(zg_clipboard_request * self, uint8_t remember);
+ZIGO_EXPORT int32_t zg_clipboard_request_deny(zg_clipboard_request * self, uint8_t reason);
+ZIGO_EXPORT int32_t zg_clipboard_request_add_content(zg_clipboard_request * self, const uint8_t * mime_type_ptr, size_t mime_type_len, const uint8_t * data_ptr, size_t data_len);
+ZIGO_EXPORT int32_t zg_clipboard_request_content_data(zg_clipboard_request * self, size_t index, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_new_osc_parser(zg_osc_parser * * out_result);
+ZIGO_EXPORT int32_t zg_osc_parser_free_osc_parser(zg_osc_parser * self);
+ZIGO_EXPORT int32_t zg_osc_parser_feed(zg_osc_parser * self, const uint8_t * bytes_ptr, size_t bytes_len);
+ZIGO_EXPORT int32_t zg_osc_parser_end(zg_osc_parser * self, uint8_t terminator, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_osc_parser_reset(zg_osc_parser * self);
 ZIGO_EXPORT int32_t zg_decode_snapshot(const uint8_t * reader_data, size_t reader_data_len, size_t reader_userdata, size_t max_continuation_bytes, zg_snapshot * * out_result);
 ZIGO_EXPORT int32_t zg_snapshot_deinit(zg_snapshot * self);
 ZIGO_EXPORT int32_t zg_snapshot_restore_into(zg_snapshot * self, zg_terminal * term);
@@ -1011,6 +1048,8 @@ ZIGO_EXPORT int32_t zg_new_render_state(zg_render_state * * out_result);
 ZIGO_EXPORT int32_t zg_render_state_deinit(zg_render_state * self);
 ZIGO_EXPORT int32_t zg_render_state_update(zg_render_state * self, zg_terminal * t);
 ZIGO_EXPORT int32_t zg_render_state_clean(zg_render_state * self);
+ZIGO_EXPORT int32_t zg_render_state_cursor(zg_render_state * self, uint64_t * out_result);
+ZIGO_EXPORT int32_t zg_render_state_colors(zg_render_state * self, zg_render_colors * out_result);
 ZIGO_EXPORT int32_t zg_render_state_cell_count(zg_render_state * self, size_t * out_result);
 ZIGO_EXPORT int32_t zg_render_state_cells(zg_render_state * self, zg_render_cell * dst_ptr, size_t dst_len, size_t * out_result);
 ZIGO_EXPORT int32_t zg_render_state_background(zg_render_state * self, uint32_t * out_result);
@@ -1029,25 +1068,9 @@ ZIGO_EXPORT int32_t zg_kitty_images_free_kitty_images(zg_kitty_images * self);
 ZIGO_EXPORT int32_t zg_kitty_images_update(zg_kitty_images * self, zg_terminal * term);
 ZIGO_EXPORT int32_t zg_kitty_images_placement_count(zg_kitty_images * self, size_t * out_result);
 ZIGO_EXPORT int32_t zg_kitty_images_placements(zg_kitty_images * self, zg_kitty_placement * dst_ptr, size_t dst_len, size_t * out_result);
-ZIGO_EXPORT int32_t zg_gesture_gesture_close(zg_gesture * self);
-ZIGO_EXPORT int32_t zg_gesture_set_behaviors(zg_gesture * self, uint8_t single_click, uint8_t double_click, uint8_t triple_click);
-ZIGO_EXPORT int32_t zg_gesture_set_word_boundaries(zg_gesture * self, const uint32_t * boundaries_ptr, size_t boundaries_len);
-ZIGO_EXPORT int32_t zg_gesture_set_geometry(zg_gesture * self, const zg_gesture_geometry * geometry);
-ZIGO_EXPORT int32_t zg_gesture_press(zg_gesture * self, const zg_gesture_press_event * p, uint8_t * out_result_has, zg_selection * out_result);
-ZIGO_EXPORT int32_t zg_gesture_drag(zg_gesture * self, const zg_gesture_drag_event * d, uint8_t * out_result_has, zg_selection * out_result);
-ZIGO_EXPORT int32_t zg_gesture_autoscroll(zg_gesture * self, uint8_t * out_result);
-ZIGO_EXPORT int32_t zg_gesture_autoscroll_tick(zg_gesture * self, const zg_gesture_drag_event * d, uint8_t * out_result_has, zg_selection * out_result);
-ZIGO_EXPORT int32_t zg_gesture_deep_press(zg_gesture * self, uint8_t * out_result_has, zg_selection * out_result);
-ZIGO_EXPORT int32_t zg_gesture_release(zg_gesture * self, uint16_t x, uint16_t y);
-ZIGO_EXPORT int32_t zg_gesture_reset(zg_gesture * self);
-ZIGO_EXPORT int32_t zg_new_osc_parser(zg_osc_parser * * out_result);
-ZIGO_EXPORT int32_t zg_osc_parser_free_osc_parser(zg_osc_parser * self);
-ZIGO_EXPORT int32_t zg_osc_parser_feed(zg_osc_parser * self, const uint8_t * bytes_ptr, size_t bytes_len);
-ZIGO_EXPORT int32_t zg_osc_parser_end(zg_osc_parser * self, uint8_t terminator, uint8_t * out_result);
-ZIGO_EXPORT int32_t zg_osc_parser_reset(zg_osc_parser * self);
-ZIGO_EXPORT uint8_t zg_color_name_default(uint8_t self, uint32_t * out_result);
 ZIGO_EXPORT int32_t zg_unicode_codepoint_width(uint32_t cp, uint8_t * out_result);
 ZIGO_EXPORT uint8_t zg_grapheme_width(const uint32_t * cps_ptr, size_t cps_len);
+ZIGO_EXPORT void zg_free_buffer(uint8_t * buffer_ptr, size_t buffer_len);
 ZIGO_EXPORT void zg_free_string(const uint8_t * str_ptr, size_t str_len);
 ZIGO_EXPORT int32_t zg_sgr_attribute_count(const uint16_t * params_ptr, size_t params_len, uint32_t colon_mask, size_t * out_result);
 ZIGO_EXPORT int32_t zg_sgr_attribute_at(const uint16_t * params_ptr, size_t params_len, uint32_t colon_mask, size_t index, zg_attribute_snapshot_t * out_result);

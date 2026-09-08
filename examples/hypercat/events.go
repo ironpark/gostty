@@ -11,82 +11,43 @@ import (
 // drainEvents acts on what the program asked of the emulator rather than of the
 // screen. libghostty-vt parses OSC; doing something about it is ours.
 func (tab *terminalTab) drainEvents() error {
-	for event, err := range tab.stream.Events() {
+	for event, err := range tab.stream.EventValues() {
 		if err != nil {
 			return err
 		}
-		switch event {
+		switch event.Kind {
 		case gostty.StreamEventBell:
 			tab.bell = 6 // frames of visual bell
 		case gostty.StreamEventPwdChanged:
-			// OSC 7. A real emulator opens new tabs here; this one has none, so
-			// the directory rides along in the window title.
-			if pwd, ok, err := tab.vt.GetPwd(); err == nil && ok {
-				tab.pwd = pwd
-				tab.retitle()
-			}
+			tab.pwd = event.Pwd
+			tab.retitle()
 		case gostty.StreamEventDesktopNotification:
-			// OSC 9 and OSC 777. There is no notification service to hand this
-			// to from a window this small, so it goes to the log.
-			title, err := tab.stream.EventTitle()
-			if err != nil {
-				return err
-			}
-			body, err := tab.stream.EventBody()
-			if err != nil {
-				return err
-			}
-			log.Printf("notification: %s %s", title, body)
+			log.Printf("notification: %s %s", event.Title, event.Body)
 		case gostty.StreamEventUnknownSequence:
-			// An APC nothing here handles. Only visible because capture was
-			// turned on at startup.
-			data, err := tab.stream.EventSequence()
-			if err != nil {
-				return err
-			}
-			log.Printf("unhandled APC: %q", data)
+			log.Printf("unhandled APC: %q", event.Sequence)
 		case gostty.StreamEventProgressReport:
-			if err := tab.progressReport(); err != nil {
-				return err
-			}
+			tab.progressReport(event)
 		case gostty.StreamEventTitleChanged:
-			// The event only announces the change; the value lives on the
-			// terminal, which is where ghostty keeps it.
-			if title, ok, err := tab.vt.GetTitle(); err == nil && ok {
-				tab.title = title
-				tab.retitle()
-			}
+			tab.title = event.Title
+			tab.retitle()
 		}
 	}
 	return nil
 }
 
-// progressReport reads OSC 9;4, which a long-running command uses to say how
-// far along it is. The state says what to show; the percentage is only there
-// for one of them, which is why it comes back with a flag.
-func (tab *terminalTab) progressReport() error {
-	state, err := tab.stream.EventProgressState()
-	if err != nil {
-		return err
-	}
-	percent, ok, err := tab.stream.EventProgress()
-	if err != nil {
-		return err
-	}
+// progressReport applies the report captured with this event.
+func (tab *terminalTab) progressReport(event gostty.Event) {
 	switch {
-	case state == gostty.ProgressStateRemove:
+	case event.ProgressState == gostty.ProgressStateRemove:
 		tab.progress = ""
-	case ok:
-		tab.progress = fmt.Sprintf("%d%%", percent)
+	case event.HasProgress:
+		tab.progress = fmt.Sprintf("%d%%", event.Progress)
 	default:
-		tab.progress = state.String()
+		tab.progress = event.ProgressState.String()
 	}
 	tab.retitle()
-	return nil
 }
 
-// retitle rebuilds the window title out of everything the program has told us
-// about itself.
 func (tab *terminalTab) retitle() {
 	if tab.owner != nil && tab.owner.current() != tab {
 		return

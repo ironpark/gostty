@@ -112,16 +112,12 @@ func (tab *terminalTab) refresh() error {
 // default colors is drawn from them.
 func (tab *terminalTab) refreshColors() error {
 	prevBg, prevFg := tab.bg, tab.fg
-	bg, err := tab.state.Background()
+	colors, err := tab.state.Colors()
 	if err != nil {
 		return err
 	}
-	tab.terminalBg = rgb(bg)
-	fg, err := tab.state.Foreground()
-	if err != nil {
-		return err
-	}
-	tab.terminalFg = rgb(fg)
+	tab.terminalBg = rgb(colors.Background)
+	tab.terminalFg = rgb(colors.Foreground)
 	theme := tab.currentTheme()
 	if theme.Terminal {
 		tab.bg, tab.fg = tab.terminalBg, tab.terminalFg
@@ -137,24 +133,15 @@ func (tab *terminalTab) refreshColors() error {
 // refreshCursor reads the cursor out of the render state, so Draw does not have
 // to reach across the boundary from a place that cannot report a failure.
 func (tab *terminalTab) refreshCursor() error {
-	visible, err := tab.state.CursorVisible()
+	cursor, err := tab.state.Cursor()
 	if err != nil {
 		return err
 	}
-	x, onScreen, err := tab.state.CursorX()
-	if err != nil {
-		return err
+	tab.cursor = cursorState{
+		x: cursor.X, y: cursor.Y,
+		visible: cursor.Visible && cursor.ViewportHasValue,
+		style:   cursor.Style,
 	}
-	y, _, err := tab.state.CursorY()
-	if err != nil {
-		return err
-	}
-	style, err := tab.state.CursorStyle()
-	if err != nil {
-		return err
-	}
-	// `onScreen` is false when the viewport has been scrolled away from it.
-	tab.cursor = cursorState{x: x, y: y, visible: visible && onScreen, style: style}
 	return nil
 }
 
