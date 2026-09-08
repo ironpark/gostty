@@ -8,7 +8,7 @@ require (
 	github.com/go-text/typesetting v0.3.5
 	github.com/hajimehoshi/bitmapfont/v4 v4.2.0
 	github.com/hajimehoshi/ebiten/v2 v2.9.11
-	github.com/ironpark/gostty v0.0.0-20260906052917-08c29bbcb8bf
+	github.com/ironpark/gostty v0.0.0-20260908043959-19677865cc54
 	golang.design/x/clipboard v0.9.0
 )
 

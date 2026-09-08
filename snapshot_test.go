@@ -240,3 +240,79 @@ func TestSnapshotDecoderReadyOnce(t *testing.T) {
 		t.Error("second Ready succeeded")
 	}
 }
+
+// Both ways a snapshot comes back satisfy SnapshotSource, so a restore that
+// does not care which it was given can take the interface. `Snapshot` needs no
+// `Ready` and `SnapshotDecoder` needs one, so the interface stops at what the
+// two share: restoring, the continuation bytes and Close.
+func TestSnapshotSource(t *testing.T) {
+	term, err := NewTerminal(10, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer term.Close()
+	stream, err := term.NewStream(64)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer stream.Close()
+	feed(t, stream, "one\r\ntwo\r\nthree\x1b[3")
+
+	var snap bytes.Buffer
+	if err := stream.WriteSnapshot(&snap); err != nil {
+		t.Fatal(err)
+	}
+
+	whole, err := DecodeSnapshot(bytes.NewReader(snap.Bytes()), 1024)
+	if err != nil {
+		t.Fatal(err)
+	}
+	incremental, err := NewSnapshotDecoder(snap.Bytes())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := incremental.Ready(1024); err != nil {
+		t.Fatal(err)
+	}
+
+	// The one call a restore actually makes, written once against both.
+	restore := func(src SnapshotSource) (string, []byte) {
+		t.Helper()
+		defer src.Close()
+		into, err := NewTerminal(80, 24)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer into.Close()
+		if err := src.RestoreInto(into); err != nil {
+			t.Fatal(err)
+		}
+		cont, err := src.Continuation()
+		if err != nil {
+			t.Fatal(err)
+		}
+		screen, err := into.PlainString()
+		if err != nil {
+			t.Fatal(err)
+		}
+		return screen, cont
+	}
+
+	for _, tc := range []struct {
+		name   string
+		source SnapshotSource
+	}{
+		{"Snapshot", whole},
+		{"SnapshotDecoder", incremental},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			screen, cont := restore(tc.source)
+			if screen != "two\nthree" {
+				t.Errorf("PlainString() = %q, want %q", screen, "two\nthree")
+			}
+			if string(cont) != "\x1b[3" {
+				t.Errorf("Continuation() = %q, want the unfinished CSI", cont)
+			}
+		})
+	}
+}

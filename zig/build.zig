@@ -68,9 +68,18 @@ pub fn build(b: *std.Build) void {
     gostty.addImport("terminal_options", ghostty_vt.import_table.get("terminal_options").?);
     const manifest = @import("build.zig.zon");
     const ghostty_url = manifest.dependencies.ghostty.url;
+    // The package hash is `<name>-<version>-<digest>`, so the version the
+    // generator ran at comes from the manifest rather than a second constant
+    // that has to be remembered on every bump.
+    const zigo_hash = manifest.dependencies.zigo.hash;
+    const zigo_version = version: {
+        const after_name = std.mem.indexOfScalar(u8, zigo_hash, '-').? + 1;
+        const rest = zigo_hash[after_name..];
+        break :version rest[0..std.mem.indexOfScalar(u8, rest, '-').?];
+    };
     const build_info_config = zigo.configJson(b, .{
         .ghostty_revision = ghostty_url[std.mem.lastIndexOfScalar(u8, ghostty_url, '#').? + 1 ..],
-        .zigo_version = "local",
+        .zigo_version = zigo_version,
         .optimize = @tagName(optimize),
     });
 
@@ -81,6 +90,7 @@ pub fn build(b: *std.Build) void {
         .{ .name = "build_info", .root_source_file = b.path("plugins/build_info/src/plugin.zig"), .config = build_info_config },
         .{ .name = "convenience", .root_source_file = b.path("plugins/convenience/src/plugin.zig") },
         .{ .name = "stringer", .root_source_file = b.path("plugins/stringer/src/plugin.zig") },
+        .{ .name = "trim", .root_source_file = b.path("plugins/trim/src/plugin.zig") },
         .{ .name = "must", .root_source_file = b.path("plugins/must/src/plugin.zig") },
         .{ .name = "satisfies", .root_source_file = zigo_dep.path("plugins/satisfies/src/plugin.zig") },
         .{ .name = "enumkit", .root_source_file = zigo_dep.path("plugins/enumkit/src/plugin.zig") },

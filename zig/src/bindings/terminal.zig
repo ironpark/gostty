@@ -13,6 +13,7 @@ const enumeration = p.enumeration;
 const out = p.out;
 const outCodepoints = p.outCodepoints;
 const childConstructor = p.childConstructor;
+const trimmed = p.trimmed;
 
 // The types, each captured as a context: one declaration that is both the type
 // and the scope its members are selected from. `.context()` only captures --
@@ -60,16 +61,16 @@ const Terminal = api.handle("Terminal", .{
     .tmux_control_mode = gostty.build_features.tmux_control_mode,
 }).context();
 
-const Screen = api.handle("Screen", .{}).context();
+const Screen = trimmed(api.handle("Screen", .{}), null).context();
 
-const Search = api.handle("Search", .{}).context();
+const Search = trimmed(api.handle("Search", .{}), null).context();
 
-const GridRef = api.handle("GridRef", .{}).context();
+const GridRef = trimmed(api.handle("GridRef", .{}), null).context();
 
-const Gesture = api.handle("Gesture", .{ .fields = &.{
+const Gesture = trimmed(api.handle("Gesture", .{ .fields = &.{
     .{ .path = "inner.left_click_count", .name = "clickCount", .doc = "How many clicks the current sequence is at: 0 before any press, then 1, 2 or 3. What an emulator switches on to decide what a click means." },
     .{ .path = "inner.left_click_dragged", .name = "dragged", .doc = "Whether the pointer has left the pressed cell during this gesture. Read it on release: a click that never dragged is the one that should follow a hyperlink or move the shell cursor, rather than one that happened to end where it started after a round trip." },
-} }).context();
+} }), null).context();
 
 const ColorName = enumeration("ColorName", .{ .text = true, .open = true }).context();
 
@@ -239,71 +240,70 @@ const screen_group = Screen.define(&.{
     Screen.func("endHyperlink", .{}),
     // Wrappers whose receiver zigo infers from their first argument. The
     // shared prefix is what keeps them apart in Zig; the Go name drops it.
-    api.func("screenSelectAll", .{ .name = "selectAll", .covers = &.{Screen.ref("selectAll")} }),
-    api.func("screenHasSelection", .{ .name = "hasSelection" }),
-    api.func("screenSelectRange", .{ .name = "selectRange", .covers = &.{Screen.ref("select")} }),
-    api.func("screenSelectWord", .{ .name = "selectWord", .covers = &.{Screen.ref("selectWord")} }),
-    api.func("screenSelectLine", .{ .name = "selectLine", .covers = &.{Screen.ref("selectLine")} }),
-    api.func("screenSelectOutput", .{ .name = "selectOutput", .covers = &.{Screen.ref("selectOutput")} }),
+    api.func("screenSelectAll", .{ .covers = &.{Screen.ref("selectAll")} }),
+    api.func("screenHasSelection", .{}),
+    api.func("screenSelectRange", .{ .covers = &.{Screen.ref("select")} }),
+    api.func("screenSelectWord", .{ .covers = &.{Screen.ref("selectWord")} }),
+    api.func("screenSelectLine", .{ .covers = &.{Screen.ref("selectLine")} }),
+    api.func("screenSelectOutput", .{ .covers = &.{Screen.ref("selectOutput")} }),
     api.func("screenSelectionString", .{
-        .name = "selectionString",
         .returns = zigo.result.owned(),
         .covers = &.{Screen.ref("selectionString")},
     }),
-    api.func("screenSelection", .{ .name = "selection" }),
-    api.func("screenSetSelection", .{ .name = "setSelection" }),
-    api.func("screenViewportTop", .{ .name = "viewportTop" }),
-    api.func("screenScrollbar", .{ .name = "scrollbar" }),
-    api.func("screenFormat", .{ .name = "format" }),
-    api.func("screenFormatSelection", .{ .name = "formatSelection" }),
-    api.func("screenSelectionContains", .{ .name = "selectionContains" }),
-    api.func("screenSelectionAdjust", .{ .name = "selectionAdjust" }),
-    api.func("screenStartHyperlink", .{ .name = "startHyperlink", .covers = &.{Screen.ref("startHyperlink")} }),
+    api.func("screenSelection", .{}),
+    api.func("screenSetSelection", .{}),
+    api.func("screenViewportTop", .{}),
+    api.func("screenScrollbar", .{}),
+    api.func("screenFormat", .{}),
+    api.func("screenFormatSelection", .{}),
+    api.func("screenSelectionContains", .{}),
+    api.func("screenSelectionAdjust", .{}),
+    api.func("screenStartHyperlink", .{ .covers = &.{Screen.ref("startHyperlink")} }),
 });
 
 // `newSearch` returns by value, like `Terminal.init`: zigo boxes the result
 // and frees the box in `close`.
 const search_group = Search.define(&.{
     api.func("searchClose", .{ .role = .{ .destructor = Search.typeRef() } }),
-    api.func("searchNeedle", .{ .name = "needle" }),
-    api.func("searchStatus", .{ .name = "status" }),
-    api.func("searchTick", .{ .name = "tick" }),
-    api.func("searchFeed", .{ .name = "feed" }),
-    api.func("searchAll", .{ .name = "all" }),
-    api.func("searchSelect", .{ .name = "select" }),
-    api.func("searchMatchCount", .{ .name = "matchCount" }),
-    api.func("searchMatches", .{ .name = "matches", .params = &.{out(1)} }),
-    api.func("searchViewportMatches", .{ .name = "viewportMatches", .params = &.{out(1)} }),
-    api.func("searchSelectedMatch", .{ .name = "selectedMatch" }),
-    api.func("searchSelectedIndex", .{ .name = "selectedIndex" }),
+    api.func("searchNeedle", .{}),
+    api.func("searchStatus", .{}),
+    api.func("searchTick", .{}),
+    api.func("searchFeed", .{}),
+    api.func("searchAll", .{}),
+    api.func("searchSelect", .{}),
+    api.func("searchMatchCount", .{}),
+    api.func("searchMatches", .{ .params = &.{out(1)} }),
+    api.func("searchViewportMatches", .{ .params = &.{out(1)} }),
+    api.func("searchSelectedMatch", .{}),
+    api.func("searchSelectedIndex", .{}),
 });
 
 // A pin lives in the terminal's page storage and is updated by it, so a
 // reference is a child handle and closes first.
 const grid_ref_group = GridRef.define(&.{
     api.func("gridRefClose", .{ .role = .{ .destructor = GridRef.typeRef() } }),
-    api.func("gridRefHasValue", .{ .name = "hasValue" }),
-    api.func("gridRefPoint", .{ .name = "point" }),
-    api.func("gridRefSet", .{ .name = "set" }),
-    api.func("gridRefCell", .{ .name = "cell" }),
-    api.func("gridRefGraphemes", .{ .name = "graphemes", .params = &.{outCodepoints(1)} }),
-    api.func("gridRefHyperlinkUri", .{ .name = "hyperlinkUri", .returns = zigo.result.owned() }),
+    api.func("gridRefHasValue", .{}),
+    api.func("gridRefPoint", .{}),
+    api.func("gridRefSet", .{}),
+    api.func("gridRefCell", .{}),
+    api.func("gridRefGraphemes", .{ .params = &.{outCodepoints(1)} }),
+    api.func("gridRefHyperlinkUri", .{ .returns = zigo.result.owned() }),
 });
 
 // Like `Search`, a gesture holds a tracked pin inside its terminal and hands
 // it back on every call, so it is a child handle and closes first.
 const gesture_group = Gesture.define(&.{
     api.func("gestureClose", .{ .role = .{ .destructor = Gesture.typeRef() } }),
-    api.func("gestureSetBehaviors", .{ .name = "setBehaviors" }),
-    api.func("gestureSetWordBoundaries", .{ .name = "setWordBoundaries" }),
-    api.func("gestureSetGeometry", .{ .name = "setGeometry" }),
-    api.func("gesturePress", .{ .name = "press" }),
-    api.func("gestureDrag", .{ .name = "drag" }),
-    api.func("gestureAutoscroll", .{ .name = "autoscroll" }),
-    api.func("gestureAutoscrollTick", .{ .name = "autoscrollTick" }),
-    api.func("gestureDeepPress", .{ .name = "deepPress" }),
-    api.func("gestureRelease", .{ .name = "release" }),
-    api.func("gestureReset", .{ .name = "reset" }),
+    api.func("gestureSetBehaviors", .{}),
+    api.func("gestureSetWordBoundaries", .{}),
+    api.func("gestureSetGeometry", .{}),
+    api.func("gesturePress", .{}),
+    api.func("gestureDrag", .{}),
+    api.func("gestureAutoscroll", .{}),
+    api.func("gestureAutoscrollTick", .{}),
+    api.func("gestureDeepPress", .{}),
+    api.func("gestureRelease", .{}),
+    api.func("gestureReset", .{}),
 });
 
 // A root wrapper, not one of ghostty's own methods on the enum; the receiver

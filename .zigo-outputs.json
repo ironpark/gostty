@@ -46,6 +46,10 @@
       "kind": "go"
     },
     {
+      "path": "gostty_interfaces_gen.go",
+      "kind": "go"
+    },
+    {
       "path": "zigo_must_gen.go",
       "kind": "go"
     },

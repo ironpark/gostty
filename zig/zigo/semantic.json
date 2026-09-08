@@ -5659,7 +5659,7 @@
         "Screen.selectAll"
       ],
       "doc": "Select the whole screen. Returns false when there is nothing to select.",
-      "name": "selectAll",
+      "name": "screenSelectAll",
       "ownership": "borrowed",
       "params": [],
       "receiver": "Screen",
@@ -5678,11 +5678,11 @@
         "column": 8
       },
       "zig_path": "screenSelectAll",
-      "symbol": "zg_screen_select_all"
+      "symbol": "zg_screen_screen_select_all"
     },
     {
       "doc": "True when the screen has a selection.",
-      "name": "hasSelection",
+      "name": "screenHasSelection",
       "ownership": "borrowed",
       "params": [],
       "receiver": "Screen",
@@ -5695,14 +5695,14 @@
         "column": 8
       },
       "zig_path": "screenHasSelection",
-      "symbol": "zg_screen_has_selection"
+      "symbol": "zg_screen_screen_has_selection"
     },
     {
       "covers": [
         "Screen.select"
       ],
       "doc": "Select the cells between two viewport positions, inclusive of both ends.\n\n`rectangle` selects the block between the two corners rather than the flow\nof text from one to the other. Returns false when either end is outside the\nviewport, which is what a drag that left the window looks like.",
-      "name": "selectRange",
+      "name": "screenSelectRange",
       "ownership": "borrowed",
       "params": [
         {
@@ -5799,14 +5799,14 @@
         "column": 8
       },
       "zig_path": "screenSelectRange",
-      "symbol": "zg_screen_select_range"
+      "symbol": "zg_screen_screen_select_range"
     },
     {
       "covers": [
         "Screen.selectWord"
       ],
       "doc": "Select the word under a viewport position -- what a double click does.\n\n`boundaries` are the codepoints that end a word. ghostty has no default for\nthem on purpose: its own UI reads the set from configuration, so the choice\nbelongs to the embedder.\n\nWrapped because ghostty returns the `Selection` rather than applying it, and\na `Selection` holds page pins that cannot cross the C ABI. False when the\nposition is outside the viewport or there is no word under it.",
-      "name": "selectWord",
+      "name": "screenSelectWord",
       "ownership": "borrowed",
       "params": [
         {
@@ -5879,14 +5879,14 @@
         "column": 8
       },
       "zig_path": "screenSelectWord",
-      "symbol": "zg_screen_select_word"
+      "symbol": "zg_screen_screen_select_word"
     },
     {
       "covers": [
         "Screen.selectLine"
       ],
       "doc": "Select the line under a viewport position -- what a triple click does.\n\nSoft-wrapped lines are followed as one line, leading and trailing whitespace\nis trimmed, and a semantic prompt boundary ends the selection.",
-      "name": "selectLine",
+      "name": "screenSelectLine",
       "ownership": "borrowed",
       "params": [
         {
@@ -5938,14 +5938,14 @@
         "column": 8
       },
       "zig_path": "screenSelectLine",
-      "symbol": "zg_screen_select_line"
+      "symbol": "zg_screen_screen_select_line"
     },
     {
       "covers": [
         "Screen.selectOutput"
       ],
       "doc": "Select the command output the given position belongs to.\n\nNeeds the shell to mark its prompts with OSC 133; without those marks there\nis no output block to find and this returns false.",
-      "name": "selectOutput",
+      "name": "screenSelectOutput",
       "ownership": "borrowed",
       "params": [
         {
@@ -5997,14 +5997,14 @@
         "column": 8
       },
       "zig_path": "screenSelectOutput",
-      "symbol": "zg_screen_select_output"
+      "symbol": "zg_screen_screen_select_output"
     },
     {
       "covers": [
         "Screen.selectionString"
       ],
       "doc": "The text of the current selection, absent when nothing is selected.",
-      "name": "selectionString",
+      "name": "screenSelectionString",
       "ownership": "caller",
       "params": [
         {
@@ -6050,11 +6050,11 @@
         "column": 8
       },
       "zig_path": "screenSelectionString",
-      "symbol": "zg_screen_selection_string"
+      "symbol": "zg_screen_screen_selection_string"
     },
     {
       "doc": "The screen's current selection, or null when there is none.",
-      "name": "selection",
+      "name": "screenSelection",
       "ownership": "borrowed",
       "params": [],
       "receiver": "Screen",
@@ -6071,11 +6071,11 @@
         "column": 8
       },
       "zig_path": "screenSelection",
-      "symbol": "zg_screen_selection"
+      "symbol": "zg_screen_screen_selection"
     },
     {
       "doc": "Replace the screen's selection. Returns false, leaving the selection as it\nwas, if either end is outside the screen.",
-      "name": "setSelection",
+      "name": "screenSetSelection",
       "ownership": "borrowed",
       "params": [
         {
@@ -6109,11 +6109,11 @@
         "column": 8
       },
       "zig_path": "screenSetSelection",
-      "symbol": "zg_screen_set_selection"
+      "symbol": "zg_screen_screen_set_selection"
     },
     {
       "doc": "The screen row shown at the top of the viewport: subtract it from a\n`Selection` row to get the viewport row a renderer draws at.",
-      "name": "viewportTop",
+      "name": "screenViewportTop",
       "ownership": "borrowed",
       "params": [],
       "receiver": "Screen",
@@ -6129,11 +6129,11 @@
         "column": 8
       },
       "zig_path": "screenViewportTop",
-      "symbol": "zg_screen_viewport_top"
+      "symbol": "zg_screen_screen_viewport_top"
     },
     {
       "doc": "The screen's scrollbar state.",
-      "name": "scrollbar",
+      "name": "screenScrollbar",
       "ownership": "borrowed",
       "params": [],
       "receiver": "Screen",
@@ -6147,11 +6147,11 @@
         "column": 8
       },
       "zig_path": "screenScrollbar",
-      "symbol": "zg_screen_scrollbar"
+      "symbol": "zg_screen_screen_scrollbar"
     },
     {
       "doc": "Format a whole screen, scrollback included. `Terminal.format` is the\nactive area only.",
-      "name": "format",
+      "name": "screenFormat",
       "ownership": "borrowed",
       "params": [
         {
@@ -6198,11 +6198,11 @@
         "column": 8
       },
       "zig_path": "screenFormat",
-      "symbol": "zg_screen_format"
+      "symbol": "zg_screen_screen_format"
     },
     {
       "doc": "Format the part of a screen inside `sel`. Returns false, writing\nnothing, if `sel` is outside the screen.",
-      "name": "formatSelection",
+      "name": "screenFormatSelection",
       "ownership": "borrowed",
       "params": [
         {
@@ -6263,11 +6263,11 @@
         "column": 8
       },
       "zig_path": "screenFormatSelection",
-      "symbol": "zg_screen_format_selection"
+      "symbol": "zg_screen_screen_format_selection"
     },
     {
       "doc": "Whether the screen cell at `x`, `y` (screen coordinates) is inside `sel`.\nFalse when either is outside the screen.",
-      "name": "selectionContains",
+      "name": "screenSelectionContains",
       "ownership": "borrowed",
       "params": [
         {
@@ -6327,11 +6327,11 @@
         "column": 8
       },
       "zig_path": "screenSelectionContains",
-      "symbol": "zg_screen_selection_contains"
+      "symbol": "zg_screen_screen_selection_contains"
     },
     {
       "doc": "Move the end of `sel` by `adjustment` -- what shift+arrow does to a\nselection -- and return the result. Null if `sel` is outside the screen.",
-      "name": "selectionAdjust",
+      "name": "screenSelectionAdjust",
       "ownership": "borrowed",
       "params": [
         {
@@ -6377,14 +6377,14 @@
         "column": 8
       },
       "zig_path": "screenSelectionAdjust",
-      "symbol": "zg_screen_selection_adjust"
+      "symbol": "zg_screen_screen_selection_adjust"
     },
     {
       "covers": [
         "Screen.startHyperlink"
       ],
       "doc": "Open a hyperlink on the screen; cells printed until `Screen.endHyperlink`\ncarry it. An empty `id` leaves the link without an explicit id, which is\nwhat OSC 8 does when the parameter is absent.",
-      "name": "startHyperlink",
+      "name": "screenStartHyperlink",
       "ownership": "borrowed",
       "params": [
         {
@@ -6447,7 +6447,7 @@
         "column": 8
       },
       "zig_path": "screenStartHyperlink",
-      "symbol": "zg_screen_start_hyperlink"
+      "symbol": "zg_screen_screen_start_hyperlink"
     },
     {
       "boxed": "destroy",
@@ -6469,7 +6469,7 @@
     },
     {
       "doc": "The needle being searched for, borrowed.",
-      "name": "needle",
+      "name": "searchNeedle",
       "ownership": "borrowed",
       "params": [],
       "receiver": "Search",
@@ -6490,11 +6490,11 @@
         "column": 8
       },
       "zig_path": "searchNeedle",
-      "symbol": "zg_search_needle"
+      "symbol": "zg_search_search_needle"
     },
     {
       "doc": "How much of the terminal the search has covered so far.",
-      "name": "status",
+      "name": "searchStatus",
       "ownership": "borrowed",
       "params": [],
       "receiver": "Search",
@@ -6508,11 +6508,11 @@
         "column": 8
       },
       "zig_path": "searchStatus",
-      "symbol": "zg_search_status"
+      "symbol": "zg_search_search_status"
     },
     {
       "doc": "Push the search forward as far as it can go without reading the terminal,\nand report what that achieved. Safe to run beside terminal IO, so a UI can\nspend a slice of each frame here rather than blocking on `searchAll`.\n\n`blocked` means the searcher has consumed everything the last `searchFeed`\ngave it and needs another one.",
-      "name": "tick",
+      "name": "searchTick",
       "ownership": "borrowed",
       "params": [],
       "receiver": "Search",
@@ -6526,11 +6526,11 @@
         "column": 8
       },
       "zig_path": "searchTick",
-      "symbol": "zg_search_tick"
+      "symbol": "zg_search_search_tick"
     },
     {
       "doc": "Read the terminal into the search: reconcile its screens, hand the\nsearchers more scrollback, and notice whether the viewport moved.\n\nThis is also the only way the search learns that the terminal changed, so\nkeep feeding it while it is in use, even after it reports complete.\n\nPass `active_dirty` false only if you know the active area has not changed\nsince the last feed; true is always correct and the rescan is cheap.",
-      "name": "feed",
+      "name": "searchFeed",
       "ownership": "borrowed",
       "params": [
         {
@@ -6557,11 +6557,11 @@
         "column": 8
       },
       "zig_path": "searchFeed",
-      "symbol": "zg_search_feed"
+      "symbol": "zg_search_search_feed"
     },
     {
       "doc": "Run the search to completion, feeding and ticking until nothing is left.\n\nThe simple call, for a program that would rather block than drive the\nsearch itself. A large scrollback can take a while; `searchTick` and\n`searchFeed` are the way to spread that over frames instead.",
-      "name": "all",
+      "name": "searchAll",
       "ownership": "borrowed",
       "params": [],
       "receiver": "Search",
@@ -6574,11 +6574,11 @@
         "column": 8
       },
       "zig_path": "searchAll",
-      "symbol": "zg_search_all"
+      "symbol": "zg_search_search_all"
     },
     {
       "doc": "Move to the next or previous match on the active screen, wrapping at the\nends, and select it on the screen. False if there is nothing to select.\n\nFeeds first, so it always works against current terminal state.",
-      "name": "select",
+      "name": "searchSelect",
       "ownership": "borrowed",
       "params": [
         {
@@ -6626,11 +6626,11 @@
         "column": 8
       },
       "zig_path": "searchSelect",
-      "symbol": "zg_search_select"
+      "symbol": "zg_search_search_select"
     },
     {
       "doc": "How many matches have been found on the active screen so far. Grows as the\nsearch progresses, so it is only final once the status is `complete`.",
-      "name": "matchCount",
+      "name": "searchMatchCount",
       "ownership": "borrowed",
       "params": [],
       "receiver": "Search",
@@ -6646,11 +6646,11 @@
         "column": 8
       },
       "zig_path": "searchMatchCount",
-      "symbol": "zg_search_match_count"
+      "symbol": "zg_search_search_match_count"
     },
     {
       "doc": "Copy the matches found on the active screen so far into `dst`, most recent\nscreen content first, and return how many were written. Matches are in\nscreen coordinates; size `dst` from `searchMatchCount`.",
-      "name": "matches",
+      "name": "searchMatches",
       "ownership": "borrowed",
       "params": [
         {
@@ -6686,11 +6686,11 @@
         "column": 8
       },
       "zig_path": "searchMatches",
-      "symbol": "zg_search_matches"
+      "symbol": "zg_search_search_matches"
     },
     {
       "doc": "The matches on the pages the viewport covers, in screen coordinates, for a\nrenderer highlighting what is on screen. Returns how many were written.\n\nThis is the cheap way to draw highlights: the viewport is searched on its\nown and the results are cached until it moves, so a frame does not pay for\nthe whole scrollback, and the answer is there before the scrollback search\nhas finished. It can include a few matches just off screen when they share\na page with the viewport, which a renderer clips anyway.\n\nThe count is not known in advance, so size `dst` generously and treat a\nfull `dst` as \"there may be more\".",
-      "name": "viewportMatches",
+      "name": "searchViewportMatches",
       "ownership": "borrowed",
       "params": [
         {
@@ -6732,11 +6732,11 @@
         "column": 8
       },
       "zig_path": "searchViewportMatches",
-      "symbol": "zg_search_viewport_matches"
+      "symbol": "zg_search_search_viewport_matches"
     },
     {
       "doc": "The match `searchSelect` last moved to, or null before the first move.",
-      "name": "selectedMatch",
+      "name": "searchSelectedMatch",
       "ownership": "borrowed",
       "params": [],
       "receiver": "Search",
@@ -6753,11 +6753,11 @@
         "column": 8
       },
       "zig_path": "searchSelectedMatch",
-      "symbol": "zg_search_selected_match"
+      "symbol": "zg_search_search_selected_match"
     },
     {
       "doc": "The index of the selected match in the list `searchMatches` writes, or null\nbefore the first `searchSelect`. What a UI shows as \"3 of 12\".",
-      "name": "selectedIndex",
+      "name": "searchSelectedIndex",
       "ownership": "borrowed",
       "params": [],
       "receiver": "Search",
@@ -6776,7 +6776,7 @@
         "column": 8
       },
       "zig_path": "searchSelectedIndex",
-      "symbol": "zg_search_selected_index"
+      "symbol": "zg_search_search_selected_index"
     },
     {
       "boxed": "destroy",
@@ -6798,7 +6798,7 @@
     },
     {
       "doc": "Whether the reference still names a cell. False after a reset, or after\nthe scrollback limit pruned the page the cell was on.",
-      "name": "hasValue",
+      "name": "gridRefHasValue",
       "ownership": "borrowed",
       "params": [],
       "receiver": "GridRef",
@@ -6811,11 +6811,11 @@
         "column": 8
       },
       "zig_path": "gridRefHasValue",
-      "symbol": "zg_grid_ref_has_value"
+      "symbol": "zg_grid_ref_grid_ref_has_value"
     },
     {
       "doc": "Where the cell is now, in the coordinate system `tag` names. Null when the\nreference is empty, or when the cell is outside that system -- a cell in\nthe scrollback has no `active` position, and one scrolled off screen has\nno `viewport` position.",
-      "name": "point",
+      "name": "gridRefPoint",
       "ownership": "borrowed",
       "params": [
         {
@@ -6847,11 +6847,11 @@
         "column": 8
       },
       "zig_path": "gridRefPoint",
-      "symbol": "zg_grid_ref_point"
+      "symbol": "zg_grid_ref_grid_ref_point"
     },
     {
       "doc": "Point the reference at another cell of the active screen, clearing an\nempty state. Returns false, leaving the reference as it was, if there is no\nsuch cell.",
-      "name": "set",
+      "name": "gridRefSet",
       "ownership": "borrowed",
       "params": [
         {
@@ -6917,11 +6917,11 @@
         "column": 8
       },
       "zig_path": "gridRefSet",
-      "symbol": "zg_grid_ref_set"
+      "symbol": "zg_grid_ref_grid_ref_set"
     },
     {
       "doc": "The cell, with its colors resolved the way `RenderState` resolves them.\nNull when the reference is empty. `selected` is never set: the selection\nis a property of a frame, not of a cell.",
-      "name": "cell",
+      "name": "gridRefCell",
       "ownership": "borrowed",
       "params": [],
       "receiver": "GridRef",
@@ -6938,11 +6938,11 @@
         "column": 8
       },
       "zig_path": "gridRefCell",
-      "symbol": "zg_grid_ref_cell"
+      "symbol": "zg_grid_ref_grid_ref_cell"
     },
     {
       "doc": "The codepoints of the cell: the base codepoint followed by any combining\nmarks or ZWJ sequence members, which `RenderCell.codepoint` alone drops.\nCopies them into `dst` and returns how many were written; zero for an\nempty cell or an empty reference. `error.NoSpaceLeft` if `dst` is shorter\nthan the cluster.",
-      "name": "graphemes",
+      "name": "gridRefGraphemes",
       "ownership": "borrowed",
       "params": [
         {
@@ -6987,11 +6987,11 @@
         "column": 8
       },
       "zig_path": "gridRefGraphemes",
-      "symbol": "zg_grid_ref_graphemes"
+      "symbol": "zg_grid_ref_grid_ref_graphemes"
     },
     {
       "doc": "The URI of the hyperlink (OSC 8) the cell is part of, or null when the\ncell is not a link or the reference is empty.",
-      "name": "hyperlinkUri",
+      "name": "gridRefHyperlinkUri",
       "ownership": "caller",
       "params": [
         {
@@ -7037,7 +7037,7 @@
         "column": 8
       },
       "zig_path": "gridRefHyperlinkUri",
-      "symbol": "zg_grid_ref_hyperlink_uri"
+      "symbol": "zg_grid_ref_grid_ref_hyperlink_uri"
     },
     {
       "boxed": "destroy",
@@ -7059,7 +7059,7 @@
     },
     {
       "doc": "What a single, double and triple click select.\n\nDefaults to ghostty's own mapping, so this is only for an emulator offering\nsomething else -- selecting command output on triple click, say. Takes\neffect on the next press; a gesture already in progress keeps the behavior\nits press chose.",
-      "name": "setBehaviors",
+      "name": "gestureSetBehaviors",
       "ownership": "borrowed",
       "params": [
         {
@@ -7115,11 +7115,11 @@
         "column": 8
       },
       "zig_path": "gestureSetBehaviors",
-      "symbol": "zg_gesture_set_behaviors"
+      "symbol": "zg_gesture_gesture_set_behaviors"
     },
     {
       "doc": "The codepoints that end a word, for double-click and deep-press selection.\n\nghostty has no default on purpose -- its own UI reads the set from\nconfiguration -- so this starts empty, and until it is set a \"word\" runs to\nthe end of the line. A space is the minimum worth setting. Copied, so the\ncaller's slice does not have to outlive the call; set it again on a config\nreload.",
-      "name": "setWordBoundaries",
+      "name": "gestureSetWordBoundaries",
       "ownership": "borrowed",
       "params": [
         {
@@ -7160,11 +7160,11 @@
         "column": 8
       },
       "zig_path": "gestureSetWordBoundaries",
-      "symbol": "zg_gesture_set_word_boundaries"
+      "symbol": "zg_gesture_gesture_set_word_boundaries"
     },
     {
       "doc": "The rendered geometry drags are measured against. Set it before the first\ndrag, and again on every resize; a zero `columns` or `cell_width` makes\ncell-granular drags select nothing.",
-      "name": "setGeometry",
+      "name": "gestureSetGeometry",
       "ownership": "borrowed",
       "params": [
         {
@@ -7192,11 +7192,11 @@
         "column": 8
       },
       "zig_path": "gestureSetGeometry",
-      "symbol": "zg_gesture_set_geometry"
+      "symbol": "zg_gesture_gesture_set_geometry"
     },
     {
       "doc": "Record a press and return the selection it makes, if any.\n\nA press near the previous one and within `repeat_interval_ns` of it raises\nthe click count, up to three; anything else starts over at one. Nothing is\nselected here: apply the result with `Screen.SetSelection` when there is one\nand call `Screen.ClearSelection` when there is not, which is what makes a\nsingle click clear the selection.\n\nNothing is returned and no gesture starts if the cell is outside the\nviewport.",
-      "name": "press",
+      "name": "gesturePress",
       "ownership": "borrowed",
       "params": [
         {
@@ -7234,11 +7234,11 @@
         "column": 8
       },
       "zig_path": "gesturePress",
-      "symbol": "zg_gesture_press"
+      "symbol": "zg_gesture_gesture_press"
     },
     {
       "doc": "Record a pointer movement while the button is down and return the selection\nit now covers, if any.\n\nNull means there is nothing to change: no gesture is in progress, the press\nit started from is no longer on the active screen, or the pointer has not\nyet moved far enough to select the first cell. Word and line drags are\nrecomputed against the terminal as it is now, so output arriving mid-drag is\npicked up.\n\nCheck `Autoscroll` afterwards: a drag past the top or bottom edge asks for a\ntimer calling `AutoscrollTick`.",
-      "name": "drag",
+      "name": "gestureDrag",
       "ownership": "borrowed",
       "params": [
         {
@@ -7270,11 +7270,11 @@
         "column": 8
       },
       "zig_path": "gestureDrag",
-      "symbol": "zg_gesture_drag"
+      "symbol": "zg_gesture_gesture_drag"
     },
     {
       "doc": "Which way an active drag wants the viewport scrolled, `none` when it does\nnot. Read it after every `Drag` to start or stop the autoscroll timer.",
-      "name": "autoscroll",
+      "name": "gestureAutoscroll",
       "ownership": "borrowed",
       "params": [],
       "receiver": "Gesture",
@@ -7288,11 +7288,11 @@
         "column": 8
       },
       "zig_path": "gestureAutoscroll",
-      "symbol": "zg_gesture_autoscroll"
+      "symbol": "zg_gesture_gesture_autoscroll"
     },
     {
       "doc": "Scroll the viewport one row in the autoscroll direction and continue the\ndrag at the pointer's current position, which now names a different row.\n\nCall this from the timer `Autoscroll` asked for, passing the last position\nthe pointer was seen at. It scrolls exactly one row per call: tick faster to\nscroll faster. A null result with `Autoscroll` back at `none` means the\ngesture ended -- stop the timer and leave the selection alone.",
-      "name": "autoscrollTick",
+      "name": "gestureAutoscrollTick",
       "ownership": "borrowed",
       "params": [
         {
@@ -7324,11 +7324,11 @@
         "column": 8
       },
       "zig_path": "gestureAutoscrollTick",
-      "symbol": "zg_gesture_autoscroll_tick"
+      "symbol": "zg_gesture_gesture_autoscroll_tick"
     },
     {
       "doc": "Record a force click -- a pressure activation while the button is already\ndown, which is what macOS calls a deep click.\n\nSelects the word under the original press and ends the gesture, so further\nmovement does not drag it. Null when there is no valid gesture to deepen.",
-      "name": "deepPress",
+      "name": "gestureDeepPress",
       "ownership": "borrowed",
       "params": [],
       "receiver": "Gesture",
@@ -7345,11 +7345,11 @@
         "column": 8
       },
       "zig_path": "gestureDeepPress",
-      "symbol": "zg_gesture_deep_press"
+      "symbol": "zg_gesture_gesture_deep_press"
     },
     {
       "doc": "Record the release of the primary button at a viewport cell.\n\nThis ends the drag and stops autoscroll but deliberately keeps the click\ncount, which is what lets the next press become a double or triple click.\nA cell outside the viewport is fine: the gesture then records that the\npointer moved away, which is the conservative answer for `Dragged`.",
-      "name": "release",
+      "name": "gestureRelease",
       "ownership": "borrowed",
       "params": [
         {
@@ -7395,11 +7395,11 @@
         "column": 8
       },
       "zig_path": "gestureRelease",
-      "symbol": "zg_gesture_release"
+      "symbol": "zg_gesture_gesture_release"
     },
     {
       "doc": "Abandon the gesture, click sequence included.\n\nFor cancellation rather than the ordinary release: the program turned on\nmouse reporting, the window lost the pointer, the surface is going away. The\nnext press is then a fresh single click.",
-      "name": "reset",
+      "name": "gestureReset",
       "ownership": "borrowed",
       "params": [],
       "receiver": "Gesture",
@@ -7412,7 +7412,7 @@
         "column": 8
       },
       "zig_path": "gestureReset",
-      "symbol": "zg_gesture_reset"
+      "symbol": "zg_gesture_gesture_reset"
     },
     {
       "covers": [
@@ -9360,7 +9360,7 @@
     },
     {
       "doc": "Replace `term` with the terminal the snapshot holds: its size, screens,\nscrollback, modes and colors. The snapshot gives its terminal up once;\na second call fails. Streams on `term` keep pointing at it, but their\nparser state belongs to the old contents, so open a new stream and feed\nit `continuation` before any new input.\n\nzigo allows one constructor per handle and `newTerminal` is it, so a\nrestore fills a terminal the caller made rather than returning one.",
-      "name": "restoreInto",
+      "name": "snapshotRestoreInto",
       "ownership": "borrowed",
       "params": [
         {
@@ -9410,11 +9410,11 @@
         "column": 8
       },
       "zig_path": "snapshotRestoreInto",
-      "symbol": "zg_snapshot_restore_into"
+      "symbol": "zg_snapshot_snapshot_restore_into"
     },
     {
       "doc": "The bytes of the unfinished sequence the snapshot was taken in, empty\nwhen the stream was at ground. Feed them to the restored terminal's\nstream before any new input.",
-      "name": "continuation",
+      "name": "snapshotContinuation",
       "ownership": "borrowed",
       "params": [],
       "receiver": "Snapshot",
@@ -9434,7 +9434,7 @@
         "column": 8
       },
       "zig_path": "snapshotContinuation",
-      "symbol": "zg_snapshot_continuation"
+      "symbol": "zg_snapshot_snapshot_continuation"
     },
     {
       "boxed": "create",
@@ -9531,7 +9531,7 @@
     },
     {
       "doc": "Decode as far as the READY marker: everything a terminal needs to be drawn.\n\n`max_continuation_bytes` bounds the unfinished-sequence suffix. After this\nthe terminal can be taken with `restoreInto` and drawn, and the history\narrives through `next` at whatever pace suits.",
-      "name": "ready",
+      "name": "snapshotDecoderReady",
       "ownership": "borrowed",
       "params": [
         {
@@ -9624,11 +9624,11 @@
         "column": 8
       },
       "zig_path": "snapshotDecoderReady",
-      "symbol": "zg_snapshot_decoder_ready"
+      "symbol": "zg_snapshot_decoder_snapshot_decoder_ready"
     },
     {
       "doc": "Replace `term` with the decoded terminal. See `snapshotRestoreInto`; the\nsame one-shot rule applies, and `next` wants the same terminal afterwards.",
-      "name": "restoreInto",
+      "name": "snapshotDecoderRestoreInto",
       "ownership": "borrowed",
       "params": [
         {
@@ -9678,11 +9678,11 @@
         "column": 8
       },
       "zig_path": "snapshotDecoderRestoreInto",
-      "symbol": "zg_snapshot_decoder_restore_into"
+      "symbol": "zg_snapshot_decoder_snapshot_decoder_restore_into"
     },
     {
       "doc": "The unfinished sequence the snapshot was taken in, empty at ground.",
-      "name": "continuation",
+      "name": "snapshotDecoderContinuation",
       "ownership": "borrowed",
       "params": [],
       "receiver": "SnapshotDecoder",
@@ -9702,11 +9702,11 @@
         "column": 8
       },
       "zig_path": "snapshotDecoderContinuation",
-      "symbol": "zg_snapshot_decoder_continuation"
+      "symbol": "zg_snapshot_decoder_snapshot_decoder_continuation"
     },
     {
       "doc": "Decode one page of history and prepend it to its screen in `term`, which\nmust be the one `restoreInto` filled.\n\nReturns null once the snapshot is complete. Wire errors are fatal -- the\nposition in the stream is lost -- but a page that cannot be applied is\nreported as zero rows rather than failing, because the terminal is live\nand may have moved on since `ready`.",
-      "name": "next",
+      "name": "snapshotDecoderNext",
       "ownership": "borrowed",
       "params": [
         {
@@ -9795,7 +9795,7 @@
         "column": 8
       },
       "zig_path": "snapshotDecoderNext",
-      "symbol": "zg_snapshot_decoder_next"
+      "symbol": "zg_snapshot_decoder_snapshot_decoder_next"
     },
     {
       "boxed": "create",
@@ -9928,7 +9928,7 @@
     },
     {
       "doc": "Copy all cursor metadata in one boundary crossing. Reading this value does\nnot touch the terminal; serialize reads with Update and Close on this state.",
-      "name": "cursor",
+      "name": "renderCursor",
       "ownership": "borrowed",
       "params": [],
       "receiver": "RenderState",
@@ -9942,11 +9942,11 @@
         "column": 8
       },
       "zig_path": "renderCursor",
-      "symbol": "zg_render_state_cursor"
+      "symbol": "zg_render_state_render_cursor"
     },
     {
       "doc": "Copy the resolved colors of this frame in one boundary crossing.",
-      "name": "colors",
+      "name": "renderColors",
       "ownership": "borrowed",
       "params": [],
       "receiver": "RenderState",
@@ -9960,11 +9960,11 @@
         "column": 8
       },
       "zig_path": "renderColors",
-      "symbol": "zg_render_state_colors"
+      "symbol": "zg_render_state_render_colors"
     },
     {
       "doc": "How many `RenderCell`s `renderCells` needs: `rows * cols`.",
-      "name": "cellCount",
+      "name": "renderCellCount",
       "ownership": "borrowed",
       "params": [],
       "receiver": "RenderState",
@@ -9980,11 +9980,11 @@
         "column": 8
       },
       "zig_path": "renderCellCount",
-      "symbol": "zg_render_state_cell_count"
+      "symbol": "zg_render_state_render_cell_count"
     },
     {
       "doc": "Flatten the viewport into `dst`, row-major from the top, and report how\nmany cells were written.",
-      "name": "cells",
+      "name": "renderCells",
       "ownership": "borrowed",
       "params": [
         {
@@ -10026,11 +10026,11 @@
         "column": 8
       },
       "zig_path": "renderCells",
-      "symbol": "zg_render_state_cells"
+      "symbol": "zg_render_state_render_cells"
     },
     {
       "doc": "The terminal's default background, 0xRRGGBB. Already reversed if the\nterminal is in reverse-video mode.",
-      "name": "background",
+      "name": "renderBackground",
       "ownership": "borrowed",
       "params": [],
       "receiver": "RenderState",
@@ -10046,10 +10046,10 @@
         "column": 8
       },
       "zig_path": "renderBackground",
-      "symbol": "zg_render_state_background"
+      "symbol": "zg_render_state_render_background"
     },
     {
-      "name": "foreground",
+      "name": "renderForeground",
       "ownership": "borrowed",
       "params": [],
       "receiver": "RenderState",
@@ -10065,11 +10065,11 @@
         "column": 8
       },
       "zig_path": "renderForeground",
-      "symbol": "zg_render_state_foreground"
+      "symbol": "zg_render_state_render_foreground"
     },
     {
       "doc": "The cursor's column within the viewport, or false if it is scrolled out.",
-      "name": "cursorX",
+      "name": "renderCursorX",
       "ownership": "borrowed",
       "params": [],
       "receiver": "RenderState",
@@ -10088,10 +10088,10 @@
         "column": 8
       },
       "zig_path": "renderCursorX",
-      "symbol": "zg_render_state_cursor_x"
+      "symbol": "zg_render_state_render_cursor_x"
     },
     {
-      "name": "cursorY",
+      "name": "renderCursorY",
       "ownership": "borrowed",
       "params": [],
       "receiver": "RenderState",
@@ -10110,11 +10110,11 @@
         "column": 8
       },
       "zig_path": "renderCursorY",
-      "symbol": "zg_render_state_cursor_y"
+      "symbol": "zg_render_state_render_cursor_y"
     },
     {
       "doc": "Whether the cursor sits on the tail of a wide character. A renderer that\ndraws a one-cell cursor may want to move it back one column so it covers\nthe character rather than half of it. Null when the cursor is scrolled out\nof the viewport, the same as `renderCursorX`.",
-      "name": "cursorWideTail",
+      "name": "renderCursorWideTail",
       "ownership": "borrowed",
       "params": [],
       "receiver": "RenderState",
@@ -10130,11 +10130,11 @@
         "column": 8
       },
       "zig_path": "renderCursorWideTail",
-      "symbol": "zg_render_state_cursor_wide_tail"
+      "symbol": "zg_render_state_render_cursor_wide_tail"
     },
     {
       "doc": "The cursor color as of this frame, 0xRRGGBB, or null when the program has\nnot set one and the renderer should pick. Read from the snapshot rather\nthan the terminal so it matches the cells drawn beside it.",
-      "name": "cursorColor",
+      "name": "renderCursorColor",
       "ownership": "borrowed",
       "params": [],
       "receiver": "RenderState",
@@ -10153,11 +10153,11 @@
         "column": 8
       },
       "zig_path": "renderCursorColor",
-      "symbol": "zg_render_state_cursor_color"
+      "symbol": "zg_render_state_render_cursor_color"
     },
     {
       "doc": "What changed since `RenderState.clean`. `RenderState.update` raises this;\nnothing lowers it but `clean`.",
-      "name": "dirty",
+      "name": "renderDirty",
       "ownership": "borrowed",
       "params": [],
       "receiver": "RenderState",
@@ -10171,11 +10171,11 @@
         "column": 8
       },
       "zig_path": "renderDirty",
-      "symbol": "zg_render_state_dirty"
+      "symbol": "zg_render_state_render_dirty"
     },
     {
       "doc": "Write the indexes of the dirty viewport rows into `dst`, top to bottom,\nand report how many there are. `error.NoSpaceLeft` if `dst` is shorter\nthan that; size it to `rows`.",
-      "name": "dirtyRows",
+      "name": "renderDirtyRows",
       "ownership": "borrowed",
       "params": [
         {
@@ -10219,11 +10219,11 @@
         "column": 8
       },
       "zig_path": "renderDirtyRows",
-      "symbol": "zg_render_state_dirty_rows"
+      "symbol": "zg_render_state_render_dirty_rows"
     },
     {
       "doc": "Flatten one viewport row into `dst` and report how many cells were\nwritten: `cols`, or zero for a row off the grid. For a renderer that\nredraws only the rows `renderDirtyRows` names.",
-      "name": "rowCells",
+      "name": "renderRowCells",
       "ownership": "borrowed",
       "params": [
         {
@@ -10281,11 +10281,11 @@
         "column": 8
       },
       "zig_path": "renderRowCells",
-      "symbol": "zg_render_state_row_cells"
+      "symbol": "zg_render_state_render_row_cells"
     },
     {
       "doc": "The codepoints of the cell at viewport `x`, `y`: the base codepoint\nfollowed by any combining marks or ZWJ sequence members, which\n`RenderCell.codepoint` alone drops. Copies them into `dst` and returns\nhow many were written; zero for an empty cell or a position off the grid.\n`error.NoSpaceLeft` if `dst` is shorter than the cluster.",
-      "name": "graphemes",
+      "name": "renderGraphemes",
       "ownership": "borrowed",
       "params": [
         {
@@ -10362,14 +10362,14 @@
         "column": 8
       },
       "zig_path": "renderGraphemes",
-      "symbol": "zg_render_state_graphemes"
+      "symbol": "zg_render_state_render_graphemes"
     },
     {
       "covers": [
         "RenderState.linkCells"
       ],
       "doc": "The OSC 8 hyperlink under viewport `x`, `y`, or null when the cell has\nnone. Valid only until the terminal changes: like ghostty's own\n`linkCells`, this reads page memory through the pins `RenderState.update`\ncaptured, so call it right after an update.",
-      "name": "hyperlinkAt",
+      "name": "renderHyperlinkAt",
       "ownership": "caller",
       "params": [
         {
@@ -10447,7 +10447,7 @@
         "column": 8
       },
       "zig_path": "renderHyperlinkAt",
-      "symbol": "zg_render_state_hyperlink_at"
+      "symbol": "zg_render_state_render_hyperlink_at"
     },
     {
       "go_owner": "KittyImages",
@@ -10521,7 +10521,7 @@
     },
     {
       "doc": "Rebuild the snapshot from `term`'s active screen.\n\nPlacements that cannot be drawn at all are left out: the ones scrolled off\nthe viewport, and the ones whose text has been pruned out of the scrollback.\nVirtual (unicode placeholder) placements are kept, flagged and positionless,\nsince the cells that reference them are what place them; so are the ones\npositioned relative to a virtual placement, for the same reason.",
-      "name": "update",
+      "name": "kittyUpdate",
       "ownership": "borrowed",
       "params": [
         {
@@ -10557,11 +10557,11 @@
         "column": 8
       },
       "zig_path": "kittyUpdate",
-      "symbol": "zg_kitty_images_update"
+      "symbol": "zg_kitty_images_kitty_update"
     },
     {
       "doc": "How many placements `kittyPlacements` will write.",
-      "name": "placementCount",
+      "name": "kittyPlacementCount",
       "ownership": "borrowed",
       "params": [],
       "receiver": "KittyImages",
@@ -10577,11 +10577,11 @@
         "column": 8
       },
       "zig_path": "kittyPlacementCount",
-      "symbol": "zg_kitty_images_placement_count"
+      "symbol": "zg_kitty_images_kitty_placement_count"
     },
     {
       "doc": "Copy the placements into `dst`, back to front, and report how many.",
-      "name": "placements",
+      "name": "kittyPlacements",
       "ownership": "borrowed",
       "params": [
         {
@@ -10623,7 +10623,7 @@
         "column": 8
       },
       "zig_path": "kittyPlacements",
-      "symbol": "zg_kitty_images_placements"
+      "symbol": "zg_kitty_images_kitty_placements"
     },
     {
       "doc": "Returns the terminal display width of a codepoint in terminal\ngrid cells: 0, 1, or 2.\n\nThis is the same width table the terminal uses when laying out\nprinted text: 0 for zero-width codepoints (controls, combining\nmarks, default-ignorables, surrogates), 2 for wide codepoints\n(East Asian Wide/Fullwidth, regional indicators, clamped at 2),\nand 1 otherwise.\n\nThis operates on a single codepoint and cannot account for\ngrapheme-cluster-level width rules (VS16, combining sequences);\ncallers needing cluster-accurate widths should use graphemeWidth().\nSumming per-codepoint widths is only correct when mode 2027 is\ndisabled.",
@@ -10932,6 +10932,21 @@
         "column": 8
       },
       "symbol": "zg_sgr_attribute_at"
+    }
+  ],
+  "interfaces": [
+    {
+      "closer": true,
+      "doc": "SnapshotSource is a decoded snapshot: either a Snapshot, restored in one\ncall, or a SnapshotDecoder, which restores the screen first and the\nscrollback a page at a time. Close it when the restore is done.",
+      "methods": [
+        "restoreInto",
+        "continuation"
+      ],
+      "name": "SnapshotSource",
+      "types": [
+        "Snapshot",
+        "SnapshotDecoder"
+      ]
     }
   ],
   "io": "target.io",
@@ -12114,6 +12129,11 @@
     },
     {
       "exhaustive": true,
+      "ext": {
+        "TRIM": {
+          "prefix": null
+        }
+      },
       "fields": [],
       "kind": "opaque",
       "name": "Screen",
@@ -12121,6 +12141,11 @@
     },
     {
       "exhaustive": true,
+      "ext": {
+        "TRIM": {
+          "prefix": null
+        }
+      },
       "fields": [],
       "kind": "opaque",
       "name": "Search",
@@ -12128,6 +12153,11 @@
     },
     {
       "exhaustive": true,
+      "ext": {
+        "TRIM": {
+          "prefix": null
+        }
+      },
       "fields": [],
       "kind": "opaque",
       "name": "GridRef",
@@ -12135,6 +12165,11 @@
     },
     {
       "exhaustive": true,
+      "ext": {
+        "TRIM": {
+          "prefix": null
+        }
+      },
       "fields": [],
       "kind": "opaque",
       "name": "Gesture",
@@ -12730,7 +12765,7 @@
         "signed": false
       },
       "text": true,
-      "zig_path": "terminal.modes.Mode__enum_40382"
+      "zig_path": "terminal.modes.Mode__enum_40474"
     },
     {
       "exhaustive": true,
@@ -14789,6 +14824,11 @@
     },
     {
       "exhaustive": true,
+      "ext": {
+        "TRIM": {
+          "prefix": null
+        }
+      },
       "fields": [],
       "kind": "opaque",
       "name": "Snapshot",
@@ -14796,6 +14836,11 @@
     },
     {
       "exhaustive": true,
+      "ext": {
+        "TRIM": {
+          "prefix": null
+        }
+      },
       "fields": [],
       "kind": "opaque",
       "name": "SnapshotDecoder",
@@ -14804,6 +14849,11 @@
     {
       "doc": "RenderState owns a render snapshot. Update requires exclusive access to both\nthe terminal and this state. After Update, reads do not touch the terminal,\nbut must be serialized with Update, Clean and Close on this state. Copied\ncell, cursor and color values can be retained across updates. Call Clean\nonly after successfully drawing the frame.",
       "exhaustive": true,
+      "ext": {
+        "TRIM": {
+          "prefix": "render"
+        }
+      },
       "fields": [],
       "kind": "opaque",
       "name": "RenderState",
@@ -14811,6 +14861,11 @@
     },
     {
       "exhaustive": true,
+      "ext": {
+        "TRIM": {
+          "prefix": "kitty"
+        }
+      },
       "fields": [],
       "kind": "opaque",
       "name": "KittyImages",

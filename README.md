@@ -53,7 +53,9 @@ reads one back into a `Snapshot` whose `RestoreInto` replaces an existing
 terminal's contents. The format puts the active state first so a terminal is
 drawable before its scrollback has been read, which `SnapshotDecoder` exposes:
 `Ready` then `RestoreInto` gives a terminal to draw, and `Next` prepends the
-scrollback a page at a time.
+scrollback a page at a time. Both satisfy `SnapshotSource`, so a function that
+only has to restore -- `RestoreInto`, `Continuation`, `Close` -- takes the
+interface and leaves the choice to its caller.
 
 Enums that a consumer names in text -- keys, mouse buttons, cursor styles,
 progress states -- implement `encoding.TextMarshaler` and `TextUnmarshaler` and have a
@@ -350,7 +352,7 @@ ABI directly:
 
 ### What the plugins add
 
-Six generator plugins run over the document: four live in `zig/plugins/`, and
+Seven generator plugins run over the document: five live in `zig/plugins/`, and
 `satisfies` and `enumkit` come from zigo itself. A plugin is an ordinary Zig package that
 zigo compiles into the generator. These plugins use public analysis and Go
 emission hooks and behave the same under cgo and purego. They are wired in
@@ -371,8 +373,9 @@ emission hooks and behave the same under cgo and purego. They are wired in
   `GoFile` emitter. Source provenance and optimization use build-level `Config`;
   native feature flags come from the reflected Terminal declaration. The same
   validated facts produce `build-info.json`, which `go-check` verifies alongside
-  the Go bindings using `.zigo-outputs.json` ownership metadata. Local
-  development builds report `ZigoVersion: "local"`.
+  the Go bindings using `.zigo-outputs.json` ownership metadata. `ZigoVersion`
+  is read out of the pinned dependency hash in `zig/build.zig.zon`, so it tracks
+  the zigo release without a second constant to bump.
 - **`stringer`** writes `String()` for the value structs. zigo already writes one
   for every enum, so a mode or a key prints by name; the structs had nothing, and
   `CellFlags` is twelve fields wide, so a cell's attributes printed as twelve
@@ -400,6 +403,19 @@ emission hooks and behave the same under cgo and purego. They are wired in
   own assertion rather than asking for one, because the claim is narrower: the
   `String` has to be on the *value*, which is the form `%v` is handed, and
   `(*T)(nil)` would hold either way.
+- **`trim`** drops the prefix that names the type from that type's method
+  names. ghostty declares them flat -- `searchTick`, `screenSelectAll`,
+  `gridRefHyperlinkUri` -- because at the root the prefix is the only thing
+  saying what a function belongs to; in Go the receiver says it, so
+  `Search.SearchTick()` stutters. Sixty-seven `.name` spellings used to say so
+  one at a time, each a second copy of a name the Zig side had already decided.
+  Now eight types ask once. It is a `transform` rather than the `name_function`
+  hook that renames Go alone, because the prefix is not in the C ABI either:
+  the symbol is `zg_search_tick`, and renaming the declaration with `zig_path`
+  pointed back at the Zig function keeps the symbol, the Go name and the raw
+  binding all spelled the one way. The prefix defaults to the type's own name,
+  so only the two that spell it differently pass one (`RenderState` writes
+  `render`, `KittyImages` writes `kitty`).
 - **`enumkit`** writes `<Enum>Values()` and `IsKnown()`. It is on for the two
   enums long enough to be worth listing (`Key`, `Mode`) and for the ones ghostty
   declares non-exhaustive, where a number off the pty converts rather than
@@ -411,8 +427,9 @@ emission hooks and behave the same under cgo and purego. They are wired in
 Every one of them refuses a declaration it cannot serve rather than emitting Go
 that will not compile. Extending an enum with `stringer` is `STRINGER002`,
 naming a field that does not exist in `.omit` is `STRINGER003`, asking `must`
-for a variant of something that cannot fail is `MUSTOPT002`, and claiming an
-interface by an unqualified name is `SATIS002`. Asking a plugin for a kind of
+for a variant of something that cannot fail is `MUSTOPT002`, claiming an
+interface by an unqualified name is `SATIS002`, and trimming a prefix no method
+starts with -- a typo, and a silent one -- is `TRIM002`. Asking a plugin for a kind of
 declaration it does not serve is earlier still: each one names its `.targets`,
 so `stringer` on an enum is a Zig compile error on the line that asked, not a
 report from the generator. `make doctor` lists the plugins the generator was

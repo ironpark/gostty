@@ -18,6 +18,8 @@ pub const satisfies = @import("satisfies");
 
 pub const stringer = @import("stringer");
 
+pub const trim = @import("trim");
+
 /// Every declaration below is selected through this scope, so a path is a real
 /// reference rather than a string: renaming a Zig function breaks the build
 /// here instead of producing a Go API missing a method.
@@ -55,6 +57,15 @@ pub fn withMust(comptime entry: zigo.Entry) zigo.Entry {
 /// makes often enough that branching on them at every call is noise.
 pub fn mustField(comptime field: zigo.HandleField) zigo.HandleField {
     return field.extend(must.plugin, .{});
+}
+
+/// A type whose methods drop the prefix naming the type. ghostty declares them
+/// flat -- `searchTick`, `screenSelectAll` -- because at the root the prefix is
+/// the only thing saying what they belong to; in Go the receiver says it. The
+/// prefix defaults to the type's own name, so only the two that spell it
+/// differently pass one.
+pub fn trimmed(comptime entry: zigo.Entry, comptime prefix: ?[]const u8) zigo.Entry {
+    return entry.use(trim.plugin, .{ .prefix = prefix });
 }
 
 /// One Go enum.
