@@ -183,7 +183,18 @@ func EncodeFocus(writer io.Writer, event FocusEvent) error {
 	return nil
 }
 
-// IsSafePaste calls the Zig function isSafePaste.
+// IsSafePaste: Returns true if the data looks safe to paste. Data is considered
+// unsafe if it contains any of the following:
+//
+// - `\n`: Newlines can be used to inject commands.
+// - `\x1b[201~`: This is the end of a bracketed paste. This cane be used
+// to exit a bracketed paste and inject commands.
+//
+// We consider any scenario unsafe regardless of current terminal state.
+// For example, even if bracketed paste mode is not active, we still
+// consider `\x1b[201~` unsafe. The existence of these types of bytes
+// should raise suspicion that the producer of the paste data is
+// acting strangely.
 func IsSafePaste(data []byte) bool {
 	return raw.InputIsSafePaste(data) != 0
 }

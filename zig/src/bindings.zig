@@ -105,8 +105,11 @@ fn raw(comptime index: usize) zigo.Param {
 // per type without naming it twice.
 const Terminal = api.handle("Terminal", .{
     .fields = &.{
-        .{ .path = "cols" },
-        .{ .path = "rows" },
+        // Read straight off the terminal rather than through ghostty's `cols()`
+        // and `rows()`, which is where these two sentences come from: the
+        // accessor's doc is not the field's, so it is spelled here.
+        .{ .path = "cols", .doc = "The current column count, read without touching page memory." },
+        .{ .path = "rows", .doc = "The number of populated rows, read without touching page memory." },
         .{ .path = "screens.active.cursor.x", .name = "cursorX" },
         .{ .path = "screens.active.cursor.y", .name = "cursorY" },
         .{ .path = "screens.active.cursor.cursor_style", .name = "cursorStyle" },
@@ -141,8 +144,8 @@ const Snapshot = api.handle("Snapshot", .{}).context();
 const SnapshotDecoder = api.handle("SnapshotDecoder", .{}).context();
 const ClipboardRequest = api.handle("ClipboardRequest", .{}).context();
 const RenderState = api.handle("RenderState", .{ .fields = &.{
-    .{ .path = "rows" },
-    .{ .path = "cols" },
+    .{ .path = "rows", .doc = "The number of rows the last update covered." },
+    .{ .path = "cols", .doc = "The number of columns the last update covered." },
     .{ .path = "cursor.visible", .name = "cursorVisible" },
     .{ .path = "cursor.visual_style", .name = "cursorStyle" },
     .{ .path = "cursor.blinking", .name = "cursorBlinking" },

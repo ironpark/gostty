@@ -14,7 +14,7 @@ import (
 	"github.com/ironpark/gostty/internal/raw"
 )
 
-// Cols: Return the current column count without accessing page memory.
+// Cols: The current column count, read without touching page memory.
 // Zig field: Terminal.cols.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
@@ -31,7 +31,7 @@ func (te *Terminal) Cols() (uint16, error) {
 	return result, nil
 }
 
-// Rows: Return the number of populated rows without accessing page memory.
+// Rows: The number of populated rows, read without touching page memory.
 // Zig field: Terminal.rows.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
@@ -298,7 +298,7 @@ func (s *Stream) Failed() (bool, error) {
 	return result != 0, nil
 }
 
-// Rows: Return the number of populated rows without accessing page memory.
+// Rows: The number of rows the last update covered.
 // Zig field: RenderState.rows.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
@@ -315,7 +315,7 @@ func (r *RenderState) Rows() (uint16, error) {
 	return result, nil
 }
 
-// Cols: Return the current column count without accessing page memory.
+// Cols: The number of columns the last update covered.
 // Zig field: RenderState.cols.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
@@ -446,7 +446,7 @@ func (g *Gesture) Dragged() (bool, error) {
 	return result != 0, nil
 }
 
-// NewTerminal: Begin a transaction from a type=write packet.
+// NewTerminal: Initialize a new terminal.
 // The caller must call Close on the returned handle.
 // Native failures are returned as generated error values.
 func NewTerminal(cols uint16, rows uint16) (*Terminal, error) {
@@ -603,7 +603,7 @@ func (te *Terminal) PlainString() (string, error) {
 	return result, nil
 }
 
-// Print: Copy of testing.print (not public)
+// Print calls the Zig function Terminal.print.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (te *Terminal) Print(c rune) error {
@@ -4299,8 +4299,16 @@ func NewRenderState() (*RenderState, error) {
 	return zigoNewRenderState(result), nil
 }
 
-// Update the columns/rows for the grid based on the given screen and
-// cell size.
+// Update the render state to the latest terminal state.
+//
+// This is a convenience function that performs a full update in
+// one call, equivalent to `beginUpdate` immediately followed by
+// `endUpdate`. Callers that hold a lock over the terminal state
+// should prefer calling the two phases directly so that the lock
+// is only held for `beginUpdate`.
+//
+// This will reset the terminal dirty state since it is consumed
+// by this render state update.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (r *RenderState) Update(t *Terminal) error {
@@ -4876,7 +4884,8 @@ func NewOSCParser() (*OSCParser, error) {
 	return zigoNewOSCParser(result), nil
 }
 
-// Feed bytes to the parser, applying them to the terminal.
+// Feed the parser the bytes of an OSC payload. May be called repeatedly;
+// a sequence can arrive split across reads.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (o *OSCParser) Feed(bytes []byte) error {

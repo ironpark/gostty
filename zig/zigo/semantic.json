@@ -61,7 +61,7 @@
         "path": "cols",
         "setter": false
       },
-      "doc": "Return the current column count without accessing page memory.",
+      "doc": "The current column count, read without touching page memory.",
       "name": "cols",
       "ownership": "borrowed",
       "params": [],
@@ -72,11 +72,6 @@
         "kind": "int",
         "signed": false
       },
-      "source": {
-        "path": "terminal/PageList.zig",
-        "line": 230,
-        "column": 19
-      },
       "symbol": "zg_terminal_cols"
     },
     {
@@ -84,7 +79,7 @@
         "path": "rows",
         "setter": false
       },
-      "doc": "Return the number of populated rows without accessing page memory.",
+      "doc": "The number of populated rows, read without touching page memory.",
       "name": "rows",
       "ownership": "borrowed",
       "params": [],
@@ -94,11 +89,6 @@
         "is_usize": false,
         "kind": "int",
         "signed": false
-      },
-      "source": {
-        "path": "terminal/PageList.zig",
-        "line": 225,
-        "column": 19
       },
       "symbol": "zg_terminal_rows"
     },
@@ -338,7 +328,7 @@
         "path": "rows",
         "setter": false
       },
-      "doc": "Return the number of populated rows without accessing page memory.",
+      "doc": "The number of rows the last update covered.",
       "name": "rows",
       "ownership": "borrowed",
       "params": [],
@@ -349,11 +339,6 @@
         "kind": "int",
         "signed": false
       },
-      "source": {
-        "path": "terminal/PageList.zig",
-        "line": 225,
-        "column": 19
-      },
       "symbol": "zg_render_state_rows"
     },
     {
@@ -361,7 +346,7 @@
         "path": "cols",
         "setter": false
       },
-      "doc": "Return the current column count without accessing page memory.",
+      "doc": "The number of columns the last update covered.",
       "name": "cols",
       "ownership": "borrowed",
       "params": [],
@@ -371,11 +356,6 @@
         "is_usize": false,
         "kind": "int",
         "signed": false
-      },
-      "source": {
-        "path": "terminal/PageList.zig",
-        "line": 230,
-        "column": 19
       },
       "symbol": "zg_render_state_cols"
     },
@@ -1247,6 +1227,7 @@
       "symbol": "zg_input_encode_focus"
     },
     {
+      "doc": "Returns true if the data looks safe to paste. Data is considered\nunsafe if it contains any of the following:\n\n- `\\n`: Newlines can be used to inject commands.\n- `\\x1b[201~`: This is the end of a bracketed paste. This cane be used\nto exit a bracketed paste and inject commands.\n\nWe consider any scenario unsafe regardless of current terminal state.\nFor example, even if bracketed paste mode is not active, we still\nconsider `\\x1b[201~` unsafe. The existence of these types of bytes\nshould raise suspicion that the producer of the paste data is\nacting strangely.",
       "name": "isSafePaste",
       "package": "input",
       "namespace": "input",
@@ -1257,6 +1238,10 @@
           "name": "data",
           "name_source": "sidecar",
           "retention": "borrowed",
+          "source": {
+            "line": 175,
+            "column": 15
+          },
           "type": {
             "const": true,
             "element": {
@@ -1271,6 +1256,11 @@
       ],
       "return": {
         "kind": "bool"
+      },
+      "source": {
+        "path": "input/paste.zig",
+        "line": 175,
+        "column": 8
       },
       "symbol": "zg_input_is_safe_paste"
     },
@@ -1348,7 +1338,7 @@
     },
     {
       "boxed": "create",
-      "doc": "Begin a transaction from a type=write packet.",
+      "doc": "Initialize a new terminal.",
       "name": "newTerminal",
       "namespace": "Terminal",
       "ownership": "caller",
@@ -1356,12 +1346,12 @@
         {
           "direction": "in",
           "injected": "io",
-          "name": "alloc",
+          "name": "io_impl",
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 81,
-            "column": 9
+            "line": 312,
+            "column": 5
           },
           "type": {
             "kind": "void"
@@ -1370,12 +1360,12 @@
         {
           "direction": "in",
           "injected": "allocator",
-          "name": "meta",
+          "name": "alloc",
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 82,
-            "column": 9
+            "line": 313,
+            "column": 5
           },
           "type": {
             "kind": "void"
@@ -1407,8 +1397,8 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 83,
-            "column": 9
+            "line": 314,
+            "column": 5
           },
           "type": {
             "kind": "value_struct",
@@ -1429,28 +1419,28 @@
         }
       },
       "source": {
-        "path": "terminal/kitty/clipboard_write.zig",
-        "line": 80,
-        "column": 12
+        "path": "terminal/Terminal.zig",
+        "line": 311,
+        "column": 8
       },
       "zig_path": "Terminal.init",
       "symbol": "zg_terminal_new_terminal"
     },
     {
       "boxed": "destroy",
-      "doc": "Deinit and deallocate all the pointers using the given\nallocator.\n\nWARNING: This should only be called if the hyperlink was\nheap-allocated. This DOES NOT need to be unconditionally\ncalled.",
+      "doc": "Free/unref any data held by this instance.",
       "name": "deinit",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "injected": "allocator",
-          "name": "gpa",
+          "name": "alloc",
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 291,
-            "column": 33
+            "line": 356,
+            "column": 32
           },
           "type": {
             "kind": "void"
@@ -1462,9 +1452,9 @@
         "kind": "void"
       },
       "source": {
-        "path": "stream.zig",
-        "line": 291,
-        "column": 12
+        "path": "terminal/Terminal.zig",
+        "line": 356,
+        "column": 8
       },
       "symbol": "zg_terminal_deinit"
     },
@@ -1807,7 +1797,6 @@
       "symbol": "zg_terminal_plain_string"
     },
     {
-      "doc": "Copy of testing.print (not public)",
       "name": "print",
       "ownership": "borrowed",
       "params": [
@@ -1818,8 +1807,8 @@
           "retention": "borrowed",
           "semantic": "codepoint",
           "source": {
-            "line": 193,
-            "column": 36
+            "line": 1201,
+            "column": 31
           },
           "type": {
             "bits": 21,
@@ -1841,9 +1830,9 @@
         }
       },
       "source": {
-        "path": "datastruct/comparison.zig",
-        "line": 193,
-        "column": 4
+        "path": "terminal/Terminal.zig",
+        "line": 1201,
+        "column": 8
       },
       "symbol": "zg_terminal_print"
     },
@@ -2302,8 +2291,8 @@
         }
       },
       "source": {
-        "path": "terminal/kitty/graphics_command.zig",
-        "line": 35,
+        "path": "terminal/Terminal.zig",
+        "line": 2317,
         "column": 8
       },
       "symbol": "zg_terminal_index"
@@ -8211,19 +8200,19 @@
     },
     {
       "boxed": "destroy",
-      "doc": "Deinit and deallocate all the pointers using the given\nallocator.\n\nWARNING: This should only be called if the hyperlink was\nheap-allocated. This DOES NOT need to be unconditionally\ncalled.",
+      "doc": "Free/unref any data held by this instance.",
       "name": "deinit",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "injected": "allocator",
-          "name": "gpa",
+          "name": "alloc",
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 291,
-            "column": 33
+            "line": 191,
+            "column": 28
           },
           "type": {
             "kind": "void"
@@ -8235,9 +8224,9 @@
         "kind": "void"
       },
       "source": {
-        "path": "stream.zig",
-        "line": 291,
-        "column": 12
+        "path": "apprt/gtk/ipc/DBus.zig",
+        "line": 191,
+        "column": 8
       },
       "symbol": "zg_snapshot_deinit"
     },
@@ -8706,19 +8695,19 @@
     },
     {
       "boxed": "destroy",
-      "doc": "Deinit and deallocate all the pointers using the given\nallocator.\n\nWARNING: This should only be called if the hyperlink was\nheap-allocated. This DOES NOT need to be unconditionally\ncalled.",
+      "doc": "Free/unref any data held by this instance.",
       "name": "deinit",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "injected": "allocator",
-          "name": "gpa",
+          "name": "alloc",
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 291,
-            "column": 33
+            "line": 191,
+            "column": 28
           },
           "type": {
             "kind": "void"
@@ -8730,9 +8719,9 @@
         "kind": "void"
       },
       "source": {
-        "path": "stream.zig",
-        "line": 291,
-        "column": 12
+        "path": "apprt/gtk/ipc/DBus.zig",
+        "line": 191,
+        "column": 8
       },
       "symbol": "zg_render_state_deinit"
     },
@@ -8741,19 +8730,19 @@
         "RenderState.beginUpdate",
         "RenderState.endUpdate"
       ],
-      "doc": "Update the columns/rows for the grid based on the given screen and\ncell size.",
+      "doc": "Update the render state to the latest terminal state.\n\nThis is a convenience function that performs a full update in\none call, equivalent to `beginUpdate` immediately followed by\n`endUpdate`. Callers that hold a lock over the terminal state\nshould prefer calling the two phases directly so that the lock\nis only held for `beginUpdate`.\n\nThis will reset the terminal dirty state since it is consumed\nby this render state update.",
       "name": "update",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "injected": "allocator",
-          "name": "screen",
+          "name": "alloc",
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 253,
-            "column": 36
+            "line": 345,
+            "column": 9
           },
           "type": {
             "kind": "void"
@@ -8765,8 +8754,8 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 253,
-            "column": 56
+            "line": 346,
+            "column": 9
           },
           "type": {
             "const": false,
@@ -8787,8 +8776,8 @@
         }
       },
       "source": {
-        "path": "renderer/size.zig",
-        "line": 253,
+        "path": "terminal/render.zig",
+        "line": 343,
         "column": 12
       },
       "symbol": "zg_render_state_update"
@@ -9905,7 +9894,7 @@
       "symbol": "zg_osc_parser_free_osc_parser"
     },
     {
-      "doc": "Feed bytes to the parser, applying them to the terminal.",
+      "doc": "Feed the parser the bytes of an OSC payload. May be called repeatedly;\na sequence can arrive split across reads.",
       "name": "feed",
       "ownership": "borrowed",
       "params": [
@@ -9915,8 +9904,8 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 466,
-            "column": 32
+            "line": 107,
+            "column": 35
           },
           "type": {
             "const": true,
@@ -9935,8 +9924,8 @@
         "kind": "void"
       },
       "source": {
-        "path": "stream.zig",
-        "line": 466,
+        "path": "parser.zig",
+        "line": 107,
         "column": 12
       },
       "symbol": "zg_osc_parser_feed"
@@ -10357,7 +10346,7 @@
           "retention": "borrowed",
           "semantic": "codepoint",
           "source": {
-            "line": 7,
+            "line": 26,
             "column": 23
           },
           "type": {
@@ -10375,8 +10364,8 @@
         "signed": false
       },
       "source": {
-        "path": "simd/codepoint_width.zig",
-        "line": 7,
+        "path": "unicode/main.zig",
+        "line": 26,
         "column": 8
       },
       "symbol": "zg_unicode_codepoint_width"
@@ -12480,7 +12469,7 @@
         "signed": false
       },
       "text": true,
-      "zig_path": "terminal.modes.Mode__enum_39838"
+      "zig_path": "terminal.modes.Mode__enum_39848"
     },
     {
       "exhaustive": true,
