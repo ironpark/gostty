@@ -35,13 +35,13 @@ var mouseButtons = [...]struct {
 // Holding Shift takes the mouse back for the window, which is the convention
 // every emulator follows: it is the only way to select text in a full-screen
 // program that has grabbed the mouse.
-func (g *game) reportMouse(m keys.Mods) (bool, error) {
+func (tab *terminalTab) reportMouse(m keys.Mods) (bool, error) {
 	if m.Shift {
-		g.mouseGrabbed = false
+		tab.mouseGrabbed = false
 		return false, nil
 	}
 
-	px, py := ebiten.CursorPosition()
+	px, py := tab.cursorPosition()
 	pressed := false
 	for _, b := range mouseButtons {
 		if ebiten.IsMouseButtonPressed(b.ebiten) {
@@ -49,19 +49,19 @@ func (g *game) reportMouse(m keys.Mods) (bool, error) {
 		}
 	}
 
-	g.report = g.report[:0]
+	tab.report = tab.report[:0]
 	for _, b := range mouseButtons {
 		switch {
 		case inpututil.IsMouseButtonJustPressed(b.ebiten):
-			if err := g.encodeMouse(input.MouseActionPress, b.vt, true, px, py, m, true); err != nil {
+			if err := tab.encodeMouse(input.MouseActionPress, b.vt, true, px, py, m, true); err != nil {
 				return false, err
 			}
 			// A press is what settles who owns the drag that follows: a
 			// program in X10 mode reports the press and nothing else, and the
 			// release still has to go to it rather than end a selection.
-			g.mouseGrabbed = len(g.report) > 0
+			tab.mouseGrabbed = len(tab.report) > 0
 		case inpututil.IsMouseButtonJustReleased(b.ebiten):
-			if err := g.encodeMouse(input.MouseActionRelease, b.vt, true, px, py, m, pressed); err != nil {
+			if err := tab.encodeMouse(input.MouseActionRelease, b.vt, true, px, py, m, pressed); err != nil {
 				return false, err
 			}
 		}
@@ -70,8 +70,8 @@ func (g *game) reportMouse(m keys.Mods) (bool, error) {
 	// Motion is reported per cell, not per pixel: the wire format has no room
 	// for anything finer, and a program in any-event mode would otherwise get a
 	// report for every frame the pointer drifts inside one cell.
-	if col, row := g.cellAt(px, py); col != g.mouseCol || row != g.mouseRow {
-		g.mouseCol, g.mouseRow = col, row
+	if col, row := tab.cellAt(px, py); col != tab.mouseCol || row != tab.mouseRow {
+		tab.mouseCol, tab.mouseRow = col, row
 		button, held := input.MouseButtonUnknown, false
 		for _, b := range mouseButtons {
 			if ebiten.IsMouseButtonPressed(b.ebiten) {
@@ -79,18 +79,18 @@ func (g *game) reportMouse(m keys.Mods) (bool, error) {
 				break
 			}
 		}
-		if err := g.encodeMouse(input.MouseActionMotion, button, held, px, py, m, pressed); err != nil {
+		if err := tab.encodeMouse(input.MouseActionMotion, button, held, px, py, m, pressed); err != nil {
 			return false, err
 		}
 	}
 
 	if !pressed {
-		g.mouseGrabbed = false
+		tab.mouseGrabbed = false
 	}
-	if len(g.report) == 0 {
-		return g.mouseGrabbed && pressed, nil
+	if len(tab.report) == 0 {
+		return tab.mouseGrabbed && pressed, nil
 	}
-	if _, err := g.ptmx.Write(g.report); err != nil {
+	if _, err := tab.shell.pty.Write(tab.report); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -109,78 +109,78 @@ const linesPerNotch = 3
 // Ebitengine reports a continuous offset rather than notches, so it is
 // accumulated: a trackpad that reports a tenth of a line at a time still ends
 // up scrolling.
-func (g *game) handleWheel(m keys.Mods) error {
+func (tab *terminalTab) handleWheel(m keys.Mods) error {
 	_, dy := ebiten.Wheel()
-	g.wheel += dy
-	notches := int(g.wheel) // truncates toward zero, so the remainder is kept
+	tab.wheel += dy
+	notches := int(tab.wheel) // truncates toward zero, so the remainder is kept
 	if notches == 0 {
 		return nil
 	}
-	g.wheel -= float64(notches)
+	tab.wheel -= float64(notches)
 
 	// Shift takes the wheel back for the window, the same way it takes back a
 	// drag: it is the only way to reach the scrollback of a program that has
 	// grabbed the mouse.
 	if !m.Shift {
-		taken, err := g.reportWheel(notches, m)
+		taken, err := tab.reportWheel(notches, m)
 		if err != nil || taken {
 			return err
 		}
 	}
 
-	screen, err := g.vt.ActiveScreenKey()
+	screen, err := tab.vt.ActiveScreenKey()
 	if err != nil {
 		return err
 	}
 	if screen == gostty.ScreenKeyAlternate {
-		return g.wheelAsArrows(notches)
+		return tab.wheelAsArrows(notches)
 	}
 	// Positive is up, and up the scrollback is a negative delta.
-	return g.vt.ScrollViewport(gostty.ScrollViewportDelta(-notches * linesPerNotch))
+	return tab.vt.ScrollViewport(gostty.ScrollViewportDelta(-notches * linesPerNotch))
 }
 
 // reportWheel offers the wheel to the program as the button presses the
 // protocol represents it with, and reports whether it took them.
-func (g *game) reportWheel(notches int, m keys.Mods) (bool, error) {
+func (tab *terminalTab) reportWheel(notches int, m keys.Mods) (bool, error) {
 	button := input.MouseButtonFour // up
 	if notches < 0 {
 		button, notches = input.MouseButtonFive, -notches
 	}
-	px, py := ebiten.CursorPosition()
+	px, py := tab.cursorPosition()
 
-	g.report = g.report[:0]
+	tab.report = tab.report[:0]
 	for range notches {
-		if err := g.encodeMouse(input.MouseActionPress, button, true, px, py, m, false); err != nil {
+		if err := tab.encodeMouse(input.MouseActionPress, button, true, px, py, m, false); err != nil {
 			return false, err
 		}
 	}
-	if len(g.report) == 0 {
+	if len(tab.report) == 0 {
 		return false, nil
 	}
-	_, err := g.ptmx.Write(g.report)
+	_, err := tab.shell.pty.Write(tab.report)
 	return true, err
 }
 
 // wheelAsArrows turns the wheel into arrow keys, which is what the alternate
 // screen leaves: there is no scrollback to move through, and a full-screen
 // program that has not asked for the mouse still understands Up and Down.
-func (g *game) wheelAsArrows(notches int) error {
+func (tab *terminalTab) wheelAsArrows(notches int) error {
 	key := input.KeyArrowUp
 	if notches < 0 {
 		key, notches = input.KeyArrowDown, -notches
 	}
-	g.out = g.out[:0]
+	tab.out = tab.out[:0]
 	for range notches * linesPerNotch {
-		if err := g.sendKey(key, nil, keys.Mods{}); err != nil {
+		if err := tab.sendKey(key, nil, keys.Mods{}); err != nil {
 			return err
 		}
 	}
-	return g.flushKeys()
+	return tab.flushKeys()
 }
 
 // encodeMouse describes one event to the binding and appends whatever it
 // encodes -- which may be nothing -- to this frame's report.
-func (g *game) encodeMouse(action input.MouseAction, button input.MouseButton, hasButton bool, px, py int, m keys.Mods, anyPressed bool) error {
+func (tab *terminalTab) encodeMouse(action input.MouseAction, button input.MouseButton, hasButton bool, px, py int, m keys.Mods, anyPressed bool) error {
 	ev := input.MouseEvent{
 		Action:    action,
 		Button:    button,
@@ -189,58 +189,63 @@ func (g *game) encodeMouse(action input.MouseAction, button input.MouseButton, h
 		X:         float32(px),
 		Y:         float32(py),
 	}
-	return input.EncodeMouse(reportWriter{g: g}, g.vt, ev, g.renderSize(), anyPressed)
+	return input.EncodeMouse(reportWriter{tab: tab}, tab.vt, ev, tab.renderSize(), anyPressed)
 }
 
 // renderSize describes the window to the encoder, which needs it to turn a
 // pixel position into a cell. There is no padding around the grid here, so the
 // only interesting fields are the cell size.
-func (g *game) renderSize() input.RenderSize {
+func (tab *terminalTab) renderSize() input.RenderSize {
 	return input.RenderSize{
-		ScreenWidth:  uint32(float64(g.cols) * g.fonts.cellW),
-		ScreenHeight: uint32(float64(g.rows) * g.fonts.cellH),
-		CellWidth:    uint32(g.fonts.cellW),
-		CellHeight:   uint32(g.fonts.cellH),
+		ScreenWidth:  uint32(float64(tab.cols) * tab.fonts.CellWidth),
+		ScreenHeight: uint32(float64(tab.rows) * tab.fonts.CellHeight),
+		CellWidth:    uint32(tab.fonts.CellWidth),
+		CellHeight:   uint32(tab.fonts.CellHeight),
 	}
 }
 
 // reportFocus tells the program the window gained or lost focus, for the
-// programs that asked (DECSET 1004). Like the mouse, the encoder writes nothing
-// when they did not.
-func (g *game) reportFocus() error {
-	focused := ebiten.IsFocused()
-	if focused != g.focused {
-		g.focused = focused
+// programs that asked (DECSET 1004). EncodeFocus only formats the event;
+// checking whether the program subscribed is the tab's responsibility.
+func (tab *terminalTab) reportFocus(focused bool) error {
+	if focused != tab.focused {
+		tab.focused = focused
 		if !focused {
-			g.focusedFrames = 0
-			g.sel.dragging = false
-			g.mouseGrabbed = false
+			tab.focusedFrames = 0
+			tab.sel.dragging = false
+			tab.mouseGrabbed = false
 		}
-		event := input.FocusEventLost
-		if focused {
-			event = input.FocusEventGained
-		}
-		g.report = g.report[:0]
-		if err := input.EncodeFocus(reportWriter{g: g}, event); err != nil {
+		enabled, err := tab.vt.ModeEnabled(gostty.ModeFocusEvent)
+		if err != nil {
 			return err
 		}
-		if len(g.report) > 0 {
-			if _, err := g.ptmx.Write(g.report); err != nil {
+		if enabled {
+			event := input.FocusEventLost
+			if focused {
+				event = input.FocusEventGained
+			}
+			tab.report = tab.report[:0]
+			if err := input.EncodeFocus(reportWriter{tab: tab}, event); err != nil {
 				return err
+			}
+			if len(tab.report) > 0 {
+				if _, err := tab.shell.pty.Write(tab.report); err != nil {
+					return err
+				}
 			}
 		}
 	}
-	if g.focused {
-		g.focusedFrames++
+	if tab.focused {
+		tab.focusedFrames++
 	}
 	return nil
 }
 
 // reportWriter appends to the frame's report buffer, so an event that the
 // program did not ask for costs nothing but a call.
-type reportWriter struct{ g *game }
+type reportWriter struct{ tab *terminalTab }
 
 func (w reportWriter) Write(p []byte) (int, error) {
-	w.g.report = append(w.g.report, p...)
+	w.tab.report = append(w.tab.report, p...)
 	return len(p), nil
 }

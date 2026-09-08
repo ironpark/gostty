@@ -52,60 +52,60 @@ type texture struct {
 }
 
 // refreshImages rebuilds the placement snapshot for this frame.
-func (g *game) refreshImages() error {
-	if err := g.images.Update(g.vt); err != nil {
+func (tab *terminalTab) refreshImages() error {
+	if err := tab.images.Update(tab.vt); err != nil {
 		return fmt.Errorf("kitty update: %w", err)
 	}
-	n, err := g.images.PlacementCount()
+	n, err := tab.images.PlacementCount()
 	if err != nil {
 		return err
 	}
-	if uint(cap(g.placements)) < n {
-		g.placements = make([]gostty.KittyPlacement, n)
+	if uint(cap(tab.placements)) < n {
+		tab.placements = make([]gostty.KittyPlacement, n)
 	}
-	g.placements = g.placements[:n]
+	tab.placements = tab.placements[:n]
 	if n > 0 {
-		if _, err := g.images.Placements(g.placements); err != nil {
+		if _, err := tab.images.Placements(tab.placements); err != nil {
 			return fmt.Errorf("kitty placements: %w", err)
 		}
 	}
-	return g.uploadImages()
+	return tab.uploadImages()
 }
 
 // uploadImages makes sure every image referred to this frame has a texture, and
 // drops the textures nothing refers to any more.
-func (g *game) uploadImages() error {
-	for id := range g.textures {
-		g.textures[id].live = false
+func (tab *terminalTab) uploadImages() error {
+	for id := range tab.textures {
+		tab.textures[id].live = false
 	}
-	for _, p := range g.placements {
+	for _, p := range tab.placements {
 		if p.Virtual {
 			continue
 		}
-		info, ok, err := g.vt.KittyImage(p.ImageID)
+		info, ok, err := tab.vt.KittyImage(p.ImageID)
 		if err != nil {
 			return err
 		}
 		if !ok {
 			continue
 		}
-		cached, hit := g.textures[p.ImageID]
+		cached, hit := tab.textures[p.ImageID]
 		if hit && cached.generation == info.Generation {
 			cached.live = true
 			continue
 		}
-		img, err := g.decodeImage(p.ImageID, info)
+		img, err := tab.decodeImage(p.ImageID, info)
 		if err != nil {
 			// A malformed or unsupported image is the program's problem, not a
 			// reason to stop drawing. Cache the failure as a nil texture so it
 			// is not decoded again every frame.
 			img = nil
 		}
-		g.textures[p.ImageID] = &texture{generation: info.Generation, image: img, live: true}
+		tab.textures[p.ImageID] = &texture{generation: info.Generation, image: img, live: true}
 	}
-	for id, tex := range g.textures {
+	for id, tex := range tab.textures {
 		if !tex.live {
-			delete(g.textures, id)
+			delete(tab.textures, id)
 		}
 	}
 	return nil
@@ -113,19 +113,19 @@ func (g *game) uploadImages() error {
 
 // decodeImage pulls one image's bytes out of the terminal and turns them into
 // something Ebitengine can draw.
-func (g *game) decodeImage(id uint32, info gostty.KittyImage) (*ebiten.Image, error) {
+func (tab *terminalTab) decodeImage(id uint32, info gostty.KittyImage) (*ebiten.Image, error) {
 	if info.DataLen == 0 {
 		return nil, fmt.Errorf("image %d has no data", id)
 	}
-	if uint64(cap(g.imageBuf)) < info.DataLen {
-		g.imageBuf = make([]byte, info.DataLen)
+	if uint64(cap(tab.imageBuf)) < info.DataLen {
+		tab.imageBuf = make([]byte, info.DataLen)
 	}
-	g.imageBuf = g.imageBuf[:info.DataLen]
-	n, err := g.vt.KittyImageData(id, g.imageBuf)
+	tab.imageBuf = tab.imageBuf[:info.DataLen]
+	n, err := tab.vt.KittyImageData(id, tab.imageBuf)
 	if err != nil {
 		return nil, err
 	}
-	data := g.imageBuf[:n]
+	data := tab.imageBuf[:n]
 
 	// The bytes are raw samples in the format ghostty stored them in. A PNG
 	// never gets here: the decoder installed at startup (`decodePNG`) turns
@@ -188,12 +188,12 @@ func rawToRGBA(data []byte, info gostty.KittyImage) (*image.RGBA, error) {
 // Virtual placements are skipped: they are positioned by the cells that
 // reference them through unicode placeholders, and this example does not scan
 // for those, so it has nowhere to put them.
-func (g *game) drawImages(screen *ebiten.Image, layer gostty.KittyLayer) {
-	for _, p := range g.placements {
+func (tab *terminalTab) drawImages(screen *ebiten.Image, layer gostty.KittyLayer) {
+	for _, p := range tab.placements {
 		if p.Layer != layer || p.Virtual {
 			continue
 		}
-		tex, ok := g.textures[p.ImageID]
+		tex, ok := tab.textures[p.ImageID]
 		if !ok || tex.image == nil {
 			continue
 		}
@@ -212,8 +212,8 @@ func (g *game) drawImages(screen *ebiten.Image, layer gostty.KittyLayer) {
 		op := &ebiten.DrawImageOptions{Filter: ebiten.FilterLinear}
 		op.GeoM.Scale(float64(p.PixelWidth)/float64(w), float64(p.PixelHeight)/float64(h))
 		op.GeoM.Translate(
-			float64(p.ViewportCol)*g.fonts.cellW+float64(p.XOffset),
-			float64(p.ViewportRow)*g.fonts.cellH+float64(p.YOffset),
+			float64(p.ViewportCol)*tab.fonts.CellWidth+float64(p.XOffset),
+			float64(p.ViewportRow)*tab.fonts.CellHeight+float64(p.YOffset),
 		)
 		screen.DrawImage(src, op)
 	}

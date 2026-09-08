@@ -1,0 +1,240 @@
+package main
+
+import (
+	"errors"
+	"os"
+	"testing"
+	"time"
+
+	"github.com/creack/pty"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/ironpark/gostty"
+	"github.com/ironpark/gostty/examples/hypercat/fonts"
+	"github.com/ironpark/gostty/examples/hypercat/keys"
+)
+
+func newTabTestApp(t *testing.T) *terminalApp {
+	t.Helper()
+	t.Setenv("SHELL", "/bin/sh")
+	app := &terminalApp{dsf: 1}
+	tab := &terminalTab{
+		owner: app, clipboardState: &app.clipboardState,
+		dsf: 1, cols: 80, rows: 24,
+		fonts:    &fonts.Set{CellWidth: 10, CellHeight: 20},
+		settings: tabSettings{size: fonts.DefaultSize},
+	}
+	if err := tab.start(); err != nil {
+		tab.close()
+		t.Fatal(err)
+	}
+	app.tabs = []*terminalTab{tab}
+	t.Cleanup(app.close)
+	return app
+}
+
+func TestTabsKeepIndependentTerminalsAndShareClipboard(t *testing.T) {
+	app := newTabTestApp(t)
+	first := app.current()
+	first.panels.Search.Query = []rune("first search")
+	if err := app.addTab(); err != nil {
+		t.Fatal(err)
+	}
+	second := app.current()
+	if first == second || first.vt == second.vt || first.shell == second.shell {
+		t.Fatal("tabs share a terminal or shell")
+	}
+	if len(second.panels.Search.Query) != 0 {
+		t.Fatal("search state leaked to new tab")
+	}
+	if err := first.stream.Feed([]byte("first")); err != nil {
+		t.Fatal(err)
+	}
+	if err := second.stream.Feed([]byte("second")); err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		tab  *terminalTab
+		want string
+	}{{first, "first"}, {second, "second"}} {
+		if err := test.tab.refresh(); err != nil {
+			t.Fatal(err)
+		}
+		for i, r := range test.want {
+			if test.tab.cells[i].Codepoint != r {
+				t.Fatalf("tab text differs at cell %d", i)
+			}
+		}
+	}
+	app.width, app.height = 1000, 634
+	app.layoutTabs()
+	for _, tab := range app.tabs {
+		size, err := pty.GetsizeFull(tab.shell.pty)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if tab.cols != 100 || tab.rows != 30 || size.Cols != 100 || size.Rows != 30 {
+			t.Fatalf("tab and PTY resize disagree: grid=%dx%d PTY=%dx%d", tab.cols, tab.rows, size.Cols, size.Rows)
+		}
+		if tab.offsetY != 34 {
+			t.Fatal("terminal pointer offset does not match tab bar")
+		}
+	}
+	first.clipboard = []byte("shared")
+	if string(second.pasteText()) != "shared" {
+		t.Fatal("fallback clipboard is not shared")
+	}
+	app.selectTab(0)
+	if app.current() != first || string(first.panels.Search.Query) != "first search" {
+		t.Fatal("tab state lost on switch")
+	}
+	app.closeTab(1)
+	if app.current() != first || len(app.tabs) != 1 {
+		t.Fatal("closing background tab changed the active terminal")
+	}
+	select {
+	case <-second.shell.processDone:
+	default:
+		t.Fatal("closed tab's shell was not reaped")
+	}
+}
+
+func TestBackgroundTabProcessesOutputAndExitsIndependently(t *testing.T) {
+	app := newTabTestApp(t)
+	background := app.current()
+	if err := app.addTab(); err != nil {
+		t.Fatal(err)
+	}
+	active := app.current()
+	// readOutput must run while this tab is inactive, including OSC side effects.
+	if _, err := background.shell.pty.Write([]byte("printf '\\033]2;background-ready\\007'\n")); err != nil {
+		t.Fatal(err)
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	for background.title != "background-ready" {
+		if _, err := background.readOutput(); err != nil {
+			t.Fatal(err)
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("background output was not processed")
+		}
+		time.Sleep(time.Millisecond)
+	}
+	if active.title == background.title {
+		t.Fatal("background title leaked into active tab")
+	}
+	if _, err := background.shell.pty.Write([]byte("exit\n")); err != nil {
+		t.Fatal(err)
+	}
+	for {
+		_, err := background.readOutput()
+		if errors.Is(err, ebiten.Termination) {
+			break
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("background shell did not exit")
+		}
+		time.Sleep(time.Millisecond)
+	}
+	app.closeTab(0)
+	if app.current() != active || app.active != 0 {
+		t.Fatal("closing earlier tab lost active tab")
+	}
+	app.closeTab(0)
+	if app.current() != nil {
+		t.Fatal("last tab was not removed")
+	}
+}
+
+func TestFailedNewTabLeavesExistingTabAlive(t *testing.T) {
+	app := newTabTestApp(t)
+	existing := app.current()
+	t.Setenv("SHELL", "/hypercat/nonexistent-shell")
+	if err := app.addTab(); err == nil {
+		t.Fatal("expected shell startup failure")
+	}
+	if len(app.tabs) != 1 || app.current() != existing {
+		t.Fatal("failed tab changed existing tabs")
+	}
+	if err := existing.stream.Feed([]byte("still alive")); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestTabFocusReportsOnlyWhenRequested(t *testing.T) {
+	vt, err := gostty.NewTerminal(80, 24)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = vt.Close() })
+	output, err := os.CreateTemp(t.TempDir(), "focus")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = output.Close() })
+	tab := &terminalTab{vt: vt, shell: &shellSession{pty: output}}
+	// A plain shell must never receive escape sequences merely from switching tabs.
+	if err := tab.reportFocus(true); err != nil {
+		t.Fatal(err)
+	}
+	if err := tab.reportFocus(false); err != nil {
+		t.Fatal(err)
+	}
+	if err := vt.SetMode(gostty.ModeFocusEvent, true); err != nil {
+		t.Fatal(err)
+	}
+	if err := tab.reportFocus(true); err != nil {
+		t.Fatal(err)
+	}
+	if err := tab.reportFocus(false); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(output.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != "\x1b[I\x1b[O" {
+		t.Fatalf("focus reports = %q", data)
+	}
+	if tab.focusedFrames != 0 {
+		t.Fatal("inactive tab retained its input repeat window")
+	}
+}
+
+func TestTabShortcuts(t *testing.T) {
+	app := newTabTestApp(t)
+	press := func(mods keys.Mods, key ebiten.Key) bool {
+		t.Helper()
+		consumed, err := app.handleTabKeys(mods, func(candidate ebiten.Key) bool { return candidate == key })
+		if err != nil {
+			t.Fatal(err)
+		}
+		return consumed
+	}
+	if press(keys.Mods{}, ebiten.KeyT) {
+		t.Fatal("plain T was consumed")
+	}
+	if !press(keys.Mods{Super: true}, ebiten.KeyT) || len(app.tabs) != 2 || app.active != 1 {
+		t.Fatal("Cmd+T did not open a tab")
+	}
+	if !press(keys.Mods{Super: true}, ebiten.KeyDigit1) || app.active != 0 {
+		t.Fatal("Cmd+1 did not switch to first tab")
+	}
+	if !press(keys.Mods{Ctrl: true, Shift: true}, ebiten.KeyTab) || app.active != 1 {
+		t.Fatal("previous tab did not wrap")
+	}
+	if !press(keys.Mods{Ctrl: true}, ebiten.KeyTab) || app.active != 0 {
+		t.Fatal("next tab did not wrap")
+	}
+	if !press(keys.Mods{Super: true}, ebiten.KeyDigit9) || app.active != 1 {
+		t.Fatal("Cmd+9 did not select last tab")
+	}
+	if !press(keys.Mods{Ctrl: true, Shift: true}, ebiten.KeyW) || len(app.tabs) != 1 {
+		t.Fatal("Ctrl+Shift+W did not close tab")
+	}
+	if !press(keys.Mods{Super: true}, ebiten.KeyW) || len(app.tabs) != 0 {
+		t.Fatal("last tab did not close")
+	}
+}

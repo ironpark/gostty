@@ -40,41 +40,41 @@ var wordBoundaries = []rune{
 // works out what that means for wrapped lines, wide characters and the
 // scrollback. What comes back is the selected text and, through the render
 // state, a per-cell flag to draw with.
-func (g *game) handleMouse(m keys.Mods) error {
+func (tab *terminalTab) handleMouse(m keys.Mods) error {
 	// The program gets first refusal. When it has asked for the mouse, the
 	// pointer is its input device and not this window's selection tool.
-	if reported, err := g.reportMouse(m); err != nil || reported {
+	if reported, err := tab.reportMouse(m); err != nil || reported {
 		return err
 	}
 
 	pressed := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
 	switch {
 	case inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft):
-		col, row := g.cellAt(ebiten.CursorPosition())
-		g.countClick(col, row)
-		switch g.sel.clicks {
+		col, row := tab.cellAt(tab.cursorPosition())
+		tab.countClick(col, row)
+		switch tab.sel.clicks {
 		case 1:
-			g.sel.dragging = true
-			g.sel.ax, g.sel.ay = col, row
-			return g.clearSelection()
+			tab.sel.dragging = true
+			tab.sel.ax, tab.sel.ay = col, row
+			return tab.clearSelection()
 		default:
-			return g.selectAt(col, row, g.sel.clicks)
+			return tab.selectAt(col, row, tab.sel.clicks)
 		}
 
-	case g.sel.dragging:
-		g.sel.dragging = pressed
-		col, row := g.cellAt(ebiten.CursorPosition())
+	case tab.sel.dragging:
+		tab.sel.dragging = pressed
+		col, row := tab.cellAt(tab.cursorPosition())
 		// A press and release on one cell is a click, not a one-cell selection.
-		if col == g.sel.ax && row == g.sel.ay {
-			return g.clearSelection()
+		if col == tab.sel.ax && row == tab.sel.ay {
+			return tab.clearSelection()
 		}
-		screen, err := g.vt.ActiveScreen()
+		screen, err := tab.vt.ActiveScreen()
 		if err != nil {
 			return err
 		}
 		// Alt selects the block between the corners instead of the flow of text.
 		_, err = screen.SelectRange(
-			uint16(g.sel.ax), uint16(g.sel.ay),
+			uint16(tab.sel.ax), uint16(tab.sel.ay),
 			uint16(col), uint16(row),
 			m.Alt,
 		)
@@ -85,22 +85,22 @@ func (g *game) handleMouse(m keys.Mods) error {
 
 // countClick turns a press into a click count: one starts a drag, two selects
 // the word, three the line.
-func (g *game) countClick(col, row int) {
+func (tab *terminalTab) countClick(col, row int) {
 	now := time.Now()
-	repeat := now.Sub(g.sel.lastAt) < multiClickInterval && col == g.sel.lastX && row == g.sel.lastY
-	if repeat && g.sel.clicks < 3 {
-		g.sel.clicks++
+	repeat := now.Sub(tab.sel.lastAt) < multiClickInterval && col == tab.sel.lastX && row == tab.sel.lastY
+	if repeat && tab.sel.clicks < 3 {
+		tab.sel.clicks++
 	} else {
-		g.sel.clicks = 1
+		tab.sel.clicks = 1
 	}
-	g.sel.lastAt, g.sel.lastX, g.sel.lastY = now, col, row
+	tab.sel.lastAt, tab.sel.lastX, tab.sel.lastY = now, col, row
 }
 
 // selectAt hands the position to ghostty, which owns what a word and a line
 // are: soft wraps, whitespace trimming and semantic prompt boundaries are all
 // its business, not this program's.
-func (g *game) selectAt(col, row, clicks int) error {
-	screen, err := g.vt.ActiveScreen()
+func (tab *terminalTab) selectAt(col, row, clicks int) error {
+	screen, err := tab.vt.ActiveScreen()
 	if err != nil {
 		return err
 	}
@@ -114,14 +114,14 @@ func (g *game) selectAt(col, row, clicks int) error {
 
 // cellAt maps a pixel position to a cell, clamped to the viewport so a drag
 // that runs off the window still selects to the edge.
-func (g *game) cellAt(px, py int) (int, int) {
-	col := min(max(int(float64(px)/g.fonts.cellW), 0), g.cols-1)
-	row := min(max(int(float64(py)/g.fonts.cellH), 0), g.rows-1)
+func (tab *terminalTab) cellAt(px, py int) (int, int) {
+	col := min(max(int(float64(px)/tab.fonts.CellWidth), 0), tab.cols-1)
+	row := min(max(int(float64(py)/tab.fonts.CellHeight), 0), tab.rows-1)
 	return col, row
 }
 
-func (g *game) clearSelection() error {
-	screen, err := g.vt.ActiveScreen()
+func (tab *terminalTab) clearSelection() error {
+	screen, err := tab.vt.ActiveScreen()
 	if err != nil {
 		return err
 	}
@@ -130,8 +130,8 @@ func (g *game) clearSelection() error {
 
 // copySelection puts the selected text on the system clipboard, falling back to
 // the process-local one when there is no system clipboard to write to.
-func (g *game) copySelection() error {
-	screen, err := g.vt.ActiveScreen()
+func (tab *terminalTab) copySelection() error {
+	screen, err := tab.vt.ActiveScreen()
 	if err != nil {
 		return err
 	}
@@ -141,9 +141,9 @@ func (g *game) copySelection() error {
 	}
 	// The clipboard keeps bytes: that is what the system clipboard and OSC 52
 	// both deal in, and the selection is the only place a string arrives.
-	g.clipboard = append(g.clipboard[:0], text...)
-	if g.systemClipboard {
-		if _, err := clipboard.Write(context.Background(), clipboard.FmtText, g.clipboard); err != nil {
+	tab.clipboard = append(tab.clipboard[:0], text...)
+	if tab.systemClipboard {
+		if _, err := clipboard.Write(context.Background(), clipboard.FmtText, tab.clipboard); err != nil {
 			return err
 		}
 	}
@@ -152,11 +152,11 @@ func (g *game) copySelection() error {
 
 // pasteText reads the system clipboard if there is one, otherwise whatever the
 // program last wrote through OSC 52.
-func (g *game) pasteText() []byte {
-	if g.systemClipboard {
+func (tab *terminalTab) pasteText() []byte {
+	if tab.systemClipboard {
 		if text, err := clipboard.Read(context.Background(), clipboard.FmtText); err == nil && len(text) > 0 {
 			return text
 		}
 	}
-	return g.clipboard
+	return tab.clipboard
 }
