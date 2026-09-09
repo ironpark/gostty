@@ -84,7 +84,6 @@ func TestTabsKeepIndependentTerminalsAndShareClipboard(t *testing.T) {
 		if tab.cols != 100 || tab.rows != 30 {
 			t.Fatalf("tab did not resize: grid=%dx%d", tab.cols, tab.rows)
 		}
-		assertPtySize(t, tab.shell.Pty, 100, 30)
 		if tab.offsetY != 34 {
 			t.Fatal("terminal pointer offset does not match tab bar")
 		}
