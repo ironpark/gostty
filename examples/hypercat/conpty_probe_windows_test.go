@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,6 +15,16 @@ import (
 // is whether the child ran at all and, if it did, where its output went.
 // Always fails, because that is how a passing test's log gets printed.
 func TestConPTYProbe(t *testing.T) {
+	for _, useStdHandles := range []bool{false, true} {
+		t.Run(fmt.Sprintf("STARTF_USESTDHANDLES=%v", useStdHandles), func(t *testing.T) {
+			conPtyUseStdHandles = useStdHandles
+			defer func() { conPtyUseStdHandles = false }()
+			probeConPty(t)
+		})
+	}
+}
+
+func probeConPty(t *testing.T) {
 	trace := filepath.Join(t.TempDir(), "helper-trace.txt")
 	t.Setenv(helperTraceVar, trace)
 

@@ -11,6 +11,13 @@ import (
 
 var procUpdateProcThreadAttribute = windows.NewLazySystemDLL("kernel32.dll").NewProc("UpdateProcThreadAttribute")
 
+// Whether the spawn claims the child's standard handles as its own while
+// leaving them empty, which is what both of the Go pseudoconsole libraries do.
+// It reads like a bug -- CreateProcess is being told the child's handles are
+// nothing -- but the child gets no console either way, so which of the two is
+// right is a question for a runner rather than for reading.
+var conPtyUseStdHandles = false
+
 // A pseudoconsole and the two pipe ends this process keeps.
 //
 // This is written out rather than taken from a library because both of the Go
@@ -138,8 +145,10 @@ func (p *conPty) start(argv, env []string) (*conPtyProcess, error) {
 		return nil, fmt.Errorf("attach pseudoconsole: %w", updateErr)
 	}
 
-	// No `STARTF_USESTDHANDLES`: see the type's comment.
 	startupInfo := new(windows.StartupInfoEx)
+	if conPtyUseStdHandles {
+		startupInfo.Flags |= windows.STARTF_USESTDHANDLES
+	}
 	startupInfo.ProcThreadAttributeList = attributes.List()
 	startupInfo.Cb = uint32(unsafe.Sizeof(*startupInfo))
 
@@ -166,9 +175,9 @@ func (p *conPty) start(argv, env []string) (*conPtyProcess, error) {
 	}
 	windows.CloseHandle(info.Thread)
 	p.diagnostics = fmt.Sprintf(
-		"console=%#x list=%#x updateRet=%d updateErr=%v cb=%d pid=%d",
+		"console=%#x list=%#x updateRet=%d updateErr=%v cb=%d flags=%#x pid=%d",
 		p.console, uintptr(unsafe.Pointer(attributes.List())),
-		ret, updateErr, startupInfo.Cb, info.ProcessId)
+		ret, updateErr, startupInfo.Cb, startupInfo.Flags, info.ProcessId)
 	return &conPtyProcess{handle: info.Process}, nil
 }
 
