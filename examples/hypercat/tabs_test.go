@@ -26,7 +26,7 @@ func newTabTestApp(t *testing.T) *terminalApp {
 		fonts: &fonts.Set{CellWidth: 10, CellHeight: 20},
 	}}
 	tab := &terminalTab{
-		owner: app, clipboardState: &app.clipboardState, settings: app.settings,
+		clipboard: &app.clipboard, settings: app.settings,
 		cols: 80, rows: 24,
 	}
 	if err := tab.start(); err != nil {
@@ -88,8 +88,8 @@ func TestTabsKeepIndependentTerminalsAndShareClipboard(t *testing.T) {
 			t.Fatal("terminal pointer offset does not match tab bar")
 		}
 	}
-	first.clipboard = []byte("shared")
-	if string(second.pasteText()) != "shared" {
+	first.clipboard.hold([]byte("shared"))
+	if string(second.clipboard.paste()) != "shared" {
 		t.Fatal("fallback clipboard is not shared")
 	}
 	app.selectTab(0)
@@ -290,7 +290,7 @@ func TestSettingsChangeAppliesToEveryTab(t *testing.T) {
 
 	second.panels.Settings.Row = ui.SettingTheme
 	before := first.currentTheme()
-	if _, err := second.applyUIActions(ui.Actions{SettingsDelta: 1}); err != nil {
+	if _, err := app.applyPanel(second, ui.Actions{SettingsDelta: 1}); err != nil {
 		t.Fatal(err)
 	}
 	if first.currentTheme() == before {
@@ -304,7 +304,7 @@ func TestSettingsChangeAppliesToEveryTab(t *testing.T) {
 	}
 
 	second.panels.Settings.Row = ui.SettingCat
-	if _, err := second.applyUIActions(ui.Actions{SettingsDelta: 1}); err != nil {
+	if _, err := app.applyPanel(second, ui.Actions{SettingsDelta: 1}); err != nil {
 		t.Fatal(err)
 	}
 	if first.cat != nil && first.cat.Mode() != app.settings.cat {
@@ -320,7 +320,7 @@ func TestSettingsChangeAppliesToEveryTab(t *testing.T) {
 	first.relayout, second.relayout = false, false
 	sizeBefore := app.settings.size
 	second.panels.Settings.Row = ui.SettingSize
-	if _, err := second.applyUIActions(ui.Actions{SettingsDelta: 1}); err != nil {
+	if _, err := app.applyPanel(second, ui.Actions{SettingsDelta: 1}); err != nil {
 		t.Fatal(err)
 	}
 	if app.settings.size == sizeBefore {

@@ -16,7 +16,7 @@ func TestFontSizeIsScaledByTheDisplay(t *testing.T) {
 		t.Skip("no system fonts on this machine")
 	}
 	app := &terminalApp{dsf: 2, settings: &appearance{families: families, size: fonts.DefaultSize}}
-	tab := &terminalTab{owner: app, settings: app.settings}
+	tab := &terminalTab{settings: app.settings}
 	app.tabs = []*terminalTab{tab}
 	app.applyFont()
 

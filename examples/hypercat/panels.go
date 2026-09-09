@@ -10,14 +10,17 @@ import (
 	"github.com/ironpark/gostty/examples/hypercat/ui"
 )
 
-func (tab *terminalTab) handleUI(m keys.Mods) (bool, error) {
+// panelInput describes this frame's keyboard to the panels. Runes are only
+// collected while the search bar is open, since it is the one component that
+// wants text rather than key presses.
+func (tab *terminalTab) panelInput(m keys.Mods) ui.Input {
 	shortcut := (m.Ctrl && m.Shift) || m.Super
 	if tab.panels.Mode == ui.Search {
 		tab.chars = ebiten.AppendInputChars(tab.chars[:0])
 	} else {
 		tab.chars = tab.chars[:0]
 	}
-	result := tab.panels.Handle(ui.Input{
+	return ui.Input{
 		OpenSearch:   shortcut && inpututil.IsKeyJustPressed(ebiten.KeyF),
 		OpenSettings: shortcut && inpututil.IsKeyJustPressed(ebiten.KeyComma),
 		Close:        inpututil.IsKeyJustPressed(ebiten.KeyEscape),
@@ -28,18 +31,25 @@ func (tab *terminalTab) handleUI(m keys.Mods) (bool, error) {
 		Down:      inpututil.IsKeyJustPressed(ebiten.KeyArrowDown),
 		Left:      inpututil.IsKeyJustPressed(ebiten.KeyArrowLeft) || inpututil.IsKeyJustPressed(ebiten.KeyMinus),
 		Right:     inpututil.IsKeyJustPressed(ebiten.KeyArrowRight) || inpututil.IsKeyJustPressed(ebiten.KeyEqual),
-	})
-	return tab.applyUIActions(result)
+	}
 }
 
+// settingsStep is one step of the settings panel's current row, reported rather
+// than applied: the font, the theme and the cat it moves through belong to the
+// window, and a tab does not know the window. The zero value is no step.
+type settingsStep struct{ row, delta int }
+
 // applyUIActions is the boundary between components and native terminal work.
-func (tab *terminalTab) applyUIActions(result ui.Actions) (bool, error) {
+// Everything the terminal owns happens here; the settings step goes back up to
+// `terminalApp.applyPanel`, which is the only place that can fan it out to
+// every tab.
+func (tab *terminalTab) applyUIActions(result ui.Actions) (bool, settingsStep, error) {
 	if result.ResetSearch {
 		tab.closeSearch()
 	}
 	if result.QueryChanged {
 		if err := tab.runSearch(); err != nil {
-			return true, err
+			return true, settingsStep{}, err
 		}
 	}
 	if result.MatchStep != 0 {
@@ -48,13 +58,13 @@ func (tab *terminalTab) applyUIActions(result ui.Actions) (bool, error) {
 			direction = gostty.SearchDirectionPrev
 		}
 		if err := tab.moveMatch(direction); err != nil {
-			return true, err
+			return true, settingsStep{}, err
 		}
 	}
 	if result.SettingsDelta != 0 {
-		return true, tab.owner.settingsAdjust(tab.panels.Settings.Row, result.SettingsDelta)
+		return true, settingsStep{row: tab.panels.Settings.Row, delta: result.SettingsDelta}, nil
 	}
-	return result.Consumed, nil
+	return result.Consumed, settingsStep{}, nil
 }
 
 func (tab *terminalTab) currentTheme() ui.Theme { return ui.ThemeAt(tab.settings.theme) }
@@ -72,15 +82,13 @@ func (tab *terminalTab) canvas(screen *ebiten.Image) ui.Canvas {
 	return ui.Canvas{
 		Screen: screen, CellWidth: tab.fonts().CellWidth, CellHeight: tab.fonts().CellHeight,
 		Width: float64(tab.cols) * tab.fonts().CellWidth, Height: float64(tab.rows) * tab.fonts().CellHeight,
-		Scale: tab.owner.dsf, Theme: tab.currentTheme(), DrawText: tab.drawText, RuneWidth: runeWidth,
+		Scale: tab.settings.dsf, Theme: tab.currentTheme(), DrawText: tab.drawText, RuneWidth: runeWidth,
 	}
 }
 
-func (tab *terminalTab) drawUI(screen *ebiten.Image) {
-	values := ui.SettingsValues{}
-	if tab.panels.Mode == ui.Settings {
-		values = tab.owner.settingsValues()
-	}
+// drawUI paints whichever panel is open. The labels come from the window, since
+// what they describe -- the font, the theme, the cat -- is the window's.
+func (tab *terminalTab) drawUI(screen *ebiten.Image, values ui.SettingsValues) {
 	tab.panels.Draw(tab.canvas(screen), values)
 }
 

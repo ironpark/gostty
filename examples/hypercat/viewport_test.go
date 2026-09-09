@@ -30,14 +30,14 @@ func TestMatchChangesMarkOnlyTheRowsThatChanged(t *testing.T) {
 	tab.redraw.resize(3)
 	tab.redraw.clear()
 	prev := []bool{false, false, false, false, true, false, false, false, false, false, false, false}
-	tab.matchCells = []bool{false, false, false, false, true, false, false, false, false, false, true, false}
+	tab.search.cells = []bool{false, false, false, false, true, false, false, false, false, false, true, false}
 	tab.markMatchChanges(prev)
 	if tab.redraw.rows[0] || tab.redraw.rows[1] || !tab.redraw.rows[2] {
 		t.Fatalf("rows = %v, want only the third", tab.redraw.rows)
 	}
 	// A cleared search leaves a shorter (empty) set; the old rows still repaint.
 	tab.redraw.clear()
-	tab.matchCells = nil
+	tab.search.cells = nil
 	tab.markMatchChanges(prev)
 	if tab.redraw.rows[0] || !tab.redraw.rows[1] || tab.redraw.rows[2] {
 		t.Fatalf("rows = %v, want only the second", tab.redraw.rows)

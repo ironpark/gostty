@@ -2,11 +2,26 @@ package main
 
 import "github.com/ironpark/gostty"
 
+// tabSearch is the tab's side of a scrollback search. The query and the count
+// the user sees belong to the search bar, which is the UI's; this is the native
+// handle behind it and the highlight the grid is drawn with.
+type tabSearch struct {
+	// The native search, nil when nothing is being looked for. It holds
+	// positions in the scrollback, so a new query means a new one.
+	handle *gostty.Search
+	// Matches in the viewport, one bool per cell, refreshed with the cells so
+	// the highlight never lags the text under it.
+	cells []bool
+	// Scratch for the viewport matches read each frame, kept so a frame with
+	// highlights on screen does not allocate.
+	viewport []gostty.Selection
+}
+
 // closeSearch releases the native handle before the terminal it belongs to.
 func (tab *terminalTab) closeSearch() {
-	if tab.search != nil {
-		_ = tab.search.Close()
-		tab.search = nil
+	if tab.search.handle != nil {
+		_ = tab.search.handle.Close()
+		tab.search.handle = nil
 	}
 	tab.panels.Search.Matches = 0
 	tab.panels.Search.Failure = ""
@@ -30,7 +45,7 @@ func (tab *terminalTab) runSearch() error {
 		tab.panels.Search.Failure = err.Error()
 		return nil
 	}
-	tab.search = search
+	tab.search.handle = search
 	return nil
 }
 
@@ -39,17 +54,17 @@ func (tab *terminalTab) runSearch() error {
 // kind a real emulator would do off the IO thread; `Feed` is what hands it
 // more scrollback and notices that the viewport moved.
 func (tab *terminalTab) tickSearch() error {
-	if tab.search == nil {
+	if tab.search.handle == nil {
 		return nil
 	}
-	if err := tab.search.Feed(true); err != nil {
+	if err := tab.search.handle.Feed(true); err != nil {
 		return err
 	}
 	// A budget rather than a loop to completion: whatever is not finished this
 	// frame is finished on the next, and the matches already found are drawn
 	// in the meantime.
 	for range searchTicksPerFrame {
-		progress, err := tab.search.Tick()
+		progress, err := tab.search.handle.Tick()
 		if err != nil {
 			return err
 		}
@@ -58,7 +73,7 @@ func (tab *terminalTab) tickSearch() error {
 		}
 	}
 	var err error
-	tab.panels.Search.Matches, err = tab.search.MatchCount()
+	tab.panels.Search.Matches, err = tab.search.handle.MatchCount()
 	return err
 }
 
@@ -75,9 +90,9 @@ const searchTicksPerFrame = 16
 // and it answers before the scrollback scan has finished. Matches are in
 // screen coordinates; the viewport's top row turns them into cells.
 func (tab *terminalTab) refreshMatches() error {
-	if tab.search == nil {
-		prev := tab.matchCells
-		tab.matchCells = tab.matchCells[:0]
+	if tab.search.handle == nil {
+		prev := tab.search.cells
+		tab.search.cells = tab.search.cells[:0]
 		tab.markMatchChanges(prev)
 		return nil
 	}
@@ -91,21 +106,21 @@ func (tab *terminalTab) refreshMatches() error {
 	}
 	// The count is not known in advance. A match spans at least one cell, so
 	// one per viewport cell cannot be exceeded by anything that is on screen.
-	if cap(tab.viewportMatches) < len(tab.cells) {
-		tab.viewportMatches = make([]gostty.Selection, len(tab.cells))
+	if cap(tab.search.viewport) < len(tab.cells) {
+		tab.search.viewport = make([]gostty.Selection, len(tab.cells))
 	}
-	n, err := tab.search.ViewportMatches(tab.viewportMatches[:len(tab.cells)])
+	n, err := tab.search.handle.ViewportMatches(tab.search.viewport[:len(tab.cells)])
 	if err != nil {
 		return err
 	}
-	prev := append([]bool(nil), tab.matchCells...)
-	if cap(tab.matchCells) < len(tab.cells) {
-		tab.matchCells = make([]bool, len(tab.cells))
+	prev := append([]bool(nil), tab.search.cells...)
+	if cap(tab.search.cells) < len(tab.cells) {
+		tab.search.cells = make([]bool, len(tab.cells))
 	}
-	tab.matchCells = tab.matchCells[:len(tab.cells)]
-	clear(tab.matchCells)
+	tab.search.cells = tab.search.cells[:len(tab.cells)]
+	clear(tab.search.cells)
 	defer tab.markMatchChanges(prev)
-	for _, m := range tab.viewportMatches[:n] {
+	for _, m := range tab.search.viewport[:n] {
 		if m.StartY < top || m.EndY >= top+uint32(tab.rows) || m.StartY > m.EndY {
 			continue
 		}
@@ -119,7 +134,7 @@ func (tab *terminalTab) refreshMatches() error {
 			}
 			row := int(y-top) * tab.cols
 			for x := x0; x <= x1 && x < tab.cols; x++ {
-				tab.matchCells[row+x] = true
+				tab.search.cells[row+x] = true
 			}
 		}
 	}
@@ -133,9 +148,9 @@ func (tab *terminalTab) markMatchChanges(prev []bool) {
 	if tab.cols == 0 {
 		return
 	}
-	for i := range max(len(prev), len(tab.matchCells)) {
+	for i := range max(len(prev), len(tab.search.cells)) {
 		was := i < len(prev) && prev[i]
-		is := i < len(tab.matchCells) && tab.matchCells[i]
+		is := i < len(tab.search.cells) && tab.search.cells[i]
 		if was != is {
 			tab.redraw.mark(i / tab.cols)
 		}
@@ -145,10 +160,10 @@ func (tab *terminalTab) markMatchChanges(prev []bool) {
 // moveMatch steps to the next or previous match. The binding puts it in the
 // screen's selection and brings the viewport to it.
 func (tab *terminalTab) moveMatch(dir gostty.SearchDirection) error {
-	if tab.search == nil || tab.panels.Search.Matches == 0 {
+	if tab.search.handle == nil || tab.panels.Search.Matches == 0 {
 		return nil
 	}
-	ok, err := tab.search.Select(dir, gostty.SearchScrollNone)
+	ok, err := tab.search.handle.Select(dir, gostty.SearchScrollNone)
 	if err != nil || !ok {
 		return err
 	}
@@ -157,7 +172,7 @@ func (tab *terminalTab) moveMatch(dir gostty.SearchDirection) error {
 	// selection colours and copies with the usual gesture, and the viewport
 	// jumps to it only when it is off screen, so stepping between visible
 	// matches does not move the page under the user.
-	match, ok, err := tab.search.SelectedMatch()
+	match, ok, err := tab.search.handle.SelectedMatch()
 	if err != nil || !ok {
 		return err
 	}

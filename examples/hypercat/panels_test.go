@@ -14,7 +14,7 @@ func TestSearchPanelActionsManageNativeSearch(t *testing.T) {
 	}
 	handle := func(in ui.Input) {
 		t.Helper()
-		consumed, err := tab.applyUIActions(tab.panels.Handle(in))
+		consumed, err := app.applyPanel(tab, tab.panels.Handle(in))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -24,7 +24,7 @@ func TestSearchPanelActionsManageNativeSearch(t *testing.T) {
 	}
 	handle(ui.Input{OpenSearch: true})
 	handle(ui.Input{Chars: []rune("needle")})
-	if tab.search == nil {
+	if tab.search.handle == nil {
 		t.Fatal("query did not create native search")
 	}
 	if err := tab.tickSearch(); err != nil {
@@ -34,9 +34,9 @@ func TestSearchPanelActionsManageNativeSearch(t *testing.T) {
 		t.Fatal("native results did not reach the search panel")
 	}
 	handle(ui.Input{Enter: true})
-	search := tab.search
+	search := tab.search.handle
 	handle(ui.Input{Close: true})
-	if tab.search != nil || tab.panels.Mode != ui.None {
+	if tab.search.handle != nil || tab.panels.Mode != ui.None {
 		t.Fatal("closing panel retained native search")
 	}
 	if _, err := search.MatchCount(); err == nil {

@@ -53,7 +53,7 @@ func (tab *terminalTab) configureStream() error {
 		n, err := req.ContentCount()
 		if err == nil && n > 0 {
 			if data, err := req.ContentData(0); err == nil {
-				tab.clipboard = append(tab.clipboard[:0], data...)
+				tab.clipboard.hold(data)
 			}
 		}
 		_ = req.Allow(false)
@@ -64,7 +64,7 @@ func (tab *terminalTab) configureStream() error {
 		// A read hands the running program whatever the user copied, so a real
 		// emulator would ask the user first. This one answers immediately,
 		// which is the wrong default for anything but a demo.
-		_ = req.ReplyText(string(tab.pasteText()), false)
+		_ = req.ReplyText(string(tab.clipboard.paste()), false)
 	}); err != nil {
 		return err
 	}

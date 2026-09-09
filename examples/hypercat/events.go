@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/ironpark/gostty"
 )
 
@@ -20,7 +19,6 @@ func (tab *terminalTab) drainEvents() error {
 			tab.bell = 6 // frames of visual bell
 		case gostty.StreamEventPwdChanged:
 			tab.title.pwd = event.Pwd
-			tab.retitle()
 		case gostty.StreamEventDesktopNotification:
 			log.Printf("notification: %s %s", event.Title, event.Body)
 		case gostty.StreamEventUnknownSequence:
@@ -29,7 +27,6 @@ func (tab *terminalTab) drainEvents() error {
 			tab.progressReport(event)
 		case gostty.StreamEventTitleChanged:
 			tab.title.program = event.Title
-			tab.retitle()
 		}
 	}
 	return nil
@@ -45,7 +42,6 @@ func (tab *terminalTab) progressReport(event gostty.Event) {
 	default:
 		tab.title.progress = event.ProgressState.String()
 	}
-	tab.retitle()
 }
 
 // windowTitle is what a program has said about itself. The three are kept
@@ -59,8 +55,10 @@ type windowTitle struct {
 	progress string
 }
 
+// String is what the window is called while this tab is the visible one: the
+// emulator's name, and whatever the program has said on top of it.
 func (t windowTitle) String() string {
-	title := "gostty"
+	title := appName
 	if t.program != "" {
 		title += " - " + t.program
 	}
@@ -71,13 +69,4 @@ func (t windowTitle) String() string {
 		title += " [" + t.progress + "]"
 	}
 	return title
-}
-
-// retitle names the window after the tab the user is looking at; a background
-// tab that renames itself is left to show up in the tab bar alone.
-func (tab *terminalTab) retitle() {
-	if tab.owner != nil && tab.owner.current() != tab {
-		return
-	}
-	ebiten.SetWindowTitle(tab.title.String())
 }

@@ -56,7 +56,7 @@ func (tab *terminalTab) handleInput(m keys.Mods) error {
 			// Bracketed paste and the safety check both come from the binding:
 			// `IsSafePaste` is what refuses a paste containing a newline when
 			// the program has not asked for bracketed paste.
-			text := tab.pasteText()
+			text := tab.clipboard.paste()
 			if len(text) > 0 && input.IsSafePaste(text) {
 				return input.EncodePaste(tab.shell.Pty, tab.vt, text)
 			}

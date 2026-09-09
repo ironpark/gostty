@@ -1,13 +1,11 @@
 package main
 
 import (
-	"context"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/ironpark/gostty/examples/hypercat/keys"
-	"golang.design/x/clipboard"
 )
 
 type selection struct {
@@ -128,8 +126,7 @@ func (tab *terminalTab) clearSelection() error {
 	return screen.ClearSelection()
 }
 
-// copySelection puts the selected text on the system clipboard, falling back to
-// the process-local one when there is no system clipboard to write to.
+// copySelection hands the selected text to the window's clipboard.
 func (tab *terminalTab) copySelection() error {
 	screen, err := tab.vt.ActiveScreen()
 	if err != nil {
@@ -139,24 +136,5 @@ func (tab *terminalTab) copySelection() error {
 	if err != nil || !ok || len(text) == 0 {
 		return err
 	}
-	// The clipboard keeps bytes: that is what the system clipboard and OSC 52
-	// both deal in, and the selection is the only place a string arrives.
-	tab.clipboard = append(tab.clipboard[:0], text...)
-	if tab.systemClipboard {
-		if _, err := clipboard.Write(context.Background(), clipboard.FmtText, tab.clipboard); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// pasteText reads the system clipboard if there is one, otherwise whatever the
-// program last wrote through OSC 52.
-func (tab *terminalTab) pasteText() []byte {
-	if tab.systemClipboard {
-		if text, err := clipboard.Read(context.Background(), clipboard.FmtText); err == nil && len(text) > 0 {
-			return text
-		}
-	}
-	return tab.clipboard
+	return tab.clipboard.copy(text)
 }

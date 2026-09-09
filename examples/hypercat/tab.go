@@ -13,8 +13,11 @@ import (
 	"github.com/ironpark/gostty/examples/hypercat/ui"
 )
 
+// terminalTab is one shell in one grid: everything the window has more than one
+// of. It holds no reference back to the window -- what a tab cannot decide
+// alone, such as a settings step, it reports and the window applies -- so the
+// dependencies run one way, from `terminalApp` down.
 type terminalTab struct {
-	owner   *terminalApp
 	offsetY int
 
 	// The terminal side.
@@ -24,12 +27,8 @@ type terminalTab struct {
 	cells  []gostty.RenderCell
 	// Kitty graphics: the placements for this frame and their textures.
 	images *imageCache
-	// Search matches in the viewport, one bool per cell, refreshed with the
-	// cells so the highlight never lags the text under it.
-	matchCells []bool
-	// Scratch for the viewport matches read each frame, kept so a frame with
-	// highlights on screen does not allocate.
-	viewportMatches []gostty.Selection
+	// The scrollback search and the cells it highlights.
+	search tabSearch
 
 	// Partial redraw: the layers the grid is drawn into, and the rows that
 	// have to be drawn again on them.
@@ -51,9 +50,8 @@ type terminalTab struct {
 	// What the program says it is, for the tab label and the window title.
 	title windowTitle
 
-	// The clipboard. The system one when it is available; otherwise a
-	// process-local buffer, which at least lets OSC 52 and paste agree.
-	*clipboardState
+	// The window's clipboard, shared with every other tab.
+	clipboard *sharedClipboard
 
 	sel selection
 
@@ -63,7 +61,6 @@ type terminalTab struct {
 	// The window's fonts, theme, and cat mode, shared with every other tab so
 	// that a change made in the settings panel is a change to all of them.
 	settings *appearance
-	search   *gostty.Search
 	// Set when the faces changed, so Layout redoes the grid even if the window
 	// did not move.
 	relayout bool
@@ -130,19 +127,15 @@ func (tab *terminalTab) readOutput() (bool, error) {
 	return fed, nil
 }
 
-func (tab *terminalTab) updateInput() error {
-	// Input before the refresh, so a selection made this frame is drawn this
-	// frame rather than one behind. The modifier state is read once and shared:
-	// the mouse needs Alt for block selection and the keyboard needs all four.
-	m := keys.Current()
+// updateInput gives the tab this frame's pointer and keyboard, then brings what
+// it draws up to date.
+//
+// The panels have already had their turn, because what they change is the
+// window's: `panelTook` says an open one kept the keyboard, so nothing typed
+// into the search bar reaches the shell. The mouse is left alone either way --
+// a selection is still worth being able to make.
+func (tab *terminalTab) updateInput(m keys.Mods, panelTook bool) error {
 	if tab.reports.focused {
-		// A panel takes the keyboard while it is open, so nothing typed into the
-		// search bar reaches the shell. The mouse is left alone: a selection is
-		// still worth being able to make.
-		taken, err := tab.handleUI(m)
-		if err != nil {
-			return err
-		}
 		// The pointer above the grid is the tab bar's; a drag released there
 		// ends. A click on the cat is the cat's, not the shell's: it must not
 		// also start a selection or be reported to the program.
@@ -161,12 +154,14 @@ func (tab *terminalTab) updateInput() error {
 				return err
 			}
 		}
-		if !taken {
+		if !panelTook {
 			if err := tab.handleInput(m); err != nil {
 				return err
 			}
 		}
 	}
+	// Input before the refresh, so a selection made this frame is drawn this
+	// frame rather than one behind.
 	if err := tab.refresh(); err != nil {
 		return err
 	}

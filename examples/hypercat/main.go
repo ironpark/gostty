@@ -28,6 +28,10 @@ import (
 const (
 	initialCols = 100
 	initialRows = 30
+
+	// appName is what the window is called before a program has said anything
+	// about itself, and the name every title it does set is shown under.
+	appName = "Hyper Cat Term /ᐠ ˵> ⩊ <˵マ"
 )
 
 func main() {
@@ -54,7 +58,7 @@ func run() error {
 	if err := clipboard.Init(); err != nil {
 		log.Printf("no system clipboard, staying in-process: %v", err)
 	} else {
-		app.systemClipboard = true
+		app.clipboard.useSystem()
 	}
 
 	// The window is asked for in device-independent pixels, which is the one
@@ -63,7 +67,7 @@ func run() error {
 		int(app.settings.fonts.CellWidth*initialCols/app.dsf),
 		int(app.settings.fonts.CellHeight*initialRows/app.dsf+ui.TabBarHeight),
 	)
-	ebiten.SetWindowTitle("Hyper Cat Term /ᐠ ˵> ⩊ <˵マ")
+	ebiten.SetWindowTitle(appName)
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	ebiten.SetScreenClearedEveryFrame(false)
 	return ebiten.RunGame(app)

@@ -40,11 +40,18 @@ once the program has gone. `internal/shelltest` starts a test binary as that
 shell, which is how both the session tests and the tab tests get a child that
 writes something and then does as it is told.
 
-The main package is organized around the terminal's frame and resource lifecycle:
+Dependencies in the main package run one way. `terminalApp` owns the window and
+what every tab shares -- the fonts, the theme, the cat mode, the clipboard --
+and reaches down into the tabs; a `terminalTab` holds no reference back. What a
+tab cannot decide alone it reports and the window applies: a settings step comes
+back as a `settingsStep`, and the window title is set from the visible tab
+rather than by each tab in turn.
+
+The files are organized around the terminal's frame and resource lifecycle:
 
 - `main.go` sets up the app's shared state, the clipboard, and the window.
 - `app.go` owns the window, the tab lifecycle, and the state tabs share; it
-  hosts `ui.TabBar`.
+  drives `ui.TabBar` and the panels, and applies what a tab asks of the window.
 - `tab.go` owns each terminal tab and services its output and input.
 - `terminal.go` creates and releases terminal resources, configures the stream,
   and starts the tab's `shell.Session`.
@@ -56,18 +63,20 @@ The main package is organized around the terminal's frame and resource lifecycle
 - `input.go` encodes keys through a per-frame `frameBuffer`; `report.go` does
   the same for mouse and focus events the program has asked for, and owns
   `reportState`, what the program has been told about the pointer so far.
-- `mouse.go` owns selection and the clipboard.
+- `mouse.go` owns selection; `clipboard.go` owns `sharedClipboard`, the one
+  clipboard every tab copies to and pastes from.
 - `render.go` draws the grid layers, cursor, and decorations, and owns
   `gridCanvas`: the two layers the grid is drawn into and their lifetime.
 - `kitty.go` owns `imageCache`: the Kitty placement snapshot and its textures.
-- `mascot.go` connects terminal cells and the window's `thecat.Mode` to `thecat.Companion`.
-- `ui_bridge.go` translates input and UI actions and connects the text renderer.
-- `search.go` owns native search handles, scanning, and match selection.
+- `cat.go` connects terminal cells and the window's `thecat.Mode` to `thecat.Companion`.
+- `panels.go` translates input and UI actions and connects the text renderer.
+- `search.go` owns `tabSearch`: the native search handle, its scanning, match
+  selection, and the per-cell highlight the grid is drawn with.
 - `settings.go` holds `appearance`, the fonts, theme, and cat mode every tab is
-  drawn with, and applies each panel row to all of them.
+  drawn with, and applies each panel row -- including the font and the display
+  scale -- to all of them.
 - `ui/search.go`, `ui/settings.go`, and `ui/tabbar.go` define the components.
 - `ui/panels.go` routes panel input; `ui/canvas.go` and `ui/theme.go` share drawing and colors.
-- `font_settings.go` applies the selected font and display scale to every tab.
 - `fonts/discovery.go` finds system fonts and selects the default family.
 - `fonts/font.go` loads text faces and derives grid and decoration metrics.
 - `fonts/emoji.go` loads and caches colour emoji; `emoji.go` places them in cells.
