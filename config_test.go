@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 )
 
@@ -339,22 +338,9 @@ func hasImage(t *testing.T, term *Terminal, id uint32) bool {
 	return ok
 }
 
-// Both path mediums are dead on Windows: ghostty's own open of the path fails
-// with `error.FileNotFound` for a file that is there, before it gets as far as
-// the permission it is being asked about. That is below the binding -- nothing
-// on the Go side touches the path, it travels through the pty as base64 -- so
-// the tests skip rather than assert a medium the platform does not deliver.
-func skipIfNoPathMediums(t *testing.T) {
-	t.Helper()
-	if runtime.GOOS == "windows" {
-		t.Skip("ghostty cannot open the transmitted path on Windows")
-	}
-}
-
 // The default is direct transmission only, so a program cannot make the
 // terminal read an arbitrary path until the embedder allows it.
 func TestKittyGraphicsLoadingLimitsGateFileMedium(t *testing.T) {
-	skipIfNoPathMediums(t)
 	dir := t.TempDir()
 	path := writeImageFile(t, dir, "image.rgb")
 
@@ -406,7 +392,6 @@ func allowedTempMedium(t *testing.T) string {
 // which the binding copies rather than borrows: the Go string backing it is
 // gone by the time the image is transmitted.
 func TestKittyGraphicsLoadingLimitsTempDir(t *testing.T) {
-	skipIfNoPathMediums(t)
 	dir := allowedTempMedium(t)
 	term, stream := newStreamPair(t, 20, 5)
 

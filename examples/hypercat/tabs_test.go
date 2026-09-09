@@ -3,10 +3,10 @@ package main
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/creack/pty"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/ironpark/gostty"
 	"github.com/ironpark/gostty/examples/hypercat/fonts"
@@ -16,7 +16,7 @@ import (
 
 func newTabTestApp(t *testing.T) *terminalApp {
 	t.Helper()
-	t.Setenv("SHELL", "/bin/sh")
+	helperShell(t, "echo")
 	app := &terminalApp{dsf: 1}
 	tab := &terminalTab{
 		owner: app, clipboardState: &app.clipboardState,
@@ -76,13 +76,10 @@ func TestTabsKeepIndependentTerminalsAndShareClipboard(t *testing.T) {
 	app.width, app.height = 1000, 634
 	app.layoutTabs()
 	for _, tab := range app.tabs {
-		size, err := pty.GetsizeFull(tab.shell.pty)
-		if err != nil {
-			t.Fatal(err)
+		if tab.cols != 100 || tab.rows != 30 {
+			t.Fatalf("tab did not resize: grid=%dx%d", tab.cols, tab.rows)
 		}
-		if tab.cols != 100 || tab.rows != 30 || size.Cols != 100 || size.Rows != 30 {
-			t.Fatalf("tab and PTY resize disagree: grid=%dx%d PTY=%dx%d", tab.cols, tab.rows, size.Cols, size.Rows)
-		}
+		assertPtySize(t, tab.shell.pty, 100, 30)
 		if tab.offsetY != 34 {
 			t.Fatal("terminal pointer offset does not match tab bar")
 		}
@@ -114,7 +111,7 @@ func TestBackgroundTabProcessesOutputAndExitsIndependently(t *testing.T) {
 	}
 	active := app.current()
 	// readOutput must run while this tab is inactive, including OSC side effects.
-	if _, err := background.shell.pty.Write([]byte("printf '\\033]2;background-ready\\007'\n")); err != nil {
+	if _, err := background.shell.pty.Write([]byte("\033]2;background-ready\007\n")); err != nil {
 		t.Fatal(err)
 	}
 	deadline := time.Now().Add(5 * time.Second)
@@ -159,7 +156,7 @@ func TestBackgroundTabProcessesOutputAndExitsIndependently(t *testing.T) {
 func TestFailedNewTabLeavesExistingTabAlive(t *testing.T) {
 	app := newTabTestApp(t)
 	existing := app.current()
-	t.Setenv("SHELL", "/hypercat/nonexistent-shell")
+	t.Setenv(shellVar, filepath.Join(t.TempDir(), "nonexistent-shell"))
 	if err := app.addTab(); err == nil {
 		t.Fatal("expected shell startup failure")
 	}
@@ -182,7 +179,7 @@ func TestTabFocusReportsOnlyWhenRequested(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = output.Close() })
-	tab := &terminalTab{vt: vt, shell: &shellSession{pty: output}}
+	tab := &terminalTab{vt: vt, shell: &shellSession{pty: fileDevice{output}}}
 	// A plain shell must never receive escape sequences merely from switching tabs.
 	if err := tab.reportFocus(true); err != nil {
 		t.Fatal(err)
@@ -246,3 +243,9 @@ func TestTabShortcuts(t *testing.T) {
 		t.Fatal("last tab did not close")
 	}
 }
+
+// A `terminalDevice` that is only ever written to, for the tests that want to
+// read back what the tab sent rather than run a shell.
+type fileDevice struct{ *os.File }
+
+func (fileDevice) Resize(cols, rows int) error { return nil }

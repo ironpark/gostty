@@ -69,16 +69,11 @@ jobs:
       - name: Vet example
         run: go vet ./examples/hypercat/...
 
-      # Windows gets the compile and nothing more: hypercat is a POSIX app.
-      # Its shell sessions go through creack/pty, which has no Windows
-      # implementation, and its colour emoji wants a bitmap font where Windows
-      # ships COLR outlines -- both of which the example says out loud rather
-      # than works around, so the tests that cover them have nothing to say
-      # there.
-      - name: Build example
-        if: runner.os != 'Linux'
-        run: go build ./examples/hypercat/...
-
+      # Only Linux needs the display wrapper; Windows has a console of its own.
       - name: Test example
         if: runner.os == 'Linux'
         run: xvfb-run -a go test ./examples/hypercat/...
+
+      - name: Test example
+        if: runner.os != 'Linux'
+        run: go test ./examples/hypercat/...

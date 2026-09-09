@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 
-	"github.com/creack/pty"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -40,9 +39,9 @@ func (tab *terminalTab) resize(cols, rows int) error {
 	if err := tab.vt.ResizeCells(uint16(cols), uint16(rows), uint32(cellW), uint32(cellH)); err != nil {
 		return err
 	}
-	// The pty carries the same two sizes, which is where a program that has not
-	// asked the terminal directly reads them from.
-	return pty.Setsize(tab.shell.pty, tab.ptySize())
+	// The pty carries the same size, which is where a program that has not
+	// asked the terminal directly reads it from.
+	return tab.shell.pty.Resize(cols, rows)
 }
 
 // deviceScale is how many pixels the display has per device-independent pixel.
@@ -59,13 +58,4 @@ func deviceScale() float64 {
 		return scale
 	}
 	return 1
-}
-
-// ptySize uses the same cell metrics at startup and on window changes.
-func (tab *terminalTab) ptySize() *pty.Winsize {
-	return &pty.Winsize{
-		Cols: uint16(tab.cols), Rows: uint16(tab.rows),
-		X: uint16(tab.fonts.CellWidth) * uint16(tab.cols),
-		Y: uint16(tab.fonts.CellHeight) * uint16(tab.rows),
-	}
 }

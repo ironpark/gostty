@@ -4,9 +4,22 @@
 const std = @import("std");
 const vt = @import("ghostty_vt");
 
-/// The `std.Io` injected into every bound call. TinyIo is ghostty's own
-/// blocking implementation, recommended for embedders.
-pub const io: std.Io = (vt.TinyIo.init).io();
+/// The `std.Io` injected into every bound call.
+///
+/// TinyIo is ghostty's own blocking implementation and the one it recommends to
+/// embedders, but it is POSIX-only: on Windows its `supported` is false and the
+/// whole vtable becomes `std.Io.failing`, which answers every file open with
+/// `error.FileNotFound`. That is not a loud failure -- it looks exactly like a
+/// path that is not there, so the kitty file mediums simply never loaded
+/// anything on Windows.
+///
+/// `global_single_threaded` is std's own hardcodable instance and carries the
+/// same two limits TinyIo does: no concurrency, no cancelation. Its allocator
+/// is `.failing`, which only the async entry points would reach.
+pub const io: std.Io = if (vt.TinyIo.supported)
+    (vt.TinyIo.init).io()
+else
+    std.Io.Threaded.global_single_threaded.io();
 
 pub const Terminal = vt.Terminal;
 

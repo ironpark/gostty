@@ -2,16 +2,14 @@ package main
 
 import (
 	"bytes"
-	"os/exec"
 	"testing"
 	"time"
 
-	"github.com/creack/pty"
 	"github.com/ironpark/gostty"
 )
 
 func TestShellOutputAndExit(t *testing.T) {
-	s, err := startShellCommand(exec.Command("/bin/sh", "-c", "printf hypercat"), &pty.Winsize{Cols: 80, Rows: 24})
+	s, err := startShellCommand(80, 24, helperShell(t, "print"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +38,7 @@ func TestShellOutputAndExit(t *testing.T) {
 }
 
 func TestShellCloseWithUnreadOutput(t *testing.T) {
-	s, err := startShellCommand(exec.Command("/bin/sh", "-c", "while :; do printf 'hypercat output\\n'; done"), &pty.Winsize{Cols: 80, Rows: 24})
+	s, err := startShellCommand(80, 24, helperShell(t, "spew"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +64,7 @@ func TestShellCloseWithUnreadOutput(t *testing.T) {
 }
 
 func TestShellCloseWhileWaitingForInput(t *testing.T) {
-	s, err := startShellCommand(exec.Command("/bin/sh", "-c", "trap '' HUP; printf ready; read line"), &pty.Winsize{Cols: 80, Rows: 24})
+	s, err := startShellCommand(80, 24, helperShell(t, "hold"))
 	if err != nil {
 		t.Fatal(err)
 	}

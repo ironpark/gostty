@@ -24,7 +24,7 @@ func (tab *terminalTab) start() error {
 	if err := tab.configureStream(); err != nil {
 		return err
 	}
-	tab.shell, err = startShell(tab.ptySize())
+	tab.shell, err = startShell(tab.cols, tab.rows)
 	if err != nil {
 		return err
 	}
