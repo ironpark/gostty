@@ -10,6 +10,8 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+var procUpdateProcThreadAttribute = windows.NewLazySystemDLL("kernel32.dll").NewProc("UpdateProcThreadAttribute")
+
 // A pseudoconsole and the two pipe ends this process keeps.
 //
 // This is written out rather than taken from a library because both of the Go
@@ -115,11 +117,20 @@ func (p *conPty) start(argv, env []string) (*conPtyProcess, error) {
 		return nil, fmt.Errorf("attribute list: %w", err)
 	}
 	defer attributes.Delete()
-	if err := attributes.Update(
+	// Called rather than going through `attributes.Update`, which takes the
+	// value as an `unsafe.Pointer`. A pseudoconsole attribute's value is the
+	// handle itself, not somewhere to read it from, so that spelling means
+	// converting a handle to a pointer -- which is what it looks like, and what
+	// `go vet` rightly says about it. Passed as the integer it is instead.
+	if ret, _, err := procUpdateProcThreadAttribute.Call(
+		uintptr(unsafe.Pointer(attributes.List())),
+		0,
 		windows.PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE,
-		unsafe.Pointer(p.console),
+		uintptr(p.console),
 		unsafe.Sizeof(p.console),
-	); err != nil {
+		0,
+		0,
+	); ret == 0 {
 		return nil, fmt.Errorf("attach pseudoconsole: %w", err)
 	}
 
