@@ -52,6 +52,7 @@ func startShellCommand(cols, rows int, argv []string) (*shellSession, error) {
 		_ = ptmx.Close()
 		return nil, fmt.Errorf("start %s: %w", argv[0], err)
 	}
+	detachChildEnd(ptmx)
 	s := &shellSession{
 		pty: ptmx, cmd: cmd,
 		output:      make(chan []byte, 64),
@@ -63,6 +64,7 @@ func startShellCommand(cols, rows int, argv []string) (*shellSession, error) {
 	go func() {
 		// Reap the child even if the window has not consumed its last output.
 		_ = cmd.Wait()
+		endReadsAfterExit(ptmx)
 		close(s.processDone)
 	}()
 	return s, nil

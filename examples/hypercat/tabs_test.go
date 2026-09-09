@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -110,12 +111,12 @@ func TestBackgroundTabProcessesOutputAndExitsIndependently(t *testing.T) {
 		t.Fatal(err)
 	}
 	active := app.current()
-	// readOutput must run while this tab is inactive, including OSC side effects.
-	if _, err := background.shell.pty.Write([]byte("\033]2;background-ready\007\n")); err != nil {
+	// readOutput must run while this tab is inactive.
+	if _, err := background.shell.pty.Write([]byte("background-ready\n")); err != nil {
 		t.Fatal(err)
 	}
 	deadline := time.Now().Add(5 * time.Second)
-	for background.title != "background-ready" {
+	for !tabHasText(t, background, "background-ready") {
 		if _, err := background.readOutput(); err != nil {
 			t.Fatal(err)
 		}
@@ -124,9 +125,10 @@ func TestBackgroundTabProcessesOutputAndExitsIndependently(t *testing.T) {
 		}
 		time.Sleep(time.Millisecond)
 	}
-	if active.title == background.title {
-		t.Fatal("background title leaked into active tab")
+	if tabHasText(t, active, "background-ready") {
+		t.Fatal("background output leaked into active tab")
 	}
+	assertOSCReachesTheTab(t, background)
 	if _, err := background.shell.pty.Write([]byte("exit\n")); err != nil {
 		t.Fatal(err)
 	}
@@ -249,3 +251,21 @@ func TestTabShortcuts(t *testing.T) {
 type fileDevice struct{ *os.File }
 
 func (fileDevice) Resize(cols, rows int) error { return nil }
+
+// Whether the tab's grid shows this text anywhere. `refresh` is what fills the
+// cells from the terminal, so it is part of looking.
+func tabHasText(t *testing.T, tab *terminalTab, want string) bool {
+	t.Helper()
+	if err := tab.refresh(); err != nil {
+		t.Fatal(err)
+	}
+	var text []rune
+	for _, cell := range tab.cells {
+		if cell.Codepoint == 0 {
+			text = append(text, ' ')
+			continue
+		}
+		text = append(text, rune(cell.Codepoint))
+	}
+	return strings.Contains(string(text), want)
+}

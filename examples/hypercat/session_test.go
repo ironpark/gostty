@@ -46,7 +46,7 @@ func TestShellCloseWithUnreadOutput(t *testing.T) {
 	deadline := time.Now().Add(5 * time.Second)
 	for len(s.output) != cap(s.output) {
 		if time.Now().After(deadline) {
-			t.Fatal("output queue did not fill")
+			t.Fatalf("output queue holds %d of %d after 5s", len(s.output), cap(s.output))
 		}
 		time.Sleep(time.Millisecond)
 	}
