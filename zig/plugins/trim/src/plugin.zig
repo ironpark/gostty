@@ -4,7 +4,7 @@
 //! called `searchTick`, `searchFeed`, `searchSelectedIndex`, because at the
 //! root that prefix is the only thing saying which type they belong to. In Go
 //! the receiver says it, so `Search.SearchTick()` stutters and every one of
-//! these needed a `.name` beside it -- sixty-seven of them, each a second
+//! these needed a `.name` beside it -- sixty-eight of them, each a second
 //! spelling of a name the Zig side had already decided, and each free to drift
 //! the day the Zig declaration was renamed.
 //!
@@ -16,9 +16,10 @@
 //!
 //! This is a `transform` rather than the `name_function` hook that renames Go
 //! alone, because the prefix is not in the C ABI either: `searchTick` is
-//! `zg_search_tick`, not `zg_search_search_tick`. Renaming the declaration and
-//! pointing `zig_path` back at the Zig function keeps the symbol, the Go name
-//! and the raw binding all spelled the one way.
+//! `zg_search_tick`, not `zg_search_search_tick`. Renaming the declaration
+//! leaves the symbol where it was, because `semantic.functionSymbolAlloc`
+//! derives it from the owner and the final name; `zig_path` is what keeps the
+//! shim pointed at the Zig function the name moved out from under.
 const std = @import("std");
 const naming = @import("naming");
 const plugin_api = @import("plugin");
@@ -38,17 +39,17 @@ pub const plugin: plugin_api.Plugin = .{
     .name = name,
     .min_contract = .{ .major = 2, .minor = 0 },
     .TypeOptions = Options,
-    .targets = &.{.handle},
+    // The rule is about how a group of declarations is spelled, which is not
+    // a property of the kind of type they hang off: `ColorName` is an enum
+    // whose one wrapper is `colorNameDefault`.
+    .targets = &.{ .handle, .enumeration, .value },
     .transform = transform,
 };
 
-/// The prefix a type asks for: what it wrote, or its own name with the first
-/// letter lowered.
-fn prefixAlloc(allocator: std.mem.Allocator, declaration: semantic.TypeDecl, options: Options) ![]const u8 {
-    if (options.prefix) |explicit| return explicit;
-    const owned = try allocator.dupe(u8, declaration.name);
-    owned[0] = std.ascii.toLower(owned[0]);
-    return owned;
+/// The prefix a type asks for: what it wrote, or its own name in the lowerCamel
+/// spelling the rest of zigo's naming pipeline uses.
+fn prefixOf(allocator: std.mem.Allocator, declaration: semantic.TypeDecl, options: Options) ![]const u8 {
+    return options.prefix orelse try naming.camelAlloc(allocator, declaration.name);
 }
 
 /// A prefix only ends where the next word begins, so the remainder has to
@@ -57,90 +58,57 @@ fn prefixAlloc(allocator: std.mem.Allocator, declaration: semantic.TypeDecl, opt
 fn stripAlloc(allocator: std.mem.Allocator, zig_name: []const u8, prefix: []const u8) !?[]const u8 {
     if (prefix.len == 0 or zig_name.len <= prefix.len) return null;
     if (!std.mem.startsWith(u8, zig_name, prefix)) return null;
-    const rest = zig_name[prefix.len..];
-    if (!std.ascii.isUpper(rest[0])) return null;
-    const owned = try allocator.dupe(u8, rest);
-    owned[0] = std.ascii.toLower(owned[0]);
-    return owned;
+    if (!std.ascii.isUpper(zig_name[prefix.len])) return null;
+    return try naming.camelAlloc(allocator, zig_name[prefix.len..]);
 }
 
-/// The prefix a type asks for, or null when it asked for nothing. The lookup
-/// is by the name the function's receiver carries, so `snapshotDecoderNext`
-/// answers to `SnapshotDecoder` and never to `Snapshot`.
-fn prefixFor(
-    context: plugin_api.TransformContext,
-    function: semantic.SemanticFn,
-) !?struct { prefix: []const u8, index: usize } {
-    const owner = function.receiver orelse function.goOwner() orelse return null;
-    for (context.document.types, 0..) |declaration, index| {
-        if (!std.mem.eql(u8, declaration.name, owner)) continue;
-        const options = try context.optionsOf(plugin, .type, declaration.ext) orelse return null;
-        return .{ .prefix = try prefixAlloc(context.allocator, declaration, options), .index = index };
-    }
-    return null;
-}
-
-/// A constructor and a destructor are matched by their Zig name, and they are
-/// named by the protocol in Go anyway -- `Close`, `New<Type>` -- so the prefix
-/// is not theirs to drop.
+/// A constructor and a destructor are named by the protocol in Go -- `Close`,
+/// `New<Type>` -- so the prefix is not theirs to drop.
 fn isLifecycle(document: semantic.Semantic, function: semantic.SemanticFn) bool {
+    if (semantic.constructorForInit(document.constructors, function) != null) return true;
     for (document.constructors) |pair| {
-        if (std.mem.eql(u8, pair.init, function.name)) return true;
         if (std.mem.eql(u8, pair.deinit, function.name)) return true;
     }
     return false;
 }
 
-/// The symbol was derived from the old name, so it ends in that name's snake
-/// spelling; the new one replaces exactly that tail. Rebuilding it from the
-/// owner instead would have to guess which owner the reflector used, and this
-/// cannot disagree with it.
-fn symbolAlloc(
-    allocator: std.mem.Allocator,
-    function: semantic.SemanticFn,
-    trimmed: []const u8,
-) !?[]const u8 {
-    if (function.custom_symbol orelse false) return null;
-    const old_tail = try naming.snakeAlloc(allocator, function.name);
-    defer allocator.free(old_tail);
-    if (!std.mem.endsWith(u8, function.symbol, old_tail)) return null;
-    const new_tail = try naming.snakeAlloc(allocator, trimmed);
-    defer allocator.free(new_tail);
-    return try std.mem.concat(allocator, u8, &.{ function.symbol[0 .. function.symbol.len - old_tail.len], new_tail });
+/// The type a function is grouped under in Go, which is the one whose prefix it
+/// carries. A declaration beside the type rather than inside it has no
+/// receiver, so `goOwner` answers for it.
+fn ownerOf(function: semantic.SemanticFn) ?[]const u8 {
+    return function.receiver orelse function.goOwner();
 }
 
-/// Renaming the declaration moves the Zig function out from under the name, so
-/// `zig_path` has to say where it went before the name changes.
+/// One pass per type that asked, so the prefix is resolved once and a type that
+/// trimmed nothing is known by the time the loop over its methods ends.
 ///
-/// The typo check belongs here rather than in `validate`, which only ever sees
-/// the document this returns: by then a prefix that did nothing and a prefix
-/// that did its job look the same.
+/// Renaming the declaration moves the Zig function out from under the name, so
+/// `zig_path` has to say where it went before the name changes. The typo check
+/// belongs here rather than in `validate`, which only ever sees the document
+/// this returns: by then a prefix that did nothing and a prefix that did its
+/// job look the same.
 fn transform(context: plugin_api.TransformContext) !semantic.Semantic {
     const allocator = context.allocator;
     var document = context.document;
-    var used = try allocator.alloc(bool, document.types.len);
-    @memset(used, false);
     const functions = try allocator.dupe(semantic.SemanticFn, document.functions);
-    for (functions) |*function| {
-        if (function.go_name != null) continue;
-        if (isLifecycle(document, function.*)) continue;
-        const found = try prefixFor(context, function.*) orelse continue;
-        const trimmed = try stripAlloc(allocator, function.name, found.prefix) orelse continue;
-        used[found.index] = true;
-        const zig_path = try semantic.zigCallPathAlloc(allocator, function.*);
-        if (try symbolAlloc(allocator, function.*, trimmed)) |symbol| function.symbol = symbol;
-        function.zig_path = zig_path;
-        function.name = trimmed;
-    }
     document.functions = functions;
-
-    // A prefix that strips nothing is a typo, and a silent one: the methods
-    // keep their stuttering names and the binding looks like it asked for that.
-    for (document.types, used) |declaration, trimmed_any| {
-        if (trimmed_any) continue;
+    for (document.types) |declaration| {
         const options = try context.optionsOf(plugin, .type, declaration.ext) orelse continue;
-        const prefix = try prefixAlloc(allocator, declaration, options);
-        try context.diagnose(.{
+        const prefix = try prefixOf(allocator, declaration, options);
+        var trimmed_any = false;
+        for (functions) |*function| {
+            if (function.go_name != null) continue;
+            if (!std.mem.eql(u8, ownerOf(function.*) orelse continue, declaration.name)) continue;
+            if (isLifecycle(document, function.*)) continue;
+            const trimmed = try stripAlloc(allocator, function.name, prefix) orelse continue;
+            function.zig_path = try semantic.zigCallPathAlloc(allocator, function.*);
+            function.name = trimmed;
+            trimmed_any = true;
+        }
+        // A prefix that strips nothing is a typo, and a silent one: the methods
+        // keep their stuttering names and the binding looks like it asked for
+        // that.
+        if (!trimmed_any) try context.diagnose(.{
             .severity = .@"error",
             .code = name ++ "002",
             .message = try std.fmt.allocPrint(allocator, "`{s}` trims `{s}`, which no method of it starts with", .{ declaration.name, prefix }),

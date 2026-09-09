@@ -68,15 +68,14 @@ pub fn build(b: *std.Build) void {
     gostty.addImport("terminal_options", ghostty_vt.import_table.get("terminal_options").?);
     const manifest = @import("build.zig.zon");
     const ghostty_url = manifest.dependencies.ghostty.url;
-    // The package hash is `<name>-<version>-<digest>`, so the version the
-    // generator ran at comes from the manifest rather than a second constant
-    // that has to be remembered on every bump.
-    const zigo_hash = manifest.dependencies.zigo.hash;
-    const zigo_version = version: {
-        const after_name = std.mem.indexOfScalar(u8, zigo_hash, '-').? + 1;
-        const rest = zigo_hash[after_name..];
-        break :version rest[0..std.mem.indexOfScalar(u8, rest, '-').?];
-    };
+    // The release tarball is named for its tag, so the version the generator
+    // ran at comes from the manifest rather than a second constant that has to
+    // be remembered on every bump. Read from the URL rather than the package
+    // hash: the hash spells `<name>-<version>-<digest>`, but the digest is
+    // base64url and carries `-` of its own, so neither end of it can be found
+    // by scanning for one.
+    const zigo_url = manifest.dependencies.zigo.url;
+    const zigo_version = std.fs.path.stem(std.fs.path.stem(std.fs.path.basename(zigo_url)));
     const build_info_config = zigo.configJson(b, .{
         .ghostty_revision = ghostty_url[std.mem.lastIndexOfScalar(u8, ghostty_url, '#').? + 1 ..],
         .zigo_version = zigo_version,

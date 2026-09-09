@@ -61,10 +61,14 @@ pub fn mustField(comptime field: zigo.HandleField) zigo.HandleField {
 
 /// A type whose methods drop the prefix naming the type. ghostty declares them
 /// flat -- `searchTick`, `screenSelectAll` -- because at the root the prefix is
-/// the only thing saying what they belong to; in Go the receiver says it. The
-/// prefix defaults to the type's own name, so only the two that spell it
-/// differently pass one.
-pub fn trimmed(comptime entry: zigo.Entry, comptime prefix: ?[]const u8) zigo.Entry {
+/// the only thing saying what they belong to; in Go the receiver says it.
+pub fn trimmed(comptime entry: zigo.Entry) zigo.Entry {
+    return entry.use(trim.plugin, .{});
+}
+
+/// The same, for the types whose declarations are not prefixed with the type's
+/// own name. Spelling the prefix is what says so.
+pub fn trimmedAs(comptime entry: zigo.Entry, comptime prefix: []const u8) zigo.Entry {
     return entry.use(trim.plugin, .{ .prefix = prefix });
 }
 

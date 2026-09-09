@@ -61,18 +61,18 @@ const Terminal = api.handle("Terminal", .{
     .tmux_control_mode = gostty.build_features.tmux_control_mode,
 }).context();
 
-const Screen = trimmed(api.handle("Screen", .{}), null).context();
+const Screen = trimmed(api.handle("Screen", .{})).context();
 
-const Search = trimmed(api.handle("Search", .{}), null).context();
+const Search = trimmed(api.handle("Search", .{})).context();
 
-const GridRef = trimmed(api.handle("GridRef", .{}), null).context();
+const GridRef = trimmed(api.handle("GridRef", .{})).context();
 
 const Gesture = trimmed(api.handle("Gesture", .{ .fields = &.{
     .{ .path = "inner.left_click_count", .name = "clickCount", .doc = "How many clicks the current sequence is at: 0 before any press, then 1, 2 or 3. What an emulator switches on to decide what a click means." },
     .{ .path = "inner.left_click_dragged", .name = "dragged", .doc = "Whether the pointer has left the pressed cell during this gesture. Read it on release: a click that never dragged is the one that should follow a hyperlink or move the shell cursor, rather than one that happened to end where it started after a round trip." },
-} }), null).context();
+} })).context();
 
-const ColorName = enumeration("ColorName", .{ .text = true, .open = true }).context();
+const ColorName = trimmed(enumeration("ColorName", .{ .text = true, .open = true })).context();
 
 // One group per type: the constructor that makes it, the destructor that ends
 // it, and everything a caller can do in between.
@@ -309,10 +309,7 @@ const gesture_group = Gesture.define(&.{
 // A root wrapper, not one of ghostty's own methods on the enum; the receiver
 // comes from the owning type of this group and the wrapper's first argument.
 const color_name_group = ColorName.define(&.{
-    api.func("colorNameDefault", .{
-        .name = "default",
-        .covers = &.{ColorName.ref("default")},
-    }),
+    api.func("colorNameDefault", .{ .covers = &.{ColorName.ref("default")} }),
 });
 
 pub const declarations = [_]zigo.Entry{

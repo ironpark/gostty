@@ -8,14 +8,13 @@ const out = p.out;
 const outCodepoints = p.outCodepoints;
 const bytesArg = p.bytesArg;
 const trimmed = p.trimmed;
+const trimmedAs = p.trimmedAs;
 
-const Snapshot = trimmed(api.handle("Snapshot", .{}), null).context();
+const Snapshot = trimmed(api.handle("Snapshot", .{})).context();
 
-const SnapshotDecoder = trimmed(api.handle("SnapshotDecoder", .{}), null).context();
+const SnapshotDecoder = trimmed(api.handle("SnapshotDecoder", .{})).context();
 
-// The declarations are `renderCells`, `renderCursorX`: the prefix is
-// `render`, not the type name.
-const RenderState = trimmed(api.handle("RenderState", .{ .fields = &.{
+const RenderState = trimmedAs(api.handle("RenderState", .{ .fields = &.{
     .{ .path = "rows", .doc = "The number of rows the last update covered." },
     .{ .path = "cols", .doc = "The number of columns the last update covered." },
     .{ .path = "cursor.visible", .name = "cursorVisible" },
@@ -30,8 +29,7 @@ const RenderState = trimmed(api.handle("RenderState", .{ .fields = &.{
     \\only after successfully drawing the frame.
 ), "render").context();
 
-// Likewise `kittyUpdate`, `kittyPlacements`.
-const KittyImages = trimmed(api.handle("KittyImages", .{ .fields = &.{
+const KittyImages = trimmedAs(api.handle("KittyImages", .{ .fields = &.{
     .{ .path = "generation" },
 } }), "kitty").context();
 

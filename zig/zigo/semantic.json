@@ -7419,7 +7419,7 @@
         "ColorName.default"
       ],
       "doc": "The color's default value as `0xRRGGBB`, or null when the name has none.\n\nOnly the sixteen named colors have one. The enum is open because every\nother 256-color palette index is a valid value, and those take their\ncolor from the palette rather than from a default; read them with\n`paletteColors`.\n\nWrapped because ghostty returns `color.RGB`, a `packed struct(u24)` with\nno C representation, behind an error union.",
-      "name": "default",
+      "name": "colorNameDefault",
       "ownership": "borrowed",
       "params": [],
       "receiver": "ColorName",
@@ -7439,7 +7439,7 @@
         "column": 8
       },
       "zig_path": "colorNameDefault",
-      "symbol": "zg_color_name_default"
+      "symbol": "zg_color_name_color_name_default"
     },
     {
       "doc": "Destroys a stream created by `newStream`.",
@@ -12181,6 +12181,9 @@
         "ENUMKIT": {
           "values": true,
           "is_known": true
+        },
+        "TRIM": {
+          "prefix": null
         }
       },
       "fields": [
@@ -12765,7 +12768,7 @@
         "signed": false
       },
       "text": true,
-      "zig_path": "terminal.modes.Mode__enum_40474"
+      "zig_path": "terminal.modes.Mode__enum_40481"
     },
     {
       "exhaustive": true,

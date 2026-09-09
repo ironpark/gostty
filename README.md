@@ -409,13 +409,14 @@ emission hooks and behave the same under cgo and purego. They are wired in
   saying what a function belongs to; in Go the receiver says it, so
   `Search.SearchTick()` stutters. Sixty-seven `.name` spellings used to say so
   one at a time, each a second copy of a name the Zig side had already decided.
-  Now eight types ask once. It is a `transform` rather than the `name_function`
+  Now nine types ask once. It is a `transform` rather than the `name_function`
   hook that renames Go alone, because the prefix is not in the C ABI either:
-  the symbol is `zg_search_tick`, and renaming the declaration with `zig_path`
-  pointed back at the Zig function keeps the symbol, the Go name and the raw
-  binding all spelled the one way. The prefix defaults to the type's own name,
-  so only the two that spell it differently pass one (`RenderState` writes
-  `render`, `KittyImages` writes `kitty`).
+  the symbol is `zg_search_tick`, not `zg_search_search_tick`. Renaming the
+  declaration leaves the symbol where it was, since it is derived from the
+  owner and the final name; `zig_path` is what keeps the shim pointed at the
+  Zig function the name moved out from under. `trimmed` takes the prefix from
+  the type's own name, and `trimmedAs` is for the two that spell it differently
+  (`RenderState` writes `render`, `KittyImages` writes `kitty`).
 - **`enumkit`** writes `<Enum>Values()` and `IsKnown()`. It is on for the two
   enums long enough to be worth listing (`Key`, `Mode`) and for the ones ghostty
   declares non-exhaustive, where a number off the pty converts rather than
