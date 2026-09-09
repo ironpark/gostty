@@ -62,8 +62,12 @@ func TestEmojiCacheFollowsTheSize(t *testing.T) {
 	if big == small {
 		t.Error("the same picture came back at a different size; the cache was not emptied")
 	}
-	if big.Bounds().Dx() <= small.Bounds().Dx() {
-		t.Errorf("the 64px picture is %v and the 20px one %v; the bigger cell should get a bigger strike",
+	// How much bigger, or whether at all, is the font's business: Apple Color
+	// Emoji carries a strike per size and Noto's carries one 136x128 strike for
+	// every ppem. What the cache owes is a re-render, not a larger one, so the
+	// only size this can hold to is that the strike never shrank.
+	if big.Bounds().Dx() < small.Bounds().Dx() {
+		t.Errorf("the 64px picture is %v and the 20px one %v; the bigger cell got the smaller strike",
 			big.Bounds(), small.Bounds())
 	}
 
