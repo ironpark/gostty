@@ -1,12 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"sync"
-
-	"github.com/aymanbagabas/go-pty"
 )
 
 // What a session needs of a pty: the two ends of the conversation, and the size
@@ -18,11 +15,18 @@ type terminalDevice interface {
 	Resize(cols, rows int) error
 }
 
+// The program on the far end of one, as much of it as a session needs: it waits
+// for the program to finish, and ends it when the window closes first.
+type shellProcess interface {
+	Wait() error
+	Kill() error
+}
+
 // shellSession owns the PTY, child process, and output reader. Closing it
 // releases the reader even when Update has stopped consuming output.
 type shellSession struct {
 	pty         terminalDevice
-	cmd         *pty.Cmd
+	cmd         shellProcess
 	output      chan []byte
 	stop        chan struct{}
 	readerDone  chan struct{}
@@ -34,27 +38,16 @@ func startShell(cols, rows int) (*shellSession, error) {
 	return startShellCommand(cols, rows, defaultShell())
 }
 
-// startShellCommand opens a pty, sizes it, and starts `argv` on it. The command
-// is made by the pty rather than handed to it: Windows cannot attach an
-// already-built `exec.Cmd` to a pseudoconsole, so the pty owns the spawn.
+// startShellCommand opens a pty, sizes it, and starts `argv` on it. The pty
+// makes the process rather than being handed one: Windows cannot attach an
+// already-built `exec.Cmd` to a pseudoconsole.
 func startShellCommand(cols, rows int, argv []string) (*shellSession, error) {
-	ptmx, err := pty.New()
+	device, cmd, err := startOnPty(cols, rows, argv, append(os.Environ(), "TERM=xterm-256color"))
 	if err != nil {
-		return nil, fmt.Errorf("open pty: %w", err)
+		return nil, err
 	}
-	if err := ptmx.Resize(cols, rows); err != nil {
-		_ = ptmx.Close()
-		return nil, fmt.Errorf("size pty: %w", err)
-	}
-	cmd := ptmx.Command(argv[0], argv[1:]...)
-	cmd.Env = append(os.Environ(), "TERM=xterm-256color")
-	if err := cmd.Start(); err != nil {
-		_ = ptmx.Close()
-		return nil, fmt.Errorf("start %s: %w", argv[0], err)
-	}
-	detachChildEnd(ptmx)
 	s := &shellSession{
-		pty: ptmx, cmd: cmd,
+		pty: device, cmd: cmd,
 		output:      make(chan []byte, 64),
 		stop:        make(chan struct{}),
 		readerDone:  make(chan struct{}),
@@ -64,7 +57,7 @@ func startShellCommand(cols, rows int, argv []string) (*shellSession, error) {
 	go func() {
 		// Reap the child even if the window has not consumed its last output.
 		_ = cmd.Wait()
-		endReadsAfterExit(ptmx)
+		endReadsAfterExit(device)
 		close(s.processDone)
 	}()
 	return s, nil
@@ -97,7 +90,7 @@ func (s *shellSession) close() {
 		close(s.stop)
 		_ = s.pty.Close()
 		// Closing the window also ends a shell that ignores the PTY hangup.
-		_ = s.cmd.Process.Kill()
+		_ = s.cmd.Kill()
 		<-s.readerDone
 		<-s.processDone
 	})
