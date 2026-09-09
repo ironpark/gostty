@@ -107,7 +107,7 @@ func (tab *terminalTab) reportMouse(m keys.Mods) (bool, error) {
 	if len(tab.report) == 0 {
 		return tab.reports.mouseGrabbed && pressed, nil
 	}
-	return true, tab.report.flush(tab.shell.pty)
+	return true, tab.report.flush(tab.shell.Pty)
 }
 
 // How many lines one notch of the wheel moves, when this window is the one
@@ -171,7 +171,7 @@ func (tab *terminalTab) reportWheel(notches int, m keys.Mods) (bool, error) {
 	if len(tab.report) == 0 {
 		return false, nil
 	}
-	return true, tab.report.flush(tab.shell.pty)
+	return true, tab.report.flush(tab.shell.Pty)
 }
 
 // wheelAsArrows turns the wheel into arrow keys, which is what the alternate
@@ -188,7 +188,7 @@ func (tab *terminalTab) wheelAsArrows(notches int) error {
 			return err
 		}
 	}
-	return tab.out.flush(tab.shell.pty)
+	return tab.out.flush(tab.shell.Pty)
 }
 
 // encodeMouse describes one event to the binding and appends whatever it
@@ -241,7 +241,7 @@ func (tab *terminalTab) reportFocus(focused bool) error {
 			if err := input.EncodeFocus(&tab.report, event); err != nil {
 				return err
 			}
-			if err := tab.report.flush(tab.shell.pty); err != nil {
+			if err := tab.report.flush(tab.shell.Pty); err != nil {
 				return err
 			}
 		}

@@ -1,4 +1,4 @@
-package main
+package shell_test
 
 // A pseudoconsole renders rather than passes through, and a shell printing the
 // same line over and over redraws to almost nothing -- five seconds of it

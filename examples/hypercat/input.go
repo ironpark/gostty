@@ -58,7 +58,7 @@ func (tab *terminalTab) handleInput(m keys.Mods) error {
 			// the program has not asked for bracketed paste.
 			text := tab.pasteText()
 			if len(text) > 0 && input.IsSafePaste(text) {
-				return input.EncodePaste(tab.shell.pty, tab.vt, text)
+				return input.EncodePaste(tab.shell.Pty, tab.vt, text)
 			}
 			return nil
 		}
@@ -78,7 +78,7 @@ func (tab *terminalTab) handleInput(m keys.Mods) error {
 	if err := tab.vt.ScrollViewport(gostty.ScrollViewportBottom()); err != nil {
 		return err
 	}
-	return tab.out.flush(tab.shell.pty)
+	return tab.out.flush(tab.shell.Pty)
 }
 
 // sendKey describes one key press to the binding and appends whatever it

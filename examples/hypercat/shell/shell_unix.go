@@ -1,15 +1,15 @@
 //go:build !windows
 
-package main
+package shell
 
 import "os"
 
-// The environment variable naming the shell on this platform.
-const shellVar = "SHELL"
+// Var is the environment variable naming the shell on this platform.
+const Var = "SHELL"
 
 // The user's shell, or the one every POSIX system has.
 func defaultShell() []string {
-	if shell := os.Getenv(shellVar); shell != "" {
+	if shell := os.Getenv(Var); shell != "" {
 		return []string{shell}
 	}
 	return []string{"/bin/sh"}

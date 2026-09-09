@@ -8,6 +8,7 @@ import (
 	"github.com/ironpark/gostty"
 	"github.com/ironpark/gostty/examples/hypercat/fonts"
 	"github.com/ironpark/gostty/examples/hypercat/keys"
+	"github.com/ironpark/gostty/examples/hypercat/shell"
 	"github.com/ironpark/gostty/examples/hypercat/thecat"
 	"github.com/ironpark/gostty/examples/hypercat/ui"
 )
@@ -36,7 +37,7 @@ type terminalTab struct {
 	redraw redrawSet
 
 	// The process side.
-	shell *shellSession
+	shell *shell.Session
 
 	// The pixel side.
 	cols, rows int
@@ -101,7 +102,7 @@ func (tab *terminalTab) readOutput() (bool, error) {
 	fed := false
 	for remaining := 64; remaining > 0; remaining-- {
 		select {
-		case chunk, ok := <-tab.shell.output:
+		case chunk, ok := <-tab.shell.Output:
 			if !ok {
 				return fed, ebiten.Termination // the shell exited
 			}
@@ -122,7 +123,7 @@ func (tab *terminalTab) readOutput() (bool, error) {
 		// reports, Kitty graphics acknowledgements -- and a program that asked
 		// is blocked until the answer arrives. Nothing is written from inside
 		// the feed, so the replies are drained right after it.
-		if err := tab.stream.WriteReplies(tab.shell.pty); err != nil {
+		if err := tab.stream.WriteReplies(tab.shell.Pty); err != nil {
 			return fed, fmt.Errorf("reply: %w", err)
 		}
 	}

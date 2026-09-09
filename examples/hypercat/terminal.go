@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/ironpark/gostty"
+	"github.com/ironpark/gostty/examples/hypercat/shell"
 )
 
 func (tab *terminalTab) start() error {
@@ -24,7 +25,7 @@ func (tab *terminalTab) start() error {
 	if err := tab.configureStream(); err != nil {
 		return err
 	}
-	tab.shell, err = startShell(tab.cols, tab.rows)
+	tab.shell, err = shell.Start(tab.cols, tab.rows)
 	if err != nil {
 		return err
 	}
@@ -33,7 +34,7 @@ func (tab *terminalTab) start() error {
 }
 
 func (tab *terminalTab) close() {
-	tab.shell.close()
+	tab.shell.Close()
 	// Reverse construction order; the stream is a child of the terminal, and
 	// closing the terminal first would be refused. The search is a child of a
 	// screen, which is borrowed from the terminal, so it goes first of all.

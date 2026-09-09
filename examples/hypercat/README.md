@@ -20,7 +20,7 @@ shell --pty--> Stream.Feed --> Terminal --> RenderState --> Ebitengine
 shell <--pty-- input.EncodeKey <-- KeyEvent <-- keys.Reader <-- Ebitengine
 ```
 
-Four subpackages keep the parts that are not about the bindings out of the way.
+Five subpackages keep the parts that are not about the bindings out of the way.
 `keys` reads a frame of keyboard state -- Ebitengine's key set, the macOS call
 that says whether a key is really down, and the repeat policy an emulator has
 to invent -- and reports which terminal keys were pressed; `input.go` is what
@@ -32,6 +32,13 @@ colour emoji glyphs. It has no dependency on terminal or tab state. `ui` owns
 the search bar, settings panel, tab bar, and themes. Its components consume
 input snapshots and return actions; drawing uses a host-supplied text renderer
 and cell metrics, without a terminal, shell, font loader, or cat dependency.
+`shell` runs the user's shell on a pseudo-terminal and reads what it writes: it
+is the half of an emulator that has nothing to do with terminal emulation, and
+it is where every platform difference lives, since a POSIX pty and a Windows
+pseudoconsole disagree about who owns the far end and about what ends a read
+once the program has gone. `internal/shelltest` starts a test binary as that
+shell, which is how both the session tests and the tab tests get a child that
+writes something and then does as it is told.
 
 The main package is organized around the terminal's frame and resource lifecycle:
 
@@ -39,8 +46,8 @@ The main package is organized around the terminal's frame and resource lifecycle
 - `app.go` owns the window, the tab lifecycle, and the state tabs share; it
   hosts `ui.TabBar`.
 - `tab.go` owns each terminal tab and services its output and input.
-- `terminal.go` creates and releases terminal resources and configures the stream.
-- `session.go` owns the shell process, PTY, and cancellable output reader.
+- `terminal.go` creates and releases terminal resources, configures the stream,
+  and starts the tab's `shell.Session`.
 - `events.go` handles terminal events such as title, bell, and progress, and owns
   `windowTitle`, the three things a program says about itself.
 - `viewport.go` refreshes cells, colors, and the cursor, and owns `redrawSet`,
@@ -64,6 +71,9 @@ The main package is organized around the terminal's frame and resource lifecycle
 - `fonts/discovery.go` finds system fonts and selects the default family.
 - `fonts/font.go` loads text faces and derives grid and decoration metrics.
 - `fonts/emoji.go` loads and caches colour emoji; `emoji.go` places them in cells.
+- `shell/session.go` owns the shell process, pty, and cancellable output reader;
+  `shell/pty_unix.go`, `shell/pty_windows.go`, and `shell/conpty_windows.go` are
+  the two platforms underneath it.
 
 On startup failure, partially created terminal resources are released in dependency
 order. Closing the window stops the output reader and terminates and reaps the shell,

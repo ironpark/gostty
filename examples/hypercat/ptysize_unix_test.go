@@ -6,13 +6,14 @@ import (
 	"testing"
 
 	"github.com/aymanbagabas/go-pty"
+	"github.com/ironpark/gostty/examples/hypercat/shell"
 	"golang.org/x/sys/unix"
 )
 
 // The size the pty is carrying, which is what a program that has not asked the
 // terminal reads. Only POSIX can be asked: a pseudoconsole is told its size and
 // keeps no way to report it back.
-func assertPtySize(t *testing.T, p terminalDevice, cols, rows int) {
+func assertPtySize(t *testing.T, p shell.Device, cols, rows int) {
 	t.Helper()
 	unixPty, ok := p.(pty.UnixPty)
 	if !ok {

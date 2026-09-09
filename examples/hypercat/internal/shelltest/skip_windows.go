@@ -1,8 +1,9 @@
-package main
+package shelltest
 
 import "testing"
 
-// The tests that need the shell's own bytes to come back cannot run here.
+// SkipWithoutIO skips the tests that need the shell's own bytes to come back,
+// which cannot run here.
 //
 // A pseudoconsole is created on this runner -- it emits its mode sequences and
 // answers a resize -- but no client ever attaches to it: the child comes up
@@ -15,7 +16,7 @@ import "testing"
 //
 // So the shell path here is unverified rather than known good. Skipping says
 // which of the two it is.
-func skipWithoutShellIO(t *testing.T) {
+func SkipWithoutIO(t *testing.T) {
 	t.Helper()
 	t.Skip("no client attaches to a pseudoconsole in this environment")
 }

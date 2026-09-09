@@ -13,7 +13,7 @@ import (
 // sequence as a title for itself rather than passing it on.
 func assertOSCReachesTheTab(t *testing.T, tab *terminalTab) {
 	t.Helper()
-	if _, err := tab.shell.pty.Write([]byte("\033]2;background-titled\007\n")); err != nil {
+	if _, err := tab.shell.Pty.Write([]byte("\033]2;background-titled\007\n")); err != nil {
 		t.Fatal(err)
 	}
 	deadline := time.Now().Add(5 * time.Second)

@@ -1,6 +1,6 @@
 //go:build !windows
 
-package main
+package shell_test
 
 // A full queue, which is the interesting state: the reader goroutine is blocked
 // on a send, and `close` has to get it out of there. A pty passes writes

@@ -37,7 +37,7 @@ func (tab *terminalTab) resize(cols, rows int) error {
 	}
 	// The pty carries the same size, which is where a program that has not
 	// asked the terminal directly reads it from.
-	return tab.shell.pty.Resize(cols, rows)
+	return tab.shell.Pty.Resize(cols, rows)
 }
 
 // deviceScale is how many pixels the display has per device-independent pixel.

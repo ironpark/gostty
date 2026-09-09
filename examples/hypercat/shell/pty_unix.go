@@ -1,6 +1,6 @@
 //go:build !windows
 
-package main
+package shell
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 )
 
 // startOnPty opens a pty, sizes it, and starts `argv` on it.
-func startOnPty(cols, rows int, argv, env []string) (terminalDevice, shellProcess, error) {
+func startOnPty(cols, rows int, argv, env []string) (Device, Process, error) {
 	ptmx, err := pty.New()
 	if err != nil {
 		return nil, nil, fmt.Errorf("open pty: %w", err)
@@ -37,7 +37,7 @@ func startOnPty(cols, rows int, argv, env []string) (terminalDevice, shellProces
 
 // Letting go of the far end above is what ends the read; there is nothing to do
 // once the program finishes.
-func endReadsAfterExit(terminalDevice) {}
+func endReadsAfterExit(Device) {}
 
 type unixProcess struct{ cmd *pty.Cmd }
 

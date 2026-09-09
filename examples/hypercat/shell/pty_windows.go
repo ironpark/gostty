@@ -1,7 +1,7 @@
-package main
+package shell
 
 // startOnPty opens a pseudoconsole, sizes it, and starts `argv` on it.
-func startOnPty(cols, rows int, argv, env []string) (terminalDevice, shellProcess, error) {
+func startOnPty(cols, rows int, argv, env []string) (Device, Process, error) {
 	console, err := newConPty(cols, rows)
 	if err != nil {
 		return nil, nil, err
@@ -17,7 +17,7 @@ func startOnPty(cols, rows int, argv, env []string) (terminalDevice, shellProces
 // A pseudoconsole outlives the program running in it, so a read on the output
 // pipe does not end when the shell does. Closing the console -- and only the
 // console -- is what ends it, after the last screen has been flushed.
-func endReadsAfterExit(device terminalDevice) {
+func endReadsAfterExit(device Device) {
 	if console, ok := device.(*conPty); ok {
 		console.endReads()
 	}

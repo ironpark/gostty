@@ -1,33 +1,36 @@
-package main
+package shell_test
 
 import (
 	"bytes"
 	"testing"
 	"time"
 
-	"github.com/ironpark/gostty"
+	"github.com/ironpark/gostty/examples/hypercat/internal/shelltest"
+	"github.com/ironpark/gostty/examples/hypercat/shell"
 )
 
+func TestMain(m *testing.M) { shelltest.Main(m) }
+
 func TestShellOutputAndExit(t *testing.T) {
-	skipWithoutShellIO(t)
-	s, err := startShellCommand(80, 24, helperShell(t, "print"))
+	shelltest.SkipWithoutIO(t)
+	s, err := shell.StartCommand(80, 24, shelltest.Shell(t, "print"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(s.close)
+	t.Cleanup(s.Close)
 	var output []byte
 	timeout := time.After(5 * time.Second)
 	for {
 		select {
-		case chunk, ok := <-s.output:
+		case chunk, ok := <-s.Output:
 			if !ok {
 				// Contains rather than equals: a pseudoconsole is a renderer,
 				// so what the shell printed arrives inside a screen it drew.
-				if !bytes.Contains(output, []byte(helperPrinted)) {
+				if !bytes.Contains(output, []byte(shelltest.Printed)) {
 					t.Fatalf("output = %q", output)
 				}
 				select {
-				case <-s.processDone:
+				case <-s.Reaped:
 				case <-timeout:
 					t.Fatal("child was not reaped")
 				}
@@ -41,23 +44,23 @@ func TestShellOutputAndExit(t *testing.T) {
 }
 
 func TestShellCloseWithUnreadOutput(t *testing.T) {
-	skipWithoutShellIO(t)
-	s, err := startShellCommand(80, 24, helperShell(t, "spew"))
+	shelltest.SkipWithoutIO(t)
+	s, err := shell.StartCommand(80, 24, shelltest.Shell(t, "spew"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(s.close)
+	t.Cleanup(s.Close)
 	deadline := time.Now().Add(5 * time.Second)
-	for len(s.output) < unreadChunksWanted {
+	for len(s.Output) < unreadChunksWanted {
 		if time.Now().After(deadline) {
-			t.Fatalf("output queue holds %d of the %d wanted after 5s", len(s.output), unreadChunksWanted)
+			t.Fatalf("output queue holds %d of the %d wanted after 5s", len(s.Output), unreadChunksWanted)
 		}
 		time.Sleep(time.Millisecond)
 	}
 	done := make(chan struct{})
 	go func() {
-		s.close()
-		s.close() // repeated shutdown is harmless
+		s.Close()
+		s.Close() // repeated shutdown is harmless
 		close(done)
 	}()
 	select {
@@ -68,20 +71,20 @@ func TestShellCloseWithUnreadOutput(t *testing.T) {
 }
 
 func TestShellCloseWhileWaitingForInput(t *testing.T) {
-	skipWithoutShellIO(t)
-	s, err := startShellCommand(80, 24, helperShell(t, "hold"))
+	shelltest.SkipWithoutIO(t)
+	s, err := shell.StartCommand(80, 24, shelltest.Shell(t, "hold"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(s.close)
+	t.Cleanup(s.Close)
 	select {
-	case <-s.output:
+	case <-s.Output:
 	case <-time.After(5 * time.Second):
 		t.Fatal("shell did not become ready")
 	}
 	done := make(chan struct{})
 	go func() {
-		s.close()
+		s.Close()
 		close(done)
 	}()
 	select {
@@ -89,25 +92,4 @@ func TestShellCloseWhileWaitingForInput(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("closing an idle shell blocked")
 	}
-}
-
-func TestClosePartiallyInitializedTerminalTab(t *testing.T) {
-	tab := &terminalTab{}
-	tab.close()
-	var err error
-	tab.vt, err = gostty.NewTerminal(80, 24)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tab.stream, err = tab.vt.NewStream(0)
-	if err != nil {
-		tab.close()
-		t.Fatal(err)
-	}
-	tab.close()
-	// Close would leave the terminal alive if its stream were still a child.
-	if _, err := tab.vt.NewStream(0); err == nil {
-		t.Fatal("terminal remained open after cleanup")
-	}
-	tab.close()
 }
