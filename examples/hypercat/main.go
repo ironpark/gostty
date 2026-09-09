@@ -43,7 +43,7 @@ func run() error {
 	sys.OnPngDecodeRequest(decodePNG)
 	defer sys.Clear()
 
-	app := &terminalApp{dsf: deviceScale()}
+	app := newApp()
 	defer app.close()
 	if err := app.addTab(); err != nil {
 		return err
@@ -60,8 +60,8 @@ func run() error {
 	// The window is asked for in device-independent pixels, which is the one
 	// place the grid's own units have to be converted back.
 	ebiten.SetWindowSize(
-		int(app.current().fonts.CellWidth*initialCols/app.dsf),
-		int(app.current().fonts.CellHeight*initialRows/app.dsf+ui.TabBarHeight),
+		int(app.settings.fonts.CellWidth*initialCols/app.dsf),
+		int(app.settings.fonts.CellHeight*initialRows/app.dsf+ui.TabBarHeight),
 	)
 	ebiten.SetWindowTitle("Hyper Cat Term /ᐠ ˵> ⩊ <˵マ")
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)

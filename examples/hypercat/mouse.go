@@ -115,8 +115,8 @@ func (tab *terminalTab) selectAt(col, row, clicks int) error {
 // cellAt maps a pixel position to a cell, clamped to the viewport so a drag
 // that runs off the window still selects to the edge.
 func (tab *terminalTab) cellAt(px, py int) (int, int) {
-	col := min(max(int(float64(px)/tab.fonts.CellWidth), 0), tab.cols-1)
-	row := min(max(int(float64(py)/tab.fonts.CellHeight), 0), tab.rows-1)
+	col := min(max(int(float64(px)/tab.fonts().CellWidth), 0), tab.cols-1)
+	row := min(max(int(float64(py)/tab.fonts().CellHeight), 0), tab.rows-1)
 	return col, row
 }
 

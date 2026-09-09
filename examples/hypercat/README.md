@@ -35,8 +35,9 @@ and cell metrics, without a terminal, shell, font loader, or cat dependency.
 
 The main package is organized around the terminal's frame and resource lifecycle:
 
-- `main.go` sets up fonts, the clipboard, and the window.
-- `app.go` owns the window and tab lifecycle, and hosts `ui.TabBar`.
+- `main.go` sets up the app's shared state, the clipboard, and the window.
+- `app.go` owns the window, the tab lifecycle, and the state tabs share; it
+  hosts `ui.TabBar`.
 - `tab.go` owns each terminal tab and services its output and input.
 - `terminal.go` creates and releases terminal resources and configures the stream.
 - `session.go` owns the shell process, PTY, and cancellable output reader.
@@ -49,14 +50,14 @@ The main package is organized around the terminal's frame and resource lifecycle
 - `mouse.go` owns selection and the clipboard.
 - `render.go` draws the grid layers, cursor, and decorations.
 - `kitty.go` owns `imageCache`: the Kitty placement snapshot and its textures.
-- `mascot.go` connects terminal cells and the inherited `thecat.Mode` to `thecat.Companion`.
+- `mascot.go` connects terminal cells and the window's `thecat.Mode` to `thecat.Companion`.
 - `ui_bridge.go` translates input and UI actions and connects the text renderer.
 - `search.go` owns native search handles, scanning, and match selection.
-- `settings.go` holds `tabSettings`, the one value a new tab inherits, and applies
-  each panel row.
+- `settings.go` holds `appearance`, the fonts, theme, and cat mode every tab is
+  drawn with, and applies each panel row to all of them.
 - `ui/search.go`, `ui/settings.go`, and `ui/tabbar.go` define the components.
 - `ui/panels.go` routes panel input; `ui/canvas.go` and `ui/theme.go` share drawing and colors.
-- `font_settings.go` applies the selected font and display scale to a tab.
+- `font_settings.go` applies the selected font and display scale to every tab.
 - `fonts/discovery.go` finds system fonts and selects the default family.
 - `fonts/font.go` loads text faces and derives grid and decoration metrics.
 - `fonts/emoji.go` loads and caches colour emoji; `emoji.go` places them in cells.
@@ -86,9 +87,10 @@ including when its output queue is full.
 | Click the cat | Interact with the cat and open settings. |
 
 Each tab has its own shell, scrollback, selection, search, and cat. Background
-tabs continue processing output and terminal replies. A new tab inherits the
-active tab's font, theme, and cat settings; later setting changes affect only
-that tab. The clipboard is shared across tabs. When a shell exits, its tab closes;
+tabs continue processing output and terminal replies. The font, theme, and cat
+settings belong to the window, so a change made from any tab's settings panel
+applies to every tab, including ones opened later. The clipboard is shared
+across tabs. When a shell exits, its tab closes;
 closing the last tab exits the window. If there are more tabs than fit in the
 bar, it follows the active tab; use the wheel or keyboard shortcuts to reach
 hidden tabs.

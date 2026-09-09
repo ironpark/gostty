@@ -6,7 +6,6 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"github.com/ironpark/gostty/examples/hypercat/fonts"
 	"github.com/ironpark/gostty/examples/hypercat/keys"
 	"github.com/ironpark/gostty/examples/hypercat/ui"
 )
@@ -16,14 +15,24 @@ type clipboardState struct {
 	systemClipboard bool
 }
 
-// terminalApp owns the window; each tab owns its terminal, shell, and UI state.
+// terminalApp owns the window and everything shared across tabs: the fonts and
+// theme every tab is drawn with, and the clipboard. Each tab owns its terminal,
+// shell, and UI state.
 type terminalApp struct {
 	tabs               []*terminalTab
 	active             int
 	tabBar             ui.TabBar
 	width, height, dsf float64
 	content            *ebiten.Image
+	settings           *appearance
 	clipboardState
+}
+
+// newApp opens the window's shared state: the fonts are discovered once here,
+// not once per tab.
+func newApp() *terminalApp {
+	dsf := deviceScale()
+	return &terminalApp{dsf: dsf, settings: defaultAppearance(dsf)}
 }
 
 func (app *terminalApp) current() *terminalTab {
@@ -34,7 +43,7 @@ func (app *terminalApp) current() *terminalTab {
 }
 
 func (app *terminalApp) addTab() error {
-	tab := app.newTab(app.current())
+	tab := app.newTab()
 	if err := tab.start(); err != nil {
 		tab.close()
 		return err
@@ -45,22 +54,17 @@ func (app *terminalApp) addTab() error {
 	return nil
 }
 
-// newTab builds a tab that opens looking like the one it was opened from:
-// same fonts, settings, and grid. The first tab discovers the fonts itself.
-func (app *terminalApp) newTab(previous *terminalTab) *terminalTab {
+// newTab builds a tab that opens looking like the one it was opened from. The
+// fonts and the theme are the window's, so it only has to take the grid: a new
+// tab starts at the size the visible one is, before Layout has measured it.
+func (app *terminalApp) newTab() *terminalTab {
 	tab := &terminalTab{
-		owner: app, clipboardState: &app.clipboardState,
-		dsf: app.dsf, cols: initialCols, rows: initialRows,
+		owner: app, clipboardState: &app.clipboardState, settings: app.settings,
+		cols: initialCols, rows: initialRows,
 	}
-	if previous != nil {
-		tab.settings = previous.settings
-		tab.fonts, tab.emoji = previous.fonts, previous.emoji
+	if previous := app.current(); previous != nil {
 		tab.cols, tab.rows = previous.cols, previous.rows
-		return tab
 	}
-	tab.settings = defaultSettings()
-	tab.fonts = fonts.Load(tab.settings.currentFamily(), tab.settings.size*tab.dsf)
-	tab.emoji = fonts.LoadEmoji()
 	return tab
 }
 
@@ -243,10 +247,15 @@ func (app *terminalApp) Layout(width, height int) (int, int) {
 }
 
 func (app *terminalApp) layoutTabs() {
+	// The faces are built in device pixels, so a window that moved to a display
+	// with a different scale factor needs them rebuilt -- once, for every tab.
+	if app.settings.dsf != app.dsf {
+		app.applyFont()
+	}
 	for _, tab := range app.tabs {
 		tab.offsetY = int(app.barHeight())
 		if app.width > 0 {
-			tab.layout(app.width, max(app.height-app.barHeight(), 1), app.dsf)
+			tab.layout(app.width, max(app.height-app.barHeight(), 1))
 		}
 	}
 }

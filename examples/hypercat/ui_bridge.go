@@ -52,7 +52,7 @@ func (tab *terminalTab) applyUIActions(result ui.Actions) (bool, error) {
 		}
 	}
 	if result.SettingsDelta != 0 {
-		return true, tab.settingsAdjust(result.SettingsDelta)
+		return true, tab.owner.settingsAdjust(tab.panels.Settings.Row, result.SettingsDelta)
 	}
 	return result.Consumed, nil
 }
@@ -70,16 +70,16 @@ func (tab *terminalTab) themeColor(c color.RGBA) color.RGBA {
 
 func (tab *terminalTab) canvas(screen *ebiten.Image) ui.Canvas {
 	return ui.Canvas{
-		Screen: screen, CellWidth: tab.fonts.CellWidth, CellHeight: tab.fonts.CellHeight,
-		Width: float64(tab.cols) * tab.fonts.CellWidth, Height: float64(tab.rows) * tab.fonts.CellHeight,
-		Scale: tab.dsf, Theme: tab.currentTheme(), DrawText: tab.drawText, RuneWidth: runeWidth,
+		Screen: screen, CellWidth: tab.fonts().CellWidth, CellHeight: tab.fonts().CellHeight,
+		Width: float64(tab.cols) * tab.fonts().CellWidth, Height: float64(tab.rows) * tab.fonts().CellHeight,
+		Scale: tab.owner.dsf, Theme: tab.currentTheme(), DrawText: tab.drawText, RuneWidth: runeWidth,
 	}
 }
 
 func (tab *terminalTab) drawUI(screen *ebiten.Image) {
 	values := ui.SettingsValues{}
 	if tab.panels.Mode == ui.Settings {
-		values = tab.settingsValues()
+		values = tab.owner.settingsValues()
 	}
 	tab.panels.Draw(tab.canvas(screen), values)
 }
@@ -90,9 +90,9 @@ func (tab *terminalTab) drawText(screen *ebiten.Image, s string, x, y float64, f
 	for _, r := range s {
 		wide := runeWidth(r) == 2
 		tab.glyph(screen, r, x, y, wide, false, false, fg)
-		x += tab.fonts.CellWidth
+		x += tab.fonts().CellWidth
 		if wide {
-			x += tab.fonts.CellWidth
+			x += tab.fonts().CellWidth
 		}
 	}
 	return x

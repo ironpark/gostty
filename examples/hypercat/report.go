@@ -193,10 +193,10 @@ func (tab *terminalTab) encodeMouse(action input.MouseAction, button input.Mouse
 // only interesting fields are the cell size.
 func (tab *terminalTab) renderSize() input.RenderSize {
 	return input.RenderSize{
-		ScreenWidth:  uint32(float64(tab.cols) * tab.fonts.CellWidth),
-		ScreenHeight: uint32(float64(tab.rows) * tab.fonts.CellHeight),
-		CellWidth:    uint32(tab.fonts.CellWidth),
-		CellHeight:   uint32(tab.fonts.CellHeight),
+		ScreenWidth:  uint32(float64(tab.cols) * tab.fonts().CellWidth),
+		ScreenHeight: uint32(float64(tab.rows) * tab.fonts().CellHeight),
+		CellWidth:    uint32(tab.fonts().CellWidth),
+		CellHeight:   uint32(tab.fonts().CellHeight),
 	}
 }
 

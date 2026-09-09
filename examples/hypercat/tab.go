@@ -41,8 +41,6 @@ type terminalTab struct {
 	shell *shellSession
 
 	// The pixel side.
-	fonts      *fonts.Set
-	emoji      *fonts.Emoji
 	cols, rows int
 	// The terminal's resolved defaults and the themed colors used to draw
 	// them. Explicit ANSI colors continue to come from the terminal.
@@ -63,15 +61,14 @@ type terminalTab struct {
 
 	// The search bar and the settings panel, which take the keyboard while
 	// they are open.
-	panels   ui.Panels
-	settings tabSettings
+	panels ui.Panels
+	// The window's fonts, theme, and cat mode, shared with every other tab so
+	// that a change made in the settings panel is a change to all of them.
+	settings *appearance
 	search   *gostty.Search
 	// Set when the faces changed, so Layout redoes the grid even if the window
 	// did not move.
 	relayout bool
-	// The display's scale factor. Every pixel in this program is a device
-	// pixel; this is what the window's own units are converted with.
-	dsf float64
 
 	// The cat that walks on this tab's output.
 	cat *thecat.Companion
@@ -92,6 +89,11 @@ type terminalTab struct {
 	chars       []rune
 	out, report frameBuffer
 }
+
+// fonts and emoji are the window's, shared with every other tab: what a tab
+// draws with follows the settings panel wherever it was opened.
+func (tab *terminalTab) fonts() *fonts.Set   { return tab.settings.fonts }
+func (tab *terminalTab) emoji() *fonts.Emoji { return tab.settings.emoji }
 
 // cursorState is what Draw needs to paint the cursor, read once per frame.
 type cursorState struct {

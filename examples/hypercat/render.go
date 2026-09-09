@@ -38,7 +38,7 @@ func (tab *terminalTab) Draw(screen *ebiten.Image) {
 	// A placement's layer says where in the stack it belongs, which is the
 	// whole reason the protocol gives it a z: under the cell backgrounds,
 	// between them and the text, or over the text.
-	cellW, cellH := tab.fonts.CellWidth, tab.fonts.CellHeight
+	cellW, cellH := tab.fonts().CellWidth, tab.fonts().CellHeight
 	tab.images.draw(screen, gostty.KittyLayerBelowBg, cellW, cellH)
 	if tab.bgLayer != nil {
 		screen.DrawImage(tab.bgLayer, nil)
@@ -60,8 +60,8 @@ func (tab *terminalTab) drawGrid() {
 	if tab.cols == 0 || tab.rows == 0 || len(tab.cells) < tab.rows*tab.cols {
 		return
 	}
-	w := int(float64(tab.cols)*tab.fonts.CellWidth) + 1
-	h := int(float64(tab.rows)*tab.fonts.CellHeight) + 1
+	w := int(float64(tab.cols)*tab.fonts().CellWidth) + 1
+	h := int(float64(tab.rows)*tab.fonts().CellHeight) + 1
 	if tab.bgLayer == nil || tab.bgLayer.Bounds().Dx() != w || tab.bgLayer.Bounds().Dy() != h {
 		if tab.bgLayer != nil {
 			tab.bgLayer.Deallocate()
@@ -84,7 +84,7 @@ func (tab *terminalTab) drawGrid() {
 		if !tab.redraw.take(row) {
 			continue
 		}
-		rect := image.Rect(0, int(float64(row)*tab.fonts.CellHeight), w, int(float64(row+1)*tab.fonts.CellHeight)+1)
+		rect := image.Rect(0, int(float64(row)*tab.fonts().CellHeight), w, int(float64(row+1)*tab.fonts().CellHeight)+1)
 		tab.bgLayer.SubImage(rect).(*ebiten.Image).Clear()
 		tab.textLayer.SubImage(rect).(*ebiten.Image).Clear()
 		tab.drawRow(row)
@@ -109,8 +109,8 @@ func (tab *terminalTab) drawRowBackground(dst *ebiten.Image, row int) {
 		}
 		if bg != tab.bg {
 			vector.FillRect(dst,
-				float32(float64(start)*tab.fonts.CellWidth), float32(float64(row)*tab.fonts.CellHeight),
-				float32(float64(end-start)*tab.fonts.CellWidth), float32(tab.fonts.CellHeight),
+				float32(float64(start)*tab.fonts().CellWidth), float32(float64(row)*tab.fonts().CellHeight),
+				float32(float64(end-start)*tab.fonts().CellWidth), float32(tab.fonts().CellHeight),
 				bg, false)
 		}
 		start = end
@@ -157,12 +157,12 @@ func (tab *terminalTab) drawRowGlyphs(dst *ebiten.Image, row int) {
 		}
 
 		wide := flags.Wide == gostty.CellWidthWide
-		x := float64(col) * tab.fonts.CellWidth
-		y := float64(row) * tab.fonts.CellHeight
+		x := float64(col) * tab.fonts().CellWidth
+		y := float64(row) * tab.fonts().CellHeight
 		tab.glyph(dst, cell.Codepoint, x, y, wide, flags.Bold, flags.Italic, fg)
 
 		if flags.Underline != gostty.UnderlineNone || flags.Strikethrough || flags.Overline {
-			width := tab.fonts.CellWidth
+			width := tab.fonts().CellWidth
 			if wide {
 				width *= 2
 			}
@@ -176,19 +176,19 @@ func (tab *terminalTab) drawRowGlyphs(dst *ebiten.Image, row int) {
 func (tab *terminalTab) decorate(screen *ebiten.Image, flags gostty.CellFlags, x, y, width float64, fg color.RGBA) {
 	line := func(dy float64) {
 		vector.FillRect(screen, float32(x), float32(y+dy),
-			float32(width), float32(tab.fonts.LineHeight), fg, false)
+			float32(width), float32(tab.fonts().LineHeight), fg, false)
 	}
 	switch flags.Underline {
 	case gostty.UnderlineNone:
 	case gostty.UnderlineDouble:
 		// The one style worth distinguishing from a single line at this size.
-		line(tab.fonts.UnderlineY)
-		line(tab.fonts.Underline2Y)
+		line(tab.fonts().UnderlineY)
+		line(tab.fonts().Underline2Y)
 	default:
-		line(tab.fonts.UnderlineY)
+		line(tab.fonts().UnderlineY)
 	}
 	if flags.Strikethrough {
-		line(tab.fonts.StrikeY)
+		line(tab.fonts().StrikeY)
 	}
 	if flags.Overline {
 		line(0)
@@ -210,17 +210,17 @@ func (tab *terminalTab) glyph(screen *ebiten.Image, r rune, x, y float64, wide, 
 		return
 	}
 
-	face, synthetic := tab.fonts.Face(bold, italic)
+	face, synthetic := tab.fonts().Face(bold, italic)
 	dx, dy := 0.0, 0.0
 	if wide {
 		// One wide face, at one weight: CJK text is drawn upright whatever the
 		// cell says, rather than shown in a face from another family.
-		face, synthetic, dx, dy = tab.fonts.Wide, false, tab.fonts.WideDX, tab.fonts.WideDY
+		face, synthetic, dx, dy = tab.fonts().Wide, false, tab.fonts().WideDX, tab.fonts().WideDY
 	}
 
 	op := &tab.drawOp
 	op.GeoM.Reset()
-	if s := tab.fonts.Scale; s != 1 {
+	if s := tab.fonts().Scale; s != 1 {
 		// The bitmap fallback is scaled by a whole number and drawn unfiltered
 		// so its pixels stay square.
 		op.GeoM.Scale(s, s)
@@ -232,7 +232,7 @@ func (tab *terminalTab) glyph(screen *ebiten.Image, r rune, x, y float64, wide, 
 	str := glyphString(r)
 	text.Draw(screen, str, face, op)
 	if synthetic {
-		op.GeoM.Translate(tab.fonts.LineHeight, 0)
+		op.GeoM.Translate(tab.fonts().LineHeight, 0)
 		text.Draw(screen, str, face, op)
 	}
 }
@@ -243,19 +243,19 @@ func (tab *terminalTab) drawCursor(screen *ebiten.Image) {
 	if !tab.cursor.visible {
 		return
 	}
-	x := float64(tab.cursor.x) * tab.fonts.CellWidth
-	y := float64(tab.cursor.y) * tab.fonts.CellHeight
-	thickness := float32(2 * tab.fonts.LineHeight)
+	x := float64(tab.cursor.x) * tab.fonts().CellWidth
+	y := float64(tab.cursor.y) * tab.fonts().CellHeight
+	thickness := float32(2 * tab.fonts().LineHeight)
 
 	switch tab.cursor.style {
 	case gostty.CursorStyleBar:
-		vector.FillRect(screen, float32(x), float32(y), thickness, float32(tab.fonts.CellHeight), tab.fg, false)
+		vector.FillRect(screen, float32(x), float32(y), thickness, float32(tab.fonts().CellHeight), tab.fg, false)
 	case gostty.CursorStyleUnderline:
-		vector.FillRect(screen, float32(x), float32(y+tab.fonts.CellHeight)-thickness,
-			float32(tab.fonts.CellWidth), thickness, tab.fg, false)
+		vector.FillRect(screen, float32(x), float32(y+tab.fonts().CellHeight)-thickness,
+			float32(tab.fonts().CellWidth), thickness, tab.fg, false)
 	default: // block
 		vector.FillRect(screen, float32(x), float32(y),
-			float32(tab.fonts.CellWidth), float32(tab.fonts.CellHeight), tab.fg, false)
+			float32(tab.fonts().CellWidth), float32(tab.fonts().CellHeight), tab.fg, false)
 		// Redraw the glyph in the background color so it stays legible.
 		if i := int(tab.cursor.y)*tab.cols + int(tab.cursor.x); i < len(tab.cells) {
 			cell := tab.cells[i]

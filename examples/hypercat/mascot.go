@@ -12,7 +12,7 @@ import (
 func (tab *terminalTab) catGrid() thecat.GridWorld {
 	return thecat.GridWorld{
 		Cols: tab.cols, Rows: tab.rows,
-		CellWidth: tab.fonts.CellWidth, CellHeight: tab.fonts.CellHeight,
+		CellWidth: tab.fonts().CellWidth, CellHeight: tab.fonts().CellHeight,
 		HasInk: tab.catCell,
 	}
 }
@@ -25,6 +25,8 @@ func (tab *terminalTab) catCell(col, row int) bool {
 	return cell.Codepoint > ' ' && !cell.Flags.Invisible
 }
 
+// startCat gives the tab a companion in the mode the window is set to, so a
+// tab opened after the mode was changed does not start in the old one.
 func (tab *terminalTab) startCat() {
 	cat, err := thecat.NewCompanion(tab.catGrid())
 	if err != nil {
@@ -33,15 +35,6 @@ func (tab *terminalTab) startCat() {
 	}
 	tab.cat = cat
 	tab.cat.SetMode(tab.settings.cat)
-}
-
-// setCatMode keeps the setting and the companion in step. The setting is what
-// a new tab inherits; the companion is what draws.
-func (tab *terminalTab) setCatMode(mode thecat.Mode) {
-	tab.settings.cat = mode
-	if tab.cat != nil {
-		tab.cat.SetMode(mode)
-	}
 }
 
 func (tab *terminalTab) updateCat() {

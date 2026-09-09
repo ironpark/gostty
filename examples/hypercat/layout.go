@@ -7,13 +7,9 @@ import (
 )
 
 // layout resizes a tab to the content area below the tab bar.
-func (tab *terminalTab) layout(width, height, dsf float64) {
-	if dsf != tab.dsf {
-		tab.dsf = dsf
-		tab.applyFont()
-	}
-	cols := max(int(width/tab.fonts.CellWidth), 1)
-	rows := max(int(height/tab.fonts.CellHeight), 1)
+func (tab *terminalTab) layout(width, height float64) {
+	cols := max(int(width/tab.fonts().CellWidth), 1)
+	rows := max(int(height/tab.fonts().CellHeight), 1)
 	if cols != tab.cols || rows != tab.rows || tab.relayout {
 		if err := tab.resize(cols, rows); err != nil {
 			log.Printf("resize to %dx%d: %v", cols, rows, err)
@@ -32,7 +28,7 @@ func (tab *terminalTab) cursorPosition() (int, int) {
 // the program asks the pty how big it is and writes for the terminal.
 func (tab *terminalTab) resize(cols, rows int) error {
 	tab.cols, tab.rows = cols, rows
-	cellW, cellH := uint16(tab.fonts.CellWidth), uint16(tab.fonts.CellHeight)
+	cellW, cellH := uint16(tab.fonts().CellWidth), uint16(tab.fonts().CellHeight)
 	// `ResizeCells` rather than `Resize`: a Kitty image sized in cells is
 	// measured in pixels through the cell size, and the terminal stores the
 	// pixel size of the whole grid, so it goes stale on every column change.

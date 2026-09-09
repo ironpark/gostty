@@ -2,39 +2,39 @@ package main
 
 import "github.com/ironpark/gostty/examples/hypercat/fonts"
 
-// setFont swaps the faces and lets the window follow.
+// setFont swaps the faces the window draws with and lets every tab follow.
 //
 // Only the faces change here. The cell size comes out of them, so the next
 // Layout works out how many columns and rows the window now holds and resizes
-// the terminal and the pty to match -- which is the same path a window resize
-// takes, so the program is told the way it expects.
-func (tab *terminalTab) setFont(family int, size float64) error {
+// each terminal and its pty to match -- which is the same path a window resize
+// takes, so the programs are told the way they expect.
+func (app *terminalApp) setFont(family int, size float64) {
 	size = min(max(size, fonts.MinSize), fonts.MaxSize)
-	if len(tab.settings.families) == 0 {
-		return nil
+	if len(app.settings.families) == 0 {
+		return
 	}
-	family = tab.settings.clampFamily(family)
-	if family == tab.settings.family && size == tab.settings.size {
-		return nil
+	family = app.settings.clampFamily(family)
+	if family == app.settings.family && size == app.settings.size {
+		return
 	}
-	tab.settings.family, tab.settings.size = family, size
-	tab.applyFont()
-	return nil
+	app.settings.family, app.settings.size = family, size
+	app.applyFont()
 }
 
-// applyFont rebuilds the faces from what the settings hold.
+// applyFont rebuilds the faces from what the settings hold, once for the window,
+// and tells every tab that what it drew last frame no longer matches them.
 //
-// The size in the panel is in device-independent pixels, because that is what a
-// user means by "14px"; what the face is asked for is that times the display's
-// scale factor. This is also called when the window moves to a display with a
-// different one.
-func (tab *terminalTab) applyFont() {
-	tab.redraw.markAll()
-	tab.fonts = fonts.Load(tab.settings.currentFamily(), tab.settings.size*tab.dsf)
-	// The grid is measured in cells and the cell just changed shape, so the
-	// window holds a different number of them. Layout is where that is worked
-	// out; this only has to say that the answer it cached is stale, because the
-	// column count can survive a size change while the pixel geometry the image
-	// protocol measures in does not.
-	tab.relayout = true
+// This is also called when the window moves to a display with a different scale
+// factor, since the faces are built in device pixels.
+func (app *terminalApp) applyFont() {
+	app.settings.loadFonts(app.dsf)
+	for _, tab := range app.tabs {
+		tab.redraw.markAll()
+		// The grid is measured in cells and the cell just changed shape, so the
+		// window holds a different number of them. Layout is where that is
+		// worked out; this only has to say that the answer it cached is stale,
+		// because the column count can survive a size change while the pixel
+		// geometry the image protocol measures in does not.
+		tab.relayout = true
+	}
 }

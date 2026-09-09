@@ -12,78 +12,124 @@ import (
 // wrap brings an index back into [0, n) from either side.
 func wrap(i, n int) int { return (i%n + n) % n }
 
-// tabSettings are the terminal configuration a tab carries and a new tab
-// inherits; panel navigation lives in ui. Everything the settings panel can
-// change is here, so it is one value to copy.
-type tabSettings struct {
+// appearance is everything the settings panel can change. It belongs to the
+// window, not to a tab: one window draws with one set of faces and one theme,
+// so a change made from any tab is a change every tab is drawn with. Each tab
+// holds a pointer to the app's copy rather than a copy of its own.
+type appearance struct {
 	families []*fonts.Family
 	family   int
-	size     float64
-	theme    int
-	cat      thecat.Mode
+	// The size the panel shows, in device-independent pixels, because that is
+	// what a user means by "14px".
+	size  float64
+	theme int
+	cat   thecat.Mode
+
+	// The faces built from the family and the size above, at scale dsf. Every
+	// tab draws with these, and the cell metrics they carry are what the grid
+	// is laid out on.
+	fonts *fonts.Set
+	emoji *fonts.Emoji
+	dsf   float64
 }
 
-// defaultSettings discovers the system fonts once, for the first tab.
-func defaultSettings() tabSettings {
+// defaultAppearance discovers the system fonts once, when the window opens.
+func defaultAppearance(dsf float64) *appearance {
 	families := fonts.Discover()
 	_, index := fonts.DefaultFamily(families)
-	return tabSettings{families: families, family: index, size: fonts.DefaultSize}
+	settings := &appearance{families: families, family: index, size: fonts.DefaultSize}
+	settings.loadFonts(dsf)
+	settings.emoji = fonts.LoadEmoji()
+	return settings
+}
+
+// loadFonts rebuilds the faces for the chosen family at the display's scale.
+// The size in the panel is device-independent; what the face is asked for is
+// that times the scale factor.
+func (s *appearance) loadFonts(dsf float64) {
+	s.dsf = dsf
+	s.fonts = fonts.Load(s.currentFamily(), s.size*dsf)
 }
 
 // clampFamily is the one place an out-of-range family index is repaired.
-func (s tabSettings) clampFamily(i int) int {
+func (s *appearance) clampFamily(i int) int {
 	return min(max(i, 0), len(s.families)-1)
 }
 
 // currentFamily is nil when there are no system fonts, which is what asks
 // fonts.Load for the bundled bitmap.
-func (s tabSettings) currentFamily() *fonts.Family {
+func (s *appearance) currentFamily() *fonts.Family {
 	if len(s.families) == 0 {
 		return nil
 	}
 	return s.families[s.clampFamily(s.family)]
 }
 
-// settingsAdjust applies one step of the settings panel's current row.
-func (tab *terminalTab) settingsAdjust(delta int) error {
-	switch tab.panels.Settings.Row {
+// settingsAdjust applies one step of the settings panel's current row. The
+// panel is opened in a tab, but what it changes is the window's, so each of
+// these fans the change out to every tab.
+func (app *terminalApp) settingsAdjust(row, delta int) error {
+	switch row {
 	case ui.SettingFont:
-		if len(tab.settings.families) == 0 {
+		if len(app.settings.families) == 0 {
 			return nil
 		}
-		next := wrap(tab.settings.family+delta, len(tab.settings.families))
-		return tab.setFont(next, tab.settings.size)
+		app.setFont(wrap(app.settings.family+delta, len(app.settings.families)), app.settings.size)
+		return nil
 	case ui.SettingTheme:
-		tab.settings.theme = wrap(tab.settings.theme+delta, ui.ThemeCount())
-		tab.redraw.markAll()
-		// A program that subscribed with mode 2031 is told now, not the next
-		// time it thinks to ask.
-		return tab.stream.ColorSchemeChanged(tab.colorScheme())
+		return app.setTheme(wrap(app.settings.theme+delta, ui.ThemeCount()))
 	case ui.SettingCat:
-		tab.setCatMode(tab.settings.cat.Step(delta))
+		app.setCatMode(app.settings.cat.Step(delta))
 		return nil
 	default:
-		return tab.setFont(tab.settings.family, tab.settings.size+float64(delta))
+		app.setFont(app.settings.family, app.settings.size+float64(delta))
+		return nil
+	}
+}
+
+// setTheme repaints every tab in the new colors.
+func (app *terminalApp) setTheme(index int) error {
+	app.settings.theme = index
+	for _, tab := range app.tabs {
+		tab.redraw.markAll()
+		// A program that subscribed with mode 2031 is told now, not the next
+		// time it thinks to ask. The scheme is resolved per tab, since a theme
+		// that defers to the terminal takes the colors that tab's program set.
+		if err := tab.stream.ColorSchemeChanged(tab.colorScheme()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// setCatMode keeps the setting and every tab's companion in step. The setting
+// is what a new tab starts its cat in; the companions are what draw.
+func (app *terminalApp) setCatMode(mode thecat.Mode) {
+	app.settings.cat = mode
+	for _, tab := range app.tabs {
+		if tab.cat != nil {
+			tab.cat.SetMode(mode)
+		}
 	}
 }
 
 // settingsValues are the labels the panel shows next to each row.
-func (tab *terminalTab) settingsValues() ui.SettingsValues {
+func (app *terminalApp) settingsValues() ui.SettingsValues {
 	return ui.SettingsValues{
-		tab.fontLabel(), fmt.Sprintf("%.0f px", tab.settings.size), tab.themeLabel(), tab.catLabel(),
+		app.fontLabel(), fmt.Sprintf("%.0f px", app.settings.size), app.themeLabel(), app.catLabel(),
 	}
 }
 
-func (tab *terminalTab) themeLabel() string {
-	return fmt.Sprintf("%s  (%d/%d)", tab.currentTheme().Name, tab.settings.theme+1, ui.ThemeCount())
+func (app *terminalApp) themeLabel() string {
+	return fmt.Sprintf("%s  (%d/%d)", ui.ThemeAt(app.settings.theme).Name, app.settings.theme+1, ui.ThemeCount())
 }
 
 // fontLabel says which faces the chosen family actually has, because that is
 // what decides whether bold and italic text looks any different.
-func (tab *terminalTab) fontLabel() string {
-	family := tab.settings.currentFamily()
+func (app *terminalApp) fontLabel() string {
+	family := app.settings.currentFamily()
 	if family == nil {
-		return tab.fonts.FamilyName + " (bundled)"
+		return app.settings.fonts.FamilyName + " (bundled)"
 	}
 	var have []string
 	if family.Has(true, false) {
@@ -95,7 +141,7 @@ func (tab *terminalTab) fontLabel() string {
 	if family.Has(true, true) {
 		have = append(have, "bold italic")
 	}
-	label := fmt.Sprintf("%s  (%d/%d)", family.Name, tab.settings.family+1, len(tab.settings.families))
+	label := fmt.Sprintf("%s  (%d/%d)", family.Name, app.settings.family+1, len(app.settings.families))
 	if len(have) == 0 {
 		return label + "  regular only"
 	}
@@ -104,8 +150,9 @@ func (tab *terminalTab) fontLabel() string {
 
 // catLabel says what the cat is up to, which is the only way to tell a cat that
 // is switched off from one asleep behind the prompt.
-func (tab *terminalTab) catLabel() string {
-	if tab.cat == nil {
+func (app *terminalApp) catLabel() string {
+	tab := app.current()
+	if tab == nil || tab.cat == nil {
 		return "unavailable"
 	}
 	return tab.cat.Mode().String()
