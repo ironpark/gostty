@@ -24,42 +24,22 @@ type terminalTab struct {
 	vt     *gostty.Terminal
 	stream *gostty.Stream
 	state  *gostty.RenderState
-	cells  []gostty.RenderCell
+	// What the last refresh read out of it, which is all Draw may look at.
+	frame frame
 	// Kitty graphics: the placements for this frame and their textures.
 	images *imageCache
-	// The cells whose text is more than one codepoint, keyed by cell index,
-	// and the scratch the terminal writes them into. Kept apart from `cells`
-	// because they are the rare case: reading them costs a call per cell, so
-	// only the rows that changed are asked.
-	clusters   map[int]string
-	clusterBuf []rune
 	// The scrollback search and the cells it highlights.
 	search tabSearch
-	// The OSC 8 link under the pointer, which is underlined and can be opened.
-	link hoveredLink
-	// Where the viewport sits in the scrollback, and how long the bar showing
-	// it stays up.
-	scrollbar scrollbarState
 
-	// Partial redraw: the layers the grid is drawn into, and the rows that
-	// have to be drawn again on them.
-	grid   gridCanvas
-	redraw redrawSet
+	// Partial redraw: the layers the grid is drawn into.
+	layers gridCanvas
 
 	// The process side.
 	shell *shell.Session
 
 	// The pixel side.
 	cols, rows int
-	// The terminal's resolved defaults and the themed colors used to draw
-	// them. Explicit ANSI colors continue to come from the terminal.
-	terminalBg, terminalFg color.RGBA
-	bg, fg                 color.RGBA
-	cursor                 cursorState
-	bell                   int
-	// The lit half of the blink phase, which SGR 5 cells and the cursor are
-	// drawn from. Held rather than read per cell so one frame is one phase.
-	blink bool
+	bell       int
 
 	// What the program says it is, for the tab label and the window title.
 	title windowTitle
@@ -93,6 +73,21 @@ type terminalTab struct {
 	keys        keys.Reader
 	chars       []rune
 	out, report frameBuffer
+}
+
+// onScreen runs f against the terminal's active screen.
+//
+// A screen is borrowed from the terminal rather than owned -- it is the
+// alternate one while a full-screen program is running and the primary one
+// otherwise -- so it is fetched where it is used rather than held. This is
+// that fetch, in one place: nine callers wanted the same three lines of error
+// handling around it.
+func (tab *terminalTab) onScreen(f func(*gostty.Screen) error) error {
+	screen, err := tab.vt.ActiveScreen()
+	if err != nil {
+		return err
+	}
+	return f(screen)
 }
 
 // fonts and emoji are the window's, shared with every other tab: what a tab
@@ -131,7 +126,7 @@ type cursorState struct {
 // of per-tab state is reset here rather than in the window's loop.
 func (tab *terminalTab) activate() {
 	tab.reports.focusedFrames = 0
-	tab.redraw.markAll()
+	tab.frame.redraw.markAll()
 }
 
 func (tab *terminalTab) deactivate() {
@@ -143,7 +138,7 @@ func (tab *terminalTab) deactivate() {
 // themeChanged and fontsChanged are what a tab does about a settings change the
 // window made for all of them.
 func (tab *terminalTab) themeChanged() error {
-	tab.redraw.markAll()
+	tab.frame.redraw.markAll()
 	if err := tab.applyPalette(); err != nil {
 		return err
 	}
@@ -206,12 +201,12 @@ func (tab *terminalTab) restyle() error {
 	}
 	_ = tab.state.Close()
 	tab.state = state
-	tab.redraw.markAll()
+	tab.frame.redraw.markAll()
 	return nil
 }
 
 func (tab *terminalTab) fontsChanged() {
-	tab.redraw.markAll()
+	tab.frame.redraw.markAll()
 	// The grid is measured in cells and the cell just changed shape, so the
 	// window holds a different number of them. Layout is where that is worked
 	// out; this only has to say that the answer it cached is stale, because the

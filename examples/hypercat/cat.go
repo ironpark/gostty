@@ -10,18 +10,19 @@ import (
 
 // The terminal only supplies occupied cells and connects cat clicks to settings.
 func (tab *terminalTab) catGrid() thecat.GridWorld {
+	g := tab.grid()
 	return thecat.GridWorld{
-		Cols: tab.cols, Rows: tab.rows,
-		CellWidth: tab.fonts().CellWidth, CellHeight: tab.fonts().CellHeight,
+		Cols: g.cols, Rows: g.rows,
+		CellWidth: g.cellW, CellHeight: g.cellH,
 		HasInk: tab.catCell,
 	}
 }
 
 func (tab *terminalTab) catCell(col, row int) bool {
-	if len(tab.cells) < tab.rows*tab.cols {
+	if len(tab.frame.cells) < tab.rows*tab.cols {
 		return false
 	}
-	cell := tab.cells[row*tab.cols+col]
+	cell := tab.frame.cells[row*tab.cols+col]
 	return cell.Codepoint > ' ' && !cell.Flags.Invisible
 }
 

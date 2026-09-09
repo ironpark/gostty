@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image"
 	"image/color"
 	"net/url"
 	"os/exec"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/ironpark/gostty"
 	"github.com/ironpark/gostty/examples/hypercat/keys"
 )
 
@@ -41,56 +43,68 @@ func (l hoveredLink) valid() bool { return l.uri != "" && l.end > l.start }
 // underlined a row at a time, since this scan stops at the row's edges; what
 // opens is the whole URI either way, because that is what the terminal stored.
 func (tab *terminalTab) refreshLink() error {
-	previous := tab.link
-	tab.link = hoveredLink{}
-	defer func() {
-		// The underline is drawn over the grid rather than into it, so nothing
-		// has to be marked dirty; the pointer shape does have to follow.
-		if tab.link.valid() != previous.valid() && tab.reports.focused {
-			shape := ebiten.CursorShapeDefault
-			if tab.link.valid() {
-				shape = ebiten.CursorShapePointer
-			}
-			ebiten.SetCursorShape(shape)
-		}
-	}()
-
+	previous := tab.frame.link.valid()
 	px, py := tab.cursorPosition()
-	if !tab.reports.focused || py < 0 || px < 0 || tab.cols == 0 || tab.rows == 0 {
+	pointer := image.Pt(px, py)
+	if !tab.reports.focused {
+		// Nothing is under a pointer this window is not being shown.
+		pointer = image.Pt(-1, -1)
+	}
+	if err := tab.frame.readLink(tab.state, tab.grid(), pointer); err != nil {
+		return err
+	}
+	// The underline is drawn over the grid rather than into it, so nothing has
+	// to be marked dirty; the pointer shape does have to follow, and that is
+	// the window's to set rather than the frame's to know about.
+	if tab.frame.link.valid() != previous && tab.reports.focused {
+		shape := ebiten.CursorShapeDefault
+		if tab.frame.link.valid() {
+			shape = ebiten.CursorShapePointer
+		}
+		ebiten.SetCursorShape(shape)
+	}
+	return nil
+}
+
+// readLink finds the link under a pointer position, which is negative when the
+// pointer is not over the grid at all.
+func (f *frame) readLink(state *gostty.RenderState, g grid, pointer image.Point) error {
+	f.link = hoveredLink{}
+	if pointer.X < 0 || pointer.Y < 0 || g.cols == 0 || g.rows == 0 {
 		return nil
 	}
-	col, row := tab.cellAt(px, py)
-	uri, ok, err := tab.state.HyperlinkAt(uint16(col), uint16(row))
+	col, row := g.cellAt(pointer.X, pointer.Y)
+	uri, ok, err := state.HyperlinkAt(uint16(col), uint16(row))
 	if err != nil || !ok || uri == "" {
 		return err
 	}
 
 	link := hoveredLink{uri: uri, row: row, start: col, end: col + 1}
 	for x := col - 1; x >= 0; x-- {
-		if same, err := tab.linkAt(x, row, uri); err != nil {
+		if same, err := linkAt(state, x, row, uri); err != nil {
 			return err
 		} else if !same {
 			break
 		}
 		link.start = x
 	}
-	for x := col + 1; x < tab.cols; x++ {
-		if same, err := tab.linkAt(x, row, uri); err != nil {
+	for x := col + 1; x < g.cols; x++ {
+		if same, err := linkAt(state, x, row, uri); err != nil {
 			return err
 		} else if !same {
 			break
 		}
 		link.end = x + 1
 	}
-	tab.link = link
+	f.link = link
 	return nil
 }
 
 // linkAt reports whether a cell belongs to the same link. Two runs of the same
 // URI printed side by side are one underline here, which is what they look
 // like; telling them apart would mean the link id, which OSC 8 makes optional.
-func (tab *terminalTab) linkAt(col, row int, uri string) (bool, error) {
-	at, ok, err := tab.state.HyperlinkAt(uint16(col), uint16(row))
+func linkAt(state *gostty.RenderState, col, row int, uri string) (bool, error) {
+	at, ok, err := state.HyperlinkAt(uint16(col), uint16(row))
 	return ok && at == uri, err
 }
 
@@ -99,15 +113,16 @@ func (tab *terminalTab) linkAt(col, row int, uri string) (bool, error) {
 // the terminal did not change still has to lose its underline when the pointer
 // leaves it.
 func (tab *terminalTab) drawLink(screen *ebiten.Image) {
-	if !tab.link.valid() {
+	if !tab.frame.link.valid() {
 		return
 	}
-	cellW, cellH := tab.fonts().CellWidth, tab.fonts().CellHeight
-	y := float64(tab.link.row)*cellH + cellH - 2*tab.fonts().LineHeight
+	g := tab.grid()
+	thickness := 2 * tab.fonts().LineHeight
+	y := g.y(tab.frame.link.row) + g.cellH - thickness
 	vector.FillRect(screen,
-		float32(float64(tab.link.start)*cellW), float32(y),
-		float32(float64(tab.link.end-tab.link.start)*cellW), float32(2*tab.fonts().LineHeight),
-		linkColor(tab.fg), false)
+		float32(g.x(tab.frame.link.start)), float32(y),
+		float32(g.x(tab.frame.link.end-tab.frame.link.start)), float32(thickness),
+		linkColor(tab.frame.colors.fg), false)
 }
 
 // linkColor is the underline's colour: the foreground, brightened, so it reads
@@ -122,10 +137,10 @@ func linkColor(fg color.RGBA) color.RGBA {
 // click keeps starting a selection: a link under the pointer must not turn a
 // click into navigating away.
 func (tab *terminalTab) openLink(m keys.Mods) bool {
-	if !m.Shortcut() || !tab.link.valid() {
+	if !m.Shortcut() || !tab.frame.link.valid() {
 		return false
 	}
-	openURL(tab.link.uri)
+	openURL(tab.frame.link.uri)
 	return true
 }
 

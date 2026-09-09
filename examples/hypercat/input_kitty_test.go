@@ -7,16 +7,6 @@ import (
 	"github.com/ironpark/gostty/input"
 )
 
-// sent is what one key event puts on the wire for this tab's terminal.
-func sent(t *testing.T, tab *terminalTab, ev keys.Event, m keys.Mods) string {
-	t.Helper()
-	tab.out.reset()
-	if err := tab.sendKey(ev, m); err != nil {
-		t.Fatalf("sendKey: %v", err)
-	}
-	return string(tab.out)
-}
-
 // The Kitty keyboard protocol describes the key, not the text: the program is
 // told which key was pressed and what it would have typed unshifted. Leaving
 // the unshifted codepoint at zero is not a small omission -- the encoder has

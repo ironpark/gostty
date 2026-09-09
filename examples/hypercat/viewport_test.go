@@ -27,19 +27,19 @@ func TestRedrawSetFollowsTheGrid(t *testing.T) {
 
 func TestMatchChangesMarkOnlyTheRowsThatChanged(t *testing.T) {
 	tab := &terminalTab{cols: 4, rows: 3}
-	tab.redraw.resize(3)
-	tab.redraw.clear()
+	tab.frame.redraw.resize(3)
+	tab.frame.redraw.clear()
 	prev := []bool{false, false, false, false, true, false, false, false, false, false, false, false}
 	tab.search.cells = []bool{false, false, false, false, true, false, false, false, false, false, true, false}
 	tab.markMatchChanges(prev)
-	if tab.redraw.rows[0] || tab.redraw.rows[1] || !tab.redraw.rows[2] {
-		t.Fatalf("rows = %v, want only the third", tab.redraw.rows)
+	if tab.frame.redraw.rows[0] || tab.frame.redraw.rows[1] || !tab.frame.redraw.rows[2] {
+		t.Fatalf("rows = %v, want only the third", tab.frame.redraw.rows)
 	}
 	// A cleared search leaves a shorter (empty) set; the old rows still repaint.
-	tab.redraw.clear()
+	tab.frame.redraw.clear()
 	tab.search.cells = nil
 	tab.markMatchChanges(prev)
-	if tab.redraw.rows[0] || !tab.redraw.rows[1] || tab.redraw.rows[2] {
-		t.Fatalf("rows = %v, want only the second", tab.redraw.rows)
+	if tab.frame.redraw.rows[0] || !tab.frame.redraw.rows[1] || tab.frame.redraw.rows[2] {
+		t.Fatalf("rows = %v, want only the second", tab.frame.redraw.rows)
 	}
 }

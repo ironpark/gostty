@@ -59,19 +59,20 @@ func (tab *terminalTab) applyUIActions(result ui.Actions) (bool, error) {
 
 func (tab *terminalTab) currentTheme() ui.Theme { return ui.ThemeAt(tab.settings.theme) }
 func (tab *terminalTab) colorScheme() gostty.ColorScheme {
-	if tab.currentTheme().Light(tab.terminalBg) {
+	if tab.currentTheme().Light(tab.frame.colors.terminalBg) {
 		return gostty.ColorSchemeLight
 	}
 	return gostty.ColorSchemeDark
 }
 func (tab *terminalTab) themeColor(c color.RGBA) color.RGBA {
-	return tab.currentTheme().ResolveColor(c, tab.terminalBg, tab.terminalFg)
+	return tab.currentTheme().ResolveColor(c, tab.frame.colors.terminalBg, tab.frame.colors.terminalFg)
 }
 
 func (tab *terminalTab) canvas(screen *ebiten.Image) ui.Canvas {
+	g := tab.grid()
 	return ui.Canvas{
-		Screen: screen, CellWidth: tab.fonts().CellWidth, CellHeight: tab.fonts().CellHeight,
-		Width: float64(tab.cols) * tab.fonts().CellWidth, Height: float64(tab.rows) * tab.fonts().CellHeight,
+		Screen: screen, CellWidth: g.cellW, CellHeight: g.cellH,
+		Width: g.width(), Height: g.height(),
 		Scale: tab.settings.dsf, Theme: tab.currentTheme(), DrawText: tab.drawText, RuneWidth: runeWidth,
 	}
 }
@@ -79,12 +80,13 @@ func (tab *terminalTab) canvas(screen *ebiten.Image) ui.Canvas {
 // drawText writes a line in the grid's own cell width, so the panels line up
 // with the terminal behind them, and returns where it ended.
 func (tab *terminalTab) drawText(screen *ebiten.Image, s string, x, y float64, fg color.RGBA) float64 {
+	cellW := tab.grid().cellW
 	for _, r := range s {
 		wide := runeWidth(r) == 2
 		tab.glyph(screen, glyphString(r), x, y, wide, false, false, fg)
-		x += tab.fonts().CellWidth
+		x += cellW
 		if wide {
-			x += tab.fonts().CellWidth
+			x += cellW
 		}
 	}
 	return x

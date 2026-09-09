@@ -23,12 +23,10 @@ import (
 
 // selectAll selects the whole scrollback, not only what is on screen.
 func (tab *terminalTab) selectAll() error {
-	screen, err := tab.vt.ActiveScreen()
-	if err != nil {
+	return tab.onScreen(func(screen *gostty.Screen) error {
+		_, err := screen.SelectAll()
 		return err
-	}
-	_, err = screen.SelectAll()
-	return err
+	})
 }
 
 // The keys that move the end of a selection, and how far.
@@ -51,51 +49,31 @@ var selectionAdjustments = map[ebiten.Key]gostty.SelectionAdjustment{
 // viewport already at the top is a row of scrollback. Only the modified arrows
 // do this, so the unmodified ones still reach the program.
 func (tab *terminalTab) adjustSelection() (bool, error) {
-	screen, err := tab.vt.ActiveScreen()
-	if err != nil {
-		return false, err
-	}
-	current, ok, err := screen.Selection()
-	if err != nil || !ok {
-		return false, err
-	}
-	for key, adjustment := range selectionAdjustments {
-		if !inpututil.IsKeyJustPressed(key) {
-			continue
-		}
-		adjusted, ok, err := screen.SelectionAdjust(current, adjustment)
+	adjusted := false
+	err := tab.onScreen(func(screen *gostty.Screen) error {
+		current, ok, err := screen.Selection()
 		if err != nil || !ok {
-			return true, err
+			return err
 		}
-		if _, err := screen.SetSelection(adjusted); err != nil {
-			return true, err
+		for key, adjustment := range selectionAdjustments {
+			if !inpututil.IsKeyJustPressed(key) {
+				continue
+			}
+			adjusted = true
+			moved, ok, err := screen.SelectionAdjust(current, adjustment)
+			if err != nil || !ok {
+				return err
+			}
+			if _, err := screen.SetSelection(moved); err != nil {
+				return err
+			}
+			// A selection the user is steering off the top of the viewport
+			// brings the viewport with it.
+			return tab.revealRow(max(moved.StartY, moved.EndY))
 		}
-		// A selection the user is steering off the top of the viewport brings
-		// the viewport with it.
-		return true, tab.followSelection(adjusted)
-	}
-	return false, nil
-}
-
-// followSelection scrolls the viewport to the end being moved, when it has
-// gone off the screen.
-func (tab *terminalTab) followSelection(sel gostty.Selection) error {
-	screen, err := tab.vt.ActiveScreen()
-	if err != nil {
-		return err
-	}
-	top, err := screen.ViewportTop()
-	if err != nil {
-		return err
-	}
-	row := sel.EndY
-	if sel.EndY < sel.StartY {
-		row = sel.StartY
-	}
-	if row >= top && row < top+uint32(tab.rows) {
 		return nil
-	}
-	return tab.vt.ScrollViewport(gostty.ScrollViewportRow(uint(row)))
+	})
+	return adjusted, err
 }
 
 // exportScrollback writes the scrollback to a file, styles and all.
@@ -115,26 +93,24 @@ func (tab *terminalTab) exportScrollback() error {
 	}
 	defer file.Close()
 
-	// The selection when there is one, and the whole scrollback otherwise,
-	// which is what "save this" means in either case.
-	screen, err := tab.vt.ActiveScreen()
-	if err != nil {
-		return err
-	}
 	options := gostty.FormatOptions{
 		Format:         gostty.FormatterFormatHtml,
 		Unwrap:         true,
 		ResolvePalette: true,
 	}
-	sel, ok, err := screen.Selection()
-	if err != nil {
-		return err
-	}
-	if ok {
-		if _, err := screen.FormatSelection(options, sel, file); err != nil {
+	// The selection when there is one, and the whole scrollback otherwise,
+	// which is what "save this" means in either case.
+	if err := tab.onScreen(func(screen *gostty.Screen) error {
+		sel, ok, err := screen.Selection()
+		if err != nil {
 			return err
 		}
-	} else if err := screen.Format(options, file); err != nil {
+		if !ok {
+			return screen.Format(options, file)
+		}
+		_, err = screen.FormatSelection(options, sel, file)
+		return err
+	}); err != nil {
 		return err
 	}
 	log.Printf("scrollback saved to %s", name)

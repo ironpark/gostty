@@ -68,16 +68,23 @@ The files are organized around the terminal's frame and resource lifecycle:
   and starts the tab's `shell.Session`.
 - `events.go` handles terminal events such as title, bell, and progress, and owns
   `windowTitle`, the three things a program says about itself.
-- `viewport.go` refreshes cells, colors, and the cursor, and owns `redrawSet`,
-  the rows the next frame has to repaint from either side of the boundary.
+- `frame.go` owns `frame`: what the last refresh read out of the terminal, and
+  all a draw may look at. Drawing cannot report a failure and every call into
+  the terminal can fail, so the two are kept apart by a type rather than by a
+  convention.
+- `viewport.go` reads a frame -- cells, colours, cursor, clusters, blink -- in
+  three named phases, and owns `redrawSet`, the rows the next frame has to
+  repaint from either side of the boundary.
+- `grid.go` owns `grid`, the cell-to-pixel arithmetic every part of the window
+  does: where a glyph goes, which cell the pointer is over, how big the screen
+  is to a program.
 - `layout.go` keeps the terminal and PTY sizes aligned with the window.
 - `input.go` encodes keys through a per-frame `frameBuffer`; `report.go` does
   the same for mouse and focus events the program has asked for, and owns
   `reportState`, what the program has been told about the pointer so far.
-- `selection.go` owns the selection the keyboard makes: select-all, stepping an
-  end of a selection around the screen, and writing a screen out through the
-  formatter.
 - `scrollbar.go` owns the scrollbar, which is `Screen.Scrollbar` and a thumb.
+- `helpers_test.go` holds what the tests build on: a window with one tab, and
+  the few things a test does with it.
 - `mouse.go` owns selection, which is a `gostty.Gesture`: the click count, what
   each count selects, the drag, and the autoscroll at the edges are the
   terminal's, and this file supplies the pointer, the clock, and the policy.
@@ -91,6 +98,8 @@ The files are organized around the terminal's frame and resource lifecycle:
 - `kitty.go` owns `imageCache`: the Kitty placement snapshot and its textures.
 - `cat.go` connects terminal cells and the window's `thecat.Mode` to `thecat.Companion`.
 - `panels.go` translates input and UI actions and connects the text renderer.
+- `selection.go` owns the selection the keyboard makes: select-all, stepping an
+  end of one around the screen, and writing a screen out through the formatter.
 - `search.go` owns `tabSearch`: the native search handle, its scanning, match
   selection, and the per-cell highlight the grid is drawn with.
 - `settings.go` holds `appearance`, the fonts, theme, and cat mode every tab is

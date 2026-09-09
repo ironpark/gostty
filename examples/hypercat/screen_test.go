@@ -32,12 +32,12 @@ func TestScrollbarFollowsTheViewport(t *testing.T) {
 	tab := app.current()
 
 	feedTab(t, tab, "idle")
-	if tab.scrollbar.visible > 0 {
+	if tab.frame.scrollbar.visible > 0 {
 		t.Error("a screen with no scrollback showed a scrollbar")
 	}
 
 	feedTab(t, tab, strings.Repeat("line\r\n", 100))
-	bottom := tab.scrollbar.bar
+	bottom := tab.frame.scrollbar.bar
 	if bottom.Total <= bottom.Len {
 		t.Fatalf("Scrollbar() = %+v, want more rows than the viewport", bottom)
 	}
@@ -51,10 +51,10 @@ func TestScrollbarFollowsTheViewport(t *testing.T) {
 	if err := tab.refresh(); err != nil {
 		t.Fatalf("refresh: %v", err)
 	}
-	if tab.scrollbar.bar.Offset != 0 {
-		t.Errorf("Scrollbar().Offset at the top = %d, want 0", tab.scrollbar.bar.Offset)
+	if tab.frame.scrollbar.bar.Offset != 0 {
+		t.Errorf("Scrollbar().Offset at the top = %d, want 0", tab.frame.scrollbar.bar.Offset)
 	}
-	if tab.scrollbar.visible <= 0 {
+	if tab.frame.scrollbar.visible <= 0 {
 		t.Error("no scrollbar while the viewport is away from the bottom")
 	}
 }
@@ -85,10 +85,7 @@ func TestSelectionAdjustMovesTheEnd(t *testing.T) {
 	tab := app.current()
 	feedTab(t, tab, "hello world")
 
-	screen, err := tab.vt.ActiveScreen()
-	if err != nil {
-		t.Fatalf("ActiveScreen: %v", err)
-	}
+	screen := screenOf(t, tab)
 	if _, err := screen.SetSelection(gostty.Selection{StartX: 0, StartY: 0, EndX: 0, EndY: 0}); err != nil {
 		t.Fatalf("SetSelection: %v", err)
 	}
@@ -164,7 +161,7 @@ func TestThemePalette(t *testing.T) {
 	app := newTabTestApp(t)
 	tab := app.current()
 	feedTab(t, tab, "\x1b[31mred")
-	plain := tab.cells[0].Fg
+	plain := tab.frame.cells[0].Fg
 
 	// Step to a theme that carries a palette.
 	for i := range ui.ThemeCount() {
@@ -177,11 +174,11 @@ func TestThemePalette(t *testing.T) {
 		if err := tab.refresh(); err != nil {
 			t.Fatalf("refresh: %v", err)
 		}
-		if tab.cells[0].Fg == plain {
+		if tab.frame.cells[0].Fg == plain {
 			t.Errorf("theme %q left ANSI red as %06x", ui.ThemeAt(i).Name, plain)
 		}
 		want := ui.ThemeAt(i).Palette[1]
-		if got := tab.cells[0].Fg; got != uint32(want.R)<<16|uint32(want.G)<<8|uint32(want.B) {
+		if got := tab.frame.cells[0].Fg; got != uint32(want.R)<<16|uint32(want.G)<<8|uint32(want.B) {
 			t.Errorf("ANSI red under %q = %06x, want the theme's %v", ui.ThemeAt(i).Name, got, want)
 		}
 		return

@@ -73,7 +73,7 @@ func (tab *terminalTab) handleDrop() error {
 	}
 
 	px, py := tab.cursorPosition()
-	col, row := tab.cellAt(px, py)
+	col, row := tab.grid().cellAt(px, py)
 	move := gostty.DragMove{
 		CellX: uint32(col), CellY: uint32(row),
 		PixelX: int32(px), PixelY: int32(py),

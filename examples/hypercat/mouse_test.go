@@ -2,44 +2,6 @@ package main
 
 import "testing"
 
-// selected is what the tab's screen currently has selected.
-func selected(t *testing.T, tab *terminalTab) string {
-	t.Helper()
-	screen, err := tab.vt.ActiveScreen()
-	if err != nil {
-		t.Fatalf("ActiveScreen: %v", err)
-	}
-	text, ok, err := screen.SelectionString()
-	if err != nil {
-		t.Fatalf("SelectionString: %v", err)
-	}
-	if !ok {
-		return ""
-	}
-	return text
-}
-
-// press and drag drive the gesture the way the frame loop does, in pixels,
-// with the tab's own cell size.
-func (tab *terminalTab) pressAtCell(t *testing.T, col, row int) {
-	t.Helper()
-	x := int(float64(col)*tab.fonts().CellWidth) + 1
-	y := int(float64(row) * tab.fonts().CellHeight)
-	if err := tab.pressSelection(x, y); err != nil {
-		t.Fatalf("pressSelection: %v", err)
-	}
-}
-
-func (tab *terminalTab) dragToCell(t *testing.T, col, row int, rectangle bool) {
-	t.Helper()
-	// Most of the way into the cell, which is what includes it in the run.
-	x := int(float64(col+1)*tab.fonts().CellWidth) - 1
-	y := int(float64(row) * tab.fonts().CellHeight)
-	if err := tab.dragSelection(x, y, rectangle); err != nil {
-		t.Fatalf("dragSelection: %v", err)
-	}
-}
-
 // What a click count means is the gesture's, not this program's: the second
 // click selects the word and the third the command output around it, and both
 // know about wrapping and word boundaries that this program does not.

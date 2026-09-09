@@ -96,28 +96,24 @@ func (tab *terminalTab) refreshMatches() error {
 		tab.markMatchChanges(prev)
 		return nil
 	}
-	screen, err := tab.vt.ActiveScreen()
-	if err != nil {
-		return err
-	}
-	top, err := screen.ViewportTop()
+	top, err := tab.viewportTop()
 	if err != nil {
 		return err
 	}
 	// The count is not known in advance. A match spans at least one cell, so
 	// one per viewport cell cannot be exceeded by anything that is on screen.
-	if cap(tab.search.viewport) < len(tab.cells) {
-		tab.search.viewport = make([]gostty.Selection, len(tab.cells))
+	if cap(tab.search.viewport) < len(tab.frame.cells) {
+		tab.search.viewport = make([]gostty.Selection, len(tab.frame.cells))
 	}
-	n, err := tab.search.handle.ViewportMatches(tab.search.viewport[:len(tab.cells)])
+	n, err := tab.search.handle.ViewportMatches(tab.search.viewport[:len(tab.frame.cells)])
 	if err != nil {
 		return err
 	}
 	prev := append([]bool(nil), tab.search.cells...)
-	if cap(tab.search.cells) < len(tab.cells) {
-		tab.search.cells = make([]bool, len(tab.cells))
+	if cap(tab.search.cells) < len(tab.frame.cells) {
+		tab.search.cells = make([]bool, len(tab.frame.cells))
 	}
-	tab.search.cells = tab.search.cells[:len(tab.cells)]
+	tab.search.cells = tab.search.cells[:len(tab.frame.cells)]
 	clear(tab.search.cells)
 	defer tab.markMatchChanges(prev)
 	for _, m := range tab.search.viewport[:n] {
@@ -152,7 +148,7 @@ func (tab *terminalTab) markMatchChanges(prev []bool) {
 		was := i < len(prev) && prev[i]
 		is := i < len(tab.search.cells) && tab.search.cells[i]
 		if was != is {
-			tab.redraw.mark(i / tab.cols)
+			tab.frame.redraw.mark(i / tab.cols)
 		}
 	}
 }
@@ -176,19 +172,11 @@ func (tab *terminalTab) moveMatch(dir gostty.SearchDirection) error {
 	if err != nil || !ok {
 		return err
 	}
-	screen, err := tab.vt.ActiveScreen()
-	if err != nil {
+	if err := tab.onScreen(func(screen *gostty.Screen) error {
+		_, err := screen.SetSelection(match)
+		return err
+	}); err != nil {
 		return err
 	}
-	if _, err := screen.SetSelection(match); err != nil {
-		return err
-	}
-	top, err := screen.ViewportTop()
-	if err != nil {
-		return err
-	}
-	if match.StartY < top || match.StartY >= top+uint32(tab.rows) {
-		return tab.vt.ScrollViewport(gostty.ScrollViewportRow(uint(match.StartY)))
-	}
-	return nil
+	return tab.revealRow(match.StartY)
 }

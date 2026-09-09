@@ -16,14 +16,15 @@ func (tab *terminalTab) drawEmoji(screen *ebiten.Image, cluster string, x, y flo
 	if tab.emoji() == nil {
 		return false
 	}
-	img, ok := tab.emoji().Glyph(cluster, tab.fonts().CellHeight)
+	g := tab.grid()
+	img, ok := tab.emoji().Glyph(cluster, g.cellH)
 	if !ok {
 		return false
 	}
 
 	// Fit inside the two cells it was given, keeping it square: emoji are
 	// drawn square and a stretched one is worse than a small one.
-	box, line := 2*tab.fonts().CellWidth, tab.fonts().CellHeight
+	box, line := 2*g.cellW, g.cellH
 	w := float64(img.Bounds().Dx())
 	h := float64(img.Bounds().Dy())
 	scale := math.Min(box/w, line/h)

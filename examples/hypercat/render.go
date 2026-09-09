@@ -73,7 +73,7 @@ func (c *gridCanvas) close() {
 // drawn by the window, which is what holds the settings they display.
 func (tab *terminalTab) Draw(screen *ebiten.Image) {
 	tab.drawGrid()
-	screen.Fill(tab.bg)
+	screen.Fill(tab.frame.colors.bg)
 	if tab.bell > 0 {
 		// A visual bell: the GUI answer to \a.
 		tab.bell--
@@ -82,16 +82,16 @@ func (tab *terminalTab) Draw(screen *ebiten.Image) {
 	// A placement's layer says where in the stack it belongs, which is the
 	// whole reason the protocol gives it a z: under the cell backgrounds,
 	// between them and the text, or over the text.
-	cellW, cellH := tab.fonts().CellWidth, tab.fonts().CellHeight
-	tab.images.draw(screen, gostty.KittyLayerBelowBg, cellW, cellH)
-	if tab.grid.bg != nil {
-		screen.DrawImage(tab.grid.bg, nil)
+	g := tab.grid()
+	tab.images.draw(screen, gostty.KittyLayerBelowBg, g.cellW, g.cellH)
+	if tab.layers.bg != nil {
+		screen.DrawImage(tab.layers.bg, nil)
 	}
-	tab.images.draw(screen, gostty.KittyLayerBelowText, cellW, cellH)
-	if tab.grid.text != nil {
-		screen.DrawImage(tab.grid.text, nil)
+	tab.images.draw(screen, gostty.KittyLayerBelowText, g.cellW, g.cellH)
+	if tab.layers.text != nil {
+		screen.DrawImage(tab.layers.text, nil)
 	}
-	tab.images.draw(screen, gostty.KittyLayerAboveText, cellW, cellH)
+	tab.images.draw(screen, gostty.KittyLayerAboveText, g.cellW, g.cellH)
 	tab.drawLink(screen)
 	tab.drawCursor(screen)
 	tab.drawScrollbar(screen)
@@ -102,52 +102,54 @@ func (tab *terminalTab) Draw(screen *ebiten.Image) {
 // marked dirty since the last frame. Cells with the default background stay
 // transparent so the fill and the bell show through.
 func (tab *terminalTab) drawGrid() {
-	if tab.cols == 0 || tab.rows == 0 || len(tab.cells) < tab.rows*tab.cols {
+	g := tab.grid()
+	if g.cols == 0 || g.rows == 0 || len(tab.frame.cells) < g.cols*g.rows {
 		return
 	}
-	cellH := tab.fonts().CellHeight
-	w := int(float64(tab.cols)*tab.fonts().CellWidth) + 1
-	h := int(float64(tab.rows)*cellH) + 1
-	if tab.grid.fit(w, h) {
-		tab.redraw.markAll()
+	// A pixel wider and taller than the cells, so a decoration drawn on the
+	// last row's baseline is not clipped away.
+	w, h := int(g.width())+1, int(g.height())+1
+	if tab.layers.fit(w, h) {
+		tab.frame.redraw.markAll()
 	}
-	if tab.redraw.all {
-		tab.grid.clear()
-		for row := 0; row < tab.rows; row++ {
+	if tab.frame.redraw.all {
+		tab.layers.clear()
+		for row := range g.rows {
 			tab.drawRow(row)
 		}
-		tab.redraw.clear()
+		tab.frame.redraw.clear()
 		return
 	}
-	for row := range tab.rows {
-		if !tab.redraw.take(row) {
+	for row := range g.rows {
+		if !tab.frame.redraw.take(row) {
 			continue
 		}
-		tab.grid.clearRect(image.Rect(0, int(float64(row)*cellH), w, int(float64(row+1)*cellH)+1))
+		tab.layers.clearRect(image.Rect(0, int(g.y(row)), w, int(g.y(row+1))+1))
 		tab.drawRow(row)
 	}
 }
 
 func (tab *terminalTab) drawRow(row int) {
-	tab.drawRowBackground(tab.grid.bg, row)
-	tab.drawRowGlyphs(tab.grid.text, row)
+	tab.drawRowBackground(tab.layers.bg, row)
+	tab.drawRowGlyphs(tab.layers.text, row)
 }
 
 // drawRowBackground fills the cells whose background is not the default, in
 // runs. A row is usually one colour, so filling per cell would be a few
 // thousand draws a frame to say what a few dozen say.
 func (tab *terminalTab) drawRowBackground(dst *ebiten.Image, row int) {
-	line := tab.cells[row*tab.cols : (row+1)*tab.cols]
+	g := tab.grid()
+	line := tab.frame.cells[g.index(0, row):g.index(0, row+1)]
 	for start := 0; start < len(line); {
-		bg := tab.cellBackgroundAt(row*tab.cols + start)
+		bg := tab.cellBackgroundAt(g.index(start, row))
 		end := start + 1
-		for end < len(line) && tab.cellBackgroundAt(row*tab.cols+end) == bg {
+		for end < len(line) && tab.cellBackgroundAt(g.index(end, row)) == bg {
 			end++
 		}
-		if bg != tab.bg {
+		if bg != tab.frame.colors.bg {
 			vector.FillRect(dst,
-				float32(float64(start)*tab.fonts().CellWidth), float32(float64(row)*tab.fonts().CellHeight),
-				float32(float64(end-start)*tab.fonts().CellWidth), float32(tab.fonts().CellHeight),
+				float32(g.x(start)), float32(g.y(row)),
+				float32(g.x(end-start)), float32(g.cellH),
 				bg, false)
 		}
 		start = end
@@ -166,15 +168,16 @@ func (tab *terminalTab) cellBackground(cell gostty.RenderCell) color.RGBA {
 }
 
 func (tab *terminalTab) cellBackgroundAt(i int) color.RGBA {
-	if i < len(tab.search.cells) && tab.search.cells[i] && !tab.cells[i].Flags.Selected {
+	if i < len(tab.search.cells) && tab.search.cells[i] && !tab.frame.cells[i].Flags.Selected {
 		return matchHighlight
 	}
-	return tab.cellBackground(tab.cells[i])
+	return tab.cellBackground(tab.frame.cells[i])
 }
 
 func (tab *terminalTab) drawRowGlyphs(dst *ebiten.Image, row int) {
-	for col := 0; col < tab.cols; col++ {
-		cell := tab.cells[row*tab.cols+col]
+	g := tab.grid()
+	for col := range g.cols {
+		cell := tab.frame.cells[g.index(col, row)]
 		flags := cell.Flags
 		// The tail of a wide character is drawn by the head, and the head of a
 		// soft-wrap is not drawn at all.
@@ -187,7 +190,7 @@ func (tab *terminalTab) drawRowGlyphs(dst *ebiten.Image, row int) {
 		// SGR 5. The terminal only records that the cell blinks; when it is
 		// dark is the renderer's to decide, and it is the same phase the
 		// cursor uses so the two do not beat against each other.
-		if flags.Blink && !tab.blink {
+		if flags.Blink && !tab.frame.blink {
 			continue
 		}
 
@@ -200,14 +203,13 @@ func (tab *terminalTab) drawRowGlyphs(dst *ebiten.Image, row int) {
 		}
 
 		wide := flags.Wide == gostty.CellWidthWide
-		x := float64(col) * tab.fonts().CellWidth
-		y := float64(row) * tab.fonts().CellHeight
+		x, y := g.x(col), g.y(row)
 		// The cell's text, not its first codepoint: an accent, a skin tone or
 		// the halves of a flag are all part of what this one cell says.
-		tab.glyph(dst, tab.clusterAt(col, row, cell), x, y, wide, flags.Bold, flags.Italic, fg)
+		tab.glyph(dst, tab.frame.clusterAt(g, col, row, cell), x, y, wide, flags.Bold, flags.Italic, fg)
 
 		if flags.Underline != gostty.UnderlineNone || flags.Strikethrough || flags.Overline {
-			width := tab.fonts().CellWidth
+			width := g.cellW
 			if wide {
 				width *= 2
 			}
@@ -269,7 +271,7 @@ func (tab *terminalTab) glyph(screen *ebiten.Image, str string, x, y float64, wi
 		face, synthetic, dx, dy = tab.fonts().Wide, false, tab.fonts().WideDX, tab.fonts().WideDY
 	}
 
-	op := &tab.grid.op
+	op := &tab.layers.op
 	op.GeoM.Reset()
 	if s := tab.fonts().Scale; s != 1 {
 		// The bitmap fallback is scaled by a whole number and drawn unfiltered
@@ -306,47 +308,47 @@ func cursorLit(blinking bool, now time.Time) bool {
 // drawCursor paints the cursor from the state refresh() read. Nothing here
 // touches the terminal: Draw cannot report an error, so it draws pixels only.
 func (tab *terminalTab) drawCursor(screen *ebiten.Image) {
-	if !tab.cursor.visible || !cursorLit(tab.cursor.blinking, time.Now()) {
+	if !tab.frame.cursor.visible || !cursorLit(tab.frame.cursor.blinking, time.Now()) {
 		return
 	}
 	// The colour the program asked for, and the foreground only as a fallback:
 	// a program that sets OSC 12 means the cursor to be that colour.
-	fill := tab.fg
-	if tab.cursor.hasColor {
-		fill = tab.themeColor(tab.cursor.color)
+	fill := tab.frame.colors.fg
+	if tab.frame.cursor.hasColor {
+		fill = tab.themeColor(tab.frame.cursor.color)
 	}
-	x := float64(tab.cursor.x) * tab.fonts().CellWidth
-	y := float64(tab.cursor.y) * tab.fonts().CellHeight
+	g := tab.grid()
+	x, y := g.x(int(tab.frame.cursor.x)), g.y(int(tab.frame.cursor.y))
 	// A cursor on a wide character covers both of its cells, so the glyph
 	// underneath is not left half-lit.
-	width := tab.fonts().CellWidth
-	if tab.cursor.wideTail {
+	width := g.cellW
+	if tab.frame.cursor.wideTail {
 		x -= width
 		width *= 2
-	} else if i := tab.cursorCellIndex(); i >= 0 && tab.cells[i].Flags.Wide == gostty.CellWidthWide {
+	} else if i := tab.cursorCellIndex(); i >= 0 && tab.frame.cells[i].Flags.Wide == gostty.CellWidthWide {
 		width *= 2
 	}
 	thickness := float32(2 * tab.fonts().LineHeight)
 
-	switch tab.cursor.style {
+	switch tab.frame.cursor.style {
 	case gostty.CursorStyleBar:
-		vector.FillRect(screen, float32(x), float32(y), thickness, float32(tab.fonts().CellHeight), fill, false)
+		vector.FillRect(screen, float32(x), float32(y), thickness, float32(g.cellH), fill, false)
 	case gostty.CursorStyleUnderline:
-		vector.FillRect(screen, float32(x), float32(y+tab.fonts().CellHeight)-thickness,
+		vector.FillRect(screen, float32(x), float32(y+g.cellH)-thickness,
 			float32(width), thickness, fill, false)
 	default: // block
 		vector.FillRect(screen, float32(x), float32(y),
-			float32(width), float32(tab.fonts().CellHeight), fill, false)
+			float32(width), float32(g.cellH), fill, false)
 		// Redraw the glyph in the background color so it stays legible --
 		// except while the program is reading a password, where the block is
 		// left solid rather than spelling out what was typed.
-		if i := tab.cursorCellIndex(); i >= 0 && !tab.cursor.password {
-			cell := tab.cells[i]
+		if i := tab.cursorCellIndex(); i >= 0 && !tab.frame.cursor.password {
+			cell := tab.frame.cells[i]
 			if cell.Codepoint > ' ' {
 				flags := cell.Flags
 				wide := flags.Wide == gostty.CellWidthWide
-				tab.glyph(screen, tab.clusterAt(int(tab.cursor.x), int(tab.cursor.y), cell),
-					x, y, wide, flags.Bold, flags.Italic, tab.bg)
+				tab.glyph(screen, tab.frame.clusterAt(g, int(tab.frame.cursor.x), int(tab.frame.cursor.y), cell),
+					x, y, wide, flags.Bold, flags.Italic, tab.frame.colors.bg)
 			}
 		}
 	}
@@ -356,12 +358,13 @@ func (tab *terminalTab) drawCursor(screen *ebiten.Image) {
 // grid the last refresh read. The tail of a wide character is drawn from its
 // head, so that is the cell this reports.
 func (tab *terminalTab) cursorCellIndex() int {
-	x, y := int(tab.cursor.x), int(tab.cursor.y)
-	if tab.cursor.wideTail {
+	g := tab.grid()
+	x, y := int(tab.frame.cursor.x), int(tab.frame.cursor.y)
+	if tab.frame.cursor.wideTail {
 		x--
 	}
-	i := y*tab.cols + x
-	if x < 0 || x >= tab.cols || i < 0 || i >= len(tab.cells) {
+	i := g.index(x, y)
+	if x < 0 || x >= g.cols || i < 0 || i >= len(tab.frame.cells) {
 		return -1
 	}
 	return i

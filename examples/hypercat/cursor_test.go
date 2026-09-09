@@ -15,15 +15,15 @@ func TestCursorBlinkFollowsTheTerminal(t *testing.T) {
 	tab := app.current()
 
 	feedTab(t, tab, "\x1b[1 q") // blinking block
-	if !tab.cursor.blinking {
+	if !tab.frame.cursor.blinking {
 		t.Error("cursor is steady after DECSCUSR 1, want blinking")
 	}
 	feedTab(t, tab, "\x1b[2 q") // steady block
-	if tab.cursor.blinking {
+	if tab.frame.cursor.blinking {
 		t.Error("cursor blinks after DECSCUSR 2, want steady")
 	}
-	if tab.cursor.style != gostty.CursorStyleBlock {
-		t.Errorf("cursor style = %v, want a block", tab.cursor.style)
+	if tab.frame.cursor.style != gostty.CursorStyleBlock {
+		t.Errorf("cursor style = %v, want a block", tab.frame.cursor.style)
 	}
 }
 
@@ -53,24 +53,24 @@ func TestBlinkingCellsRepaintOnThePhase(t *testing.T) {
 	tab := app.current()
 
 	feedTab(t, tab, "\x1b[5mblinking\x1b[0m")
-	if !tab.cells[0].Flags.Blink {
+	if !tab.frame.cells[0].Flags.Blink {
 		t.Fatal("the cell is not marked as blinking")
 	}
-	tab.redraw.clear()
+	tab.frame.redraw.clear()
 
 	// Turning the phase over marks the row holding the blinking cell.
-	tab.blink = !blinkLit(time.Now())
-	tab.refreshBlink()
-	if !tab.redraw.marked(0) {
+	tab.frame.blink = !blinkLit(time.Now())
+	tab.frame.tickBlink(time.Now(), tab.grid())
+	if !tab.frame.redraw.marked(0) {
 		t.Error("the row with the blinking cell was not repainted")
 	}
 
 	// A screen with nothing blinking costs nothing.
 	feedTab(t, tab, "\x1b[2J\x1b[Hsteady")
-	tab.redraw.clear()
-	tab.blink = !blinkLit(time.Now())
-	tab.refreshBlink()
-	if tab.redraw.marked(0) {
+	tab.frame.redraw.clear()
+	tab.frame.blink = !blinkLit(time.Now())
+	tab.frame.tickBlink(time.Now(), tab.grid())
+	if tab.frame.redraw.marked(0) {
 		t.Error("a row with nothing blinking was repainted for the phase")
 	}
 }
@@ -81,15 +81,15 @@ func TestCursorTakesTheColorTheProgramSet(t *testing.T) {
 	app := newTabTestApp(t)
 	tab := app.current()
 
-	if tab.cursor.hasColor {
+	if tab.frame.cursor.hasColor {
 		t.Fatal("a cursor colour was reported before the program set one")
 	}
 	feedTab(t, tab, "\x1b]12;#ff0000\x07")
-	if !tab.cursor.hasColor {
+	if !tab.frame.cursor.hasColor {
 		t.Fatal("no cursor colour after OSC 12")
 	}
-	if want := (color.RGBA{R: 0xff, A: 0xff}); tab.cursor.color != want {
-		t.Errorf("cursor colour = %v, want %v", tab.cursor.color, want)
+	if want := (color.RGBA{R: 0xff, A: 0xff}); tab.frame.cursor.color != want {
+		t.Errorf("cursor colour = %v, want %v", tab.frame.cursor.color, want)
 	}
 }
 
@@ -101,11 +101,11 @@ func TestCursorOnAWideCharacter(t *testing.T) {
 	tab := app.current()
 
 	feedTab(t, tab, "한\x1b[1D") // print it, then step back onto its tail
-	if !tab.cursor.wideTail {
+	if !tab.frame.cursor.wideTail {
 		t.Fatal("cursor is not on the wide character's tail")
 	}
 	i := tab.cursorCellIndex()
-	if i < 0 || tab.cells[i].Codepoint != '한' {
+	if i < 0 || tab.frame.cells[i].Codepoint != '한' {
 		t.Errorf("cursorCellIndex() = %d, want the cell holding the character", i)
 	}
 }

@@ -18,26 +18,6 @@ import (
 	"github.com/ironpark/gostty/examples/hypercat/ui"
 )
 
-func newTabTestApp(t *testing.T) *terminalApp {
-	t.Helper()
-	shelltest.Shell(t, "echo")
-	app := &terminalApp{dsf: 1, settings: &appearance{
-		size: fonts.DefaultSize, dsf: 1,
-		fonts: &fonts.Set{CellWidth: 10, CellHeight: 20},
-	}}
-	tab := &terminalTab{
-		clipboard: &app.clipboard, settings: app.settings,
-		cols: 80, rows: 24,
-	}
-	if err := tab.start(); err != nil {
-		tab.close()
-		t.Fatal(err)
-	}
-	app.tabs = []*terminalTab{tab}
-	t.Cleanup(app.close)
-	return app
-}
-
 func TestTabsKeepIndependentTerminalsAndShareClipboard(t *testing.T) {
 	app := newTabTestApp(t)
 	first := app.current()
@@ -73,7 +53,7 @@ func TestTabsKeepIndependentTerminalsAndShareClipboard(t *testing.T) {
 			t.Fatal(err)
 		}
 		for i, r := range test.want {
-			if test.tab.cells[i].Codepoint != r {
+			if test.tab.frame.cells[i].Codepoint != r {
 				t.Fatalf("tab text differs at cell %d", i)
 			}
 		}
@@ -264,7 +244,7 @@ func tabHasText(t *testing.T, tab *terminalTab, want string) bool {
 		t.Fatal(err)
 	}
 	var text []rune
-	for _, cell := range tab.cells {
+	for _, cell := range tab.frame.cells {
 		if cell.Codepoint == 0 {
 			text = append(text, ' ')
 			continue
@@ -299,7 +279,7 @@ func TestSettingsChangeAppliesToEveryTab(t *testing.T) {
 	if first.currentTheme().Name != second.currentTheme().Name {
 		t.Errorf("tabs disagree on the theme: %q and %q", first.currentTheme().Name, second.currentTheme().Name)
 	}
-	if !first.redraw.all {
+	if !first.frame.redraw.all {
 		t.Error("the other tab was not repainted in the new theme")
 	}
 

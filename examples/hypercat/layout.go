@@ -8,8 +8,9 @@ import (
 
 // layout resizes a tab to the content area below the tab bar.
 func (tab *terminalTab) layout(width, height float64) {
-	cols := max(int(width/tab.fonts().CellWidth), 1)
-	rows := max(int(height/tab.fonts().CellHeight), 1)
+	g := tab.grid()
+	cols := max(int(width/g.cellW), 1)
+	rows := max(int(height/g.cellH), 1)
 	if cols != tab.cols || rows != tab.rows || tab.relayout {
 		if err := tab.resize(cols, rows); err != nil {
 			log.Printf("resize to %dx%d: %v", cols, rows, err)
@@ -28,11 +29,11 @@ func (tab *terminalTab) cursorPosition() (int, int) {
 // the program asks the pty how big it is and writes for the terminal.
 func (tab *terminalTab) resize(cols, rows int) error {
 	tab.cols, tab.rows = cols, rows
-	cellW, cellH := uint16(tab.fonts().CellWidth), uint16(tab.fonts().CellHeight)
+	g := tab.grid()
 	// `ResizeCells` rather than `Resize`: a Kitty image sized in cells is
 	// measured in pixels through the cell size, and the terminal stores the
 	// pixel size of the whole grid, so it goes stale on every column change.
-	if err := tab.vt.ResizeCells(uint16(cols), uint16(rows), uint32(cellW), uint32(cellH)); err != nil {
+	if err := tab.vt.ResizeCells(uint16(cols), uint16(rows), uint32(g.cellW), uint32(g.cellH)); err != nil {
 		return err
 	}
 	// The selection gesture measures the pointer in pixels, so it is told the

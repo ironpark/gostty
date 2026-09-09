@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ironpark/gostty"
+	"github.com/ironpark/gostty/examples/hypercat/ui"
 )
 
 // redrawSet is what the next drawGrid has to repaint. The render state says
@@ -77,54 +78,94 @@ func (r *redrawSet) clear() {
 	clear(r.rows)
 }
 
-// refresh pulls the viewport out of the render state. This is the only place
-// cell data crosses the boundary, and it is one call for the whole grid.
-func (tab *terminalTab) refresh() error {
-	if err := tab.state.Update(tab.vt); err != nil {
-		return fmt.Errorf("render update: %w", err)
-	}
-	n, err := tab.state.CellCount()
+// viewportTop is the scrollback row the top of the screen is showing, which is
+// what turns a position in the scrollback into a row on the grid.
+func (tab *terminalTab) viewportTop() (uint32, error) {
+	var top uint32
+	err := tab.onScreen(func(screen *gostty.Screen) error {
+		var err error
+		top, err = screen.ViewportTop()
+		return err
+	})
+	return top, err
+}
+
+// revealRow brings a scrollback row onto the screen, and leaves the viewport
+// alone when it is already there.
+//
+// Both the search and a keyboard selection move to somewhere in the
+// scrollback and want to see it. Scrolling unconditionally would move the page
+// under the user every time they stepped between two things already in front
+// of them.
+func (tab *terminalTab) revealRow(row uint32) error {
+	top, err := tab.viewportTop()
 	if err != nil {
 		return err
 	}
-	if uint(cap(tab.cells)) < n {
-		tab.cells = make([]gostty.RenderCell, n)
+	if row >= top && row < top+uint32(tab.rows) {
+		return nil
 	}
-	tab.cells = tab.cells[:n]
-	if _, err := tab.state.Cells(tab.cells); err != nil {
-		return fmt.Errorf("render cells: %w", err)
-	}
-	if err := tab.tickSearch(); err != nil {
-		return err
-	}
-	tab.redraw.resize(tab.rows)
-	if err := tab.refreshMatches(); err != nil {
-		return err
-	}
-	if err := tab.redraw.pull(tab.state); err != nil {
-		return err
-	}
-	if err := tab.images.refresh(); err != nil {
-		return err
-	}
-	if err := tab.refreshColors(); err != nil {
-		return err
-	}
-	if err := tab.refreshCursor(); err != nil {
-		return err
-	}
-	if err := tab.refreshLink(); err != nil {
-		return err
-	}
-	if err := tab.refreshScrollbar(); err != nil {
-		return err
-	}
-	tab.refreshBlink()
-	// Last, because it follows the rows the steps above marked for redraw.
-	return tab.refreshClusters()
+	return tab.vt.ScrollViewport(gostty.ScrollViewportRow(uint(row)))
 }
 
-// refreshBlink advances the blink phase and marks the rows that have to be
+// refresh pulls the viewport out of the render state. This is the only place
+// cell data crosses the boundary, and it is one call for the whole grid.
+//
+// The steps run in three phases, because the order between them matters and
+// the order inside them does not. Everything reads the cells the first phase
+// took, so nothing else can come before it; everything that marks a row for
+// redraw has to have done so before the last phase, which reads back the text
+// of the rows that are going to be drawn again. A step added to the wrong
+// phase is wrong quietly -- the frame is one behind rather than broken -- so
+// the phases are named instead of left to the order of the lines.
+func (tab *terminalTab) refresh() error {
+	g := tab.grid()
+	if err := tab.frame.read(tab.state, tab.vt, g); err != nil {
+		return err
+	}
+	// Derived from the cells, in any order: none of these reads what another
+	// one writes.
+	for _, step := range []func() error{
+		tab.tickSearch,
+		tab.refreshMatches,
+		tab.images.refresh,
+		func() error { return tab.frame.readColors(tab.state, tab.currentTheme()) },
+		func() error { return tab.frame.readCursor(tab.state) },
+		tab.refreshLink,
+		tab.refreshScrollbar,
+	} {
+		if err := step(); err != nil {
+			return err
+		}
+	}
+	tab.frame.tickBlink(time.Now(), g)
+	// Last: the rows to be redrawn are settled, and these are read per cell in
+	// those rows alone.
+	return tab.frame.readClusters(tab.state, g)
+}
+
+// read takes this frame's grid out of the terminal and settles which rows have
+// to be drawn again, which is what the rest of the refresh works from.
+func (f *frame) read(state *gostty.RenderState, term *gostty.Terminal, g grid) error {
+	if err := state.Update(term); err != nil {
+		return fmt.Errorf("render update: %w", err)
+	}
+	n, err := state.CellCount()
+	if err != nil {
+		return err
+	}
+	if uint(cap(f.cells)) < n {
+		f.cells = make([]gostty.RenderCell, n)
+	}
+	f.cells = f.cells[:n]
+	if _, err := state.Cells(f.cells); err != nil {
+		return fmt.Errorf("render cells: %w", err)
+	}
+	f.redraw.resize(g.rows)
+	return f.redraw.pull(state)
+}
+
+// tickBlink advances the blink phase and marks the rows that have to be
 // drawn again because of it.
 //
 // The terminal reports a cell as blinking and stops there, since when it is
@@ -132,20 +173,20 @@ func (tab *terminalTab) refresh() error {
 // this side's business to repaint: the rows holding blinking cells are marked
 // on each half of the phase, and no others, so a screen with nothing blinking
 // costs nothing.
-func (tab *terminalTab) refreshBlink() {
-	lit := blinkLit(time.Now())
-	if lit == tab.blink {
+func (f *frame) tickBlink(now time.Time, g grid) {
+	lit := blinkLit(now)
+	if lit == f.blink {
 		return
 	}
-	tab.blink = lit
-	for row := 0; row < tab.rows; row++ {
-		for col := 0; col < tab.cols; col++ {
-			i := row*tab.cols + col
-			if i >= len(tab.cells) {
+	f.blink = lit
+	for row := range g.rows {
+		for col := range g.cols {
+			i := g.index(col, row)
+			if i >= len(f.cells) {
 				break
 			}
-			if tab.cells[i].Flags.Blink {
-				tab.redraw.mark(row)
+			if f.cells[i].Flags.Blink {
+				f.redraw.mark(row)
 				break
 			}
 		}
@@ -157,29 +198,29 @@ func (tab *terminalTab) refreshBlink() {
 // people and skin tones is nine.
 const maxClusterRunes = 32
 
-// refreshClusters reads back the cells that hold more than one codepoint.
+// readClusters reads back the cells that hold more than one codepoint.
 //
 // A `RenderCell` carries one codepoint, which is the base of the cluster: the
 // combining acute on an "e", the second half of a flag and the joiners in a
 // family are all still in the terminal. `Graphemes` is what hands them over,
 // and it is per cell, so it is asked only about the rows that are going to be
 // drawn again -- the same rows `drawGrid` repaints, for the same reason.
-func (tab *terminalTab) refreshClusters() error {
-	if tab.clusters == nil {
-		tab.clusters = make(map[int]string)
-		tab.clusterBuf = make([]rune, maxClusterRunes)
+func (f *frame) readClusters(state *gostty.RenderState, g grid) error {
+	if f.clusters == nil {
+		f.clusters = make(map[int]string)
+		f.clusterBuf = make([]rune, maxClusterRunes)
 	}
-	for row := 0; row < tab.rows; row++ {
-		if !tab.redraw.marked(row) {
+	for row := range g.rows {
+		if !f.redraw.marked(row) {
 			continue
 		}
-		for col := 0; col < tab.cols; col++ {
-			i := row*tab.cols + col
-			if i >= len(tab.cells) {
+		for col := range g.cols {
+			i := g.index(col, row)
+			if i >= len(f.cells) {
 				break
 			}
-			delete(tab.clusters, i)
-			cell := tab.cells[i]
+			delete(f.clusters, i)
+			cell := f.cells[i]
 			// Blanks and the spacers of a wide cell have no text of their own,
 			// and an ASCII letter cannot be the base of anything: skipping them
 			// is most of the grid.
@@ -187,12 +228,12 @@ func (tab *terminalTab) refreshClusters() error {
 				cell.Flags.Wide == gostty.CellWidthSpacerHead {
 				continue
 			}
-			n, err := tab.state.Graphemes(uint16(col), uint16(row), tab.clusterBuf)
+			n, err := state.Graphemes(uint16(col), uint16(row), f.clusterBuf)
 			if err != nil {
 				return err
 			}
 			if n > 1 {
-				tab.clusters[i] = string(tab.clusterBuf[:min(n, uint(len(tab.clusterBuf)))])
+				f.clusters[i] = string(f.clusterBuf[:min(n, uint(len(f.clusterBuf)))])
 			}
 		}
 	}
@@ -200,46 +241,45 @@ func (tab *terminalTab) refreshClusters() error {
 }
 
 // clusterAt is the text of one cell: its cluster where it has one, and its
-// codepoint otherwise. Draw calls it, so it reads what refreshClusters left
-// rather than the terminal.
-func (tab *terminalTab) clusterAt(col, row int, cell gostty.RenderCell) string {
-	if cluster, ok := tab.clusters[row*tab.cols+col]; ok {
+// codepoint otherwise. Draw calls it, so it reads what readClusters left rather
+// than the terminal.
+func (f *frame) clusterAt(g grid, col, row int, cell gostty.RenderCell) string {
+	if cluster, ok := f.clusters[g.index(col, row)]; ok {
 		return cluster
 	}
 	return glyphString(cell.Codepoint)
 }
 
-// refreshColors reads the terminal's default colors and resolves them through
+// readColors reads the terminal's default colors and resolves them through
 // the theme. A change to either repaints the whole grid, since every cell with
 // default colors is drawn from them.
-func (tab *terminalTab) refreshColors() error {
-	prevBg, prevFg := tab.bg, tab.fg
-	colors, err := tab.state.Colors()
+func (f *frame) readColors(state *gostty.RenderState, theme ui.Theme) error {
+	previous := f.colors
+	colors, err := state.Colors()
 	if err != nil {
 		return err
 	}
-	tab.terminalBg = rgb(colors.Background)
-	tab.terminalFg = rgb(colors.Foreground)
-	theme := tab.currentTheme()
+	f.colors.terminalBg = rgb(colors.Background)
+	f.colors.terminalFg = rgb(colors.Foreground)
 	if theme.Terminal {
-		tab.bg, tab.fg = tab.terminalBg, tab.terminalFg
+		f.colors.bg, f.colors.fg = f.colors.terminalBg, f.colors.terminalFg
 	} else {
-		tab.bg, tab.fg = theme.Background, theme.Foreground
+		f.colors.bg, f.colors.fg = theme.Background, theme.Foreground
 	}
-	if tab.bg != prevBg || tab.fg != prevFg {
-		tab.redraw.markAll()
+	if f.colors.bg != previous.bg || f.colors.fg != previous.fg {
+		f.redraw.markAll()
 	}
 	return nil
 }
 
-// refreshCursor reads the cursor out of the render state, so Draw does not have
+// readCursor reads the cursor out of the render state, so Draw does not have
 // to reach across the boundary from a place that cannot report a failure.
-func (tab *terminalTab) refreshCursor() error {
-	cursor, err := tab.state.Cursor()
+func (f *frame) readCursor(state *gostty.RenderState) error {
+	cursor, err := state.Cursor()
 	if err != nil {
 		return err
 	}
-	tab.cursor = cursorState{
+	f.cursor = cursorState{
 		x: cursor.X, y: cursor.Y,
 		visible:  cursor.Visible && cursor.ViewportHasValue,
 		style:    cursor.Style,
@@ -250,11 +290,11 @@ func (tab *terminalTab) refreshCursor() error {
 	// The colour is separate because it is optional: a program that has not
 	// set one leaves the cursor to be drawn in the foreground colour, which is
 	// this window's decision rather than the terminal's.
-	rgba, ok, err := tab.state.CursorColor()
+	rgba, ok, err := state.CursorColor()
 	if err != nil {
 		return err
 	}
-	tab.cursor.color, tab.cursor.hasColor = rgb(rgba), ok
+	f.cursor.color, f.cursor.hasColor = rgb(rgba), ok
 	return nil
 }
 

@@ -32,49 +32,53 @@ type scrollbarState struct {
 
 // refreshScrollbar reads where the viewport sits in the scrollback.
 func (tab *terminalTab) refreshScrollbar() error {
-	screen, err := tab.vt.ActiveScreen()
-	if err != nil {
-		return err
-	}
-	bar, err := screen.Scrollbar()
-	if err != nil {
-		return err
-	}
-	previous := tab.scrollbar.bar
-	tab.scrollbar.bar = bar
+	return tab.onScreen(func(screen *gostty.Screen) error {
+		bar, err := screen.Scrollbar()
+		if err != nil {
+			return err
+		}
+		tab.frame.updateScrollbar(bar)
+		return nil
+	})
+}
+
+// updateScrollbar takes a reading and decides how long the bar stays up.
+func (f *frame) updateScrollbar(bar gostty.Scrollbar) {
+	previous := f.scrollbar.bar
+	f.scrollbar.bar = bar
 	switch {
 	case bar.Total <= bar.Len:
 		// Nothing to scroll through: no bar, however recently it moved.
-		tab.scrollbar.visible = 0
+		f.scrollbar.visible = 0
 	case bar.Offset+bar.Len < bar.Total:
 		// Away from the bottom, which is the whole reason to show it.
-		tab.scrollbar.visible = scrollbarFrames
+		f.scrollbar.visible = scrollbarFrames
 	case bar.Offset != previous.Offset || bar.Total != previous.Total:
-		tab.scrollbar.visible = scrollbarFrames
-	case tab.scrollbar.visible > 0:
-		tab.scrollbar.visible--
+		f.scrollbar.visible = scrollbarFrames
+	case f.scrollbar.visible > 0:
+		f.scrollbar.visible--
 	}
-	return nil
 }
 
 // drawScrollbar paints the thumb down the right edge. Like the link underline
 // it goes over the finished grid rather than into it, because it follows the
 // viewport rather than the cells.
 func (tab *terminalTab) drawScrollbar(screen *ebiten.Image) {
-	bar := tab.scrollbar.bar
-	if tab.scrollbar.visible <= 0 || bar.Total <= bar.Len || bar.Total == 0 {
+	bar := tab.frame.scrollbar.bar
+	if tab.frame.scrollbar.visible <= 0 || bar.Total <= bar.Len || bar.Total == 0 {
 		return
 	}
+	g := tab.grid()
 	width := scrollbarWidth * tab.settings.dsf
-	height := float64(tab.rows) * tab.fonts().CellHeight
+	height := g.height()
 	// The thumb is the viewport's share of the whole, kept big enough to see
 	// on a scrollback that dwarfs it.
 	thumb := max(height*float64(bar.Len)/float64(bar.Total), 2*width)
 	top := (height - thumb) * float64(bar.Offset) / float64(bar.Total-bar.Len)
 
-	x := float32(float64(tab.cols)*tab.fonts().CellWidth - width)
-	vector.FillRect(screen, x, 0, float32(width), float32(height), scrollbarTrack(tab.fg), false)
-	vector.FillRect(screen, x, float32(top), float32(width), float32(thumb), scrollbarThumb(tab.fg), false)
+	x := float32(g.width() - width)
+	vector.FillRect(screen, x, 0, float32(width), float32(height), scrollbarTrack(tab.frame.colors.fg), false)
+	vector.FillRect(screen, x, float32(top), float32(width), float32(thumb), scrollbarThumb(tab.frame.colors.fg), false)
 }
 
 // The track and the thumb are the foreground colour at two transparencies, so

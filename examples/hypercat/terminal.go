@@ -129,7 +129,7 @@ func (tab *terminalTab) close() {
 		_ = tab.sel.gesture.Close()
 		tab.sel.gesture = nil
 	}
-	tab.grid.close()
+	tab.layers.close()
 	tab.images.close()
 	_ = tab.state.Close()
 	_ = tab.stream.Close()

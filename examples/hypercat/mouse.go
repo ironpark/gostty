@@ -74,11 +74,12 @@ func (tab *terminalTab) syncGestureGeometry() error {
 	if tab.sel.gesture == nil {
 		return nil
 	}
+	g := tab.grid()
 	return tab.sel.gesture.SetGeometry(gostty.GestureGeometry{
-		Columns:      uint32(tab.cols),
-		CellWidth:    uint32(tab.fonts().CellWidth),
+		Columns:      uint32(g.cols),
+		CellWidth:    uint32(g.cellW),
 		PaddingLeft:  0,
-		ScreenHeight: uint32(float64(tab.rows) * tab.fonts().CellHeight),
+		ScreenHeight: uint32(g.height()),
 	})
 }
 
@@ -111,7 +112,7 @@ func (tab *terminalTab) handleMouse(m keys.Mods) error {
 
 	case tab.sel.dragging && !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft):
 		tab.sel.dragging = false
-		col, row := tab.cellAt(px, py)
+		col, row := tab.grid().cellAt(px, py)
 		return tab.sel.gesture.Release(uint16(col), uint16(row))
 
 	case tab.sel.dragging:
@@ -124,13 +125,13 @@ func (tab *terminalTab) handleMouse(m keys.Mods) error {
 // a double click, the command output for a triple, and nothing for the first
 // one, which only sets the anchor a drag grows from.
 func (tab *terminalTab) pressSelection(px, py int) error {
-	col, row := tab.cellAt(px, py)
+	col, row := tab.grid().cellAt(px, py)
 	sel, ok, err := tab.sel.gesture.Press(gostty.GesturePressEvent{
 		X: uint16(col), Y: uint16(row),
 		Xpos: float64(px), Ypos: float64(py),
 		// The distance and the interval are what separate a double click from
 		// two clicks that happen to be near each other in space or time.
-		MaxDistance:      multiClickDistance * tab.fonts().CellWidth,
+		MaxDistance:      multiClickDistance * tab.grid().cellW,
 		RepeatIntervalNs: uint64(multiClickInterval),
 		TimeNs:           time.Now().UnixNano(),
 	})
@@ -147,7 +148,7 @@ func (tab *terminalTab) pressSelection(px, py int) error {
 // Alt selects the block between the corners instead of the flow of text, which
 // the gesture applies as it grows the selection rather than only at the end.
 func (tab *terminalTab) dragSelection(px, py int, rectangle bool) error {
-	col, row := tab.cellAt(px, py)
+	col, row := tab.grid().cellAt(px, py)
 	tab.sel.last = gostty.GestureDragEvent{
 		X: uint16(col), Y: uint16(row),
 		// The pixel position matters at the edges: whether the pointer is past
@@ -193,15 +194,13 @@ func (tab *terminalTab) autoscroll() error {
 // screen's selection when it produced none -- which is what a single click is:
 // an anchor, and no selection until the pointer moves.
 func (tab *terminalTab) applySelection(sel gostty.Selection, ok bool) error {
-	screen, err := tab.vt.ActiveScreen()
-	if err != nil {
+	return tab.onScreen(func(screen *gostty.Screen) error {
+		if !ok {
+			return screen.ClearSelection()
+		}
+		_, err := screen.SetSelection(sel)
 		return err
-	}
-	if !ok {
-		return screen.ClearSelection()
-	}
-	_, err = screen.SetSelection(sel)
-	return err
+	})
 }
 
 // endGesture ends the sequence, so the next press starts a fresh one rather
@@ -213,23 +212,13 @@ func (tab *terminalTab) endGesture() {
 	}
 }
 
-// cellAt maps a pixel position to a cell, clamped to the viewport so a drag
-// that runs off the window still selects to the edge.
-func (tab *terminalTab) cellAt(px, py int) (int, int) {
-	col := min(max(int(float64(px)/tab.fonts().CellWidth), 0), tab.cols-1)
-	row := min(max(int(float64(py)/tab.fonts().CellHeight), 0), tab.rows-1)
-	return col, row
-}
-
 // copySelection hands the selected text to the window's clipboard.
 func (tab *terminalTab) copySelection() error {
-	screen, err := tab.vt.ActiveScreen()
-	if err != nil {
-		return err
-	}
-	text, ok, err := screen.SelectionString()
-	if err != nil || !ok || len(text) == 0 {
-		return err
-	}
-	return tab.clipboard.copy(text)
+	return tab.onScreen(func(screen *gostty.Screen) error {
+		text, ok, err := screen.SelectionString()
+		if err != nil || !ok || len(text) == 0 {
+			return err
+		}
+		return tab.clipboard.copy(text)
+	})
 }

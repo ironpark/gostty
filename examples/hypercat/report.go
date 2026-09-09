@@ -87,7 +87,7 @@ func (tab *terminalTab) reportMouse(m keys.Mods) (bool, error) {
 	// Motion is reported per cell, not per pixel: the wire format has no room
 	// for anything finer, and a program in any-event mode would otherwise get a
 	// report for every frame the pointer drifts inside one cell.
-	if col, row := tab.cellAt(px, py); col != tab.reports.mouseCol || row != tab.reports.mouseRow {
+	if col, row := tab.grid().cellAt(px, py); col != tab.reports.mouseCol || row != tab.reports.mouseRow {
 		tab.reports.mouseCol, tab.reports.mouseRow = col, row
 		button, held := input.MouseButtonUnknown, false
 		for _, b := range mouseButtons {
@@ -204,19 +204,7 @@ func (tab *terminalTab) encodeMouse(action input.MouseAction, button input.Mouse
 		X:         float32(px),
 		Y:         float32(py),
 	}
-	return input.EncodeMouse(&tab.report, tab.vt, ev, tab.renderSize(), anyPressed)
-}
-
-// renderSize describes the window to the encoder, which needs it to turn a
-// pixel position into a cell. There is no padding around the grid here, so the
-// only interesting fields are the cell size.
-func (tab *terminalTab) renderSize() input.RenderSize {
-	return input.RenderSize{
-		ScreenWidth:  uint32(float64(tab.cols) * tab.fonts().CellWidth),
-		ScreenHeight: uint32(float64(tab.rows) * tab.fonts().CellHeight),
-		CellWidth:    uint32(tab.fonts().CellWidth),
-		CellHeight:   uint32(tab.fonts().CellHeight),
-	}
+	return input.EncodeMouse(&tab.report, tab.vt, ev, tab.grid().renderSize(), anyPressed)
 }
 
 // reportFocus tells the program the window gained or lost focus, for the
