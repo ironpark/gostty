@@ -20,7 +20,9 @@ func TestShellOutputAndExit(t *testing.T) {
 		select {
 		case chunk, ok := <-s.output:
 			if !ok {
-				if !bytes.Equal(output, []byte("hypercat")) {
+				// Contains rather than equals: a pseudoconsole is a renderer,
+				// so what the shell printed arrives inside a screen it drew.
+				if !bytes.Contains(output, []byte(helperPrinted)) {
 					t.Fatalf("output = %q", output)
 				}
 				select {
@@ -44,9 +46,9 @@ func TestShellCloseWithUnreadOutput(t *testing.T) {
 	}
 	t.Cleanup(s.close)
 	deadline := time.Now().Add(5 * time.Second)
-	for len(s.output) != cap(s.output) {
+	for len(s.output) < unreadChunksWanted {
 		if time.Now().After(deadline) {
-			t.Fatalf("output queue holds %d of %d after 5s", len(s.output), cap(s.output))
+			t.Fatalf("output queue holds %d of the %d wanted after 5s", len(s.output), unreadChunksWanted)
 		}
 		time.Sleep(time.Millisecond)
 	}

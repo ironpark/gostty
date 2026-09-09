@@ -16,6 +16,11 @@ import (
 // when this is set and the tests point the shell at `os.Executable()`.
 const helperVar = "HYPERCAT_TEST_HELPER"
 
+// What the helper writes to say it ran. Not the word "hypercat": a
+// pseudoconsole announces the program it is running in a title sequence, and
+// the program here is hypercat.test.exe.
+const helperPrinted = "helper-ran"
+
 func TestMain(m *testing.M) {
 	if mode := os.Getenv(helperVar); mode != "" {
 		os.Exit(helper(mode))
@@ -26,7 +31,7 @@ func TestMain(m *testing.M) {
 func helper(mode string) int {
 	switch mode {
 	case "print":
-		fmt.Print("hypercat")
+		fmt.Print(helperPrinted)
 	case "spew":
 		for {
 			if _, err := fmt.Println("hypercat output"); err != nil {
@@ -40,6 +45,9 @@ func helper(mode string) int {
 		fmt.Print("ready")
 		bufio.NewReader(os.Stdin).ReadString('\n')
 	case "echo":
+		// Says the child is up before anything is written to it, so a session
+		// that ends early is distinguishable from one that never started.
+		fmt.Println(helperPrinted)
 		// A stand-in for an interactive shell: whatever the test writes comes
 		// back out of the terminal, so a test that wants the emulator to see an
 		// escape sequence can just write one.
