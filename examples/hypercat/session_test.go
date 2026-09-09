@@ -9,6 +9,7 @@ import (
 )
 
 func TestShellOutputAndExit(t *testing.T) {
+	skipWithoutShellIO(t)
 	s, err := startShellCommand(80, 24, helperShell(t, "print"))
 	if err != nil {
 		t.Fatal(err)
@@ -40,6 +41,7 @@ func TestShellOutputAndExit(t *testing.T) {
 }
 
 func TestShellCloseWithUnreadOutput(t *testing.T) {
+	skipWithoutShellIO(t)
 	s, err := startShellCommand(80, 24, helperShell(t, "spew"))
 	if err != nil {
 		t.Fatal(err)
@@ -66,6 +68,7 @@ func TestShellCloseWithUnreadOutput(t *testing.T) {
 }
 
 func TestShellCloseWhileWaitingForInput(t *testing.T) {
+	skipWithoutShellIO(t)
 	s, err := startShellCommand(80, 24, helperShell(t, "hold"))
 	if err != nil {
 		t.Fatal(err)

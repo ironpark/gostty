@@ -105,6 +105,7 @@ func TestTabsKeepIndependentTerminalsAndShareClipboard(t *testing.T) {
 }
 
 func TestBackgroundTabProcessesOutputAndExitsIndependently(t *testing.T) {
+	skipWithoutShellIO(t)
 	app := newTabTestApp(t)
 	background := app.current()
 	if err := app.addTab(); err != nil {

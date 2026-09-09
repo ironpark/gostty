@@ -11,13 +11,6 @@ import (
 
 var procUpdateProcThreadAttribute = windows.NewLazySystemDLL("kernel32.dll").NewProc("UpdateProcThreadAttribute")
 
-// Whether the spawn claims the child's standard handles as its own while
-// leaving them empty, which is what both of the Go pseudoconsole libraries do.
-// It reads like a bug -- CreateProcess is being told the child's handles are
-// nothing -- but the child gets no console either way, so which of the two is
-// right is a question for a runner rather than for reading.
-var conPtyUseStdHandles = false
-
 // A pseudoconsole and the two pipe ends this process keeps.
 //
 // This is written out rather than taken from a library because both of the Go
@@ -36,10 +29,6 @@ type conPty struct {
 	consoleOnce sync.Once
 	closeOnce   sync.Once
 	closeErr    error
-
-	// What the spawn saw. Read by the probe; a pseudoconsole cannot be watched
-	// from anywhere but a Windows runner.
-	diagnostics string
 }
 
 func newConPty(cols, rows int) (*conPty, error) {
@@ -145,10 +134,11 @@ func (p *conPty) start(argv, env []string) (*conPtyProcess, error) {
 		return nil, fmt.Errorf("attach pseudoconsole: %w", updateErr)
 	}
 
+	// No `STARTF_USESTDHANDLES`. Both of the Go pseudoconsole libraries set it
+	// while leaving the three handles it points at empty, which tells
+	// CreateProcess the child's standard handles are nothing at all; the
+	// console can only supply them if nothing has claimed them first.
 	startupInfo := new(windows.StartupInfoEx)
-	if conPtyUseStdHandles {
-		startupInfo.Flags |= windows.STARTF_USESTDHANDLES
-	}
 	startupInfo.ProcThreadAttributeList = attributes.List()
 	startupInfo.Cb = uint32(unsafe.Sizeof(*startupInfo))
 
@@ -174,10 +164,6 @@ func (p *conPty) start(argv, env []string) (*conPtyProcess, error) {
 		return nil, fmt.Errorf("start %s: %w", argv[0], err)
 	}
 	windows.CloseHandle(info.Thread)
-	p.diagnostics = fmt.Sprintf(
-		"console=%#x list=%#x updateRet=%d updateErr=%v cb=%d flags=%#x pid=%d",
-		p.console, uintptr(unsafe.Pointer(attributes.List())),
-		ret, updateErr, startupInfo.Cb, startupInfo.Flags, info.ProcessId)
 	return &conPtyProcess{handle: info.Process}, nil
 }
 

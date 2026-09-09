@@ -21,9 +21,6 @@ const helperVar = "HYPERCAT_TEST_HELPER"
 // the program here is hypercat.test.exe.
 const helperPrinted = "helper-ran"
 
-// Where the helper records that it ran. Set only by the probe.
-const helperTraceVar = "HYPERCAT_TEST_HELPER_TRACE"
-
 func TestMain(m *testing.M) {
 	if mode := os.Getenv(helperVar); mode != "" {
 		os.Exit(helper(mode))
@@ -32,15 +29,6 @@ func TestMain(m *testing.M) {
 }
 
 func helper(mode string) int {
-	// A throwaway record of having run, outside the pty: it tells a failing
-	// Windows run whether the child never started or started and had its
-	// output go somewhere other than the console.
-	if trace := os.Getenv(helperTraceVar); trace != "" {
-		if f, err := os.OpenFile(trace, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600); err == nil {
-			fmt.Fprintf(f, "%s %s\n", mode, describeStdio())
-			f.Close()
-		}
-	}
 	switch mode {
 	case "print":
 		fmt.Print(helperPrinted)
