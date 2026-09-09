@@ -14,6 +14,7 @@ require (
 )
 
 require (
+	github.com/UserExistsError/conpty v0.1.4 // indirect
 	github.com/creack/pty v1.1.24 // indirect
 	github.com/ebitengine/gomobile v0.0.0-20250923094054-ea854a63cce1 // indirect
 	github.com/ebitengine/hideconsole v1.0.0 // indirect
