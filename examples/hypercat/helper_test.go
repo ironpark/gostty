@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 )
 
 // The variable that turns this test binary into the shell the tab tests run.
@@ -24,6 +25,9 @@ const helperPrinted = "helper-ran"
 // Where the helper records that it ran. Set only by the probe.
 const helperTraceVar = "HYPERCAT_TEST_HELPER_TRACE"
 
+// How long the printing helper stays alive after writing.
+const helperLinger = 400 * time.Millisecond
+
 func TestMain(m *testing.M) {
 	if mode := os.Getenv(helperVar); mode != "" {
 		os.Exit(helper(mode))
@@ -37,13 +41,18 @@ func helper(mode string) int {
 	// output go somewhere other than the console.
 	if trace := os.Getenv(helperTraceVar); trace != "" {
 		if f, err := os.OpenFile(trace, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600); err == nil {
-			fmt.Fprintf(f, "%s stdout=%v\n", mode, os.Stdout.Fd())
+			fmt.Fprintf(f, "%s %s\n", mode, describeStdio())
 			f.Close()
 		}
 	}
 	switch mode {
 	case "print":
 		fmt.Print(helperPrinted)
+		// A pseudoconsole paints on its own schedule and only while a client is
+		// attached, so a program that writes and exits in the same breath may
+		// never be drawn. Staying a moment tells that apart from output that
+		// never reached the console at all.
+		time.Sleep(helperLinger)
 	case "spew":
 		for {
 			if _, err := fmt.Println("hypercat output"); err != nil {
