@@ -77,3 +77,21 @@ jobs:
       - name: Test example
         if: runner.os != 'Linux'
         run: go test ./examples/hypercat/...
+
+  published-example:
+    name: example with published dependency (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: examples/hypercat/go.mod
+
+      # Match go run .../examples/hypercat@version: use the pinned module,
+      # not the local replacement in go.work, and link its native archives.
+      - name: Build with published gostty
+        working-directory: examples/hypercat
+        env:
+          GOWORK: "off"
+        run: go build -o hypercat .

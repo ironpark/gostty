@@ -20,6 +20,8 @@ github.com/hugelgupf/vmtest v0.0.0-20240307030256-5d9f3d34a58d h1:nP8SfQJqruIVSW
 github.com/hugelgupf/vmtest v0.0.0-20240307030256-5d9f3d34a58d/go.mod h1:B63hDJMhTupLWCHwopAyEo7wRFowx9kOc8m8j1sfOqE=
 github.com/ironpark/gostty v0.0.0-20260908043959-19677865cc54 h1:Y+DFRgRfiTyevzXB9xsQWa+9B+sotxsRMMQ29l/LKtw=
 github.com/ironpark/gostty v0.0.0-20260908043959-19677865cc54/go.mod h1:htMJDApfeCwo3cVH8Bv9FyVnlhvwrnDkn4DDxSKtjE8=
+github.com/ironpark/gostty v0.0.0-20260909043944-543bd8d15dfc h1:1RO9CX2FjTELK6/2fvzDjrq7pn3MCExcGGrfzdos/hk=
+github.com/ironpark/gostty v0.0.0-20260909043944-543bd8d15dfc/go.mod h1:htMJDApfeCwo3cVH8Bv9FyVnlhvwrnDkn4DDxSKtjE8=
 github.com/jezek/xgb v1.1.1 h1:bE/r8ZZtSv7l9gk6nU0mYx51aXrvnyb44892TwSaqS4=
 github.com/jezek/xgb v1.1.1/go.mod h1:nrhwO0FX/enq75I7Y7G8iN1ubpSGZEiA3v9e9GyRFlk=
 github.com/pierrec/lz4/v4 v4.1.29 h1:CDQY6qZOLI4DW0Nx6R1vRrifrCeQHnNXkMb0hZWXFjg=

@@ -10,4 +10,4 @@ use (
 	./examples/hypercat
 )
 
-replace github.com/ironpark/gostty v0.0.0-20260908043959-19677865cc54 => ./
+replace github.com/ironpark/gostty v0.0.0-20260909043944-543bd8d15dfc => ./
