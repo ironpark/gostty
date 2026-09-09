@@ -36,75 +36,6 @@ func newApp() *terminalApp {
 	return &terminalApp{dsf: dsf, settings: defaultAppearance(dsf)}
 }
 
-func (app *terminalApp) current() *terminalTab {
-	if len(app.tabs) == 0 {
-		return nil
-	}
-	return app.tabs[app.active]
-}
-
-func (app *terminalApp) addTab() error {
-	tab := app.newTab()
-	if err := tab.start(); err != nil {
-		tab.close()
-		return err
-	}
-	app.tabs = append(app.tabs, tab)
-	app.selectTab(len(app.tabs) - 1)
-	app.layoutTabs()
-	return nil
-}
-
-// newTab builds a tab that opens looking like the one it was opened from. The
-// fonts, the theme and the clipboard are the window's, so it only has to take
-// the grid: a new tab starts at the size the visible one is, before Layout has
-// measured it.
-func (app *terminalApp) newTab() *terminalTab {
-	tab := &terminalTab{
-		clipboard: &app.clipboard, settings: app.settings,
-		cols: initialCols, rows: initialRows,
-	}
-	if previous := app.current(); previous != nil {
-		tab.cols, tab.rows = previous.cols, previous.rows
-	}
-	return tab
-}
-
-func (app *terminalApp) selectTab(index int) {
-	if index < 0 || index >= len(app.tabs) {
-		return
-	}
-	if old := app.current(); old != nil {
-		old.deactivate()
-	}
-	app.active = index
-	app.current().activate()
-}
-
-// cycleTab selects the tab `step` away from the active one, wrapping.
-func (app *terminalApp) cycleTab(step int) {
-	app.selectTab(wrap(app.active+step, len(app.tabs)))
-}
-
-func (app *terminalApp) closeTab(index int) {
-	if index < 0 || index >= len(app.tabs) {
-		return
-	}
-	app.tabs[index].close()
-	copy(app.tabs[index:], app.tabs[index+1:])
-	app.tabs[len(app.tabs)-1] = nil
-	app.tabs = app.tabs[:len(app.tabs)-1]
-	if index < app.active {
-		app.active--
-	}
-	app.active = min(app.active, len(app.tabs)-1)
-	if len(app.tabs) > 0 {
-		app.selectTab(app.active)
-	} else {
-		app.active = 0
-	}
-}
-
 func (app *terminalApp) close() {
 	for len(app.tabs) > 0 {
 		app.closeTab(len(app.tabs) - 1)
@@ -184,18 +115,6 @@ func (app *terminalApp) serviceTabs() error {
 	return nil
 }
 
-// syncTitle names the window after the tab the user is looking at; a background
-// tab that renames itself is left to show up in the tab bar alone. The window
-// opens under `appName`, which is what an untouched `windowTitle` comes to, so
-// a shell that never sets a title never reaches the platform call at all.
-func (app *terminalApp) syncTitle(tab *terminalTab) {
-	if tab.title == app.titled && app.active == app.titledTab {
-		return
-	}
-	app.titled, app.titledTab = tab.title, app.active
-	ebiten.SetWindowTitle(tab.title.String())
-}
-
 // applyPanel gives a panel result its effect, in two halves: the tab does what
 // is its own -- the native search -- and the window applies the settings step,
 // because the font, the theme and the cat the panel steps through are shared by
@@ -206,6 +125,74 @@ func (app *terminalApp) applyPanel(tab *terminalTab, result ui.Actions) (bool, e
 		return consumed, err
 	}
 	return consumed, app.settingsAdjust(tab.panels.Settings.Row, result.SettingsDelta)
+}
+
+func (app *terminalApp) current() *terminalTab {
+	if len(app.tabs) == 0 {
+		return nil
+	}
+	return app.tabs[app.active]
+}
+
+func (app *terminalApp) addTab() error {
+	tab := app.newTab()
+	if err := tab.start(); err != nil {
+		return err
+	}
+	app.tabs = append(app.tabs, tab)
+	app.selectTab(len(app.tabs) - 1)
+	app.layoutTabs()
+	return nil
+}
+
+// newTab builds a tab that opens looking like the one it was opened from. The
+// fonts, the theme and the clipboard are the window's, so it only has to take
+// the grid: a new tab starts at the size the visible one is, before Layout has
+// measured it.
+func (app *terminalApp) newTab() *terminalTab {
+	tab := &terminalTab{
+		clipboard: &app.clipboard, settings: app.settings,
+		cols: initialCols, rows: initialRows,
+	}
+	if previous := app.current(); previous != nil {
+		tab.cols, tab.rows = previous.cols, previous.rows
+	}
+	return tab
+}
+
+func (app *terminalApp) selectTab(index int) {
+	if index < 0 || index >= len(app.tabs) {
+		return
+	}
+	if old := app.current(); old != nil {
+		old.deactivate()
+	}
+	app.active = index
+	app.current().activate()
+}
+
+// cycleTab selects the tab `step` away from the active one, wrapping.
+func (app *terminalApp) cycleTab(step int) {
+	app.selectTab(wrap(app.active+step, len(app.tabs)))
+}
+
+func (app *terminalApp) closeTab(index int) {
+	if index < 0 || index >= len(app.tabs) {
+		return
+	}
+	app.tabs[index].close()
+	copy(app.tabs[index:], app.tabs[index+1:])
+	app.tabs[len(app.tabs)-1] = nil
+	app.tabs = app.tabs[:len(app.tabs)-1]
+	if index < app.active {
+		app.active--
+	}
+	app.active = min(app.active, len(app.tabs)-1)
+	if len(app.tabs) > 0 {
+		app.selectTab(app.active)
+	} else {
+		app.active = 0
+	}
 }
 
 // handleTabs consumes the window's own input -- tab shortcuts and the tab
@@ -275,6 +262,18 @@ func (app *terminalApp) handleTabKeys(m keys.Mods, pressed func(ebiten.Key) bool
 		return true, nil
 	}
 	return false, nil
+}
+
+// syncTitle names the window after the tab the user is looking at; a background
+// tab that renames itself is left to show up in the tab bar alone. The window
+// opens under `appName`, which is what an untouched `windowTitle` comes to, so
+// a shell that never sets a title never reaches the platform call at all.
+func (app *terminalApp) syncTitle(tab *terminalTab) {
+	if tab.title == app.titled && app.active == app.titledTab {
+		return
+	}
+	app.titled, app.titledTab = tab.title, app.active
+	ebiten.SetWindowTitle(tab.title.String())
 }
 
 func (app *terminalApp) barHeight() float64 { return float64(int(ui.TabBarHeight * app.dsf)) }

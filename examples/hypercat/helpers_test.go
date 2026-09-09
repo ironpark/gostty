@@ -1,10 +1,5 @@
 package main
 
-// The helpers every test in this package builds on: a window with one tab
-// running a shell, and the few things a test does with it. They live here
-// rather than in whichever test file first needed them, so a new test can find
-// them without knowing which one that was.
-
 import (
 	"testing"
 
@@ -13,6 +8,11 @@ import (
 	"github.com/ironpark/gostty/examples/hypercat/internal/shelltest"
 	"github.com/ironpark/gostty/examples/hypercat/keys"
 )
+
+// The helpers every test in this package builds on: a window with one tab
+// running a shell, and the few things a test does with it. They live here
+// rather than in whichever test file first needed them, so a new test can find
+// them without knowing which one that was.
 
 // newTabTestApp is a window with one tab, on a 10x20 cell so that pixel and
 // cell positions convert by eye. The shell is this test binary; see
@@ -100,3 +100,6 @@ func screenOf(t *testing.T, tab *terminalTab) *gostty.Screen {
 	}
 	return screen
 }
+
+// The tab tests run this binary as their shell, so it has to be able to be one.
+func TestMain(m *testing.M) { shelltest.Main(m) }

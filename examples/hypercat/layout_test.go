@@ -1,6 +1,8 @@
 package main
 
-import "testing"
+import (
+	"testing"
+)
 
 // A 10x20 cell, which is what the tab tests are built on.
 var testGrid = grid{cols: 80, rows: 24, cellW: 10, cellH: 20}

@@ -1,6 +1,6 @@
 # HyperCat Term
 
-A small GUI terminal emulator built with [gostty](../) and
+A small GUI terminal emulator built with [gostty](../../) and
 [Ebitengine](https://ebitengine.org).
 
 ```sh
@@ -26,97 +26,52 @@ shell --pty--> Stream.Feed --> Terminal --> RenderState --> Ebitengine
 shell <--pty-- input.EncodeKey <-- KeyEvent <-- keys.Reader <-- Ebitengine
 ```
 
-Five subpackages keep the parts that are not about the bindings out of the way.
-`keys` reads a frame of keyboard state -- Ebitengine's key set, the macOS call
-that says whether a key is really down, and the repeat policy an emulator has
-to invent -- and reports which terminal keys were pressed, repeated and
-released; `input.go` is what hypercat then does with them. The two key sets are
-not mapped by hand: both spell keys as W3C codes, so `input.KeyFromW3C` names an
-Ebitengine key and `Key.Printable` says whether the platform reports it as text
-or it has to be described to the encoder. `thecat` owns the cat, pointer interaction,
-visual effects, and a grid terrain adapter that has no terminal dependency.
-`fonts` discovers and loads
-font families, derives cell metrics, supplies the bitmap fallback, and caches
-colour emoji glyphs. It has no dependency on terminal or tab state. `ui` owns
-the search bar, settings panel, tab bar, and themes. Its components consume
-input snapshots and return actions; drawing uses a host-supplied text renderer
-and cell metrics, without a terminal, shell, font loader, or cat dependency.
-`shell` runs the user's shell on a pseudo-terminal and reads what it writes: it
-is the half of an emulator that has nothing to do with terminal emulation, and
-it is where every platform difference lives, since a POSIX pty and a Windows
-pseudoconsole disagree about who owns the far end and about what ends a read
-once the program has gone. `internal/shelltest` starts a test binary as that
-shell, which is how both the session tests and the tab tests get a child that
-writes something and then does as it is told.
+## Reading the example
 
-Dependencies in the main package run one way. `terminalApp` owns the window and
-what every tab shares -- the fonts, the theme, the cat mode, the clipboard --
-and reaches down into the tabs; a `terminalTab` holds no reference back. What a
-tab cannot decide alone it reports and the window applies: a settings step comes
-back as a `ui.Actions` field, and the window title is set from the visible tab
-rather than by each tab in turn. The window says what happened -- `activate`,
-`deactivate`, `themeChanged`, `fontsChanged` -- and each tab decides what that
-means to its own state, so `appearance` keeps one writer and many readers.
+Start with these files, in order:
 
-The files are organized around the terminal's frame and resource lifecycle:
+1. [`main.go`](main.go): register the PNG decoder, create the app, and run Ebitengine.
+2. [`terminal.go`](terminal.go): `start` creates the terminal, stream, render state,
+   and shell. `readOutput` feeds PTY bytes with `Stream.Feed`, handles OSC events,
+   and sends `Stream.WriteReplies` back to the shell. `close` releases resources;
+   startup failures use the same cleanup path.
+3. [`app.go`](app.go): `Update` services every tab, routes window and panel input,
+   and updates the active tab. Background shells continue receiving replies.
+4. [`input.go`](input.go): describe key events to `input.EncodeKey` and write the
+   encoded bytes to the PTY. Paste uses `input.EncodePaste`; clipboard callbacks live here too. Mouse and focus
+   encoding live in [`report.go`](report.go).
+5. [`viewport.go`](viewport.go) → [`frame.go`](frame.go) → [`render.go`](render.go):
+   refresh the viewport, copy cells and grapheme clusters from `RenderState`,
+   then draw the snapshot. Native reads happen during `Update`, where errors
+   can be returned. `Draw` uses the saved data.
+6. [`layout.go`](layout.go): resize the terminal and PTY together when the grid changes.
 
-- `main.go` sets up the app's shared state, the clipboard, and the window.
-- `app.go` owns the window, the tab lifecycle, and the state tabs share; it
-  drives `ui.TabBar` and the panels, and applies what a tab asks of the window.
-- `tab.go` owns each terminal tab and services its output and input.
-- `terminal.go` creates and releases terminal resources, configures the stream,
-  and starts the tab's `shell.Session`.
-- `events.go` handles terminal events such as title, bell, and progress, and owns
-  `windowTitle`, the three things a program says about itself.
-- `frame.go` owns `frame`: what the last refresh read out of the terminal, and
-  all a draw may look at. Drawing cannot report a failure and every call into
-  the terminal can fail, so the two are kept apart by a type rather than by a
-  convention.
-- `viewport.go` reads a frame -- cells, colours, cursor, clusters, blink -- in
-  three named phases, and owns `redrawSet`, the rows the next frame has to
-  repaint from either side of the boundary.
-- `grid.go` owns `grid`, the cell-to-pixel arithmetic every part of the window
-  does: where a glyph goes, which cell the pointer is over, how big the screen
-  is to a program.
-- `layout.go` keeps the terminal and PTY sizes aligned with the window.
-- `input.go` encodes keys through a per-frame `frameBuffer`; `report.go` does
-  the same for mouse and focus events the program has asked for, and owns
-  `reportState`, what the program has been told about the pointer so far.
-- `scrollbar.go` owns the scrollbar, which is `Screen.Scrollbar` and a thumb.
-- `helpers_test.go` holds what the tests build on: a window with one tab, and
-  the few things a test does with it.
-- `mouse.go` owns selection, which is a `gostty.Gesture`: the click count, what
-  each count selects, the drag, and the autoscroll at the edges are the
-  terminal's, and this file supplies the pointer, the clock, and the policy.
-- `hyperlink.go` owns the OSC 8 link under the pointer and opens it.
-- `dnd.go` owns OSC 72 drag and drop: what the window system dropped, staged as
-  representations for a program that registered for them.
-- `clipboard.go` owns `sharedClipboard`, the one
-  clipboard every tab copies to and pastes from.
-- `render.go` draws the grid layers, cursor, and decorations, and owns
-  `gridCanvas`: the two layers the grid is drawn into and their lifetime.
-- `kitty.go` owns `imageCache`: the Kitty placement snapshot and its textures.
-- `cat.go` connects terminal cells and the window's `thecat.Mode` to `thecat.Companion`.
-- `panels.go` translates input and UI actions and connects the text renderer.
-- `selection.go` owns the selection the keyboard makes: select-all, stepping an
-  end of one around the screen, and writing a screen out through the formatter.
-- `search.go` owns `tabSearch`: the native search handle, its scanning, match
-  selection, and the per-cell highlight the grid is drawn with.
-- `settings.go` holds `appearance`, the fonts, theme, and cat mode every tab is
-  drawn with, and applies each panel row -- including the font and the display
-  scale -- to all of them.
-- `ui/search.go`, `ui/settings.go`, and `ui/tabbar.go` define the components.
-- `ui/panels.go` routes panel input; `ui/canvas.go` and `ui/theme.go` share drawing and colors.
-- `fonts/discovery.go` finds system fonts and selects the default family.
-- `fonts/font.go` loads text faces and derives grid and decoration metrics.
-- `fonts/emoji.go` loads and caches colour emoji; `emoji.go` places them in cells.
-- `shell/session.go` owns the shell process, pty, and cancellable output reader;
-  `shell/pty_unix.go`, `shell/pty_windows.go`, and `shell/conpty_windows.go` are
-  the two platforms underneath it.
+The terminal, stream, render state, and shell belong to one `terminalTab`.
+The window shares fonts, theme, and clipboard across tabs. A tab returns UI
+actions to the app without holding a reference back to it.
 
-On startup failure, partially created terminal resources are released in dependency
-order. Closing the window stops the output reader and terminates and reaps the shell,
-including when its output queue is full.
+### Optional features and host plumbing
+
+| Concern | Files |
+| --- | --- |
+| Selection and scrollback | `mouse.go`, `viewport.go`, `search.go` |
+| Terminal events and integrations | `terminal.go`, `input.go`, `hyperlink.go`, `dnd.go`, `kitty.go` |
+| Tab and window UI | `app.go`, `tab.go`, `ui/` |
+| Appearance, grid geometry, and drawing | `settings.go`, `layout.go`, `frame.go`, `render.go` |
+| Platform keyboard state and repeats | `keys/` |
+| Font discovery, loading, and emoji | `fonts/` |
+| PTY and shell process lifecycle | `shell/` |
+| Animated cat | `tab.go`, `thecat/` |
+
+These support the full demo but are not prerequisites for following the core
+feed → encode → snapshot flow. `shell/` handles platform differences and stops,
+terminates, and reaps the shell on close, even when its output queue is full.
+
+Run the example's regression tests from the repository root:
+
+```sh
+go test ./examples/hypercat/...
+```
 
 ## Controls
 

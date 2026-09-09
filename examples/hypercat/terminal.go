@@ -1,25 +1,27 @@
 package main
 
 import (
+	"fmt"
+	"log"
+
+	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/ironpark/gostty"
 	"github.com/ironpark/gostty/examples/hypercat/shell"
 )
 
-// How much scrollback a tab keeps.
-//
-// The native default is unbounded, which is the right default for a library --
-// it cannot know how many tabs an application will open, or how long they live
-// -- and the wrong one for a window with a tab bar: a shell that prints for a
-// week would keep every line of it. The line count is pruned at page
-// boundaries rather than exactly, and the byte ceiling is what actually bounds
-// the memory, so both are set.
+// Bound scrollback per tab; native pruning happens at page boundaries.
 const (
 	scrollbackMaxLines = 10_000
 	scrollbackMaxBytes = 16 << 20
 )
 
-func (tab *terminalTab) start() error {
-	var err error
+// start acquires a tab's resources. Any failure releases what was created.
+func (tab *terminalTab) start() (err error) {
+	defer func() {
+		if err != nil {
+			tab.close()
+		}
+	}()
 	if tab.vt, err = gostty.NewTerminalWithConfig(tab.terminalConfig()); err != nil {
 		return err
 	}
@@ -28,10 +30,7 @@ func (tab *terminalTab) start() error {
 	if tab.stream, err = tab.vt.NewStreamWithConfig(tab.streamConfig()); err != nil {
 		return err
 	}
-	// Drag and drop (OSC 72) is a callback rather than a setting: a program
-	// says which types it will take, and is told when a drag happens over a
-	// window it cannot see. Without it the protocol still works -- the stream
-	// answers it -- but this program would not know a drop had anywhere to go.
+	// OSC 72 registrations tell the host which dropped file types to offer.
 	if err := tab.stream.OnDrag(tab.onDrag); err != nil {
 		return err
 	}
@@ -56,9 +55,41 @@ func (tab *terminalTab) start() error {
 	return nil
 }
 
-// terminalConfig is everything the terminal is opened with, in one value
-// rather than a handful of setters afterwards: a setting that fails closes the
-// terminal, so no half-configured tab can escape this call.
+// readOutput feeds PTY output and returns terminal replies to the shell.
+// The budget also lets background tabs and window input make progress.
+func (tab *terminalTab) readOutput() (bool, error) {
+	fed := false
+	for remaining := 64; remaining > 0; remaining-- {
+		select {
+		case chunk, ok := <-tab.shell.Output:
+			if !ok {
+				return fed, ebiten.Termination // the shell exited
+			}
+			if err := tab.stream.Feed(chunk); err != nil {
+				return fed, fmt.Errorf("feed: %w", err)
+			}
+			fed = true
+		default:
+			remaining = 0
+		}
+	}
+
+	if fed {
+		if err := tab.drainEvents(); err != nil {
+			return fed, err
+		}
+		// The terminal answers some sequences itself -- device status, size
+		// reports, Kitty graphics acknowledgements -- and a program that asked
+		// is blocked until the answer arrives. Nothing is written from inside
+		// the feed, so the replies are drained right after it.
+		if err := tab.stream.WriteReplies(tab.shell.Pty); err != nil {
+			return fed, fmt.Errorf("reply: %w", err)
+		}
+	}
+	return fed, nil
+}
+
+// terminalConfig sets dimensions, scrollback limits, and reset-persistent modes.
 func (tab *terminalTab) terminalConfig() gostty.TerminalConfig {
 	lines, bytes := uint(scrollbackMaxLines), uint(scrollbackMaxBytes)
 	return gostty.TerminalConfig{
@@ -67,55 +98,23 @@ func (tab *terminalTab) terminalConfig() gostty.TerminalConfig {
 		ScrollbackMaxLines: &lines,
 		ScrollbackMaxBytes: &bytes,
 		ModeDefaults: []gostty.ModeDefault{
-			// Grapheme clustering (mode 2027). Off, a flag is two cells of
-			// regional indicator and a family is three cells of people: the
-			// terminal counts codepoints because it cannot know whether the
-			// thing drawing them can put a cluster in one cell. This one can --
-			// the renderer reads the cluster back and the emoji font shapes it
-			// -- so it says so.
-			//
-			// A default rather than a mode set afterwards, so a program's full
-			// reset does not quietly take it away again.
+			// The renderer supports clusters. Keep mode 2027 enabled after reset.
 			{Mode: gostty.ModeGraphemeCluster, Enabled: true},
 		},
 	}
 }
 
-// streamConfig is the parser's settings and this program's identity.
+// streamConfig configures parser limits, terminal identity, and OSC callbacks.
 func (tab *terminalTab) streamConfig() gostty.StreamConfig {
 	scheme := tab.colorScheme()
 	return gostty.StreamConfig{
-		// Capture the sequences this library does not implement, so a program
-		// speaking a graphics protocol hypercat never wired up says so in the
-		// log instead of drawing nothing.
+		// Log a bounded sample of unsupported sequences.
 		UnknownMaxBytes: 256,
-		// Tell programs who they are talking to. Without this XTVERSION names
-		// the parser ("libghostty"), which is true and useless: a program
-		// checking whether the terminal supports something wants the
-		// emulator's identity.
-		Version: &gostty.VersionReport{Name: reportName, Version: reportVersion},
-		// The color scheme answers CSI ? 996 n and, once a program subscribes
-		// with mode 2031, is reported the moment it changes. A real emulator
-		// would hook this to the OS appearance notification; this one only
-		// knows its own theme, so it says that.
-		ColorScheme: &scheme,
-		// A clipboard write must be answered from inside the callback: it runs
-		// while Feed is still on the stack and the program is blocked on it.
-		ClipboardWrite: func(req *gostty.ClipboardRequest) {
-			n, err := req.ContentCount()
-			if err == nil && n > 0 {
-				if data, err := req.ContentData(0); err == nil {
-					tab.clipboard.hold(data)
-				}
-			}
-			_ = req.Allow(false)
-		},
-		ClipboardRead: func(req *gostty.ClipboardRequest) {
-			// A read hands the running program whatever the user copied, so a
-			// real emulator would ask the user first. This one answers
-			// immediately, which is the wrong default for anything but a demo.
-			_ = req.ReplyText(string(tab.clipboard.paste()), false)
-		},
+		Version:         &gostty.VersionReport{Name: reportName, Version: reportVersion},
+		// Answer color-scheme queries; themeChanged also notifies subscribers.
+		ColorScheme:    &scheme,
+		ClipboardWrite: tab.writeClipboard,
+		ClipboardRead:  tab.readClipboard,
 	}
 }
 
@@ -134,4 +133,68 @@ func (tab *terminalTab) close() {
 	_ = tab.state.Close()
 	_ = tab.stream.Close()
 	_ = tab.vt.Close()
+}
+
+// drainEvents acts on what the program asked of the emulator rather than of the
+// screen. libghostty-vt parses OSC; doing something about it is ours.
+func (tab *terminalTab) drainEvents() error {
+	for event, err := range tab.stream.EventValues() {
+		if err != nil {
+			return err
+		}
+		switch event.Kind {
+		case gostty.StreamEventBell:
+			tab.bell = 6 // frames of visual bell
+		case gostty.StreamEventPwdChanged:
+			tab.title.pwd = event.Pwd
+		case gostty.StreamEventDesktopNotification:
+			log.Printf("notification: %s %s", event.Title, event.Body)
+		case gostty.StreamEventUnknownSequence:
+			log.Printf("unhandled APC: %q", event.Sequence)
+		case gostty.StreamEventProgressReport:
+			tab.progressReport(event)
+		case gostty.StreamEventTitleChanged:
+			tab.title.program = event.Title
+		}
+	}
+	return nil
+}
+
+// progressReport applies the report captured with this event.
+func (tab *terminalTab) progressReport(event gostty.Event) {
+	switch {
+	case event.ProgressState == gostty.ProgressStateRemove:
+		tab.title.progress = ""
+	case event.HasProgress:
+		tab.title.progress = fmt.Sprintf("%d%%", event.Progress)
+	default:
+		tab.title.progress = event.ProgressState.String()
+	}
+}
+
+// windowTitle is what a program has said about itself. The three are kept
+// apart rather than folded into one string as they arrive, because they arrive
+// separately: a program that sets a title should not lose the directory a
+// previous OSC 7 reported.
+type windowTitle struct {
+	// What the program called itself (OSC 0/2), which is also the tab's label.
+	program  string
+	pwd      string
+	progress string
+}
+
+// String is what the window is called while this tab is the visible one: the
+// emulator's name, and whatever the program has said on top of it.
+func (t windowTitle) String() string {
+	title := appName
+	if t.program != "" {
+		title += " - " + t.program
+	}
+	if t.pwd != "" {
+		title += " (" + t.pwd + ")"
+	}
+	if t.progress != "" {
+		title += " [" + t.progress + "]"
+	}
+	return title
 }

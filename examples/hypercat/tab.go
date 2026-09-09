@@ -1,10 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"image/color"
+	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/ironpark/gostty"
 	"github.com/ironpark/gostty/examples/hypercat/fonts"
 	"github.com/ironpark/gostty/examples/hypercat/keys"
@@ -13,10 +14,8 @@ import (
 	"github.com/ironpark/gostty/examples/hypercat/ui"
 )
 
-// terminalTab is one shell in one grid: everything the window has more than one
-// of. It holds no reference back to the window -- what a tab cannot decide
-// alone, such as a settings step, it reports and the window applies -- so the
-// dependencies run one way, from `terminalApp` down.
+// terminalTab owns one terminal, shell, and viewport. Shared appearance and
+// clipboard come from the app; UI actions flow back without an app reference.
 type terminalTab struct {
 	offsetY int
 
@@ -75,13 +74,8 @@ type terminalTab struct {
 	out, report frameBuffer
 }
 
-// onScreen runs f against the terminal's active screen.
-//
-// A screen is borrowed from the terminal rather than owned -- it is the
-// alternate one while a full-screen program is running and the primary one
-// otherwise -- so it is fetched where it is used rather than held. This is
-// that fetch, in one place: nine callers wanted the same three lines of error
-// handling around it.
+// onScreen borrows the currently active screen for one operation.
+// Fetch it each time because programs can switch between primary and alternate screens.
 func (tab *terminalTab) onScreen(f func(*gostty.Screen) error) error {
 	screen, err := tab.vt.ActiveScreen()
 	if err != nil {
@@ -95,35 +89,7 @@ func (tab *terminalTab) onScreen(f func(*gostty.Screen) error) error {
 func (tab *terminalTab) fonts() *fonts.Set   { return tab.settings.fonts }
 func (tab *terminalTab) emoji() *fonts.Emoji { return tab.settings.emoji }
 
-// cursorState is what Draw needs to paint the cursor, read once per frame.
-//
-// All of it comes from the render state, including the parts a naive renderer
-// invents for itself: whether the cursor blinks (DECSCUSR's odd styles and
-// mode 12), what colour it was given (OSC 12), whether it sits on the tail of
-// a wide character, and whether the program has said it is reading a password.
-type cursorState struct {
-	x, y    uint16
-	visible bool
-	style   gostty.CursorStyle
-	// Blinking is the terminal's answer, not a fixed policy: a program that
-	// asks for a steady cursor gets one.
-	blinking bool
-	// wideTail is set when the cursor is on the second half of a wide
-	// character, which is drawn two cells wide so it covers the whole glyph.
-	wideTail bool
-	// password is set while the program is reading a secret (OSC 133 / mode
-	// 2026 password input). The block cursor then draws without the character
-	// under it, which would otherwise be shown in the background colour.
-	password bool
-	// color is the cursor colour the program set, when it set one.
-	color    color.RGBA
-	hasColor bool
-}
-
-// activate and deactivate are what a tab does about being switched to and away
-// from. The window says which tab is the visible one; what that means to the
-// pointer, the selection and the cat is the tab's own business, so a new piece
-// of per-tab state is reset here rather than in the window's loop.
+// Tab switches reset interaction state and invalidate the visible grid.
 func (tab *terminalTab) activate() {
 	tab.reports.focusedFrames = 0
 	tab.frame.redraw.markAll()
@@ -135,126 +101,8 @@ func (tab *terminalTab) deactivate() {
 	tab.cat.ClearHover()
 }
 
-// themeChanged and fontsChanged are what a tab does about a settings change the
-// window made for all of them.
-func (tab *terminalTab) themeChanged() error {
-	tab.frame.redraw.markAll()
-	if err := tab.applyPalette(); err != nil {
-		return err
-	}
-	// A program that subscribed with mode 2031 is told now, not the next time
-	// it thinks to ask. The scheme is resolved per tab, since a theme that
-	// defers to the terminal takes the colors that tab's program set.
-	return tab.stream.ColorSchemeChanged(tab.colorScheme())
-}
-
-// applyPalette hands the theme's sixteen ANSI colours to the terminal.
-//
-// A theme that only replaced the default foreground and background would leave
-// everything a program coloured by name -- every ls, every prompt, every diff
-// -- in the colours of whatever theme it was not using. The palette is where
-// those live, and it belongs to the terminal: a program can set it too, with
-// OSC 4, and it is resolved per cell as the screen is read.
-//
-// The theme sets the defaults rather than the current values, so what a
-// program asked for is what a reset comes back to. `ResetPalette` then makes
-// the new defaults the current colours, which does drop an OSC 4 palette a
-// program set for itself -- the same thing every emulator does when its
-// configuration is reloaded.
-func (tab *terminalTab) applyPalette() error {
-	palette := tab.currentTheme().Palette
-	if palette == nil {
-		// The terminal theme, which is the terminal's own colours: put back
-		// whatever the defaults were before a theme was applied.
-		if err := tab.vt.ResetDefaultPalette(); err != nil {
-			return err
-		}
-		return tab.vt.ResetPalette()
-	}
-	for i, c := range palette {
-		if err := tab.vt.SetDefaultPaletteColor(uint8(i), ui.Packed(c)); err != nil {
-			return err
-		}
-	}
-	if err := tab.vt.ResetPalette(); err != nil {
-		return err
-	}
-	return tab.restyle()
-}
-
-// restyle rebuilds the render state after a change the terminal does not mark
-// any row dirty for.
-//
-// A cell keeps the palette entry it was written with and the colour is
-// resolved as the state is read, so every cell on screen changes colour when
-// the palette does -- but nothing about the screen changed, so an existing
-// state reports the rows it has as clean and hands back the colours it
-// resolved last time. A fresh one resolves them again.
-func (tab *terminalTab) restyle() error {
-	if tab.state == nil {
-		return nil
-	}
-	state, err := gostty.NewRenderState()
-	if err != nil {
-		return err
-	}
-	_ = tab.state.Close()
-	tab.state = state
-	tab.frame.redraw.markAll()
-	return nil
-}
-
-func (tab *terminalTab) fontsChanged() {
-	tab.frame.redraw.markAll()
-	// The grid is measured in cells and the cell just changed shape, so the
-	// window holds a different number of them. Layout is where that is worked
-	// out; this only has to say that the answer it cached is stale, because the
-	// column count can survive a size change while the pixel geometry the image
-	// protocol measures in does not.
-	tab.relayout = true
-}
-
-// readOutput services background tabs too, with a per-frame budget so a busy
-// shell cannot starve the other tabs or window input.
-func (tab *terminalTab) readOutput() (bool, error) {
-	fed := false
-	for remaining := 64; remaining > 0; remaining-- {
-		select {
-		case chunk, ok := <-tab.shell.Output:
-			if !ok {
-				return fed, ebiten.Termination // the shell exited
-			}
-			if err := tab.stream.Feed(chunk); err != nil {
-				return fed, fmt.Errorf("feed: %w", err)
-			}
-			fed = true
-		default:
-			remaining = 0
-		}
-	}
-
-	if fed {
-		if err := tab.drainEvents(); err != nil {
-			return fed, err
-		}
-		// The terminal answers some sequences itself -- device status, size
-		// reports, Kitty graphics acknowledgements -- and a program that asked
-		// is blocked until the answer arrives. Nothing is written from inside
-		// the feed, so the replies are drained right after it.
-		if err := tab.stream.WriteReplies(tab.shell.Pty); err != nil {
-			return fed, fmt.Errorf("reply: %w", err)
-		}
-	}
-	return fed, nil
-}
-
-// updateInput gives the tab this frame's pointer and keyboard, then brings what
-// it draws up to date.
-//
-// The panels have already had their turn, because what they change is the
-// window's: `panelTook` says an open one kept the keyboard, so nothing typed
-// into the search bar reaches the shell. The mouse is left alone either way --
-// a selection is still worth being able to make.
+// updateInput routes pointer and keyboard input, then refreshes the frame.
+// An open panel consumes the keyboard while selection remains available.
 func (tab *terminalTab) updateInput(m keys.Mods, panelTook bool) error {
 	if tab.reports.focused {
 		// The pointer above the grid is the tab bar's; a drag released there
@@ -295,4 +143,151 @@ func (tab *terminalTab) updateInput(m keys.Mods, panelTook bool) error {
 	// draw, not the ones the last frame drew.
 	tab.updateCat()
 	return nil
+}
+
+// panelInput describes this frame's keyboard to the panels. Runes are only
+// collected while the search bar is open, since it is the one component that
+// wants text rather than key presses.
+func (tab *terminalTab) panelInput(m keys.Mods) ui.Input {
+	if tab.panels.Mode == ui.Search {
+		tab.chars = ebiten.AppendInputChars(tab.chars[:0])
+	} else {
+		tab.chars = tab.chars[:0]
+	}
+	return ui.Input{
+		OpenSearch:   m.Shortcut() && inpututil.IsKeyJustPressed(ebiten.KeyF),
+		OpenSettings: m.Shortcut() && inpututil.IsKeyJustPressed(ebiten.KeyComma),
+		Close:        inpututil.IsKeyJustPressed(ebiten.KeyEscape),
+		Enter:        inpututil.IsKeyJustPressed(ebiten.KeyEnter), Shift: m.Shift,
+		Chars:     tab.chars,
+		Backspace: keys.Repeating(inpututil.KeyPressDuration(ebiten.KeyBackspace)),
+		Up:        inpututil.IsKeyJustPressed(ebiten.KeyArrowUp),
+		Down:      inpututil.IsKeyJustPressed(ebiten.KeyArrowDown),
+		Left:      inpututil.IsKeyJustPressed(ebiten.KeyArrowLeft) || inpututil.IsKeyJustPressed(ebiten.KeyMinus),
+		Right:     inpututil.IsKeyJustPressed(ebiten.KeyArrowRight) || inpututil.IsKeyJustPressed(ebiten.KeyEqual),
+	}
+}
+
+// applyUIActions does the half of a panel result that is the terminal's: the
+// native search. A settings step is left for `terminalApp.applyPanel`, which is
+// the only place that can fan it out to every tab.
+func (tab *terminalTab) applyUIActions(result ui.Actions) (bool, error) {
+	if result.ResetSearch {
+		tab.closeSearch()
+	}
+	if result.QueryChanged {
+		if err := tab.runSearch(); err != nil {
+			return true, err
+		}
+	}
+	if result.MatchStep != 0 {
+		direction := gostty.SearchDirectionNext
+		if result.MatchStep < 0 {
+			direction = gostty.SearchDirectionPrev
+		}
+		if err := tab.moveMatch(direction); err != nil {
+			return true, err
+		}
+	}
+	return result.Consumed, nil
+}
+
+func (tab *terminalTab) currentTheme() ui.Theme { return ui.ThemeAt(tab.settings.theme) }
+func (tab *terminalTab) colorScheme() gostty.ColorScheme {
+	if tab.currentTheme().Light(tab.frame.colors.terminalBg) {
+		return gostty.ColorSchemeLight
+	}
+	return gostty.ColorSchemeDark
+}
+func (tab *terminalTab) themeColor(c color.RGBA) color.RGBA {
+	return tab.currentTheme().ResolveColor(c, tab.frame.colors.terminalBg, tab.frame.colors.terminalFg)
+}
+
+func (tab *terminalTab) canvas(screen *ebiten.Image) ui.Canvas {
+	g := tab.grid()
+	return ui.Canvas{
+		Screen: screen, CellWidth: g.cellW, CellHeight: g.cellH,
+		Width: g.width(), Height: g.height(),
+		Scale: tab.settings.dsf, Theme: tab.currentTheme(), DrawText: tab.drawText, RuneWidth: runeWidth,
+	}
+}
+
+// drawText writes a line in the grid's own cell width, so the panels line up
+// with the terminal behind them, and returns where it ended.
+func (tab *terminalTab) drawText(screen *ebiten.Image, s string, x, y float64, fg color.RGBA) float64 {
+	cellW := tab.grid().cellW
+	for _, r := range s {
+		wide := runeWidth(r) == 2
+		tab.glyph(screen, glyphString(r), x, y, wide, false, false, fg)
+		x += cellW
+		if wide {
+			x += cellW
+		}
+	}
+	return x
+}
+
+// runeWidth asks the binding how many columns a rune takes, which is the same
+// answer the terminal used when it laid the grid out.
+func runeWidth(r rune) int {
+	w, err := gostty.CodepointWidth(r)
+	if err != nil {
+		return 1
+	}
+	return int(w)
+}
+
+// The terminal only supplies occupied cells and connects cat clicks to settings.
+func (tab *terminalTab) catGrid() thecat.GridWorld {
+	g := tab.grid()
+	return thecat.GridWorld{
+		Cols: g.cols, Rows: g.rows,
+		CellWidth: g.cellW, CellHeight: g.cellH,
+		// The grid is captured rather than rebuilt, because this is asked per
+		// cell as the cat looks for ground to walk on.
+		HasInk: func(col, row int) bool { return tab.catCell(g, col, row) },
+	}
+}
+
+func (tab *terminalTab) catCell(g grid, col, row int) bool {
+	if !g.holds(len(tab.frame.cells)) {
+		return false
+	}
+	cell := tab.frame.cells[g.index(col, row)]
+	return cell.Codepoint > ' ' && !cell.Flags.Invisible
+}
+
+// startCat gives the tab a companion in the mode the window is set to, so a
+// tab opened after the mode was changed does not start in the old one.
+func (tab *terminalTab) startCat() {
+	cat, err := thecat.NewCompanion(tab.catGrid())
+	if err != nil {
+		log.Printf("no cat: %v", err)
+		return
+	}
+	tab.cat = cat
+	tab.cat.SetMode(tab.settings.cat)
+}
+
+func (tab *terminalTab) updateCat() {
+	x, y := tab.cursorPosition()
+	tab.cat.Update(tab.catGrid(), x, y, 1.0/float64(ebiten.TPS()))
+}
+
+// pokeCat reports whether this frame's click landed on the cat, which opens
+// the settings rather than starting a selection.
+func (tab *terminalTab) pokeCat() bool {
+	if !inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		return false
+	}
+	x, y := tab.cursorPosition()
+	if !tab.cat.PokeAt(x, y) {
+		return false
+	}
+	tab.panels.OpenSettings()
+	return true
+}
+
+func (tab *terminalTab) drawCat(screen *ebiten.Image) {
+	tab.cat.Draw(screen, tab.currentTheme().Accent)
 }

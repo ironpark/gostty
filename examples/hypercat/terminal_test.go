@@ -1,9 +1,12 @@
 package main
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/ironpark/gostty"
+	"github.com/ironpark/gostty/examples/hypercat/fonts"
+	"github.com/ironpark/gostty/examples/hypercat/shell"
 )
 
 func TestClosePartiallyInitializedTerminalTab(t *testing.T) {
@@ -25,4 +28,34 @@ func TestClosePartiallyInitializedTerminalTab(t *testing.T) {
 		t.Fatal("terminal remained open after cleanup")
 	}
 	tab.close()
+}
+
+// Fail after native resources have been acquired, before the shell can start.
+func TestStartFailureClosesTerminalResources(t *testing.T) {
+	t.Setenv(shell.Var, filepath.Join(t.TempDir(), "missing-shell"))
+	tab := &terminalTab{
+		cols: 80, rows: 24,
+		settings:  &appearance{fonts: &fonts.Set{CellWidth: 10, CellHeight: 20}},
+		clipboard: &sharedClipboard{},
+	}
+	t.Cleanup(tab.close)
+	if err := tab.start(); err == nil {
+		t.Fatal("starting a missing shell succeeded")
+	}
+	if tab.vt == nil || tab.stream == nil || tab.state == nil || tab.images == nil {
+		t.Fatal("startup failed before acquiring native resources")
+	}
+	if err := tab.stream.Feed([]byte("closed")); err == nil {
+		t.Error("stream remained open after startup failure")
+	}
+	if _, err := tab.state.CellCount(); err == nil {
+		t.Error("render state remained open after startup failure")
+	}
+	if tab.sel.gesture != nil {
+		t.Error("selection gesture remained open after startup failure")
+	}
+	if stream, err := tab.vt.NewStream(0); err == nil {
+		_ = stream.Close()
+		t.Error("terminal remained open after startup failure")
+	}
 }
