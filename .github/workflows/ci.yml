@@ -46,28 +46,35 @@ jobs:
           go-version-file: go.mod
 
       # The example is an ebiten app; its cgo build needs the X11/GL headers
-      # that the runner does not ship.
+      # that the runner does not ship. Xvfb because ebiten opens a window from
+      # `internal/ui`'s package `init`, so every test binary here needs a
+      # display even though none of the tests draw. The fonts because the
+      # discovery tests measure real glyphs: a bare runner has neither a
+      # colour emoji font nor anything with Korean in it.
       - name: Install build dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             libgl1-mesa-dev libxrandr-dev libxcursor-dev libxinerama-dev \
-            libxi-dev libxxf86vm-dev libasound2-dev xvfb xauth
+            libxi-dev libxxf86vm-dev libasound2-dev xvfb xauth \
+            fonts-noto-color-emoji fonts-noto-cjk
 
       # The example is its own module; go.work builds it against this checkout
       # rather than the gostty version its go.mod pins.
       - name: Vet example
         run: go vet ./examples/hypercat/...
 
-      # ebiten opens a window from `internal/ui`'s package `init`, so every
-      # test binary here needs a display even though none of the tests draw.
-      # Xvfb is one; Windows needs nothing.
+      # Windows gets the compile and nothing more: hypercat is a POSIX app.
+      # Its shell sessions go through creack/pty, which has no Windows
+      # implementation, and its colour emoji wants a bitmap font where Windows
+      # ships COLR outlines -- both of which the example says out loud rather
+      # than works around, so the tests that cover them have nothing to say
+      # there.
+      - name: Build example
+        if: runner.os != 'Linux'
+        run: go build ./examples/hypercat/...
+
       - name: Test example
-        run: |
-          if [ "$RUNNER_OS" = Linux ]; then
-            xvfb-run -a go test ./examples/hypercat/...
-          else
-            go test ./examples/hypercat/...
-          fi
-        shell: bash
+        if: runner.os == 'Linux'
+        run: xvfb-run -a go test ./examples/hypercat/...
