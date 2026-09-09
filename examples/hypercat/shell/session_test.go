@@ -93,3 +93,20 @@ func TestShellCloseWhileWaitingForInput(t *testing.T) {
 		t.Fatal("closing an idle shell blocked")
 	}
 }
+
+// The size a session is started at, and every size it is resized to, reaches
+// the pty. The program on the far end reads its size from there, so a terminal
+// that resized only its own grid would leave the program drawing to the old
+// one.
+func TestSessionCarriesTheSizeToThePty(t *testing.T) {
+	s, err := shell.StartCommand(80, 24, shelltest.Shell(t, "hold"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(s.Close)
+	assertPtySize(t, s.Pty, 80, 24)
+	if err := s.Pty.Resize(100, 30); err != nil {
+		t.Fatal(err)
+	}
+	assertPtySize(t, s.Pty, 100, 30)
+}
