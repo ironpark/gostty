@@ -50,6 +50,7 @@ collect:
 		all = append(all, chunk...)
 	}
 	t.Logf("marker in output: %v", strings.Contains(string(all), helperPrinted))
+	t.Logf("CONOUT$ marker in output: %v", strings.Contains(string(all), conoutMarker))
 
 	select {
 	case <-s.processDone:
