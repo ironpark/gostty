@@ -6,21 +6,22 @@ import (
 	"testing"
 )
 
-// A snapshot round-trips the screen, scrollback and an unfinished sequence.
-func TestSnapshotRoundTrip(t *testing.T) {
+// The snapshot both tests below work from: three lines into a two-row
+// terminal, so one goes to scrollback, then the start of an escape sequence
+// left unfinished. Continuation tracking is opt-in, which is what the positive
+// stream cap turns on.
+func encodedSnapshot(t *testing.T) []byte {
+	t.Helper()
 	term, err := NewTerminal(10, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer term.Close()
-	// Continuation tracking is opt-in: a positive cap turns it on.
 	stream, err := term.NewStream(64)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer stream.Close()
-	// Three lines into a two-row terminal: one goes to scrollback. Then the
-	// start of an escape sequence, left unfinished.
 	feed(t, stream, "one\r\ntwo\r\nthree\x1b[3")
 
 	var snap bytes.Buffer
@@ -30,8 +31,14 @@ func TestSnapshotRoundTrip(t *testing.T) {
 	if snap.Len() == 0 {
 		t.Fatal("WriteSnapshot wrote nothing")
 	}
+	return snap.Bytes()
+}
 
-	decoded, err := DecodeSnapshot(bytes.NewReader(snap.Bytes()), 1024)
+// A snapshot round-trips the screen, scrollback and an unfinished sequence.
+func TestSnapshotRoundTrip(t *testing.T) {
+	snap := encodedSnapshot(t)
+
+	decoded, err := DecodeSnapshot(bytes.NewReader(snap), 1024)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -246,28 +253,13 @@ func TestSnapshotDecoderReadyOnce(t *testing.T) {
 // `Ready` and `SnapshotDecoder` needs one, so the interface stops at what the
 // two share: restoring, the continuation bytes and Close.
 func TestSnapshotSource(t *testing.T) {
-	term, err := NewTerminal(10, 2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer term.Close()
-	stream, err := term.NewStream(64)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer stream.Close()
-	feed(t, stream, "one\r\ntwo\r\nthree\x1b[3")
+	snap := encodedSnapshot(t)
 
-	var snap bytes.Buffer
-	if err := stream.WriteSnapshot(&snap); err != nil {
-		t.Fatal(err)
-	}
-
-	whole, err := DecodeSnapshot(bytes.NewReader(snap.Bytes()), 1024)
+	whole, err := DecodeSnapshot(bytes.NewReader(snap), 1024)
 	if err != nil {
 		t.Fatal(err)
 	}
-	incremental, err := NewSnapshotDecoder(snap.Bytes())
+	incremental, err := NewSnapshotDecoder(snap)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -275,8 +267,9 @@ func TestSnapshotSource(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// The one call a restore actually makes, written once against both.
-	restore := func(src SnapshotSource) (string, []byte) {
+	// The one call a restore actually makes, written once against both. It
+	// takes its own `t` so a failure names the subtest that hit it.
+	restore := func(t *testing.T, src SnapshotSource) (string, []byte) {
 		t.Helper()
 		defer src.Close()
 		into, err := NewTerminal(80, 24)
@@ -306,7 +299,7 @@ func TestSnapshotSource(t *testing.T) {
 		{"SnapshotDecoder", incremental},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			screen, cont := restore(tc.source)
+			screen, cont := restore(t, tc.source)
 			if screen != "two\nthree" {
 				t.Errorf("PlainString() = %q, want %q", screen, "two\nthree")
 			}
