@@ -29,6 +29,10 @@ type conPty struct {
 	consoleOnce sync.Once
 	closeOnce   sync.Once
 	closeErr    error
+
+	// What the spawn saw. Read by the probe; a pseudoconsole cannot be watched
+	// from anywhere but a Windows runner.
+	diagnostics string
 }
 
 func newConPty(cols, rows int) (*conPty, error) {
@@ -121,7 +125,7 @@ func (p *conPty) start(argv, env []string) (*conPtyProcess, error) {
 	// handle itself, not somewhere to read it from, so that spelling means
 	// converting a handle to a pointer -- which is what it looks like, and what
 	// `go vet` rightly says about it. Passed as the integer it is instead.
-	if ret, _, err := procUpdateProcThreadAttribute.Call(
+	ret, _, updateErr := procUpdateProcThreadAttribute.Call(
 		uintptr(unsafe.Pointer(attributes.List())),
 		0,
 		windows.PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE,
@@ -129,8 +133,9 @@ func (p *conPty) start(argv, env []string) (*conPtyProcess, error) {
 		unsafe.Sizeof(p.console),
 		0,
 		0,
-	); ret == 0 {
-		return nil, fmt.Errorf("attach pseudoconsole: %w", err)
+	)
+	if ret == 0 {
+		return nil, fmt.Errorf("attach pseudoconsole: %w", updateErr)
 	}
 
 	// No `STARTF_USESTDHANDLES`: see the type's comment.
@@ -160,6 +165,10 @@ func (p *conPty) start(argv, env []string) (*conPtyProcess, error) {
 		return nil, fmt.Errorf("start %s: %w", argv[0], err)
 	}
 	windows.CloseHandle(info.Thread)
+	p.diagnostics = fmt.Sprintf(
+		"console=%#x list=%#x updateRet=%d updateErr=%v cb=%d pid=%d",
+		p.console, uintptr(unsafe.Pointer(attributes.List())),
+		ret, updateErr, startupInfo.Cb, info.ProcessId)
 	return &conPtyProcess{handle: info.Process}, nil
 }
 

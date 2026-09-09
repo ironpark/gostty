@@ -39,6 +39,9 @@ collect:
 		}
 	}
 
+	if console, ok := s.pty.(*conPty); ok {
+		t.Logf("spawn: %s", console.diagnostics)
+	}
 	traced, readErr := os.ReadFile(trace)
 	t.Logf("child ran: %v (%q, err=%v)", readErr == nil, string(traced), readErr)
 	t.Logf("chunks: %d", len(chunks))
