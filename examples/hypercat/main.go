@@ -32,6 +32,12 @@ const (
 	// appName is what the window is called before a program has said anything
 	// about itself, and the name every title it does set is shown under.
 	appName = "Hyper Cat Term /ᐠ ˵> ⩊ <˵マ"
+
+	// What this program calls itself to the programs running in it, which is
+	// the window title with the decoration taken off: XTVERSION is answered
+	// with it, and something parsing that answer wants a name and a number.
+	reportName    = "hypercat"
+	reportVersion = "0.1.0"
 )
 
 func main() {

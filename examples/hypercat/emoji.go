@@ -8,11 +8,15 @@ import (
 
 // drawEmoji paints the picture for a cell, and reports whether there was one.
 // The caller has already decided the cell is two columns wide.
-func (tab *terminalTab) drawEmoji(screen *ebiten.Image, r rune, x, y float64) bool {
+//
+// The cell's whole cluster is offered, since that is what the picture belongs
+// to: a flag is two regional indicators and a family is three people and two
+// joiners, and either one is one two-column cell.
+func (tab *terminalTab) drawEmoji(screen *ebiten.Image, cluster string, x, y float64) bool {
 	if tab.emoji() == nil {
 		return false
 	}
-	img, ok := tab.emoji().Glyph(r, tab.fonts().CellHeight)
+	img, ok := tab.emoji().Glyph(cluster, tab.fonts().CellHeight)
 	if !ok {
 		return false
 	}

@@ -52,19 +52,19 @@ func (tab *terminalTab) handleInput(m keys.Mods) error {
 		case inpututil.IsKeyJustPressed(ebiten.KeyC):
 			return tab.copySelection()
 		case inpututil.IsKeyJustPressed(ebiten.KeyV):
-			// Bracketed paste and the safety check both come from the binding:
-			// `IsSafePaste` is what refuses a paste containing a newline when
-			// the program has not asked for bracketed paste.
-			text := tab.clipboard.paste()
-			if len(text) > 0 && input.IsSafePaste(text) {
-				return input.EncodePaste(tab.shell.Pty, tab.vt, text)
-			}
-			return nil
+			return tab.pasteText(string(tab.clipboard.paste()))
+		case inpututil.IsKeyJustPressed(ebiten.KeyA):
+			return tab.selectAll()
+		case inpututil.IsKeyJustPressed(ebiten.KeyS):
+			return tab.exportScrollback()
+		}
+		if adjusted, err := tab.adjustSelection(); adjusted || err != nil {
+			return err
 		}
 	}
 
 	for _, ev := range tab.keys.Frame(m, tab.reports.focusedFrames) {
-		if err := tab.sendKey(ev.Key, ev.Text, m); err != nil {
+		if err := tab.sendKey(ev, m); err != nil {
 			return err
 		}
 	}
@@ -80,9 +80,43 @@ func (tab *terminalTab) handleInput(m keys.Mods) error {
 	return tab.out.flush(tab.shell.Pty)
 }
 
-// sendKey describes one key press to the binding and appends whatever it
+// pasteText hands text to the program as a paste.
+//
+// Bracketed paste and the safety check both come from the binding:
+// `IsSafePaste` is what refuses text containing a newline when the program has
+// not asked for bracketed paste, where it would run as typed commands rather
+// than arrive as data.
+func (tab *terminalTab) pasteText(text string) error {
+	if text == "" || !input.IsSafePaste([]byte(text)) {
+		return nil
+	}
+	return input.EncodePaste(tab.shell.Pty, tab.vt, []byte(text))
+}
+
+// sendKey describes one key event to the binding and appends whatever it
 // encodes to this frame's output.
-func (tab *terminalTab) sendKey(key input.Key, text []byte, m keys.Mods) error {
-	ev := input.KeyEvent{Action: input.KeyActionPress, Key: key, Mods: m.KeyMods()}
-	return input.EncodeKey(&tab.out, tab.vt, ev, string(text))
+//
+// The whole event is described, not only the key and the modifiers. Under the
+// Kitty keyboard protocol a program is told which key was pressed, what it
+// would have typed unshifted, which modifiers went into the text, and whether
+// this was a press, a repeat or a release -- and the encoder needs all of it:
+// given a key with no unshifted codepoint it has nothing to name and falls
+// back to the legacy bytes, which is the protocol quietly not working.
+//
+// None of it costs anything under the legacy encoding, which ignores the extra
+// fields, drops releases entirely, and treats a repeat as a press.
+func (tab *terminalTab) sendKey(ev keys.Event, m keys.Mods) error {
+	unshifted, _ := ev.Key.Codepoint()
+	key := input.KeyEvent{
+		Action:             ev.Action,
+		Key:                ev.Key,
+		Mods:               m.KeyMods(),
+		ConsumedMods:       m.Consumed(len(ev.Text) > 0),
+		UnshiftedCodepoint: unshifted,
+		// Composing would be set while an IME has a preedit open, so that a
+		// keystroke going into the composition is not also sent to the
+		// program. Ebitengine does not report one, which is the same reason
+		// this example draws no preedit.
+	}
+	return input.EncodeKey(&tab.out, tab.vt, key, string(ev.Text))
 }

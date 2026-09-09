@@ -1,6 +1,11 @@
 package keys
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/ironpark/gostty/input"
+)
 
 func TestRepeating(t *testing.T) {
 	// First press fires immediately.
@@ -43,12 +48,62 @@ func TestAnyIgnoresShift(t *testing.T) {
 	}
 }
 
-// The two tables must not overlap: a key in both would be described twice,
-// once as a repeating non-text key and once as a modified text key.
-func TestKeyTablesAreDisjoint(t *testing.T) {
-	for key := range nonTextKeys {
-		if _, both := textKeys[key]; both {
-			t.Errorf("key %v is in both nonTextKeys and textKeys", key)
+// Ebitengine's key names and the binding's W3C codes are the same strings, so
+// the mapping between them is a translation rather than a table. What it has
+// to get right is that every key worth sending is named, and named correctly.
+func TestTerminalKeyNamesEbitengineKeys(t *testing.T) {
+	for _, test := range []struct {
+		key  ebiten.Key
+		want input.Key
+	}{
+		{ebiten.KeyA, input.KeyKeyA},
+		{ebiten.KeyZ, input.KeyKeyZ},
+		{ebiten.KeyDigit0, input.KeyDigit0},
+		{ebiten.KeyArrowUp, input.KeyArrowUp},
+		{ebiten.KeyEnter, input.KeyEnter},
+		{ebiten.KeyBackspace, input.KeyBackspace},
+		{ebiten.KeyEscape, input.KeyEscape},
+		{ebiten.KeyF1, input.KeyF1},
+		{ebiten.KeyBracketLeft, input.KeyBracketLeft},
+		{ebiten.KeySpace, input.KeySpace},
+		// Past what the hand-written tables covered, and free with the
+		// translation: the high function keys, the numpad, and the modifiers
+		// the Kitty protocol reports.
+		{ebiten.KeyF13, input.KeyF13},
+		{ebiten.KeyNumpad7, input.KeyNumpad7},
+		{ebiten.KeyNumpadEnter, input.KeyNumpadEnter},
+		{ebiten.KeyShiftLeft, input.KeyShiftLeft},
+	} {
+		got, named := terminalKey(test.key)
+		if !named || got != test.want {
+			t.Errorf("terminalKey(%v) = %v, %v; want %v", test.key, got, named, test.want)
 		}
+	}
+}
+
+// Which keys have to be described to the encoder is the binding's answer, not
+// a list kept here: a printable key arrives as text, and everything else has
+// to be named. The tab is the exception every platform makes.
+func TestProducesTextFollowsPrintable(t *testing.T) {
+	for _, key := range []input.Key{input.KeyKeyA, input.KeyDigit1, input.KeySpace, input.KeyNumpad0} {
+		if !producesText(key) {
+			t.Errorf("producesText(%v) = false, want true", key)
+		}
+	}
+	for _, key := range []input.Key{input.KeyEnter, input.KeyArrowUp, input.KeyF5, input.KeyTab, input.KeyBackspace} {
+		if producesText(key) {
+			t.Errorf("producesText(%v) = true, want false", key)
+		}
+	}
+}
+
+// A press on the first tick, a repeat afterwards: the Kitty protocol tells the
+// two apart and the legacy encoding does not care.
+func TestActionIsPressThenRepeat(t *testing.T) {
+	if got := action(1); got != input.KeyActionPress {
+		t.Errorf("action(1) = %v, want a press", got)
+	}
+	if got := action(repeatDelayTicks + repeatIntervalTicks); got != input.KeyActionRepeat {
+		t.Errorf("action(held) = %v, want a repeat", got)
 	}
 }

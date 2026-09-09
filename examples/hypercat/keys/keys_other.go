@@ -14,6 +14,11 @@ func Current() Mods {
 	}
 }
 
+// altProducesText is whether holding Alt makes the platform report different
+// text rather than suppressing it. It is a macOS habit: Option+e is a dead
+// key there and Alt+e is a text-less shortcut everywhere else.
+const altProducesText = false
+
 // PhysicallyPressed reports whether the key is really down. Only macOS needs
 // to ask: see the darwin build of this file.
 func PhysicallyPressed(key ebiten.Key) bool {

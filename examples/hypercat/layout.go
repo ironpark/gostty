@@ -35,6 +35,11 @@ func (tab *terminalTab) resize(cols, rows int) error {
 	if err := tab.vt.ResizeCells(uint16(cols), uint16(rows), uint32(cellW), uint32(cellH)); err != nil {
 		return err
 	}
+	// The selection gesture measures the pointer in pixels, so it is told the
+	// new geometry rather than left to work from a stale cell size.
+	if err := tab.syncGestureGeometry(); err != nil {
+		return err
+	}
 	// The pty carries the same size, which is where a program that has not
 	// asked the terminal directly reads it from.
 	return tab.shell.Pty.Resize(cols, rows)

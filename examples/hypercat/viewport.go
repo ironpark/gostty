@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"image/color"
+	"time"
 
 	"github.com/ironpark/gostty"
 )
@@ -56,6 +57,11 @@ func (r *redrawSet) pull(state *gostty.RenderState) error {
 	return state.Clean()
 }
 
+// marked reports whether a row needs repainting, without claiming it.
+func (r *redrawSet) marked(row int) bool {
+	return r.all || (row >= 0 && row < len(r.rows) && r.rows[row])
+}
+
 // take reports whether a row needs repainting, and claims it.
 func (r *redrawSet) take(row int) bool {
 	if row < 0 || row >= len(r.rows) || !r.rows[row] {
@@ -104,7 +110,103 @@ func (tab *terminalTab) refresh() error {
 	if err := tab.refreshColors(); err != nil {
 		return err
 	}
-	return tab.refreshCursor()
+	if err := tab.refreshCursor(); err != nil {
+		return err
+	}
+	if err := tab.refreshLink(); err != nil {
+		return err
+	}
+	if err := tab.refreshScrollbar(); err != nil {
+		return err
+	}
+	tab.refreshBlink()
+	// Last, because it follows the rows the steps above marked for redraw.
+	return tab.refreshClusters()
+}
+
+// refreshBlink advances the blink phase and marks the rows that have to be
+// drawn again because of it.
+//
+// The terminal reports a cell as blinking and stops there, since when it is
+// dark is a question about a clock rather than about the screen. That makes it
+// this side's business to repaint: the rows holding blinking cells are marked
+// on each half of the phase, and no others, so a screen with nothing blinking
+// costs nothing.
+func (tab *terminalTab) refreshBlink() {
+	lit := blinkLit(time.Now())
+	if lit == tab.blink {
+		return
+	}
+	tab.blink = lit
+	for row := 0; row < tab.rows; row++ {
+		for col := 0; col < tab.cols; col++ {
+			i := row*tab.cols + col
+			if i >= len(tab.cells) {
+				break
+			}
+			if tab.cells[i].Flags.Blink {
+				tab.redraw.mark(row)
+				break
+			}
+		}
+	}
+}
+
+// The longest cluster a cell is read back as. Ghostty caps what it stores; this
+// only has to be longer than anything worth drawing, and a family with four
+// people and skin tones is nine.
+const maxClusterRunes = 32
+
+// refreshClusters reads back the cells that hold more than one codepoint.
+//
+// A `RenderCell` carries one codepoint, which is the base of the cluster: the
+// combining acute on an "e", the second half of a flag and the joiners in a
+// family are all still in the terminal. `Graphemes` is what hands them over,
+// and it is per cell, so it is asked only about the rows that are going to be
+// drawn again -- the same rows `drawGrid` repaints, for the same reason.
+func (tab *terminalTab) refreshClusters() error {
+	if tab.clusters == nil {
+		tab.clusters = make(map[int]string)
+		tab.clusterBuf = make([]rune, maxClusterRunes)
+	}
+	for row := 0; row < tab.rows; row++ {
+		if !tab.redraw.marked(row) {
+			continue
+		}
+		for col := 0; col < tab.cols; col++ {
+			i := row*tab.cols + col
+			if i >= len(tab.cells) {
+				break
+			}
+			delete(tab.clusters, i)
+			cell := tab.cells[i]
+			// Blanks and the spacers of a wide cell have no text of their own,
+			// and an ASCII letter cannot be the base of anything: skipping them
+			// is most of the grid.
+			if cell.Codepoint <= ' ' || cell.Flags.Wide == gostty.CellWidthSpacerTail ||
+				cell.Flags.Wide == gostty.CellWidthSpacerHead {
+				continue
+			}
+			n, err := tab.state.Graphemes(uint16(col), uint16(row), tab.clusterBuf)
+			if err != nil {
+				return err
+			}
+			if n > 1 {
+				tab.clusters[i] = string(tab.clusterBuf[:min(n, uint(len(tab.clusterBuf)))])
+			}
+		}
+	}
+	return nil
+}
+
+// clusterAt is the text of one cell: its cluster where it has one, and its
+// codepoint otherwise. Draw calls it, so it reads what refreshClusters left
+// rather than the terminal.
+func (tab *terminalTab) clusterAt(col, row int, cell gostty.RenderCell) string {
+	if cluster, ok := tab.clusters[row*tab.cols+col]; ok {
+		return cluster
+	}
+	return glyphString(cell.Codepoint)
 }
 
 // refreshColors reads the terminal's default colors and resolves them through
@@ -139,9 +241,20 @@ func (tab *terminalTab) refreshCursor() error {
 	}
 	tab.cursor = cursorState{
 		x: cursor.X, y: cursor.Y,
-		visible: cursor.Visible && cursor.ViewportHasValue,
-		style:   cursor.Style,
+		visible:  cursor.Visible && cursor.ViewportHasValue,
+		style:    cursor.Style,
+		blinking: cursor.Blinking,
+		wideTail: cursor.WideTail,
+		password: cursor.PasswordInput,
 	}
+	// The colour is separate because it is optional: a program that has not
+	// set one leaves the cursor to be drawn in the foreground colour, which is
+	// this window's decision rather than the terminal's.
+	rgba, ok, err := tab.state.CursorColor()
+	if err != nil {
+		return err
+	}
+	tab.cursor.color, tab.cursor.hasColor = rgb(rgba), ok
 	return nil
 }
 

@@ -81,7 +81,7 @@ func (tab *terminalTab) canvas(screen *ebiten.Image) ui.Canvas {
 func (tab *terminalTab) drawText(screen *ebiten.Image, s string, x, y float64, fg color.RGBA) float64 {
 	for _, r := range s {
 		wide := runeWidth(r) == 2
-		tab.glyph(screen, r, x, y, wide, false, false, fg)
+		tab.glyph(screen, glyphString(r), x, y, wide, false, false, fg)
 		x += tab.fonts().CellWidth
 		if wide {
 			x += tab.fonts().CellWidth

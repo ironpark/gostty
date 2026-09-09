@@ -184,7 +184,9 @@ func (tab *terminalTab) wheelAsArrows(notches int) error {
 	}
 	tab.out.reset()
 	for range notches * linesPerNotch {
-		if err := tab.sendKey(key, nil, keys.Mods{}); err != nil {
+		// A press with no text: the wheel is standing in for the key, so what
+		// goes out is what pressing it would have sent.
+		if err := tab.sendKey(keys.Event{Key: key, Action: input.KeyActionPress}, keys.Mods{}); err != nil {
 			return err
 		}
 	}
@@ -225,7 +227,7 @@ func (tab *terminalTab) reportFocus(focused bool) error {
 		tab.reports.focused = focused
 		if !focused {
 			tab.reports.focusedFrames = 0
-			tab.sel.dragging = false
+			tab.endGesture()
 			tab.reports.mouseGrabbed = false
 		}
 		enabled, err := tab.vt.ModeEnabled(gostty.ModeFocusEvent)

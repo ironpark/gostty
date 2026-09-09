@@ -289,14 +289,14 @@ func TestSettingsChangeAppliesToEveryTab(t *testing.T) {
 	second.panels.OpenSettings()
 
 	second.panels.Settings.Row = ui.SettingTheme
-	before := first.currentTheme()
+	before := first.currentTheme().Name
 	if _, err := app.applyPanel(second, ui.Actions{SettingsDelta: 1}); err != nil {
 		t.Fatal(err)
 	}
-	if first.currentTheme() == before {
+	if first.currentTheme().Name == before {
 		t.Error("the theme changed only in the tab it was changed from")
 	}
-	if first.currentTheme() != second.currentTheme() {
+	if first.currentTheme().Name != second.currentTheme().Name {
 		t.Errorf("tabs disagree on the theme: %q and %q", first.currentTheme().Name, second.currentTheme().Name)
 	}
 	if !first.redraw.all {

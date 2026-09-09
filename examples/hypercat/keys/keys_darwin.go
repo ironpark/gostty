@@ -46,6 +46,10 @@ func Current() Mods {
 	}
 }
 
+// altProducesText: Option is how a Mac types the characters that are not on
+// the keyboard, so text produced with it has consumed the modifier.
+const altProducesText = true
+
 var darwinKeyCodes = map[ebiten.Key]uint16{
 	ebiten.KeyArrowUp:     0x7E,
 	ebiten.KeyArrowDown:   0x7D,

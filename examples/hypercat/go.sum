@@ -18,8 +18,6 @@ github.com/hajimehoshi/ebiten/v2 v2.9.11 h1:VXnv8jHvTHEeLBoPKEvPdywwJdcemur+EoXE
 github.com/hajimehoshi/ebiten/v2 v2.9.11/go.mod h1:UqZjna6ppO9dTZtO97LySdB5ustokqOcQKrAfWPrVro=
 github.com/hugelgupf/vmtest v0.0.0-20240307030256-5d9f3d34a58d h1:nP8SfQJqruIVSWYJTuYc37jLHEY1Z0fF+zKSrs3K/C8=
 github.com/hugelgupf/vmtest v0.0.0-20240307030256-5d9f3d34a58d/go.mod h1:B63hDJMhTupLWCHwopAyEo7wRFowx9kOc8m8j1sfOqE=
-github.com/ironpark/gostty v0.0.0-20260908043959-19677865cc54 h1:Y+DFRgRfiTyevzXB9xsQWa+9B+sotxsRMMQ29l/LKtw=
-github.com/ironpark/gostty v0.0.0-20260908043959-19677865cc54/go.mod h1:htMJDApfeCwo3cVH8Bv9FyVnlhvwrnDkn4DDxSKtjE8=
 github.com/ironpark/gostty v0.0.0-20260909043944-543bd8d15dfc h1:1RO9CX2FjTELK6/2fvzDjrq7pn3MCExcGGrfzdos/hk=
 github.com/ironpark/gostty v0.0.0-20260909043944-543bd8d15dfc/go.mod h1:htMJDApfeCwo3cVH8Bv9FyVnlhvwrnDkn4DDxSKtjE8=
 github.com/jezek/xgb v1.1.1 h1:bE/r8ZZtSv7l9gk6nU0mYx51aXrvnyb44892TwSaqS4=
