@@ -91,11 +91,7 @@ func (app *terminalApp) settingsAdjust(row, delta int) error {
 func (app *terminalApp) setTheme(index int) error {
 	app.settings.theme = index
 	for _, tab := range app.tabs {
-		tab.redraw.markAll()
-		// A program that subscribed with mode 2031 is told now, not the next
-		// time it thinks to ask. The scheme is resolved per tab, since a theme
-		// that defers to the terminal takes the colors that tab's program set.
-		if err := tab.stream.ColorSchemeChanged(tab.colorScheme()); err != nil {
+		if err := tab.themeChanged(); err != nil {
 			return err
 		}
 	}
@@ -107,9 +103,7 @@ func (app *terminalApp) setTheme(index int) error {
 func (app *terminalApp) setCatMode(mode thecat.Mode) {
 	app.settings.cat = mode
 	for _, tab := range app.tabs {
-		if tab.cat != nil {
-			tab.cat.SetMode(mode)
-		}
+		tab.cat.SetMode(mode)
 	}
 }
 
@@ -185,12 +179,6 @@ func (app *terminalApp) setFont(family int, size float64) {
 func (app *terminalApp) applyFont() {
 	app.settings.loadFonts(app.dsf)
 	for _, tab := range app.tabs {
-		tab.redraw.markAll()
-		// The grid is measured in cells and the cell just changed shape, so the
-		// window holds a different number of them. Layout is where that is
-		// worked out; this only has to say that the answer it cached is stale,
-		// because the column count can survive a size change while the pixel
-		// geometry the image protocol measures in does not.
-		tab.relayout = true
+		tab.fontsChanged()
 	}
 }

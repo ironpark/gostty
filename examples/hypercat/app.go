@@ -22,15 +22,18 @@ type terminalApp struct {
 	content            *ebiten.Image
 	settings           *appearance
 	clipboard          sharedClipboard
-	// The last title given to the window, so an unchanged one is not set again.
-	title string
+	// The tab and the title the window is currently named after. Kept so that
+	// the title is only formatted when a program actually renames itself:
+	// Update runs sixty times a second, and `windowTitle.String` allocates.
+	titled    windowTitle
+	titledTab int
 }
 
 // newApp opens the window's shared state: the fonts are discovered once here,
 // not once per tab.
 func newApp() *terminalApp {
 	dsf := deviceScale()
-	return &terminalApp{dsf: dsf, settings: defaultAppearance(dsf), title: appName}
+	return &terminalApp{dsf: dsf, settings: defaultAppearance(dsf)}
 }
 
 func (app *terminalApp) current() *terminalTab {
@@ -72,14 +75,10 @@ func (app *terminalApp) selectTab(index int) {
 		return
 	}
 	if old := app.current(); old != nil {
-		old.sel.dragging = false
-		old.reports.mouseGrabbed = false
-		old.cat.ClearHover()
+		old.deactivate()
 	}
 	app.active = index
-	tab := app.current()
-	tab.reports.focusedFrames = 0
-	tab.redraw.markAll()
+	app.current().activate()
 }
 
 // cycleTab selects the tab `step` away from the active one, wrapping.
@@ -152,9 +151,9 @@ func (app *terminalApp) Update() error {
 	// what it changes belongs to the window rather than to the tab it was
 	// opened in.
 	panelTook := false
-	if tab.reports.focused {
+	if focused {
 		var err error
-		if panelTook, err = app.updatePanels(tab, m); err != nil {
+		if panelTook, err = app.applyPanel(tab, tab.panels.Handle(tab.panelInput(m))); err != nil {
 			return err
 		}
 	}
@@ -186,18 +185,15 @@ func (app *terminalApp) serviceTabs() error {
 }
 
 // syncTitle names the window after the tab the user is looking at; a background
-// tab that renames itself is left to show up in the tab bar alone.
+// tab that renames itself is left to show up in the tab bar alone. The window
+// opens under `appName`, which is what an untouched `windowTitle` comes to, so
+// a shell that never sets a title never reaches the platform call at all.
 func (app *terminalApp) syncTitle(tab *terminalTab) {
-	if title := tab.title.String(); title != app.title {
-		app.title = title
-		ebiten.SetWindowTitle(title)
+	if tab.title == app.titled && app.active == app.titledTab {
+		return
 	}
-}
-
-// updatePanels gives the tab's open panel this frame's keyboard and makes the
-// change it asked for.
-func (app *terminalApp) updatePanels(tab *terminalTab, m keys.Mods) (bool, error) {
-	return app.applyPanel(tab, tab.panels.Handle(tab.panelInput(m)))
+	app.titled, app.titledTab = tab.title, app.active
+	ebiten.SetWindowTitle(tab.title.String())
 }
 
 // applyPanel gives a panel result its effect, in two halves: the tab does what
@@ -205,11 +201,11 @@ func (app *terminalApp) updatePanels(tab *terminalTab, m keys.Mods) (bool, error
 // because the font, the theme and the cat the panel steps through are shared by
 // every tab.
 func (app *terminalApp) applyPanel(tab *terminalTab, result ui.Actions) (bool, error) {
-	consumed, step, err := tab.applyUIActions(result)
-	if err != nil || step.delta == 0 {
+	consumed, err := tab.applyUIActions(result)
+	if err != nil || result.SettingsDelta == 0 {
 		return consumed, err
 	}
-	return consumed, app.settingsAdjust(step.row, step.delta)
+	return consumed, app.settingsAdjust(tab.panels.Settings.Row, result.SettingsDelta)
 }
 
 // handleTabs consumes the window's own input -- tab shortcuts and the tab
@@ -252,8 +248,7 @@ func (app *terminalApp) handleTabBar() (bool, error) {
 
 // handleTabKeys consumes window shortcuts before they can reach a shell.
 func (app *terminalApp) handleTabKeys(m keys.Mods, pressed func(ebiten.Key) bool) (bool, error) {
-	shortcut := (m.Ctrl && m.Shift) || m.Super
-	if shortcut {
+	if m.Shortcut() {
 		switch {
 		case pressed(ebiten.KeyT):
 			return true, app.addTab()
@@ -322,7 +317,8 @@ func (app *terminalApp) Draw(screen *ebiten.Image) {
 		}
 		app.content = ebiten.NewImage(w, h)
 	}
-	tab.Draw(app.content, app.panelValues(tab))
+	tab.Draw(app.content)
+	app.drawPanels(tab)
 	screen.Fill(tab.currentTheme().Panel)
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(0, app.barHeight())
@@ -330,14 +326,16 @@ func (app *terminalApp) Draw(screen *ebiten.Image) {
 	app.drawTabBar(screen)
 }
 
-// panelValues builds the labels the settings panel shows, and only while it is
-// open: they are formatted strings, and a frame not showing them should not be
-// building them.
-func (app *terminalApp) panelValues(tab *terminalTab) ui.SettingsValues {
-	if tab.panels.Mode != ui.Settings {
-		return ui.SettingsValues{}
+// drawPanels paints whichever panel the tab has open over its content. The
+// window draws it, because what the settings panel displays -- the font, the
+// theme, the cat -- is the window's, and the labels are only formatted while it
+// is open: a frame not showing them should not be building them.
+func (app *terminalApp) drawPanels(tab *terminalTab) {
+	values := ui.SettingsValues{}
+	if tab.panels.Mode == ui.Settings {
+		values = app.settingsValues()
 	}
-	return app.settingsValues()
+	tab.panels.Draw(tab.canvas(app.content), values)
 }
 
 func (app *terminalApp) drawTabBar(screen *ebiten.Image) {

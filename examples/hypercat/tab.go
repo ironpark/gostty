@@ -93,6 +93,41 @@ type cursorState struct {
 	style   gostty.CursorStyle
 }
 
+// activate and deactivate are what a tab does about being switched to and away
+// from. The window says which tab is the visible one; what that means to the
+// pointer, the selection and the cat is the tab's own business, so a new piece
+// of per-tab state is reset here rather than in the window's loop.
+func (tab *terminalTab) activate() {
+	tab.reports.focusedFrames = 0
+	tab.redraw.markAll()
+}
+
+func (tab *terminalTab) deactivate() {
+	tab.sel.dragging = false
+	tab.reports.mouseGrabbed = false
+	tab.cat.ClearHover()
+}
+
+// themeChanged and fontsChanged are what a tab does about a settings change the
+// window made for all of them.
+func (tab *terminalTab) themeChanged() error {
+	tab.redraw.markAll()
+	// A program that subscribed with mode 2031 is told now, not the next time
+	// it thinks to ask. The scheme is resolved per tab, since a theme that
+	// defers to the terminal takes the colors that tab's program set.
+	return tab.stream.ColorSchemeChanged(tab.colorScheme())
+}
+
+func (tab *terminalTab) fontsChanged() {
+	tab.redraw.markAll()
+	// The grid is measured in cells and the cell just changed shape, so the
+	// window holds a different number of them. Layout is where that is worked
+	// out; this only has to say that the answer it cached is stale, because the
+	// column count can survive a size change while the pixel geometry the image
+	// protocol measures in does not.
+	tab.relayout = true
+}
+
 // readOutput services background tabs too, with a per-frame budget so a busy
 // shell cannot starve the other tabs or window input.
 func (tab *terminalTab) readOutput() (bool, error) {

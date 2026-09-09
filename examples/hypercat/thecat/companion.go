@@ -75,7 +75,12 @@ func (c *Companion) Mode() Mode {
 	}
 }
 
+// SetMode is nil-safe like the rest of the companion's API: a window whose
+// sprites would not load still has a cat setting, it just has no cat.
 func (c *Companion) SetMode(m Mode) {
+	if c == nil {
+		return
+	}
 	c.SetEnabled(m != ModeOff)
 	c.SetHyper(m == ModeHyper)
 }

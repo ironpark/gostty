@@ -8,7 +8,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/ironpark/gostty"
-	"github.com/ironpark/gostty/examples/hypercat/ui"
 )
 
 // asciiGlyphs maps the common runes to the one-rune strings text.Draw wants,
@@ -69,9 +68,9 @@ func (c *gridCanvas) close() {
 	c.bg, c.text = nil, nil
 }
 
-// Draw paints one frame of the tab. The settings labels are passed in because
-// they describe the window's fonts and theme rather than this tab's.
-func (tab *terminalTab) Draw(screen *ebiten.Image, settings ui.SettingsValues) {
+// Draw paints one frame of the tab's own content. The panels go on top of it,
+// drawn by the window, which is what holds the settings they display.
+func (tab *terminalTab) Draw(screen *ebiten.Image) {
 	tab.drawGrid()
 	screen.Fill(tab.bg)
 	if tab.bell > 0 {
@@ -94,7 +93,6 @@ func (tab *terminalTab) Draw(screen *ebiten.Image, settings ui.SettingsValues) {
 	tab.images.draw(screen, gostty.KittyLayerAboveText, cellW, cellH)
 	tab.drawCursor(screen)
 	tab.drawCat(screen)
-	tab.drawUI(screen, settings)
 }
 
 // drawGrid brings the two grid layers up to date, redrawing only the rows

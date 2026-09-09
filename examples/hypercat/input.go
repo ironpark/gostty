@@ -47,8 +47,7 @@ func (tab *terminalTab) handleInput(m keys.Mods) error {
 	tab.out.reset()
 
 	// Copy and paste are the two bindings this emulator keeps for itself.
-	// Ctrl+Shift+C/V, or Cmd+C/V where that is the convention.
-	if (m.Ctrl && m.Shift) || m.Super {
+	if m.Shortcut() {
 		switch {
 		case inpututil.IsKeyJustPressed(ebiten.KeyC):
 			return tab.copySelection()

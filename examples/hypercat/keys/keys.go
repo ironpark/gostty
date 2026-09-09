@@ -36,6 +36,11 @@ func (m Mods) KeyMods() input.KeyMods {
 // one of them: it is already in the rune the platform produced.
 func (m Mods) Any() bool { return m.Ctrl || m.Alt || m.Super }
 
+// Shortcut reports whether the emulator's own bindings are being held, rather
+// than something meant for the program: Ctrl+Shift, or Cmd where that is the
+// convention. Everything hypercat keeps for itself is behind this.
+func (m Mods) Shortcut() bool { return (m.Ctrl && m.Shift) || m.Super }
+
 // Repeating reports whether a key held for this many ticks should fire now.
 func Repeating(held int) bool {
 	if held == 1 {

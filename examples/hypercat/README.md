@@ -44,8 +44,10 @@ Dependencies in the main package run one way. `terminalApp` owns the window and
 what every tab shares -- the fonts, the theme, the cat mode, the clipboard --
 and reaches down into the tabs; a `terminalTab` holds no reference back. What a
 tab cannot decide alone it reports and the window applies: a settings step comes
-back as a `settingsStep`, and the window title is set from the visible tab
-rather than by each tab in turn.
+back as a `ui.Actions` field, and the window title is set from the visible tab
+rather than by each tab in turn. The window says what happened -- `activate`,
+`deactivate`, `themeChanged`, `fontsChanged` -- and each tab decides what that
+means to its own state, so `appearance` keeps one writer and many readers.
 
 The files are organized around the terminal's frame and resource lifecycle:
 
