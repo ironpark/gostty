@@ -7,9 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/ironpark/gostty"
+	"github.com/ironpark/gostty/input"
 )
 
 // The selection a window can make without the pointer: select everything,
@@ -30,50 +29,45 @@ func (tab *terminalTab) selectAll() error {
 }
 
 // The keys that move the end of a selection, and how far.
-var selectionAdjustments = map[ebiten.Key]gostty.SelectionAdjustment{
-	ebiten.KeyArrowLeft:  gostty.SelectionAdjustmentLeft,
-	ebiten.KeyArrowRight: gostty.SelectionAdjustmentRight,
-	ebiten.KeyArrowUp:    gostty.SelectionAdjustmentUp,
-	ebiten.KeyArrowDown:  gostty.SelectionAdjustmentDown,
-	ebiten.KeyHome:       gostty.SelectionAdjustmentBeginningOfLine,
-	ebiten.KeyEnd:        gostty.SelectionAdjustmentEndOfLine,
-	ebiten.KeyPageUp:     gostty.SelectionAdjustmentPageUp,
-	ebiten.KeyPageDown:   gostty.SelectionAdjustmentPageDown,
+var selectionAdjustments = map[input.Key]gostty.SelectionAdjustment{
+	input.KeyArrowLeft:  gostty.SelectionAdjustmentLeft,
+	input.KeyArrowRight: gostty.SelectionAdjustmentRight,
+	input.KeyArrowUp:    gostty.SelectionAdjustmentUp,
+	input.KeyArrowDown:  gostty.SelectionAdjustmentDown,
+	input.KeyHome:       gostty.SelectionAdjustmentBeginningOfLine,
+	input.KeyEnd:        gostty.SelectionAdjustmentEndOfLine,
+	input.KeyPageUp:     gostty.SelectionAdjustmentPageUp,
+	input.KeyPageDown:   gostty.SelectionAdjustmentPageDown,
 }
 
-// adjustSelection moves the loose end of the selection with the keyboard, and
-// reports whether it took the keystroke.
+// adjustSelection moves the loose end of the selection with one key, and
+// reports whether that key was one of its own.
 //
 // Where the end lands is the terminal's answer: one cell to the right at the
 // end of a soft-wrapped line is the start of the next row, and one row up in a
 // viewport already at the top is a row of scrollback. Only the modified arrows
 // do this, so the unmodified ones still reach the program.
-func (tab *terminalTab) adjustSelection() (bool, error) {
-	adjusted := false
-	err := tab.onScreen(func(screen *gostty.Screen) error {
+func (tab *terminalTab) adjustSelection(key input.Key) (bool, error) {
+	adjustment, bound := selectionAdjustments[key]
+	if !bound {
+		return false, nil
+	}
+	return true, tab.onScreen(func(screen *gostty.Screen) error {
 		current, ok, err := screen.Selection()
 		if err != nil || !ok {
 			return err
 		}
-		for key, adjustment := range selectionAdjustments {
-			if !inpututil.IsKeyJustPressed(key) {
-				continue
-			}
-			adjusted = true
-			moved, ok, err := screen.SelectionAdjust(current, adjustment)
-			if err != nil || !ok {
-				return err
-			}
-			if _, err := screen.SetSelection(moved); err != nil {
-				return err
-			}
-			// A selection the user is steering off the top of the viewport
-			// brings the viewport with it.
-			return tab.revealRow(max(moved.StartY, moved.EndY))
+		moved, ok, err := screen.SelectionAdjust(current, adjustment)
+		if err != nil || !ok {
+			return err
 		}
-		return nil
+		if _, err := screen.SetSelection(moved); err != nil {
+			return err
+		}
+		// A selection the user is steering off the top of the viewport brings
+		// the viewport with it.
+		return tab.revealRow(max(moved.StartY, moved.EndY))
 	})
-	return adjusted, err
 }
 
 // exportScrollback writes the scrollback to a file, styles and all.

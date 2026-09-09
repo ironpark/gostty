@@ -19,13 +19,13 @@ import (
 // It is a snapshot and not a cache: everything in it is replaced or refreshed
 // each frame, and nothing in it outlives the terminal it came from.
 type frame struct {
-	// The viewport, row-major, and the cells whose text is more than one
-	// codepoint, keyed by cell index. The clusters are kept apart because they
-	// are the rare case: reading them costs a call per cell, so only the rows
-	// that changed are asked.
-	cells      []gostty.RenderCell
-	clusters   map[int]string
-	clusterBuf []rune
+	// The viewport, row-major, and the text of the cells that hold more than
+	// one codepoint, in the same order. The clusters are kept apart from the
+	// cells because they are the rare case -- almost every entry is empty,
+	// meaning "the codepoint in the cell is the whole of it" -- and because
+	// reading one costs a call into the terminal.
+	cells    []gostty.RenderCell
+	clusters []string
 
 	// The cursor, and the colours the grid is drawn in.
 	cursor cursorState

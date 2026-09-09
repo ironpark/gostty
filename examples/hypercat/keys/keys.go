@@ -149,12 +149,8 @@ func (r *Reader) Frame(m Mods, maxHeld int) []Event {
 	}
 
 	for _, key := range r.pressed {
-		code, named := terminalKey(key)
-		if !named || !PhysicallyPressed(key) {
-			continue
-		}
-		held := inpututil.KeyPressDuration(key)
-		if held > maxHeld {
+		code, held, ok := namedPress(key, maxHeld)
+		if !ok {
 			continue
 		}
 		if producesText(code) {
@@ -215,11 +211,8 @@ func action(held int) input.KeyAction {
 func (r *Reader) pairedKey(maxHeld int) (input.Key, bool) {
 	found, ok := input.KeyUnidentified, false
 	for _, key := range r.pressed {
-		if held := inpututil.KeyPressDuration(key); held != 1 || held > maxHeld {
-			continue
-		}
-		code, named := terminalKey(key)
-		if !named || !producesText(code) || !PhysicallyPressed(key) {
+		code, held, named := namedPress(key, maxHeld)
+		if !named || held != 1 || !producesText(code) {
 			continue
 		}
 		if ok {
@@ -228,6 +221,26 @@ func (r *Reader) pairedKey(maxHeld int) (input.Key, bool) {
 		found, ok = code, true
 	}
 	return found, ok
+}
+
+// namedPress is one held key, as this program sees it: the terminal key it
+// stands for and how long it has been down, or not named at all.
+//
+// The filtering is here rather than at each loop because it is a policy and
+// not an observation: a key the binding has no name for is not a key this
+// program can describe; a key macOS reports as down after the window took the
+// press is not one the user is holding (see PhysicallyPressed); and a key held
+// from before the window had focus belongs to whatever had focus then.
+func namedPress(key ebiten.Key, maxHeld int) (input.Key, int, bool) {
+	code, named := terminalKey(key)
+	if !named || !PhysicallyPressed(key) {
+		return input.KeyUnidentified, 0, false
+	}
+	held := inpututil.KeyPressDuration(key)
+	if held > maxHeld {
+		return input.KeyUnidentified, 0, false
+	}
+	return code, held, true
 }
 
 // producesText reports whether the platform will report typing this key as a

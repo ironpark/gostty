@@ -55,11 +55,23 @@ var themes = []Theme{
 	},
 }
 
+// RGB and Packed convert between a colour and the 0xRRGGBB integer the
+// terminal deals in. Both sides of the window speak that layout -- the
+// bindings hand cell and palette colours over as one, the themes are written
+// as one -- so the conversion lives here rather than once per caller.
+func RGB(v uint32) color.RGBA {
+	return color.RGBA{R: uint8(v >> 16), G: uint8(v >> 8), B: uint8(v), A: 0xff}
+}
+
+func Packed(c color.RGBA) uint32 {
+	return uint32(c.R)<<16 | uint32(c.G)<<8 | uint32(c.B)
+}
+
 // hexPalette spells the sixteen ANSI colours the way palettes are published.
 func hexPalette(values ...uint32) []color.RGBA {
 	palette := make([]color.RGBA, len(values))
 	for i, v := range values {
-		palette[i] = color.RGBA{R: uint8(v >> 16), G: uint8(v >> 8), B: uint8(v), A: 0xff}
+		palette[i] = RGB(v)
 	}
 	return palette
 }

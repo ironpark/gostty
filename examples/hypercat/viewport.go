@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"image/color"
 	"time"
 
 	"github.com/ironpark/gostty"
@@ -16,6 +15,12 @@ import (
 type redrawSet struct {
 	all  bool
 	rows []bool
+	// The rows the terminal itself changed, as opposed to the ones marked from
+	// this side. Kept apart because what a row says is only stale when the
+	// terminal wrote to it: a theme change repaints every row without changing
+	// a single character on any of them.
+	changed    []bool
+	changedAll bool
 	// Scratch for RenderState.DirtyRows, sized with the grid.
 	scratch []uint16
 }
@@ -32,8 +37,9 @@ func (r *redrawSet) mark(row int) {
 func (r *redrawSet) resize(rows int) {
 	if len(r.rows) != rows {
 		r.rows = make([]bool, rows)
+		r.changed = make([]bool, rows)
 		r.scratch = make([]uint16, rows)
-		r.all = true
+		r.all, r.changedAll = true, true
 	}
 }
 
@@ -41,11 +47,13 @@ func (r *redrawSet) resize(rows int) {
 // next Update reports only what changes from here. Full dirt -- colors or size
 // changed -- redraws every row.
 func (r *redrawSet) pull(state *gostty.RenderState) error {
+	clear(r.changed)
 	dirty, err := state.Dirty()
 	if err != nil {
 		return err
 	}
-	if dirty == gostty.RenderDirtyFull {
+	r.changedAll = dirty == gostty.RenderDirtyFull
+	if r.changedAll {
 		r.all = true
 	}
 	n, err := state.DirtyRows(r.scratch)
@@ -54,8 +62,17 @@ func (r *redrawSet) pull(state *gostty.RenderState) error {
 	}
 	for _, y := range r.scratch[:n] {
 		r.mark(int(y))
+		if int(y) < len(r.changed) {
+			r.changed[int(y)] = true
+		}
 	}
 	return state.Clean()
+}
+
+// rewritten reports whether the terminal changed this row since the last
+// frame, which is a narrower question than whether it has to be repainted.
+func (r *redrawSet) rewritten(row int) bool {
+	return r.changedAll || (row >= 0 && row < len(r.changed) && r.changed[row])
 }
 
 // marked reports whether a row needs repainting, without claiming it.
@@ -111,32 +128,39 @@ func (tab *terminalTab) revealRow(row uint32) error {
 // refresh pulls the viewport out of the render state. This is the only place
 // cell data crosses the boundary, and it is one call for the whole grid.
 //
-// The steps run in three phases, because the order between them matters and
-// the order inside them does not. Everything reads the cells the first phase
-// took, so nothing else can come before it; everything that marks a row for
-// redraw has to have done so before the last phase, which reads back the text
-// of the rows that are going to be drawn again. A step added to the wrong
-// phase is wrong quietly -- the frame is one behind rather than broken -- so
-// the phases are named instead of left to the order of the lines.
+// It runs in three phases, and the boundaries between them are the only order
+// that matters. Everything reads the cells the first phase took, so nothing
+// can come before it; everything that marks a row for redraw has to have done
+// so before the last phase, which reads back the text of the rows that are
+// going to be drawn again. A step put in the wrong phase is wrong quietly --
+// the frame is one behind rather than broken -- so the phases are marked.
 func (tab *terminalTab) refresh() error {
 	g := tab.grid()
 	if err := tab.frame.read(tab.state, tab.vt, g); err != nil {
 		return err
 	}
-	// Derived from the cells, in any order: none of these reads what another
-	// one writes.
-	for _, step := range []func() error{
-		tab.tickSearch,
-		tab.refreshMatches,
-		tab.images.refresh,
-		func() error { return tab.frame.readColors(tab.state, tab.currentTheme()) },
-		func() error { return tab.frame.readCursor(tab.state) },
-		tab.refreshLink,
-		tab.refreshScrollbar,
-	} {
-		if err := step(); err != nil {
-			return err
-		}
+	// Derived from the cells: none of these reads what another one writes, so
+	// the order between them is free.
+	if err := tab.tickSearch(); err != nil {
+		return err
+	}
+	if err := tab.refreshMatches(); err != nil {
+		return err
+	}
+	if err := tab.images.refresh(); err != nil {
+		return err
+	}
+	if err := tab.frame.readColors(tab.state, tab.currentTheme()); err != nil {
+		return err
+	}
+	if err := tab.frame.readCursor(tab.state); err != nil {
+		return err
+	}
+	if err := tab.refreshLink(); err != nil {
+		return err
+	}
+	if err := tab.refreshScrollbar(); err != nil {
+		return err
 	}
 	tab.frame.tickBlink(time.Now(), g)
 	// Last: the rows to be redrawn are settled, and these are read per cell in
@@ -202,16 +226,23 @@ const maxClusterRunes = 32
 //
 // A `RenderCell` carries one codepoint, which is the base of the cluster: the
 // combining acute on an "e", the second half of a flag and the joiners in a
-// family are all still in the terminal. `Graphemes` is what hands them over,
-// and it is per cell, so it is asked only about the rows that are going to be
-// drawn again -- the same rows `drawGrid` repaints, for the same reason.
+// family are all still in the terminal. `Graphemes` is what hands them over.
+//
+// It is per cell, and a cell is a cgo call, so the rows asked about are the
+// ones the terminal rewrote rather than the ones about to be repainted. The
+// two are usually the same set; where they differ -- a theme change, a font
+// change, a search highlight, the blink phase, a rebuilt canvas -- the text
+// has not moved, so what was read last time still stands. What is left is
+// proportional to what the shell actually printed, which is the only part
+// that cannot be avoided from here: a batched, row-at-a-time read in the
+// binding is what would fix the rest.
 func (f *frame) readClusters(state *gostty.RenderState, g grid) error {
-	if f.clusters == nil {
-		f.clusters = make(map[int]string)
-		f.clusterBuf = make([]rune, maxClusterRunes)
+	if len(f.clusters) != len(f.cells) {
+		f.clusters = make([]string, len(f.cells))
 	}
+	var cluster [maxClusterRunes]rune
 	for row := range g.rows {
-		if !f.redraw.marked(row) {
+		if !f.redraw.rewritten(row) {
 			continue
 		}
 		for col := range g.cols {
@@ -219,21 +250,20 @@ func (f *frame) readClusters(state *gostty.RenderState, g grid) error {
 			if i >= len(f.cells) {
 				break
 			}
-			delete(f.clusters, i)
+			f.clusters[i] = ""
 			cell := f.cells[i]
-			// Blanks and the spacers of a wide cell have no text of their own,
-			// and an ASCII letter cannot be the base of anything: skipping them
-			// is most of the grid.
+			// Blanks and the spacers of a wide cell have no text of their own:
+			// skipping them is most of the grid.
 			if cell.Codepoint <= ' ' || cell.Flags.Wide == gostty.CellWidthSpacerTail ||
 				cell.Flags.Wide == gostty.CellWidthSpacerHead {
 				continue
 			}
-			n, err := state.Graphemes(uint16(col), uint16(row), f.clusterBuf)
+			n, err := state.Graphemes(uint16(col), uint16(row), cluster[:])
 			if err != nil {
 				return err
 			}
 			if n > 1 {
-				f.clusters[i] = string(f.clusterBuf[:min(n, uint(len(f.clusterBuf)))])
+				f.clusters[i] = string(cluster[:min(n, uint(len(cluster)))])
 			}
 		}
 	}
@@ -244,8 +274,8 @@ func (f *frame) readClusters(state *gostty.RenderState, g grid) error {
 // codepoint otherwise. Draw calls it, so it reads what readClusters left rather
 // than the terminal.
 func (f *frame) clusterAt(g grid, col, row int, cell gostty.RenderCell) string {
-	if cluster, ok := f.clusters[g.index(col, row)]; ok {
-		return cluster
+	if i := g.index(col, row); i < len(f.clusters) && f.clusters[i] != "" {
+		return f.clusters[i]
 	}
 	return glyphString(cell.Codepoint)
 }
@@ -259,8 +289,8 @@ func (f *frame) readColors(state *gostty.RenderState, theme ui.Theme) error {
 	if err != nil {
 		return err
 	}
-	f.colors.terminalBg = rgb(colors.Background)
-	f.colors.terminalFg = rgb(colors.Foreground)
+	f.colors.terminalBg = ui.RGB(colors.Background)
+	f.colors.terminalFg = ui.RGB(colors.Foreground)
 	if theme.Terminal {
 		f.colors.bg, f.colors.fg = f.colors.terminalBg, f.colors.terminalFg
 	} else {
@@ -294,10 +324,6 @@ func (f *frame) readCursor(state *gostty.RenderState) error {
 	if err != nil {
 		return err
 	}
-	f.cursor.color, f.cursor.hasColor = rgb(rgba), ok
+	f.cursor.color, f.cursor.hasColor = ui.RGB(rgba), ok
 	return nil
-}
-
-func rgb(v uint32) color.RGBA {
-	return color.RGBA{R: uint8(v >> 16), G: uint8(v >> 8), B: uint8(v), A: 0xff}
 }

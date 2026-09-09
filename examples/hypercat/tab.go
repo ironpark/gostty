@@ -172,8 +172,7 @@ func (tab *terminalTab) applyPalette() error {
 		return tab.vt.ResetPalette()
 	}
 	for i, c := range palette {
-		rgb := uint32(c.R)<<16 | uint32(c.G)<<8 | uint32(c.B)
-		if err := tab.vt.SetDefaultPaletteColor(uint8(i), rgb); err != nil {
+		if err := tab.vt.SetDefaultPaletteColor(uint8(i), ui.Packed(c)); err != nil {
 			return err
 		}
 	}

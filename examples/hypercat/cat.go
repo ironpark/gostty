@@ -14,15 +14,17 @@ func (tab *terminalTab) catGrid() thecat.GridWorld {
 	return thecat.GridWorld{
 		Cols: g.cols, Rows: g.rows,
 		CellWidth: g.cellW, CellHeight: g.cellH,
-		HasInk: tab.catCell,
+		// The grid is captured rather than rebuilt, because this is asked per
+		// cell as the cat looks for ground to walk on.
+		HasInk: func(col, row int) bool { return tab.catCell(g, col, row) },
 	}
 }
 
-func (tab *terminalTab) catCell(col, row int) bool {
-	if len(tab.frame.cells) < tab.rows*tab.cols {
+func (tab *terminalTab) catCell(g grid, col, row int) bool {
+	if !g.holds(len(tab.frame.cells)) {
 		return false
 	}
-	cell := tab.frame.cells[row*tab.cols+col]
+	cell := tab.frame.cells[g.index(col, row)]
 	return cell.Codepoint > ' ' && !cell.Flags.Invisible
 }
 

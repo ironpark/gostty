@@ -25,7 +25,7 @@ func TestCellsCarryTheirWholeCluster(t *testing.T) {
 	if got, want := tab.frame.clusterAt(tab.grid(), 1, 0, tab.frame.cells[1]), "t"; got != want {
 		t.Errorf("clusterAt(1, 0) = %q, want %q", got, want)
 	}
-	if _, ok := tab.frame.clusters[1]; ok {
+	if tab.frame.clusters[1] != "" {
 		t.Error("a single-codepoint cell was recorded as a cluster")
 	}
 }
@@ -67,6 +67,32 @@ func TestGraphemeClusteringSurvivesAReset(t *testing.T) {
 	}
 }
 
+// The cluster read is per cell and each cell is a call into the terminal, so
+// it follows what the terminal rewrote rather than what has to be repainted.
+// A theme change repaints every row without changing a character on any of
+// them, and must not re-read the whole grid to be told so.
+func TestClustersAreNotRereadForARepaint(t *testing.T) {
+	app := newTabTestApp(t)
+	tab := app.current()
+	feedTab(t, tab, "e\u0301tude")
+
+	// A repaint with no new output: every row is marked, none was rewritten.
+	tab.frame.redraw.markAll()
+	if err := tab.refresh(); err != nil {
+		t.Fatalf("refresh: %v", err)
+	}
+	if !tab.frame.redraw.all {
+		t.Fatal("the repaint was dropped")
+	}
+	if tab.frame.redraw.rewritten(0) {
+		t.Error("a row nothing was printed to counts as rewritten")
+	}
+	// The text did not move, so what was read before still stands.
+	if got, want := tab.frame.clusterAt(tab.grid(), 0, 0, tab.frame.cells[0]), "e\u0301"; got != want {
+		t.Errorf("clusterAt after a repaint = %q, want %q", got, want)
+	}
+}
+
 // Only the rows that are going to be drawn again are asked for their clusters,
 // so a cluster that scrolled off is forgotten rather than left pointing at a
 // cell that now says something else.
@@ -75,11 +101,11 @@ func TestClustersFollowTheRowsThatChanged(t *testing.T) {
 	tab := app.current()
 
 	feedTab(t, tab, "e\u0301\r\n")
-	if _, ok := tab.frame.clusters[0]; !ok {
+	if tab.frame.clusters[0] == "" {
 		t.Fatal("the cluster was not recorded")
 	}
 	feedTab(t, tab, "\x1b[H\x1b[2Kplain")
-	if _, ok := tab.frame.clusters[0]; ok {
+	if tab.frame.clusters[0] != "" {
 		t.Error("the cluster outlived the text it belonged to")
 	}
 }

@@ -46,14 +46,15 @@ func (tab *terminalTab) refreshScrollbar() error {
 func (f *frame) updateScrollbar(bar gostty.Scrollbar) {
 	previous := f.scrollbar.bar
 	f.scrollbar.bar = bar
+	// Away from the bottom, or moved since the last frame: either is a reason
+	// to be showing it.
+	awayFromBottom := bar.Offset+bar.Len < bar.Total
+	moved := bar.Offset != previous.Offset || bar.Total != previous.Total
 	switch {
 	case bar.Total <= bar.Len:
 		// Nothing to scroll through: no bar, however recently it moved.
 		f.scrollbar.visible = 0
-	case bar.Offset+bar.Len < bar.Total:
-		// Away from the bottom, which is the whole reason to show it.
-		f.scrollbar.visible = scrollbarFrames
-	case bar.Offset != previous.Offset || bar.Total != previous.Total:
+	case awayFromBottom || moved:
 		f.scrollbar.visible = scrollbarFrames
 	case f.scrollbar.visible > 0:
 		f.scrollbar.visible--

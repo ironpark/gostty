@@ -41,6 +41,37 @@ func TestDroppedPathsReadsTheDropRoot(t *testing.T) {
 	}
 }
 
+// What is staged for a drop is the intersection of what this window can make
+// with what the program registered for: a type it did not ask for is noise, and
+// one it asked for that this window cannot make is a promise it cannot keep.
+func TestOfferedRepresentationsIntersect(t *testing.T) {
+	both := offeredRepresentations([]string{"text/plain", "text/uri-list"})
+	if len(both) != 2 || both[0].mime != "text/uri-list" {
+		t.Errorf("offered %v, want both in this window's order", mimesOf(both))
+	}
+	if one := offeredRepresentations([]string{"text/plain"}); len(one) != 1 || one[0].mime != "text/plain" {
+		t.Errorf("offered %v, want only text/plain", mimesOf(one))
+	}
+	if none := offeredRepresentations([]string{"image/png"}); len(none) != 0 {
+		t.Errorf("offered %v for a type this window cannot make", mimesOf(none))
+	}
+	// The bytes come from the same table that named the type, so a drop cannot
+	// advertise one thing and stage another.
+	for _, representation := range both {
+		if len(representation.body([]string{"/tmp/a"})) == 0 {
+			t.Errorf("%s staged nothing", representation.mime)
+		}
+	}
+}
+
+func mimesOf(representations []dropRepresentation) []string {
+	names := make([]string, 0, len(representations))
+	for _, r := range representations {
+		names = append(names, r.mime)
+	}
+	return names
+}
+
 // A program that registered with OSC 72 takes the drop itself: the terminal
 // reports it and answers the program's request for the data, rather than the
 // paths being typed at a prompt that is not there.

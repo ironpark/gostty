@@ -9,6 +9,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/ironpark/gostty"
+	"github.com/ironpark/gostty/examples/hypercat/ui"
 )
 
 // asciiGlyphs maps the common runes to the one-rune strings text.Draw wants,
@@ -162,9 +163,9 @@ var matchHighlight = color.RGBA{R: 0xb5, G: 0x89, B: 0x00, A: 0xff}
 
 func (tab *terminalTab) cellBackground(cell gostty.RenderCell) color.RGBA {
 	if cell.Flags.Selected {
-		return tab.themeColor(rgb(cell.Fg))
+		return tab.themeColor(ui.RGB(cell.Fg))
 	}
-	return tab.themeColor(rgb(cell.Bg))
+	return tab.themeColor(ui.RGB(cell.Bg))
 }
 
 func (tab *terminalTab) cellBackgroundAt(i int) color.RGBA {
@@ -194,9 +195,9 @@ func (tab *terminalTab) drawRowGlyphs(dst *ebiten.Image, row int) {
 			continue
 		}
 
-		fg := tab.themeColor(rgb(cell.Fg))
+		fg := tab.themeColor(ui.RGB(cell.Fg))
 		if flags.Selected {
-			fg = tab.themeColor(rgb(cell.Bg))
+			fg = tab.themeColor(ui.RGB(cell.Bg))
 		}
 		if flags.Faint {
 			fg = color.RGBA{R: fg.R / 2, G: fg.G / 2, B: fg.B / 2, A: 0xff}
@@ -319,13 +320,15 @@ func (tab *terminalTab) drawCursor(screen *ebiten.Image) {
 	}
 	g := tab.grid()
 	x, y := g.x(int(tab.frame.cursor.x)), g.y(int(tab.frame.cursor.y))
-	// A cursor on a wide character covers both of its cells, so the glyph
-	// underneath is not left half-lit.
+	cursorCell := tab.cursorCellIndex(g)
+	// A cursor on a wide character covers both of its cells, whether it landed
+	// on the head or on the tail, so the glyph is not left half-lit.
 	width := g.cellW
-	if tab.frame.cursor.wideTail {
+	switch {
+	case tab.frame.cursor.wideTail:
 		x -= width
 		width *= 2
-	} else if i := tab.cursorCellIndex(); i >= 0 && tab.frame.cells[i].Flags.Wide == gostty.CellWidthWide {
+	case cursorCell >= 0 && tab.frame.cells[cursorCell].Flags.Wide == gostty.CellWidthWide:
 		width *= 2
 	}
 	thickness := float32(2 * tab.fonts().LineHeight)
@@ -342,8 +345,8 @@ func (tab *terminalTab) drawCursor(screen *ebiten.Image) {
 		// Redraw the glyph in the background color so it stays legible --
 		// except while the program is reading a password, where the block is
 		// left solid rather than spelling out what was typed.
-		if i := tab.cursorCellIndex(); i >= 0 && !tab.frame.cursor.password {
-			cell := tab.frame.cells[i]
+		if cursorCell >= 0 && !tab.frame.cursor.password {
+			cell := tab.frame.cells[cursorCell]
 			if cell.Codepoint > ' ' {
 				flags := cell.Flags
 				wide := flags.Wide == gostty.CellWidthWide
@@ -357,8 +360,7 @@ func (tab *terminalTab) drawCursor(screen *ebiten.Image) {
 // cursorCellIndex is the cell the cursor sits on, or -1 when it is off the
 // grid the last refresh read. The tail of a wide character is drawn from its
 // head, so that is the cell this reports.
-func (tab *terminalTab) cursorCellIndex() int {
-	g := tab.grid()
+func (tab *terminalTab) cursorCellIndex(g grid) int {
 	x, y := int(tab.frame.cursor.x), int(tab.frame.cursor.y)
 	if tab.frame.cursor.wideTail {
 		x--

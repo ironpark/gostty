@@ -93,13 +93,14 @@ func (tab *terminalTab) refreshMatches() error {
 	if tab.search.handle == nil {
 		prev := tab.search.cells
 		tab.search.cells = tab.search.cells[:0]
-		tab.markMatchChanges(prev)
+		tab.markMatchChanges(tab.grid(), prev)
 		return nil
 	}
 	top, err := tab.viewportTop()
 	if err != nil {
 		return err
 	}
+	g := tab.grid()
 	// The count is not known in advance. A match spans at least one cell, so
 	// one per viewport cell cannot be exceeded by anything that is on screen.
 	if cap(tab.search.viewport) < len(tab.frame.cells) {
@@ -115,22 +116,21 @@ func (tab *terminalTab) refreshMatches() error {
 	}
 	tab.search.cells = tab.search.cells[:len(tab.frame.cells)]
 	clear(tab.search.cells)
-	defer tab.markMatchChanges(prev)
+	defer tab.markMatchChanges(g, prev)
 	for _, m := range tab.search.viewport[:n] {
-		if m.StartY < top || m.EndY >= top+uint32(tab.rows) || m.StartY > m.EndY {
+		if m.StartY < top || m.EndY >= top+uint32(g.rows) || m.StartY > m.EndY {
 			continue
 		}
 		for y := m.StartY; y <= m.EndY; y++ {
-			x0, x1 := 0, tab.cols-1
+			x0, x1 := 0, g.cols-1
 			if y == m.StartY {
 				x0 = int(m.StartX)
 			}
 			if y == m.EndY {
 				x1 = int(m.EndX)
 			}
-			row := int(y-top) * tab.cols
-			for x := x0; x <= x1 && x < tab.cols; x++ {
-				tab.search.cells[row+x] = true
+			for x := x0; x <= x1 && x < g.cols; x++ {
+				tab.search.cells[g.index(x, int(y-top))] = true
 			}
 		}
 	}
@@ -140,15 +140,15 @@ func (tab *terminalTab) refreshMatches() error {
 // markMatchChanges redraws the rows whose highlight differs from the last
 // frame. The highlight is drawn here, not by the terminal, so the render
 // state's own dirty flags do not know about it.
-func (tab *terminalTab) markMatchChanges(prev []bool) {
-	if tab.cols == 0 {
+func (tab *terminalTab) markMatchChanges(g grid, prev []bool) {
+	if g.cols == 0 {
 		return
 	}
 	for i := range max(len(prev), len(tab.search.cells)) {
 		was := i < len(prev) && prev[i]
 		is := i < len(tab.search.cells) && tab.search.cells[i]
 		if was != is {
-			tab.frame.redraw.mark(i / tab.cols)
+			tab.frame.redraw.mark(g.row(i))
 		}
 	}
 }

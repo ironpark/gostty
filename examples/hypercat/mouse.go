@@ -125,13 +125,14 @@ func (tab *terminalTab) handleMouse(m keys.Mods) error {
 // a double click, the command output for a triple, and nothing for the first
 // one, which only sets the anchor a drag grows from.
 func (tab *terminalTab) pressSelection(px, py int) error {
-	col, row := tab.grid().cellAt(px, py)
+	g := tab.grid()
+	col, row := g.cellAt(px, py)
 	sel, ok, err := tab.sel.gesture.Press(gostty.GesturePressEvent{
 		X: uint16(col), Y: uint16(row),
 		Xpos: float64(px), Ypos: float64(py),
 		// The distance and the interval are what separate a double click from
 		// two clicks that happen to be near each other in space or time.
-		MaxDistance:      multiClickDistance * tab.grid().cellW,
+		MaxDistance:      multiClickDistance * g.cellW,
 		RepeatIntervalNs: uint64(multiClickInterval),
 		TimeNs:           time.Now().UnixNano(),
 	})

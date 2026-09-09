@@ -68,7 +68,14 @@ func (tab *terminalTab) refreshLink() error {
 
 // readLink finds the link under a pointer position, which is negative when the
 // pointer is not over the grid at all.
+//
+// The cell under the pointer is asked every frame, since that is one call and
+// the answer is what decides everything else. The run it belongs to is only
+// walked when the answer is a link the last frame did not already have: a
+// pointer resting on a seventy-cell link would otherwise cost seventy calls
+// and seventy strings a frame to arrive at the same two numbers.
 func (f *frame) readLink(state *gostty.RenderState, g grid, pointer image.Point) error {
+	previous := f.link
 	f.link = hoveredLink{}
 	if pointer.X < 0 || pointer.Y < 0 || g.cols == 0 || g.rows == 0 {
 		return nil
@@ -77,6 +84,14 @@ func (f *frame) readLink(state *gostty.RenderState, g grid, pointer image.Point)
 	uri, ok, err := state.HyperlinkAt(uint16(col), uint16(row))
 	if err != nil || !ok || uri == "" {
 		return err
+	}
+	// The same link, in the same row, still covering this cell: the run cannot
+	// have changed without the row being rewritten, and a rewritten row is one
+	// the caller marked for redraw.
+	if previous.uri == uri && previous.row == row &&
+		col >= previous.start && col < previous.end && !f.redraw.rewritten(row) {
+		f.link = previous
+		return nil
 	}
 
 	link := hoveredLink{uri: uri, row: row, start: col, end: col + 1}

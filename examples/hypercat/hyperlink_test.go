@@ -34,6 +34,39 @@ func TestHoveredLinkCoversTheWholeRun(t *testing.T) {
 	}
 }
 
+// The run is cached while the pointer stays inside it, so a pointer resting on
+// a link does not walk the row again every frame. What is cached has to be the
+// same run: the cell under the pointer is still asked, every frame.
+func TestHoveredLinkIsNotRescannedWhileTheRunHolds(t *testing.T) {
+	app := newTabTestApp(t)
+	tab := app.current()
+	tab.reports.focused = true
+
+	feedTab(t, tab, "\x1b]8;;https://example.com\x07click\x1b]8;;\x07")
+	if err := tab.refreshLink(); err != nil {
+		t.Fatalf("refreshLink: %v", err)
+	}
+	first := tab.frame.link
+
+	// A second look with nothing rewritten keeps the same run.
+	if err := tab.refreshLink(); err != nil {
+		t.Fatalf("refreshLink: %v", err)
+	}
+	if tab.frame.link != first {
+		t.Errorf("link = %+v, want the cached %+v", tab.frame.link, first)
+	}
+
+	// Printing over it is a rewritten row, so the run is found again -- and
+	// there is no longer a link there to find.
+	feedTab(t, tab, "\x1b[H\x1b[2Kplain")
+	if err := tab.refreshLink(); err != nil {
+		t.Fatalf("refreshLink: %v", err)
+	}
+	if tab.frame.link.valid() {
+		t.Errorf("link = %+v, want none once the text was overwritten", tab.frame.link)
+	}
+}
+
 // Text with no link under the pointer leaves nothing to underline or open.
 func TestUnlinkedTextHasNoLink(t *testing.T) {
 	app := newTabTestApp(t)

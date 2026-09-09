@@ -3,8 +3,6 @@ package main
 import (
 	"io"
 
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/ironpark/gostty"
 	"github.com/ironpark/gostty/examples/hypercat/keys"
 	"github.com/ironpark/gostty/input"
@@ -46,24 +44,20 @@ func (b *frameBuffer) flush(w io.Writer) error {
 func (tab *terminalTab) handleInput(m keys.Mods) error {
 	tab.out.reset()
 
-	// Copy and paste are the two bindings this emulator keeps for itself.
-	if m.Shortcut() {
-		switch {
-		case inpututil.IsKeyJustPressed(ebiten.KeyC):
-			return tab.copySelection()
-		case inpututil.IsKeyJustPressed(ebiten.KeyV):
-			return tab.pasteText(string(tab.clipboard.paste()))
-		case inpututil.IsKeyJustPressed(ebiten.KeyA):
-			return tab.selectAll()
-		case inpututil.IsKeyJustPressed(ebiten.KeyS):
-			return tab.exportScrollback()
-		}
-		if adjusted, err := tab.adjustSelection(); adjusted || err != nil {
-			return err
-		}
-	}
-
 	for _, ev := range tab.keys.Frame(m, tab.reports.focusedFrames) {
+		// The window's own bindings are taken out of the same stream of events
+		// the program is fed from, rather than polled beside it: one reader
+		// means one set of rules about what counts as a press, and a binding
+		// takes its own key and leaves the rest of the frame alone.
+		if m.Shortcut() && ev.Action == input.KeyActionPress {
+			taken, err := tab.shortcut(ev.Key)
+			if err != nil {
+				return err
+			}
+			if taken {
+				continue
+			}
+		}
 		if err := tab.sendKey(ev, m); err != nil {
 			return err
 		}
@@ -78,6 +72,22 @@ func (tab *terminalTab) handleInput(m keys.Mods) error {
 		return err
 	}
 	return tab.out.flush(tab.shell.Pty)
+}
+
+// shortcut runs the window's own binding for a key, and reports whether there
+// was one. What is bound here never reaches the program.
+func (tab *terminalTab) shortcut(key input.Key) (bool, error) {
+	switch key {
+	case input.KeyKeyC:
+		return true, tab.copySelection()
+	case input.KeyKeyV:
+		return true, tab.pasteText(string(tab.clipboard.paste()))
+	case input.KeyKeyA:
+		return true, tab.selectAll()
+	case input.KeyKeyS:
+		return true, tab.exportScrollback()
+	}
+	return tab.adjustSelection(key)
 }
 
 // pasteText hands text to the program as a paste.

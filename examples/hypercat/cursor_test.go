@@ -104,7 +104,7 @@ func TestCursorOnAWideCharacter(t *testing.T) {
 	if !tab.frame.cursor.wideTail {
 		t.Fatal("cursor is not on the wide character's tail")
 	}
-	i := tab.cursorCellIndex()
+	i := tab.cursorCellIndex(tab.grid())
 	if i < 0 || tab.frame.cells[i].Codepoint != '한' {
 		t.Errorf("cursorCellIndex() = %d, want the cell holding the character", i)
 	}

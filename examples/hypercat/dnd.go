@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/url"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -66,10 +67,17 @@ func (tab *terminalTab) handleDrop() error {
 		return tab.pasteText(shellQuote(paths))
 	}
 
-	// What the program registered for, which is what a real emulator would
-	// stage rather than offering the two types this one always has.
-	if mimes, err := tab.stream.DragRegisteredMimes(); err == nil {
-		log.Printf("drag: dropping %d path(s) for %s", len(paths), mimes)
+	// What the program registered for decides what is staged: offering a type
+	// it did not ask for is noise, and staging one it did ask for but this
+	// window cannot make is a promise that cannot be kept.
+	registered, err := tab.stream.DragRegisteredMimes()
+	if err != nil {
+		return err
+	}
+	offered := offeredRepresentations(strings.Fields(registered))
+	if len(offered) == 0 {
+		log.Printf("drag: the program accepts %s, and this window has none of it", registered)
+		return nil
 	}
 
 	px, py := tab.cursorPosition()
@@ -83,17 +91,20 @@ func (tab *terminalTab) handleDrop() error {
 	}
 	// The representations are staged before the drop, because the program does
 	// not receive them: it is told a drop happened and asks for the one it
-	// wants, which the terminal answers from what was staged here.
+	// wants, which the terminal answers from what was staged here. The list it
+	// is told about and the bytes staged for it come from the same iteration,
+	// so the two cannot fall out of step.
 	if err := tab.stream.DragClearItems(); err != nil {
 		return err
 	}
-	if err := tab.stream.DragAddItem("text/uri-list", []byte(uriList(paths))); err != nil {
-		return err
+	mimes := make([]string, 0, len(offered))
+	for _, representation := range offered {
+		if err := tab.stream.DragAddItem(representation.mime, representation.body(paths)); err != nil {
+			return err
+		}
+		mimes = append(mimes, representation.mime)
 	}
-	if err := tab.stream.DragAddItem("text/plain", []byte(strings.Join(paths, "\n"))); err != nil {
-		return err
-	}
-	if err := tab.stream.DragMove(move, "text/uri-list text/plain"); err != nil {
+	if err := tab.stream.DragMove(move, strings.Join(mimes, " ")); err != nil {
 		return err
 	}
 	if err := tab.stream.DragDrop(move); err != nil {
@@ -102,6 +113,34 @@ func (tab *terminalTab) handleDrop() error {
 	// The moves and the drop are written as replies, the same as a device
 	// status report, so they go out with the rest of this frame's answers.
 	return tab.stream.WriteReplies(tab.shell.Pty)
+}
+
+// dropRepresentation is one way this window can describe a set of dropped
+// paths. A program takes the drop by asking for one of them by name, so what
+// is staged and what it is told about have to be the same list -- which is
+// why it is a list.
+type dropRepresentation struct {
+	mime string
+	body func(paths []string) []byte
+}
+
+// What this window can make, in the order a program that asked for more than
+// one of them gets it.
+var dropRepresentations = []dropRepresentation{
+	{"text/uri-list", func(paths []string) []byte { return []byte(uriList(paths)) }},
+	{"text/plain", func(paths []string) []byte { return []byte(strings.Join(paths, "\n")) }},
+}
+
+// offeredRepresentations is what this window can make and the program will
+// take: the intersection, in this window's order of preference.
+func offeredRepresentations(registered []string) []dropRepresentation {
+	var offered []dropRepresentation
+	for _, representation := range dropRepresentations {
+		if slices.Contains(registered, representation.mime) {
+			offered = append(offered, representation)
+		}
+	}
+	return offered
 }
 
 // droppedPaths lists what was dropped, at the root of the virtual filesystem

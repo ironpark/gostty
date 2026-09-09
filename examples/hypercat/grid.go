@@ -45,8 +45,13 @@ func (g grid) cellAt(px, py int) (int, int) {
 }
 
 // index is the offset of a cell in a row-major grid of them, which is how the
-// render state hands cells over.
+// render state hands cells over, and row is the way back.
 func (g grid) index(col, row int) int { return row*g.cols + col }
+func (g grid) row(index int) int      { return index / g.cols }
+
+// holds reports whether a slice of cells covers the whole grid, which is what
+// anything indexing into one has to know before it does.
+func (g grid) holds(cells int) bool { return cells >= g.cols*g.rows }
 
 // renderSize describes the window to the input encoders, which need it to turn
 // a pixel position into a cell of their own. There is no padding around the
