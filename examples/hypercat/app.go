@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"log"
+	"slices"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -37,9 +38,11 @@ func newApp() *terminalApp {
 }
 
 func (app *terminalApp) close() {
-	for len(app.tabs) > 0 {
-		app.closeTab(len(app.tabs) - 1)
+	for _, tab := range app.tabs {
+		tab.close()
 	}
+	app.tabs = nil
+	app.active = 0
 	if app.content != nil {
 		app.content.Deallocate()
 		app.content = nil
@@ -88,7 +91,16 @@ func (app *terminalApp) Update() error {
 			return err
 		}
 	}
-	return tab.updateInput(m, panelTook)
+	if err := tab.updateInput(m, panelTook); err != nil {
+		return err
+	}
+	// Snapshot after input so selection is visible immediately. The cat then
+	// walks on the same cells that Draw will render.
+	if err := tab.refresh(); err != nil {
+		return err
+	}
+	tab.updateCat()
+	return nil
 }
 
 // serviceTabs feeds every tab what its shell wrote, background ones included,
@@ -176,22 +188,25 @@ func (app *terminalApp) cycleTab(step int) {
 	app.selectTab(wrap(app.active+step, len(app.tabs)))
 }
 
+// closeTab preserves the active tab's interaction state when a background
+// shell exits. Only closing the active tab activates its replacement.
 func (app *terminalApp) closeTab(index int) {
 	if index < 0 || index >= len(app.tabs) {
 		return
 	}
+	wasActive := index == app.active
 	app.tabs[index].close()
-	copy(app.tabs[index:], app.tabs[index+1:])
-	app.tabs[len(app.tabs)-1] = nil
-	app.tabs = app.tabs[:len(app.tabs)-1]
+	app.tabs = slices.Delete(app.tabs, index, index+1)
+	if len(app.tabs) == 0 {
+		app.active = 0
+		return
+	}
 	if index < app.active {
 		app.active--
 	}
 	app.active = min(app.active, len(app.tabs)-1)
-	if len(app.tabs) > 0 {
-		app.selectTab(app.active)
-	} else {
-		app.active = 0
+	if wasActive {
+		app.current().activate()
 	}
 }
 
@@ -274,34 +289,6 @@ func (app *terminalApp) syncTitle(tab *terminalTab) {
 	}
 	app.titled, app.titledTab = tab.title, app.active
 	ebiten.SetWindowTitle(tab.title.String())
-}
-
-func (app *terminalApp) barHeight() float64 { return float64(int(ui.TabBarHeight * app.dsf)) }
-
-func (app *terminalApp) LayoutF(width, height float64) (float64, float64) {
-	app.dsf = deviceScale()
-	app.width, app.height = width*app.dsf, height*app.dsf
-	app.layoutTabs()
-	return app.width, app.height
-}
-
-func (app *terminalApp) Layout(width, height int) (int, int) {
-	w, h := app.LayoutF(float64(width), float64(height))
-	return int(w), int(h)
-}
-
-func (app *terminalApp) layoutTabs() {
-	// The faces are built in device pixels, so a window that moved to a display
-	// with a different scale factor needs them rebuilt -- once, for every tab.
-	if app.settings.dsf != app.dsf {
-		app.applyFont()
-	}
-	for _, tab := range app.tabs {
-		tab.offsetY = int(app.barHeight())
-		if app.width > 0 {
-			tab.layout(app.width, max(app.height-app.barHeight(), 1))
-		}
-	}
 }
 
 func (app *terminalApp) Draw(screen *ebiten.Image) {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"image/color"
 	"strings"
 
 	"github.com/ironpark/gostty"
@@ -261,4 +262,15 @@ func (tab *terminalTab) fontsChanged() {
 	// column count can survive a size change while the pixel geometry the image
 	// protocol measures in does not.
 	tab.relayout = true
+}
+
+func (tab *terminalTab) currentTheme() ui.Theme { return ui.ThemeAt(tab.settings.theme) }
+func (tab *terminalTab) colorScheme() gostty.ColorScheme {
+	if tab.currentTheme().Light(tab.frame.colors.terminalBg) {
+		return gostty.ColorSchemeLight
+	}
+	return gostty.ColorSchemeDark
+}
+func (tab *terminalTab) themeColor(c color.RGBA) color.RGBA {
+	return tab.currentTheme().ResolveColor(c, tab.frame.colors.terminalBg, tab.frame.colors.terminalFg)
 }

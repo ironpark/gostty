@@ -313,3 +313,49 @@ func TestSettingsChangeAppliesToEveryTab(t *testing.T) {
 		t.Error("the other tab's grid was not remeasured for the new cell size")
 	}
 }
+
+func TestCloseTabPreservesOrActivatesCurrentTab(t *testing.T) {
+	for _, tt := range []struct {
+		name                  string
+		count, active, closed int
+		wantIndex             int
+	}{
+		{"background before active", 3, 1, 0, 0},
+		{"background after active", 3, 1, 2, 1},
+		{"active first", 3, 0, 0, 0},
+		{"active middle", 3, 1, 1, 1},
+		{"active last", 3, 2, 2, 1},
+		{"only tab", 1, 0, 0, 0},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			app := &terminalApp{active: tt.active}
+			for range tt.count {
+				app.tabs = append(app.tabs, &terminalTab{})
+			}
+			t.Cleanup(app.close)
+			current := app.current()
+			current.sel.dragging = true
+			current.reports.mouseGrabbed = true
+			current.reports.focusedFrames = 12
+			app.closeTab(tt.closed)
+			if len(app.tabs) != tt.count-1 || app.active != tt.wantIndex {
+				t.Fatalf("tabs=%d active=%d, want tabs=%d active=%d", len(app.tabs), app.active, tt.count-1, tt.wantIndex)
+			}
+			if tt.count == 1 {
+				if app.current() != nil {
+					t.Fatal("closing the last tab retained the current tab")
+				}
+				return
+			}
+			if tt.closed == tt.active {
+				if app.current() == current || !app.current().frame.redraw.all {
+					t.Fatal("replacement tab was not activated for a full redraw")
+				}
+				return
+			}
+			if app.current() != current || !current.sel.dragging || !current.reports.mouseGrabbed || current.reports.focusedFrames != 12 || current.frame.redraw.all {
+				t.Fatal("closing a background tab reset the active tab's interaction state")
+			}
+		})
+	}
+}

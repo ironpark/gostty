@@ -101,48 +101,39 @@ func (tab *terminalTab) deactivate() {
 	tab.cat.ClearHover()
 }
 
-// updateInput routes pointer and keyboard input, then refreshes the frame.
+// updateInput routes input only; the app refreshes the viewport afterwards.
 // An open panel consumes the keyboard while selection remains available.
 func (tab *terminalTab) updateInput(m keys.Mods, panelTook bool) error {
-	if tab.reports.focused {
-		// The pointer above the grid is the tab bar's; a drag released there
-		// ends. A click on the cat is the cat's, not the shell's: it must not
-		// also start a selection or be reported to the program.
-		_, y := tab.cursorPosition()
-		onGrid := y >= 0
-		if !onGrid && !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-			tab.sel.dragging = false
-		}
-		if onGrid && !tab.pokeCat() {
-			if err := tab.handleMouse(m); err != nil {
-				return err
-			}
-		}
-		if onGrid {
-			if err := tab.handleWheel(m); err != nil {
-				return err
-			}
-			// A drop lands on the tab under the pointer, whichever half of the
-			// conversation takes it.
-			if err := tab.handleDrop(); err != nil {
-				return err
-			}
-		}
-		if !panelTook {
-			if err := tab.handleInput(m); err != nil {
-				return err
-			}
-		}
+	if !tab.reports.focused {
+		return nil
 	}
-	// Input before the refresh, so a selection made this frame is drawn this
-	// frame rather than one behind.
-	if err := tab.refresh(); err != nil {
+	if err := tab.handlePointer(m); err != nil {
 		return err
 	}
-	// After the refresh: the cat walks on the cells this frame is about to
-	// draw, not the ones the last frame drew.
-	tab.updateCat()
-	return nil
+	if panelTook {
+		return nil
+	}
+	return tab.handleInput(m)
+}
+
+// handlePointer gives the tab bar and cat first refusal on pointer input.
+func (tab *terminalTab) handlePointer(m keys.Mods) error {
+	_, y := tab.cursorPosition()
+	if y < 0 {
+		if !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+			tab.sel.dragging = false
+		}
+		return nil
+	}
+	if !tab.pokeCat() {
+		if err := tab.handleMouse(m); err != nil {
+			return err
+		}
+	}
+	if err := tab.handleWheel(m); err != nil {
+		return err
+	}
+	return tab.handleDrop()
 }
 
 // panelInput describes this frame's keyboard to the panels. Runes are only
@@ -190,17 +181,6 @@ func (tab *terminalTab) applyUIActions(result ui.Actions) (bool, error) {
 		}
 	}
 	return result.Consumed, nil
-}
-
-func (tab *terminalTab) currentTheme() ui.Theme { return ui.ThemeAt(tab.settings.theme) }
-func (tab *terminalTab) colorScheme() gostty.ColorScheme {
-	if tab.currentTheme().Light(tab.frame.colors.terminalBg) {
-		return gostty.ColorSchemeLight
-	}
-	return gostty.ColorSchemeDark
-}
-func (tab *terminalTab) themeColor(c color.RGBA) color.RGBA {
-	return tab.currentTheme().ResolveColor(c, tab.frame.colors.terminalBg, tab.frame.colors.terminalFg)
 }
 
 func (tab *terminalTab) canvas(screen *ebiten.Image) ui.Canvas {

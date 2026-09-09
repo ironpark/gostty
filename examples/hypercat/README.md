@@ -36,7 +36,8 @@ Start with these files, in order:
    and sends `Stream.WriteReplies` back to the shell. `close` releases resources;
    startup failures use the same cleanup path.
 3. [`app.go`](app.go): `Update` services every tab, routes window and panel input,
-   and updates the active tab. Background shells continue receiving replies.
+   then handles tab input → refreshes the viewport → updates the cat.
+   `Draw` consumes the completed snapshot. Background shells continue receiving replies.
 4. [`input.go`](input.go): describe key events to `input.EncodeKey` and write the
    encoded bytes to the PTY. Paste uses `input.EncodePaste`; clipboard callbacks live here too. Mouse and focus
    encoding live in [`report.go`](report.go).
@@ -44,7 +45,8 @@ Start with these files, in order:
    refresh the viewport, copy cells and grapheme clusters from `RenderState`,
    then draw the snapshot. Native reads happen during `Update`, where errors
    can be returned. `Draw` uses the saved data.
-6. [`layout.go`](layout.go): resize the terminal and PTY together when the grid changes.
+6. [`layout.go`](layout.go): measure the window and resize the terminal and PTY together
+   when the grid changes.
 
 The terminal, stream, render state, and shell belong to one `terminalTab`.
 The window shares fonts, theme, and clipboard across tabs. A tab returns UI

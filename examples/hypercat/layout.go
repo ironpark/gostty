@@ -4,8 +4,37 @@ import (
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/ironpark/gostty/examples/hypercat/ui"
 	"github.com/ironpark/gostty/input"
 )
+
+func (app *terminalApp) barHeight() float64 { return float64(int(ui.TabBarHeight * app.dsf)) }
+
+func (app *terminalApp) LayoutF(width, height float64) (float64, float64) {
+	app.dsf = deviceScale()
+	app.width, app.height = width*app.dsf, height*app.dsf
+	app.layoutTabs()
+	return app.width, app.height
+}
+
+func (app *terminalApp) Layout(width, height int) (int, int) {
+	w, h := app.LayoutF(float64(width), float64(height))
+	return int(w), int(h)
+}
+
+func (app *terminalApp) layoutTabs() {
+	// The faces are built in device pixels, so a window that moved to a display
+	// with a different scale factor needs them rebuilt -- once, for every tab.
+	if app.settings.dsf != app.dsf {
+		app.applyFont()
+	}
+	for _, tab := range app.tabs {
+		tab.offsetY = int(app.barHeight())
+		if app.width > 0 {
+			tab.layout(app.width, max(app.height-app.barHeight(), 1))
+		}
+	}
+}
 
 // layout resizes a tab to the content area below the tab bar.
 func (tab *terminalTab) layout(width, height float64) {
