@@ -6,41 +6,68 @@ on:
   pull_request:
 
 jobs:
-  build:
-    name: build (${{ matrix.os }})
+  library:
+    name: library (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
 
-      # The example is an ebiten app; its cgo build needs the X11/GL headers
-      # that the runner does not ship.
-      - name: Install example build dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            libgl1-mesa-dev libxrandr-dev libxcursor-dev libxinerama-dev \
-            libxi-dev libxxf86vm-dev libasound2-dev
-
       # The native archives are committed under libs/, so this links the same
-      # prebuilt libraries a consumer of the module would get.
+      # prebuilt libraries a consumer of the module would get. A library build
+      # does not link, so a missing symbol only surfaces under `go test`.
       - name: Build
         run: go build ./...
 
       - name: Test
         run: go test ./...
 
+  # A separate job rather than another step, so a failing library test does not
+  # hide whether the example still builds.
+  example:
+    name: example (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      # The example is an ebiten app; its cgo build needs the X11/GL headers
+      # that the runner does not ship.
+      - name: Install build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgl1-mesa-dev libxrandr-dev libxcursor-dev libxinerama-dev \
+            libxi-dev libxxf86vm-dev libasound2-dev xvfb xauth
+
       # The example is its own module; go.work builds it against this checkout
       # rather than the gostty version its go.mod pins.
-      - name: Build and test example
+      - name: Vet example
+        run: go vet ./examples/hypercat/...
+
+      # ebiten opens a window from `internal/ui`'s package `init`, so every
+      # test binary here needs a display even though none of the tests draw.
+      # Xvfb is one; Windows needs nothing.
+      - name: Test example
         run: |
-          go vet ./examples/hypercat/...
-          go test ./examples/hypercat/...
+          if [ "$RUNNER_OS" = Linux ]; then
+            xvfb-run -a go test ./examples/hypercat/...
+          else
+            go test ./examples/hypercat/...
+          fi
+        shell: bash

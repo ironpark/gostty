@@ -368,11 +368,31 @@ func TestKittyGraphicsLoadingLimitsGateFileMedium(t *testing.T) {
 	}
 }
 
+// A directory for the temporary file medium, outside the system temp
+// directory on purpose. ghostty always accepts `/tmp` and `/dev/shm` for that
+// medium, whatever directory the embedder allowed, so a `t.TempDir()` on Linux
+// is accepted by the rule under test and by the blanket one -- the test cannot
+// tell which. A directory next to the package keeps only the rule under test
+// in play, on every platform.
+func allowedTempMedium(t *testing.T) string {
+	t.Helper()
+	dir, err := os.MkdirTemp(".", "kitty-tmp-medium")
+	if err != nil {
+		t.Fatalf("MkdirTemp: %v", err)
+	}
+	t.Cleanup(func() { os.RemoveAll(dir) })
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		t.Fatalf("Abs(%s): %v", dir, err)
+	}
+	return abs
+}
+
 // The temporary file medium is a separate permission scoped to one directory,
 // which the binding copies rather than borrows: the Go string backing it is
 // gone by the time the image is transmitted.
 func TestKittyGraphicsLoadingLimitsTempDir(t *testing.T) {
-	dir := t.TempDir()
+	dir := allowedTempMedium(t)
 	term, stream := newStreamPair(t, 20, 5)
 
 	transmitPath(t, stream, 1, "t", writeImageFile(t, dir, "tty-graphics-protocol-a.rgb"))
@@ -405,7 +425,7 @@ func TestKittyGraphicsLoadingLimitsTempDir(t *testing.T) {
 	}
 
 	// A file outside the allowed directory is still refused.
-	transmitPath(t, stream, 5, "t", writeImageFile(t, t.TempDir(), "tty-graphics-protocol-e.rgb"))
+	transmitPath(t, stream, 5, "t", writeImageFile(t, allowedTempMedium(t), "tty-graphics-protocol-e.rgb"))
 	if hasImage(t, term, 5) {
 		t.Errorf("temporary file medium loaded from outside the allowed directory")
 	}
