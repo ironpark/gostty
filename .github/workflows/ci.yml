@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Windows and Linux behaviour that cannot be reproduced on a developer's
+  # machine gets investigated here, on a branch, without opening a pull request
+  # to do it.
+  workflow_dispatch:
 
 jobs:
   library:
