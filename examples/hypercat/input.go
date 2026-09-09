@@ -1,48 +1,16 @@
 package main
 
 import (
-	"context"
 	"io"
 
+	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/ironpark/gostty"
 	"github.com/ironpark/gostty/examples/hypercat/keys"
 	"github.com/ironpark/gostty/input"
-	"golang.design/x/clipboard"
 )
 
-// frameBuffer collects what one frame's encoders write before it goes to the
-// pty. EncodeKey and EncodeMouse write at most a few bytes each, and a
-// bytes.Buffer per event is more machinery than that deserves; one of these
-// lives on the tab so nothing is allocated per key or per report.
-//
-// Every path that encodes into one truncates it first rather than trusting the
-// last one to have emptied it. That is also what discards a partial encode left
-// behind by an error.
-type frameBuffer []byte
-
-func (b *frameBuffer) Write(p []byte) (int, error) {
-	*b = append(*b, p...)
-	return len(p), nil
-}
-
-func (b *frameBuffer) reset() { *b = (*b)[:0] }
-
-// flush writes the buffer to the pty, if anything was encoded into it.
-func (b *frameBuffer) flush(w io.Writer) error {
-	if len(*b) == 0 {
-		return nil
-	}
-	_, err := w.Write(*b)
-	return err
-}
-
-// handleInput turns this frame's key presses into bytes for the pty.
-//
-// The encoding is not ours to invent: what Ctrl+C or an arrow key means on the
-// wire depends on modes the running program has set (DECCKM, the Kitty keyboard
-// protocol, bracketed paste). `input.EncodeKey` reads those modes off the
-// terminal, so this only has to say which key was pressed. Which keys those are
-// is the `keys` package's problem.
+// handleInput consumes host shortcuts, encodes the remaining keys, and writes
+// one batch to the PTY. gostty reads terminal modes to choose the wire format.
 func (tab *terminalTab) handleInput(m keys.Mods) error {
 	tab.out.reset()
 
@@ -92,12 +60,8 @@ func (tab *terminalTab) shortcut(key input.Key) (bool, error) {
 	return tab.adjustSelection(key)
 }
 
-// pasteText hands text to the program as a paste.
-//
-// Bracketed paste and the safety check both come from the binding:
-// `IsSafePaste` is what refuses text containing a newline when the program has
-// not asked for bracketed paste, where it would run as typed commands rather
-// than arrive as data.
+// pasteText rejects unsafe control bytes and lets gostty encode bracketed paste
+// according to the running program's terminal modes.
 func (tab *terminalTab) pasteText(text string) error {
 	if text == "" || !input.IsSafePaste([]byte(text)) {
 		return nil
@@ -105,18 +69,9 @@ func (tab *terminalTab) pasteText(text string) error {
 	return input.EncodePaste(tab.shell.Pty, tab.vt, []byte(text))
 }
 
-// sendKey describes one key event to the binding and appends whatever it
-// encodes to this frame's output.
-//
-// The whole event is described, not only the key and the modifiers. Under the
-// Kitty keyboard protocol a program is told which key was pressed, what it
-// would have typed unshifted, which modifiers went into the text, and whether
-// this was a press, a repeat or a release -- and the encoder needs all of it:
-// given a key with no unshifted codepoint it has nothing to name and falls
-// back to the legacy bytes, which is the protocol quietly not working.
-//
-// None of it costs anything under the legacy encoding, which ignores the extra
-// fields, drops releases entirely, and treats a repeat as a press.
+// sendKey supplies the full event for the Kitty keyboard protocol, including
+// repeats, releases, consumed modifiers, and the unshifted codepoint.
+// The legacy encoder ignores fields it does not need.
 func (tab *terminalTab) sendKey(ev keys.Event, m keys.Mods) error {
 	unshifted, _ := ev.Key.Codepoint()
 	key := input.KeyEvent{
@@ -133,59 +88,57 @@ func (tab *terminalTab) sendKey(ev keys.Event, m keys.Mods) error {
 	return input.EncodeKey(&tab.out, tab.vt, key, string(ev.Text))
 }
 
-// sharedClipboard is the window's clipboard, shared by every tab.
-//
-// The system one when there is one -- a headless Linux box has none, which is
-// a degradation rather than a failure -- and otherwise a process-local buffer,
-// which at least lets OSC 52 and paste agree. It keeps bytes, because that is
-// what the system clipboard and OSC 52 both deal in.
-type sharedClipboard struct {
-	local  []byte
-	system bool
-}
-
-// useSystem is called once at startup, when the system clipboard answered.
-func (c *sharedClipboard) useSystem() { c.system = true }
-
-// hold keeps bytes for this process alone. This is what a program writing
-// OSC 52 gets: it asked the terminal to remember something, and putting that
-// on the user's system clipboard unasked is not the terminal's to decide.
-func (c *sharedClipboard) hold(data []byte) { c.local = append(c.local[:0], data...) }
-
-// copy is the user's own copy, which does reach the system clipboard.
-func (c *sharedClipboard) copy(text string) error {
-	c.hold([]byte(text))
-	if !c.system {
+// updateInput routes input only; the app refreshes the viewport afterwards.
+// An open panel consumes the keyboard while selection remains available.
+func (tab *terminalTab) updateInput(m keys.Mods, panelTook bool) error {
+	if !tab.reports.focused {
 		return nil
 	}
-	_, err := clipboard.Write(context.Background(), clipboard.FmtText, c.local)
+	if err := tab.handlePointer(m); err != nil {
+		return err
+	}
+	if panelTook {
+		return nil
+	}
+	return tab.handleInput(m)
+}
+
+// handlePointer gives the tab bar and cat first refusal on pointer input.
+func (tab *terminalTab) handlePointer(m keys.Mods) error {
+	_, y := tab.cursorPosition()
+	if y < 0 {
+		if !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+			tab.sel.dragging = false
+		}
+		return nil
+	}
+	if !tab.pokeCat() {
+		if err := tab.handleMouse(m); err != nil {
+			return err
+		}
+	}
+	if err := tab.handleWheel(m); err != nil {
+		return err
+	}
+	return tab.handleDrop()
+}
+
+// frameBuffer batches encoder output without allocating a buffer per event.
+// Reset before every encode to discard any bytes left by a previous error.
+type frameBuffer []byte
+
+func (b *frameBuffer) Write(p []byte) (int, error) {
+	*b = append(*b, p...)
+	return len(p), nil
+}
+
+func (b *frameBuffer) reset() { *b = (*b)[:0] }
+
+// flush writes the buffer to the pty, if anything was encoded into it.
+func (b *frameBuffer) flush(w io.Writer) error {
+	if len(*b) == 0 {
+		return nil
+	}
+	_, err := w.Write(*b)
 	return err
-}
-
-// paste reads the system clipboard if there is one, and otherwise whatever was
-// last held.
-func (c *sharedClipboard) paste() []byte {
-	if c.system {
-		if text, err := clipboard.Read(context.Background(), clipboard.FmtText); err == nil && len(text) > 0 {
-			return text
-		}
-	}
-	return c.local
-}
-
-// Clipboard requests must be answered inside the callback, while Feed runs.
-func (tab *terminalTab) writeClipboard(req *gostty.ClipboardRequest) {
-	n, err := req.ContentCount()
-	if err == nil && n > 0 {
-		if data, err := req.ContentData(0); err == nil {
-			tab.clipboard.hold(data)
-		}
-	}
-	_ = req.Allow(false)
-}
-
-// This demo immediately shares clipboard contents with the running program.
-// A production emulator should ask for permission before answering OSC 52 reads.
-func (tab *terminalTab) readClipboard(req *gostty.ClipboardRequest) {
-	_ = req.ReplyText(string(tab.clipboard.paste()), false)
 }

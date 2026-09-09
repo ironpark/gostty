@@ -28,46 +28,54 @@ shell <--pty-- input.EncodeKey <-- KeyEvent <-- keys.Reader <-- Ebitengine
 
 ## Reading the example
 
-Start with these files, in order:
+Follow the data through these files:
 
-1. [`main.go`](main.go): register the PNG decoder, create the app, and run Ebitengine.
-2. [`terminal.go`](terminal.go): `start` creates the terminal, stream, render state,
-   and shell. `readOutput` feeds PTY bytes with `Stream.Feed`, handles OSC events,
-   and sends `Stream.WriteReplies` back to the shell. `close` releases resources;
-   startup failures use the same cleanup path.
-3. [`app.go`](app.go): `Update` services every tab, routes window and panel input,
-   then handles tab input → refreshes the viewport → updates the cat.
-   `Draw` consumes the completed snapshot. Background shells continue receiving replies.
-4. [`input.go`](input.go): describe key events to `input.EncodeKey` and write the
-   encoded bytes to the PTY. Paste uses `input.EncodePaste`; clipboard callbacks live here too. Mouse and focus
-   encoding live in [`report.go`](report.go).
+1. [`main.go`](main.go): register the PNG decoder, open the first tab, and run
+   Ebitengine. [`tab.go`](tab.go) lists the resources owned by a tab.
+2. [`terminal.go`](terminal.go): `start` creates the terminal, stream, render
+   state, and shell. `readOutput` feeds PTY bytes with `Stream.Feed`, dispatches
+   events, and sends `Stream.WriteReplies` back to the shell. `close` releases
+   resources, including on startup failure.
+3. [`app.go`](app.go): `Update` services every shell, routes input to the active
+   tab, refreshes its snapshot, and updates the cat. `Draw` displays the snapshot.
+   Background tabs continue parsing output and returning replies.
+4. [`input.go`](input.go): `handleInput` filters host shortcuts, `sendKey` passes
+   full key events to `input.EncodeKey`, and `pasteText` uses `input.EncodePaste`.
+   [`report.go`](report.go) demonstrates mouse and focus encoding.
 5. [`viewport.go`](viewport.go) → [`frame.go`](frame.go) → [`render.go`](render.go):
-   refresh the viewport, copy cells and grapheme clusters from `RenderState`,
-   then draw the snapshot. Native reads happen during `Update`, where errors
-   can be returned. `Draw` uses the saved data.
-6. [`layout.go`](layout.go): measure the window and resize the terminal and PTY together
-   when the grid changes.
+   `frame.read` captures cells, dirty rows, colors, cursor, and grapheme clusters
+   from `RenderState`. The viewport adds search highlights, graphics, and
+   overlays. `Draw` uses saved data; native reads stay in `Update`, where errors
+   can be returned. Only terminal-rewritten rows need their clusters read again.
+6. [`layout.go`](layout.go): resize the terminal and PTY together when the grid
+   or font changes.
 
-The terminal, stream, render state, and shell belong to one `terminalTab`.
-The window shares fonts, theme, and clipboard across tabs. A tab returns UI
-actions to the app without holding a reference back to it.
+The core gostty calls stay in these files rather than behind a separate terminal
+wrapper. Each `terminalTab` owns its terminal, stream, render state, and shell;
+`terminalApp` shares fonts, theme, and clipboard across tabs. A tab returns UI
+actions without holding a reference back to the app.
 
 ### Optional features and host plumbing
 
+These files support the full demo but can be skipped on the first pass through
+the feed → encode → snapshot flow:
+
 | Concern | Files |
 | --- | --- |
-| Selection and scrollback | `mouse.go`, `viewport.go`, `search.go` |
-| Terminal events and integrations | `terminal.go`, `input.go`, `hyperlink.go`, `dnd.go`, `kitty.go` |
-| Tab and window UI | `app.go`, `tab.go`, `ui/` |
-| Appearance, grid geometry, and drawing | `settings.go`, `layout.go`, `frame.go`, `render.go` |
+| Tab lifecycle, shortcuts, and tab bar | `tabs.go`, `ui/tabbar.go` |
+| Search/settings panel input and drawing | `panels.go`, `ui/` |
+| OSC title, bell, progress, and notifications | `events.go` |
+| System clipboard and OSC 52 callbacks | `clipboard.go` |
+| Selection, scrollback, and search | `mouse.go`, `viewport.go`, `search.go` |
+| Hyperlinks, file drops, and Kitty graphics | `hyperlink.go`, `dnd.go`, `kitty.go` |
+| Shared appearance | `settings.go` |
 | Platform keyboard state and repeats | `keys/` |
 | Font discovery, loading, and emoji | `fonts/` |
 | PTY and shell process lifecycle | `shell/` |
-| Animated cat | `tab.go`, `thecat/` |
+| Animated cat and its connection to the cell grid | `companion.go`, `thecat/` |
 
-These support the full demo but are not prerequisites for following the core
-feed → encode → snapshot flow. `shell/` handles platform differences and stops,
-terminates, and reaps the shell on close, even when its output queue is full.
+`shell/` handles platform differences and stops, terminates, and reaps the shell
+on close, even when its output queue is full.
 
 Run the example's regression tests from the repository root:
 

@@ -33,11 +33,11 @@ func (tab *terminalTab) revealRow(row uint32) error {
 	return tab.vt.ScrollViewport(gostty.ScrollViewportRow(uint(row)))
 }
 
-// refresh reads cells first, updates viewport features, then fetches clusters.
+// refresh captures the terminal, then updates search, graphics, and overlays.
 // Draw and the cat both consume this completed snapshot.
 func (tab *terminalTab) refresh() error {
 	g := tab.grid()
-	if err := tab.frame.read(tab.state, tab.vt, g); err != nil {
+	if err := tab.frame.read(tab.state, tab.vt, g, tab.currentTheme()); err != nil {
 		return err
 	}
 	// Derived from the cells: none of these reads what another one writes, so
@@ -51,12 +51,6 @@ func (tab *terminalTab) refresh() error {
 	if err := tab.images.refresh(); err != nil {
 		return err
 	}
-	if err := tab.frame.readColors(tab.state, tab.currentTheme()); err != nil {
-		return err
-	}
-	if err := tab.frame.readCursor(tab.state); err != nil {
-		return err
-	}
 	if err := tab.refreshLink(); err != nil {
 		return err
 	}
@@ -64,8 +58,7 @@ func (tab *terminalTab) refresh() error {
 		return err
 	}
 	tab.frame.tickBlink(time.Now(), g)
-	// Complete the snapshot with clusters from terminal-rewritten rows.
-	return tab.frame.readClusters(tab.state, g)
+	return nil
 }
 
 // The scrollbar is `Screen.Scrollbar`: the terminal counts what is in the

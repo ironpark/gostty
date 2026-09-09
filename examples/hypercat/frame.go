@@ -68,8 +68,9 @@ type cursorState struct {
 	hasColor bool
 }
 
-// read updates RenderState, copies the grid in one call, and collects dirty rows.
-func (f *frame) read(state *gostty.RenderState, term *gostty.Terminal, g grid) error {
+// read captures the terminal snapshot: cells, dirty rows, colors, cursor, and text.
+// Viewport decorations can then mark extra rows without re-reading their clusters.
+func (f *frame) read(state *gostty.RenderState, term *gostty.Terminal, g grid, theme ui.Theme) error {
 	if err := state.Update(term); err != nil {
 		return fmt.Errorf("render update: %w", err)
 	}
@@ -85,7 +86,16 @@ func (f *frame) read(state *gostty.RenderState, term *gostty.Terminal, g grid) e
 		return fmt.Errorf("render cells: %w", err)
 	}
 	f.redraw.resize(g.rows)
-	return f.redraw.pull(state)
+	if err := f.redraw.pull(state); err != nil {
+		return err
+	}
+	if err := f.readColors(state, theme); err != nil {
+		return err
+	}
+	if err := f.readCursor(state); err != nil {
+		return err
+	}
+	return f.readClusters(state, g)
 }
 
 // tickBlink repaints blinking cells when the host clock changes phase.

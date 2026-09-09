@@ -22,7 +22,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/ironpark/gostty/examples/hypercat/ui"
 	"github.com/ironpark/gostty/sys"
-	"golang.design/x/clipboard"
 )
 
 const (
@@ -59,13 +58,7 @@ func run() error {
 		return err
 	}
 
-	// A system clipboard is not guaranteed (a headless Linux box has none), so
-	// its absence is a degradation rather than a failure.
-	if err := clipboard.Init(); err != nil {
-		log.Printf("no system clipboard, staying in-process: %v", err)
-	} else {
-		app.clipboard.useSystem()
-	}
+	app.clipboard.init()
 
 	// The window is asked for in device-independent pixels, which is the one
 	// place the grid's own units have to be converted back.
