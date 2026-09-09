@@ -19,6 +19,23 @@ import (
 // the answer to "does the program want the mouse". That is what tells this
 // program whether the drag belongs to the shell or to the selection.
 
+// reportState is what the program has been told about the pointer and the
+// focus so far, which is what decides whether the next frame has anything new
+// to tell it.
+type reportState struct {
+	// The cell the pointer was last reported in: motion goes on the wire per
+	// cell, not per pixel.
+	mouseCol, mouseRow int
+	// Wheel movement that has not yet added up to a notch.
+	wheel float64
+	// Set while a press has gone to the program, so the release does too.
+	mouseGrabbed bool
+	focused      bool
+	// Frames spent focused, which is what tells a key held down through the
+	// click that focused the window from one pressed afterwards.
+	focusedFrames int
+}
+
 // The mouse buttons this window reports. Ebitengine knows about three.
 var mouseButtons = [...]struct {
 	ebiten ebiten.MouseButton
@@ -37,7 +54,7 @@ var mouseButtons = [...]struct {
 // program that has grabbed the mouse.
 func (tab *terminalTab) reportMouse(m keys.Mods) (bool, error) {
 	if m.Shift {
-		tab.mouseGrabbed = false
+		tab.reports.mouseGrabbed = false
 		return false, nil
 	}
 
@@ -59,7 +76,7 @@ func (tab *terminalTab) reportMouse(m keys.Mods) (bool, error) {
 			// A press is what settles who owns the drag that follows: a
 			// program in X10 mode reports the press and nothing else, and the
 			// release still has to go to it rather than end a selection.
-			tab.mouseGrabbed = len(tab.report) > 0
+			tab.reports.mouseGrabbed = len(tab.report) > 0
 		case inpututil.IsMouseButtonJustReleased(b.ebiten):
 			if err := tab.encodeMouse(input.MouseActionRelease, b.vt, true, px, py, m, pressed); err != nil {
 				return false, err
@@ -70,8 +87,8 @@ func (tab *terminalTab) reportMouse(m keys.Mods) (bool, error) {
 	// Motion is reported per cell, not per pixel: the wire format has no room
 	// for anything finer, and a program in any-event mode would otherwise get a
 	// report for every frame the pointer drifts inside one cell.
-	if col, row := tab.cellAt(px, py); col != tab.mouseCol || row != tab.mouseRow {
-		tab.mouseCol, tab.mouseRow = col, row
+	if col, row := tab.cellAt(px, py); col != tab.reports.mouseCol || row != tab.reports.mouseRow {
+		tab.reports.mouseCol, tab.reports.mouseRow = col, row
 		button, held := input.MouseButtonUnknown, false
 		for _, b := range mouseButtons {
 			if ebiten.IsMouseButtonPressed(b.ebiten) {
@@ -85,10 +102,10 @@ func (tab *terminalTab) reportMouse(m keys.Mods) (bool, error) {
 	}
 
 	if !pressed {
-		tab.mouseGrabbed = false
+		tab.reports.mouseGrabbed = false
 	}
 	if len(tab.report) == 0 {
-		return tab.mouseGrabbed && pressed, nil
+		return tab.reports.mouseGrabbed && pressed, nil
 	}
 	return true, tab.report.flush(tab.shell.pty)
 }
@@ -108,12 +125,12 @@ const linesPerNotch = 3
 // up scrolling.
 func (tab *terminalTab) handleWheel(m keys.Mods) error {
 	_, dy := ebiten.Wheel()
-	tab.wheel += dy
-	notches := int(tab.wheel) // truncates toward zero, so the remainder is kept
+	tab.reports.wheel += dy
+	notches := int(tab.reports.wheel) // truncates toward zero, so the remainder is kept
 	if notches == 0 {
 		return nil
 	}
-	tab.wheel -= float64(notches)
+	tab.reports.wheel -= float64(notches)
 
 	// Shift takes the wheel back for the window, the same way it takes back a
 	// drag: it is the only way to reach the scrollback of a program that has
@@ -204,12 +221,12 @@ func (tab *terminalTab) renderSize() input.RenderSize {
 // programs that asked (DECSET 1004). EncodeFocus only formats the event;
 // checking whether the program subscribed is the tab's responsibility.
 func (tab *terminalTab) reportFocus(focused bool) error {
-	if focused != tab.focused {
-		tab.focused = focused
+	if focused != tab.reports.focused {
+		tab.reports.focused = focused
 		if !focused {
-			tab.focusedFrames = 0
+			tab.reports.focusedFrames = 0
 			tab.sel.dragging = false
-			tab.mouseGrabbed = false
+			tab.reports.mouseGrabbed = false
 		}
 		enabled, err := tab.vt.ModeEnabled(gostty.ModeFocusEvent)
 		if err != nil {
@@ -229,8 +246,8 @@ func (tab *terminalTab) reportFocus(focused bool) error {
 			}
 		}
 	}
-	if tab.focused {
-		tab.focusedFrames++
+	if tab.reports.focused {
+		tab.reports.focusedFrames++
 	}
 	return nil
 }

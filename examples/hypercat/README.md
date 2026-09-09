@@ -41,14 +41,17 @@ The main package is organized around the terminal's frame and resource lifecycle
 - `tab.go` owns each terminal tab and services its output and input.
 - `terminal.go` creates and releases terminal resources and configures the stream.
 - `session.go` owns the shell process, PTY, and cancellable output reader.
-- `events.go` handles terminal events such as title, bell, and progress.
+- `events.go` handles terminal events such as title, bell, and progress, and owns
+  `windowTitle`, the three things a program says about itself.
 - `viewport.go` refreshes cells, colors, and the cursor, and owns `redrawSet`,
   the rows the next frame has to repaint from either side of the boundary.
 - `layout.go` keeps the terminal and PTY sizes aligned with the window.
 - `input.go` encodes keys through a per-frame `frameBuffer`; `report.go` does
-  the same for mouse and focus events the program has asked for.
+  the same for mouse and focus events the program has asked for, and owns
+  `reportState`, what the program has been told about the pointer so far.
 - `mouse.go` owns selection and the clipboard.
-- `render.go` draws the grid layers, cursor, and decorations.
+- `render.go` draws the grid layers, cursor, and decorations, and owns
+  `gridCanvas`: the two layers the grid is drawn into and their lifetime.
 - `kitty.go` owns `imageCache`: the Kitty placement snapshot and its textures.
 - `mascot.go` connects terminal cells and the window's `thecat.Mode` to `thecat.Companion`.
 - `ui_bridge.go` translates input and UI actions and connects the text renderer.

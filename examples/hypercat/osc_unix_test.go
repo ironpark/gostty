@@ -17,12 +17,12 @@ func assertOSCReachesTheTab(t *testing.T, tab *terminalTab) {
 		t.Fatal(err)
 	}
 	deadline := time.Now().Add(5 * time.Second)
-	for tab.title != "background-titled" {
+	for tab.title.program != "background-titled" {
 		if _, err := tab.readOutput(); err != nil {
 			t.Fatal(err)
 		}
 		if time.Now().After(deadline) {
-			t.Fatalf("OSC title was not applied; title is %q", tab.title)
+			t.Fatalf("OSC title was not applied; title is %q", tab.title.program)
 		}
 		time.Sleep(time.Millisecond)
 	}

@@ -38,14 +38,7 @@ func (tab *terminalTab) close() {
 	// closing the terminal first would be refused. The search is a child of a
 	// screen, which is borrowed from the terminal, so it goes first of all.
 	tab.closeSearch()
-	if tab.bgLayer != nil {
-		tab.bgLayer.Deallocate()
-		tab.bgLayer = nil
-	}
-	if tab.textLayer != nil {
-		tab.textLayer.Deallocate()
-		tab.textLayer = nil
-	}
+	tab.grid.close()
 	tab.images.close()
 	_ = tab.state.Close()
 	_ = tab.stream.Close()

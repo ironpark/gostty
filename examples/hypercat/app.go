@@ -74,12 +74,12 @@ func (app *terminalApp) selectTab(index int) {
 	}
 	if old := app.current(); old != nil {
 		old.sel.dragging = false
-		old.mouseGrabbed = false
+		old.reports.mouseGrabbed = false
 		old.cat.ClearHover()
 	}
 	app.active = index
 	tab := app.current()
-	tab.focusedFrames = 0
+	tab.reports.focusedFrames = 0
 	tab.redraw.markAll()
 	tab.retitle()
 }
@@ -286,4 +286,4 @@ func (app *terminalApp) drawTabBar(screen *ebiten.Image) {
 	app.tabBar.Draw(canvas, app.active, len(app.tabs), app.tabTitle)
 }
 
-func (app *terminalApp) tabTitle(index int) string { return app.tabs[index].title }
+func (app *terminalApp) tabTitle(index int) string { return app.tabs[index].title.program }

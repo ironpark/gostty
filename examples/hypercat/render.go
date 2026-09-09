@@ -27,6 +27,47 @@ func glyphString(r rune) string {
 	return string(r)
 }
 
+// gridCanvas is the pair of layers the grid is drawn into -- backgrounds and
+// glyphs, kept apart so Kitty images can sit between them -- and the draw
+// options the glyphs reuse. It is the only thing in the tab that owns GPU
+// images of its own, so it is also the only thing that has to be closed.
+type gridCanvas struct {
+	bg, text *ebiten.Image
+	op       text.DrawOptions
+}
+
+// fit sizes the layers to the grid and reports whether it had to build them,
+// which is when everything that was on them has to be drawn again.
+func (c *gridCanvas) fit(w, h int) bool {
+	if c.bg != nil && c.bg.Bounds().Dx() == w && c.bg.Bounds().Dy() == h {
+		return false
+	}
+	c.close()
+	c.bg, c.text = ebiten.NewImage(w, h), ebiten.NewImage(w, h)
+	return true
+}
+
+func (c *gridCanvas) clear() {
+	c.bg.Clear()
+	c.text.Clear()
+}
+
+// clearRect wipes one row's worth of both layers, so it can be drawn again
+// without disturbing the rows that did not change.
+func (c *gridCanvas) clearRect(r image.Rectangle) {
+	c.bg.SubImage(r).(*ebiten.Image).Clear()
+	c.text.SubImage(r).(*ebiten.Image).Clear()
+}
+
+func (c *gridCanvas) close() {
+	if c.bg == nil {
+		return
+	}
+	c.bg.Deallocate()
+	c.text.Deallocate()
+	c.bg, c.text = nil, nil
+}
+
 func (tab *terminalTab) Draw(screen *ebiten.Image) {
 	tab.drawGrid()
 	screen.Fill(tab.bg)
@@ -40,12 +81,12 @@ func (tab *terminalTab) Draw(screen *ebiten.Image) {
 	// between them and the text, or over the text.
 	cellW, cellH := tab.fonts().CellWidth, tab.fonts().CellHeight
 	tab.images.draw(screen, gostty.KittyLayerBelowBg, cellW, cellH)
-	if tab.bgLayer != nil {
-		screen.DrawImage(tab.bgLayer, nil)
+	if tab.grid.bg != nil {
+		screen.DrawImage(tab.grid.bg, nil)
 	}
 	tab.images.draw(screen, gostty.KittyLayerBelowText, cellW, cellH)
-	if tab.textLayer != nil {
-		screen.DrawImage(tab.textLayer, nil)
+	if tab.grid.text != nil {
+		screen.DrawImage(tab.grid.text, nil)
 	}
 	tab.images.draw(screen, gostty.KittyLayerAboveText, cellW, cellH)
 	tab.drawCursor(screen)
@@ -60,20 +101,14 @@ func (tab *terminalTab) drawGrid() {
 	if tab.cols == 0 || tab.rows == 0 || len(tab.cells) < tab.rows*tab.cols {
 		return
 	}
+	cellH := tab.fonts().CellHeight
 	w := int(float64(tab.cols)*tab.fonts().CellWidth) + 1
-	h := int(float64(tab.rows)*tab.fonts().CellHeight) + 1
-	if tab.bgLayer == nil || tab.bgLayer.Bounds().Dx() != w || tab.bgLayer.Bounds().Dy() != h {
-		if tab.bgLayer != nil {
-			tab.bgLayer.Deallocate()
-			tab.textLayer.Deallocate()
-		}
-		tab.bgLayer = ebiten.NewImage(w, h)
-		tab.textLayer = ebiten.NewImage(w, h)
+	h := int(float64(tab.rows)*cellH) + 1
+	if tab.grid.fit(w, h) {
 		tab.redraw.markAll()
 	}
 	if tab.redraw.all {
-		tab.bgLayer.Clear()
-		tab.textLayer.Clear()
+		tab.grid.clear()
 		for row := 0; row < tab.rows; row++ {
 			tab.drawRow(row)
 		}
@@ -84,16 +119,14 @@ func (tab *terminalTab) drawGrid() {
 		if !tab.redraw.take(row) {
 			continue
 		}
-		rect := image.Rect(0, int(float64(row)*tab.fonts().CellHeight), w, int(float64(row+1)*tab.fonts().CellHeight)+1)
-		tab.bgLayer.SubImage(rect).(*ebiten.Image).Clear()
-		tab.textLayer.SubImage(rect).(*ebiten.Image).Clear()
+		tab.grid.clearRect(image.Rect(0, int(float64(row)*cellH), w, int(float64(row+1)*cellH)+1))
 		tab.drawRow(row)
 	}
 }
 
 func (tab *terminalTab) drawRow(row int) {
-	tab.drawRowBackground(tab.bgLayer, row)
-	tab.drawRowGlyphs(tab.textLayer, row)
+	tab.drawRowBackground(tab.grid.bg, row)
+	tab.drawRowGlyphs(tab.grid.text, row)
 }
 
 // drawRowBackground fills the cells whose background is not the default, in
@@ -218,7 +251,7 @@ func (tab *terminalTab) glyph(screen *ebiten.Image, r rune, x, y float64, wide, 
 		face, synthetic, dx, dy = tab.fonts().Wide, false, tab.fonts().WideDX, tab.fonts().WideDY
 	}
 
-	op := &tab.drawOp
+	op := &tab.grid.op
 	op.GeoM.Reset()
 	if s := tab.fonts().Scale; s != 1 {
 		// The bitmap fallback is scaled by a whole number and drawn unfiltered

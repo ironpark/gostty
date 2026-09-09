@@ -19,7 +19,7 @@ func (tab *terminalTab) drainEvents() error {
 		case gostty.StreamEventBell:
 			tab.bell = 6 // frames of visual bell
 		case gostty.StreamEventPwdChanged:
-			tab.pwd = event.Pwd
+			tab.title.pwd = event.Pwd
 			tab.retitle()
 		case gostty.StreamEventDesktopNotification:
 			log.Printf("notification: %s %s", event.Title, event.Body)
@@ -28,7 +28,7 @@ func (tab *terminalTab) drainEvents() error {
 		case gostty.StreamEventProgressReport:
 			tab.progressReport(event)
 		case gostty.StreamEventTitleChanged:
-			tab.title = event.Title
+			tab.title.program = event.Title
 			tab.retitle()
 		}
 	}
@@ -39,28 +39,45 @@ func (tab *terminalTab) drainEvents() error {
 func (tab *terminalTab) progressReport(event gostty.Event) {
 	switch {
 	case event.ProgressState == gostty.ProgressStateRemove:
-		tab.progress = ""
+		tab.title.progress = ""
 	case event.HasProgress:
-		tab.progress = fmt.Sprintf("%d%%", event.Progress)
+		tab.title.progress = fmt.Sprintf("%d%%", event.Progress)
 	default:
-		tab.progress = event.ProgressState.String()
+		tab.title.progress = event.ProgressState.String()
 	}
 	tab.retitle()
 }
 
+// windowTitle is what a program has said about itself. The three are kept
+// apart rather than folded into one string as they arrive, because they arrive
+// separately: a program that sets a title should not lose the directory a
+// previous OSC 7 reported.
+type windowTitle struct {
+	// What the program called itself (OSC 0/2), which is also the tab's label.
+	program  string
+	pwd      string
+	progress string
+}
+
+func (t windowTitle) String() string {
+	title := "gostty"
+	if t.program != "" {
+		title += " - " + t.program
+	}
+	if t.pwd != "" {
+		title += " (" + t.pwd + ")"
+	}
+	if t.progress != "" {
+		title += " [" + t.progress + "]"
+	}
+	return title
+}
+
+// retitle names the window after the tab the user is looking at; a background
+// tab that renames itself is left to show up in the tab bar alone.
 func (tab *terminalTab) retitle() {
 	if tab.owner != nil && tab.owner.current() != tab {
 		return
 	}
-	title := "gostty"
-	if tab.title != "" {
-		title += " - " + tab.title
-	}
-	if tab.pwd != "" {
-		title += " (" + tab.pwd + ")"
-	}
-	if tab.progress != "" {
-		title += " [" + tab.progress + "]"
-	}
-	ebiten.SetWindowTitle(title)
+	ebiten.SetWindowTitle(tab.title.String())
 }

@@ -208,7 +208,7 @@ func TestTabFocusReportsOnlyWhenRequested(t *testing.T) {
 	if string(data) != "\x1b[I\x1b[O" {
 		t.Fatalf("focus reports = %q", data)
 	}
-	if tab.focusedFrames != 0 {
+	if tab.reports.focusedFrames != 0 {
 		t.Fatal("inactive tab retained its input repeat window")
 	}
 }

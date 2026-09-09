@@ -5,7 +5,6 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/ironpark/gostty"
 	"github.com/ironpark/gostty/examples/hypercat/fonts"
 	"github.com/ironpark/gostty/examples/hypercat/keys"
@@ -31,11 +30,10 @@ type terminalTab struct {
 	// highlights on screen does not allocate.
 	viewportMatches []gostty.Selection
 
-	// Partial redraw. The grid is drawn into two layers, backgrounds and
-	// glyphs, so Kitty images can sit between them; a row is redrawn only
-	// when it is in the redraw set.
-	bgLayer, textLayer *ebiten.Image
-	redraw             redrawSet
+	// Partial redraw: the layers the grid is drawn into, and the rows that
+	// have to be drawn again on them.
+	grid   gridCanvas
+	redraw redrawSet
 
 	// The process side.
 	shell *shellSession
@@ -48,10 +46,9 @@ type terminalTab struct {
 	bg, fg                 color.RGBA
 	cursor                 cursorState
 	bell                   int
-	drawOp                 text.DrawOptions
 
-	// Program metadata for the tab label and the active window title.
-	title, pwd, progress string
+	// What the program says it is, for the tab label and the window title.
+	title windowTitle
 
 	// The clipboard. The system one when it is available; otherwise a
 	// process-local buffer, which at least lets OSC 52 and paste agree.
@@ -75,11 +72,7 @@ type terminalTab struct {
 
 	// Mouse and focus reporting: what the program is told about the pointer,
 	// as opposed to what the window does with it itself.
-	mouseCol, mouseRow int
-	wheel              float64
-	mouseGrabbed       bool
-	focused            bool
-	focusedFrames      int
+	reports reportState
 
 	// Per-frame input scratch, reused so a keystroke allocates nothing. The
 	// reader answers for the shell; `chars` is the search bar's, which wants
@@ -141,7 +134,7 @@ func (tab *terminalTab) updateInput() error {
 	// frame rather than one behind. The modifier state is read once and shared:
 	// the mouse needs Alt for block selection and the keyboard needs all four.
 	m := keys.Current()
-	if tab.focused {
+	if tab.reports.focused {
 		// A panel takes the keyboard while it is open, so nothing typed into the
 		// search bar reaches the shell. The mouse is left alone: a selection is
 		// still worth being able to make.

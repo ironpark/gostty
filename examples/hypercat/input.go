@@ -64,7 +64,7 @@ func (tab *terminalTab) handleInput(m keys.Mods) error {
 		}
 	}
 
-	for _, ev := range tab.keys.Frame(m, tab.focusedFrames) {
+	for _, ev := range tab.keys.Frame(m, tab.reports.focusedFrames) {
 		if err := tab.sendKey(ev.Key, ev.Text, m); err != nil {
 			return err
 		}
