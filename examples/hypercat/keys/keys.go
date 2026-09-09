@@ -17,11 +17,24 @@ import (
 )
 
 // Key repeat, in ticks, since Ebitengine reports how long a key has been held
-// rather than repeats. The default tick rate is 60Hz, so this is 0.4s then 30
-// times a second.
+// rather than repeats. The default tick rate is 60Hz, so this is 0.4s and then
+// ten times a second.
+//
+// Invented, and so worth matching to what the platform would have done. Only
+// the keys that produce no text need it: a held letter arrives as repeated
+// characters from the window system, at whatever rate the user configured, and
+// a key with no character has to be repeated here or not at all. The two
+// halves of the keyboard repeating at visibly different rates is what a rate
+// picked without reference to the platform looks like -- and on a key that
+// commits a line, a rate three times too fast is a screen of prompts from a
+// keypress that felt momentary.
+//
+// macOS defaults to 375ms and about eleven a second (InitialKeyRepeat 25,
+// KeyRepeat 6, both in 15ms units), and the common Linux and Windows defaults
+// land near enough to the same place.
 const (
 	repeatDelayTicks    = 24
-	repeatIntervalTicks = 2
+	repeatIntervalTicks = 6
 )
 
 // Mods is the modifier state shared by the keyboard and the mouse.

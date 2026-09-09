@@ -29,6 +29,39 @@ func TestRepeating(t *testing.T) {
 	}
 }
 
+// The repeat rate is invented, so it is pinned: a key with no text of its own
+// has to repeat at something like the rate the window system repeats a letter
+// at, or the two halves of the keyboard disagree -- and a key that commits a
+// line, held for a moment, fills the screen.
+//
+// The bounds are the range the desktop platforms' defaults fall in, at
+// Ebitengine's 60Hz tick: roughly a third of a second before the first repeat,
+// and roughly ten a second after it.
+func TestRepeatRateMatchesThePlatform(t *testing.T) {
+	const ticksPerSecond = 60
+
+	delay := float64(repeatDelayTicks) / ticksPerSecond
+	if delay < 0.25 || delay > 0.6 {
+		t.Errorf("the first repeat comes after %.2fs, want between 0.25s and 0.6s", delay)
+	}
+	rate := float64(ticksPerSecond) / float64(repeatIntervalTicks)
+	if rate < 8 || rate > 15 {
+		t.Errorf("keys repeat %.0f times a second, want between 8 and 15", rate)
+	}
+
+	// The same thing said in the terms the caller sees: a key held for a
+	// second fires about a dozen times, not several dozen.
+	fired := 0
+	for held := 1; held <= ticksPerSecond; held++ {
+		if Repeating(held) {
+			fired++
+		}
+	}
+	if fired < 5 || fired > 12 {
+		t.Errorf("a key held for a second fired %d times, want about eight", fired)
+	}
+}
+
 func TestCurrentDoesNotPanic(t *testing.T) {
 	// On macOS this reaches CoreGraphics through purego, so that it answers at
 	// all is the claim; there is no keyboard to assert about under `go test`.
