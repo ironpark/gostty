@@ -63,10 +63,24 @@ func LoadEmoji() *Emoji {
 		if err != nil || len(faces) == 0 {
 			continue
 		}
-		return &Emoji{face: faces[0], cache: map[rune]*ebiten.Image{}}
+		emoji := &Emoji{face: faces[0], cache: map[rune]*ebiten.Image{}}
+		// A font is only this one if it answers in pictures. Windows ships
+		// Segoe UI Emoji, which is colour but COLR: outlines with a palette,
+		// which `render` declines and the text faces draw perfectly well. So
+		// the file being there is not the question -- whether it has a strike
+		// is, and one emoji is enough to ask.
+		if _, ok := emoji.Glyph(emojiProbe, 20); !ok {
+			continue
+		}
+		clear(emoji.cache)
+		return emoji
 	}
 	return nil
 }
+
+// The rune `LoadEmoji` asks a candidate for: a picture for this one means a
+// picture for the rest.
+const emojiProbe = '\U0001F600'
 
 // Glyph is the picture for a rune at a cell of this height, and whether the
 // font has one.
