@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
 	"sync"
 	"unsafe"
 
@@ -141,15 +140,9 @@ func (p *conPty) start(argv, env []string) (*conPtyProcess, error) {
 
 	command, err := windows.UTF16PtrFromString(windows.ComposeCommandLine(argv))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("command line for %s: %w", argv[0], err)
 	}
-	var block *uint16
-	if len(env) > 0 {
-		block, err = windows.UTF16PtrFromString(strings.Join(env, "\x00") + "\x00")
-		if err != nil {
-			return nil, err
-		}
-	}
+	block := environmentBlock(env)
 
 	var info windows.ProcessInformation
 	if err := windows.CreateProcess(
@@ -159,7 +152,7 @@ func (p *conPty) start(argv, env []string) (*conPtyProcess, error) {
 		nil,
 		false,
 		windows.EXTENDED_STARTUPINFO_PRESENT|windows.CREATE_UNICODE_ENVIRONMENT,
-		block,
+		&block[0],
 		nil,
 		&startupInfo.StartupInfo,
 		&info,
@@ -168,6 +161,26 @@ func (p *conPty) start(argv, env []string) (*conPtyProcess, error) {
 	}
 	windows.CloseHandle(info.Thread)
 	return &conPtyProcess{handle: info.Process}, nil
+}
+
+// The environment as CreateProcess wants it: every "name=value" terminated by a
+// zero, and one more zero to end the block.
+//
+// Assembled here rather than by handing the joined string to
+// `UTF16PtrFromString`, which rejects a string with a zero in it -- and the
+// zeroes are the whole point of the shape.
+func environmentBlock(env []string) []uint16 {
+	block := make([]uint16, 0, 64)
+	for _, entry := range env {
+		// A variable with a zero inside it cannot be spelled in the block, and
+		// is not something the process could have been given in the first place.
+		encoded, err := windows.UTF16FromString(entry)
+		if err != nil {
+			continue
+		}
+		block = append(block, encoded...)
+	}
+	return append(block, 0)
 }
 
 // The process handle, waited on directly rather than through `os.Process`: the
