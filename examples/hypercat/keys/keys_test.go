@@ -129,14 +129,3 @@ func TestProducesTextFollowsPrintable(t *testing.T) {
 		}
 	}
 }
-
-// A press on the first tick, a repeat afterwards: the Kitty protocol tells the
-// two apart and the legacy encoding does not care.
-func TestActionIsPressThenRepeat(t *testing.T) {
-	if got := action(1); got != input.KeyActionPress {
-		t.Errorf("action(1) = %v, want a press", got)
-	}
-	if got := action(repeatDelayTicks + repeatIntervalTicks); got != input.KeyActionRepeat {
-		t.Errorf("action(held) = %v, want a repeat", got)
-	}
-}

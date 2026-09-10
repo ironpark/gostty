@@ -120,8 +120,8 @@ controls and implementation details.
 
 For a PTY integration, feed process output into a stream, drain its events, and
 write terminal replies back to the PTY. Send encoded user input to the same PTY.
-HyperCat demonstrates this integration in [tab.go](examples/hypercat/tab.go) and
-[input.go](examples/hypercat/input.go).
+HyperCat demonstrates this integration in [terminal.go](examples/hypercat/terminal.go) and
+[terminal_input.go](examples/hypercat/terminal_input.go).
 
 - **Serialize terminal access.** This includes getters and operations on its
   streams, screens, searches, and tracked references. The lifetime mutex does

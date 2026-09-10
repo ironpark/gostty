@@ -28,54 +28,87 @@ shell <--pty-- input.EncodeKey <-- KeyEvent <-- keys.Reader <-- Ebitengine
 
 ## Reading the example
 
-Follow the data through these files:
+The root contains the gostty integration. Ebitengine input polling, window
+callbacks, and drawing live in [`internal/frontend/`](internal/frontend/).
+Start with these files:
 
-1. [`main.go`](main.go): register the PNG decoder, open the first tab, and run
-   Ebitengine. [`tab.go`](tab.go) lists the resources owned by a tab.
-2. [`terminal.go`](terminal.go): `start` creates the terminal, stream, render
-   state, and shell. `readOutput` feeds PTY bytes with `Stream.Feed`, dispatches
-   events, and sends `Stream.WriteReplies` back to the shell. `close` releases
-   resources, including on startup failure.
-3. [`app.go`](app.go): `Update` services every shell, routes input to the active
-   tab, refreshes its snapshot, and updates the cat. `Draw` displays the snapshot.
-   Background tabs continue parsing output and returning replies.
-4. [`input.go`](input.go): `handleInput` filters host shortcuts, `sendKey` passes
-   full key events to `input.EncodeKey`, and `pasteText` uses `input.EncodePaste`.
-   [`report.go`](report.go) demonstrates mouse and focus encoding.
-5. [`viewport.go`](viewport.go) → [`frame.go`](frame.go) → [`render.go`](render.go):
-   `frame.read` captures cells, dirty rows, colors, cursor, and grapheme clusters
-   from `RenderState`. The viewport adds search highlights, graphics, and
-   overlays. `Draw` uses saved data; native reads stay in `Update`, where errors
-   can be returned. Only terminal-rewritten rows need their clusters read again.
-6. [`layout.go`](layout.go): resize the terminal and PTY together when the grid
-   or font changes.
+1. [`main.go`](main.go): install the PNG decoder, create the window and first
+   terminal, and call `frontend.Run`. Deferred cleanup closes all terminals.
+2. [`terminal.go`](terminal.go): one terminal's resources and lifecycle, in
+   execution order: `start` → `readOutput` → `refreshSnapshot` → `resize` →
+   `close`. `readOutput` shows `Stream.Feed`, event dispatch and
+   `Stream.WriteReplies` together. `refreshSnapshot` collects the cells and
+   overlays that the next draw consumes. `resize` updates both terminal and PTY.
+3. [`terminal_input.go`](terminal_input.go): route terminal input, filter host
+   shortcuts, encode keys with `input.EncodeKey`, and paste with
+   `input.EncodePaste`. Window input priority is in
+   [`window_input.go`](window_input.go): tabs → panels → terminal.
+4. [`render_frame.go`](render_frame.go): read cells, dirty rows, colors, cursor,
+   and grapheme clusters from `RenderState` during updates.
+5. [`window.go`](window.go) and [`presentation.go`](presentation.go): implement
+   the frontend contract. `Update` services shells and routes supplied input;
+   `Resize` keeps terminal and PTY geometry in sync; `Present` supplies cached
+   data for drawing without reading native handles.
 
-The core gostty calls stay in these files rather than behind a separate terminal
-wrapper. Each `terminalTab` owns its terminal, stream, render state, and shell;
-`terminalApp` shares fonts, theme, and clipboard across tabs. A tab returns UI
-actions without holding a reference back to the app.
+```text
+internal/frontend                    root (gostty integration)
+  Ebitengine.Update → Input ────────→ window.Update
+                                       ├─ PTY → Feed → events → replies
+                                       ├─ input → EncodeKey/Mouse/Paste → PTY
+                                       └─ RenderState → cached snapshot
+  Ebitengine.Draw   ← Presentation ← window.Present
+  Ebitengine.Layout ───────────────→ window.Resize → terminal + PTY
+```
+
+The frontend drives three methods: `Update(Input)`, `Resize(width, height,
+scale)`, and `Present() Presentation`. No Ebitengine types cross this contract.
+The frontend owns the window and GPU drawing; the root owns native terminal
+handles and protocol decisions. Its `window` model manages the tab list and
+shared settings; each `terminal` owns its shell, snapshot, selection, and search.
+
+`Presentation` borrows cached cells, clusters, and overlays until the next
+update. Drawing consumes pending repaint marks but performs no native terminal
+reads. Keyboard events are collected only after tab and panel routing decide
+who owns typing and how long the active terminal has had focus.
+
+The shell's reader goroutine only queues bytes. The frontend serializes model
+callbacks, so terminal access stays in the window loop. Background terminals
+continue parsing output and sending replies.
 
 ### Optional features and host plumbing
 
-These files support the full demo but can be skipped on the first pass through
+These parts support the full demo but can be skipped on the first pass through
 the feed → encode → snapshot flow:
 
-| Concern | Files |
+| Concern | Files or package |
 | --- | --- |
-| Tab lifecycle, shortcuts, and tab bar | `tabs.go`, `ui/tabbar.go` |
-| Search/settings panel input and drawing | `panels.go`, `ui/` |
-| OSC title, bell, progress, and notifications | `events.go` |
-| System clipboard and OSC 52 callbacks | `clipboard.go` |
-| Selection, scrollback, and search | `mouse.go`, `viewport.go`, `search.go` |
-| Hyperlinks, file drops, and Kitty graphics | `hyperlink.go`, `dnd.go`, `kitty.go` |
-| Shared appearance | `settings.go` |
-| Platform keyboard state and repeats | `keys/` |
-| Font discovery, loading, and emoji | `fonts/` |
-| PTY and shell process lifecycle | `shell/` |
-| Animated cat and its connection to the cell grid | `companion.go`, `thecat/` |
+| Ebitengine window, input collection, and rendering | [`internal/frontend/`](internal/frontend/) |
+| Tab lifecycle, shortcuts, and tab bar | [`window_tabs.go`](window_tabs.go), [`ui/tabbar.go`](ui/tabbar.go) |
+| Search/settings panels | [`window_panels.go`](window_panels.go), [`ui/`](ui/) |
+| OSC events and clipboard callbacks | [`terminal_events.go`](terminal_events.go) |
+| Shared system clipboard | [`window_clipboard.go`](window_clipboard.go) |
+| Mouse and focus reporting | [`terminal_mouse.go`](terminal_mouse.go) |
+| Selection, scrollback, and search | [`terminal_selection.go`](terminal_selection.go), [`terminal_scroll.go`](terminal_scroll.go), [`terminal_search.go`](terminal_search.go) |
+| Hyperlinks and file drops | [`terminal_hyperlink.go`](terminal_hyperlink.go), [`terminal_drop.go`](terminal_drop.go) |
+| Kitty image snapshots, textures, and PNG decoding | [`internal/graphics/`](internal/graphics/) |
+| Shared appearance and per-terminal palette | [`window_settings.go`](window_settings.go), [`terminal_style.go`](terminal_style.go) |
+| Grid coordinates and content sizing | [`terminal_geometry.go`](terminal_geometry.go) |
+| Platform keyboard state and repeats | [`keys/`](keys/) |
+| Font discovery, loading, and emoji | [`fonts/`](fonts/) |
+| PTY and shell process lifecycle | [`shell/`](shell/) |
+| Animated cat and its connection to the cell grid | [`terminal_cat.go`](terminal_cat.go), [`thecat/`](thecat/) |
+
+`internal/graphics` depends on gostty and Ebitengine, with no dependency on the
+command. Its `Cache` borrows a terminal: the tab creates it at startup and calls
+`Refresh` during updates; the frontend draws its cached layers. The tab closes
+it before the terminal. `png.go` handles the process-wide decoder callback; `pixels.go`
+converts raw image samples.
 
 `shell/` handles platform differences and stops, terminates, and reaps the shell
-on close, even when its output queue is full.
+on close, even when its output queue is full. The existing `fonts`, `keys`,
+`shell`, `thecat`, and `ui` packages retain their import paths. These packages
+handle supporting work without depending on the command's window or terminal
+types. `internal/frontend` and `internal/graphics` are private to this example.
 
 Run the example's regression tests from the repository root:
 
@@ -141,39 +174,17 @@ builds of libghostty-vt carry no PNG decoder, so the example installs Go's
 
 ## Fonts and the cat
 
-The settings panel includes terminal, midnight, Catppuccin, and Solarized
-themes. A theme carries the sixteen ANSI colours as well as the default
-foreground and background, so text a program coloured by name follows it;
-they are set as the terminal's palette defaults, which is also why changing a
-theme rebuilds the render state -- a palette change dirties no row, and cell
-colours are resolved as the state is read. The example discovers system fonts and prefers JetBrains Mono when
-available.
-Set `GOSTTY_FONT` and `GOSTTY_FONT_CJK` to override the narrow and wide font
-paths. A bundled bitmap font is used as a final fallback. Font and size changes
-are available in settings.
+Use settings to change the font, size, and theme (terminal, midnight,
+Catppuccin, or Solarized). HyperCat discovers system fonts, prefers JetBrains
+Mono, and falls back to a bundled bitmap font.
 
-Colour emoji are drawn from the emoji font's own bitmaps (`sbix` on macOS,
-`CBDT` elsewhere) rather than through the text renderer, which rasterises
-outlines and would draw them blank. Only two-column cells take that path, which
-is the rule the terminal laid the line out with. Set `GOSTTY_FONT_EMOJI` to
-override the search. Windows keeps its text face, since Segoe UI Emoji is a
-layered vector font rather than a bitmap one.
+Override font paths with `GOSTTY_FONT` (normal text), `GOSTTY_FONT_CJK` (wide
+characters), or `GOSTTY_FONT_EMOJI` (colour emoji). Windows renders emoji through
+the text font.
 
-Emoji written as several codepoints -- flags, ZWJ sequences, skin tones -- are
-one cell and one picture. `RenderCell.Codepoint` carries the base of the
-cluster, so the rest is read back with `RenderState.Graphemes`, for the rows
-about to be redrawn; the tab turns on grapheme clustering (mode 2027) as a
-default so the terminal puts the whole cluster in one two-column cell rather
-than counting codepoints. The same read is what puts a combining accent on the
-letter it belongs to. The picture for a cluster is found by shaping it with the
-emoji font, since the substitution that turns two regional indicators into a
-flag lives in the font.
-
-The cat uses `thecat.GridWorld` to treat the rendered cell grid as terrain, so it follows terminal output
-and scrollback without maintaining a separate world model. It can be disabled
-in settings. Hyper Cat mode adds infinite stamina, faster movement, a pulsing
-aura, rainbow particles, and motion afterimages. The cat setting cycles through
-`off`, `on`, and `hyper`.
+The cat walks on the terminal's cell grid and follows output and scrollback.
+In settings, choose `off`, `on`, or `hyper`. Hyper mode adds faster movement,
+infinite stamina, and visual effects.
 
 Sprites are by **Jump Button**
 ([Bluesky](https://bsky.app/profile/jumpbutton.bsky.social),

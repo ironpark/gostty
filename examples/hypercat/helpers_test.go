@@ -17,40 +17,40 @@ import (
 // newTabTestApp is a window with one tab, on a 10x20 cell so that pixel and
 // cell positions convert by eye. The shell is this test binary; see
 // `internal/shelltest`.
-func newTabTestApp(t *testing.T) *terminalApp {
+func newTabTestApp(t *testing.T) *window {
 	t.Helper()
 	shelltest.Shell(t, "echo")
-	app := &terminalApp{dsf: 1, settings: &appearance{
+	win := &window{dsf: 1, settings: &appearance{
 		size: fonts.DefaultSize, dsf: 1,
 		fonts: &fonts.Set{CellWidth: 10, CellHeight: 20},
 	}}
-	tab := &terminalTab{
-		clipboard: &app.clipboard, settings: app.settings,
+	tab := &terminal{
+		clipboard: &win.clipboard, settings: win.settings,
 		cols: 80, rows: 24,
 	}
 	if err := tab.start(); err != nil {
 		tab.close()
 		t.Fatal(err)
 	}
-	app.tabs = []*terminalTab{tab}
-	t.Cleanup(app.close)
-	return app
+	win.tabs = []*terminal{tab}
+	t.Cleanup(win.close)
+	return win
 }
 
 // feedTab writes to a tab's terminal and brings the drawn state up to date,
 // which is what a frame of shell output does.
-func feedTab(t *testing.T, tab *terminalTab, s string) {
+func feedTab(t *testing.T, tab *terminal, s string) {
 	t.Helper()
 	if err := tab.stream.Feed([]byte(s)); err != nil {
 		t.Fatalf("feed: %v", err)
 	}
-	if err := tab.refresh(); err != nil {
+	if err := tab.refreshSnapshot(); err != nil {
 		t.Fatalf("refresh: %v", err)
 	}
 }
 
 // selected is what the tab's screen currently has selected.
-func selected(t *testing.T, tab *terminalTab) string {
+func selected(t *testing.T, tab *terminal) string {
 	t.Helper()
 	text, ok, err := screenOf(t, tab).SelectionString()
 	if err != nil {
@@ -63,7 +63,7 @@ func selected(t *testing.T, tab *terminalTab) string {
 }
 
 // sent is what one key event puts on the wire for this tab's terminal.
-func sent(t *testing.T, tab *terminalTab, ev keys.Event, m keys.Mods) string {
+func sent(t *testing.T, tab *terminal, ev keys.Event, m keys.Mods) string {
 	t.Helper()
 	tab.out.reset()
 	if err := tab.sendKey(ev, m); err != nil {
@@ -74,7 +74,7 @@ func sent(t *testing.T, tab *terminalTab, ev keys.Event, m keys.Mods) string {
 
 // pressAtCell and dragToCell drive the selection gesture the way the frame
 // loop does, in pixels, with the tab's own cell size.
-func (tab *terminalTab) pressAtCell(t *testing.T, col, row int) {
+func (tab *terminal) pressAtCell(t *testing.T, col, row int) {
 	t.Helper()
 	g := tab.grid()
 	if err := tab.pressSelection(int(g.x(col))+1, int(g.y(row))); err != nil {
@@ -82,7 +82,7 @@ func (tab *terminalTab) pressAtCell(t *testing.T, col, row int) {
 	}
 }
 
-func (tab *terminalTab) dragToCell(t *testing.T, col, row int, rectangle bool) {
+func (tab *terminal) dragToCell(t *testing.T, col, row int, rectangle bool) {
 	t.Helper()
 	g := tab.grid()
 	// Most of the way into the cell, which is what includes it in the run.
@@ -92,7 +92,7 @@ func (tab *terminalTab) dragToCell(t *testing.T, col, row int, rectangle bool) {
 }
 
 // screenOf is the tab's active screen, for the tests that drive it directly.
-func screenOf(t *testing.T, tab *terminalTab) *gostty.Screen {
+func screenOf(t *testing.T, tab *terminal) *gostty.Screen {
 	t.Helper()
 	screen, err := tab.vt.ActiveScreen()
 	if err != nil {

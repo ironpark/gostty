@@ -1,28 +1,22 @@
-// Command hypercat is a small GUI terminal emulator built on libghostty-vt.
-//
-// It runs your shell on a pty and draws the screen in a window. Everything a
-// terminal has to know -- how the bytes from the shell change the grid, what a
-// keystroke encodes to given the modes the program has set, which colors a cell
-// ended up with -- comes from gostty. This program only owns the pixels.
-//
-//	shell --pty--> Stream.Feed --> Terminal --> RenderState --> Ebitengine
-//	                                                        \-> the cat walks on it
-//	shell <--pty-- input.EncodeKey   <-- KeyEvent   <-- Ebitengine
-//	shell <--pty-- input.EncodeMouse <-- MouseEvent <-- Ebitengine
-//
-// It is deliberately small, so it stops well short of a terminal you would use:
-// no ligatures, no font fallback, and no reflowing of wide glyphs beyond a
-// two-cell advance.
+// Command hypercat demonstrates the PTY → gostty → window flow.
+// Read main.go, terminal.go, terminal_input.go, and render_frame.go.
+// internal/frontend owns the Ebitengine window, input polling, and rendering.
 package main
 
 import (
-	"errors"
 	"log"
 
-	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/ironpark/gostty/examples/hypercat/internal/frontend"
+	"github.com/ironpark/gostty/examples/hypercat/internal/graphics"
 	"github.com/ironpark/gostty/examples/hypercat/ui"
 	"github.com/ironpark/gostty/sys"
 )
+
+func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
 
 const (
 	initialCols = 100
@@ -39,35 +33,26 @@ const (
 	reportVersion = "0.1.0"
 )
 
-func main() {
-	if err := run(); err != nil && !errors.Is(err, ebiten.Termination) {
-		log.Fatal(err)
-	}
-}
-
+// run creates the first tab and runs the window until all tabs close.
+// Call it from main: Ebitengine owns the main thread.
 func run() error {
 	// libghostty-vt has no PNG decoder of its own, so without this a Kitty
 	// `f=100` transmission is refused. With it, PNGs are decoded as they
 	// arrive and reach the renderer as RGBA like every other format.
-	sys.OnPngDecodeRequest(decodePNG)
+	sys.OnPngDecodeRequest(graphics.DecodePNG)
 	defer sys.Clear()
 
-	app := newApp()
-	defer app.close()
-	if err := app.addTab(); err != nil {
+	win := newWindow()
+	defer win.close()
+	if err := win.addTab(); err != nil {
 		return err
 	}
 
-	app.clipboard.init()
+	win.clipboard.init()
 
-	// The window is asked for in device-independent pixels, which is the one
-	// place the grid's own units have to be converted back.
-	ebiten.SetWindowSize(
-		int(app.settings.fonts.CellWidth*initialCols/app.dsf),
-		int(app.settings.fonts.CellHeight*initialRows/app.dsf+ui.TabBarHeight),
-	)
-	ebiten.SetWindowTitle(appName)
-	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
-	ebiten.SetScreenClearedEveryFrame(false)
-	return ebiten.RunGame(app)
+	return frontend.Run(win, frontend.Config{
+		Title:  appName,
+		Width:  int(win.settings.fonts.CellWidth * initialCols / win.dsf),
+		Height: int(win.settings.fonts.CellHeight*initialRows/win.dsf + ui.TabBarHeight),
+	})
 }
