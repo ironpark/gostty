@@ -82,8 +82,8 @@ func TestSearchMaskReusePreservesPreviousHighlights(t *testing.T) {
 	var search tabSearch
 	search.resetMask(80 * 24)
 	search.cells[7] = true
-	previous := search.resetMask(80 * 24)
-	if !previous[7] || search.cells[7] {
+	search.resetMask(80 * 24)
+	if !search.previous[7] || search.cells[7] {
 		t.Fatal("reset lost previous highlights or retained new ones")
 	}
 	allocs := testing.AllocsPerRun(20, func() { search.resetMask(80 * 24) })
@@ -91,8 +91,8 @@ func TestSearchMaskReusePreservesPreviousHighlights(t *testing.T) {
 		t.Fatalf("highlight buffers allocate %v times per frame", allocs)
 	}
 	search.cells[100] = true
-	previous = search.resetMask(40 * 12)
-	if !previous[100] || len(search.cells) != 40*12 || search.cells[100] {
+	search.resetMask(40 * 12)
+	if !search.previous[100] || len(search.cells) != 40*12 || search.cells[100] {
 		t.Fatal("resizing lost previous highlights or retained new ones")
 	}
 	search.resetMask(100 * 40)

@@ -69,7 +69,8 @@ func (tab *terminal) shortcut(key input.Key) (bool, error) {
 	case input.KeyKeyA:
 		return true, tab.selectAll()
 	case input.KeyKeyS:
-		return true, tab.exportScrollback()
+		tab.exportScrollback()
+		return true, nil
 	}
 	return tab.adjustSelection(key)
 }

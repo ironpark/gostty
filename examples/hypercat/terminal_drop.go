@@ -65,7 +65,8 @@ func (tab *terminal) handleDrop() error {
 			log.Printf("drop: %v", err)
 			return nil
 		}
-		return tab.pasteText(text)
+		// The trailing space leaves the cursor ready for the next argument.
+		return tab.pasteText(text + " ")
 	}
 
 	// What the program registered for decides what is staged: offering a type

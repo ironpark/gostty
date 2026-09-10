@@ -21,7 +21,7 @@ type Representation struct {
 // What this window can make, in the order a program that asked for more than
 // one of them gets it.
 var representations = []Representation{
-	{"text/uri-list", func(paths []string) []byte { return []byte(URIList(paths)) }},
+	{"text/uri-list", func(paths []string) []byte { return []byte(uriList(paths)) }},
 	{"text/plain", func(paths []string) []byte { return []byte(strings.Join(paths, "\n")) }},
 }
 
@@ -57,8 +57,8 @@ func Paths(dropped fs.FS) []string {
 	return paths
 }
 
-// URIList is the paths as text/uri-list, which is CRLF separated file URIs.
-func URIList(paths []string) string {
+// uriList is the paths as text/uri-list, which is CRLF separated file URIs.
+func uriList(paths []string) string {
 	var b strings.Builder
 	for _, path := range paths {
 		abs, err := filepath.Abs(path)

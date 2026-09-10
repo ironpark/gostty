@@ -7,7 +7,8 @@ import (
 )
 
 // QuotePaths prepares filenames to paste as arguments in the shell started by
-// this session. It cannot detect a different shell subsequently started inside it.
+// this session, joined by spaces. It cannot detect a different shell
+// subsequently started inside it.
 func (s *Session) QuotePaths(paths []string) (string, error) {
 	return quotePaths(s.command, paths)
 }
@@ -39,5 +40,5 @@ func quotePaths(command string, paths []string) (string, error) {
 	if len(quoted) == 0 {
 		return "", nil
 	}
-	return strings.Join(quoted, " ") + " ", nil
+	return strings.Join(quoted, " "), nil
 }

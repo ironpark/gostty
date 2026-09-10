@@ -32,16 +32,19 @@ func TestFontSizeIsScaledByTheDisplay(t *testing.T) {
 	}
 }
 
-// With no system font the same has to hold for the bundled bitmap, which can
-// only grow in whole steps.
-func TestBitmapFallbackFollowsTheDisplay(t *testing.T) {
+// The same fan-out with no system font, which is the case that always runs:
+// the test above skips on a machine without one. How the bitmap itself scales
+// is appearance's own, and asserted in its package.
+func TestBitmapFallbackFansOutToTabs(t *testing.T) {
 	win := &window{dsf: 2, settings: appearance.New(nil, fonts.DefaultSize, 1)}
+	tab := &terminal{settings: win.settings}
+	win.tabs = []*terminal{tab}
 	win.applyFont()
+
 	if win.settings.Fonts().FamilyName != "bitmap" {
 		t.Fatalf("family = %q, want the bitmap fallback with no families to choose from", win.settings.Fonts().FamilyName)
 	}
-	one := fonts.Load(nil, fonts.DefaultSize)
-	if win.settings.Fonts().Scale <= one.Scale {
-		t.Errorf("scale at 2x is %v, want more than %v", win.settings.Fonts().Scale, one.Scale)
+	if !tab.relayout {
+		t.Error("the grid was not marked for relayout after the cell changed shape")
 	}
 }

@@ -95,9 +95,8 @@ const searchTicksPerFrame = 16
 // screen coordinates; the viewport's top row turns them into cells.
 func (tab *terminal) refreshMatches() error {
 	if tab.search.handle == nil {
-		prev := tab.search.cells
-		tab.search.cells = tab.search.cells[:0]
-		tab.markMatchChanges(tab.grid(), prev)
+		tab.search.resetMask(0)
+		tab.markMatchChanges(tab.grid())
 		return nil
 	}
 	top, err := tab.viewportTop()
@@ -107,15 +106,13 @@ func (tab *terminal) refreshMatches() error {
 	g := tab.grid()
 	// The count is not known in advance. A match spans at least one cell, so
 	// one per viewport cell cannot be exceeded by anything that is on screen.
-	if cap(tab.search.viewport) < len(tab.frame.cells) {
-		tab.search.viewport = make([]gostty.Selection, len(tab.frame.cells))
-	}
-	n, err := tab.search.handle.ViewportMatches(tab.search.viewport[:len(tab.frame.cells)])
+	tab.search.viewport = grow(tab.search.viewport, len(tab.frame.cells))
+	n, err := tab.search.handle.ViewportMatches(tab.search.viewport)
 	if err != nil {
 		return err
 	}
-	prev := tab.search.resetMask(len(tab.frame.cells))
-	defer tab.markMatchChanges(g, prev)
+	tab.search.resetMask(len(tab.frame.cells))
+	defer tab.markMatchChanges(g)
 	for _, m := range tab.search.viewport[:n] {
 		if m.StartY < top || m.EndY >= top+uint32(g.rows) || m.StartY > m.EndY {
 			continue
@@ -138,24 +135,20 @@ func (tab *terminal) refreshMatches() error {
 
 // resetMask swaps reusable masks and clears the new one, preserving the old
 // highlights until their changed rows have been marked for redraw.
-func (s *tabSearch) resetMask(size int) []bool {
-	prev := s.cells
-	s.cells, s.previous = s.previous, prev
-	if cap(s.cells) < size {
-		s.cells = make([]bool, size)
-	}
-	s.cells = s.cells[:size]
+func (s *tabSearch) resetMask(size int) {
+	s.cells, s.previous = s.previous, s.cells
+	s.cells = grow(s.cells, size)
 	clear(s.cells)
-	return prev
 }
 
 // markMatchChanges redraws the rows whose highlight differs from the last
 // frame. The highlight is drawn here, not by the terminal, so the render
 // state's own dirty flags do not know about it.
-func (tab *terminal) markMatchChanges(g grid, prev []bool) {
+func (tab *terminal) markMatchChanges(g grid) {
 	if g.cols == 0 {
 		return
 	}
+	prev := tab.search.previous
 	for i := range max(len(prev), len(tab.search.cells)) {
 		was := i < len(prev) && prev[i]
 		is := i < len(tab.search.cells) && tab.search.cells[i]

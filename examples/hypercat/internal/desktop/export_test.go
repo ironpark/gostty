@@ -8,11 +8,11 @@ import (
 	"testing"
 )
 
-func TestSaveHTMLDoesNotOverwritePreviousExports(t *testing.T) {
+func TestSaveTempDoesNotOverwritePreviousExports(t *testing.T) {
 	dir := t.TempDir()
 	names := make(map[string]bool)
 	for _, body := range []string{"first", "second", "third"} {
-		name, err := SaveHTML(dir, func(out io.Writer) error { _, err := io.WriteString(out, body); return err })
+		name, err := SaveTemp(dir, "hypercat-*.html", func(out io.Writer) error { _, err := io.WriteString(out, body); return err })
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -34,17 +34,17 @@ func TestSaveHTMLDoesNotOverwritePreviousExports(t *testing.T) {
 	}
 }
 
-func TestSaveHTMLRemovesIncompleteOutput(t *testing.T) {
+func TestSaveTempRemovesIncompleteOutput(t *testing.T) {
 	dir := t.TempDir()
 	failed := errors.New("formatter failed")
-	name, err := SaveHTML(dir, func(out io.Writer) error {
+	name, err := SaveTemp(dir, "hypercat-*.html", func(out io.Writer) error {
 		if _, err := io.WriteString(out, "partial"); err != nil {
 			t.Fatal(err)
 		}
 		return failed
 	})
 	if name != "" || !errors.Is(err, failed) {
-		t.Fatalf("SaveHTML = %q, %v", name, err)
+		t.Fatalf("SaveTemp = %q, %v", name, err)
 	}
 	entries, err := os.ReadDir(dir)
 	if err != nil || len(entries) != 0 {
@@ -52,14 +52,14 @@ func TestSaveHTMLRemovesIncompleteOutput(t *testing.T) {
 	}
 }
 
-func TestSaveHTMLReportsCloseFailure(t *testing.T) {
+func TestSaveTempReportsCloseFailure(t *testing.T) {
 	dir := t.TempDir()
-	name, err := SaveHTML(dir, func(out io.Writer) error {
+	name, err := SaveTemp(dir, "hypercat-*.html", func(out io.Writer) error {
 		// Force finalization to fail after the formatter has returned successfully.
 		return out.(io.Closer).Close()
 	})
 	if name != "" || err == nil {
-		t.Fatalf("SaveHTML = %q, %v", name, err)
+		t.Fatalf("SaveTemp = %q, %v", name, err)
 	}
 	entries, err := os.ReadDir(dir)
 	if err != nil || len(entries) != 0 {
@@ -67,10 +67,10 @@ func TestSaveHTMLReportsCloseFailure(t *testing.T) {
 	}
 }
 
-func TestSaveHTMLCreationFailureDoesNotCallFormatter(t *testing.T) {
+func TestSaveTempCreationFailureDoesNotCallFormatter(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "missing")
-	name, err := SaveHTML(dir, func(io.Writer) error { t.Fatal("formatter called without a file"); return nil })
+	name, err := SaveTemp(dir, "hypercat-*.html", func(io.Writer) error { t.Fatal("formatter called without a file"); return nil })
 	if name != "" || err == nil {
-		t.Fatalf("SaveHTML = %q, %v", name, err)
+		t.Fatalf("SaveTemp = %q, %v", name, err)
 	}
 }

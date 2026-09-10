@@ -14,10 +14,10 @@ func TestQuotePathsUsesSessionShell(t *testing.T) {
 		paths         []string
 		want          string
 	}{
-		{"posix", "/bin/sh", []string{"/tmp/plain.txt", "/tmp/two words.txt", "/tmp/it's.txt"}, `'/tmp/plain.txt' '/tmp/two words.txt' '/tmp/it'\''s.txt' `},
-		{"cmd", `C:\Windows\System32\cmd.exe`, []string{`C:\two words\it's & (ok).txt`}, `"C:\two words\it's & (ok).txt" `},
-		{"powershell", `C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`, []string{`C:\it's $HOME.txt`}, `'C:\it''s $HOME.txt' `},
-		{"pwsh", "/usr/bin/pwsh", []string{"/tmp/it's.txt"}, `'/tmp/it''s.txt' `},
+		{"posix", "/bin/sh", []string{"/tmp/plain.txt", "/tmp/two words.txt", "/tmp/it's.txt"}, `'/tmp/plain.txt' '/tmp/two words.txt' '/tmp/it'\''s.txt'`},
+		{"cmd", `C:\Windows\System32\cmd.exe`, []string{`C:\two words\it's & (ok).txt`}, `"C:\two words\it's & (ok).txt"`},
+		{"powershell", `C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`, []string{`C:\it's $HOME.txt`}, `'C:\it''s $HOME.txt'`},
+		{"pwsh", "/usr/bin/pwsh", []string{"/tmp/it's.txt"}, `'/tmp/it''s.txt'`},
 		{"empty", "cmd.exe", nil, ""},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

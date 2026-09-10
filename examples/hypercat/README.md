@@ -31,11 +31,12 @@ shell <--pty-- input.EncodeKey <-- KeyEvent <-- keys.Reader <-- Ebitengine
 The root contains the gostty integration. Ebitengine input polling, window
 callbacks, and drawing live in [`internal/frontend/`](internal/frontend/).
 Window and terminal integration stay here; supporting packages own fonts, keys,
-PTYs, UI, and the cat. [`settings.go`](settings.go) applies shared appearance
-changes to native terminals; [`internal/appearance/`](internal/appearance/) owns
-settings and font resources. [`terminal_events.go`](terminal_events.go) connects OSC 52 to
-[`internal/desktop/`](internal/desktop/), which owns clipboard storage and URL
-launching, plus file creation and completion for HTML exports. Standalone protocol demos live in `scripts/`.
+PTYs, UI, and the cat. [`settings.go`](settings.go) fans a settings change out
+to every tab and formats the panel; [`terminal_style.go`](terminal_style.go)
+applies one to a native terminal; [`internal/appearance/`](internal/appearance/)
+owns the shared font resources. [`terminal_events.go`](terminal_events.go) connects OSC 52 to
+[`internal/desktop/`](internal/desktop/), which owns clipboard storage, URL
+launching, and atomic temporary-file creation. Standalone protocol demos live in `scripts/`.
 Start with these files:
 
 1. [`main.go`](main.go): install the PNG decoder, create the window and first
@@ -99,7 +100,7 @@ the feed → encode → snapshot flow:
 | HTML export formatting and file lifecycle | [`terminal_scroll.go`](terminal_scroll.go), [`internal/desktop/export.go`](internal/desktop/export.go) |
 | Dropped-path MIME representations | [`internal/filedrop/`](internal/filedrop/) |
 | Kitty image snapshots, textures, and PNG decoding | [`internal/graphics/`](internal/graphics/) |
-| Shared appearance and per-terminal palette | [`settings.go`](settings.go), [`internal/appearance/`](internal/appearance/) |
+| Shared appearance and per-terminal palette | [`settings.go`](settings.go), [`terminal_style.go`](terminal_style.go), [`internal/appearance/`](internal/appearance/) |
 | Grid coordinates and content sizing | [`terminal_geometry.go`](terminal_geometry.go) |
 | Platform keyboard state and repeats | [`keys/`](keys/) |
 | Font discovery, loading, and emoji | [`fonts/`](fonts/) |

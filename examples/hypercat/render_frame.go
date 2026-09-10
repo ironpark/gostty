@@ -79,10 +79,7 @@ func (f *frame) read(state *gostty.RenderState, term *gostty.Terminal, g grid, t
 	if err != nil {
 		return err
 	}
-	if uint(cap(f.cells)) < n {
-		f.cells = make([]gostty.RenderCell, n)
-	}
-	f.cells = f.cells[:n]
+	f.cells = grow(f.cells, int(n))
 	if _, err := state.Cells(f.cells); err != nil {
 		return fmt.Errorf("render cells: %w", err)
 	}
@@ -320,3 +317,12 @@ func (tab *terminal) presentation() frontend.Frame {
 }
 
 func (r *redrawSet) Full() bool { return r.all }
+
+// grow returns s resliced to n, reallocating only when it will not fit. The
+// contents up to n are not preserved; callers overwrite or clear them.
+func grow[T any](s []T, n int) []T {
+	if cap(s) < n {
+		return make([]T, n)
+	}
+	return s[:n]
+}

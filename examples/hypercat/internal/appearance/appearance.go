@@ -2,12 +2,8 @@
 package appearance
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/ironpark/gostty/examples/hypercat/fonts"
 	"github.com/ironpark/gostty/examples/hypercat/thecat"
-	"github.com/ironpark/gostty/examples/hypercat/ui"
 )
 
 // State is everything the settings panel can change. It belongs to the
@@ -43,17 +39,24 @@ func Default(dsf float64) *State {
 // that times the scale factor.
 func (s *State) loadFonts(dsf float64) {
 	s.dsf = dsf
-	s.fonts = fonts.Load(s.currentFamily(), s.size*dsf)
+	s.fonts = fonts.Load(s.CurrentFamily(), s.size*dsf)
 }
 
-// clampFamily is the one place an out-of-range family index is repaired.
+// clampFamily is the one place an out-of-range family index is repaired. It is
+// total: an empty family list repairs to 0, which currentFamily reads as the
+// bundled bitmap.
 func (s *State) clampFamily(i int) int {
-	return min(max(i, 0), len(s.families)-1)
+	return min(max(i, 0), max(len(s.families)-1, 0))
 }
 
-// currentFamily is nil when there are no system fonts, which is what asks
+// clampSize is the one place a size outside the supported range is repaired.
+func clampSize(size float64) float64 {
+	return min(max(size, fonts.MinSize), fonts.MaxSize)
+}
+
+// CurrentFamily is nil when there are no system fonts, which is what asks
 // fonts.Load for the bundled bitmap.
-func (s *State) currentFamily() *fonts.Family {
+func (s *State) CurrentFamily() *fonts.Family {
 	if len(s.families) == 0 {
 		return nil
 	}
@@ -63,7 +66,8 @@ func (s *State) currentFamily() *fonts.Family {
 // New loads the supplied font families; an empty list uses the bitmap fallback.
 func New(families []*fonts.Family, size, scale float64) *State {
 	_, index := fonts.DefaultFamily(families)
-	s := &State{families: families, family: max(index, 0), size: min(max(size, fonts.MinSize), fonts.MaxSize)}
+	s := &State{families: families}
+	s.family, s.size = s.clampFamily(index), clampSize(size)
 	s.loadFonts(scale)
 	return s
 }
@@ -79,58 +83,22 @@ func (s *State) CatMode() thecat.Mode        { return s.cat }
 func (s *State) SetTheme(index int)          { s.theme = index }
 func (s *State) SetCatMode(mode thecat.Mode) { s.cat = mode }
 
+// SetMetrics replaces the built faces with a fixed set. It exists so tests can
+// pin deterministic cell metrics without system font discovery; production code
+// changes faces through SetFont and Reload, which keep them consistent with the
+// chosen family and size.
+func (s *State) SetMetrics(set *fonts.Set) { s.fonts = set }
+
 // Reload rebuilds shared faces after a display scale change.
 func (s *State) Reload(scale float64) { s.loadFonts(scale) }
 
 // SetFont changes family and logical size, returning whether faces were rebuilt.
 func (s *State) SetFont(family int, size float64) bool {
-	size = min(max(size, fonts.MinSize), fonts.MaxSize)
-	if len(s.families) == 0 {
-		family = 0
-	} else {
-		family = s.clampFamily(family)
-	}
+	size, family = clampSize(size), s.clampFamily(family)
 	if family == s.family && size == s.size {
 		return false
 	}
 	s.family, s.size = family, size
 	s.loadFonts(s.dsf)
 	return true
-}
-
-func (s *State) themeLabel() string {
-	return fmt.Sprintf("%s  (%d/%d)", ui.ThemeAt(s.theme).Name, s.theme+1, ui.ThemeCount())
-}
-
-// fontLabel says which faces the chosen family actually has, because that is
-// what decides whether bold and italic text looks any different.
-func (s *State) fontLabel() string {
-	family := s.currentFamily()
-	if family == nil {
-		return s.fonts.FamilyName + " (bundled)"
-	}
-	var have []string
-	if family.Has(true, false) {
-		have = append(have, "bold")
-	}
-	if family.Has(false, true) {
-		have = append(have, "italic")
-	}
-	if family.Has(true, true) {
-		have = append(have, "bold italic")
-	}
-	label := fmt.Sprintf("%s  (%d/%d)", family.Name, s.family+1, len(s.families))
-	if len(have) == 0 {
-		return label + "  regular only"
-	}
-	return label + "  + " + strings.Join(have, ", ")
-}
-
-// Values formats the panel labels; the caller reports whether sprites loaded.
-func (s *State) Values(catAvailable bool) ui.SettingsValues {
-	cat := "unavailable"
-	if catAvailable {
-		cat = s.cat.String()
-	}
-	return ui.SettingsValues{s.fontLabel(), fmt.Sprintf("%.0f px", s.size), s.themeLabel(), cat}
 }

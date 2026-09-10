@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"io"
 	"log"
 
@@ -81,16 +82,24 @@ func (f *frame) updateScrollbar(bar gostty.Scrollbar) {
 	}
 }
 
-// exportScrollback saves selected text, or the whole scrollback, as HTML.
-func (tab *terminal) exportScrollback() error {
-	name, err := desktop.SaveHTML("", tab.formatScrollback)
+// exportScrollback saves selected text, or the whole scrollback, as HTML. The
+// naming convention lives here, with the format the writer produces.
+func (tab *terminal) exportScrollback() {
+	name, err := desktop.SaveTemp("", "hypercat-*.html", func(out io.Writer) error {
+		// The native formatter writes one chunk at a time, so the whole
+		// scrollback would otherwise be a syscall per chunk.
+		buffered := bufio.NewWriter(out)
+		if err := tab.formatScrollback(buffered); err != nil {
+			return err
+		}
+		return buffered.Flush()
+	})
 	if err != nil {
 		// An export failure is reported without ending the terminal session.
 		log.Printf("save scrollback: %v", err)
-		return nil
+		return
 	}
 	log.Printf("scrollback saved to %s", name)
-	return nil
 }
 
 // formatScrollback keeps native formatting policy here: unwrap soft wraps,

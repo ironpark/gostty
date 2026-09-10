@@ -105,6 +105,6 @@ func TestMain(m *testing.M) { shelltest.Main(m) }
 // testAppearance supplies deterministic grid metrics without system discovery.
 func testAppearance() *appearance.State {
 	s := appearance.New(nil, fonts.DefaultSize, 1)
-	*s.Fonts() = fonts.Set{CellWidth: 10, CellHeight: 20}
+	s.SetMetrics(&fonts.Set{CellWidth: 10, CellHeight: 20})
 	return s
 }

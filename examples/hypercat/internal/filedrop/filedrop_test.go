@@ -9,12 +9,12 @@ import (
 // The staged representation a program asks for is text/uri-list, which is CRLF
 // separated file URIs rather than the paths as they were dropped.
 func TestURIListIsFileURIs(t *testing.T) {
-	got := URIList([]string{"/tmp/a b.txt"})
+	got := uriList([]string{"/tmp/a b.txt"})
 	if !strings.HasSuffix(got, "\r\n") {
-		t.Errorf("URIList() = %q, want it to end in CRLF", got)
+		t.Errorf("uriList() = %q, want it to end in CRLF", got)
 	}
 	if !strings.Contains(got, "file://") || !strings.Contains(got, "a%20b.txt") {
-		t.Errorf("URIList() = %q, want an escaped file URI", got)
+		t.Errorf("uriList() = %q, want an escaped file URI", got)
 	}
 }
 
