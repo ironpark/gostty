@@ -1,10 +1,9 @@
 package main
 
 import (
-	"os"
+	"bytes"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/ironpark/gostty"
 	"github.com/ironpark/gostty/examples/hypercat/ui"
@@ -112,17 +111,11 @@ func TestExportScrollbackWritesStyledHTML(t *testing.T) {
 	tab := win.current()
 	feedTab(t, tab, "\x1b[31mred\x1b[0m plain")
 
-	before := time.Now()
-	if err := tab.exportScrollback(); err != nil {
-		t.Fatalf("exportScrollback: %v", err)
+	var out bytes.Buffer
+	if err := tab.formatScrollback(&out); err != nil {
+		t.Fatal(err)
 	}
-	name := newestExport(t, before)
-	body, err := os.ReadFile(name)
-	if err != nil {
-		t.Fatalf("read export: %v", err)
-	}
-	t.Cleanup(func() { os.Remove(name) })
-	text := string(body)
+	text := out.String()
 	if !strings.Contains(text, "red") || !strings.Contains(text, "plain") {
 		t.Errorf("the export is missing the screen: %q", text)
 	}
@@ -131,28 +124,20 @@ func TestExportScrollbackWritesStyledHTML(t *testing.T) {
 	}
 }
 
-// newestExport is the file exportScrollback just wrote.
-func newestExport(t *testing.T, after time.Time) string {
-	t.Helper()
-	entries, err := os.ReadDir(os.TempDir())
-	if err != nil {
-		t.Fatalf("read temp dir: %v", err)
+func TestExportFormatsOnlyTheSelection(t *testing.T) {
+	win := newTabTestApp(t)
+	tab := win.current()
+	feedTab(t, tab, "selected omitted")
+	if _, err := screenOf(t, tab).SetSelection(gostty.Selection{StartX: 0, StartY: 0, EndX: 7, EndY: 0}); err != nil {
+		t.Fatal(err)
 	}
-	newest := ""
-	for _, entry := range entries {
-		if !strings.HasPrefix(entry.Name(), "hypercat-") || !strings.HasSuffix(entry.Name(), ".html") {
-			continue
-		}
-		info, err := entry.Info()
-		if err != nil || info.ModTime().Before(after.Add(-time.Second)) {
-			continue
-		}
-		newest = os.TempDir() + string(os.PathSeparator) + entry.Name()
+	var out bytes.Buffer
+	if err := tab.formatScrollback(&out); err != nil {
+		t.Fatal(err)
 	}
-	if newest == "" {
-		t.Fatal("exportScrollback wrote no file")
+	if text := out.String(); !strings.Contains(text, "selected") || strings.Contains(text, "omitted") {
+		t.Fatalf("selection export = %q", text)
 	}
-	return newest
 }
 
 // A theme is the sixteen ANSI colours as well as the two default ones: a

@@ -48,11 +48,11 @@ func run() error {
 		return err
 	}
 
-	win.clipboard.init()
+	win.clipboard.Init()
 
 	return frontend.Run(win, frontend.Config{
 		Title:  appName,
-		Width:  int(win.settings.fonts.CellWidth * initialCols / win.dsf),
-		Height: int(win.settings.fonts.CellHeight*initialRows/win.dsf + ui.TabBarHeight),
+		Width:  int(win.settings.Fonts().CellWidth * initialCols / win.dsf),
+		Height: int(win.settings.Fonts().CellHeight*initialRows/win.dsf + ui.TabBarHeight),
 	})
 }

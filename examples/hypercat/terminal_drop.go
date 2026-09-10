@@ -1,14 +1,11 @@
 package main
 
 import (
-	"io/fs"
 	"log"
-	"net/url"
-	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/ironpark/gostty"
+	"github.com/ironpark/gostty/examples/hypercat/internal/filedrop"
 )
 
 // Drag and drop, in the sense the terminal knows about it: OSC 72, where a
@@ -50,7 +47,7 @@ func (tab *terminal) onDrag(notice gostty.DragNotice, mimes string) {
 // least the protocol accepts: a program is told where the pointer is before it
 // is told to take what is under it.
 func (tab *terminal) handleDrop() error {
-	paths := droppedPaths(tab.input.Dropped)
+	paths := filedrop.Paths(tab.input.Dropped)
 	if len(paths) == 0 {
 		return nil
 	}
@@ -63,7 +60,12 @@ func (tab *terminal) handleDrop() error {
 		// No program asked for drops, so this is the convention every terminal
 		// has: the paths are typed at the prompt, quoted, for the shell to do
 		// something with.
-		return tab.pasteText(shellQuote(paths))
+		text, err := tab.shell.QuotePaths(paths)
+		if err != nil {
+			log.Printf("drop: %v", err)
+			return nil
+		}
+		return tab.pasteText(text)
 	}
 
 	// What the program registered for decides what is staged: offering a type
@@ -73,7 +75,7 @@ func (tab *terminal) handleDrop() error {
 	if err != nil {
 		return err
 	}
-	offered := offeredRepresentations(strings.Fields(registered))
+	offered := filedrop.Offered(strings.Fields(registered))
 	if len(offered) == 0 {
 		log.Printf("drag: the program accepts %s, and this window has none of it", registered)
 		return nil
@@ -98,10 +100,10 @@ func (tab *terminal) handleDrop() error {
 	}
 	mimes := make([]string, 0, len(offered))
 	for _, representation := range offered {
-		if err := tab.stream.DragAddItem(representation.mime, representation.body(paths)); err != nil {
+		if err := tab.stream.DragAddItem(representation.MIME, representation.Body(paths)); err != nil {
 			return err
 		}
-		mimes = append(mimes, representation.mime)
+		mimes = append(mimes, representation.MIME)
 	}
 	if err := tab.stream.DragMove(move, strings.Join(mimes, " ")); err != nil {
 		return err
@@ -112,76 +114,4 @@ func (tab *terminal) handleDrop() error {
 	// The moves and the drop are written as replies, the same as a device
 	// status report, so they go out with the rest of this frame's answers.
 	return tab.stream.WriteReplies(tab.shell.Pty)
-}
-
-// dropRepresentation is one way this window can describe a set of dropped
-// paths. A program takes the drop by asking for one of them by name, so what
-// is staged and what it is told about have to be the same list -- which is
-// why it is a list.
-type dropRepresentation struct {
-	mime string
-	body func(paths []string) []byte
-}
-
-// What this window can make, in the order a program that asked for more than
-// one of them gets it.
-var dropRepresentations = []dropRepresentation{
-	{"text/uri-list", func(paths []string) []byte { return []byte(uriList(paths)) }},
-	{"text/plain", func(paths []string) []byte { return []byte(strings.Join(paths, "\n")) }},
-}
-
-// offeredRepresentations is what this window can make and the program will
-// take: the intersection, in this window's order of preference.
-func offeredRepresentations(registered []string) []dropRepresentation {
-	var offered []dropRepresentation
-	for _, representation := range dropRepresentations {
-		if slices.Contains(registered, representation.mime) {
-			offered = append(offered, representation)
-		}
-	}
-	return offered
-}
-
-// droppedPaths lists what was dropped, at the root of the virtual filesystem
-// Ebitengine hands over. Directories come along: what to do with one is the
-// program's business, and a shell handed a directory path is not confused.
-func droppedPaths(dropped fs.FS) []string {
-	if dropped == nil {
-		return nil
-	}
-	entries, err := fs.ReadDir(dropped, ".")
-	if err != nil || len(entries) == 0 {
-		return nil
-	}
-	paths := make([]string, 0, len(entries))
-	for _, entry := range entries {
-		// The names are real paths on the desktop platforms, which is what
-		// both the shell and the URI list want.
-		paths = append(paths, entry.Name())
-	}
-	return paths
-}
-
-// uriList is the paths as text/uri-list, which is CRLF separated file URIs.
-func uriList(paths []string) string {
-	var b strings.Builder
-	for _, path := range paths {
-		abs, err := filepath.Abs(path)
-		if err != nil {
-			abs = path
-		}
-		b.WriteString((&url.URL{Scheme: "file", Path: filepath.ToSlash(abs)}).String())
-		b.WriteString("\r\n")
-	}
-	return b.String()
-}
-
-// shellQuote is the paths as a line a shell will read as filenames, which is
-// what a drop with no program listening turns into.
-func shellQuote(paths []string) string {
-	quoted := make([]string, 0, len(paths))
-	for _, path := range paths {
-		quoted = append(quoted, "'"+strings.ReplaceAll(path, "'", `'\''`)+"'")
-	}
-	return strings.Join(quoted, " ") + " "
 }

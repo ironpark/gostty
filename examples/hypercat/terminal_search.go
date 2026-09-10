@@ -14,7 +14,8 @@ type tabSearch struct {
 	handle *gostty.Search
 	// Matches in the viewport, one bool per cell, refreshed with the cells so
 	// the highlight never lags the text under it.
-	cells []bool
+	cells    []bool
+	previous []bool // reusable mask from the preceding refresh
 	// Scratch for the viewport matches read each frame, kept so a frame with
 	// highlights on screen does not allocate.
 	viewport []gostty.Selection
@@ -113,12 +114,7 @@ func (tab *terminal) refreshMatches() error {
 	if err != nil {
 		return err
 	}
-	prev := append([]bool(nil), tab.search.cells...)
-	if cap(tab.search.cells) < len(tab.frame.cells) {
-		tab.search.cells = make([]bool, len(tab.frame.cells))
-	}
-	tab.search.cells = tab.search.cells[:len(tab.frame.cells)]
-	clear(tab.search.cells)
+	prev := tab.search.resetMask(len(tab.frame.cells))
 	defer tab.markMatchChanges(g, prev)
 	for _, m := range tab.search.viewport[:n] {
 		if m.StartY < top || m.EndY >= top+uint32(g.rows) || m.StartY > m.EndY {
@@ -138,6 +134,19 @@ func (tab *terminal) refreshMatches() error {
 		}
 	}
 	return nil
+}
+
+// resetMask swaps reusable masks and clears the new one, preserving the old
+// highlights until their changed rows have been marked for redraw.
+func (s *tabSearch) resetMask(size int) []bool {
+	prev := s.cells
+	s.cells, s.previous = s.previous, prev
+	if cap(s.cells) < size {
+		s.cells = make([]bool, size)
+	}
+	s.cells = s.cells[:size]
+	clear(s.cells)
+	return prev
 }
 
 // markMatchChanges redraws the rows whose highlight differs from the last

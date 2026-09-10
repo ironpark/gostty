@@ -35,7 +35,7 @@ func (tab *terminal) startCat() {
 		return
 	}
 	tab.cat = cat
-	tab.cat.SetMode(tab.settings.cat)
+	tab.cat.SetMode(tab.settings.CatMode())
 }
 
 func (tab *terminal) updateCat() {

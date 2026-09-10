@@ -43,3 +43,60 @@ func TestSearchPanelActionsManageNativeSearch(t *testing.T) {
 		t.Fatal("native search handle was not closed")
 	}
 }
+
+func TestSearchHighlightBuffersRefreshAndClear(t *testing.T) {
+	win := newTabTestApp(t)
+	tab := win.current()
+	feedTab(t, tab, "needle plain")
+	tab.panels.Search.Query = []rune("needle")
+	if err := tab.runSearch(); err != nil {
+		t.Fatal(err)
+	}
+	if err := tab.refreshSnapshot(); err != nil {
+		t.Fatal(err)
+	}
+	if len(tab.search.cells) == 0 || !tab.search.cells[0] || tab.search.cells[7] {
+		t.Fatal("search did not highlight only the matching cells")
+	}
+	tab.closeSearch()
+	tab.frame.redraw.Clear()
+	if err := tab.refreshMatches(); err != nil {
+		t.Fatal(err)
+	}
+	if len(tab.search.cells) != 0 || !tab.frame.redraw.Take(0) {
+		t.Fatal("closing search did not clear and repaint old highlights")
+	}
+	tab.panels.Search.Query = []rune("plain")
+	if err := tab.runSearch(); err != nil {
+		t.Fatal(err)
+	}
+	if err := tab.refreshSnapshot(); err != nil {
+		t.Fatal(err)
+	}
+	if tab.search.cells[0] || !tab.search.cells[7] {
+		t.Fatal("reopened search retained previous highlights")
+	}
+}
+
+func TestSearchMaskReusePreservesPreviousHighlights(t *testing.T) {
+	var search tabSearch
+	search.resetMask(80 * 24)
+	search.cells[7] = true
+	previous := search.resetMask(80 * 24)
+	if !previous[7] || search.cells[7] {
+		t.Fatal("reset lost previous highlights or retained new ones")
+	}
+	allocs := testing.AllocsPerRun(20, func() { search.resetMask(80 * 24) })
+	if allocs != 0 {
+		t.Fatalf("highlight buffers allocate %v times per frame", allocs)
+	}
+	search.cells[100] = true
+	previous = search.resetMask(40 * 12)
+	if !previous[100] || len(search.cells) != 40*12 || search.cells[100] {
+		t.Fatal("resizing lost previous highlights or retained new ones")
+	}
+	search.resetMask(100 * 40)
+	if len(search.cells) != 100*40 {
+		t.Fatal("mask did not grow with viewport")
+	}
+}

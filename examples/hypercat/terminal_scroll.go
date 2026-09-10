@@ -1,7 +1,11 @@
 package main
 
 import (
+	"io"
+	"log"
+
 	"github.com/ironpark/gostty"
+	"github.com/ironpark/gostty/examples/hypercat/internal/desktop"
 )
 
 // viewportTop is the scrollback row the top of the screen is showing, which is
@@ -75,4 +79,37 @@ func (f *frame) updateScrollbar(bar gostty.Scrollbar) {
 	case f.scrollbar.visible > 0:
 		f.scrollbar.visible--
 	}
+}
+
+// exportScrollback saves selected text, or the whole scrollback, as HTML.
+func (tab *terminal) exportScrollback() error {
+	name, err := desktop.SaveHTML("", tab.formatScrollback)
+	if err != nil {
+		// An export failure is reported without ending the terminal session.
+		log.Printf("save scrollback: %v", err)
+		return nil
+	}
+	log.Printf("scrollback saved to %s", name)
+	return nil
+}
+
+// formatScrollback keeps native formatting policy here: unwrap soft wraps,
+// resolve the palette, and export the selection when one exists.
+func (tab *terminal) formatScrollback(out io.Writer) error {
+	options := gostty.FormatOptions{
+		Format:         gostty.FormatterFormatHtml,
+		Unwrap:         true,
+		ResolvePalette: true,
+	}
+	return tab.onScreen(func(screen *gostty.Screen) error {
+		sel, ok, err := screen.Selection()
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return screen.Format(options, out)
+		}
+		_, err = screen.FormatSelection(options, sel, out)
+		return err
+	})
 }

@@ -65,7 +65,7 @@ func (tab *terminal) shortcut(key input.Key) (bool, error) {
 	case input.KeyKeyC:
 		return true, tab.copySelection()
 	case input.KeyKeyV:
-		return true, tab.pasteText(string(tab.clipboard.paste()))
+		return true, tab.pasteText(string(tab.clipboard.Paste()))
 	case input.KeyKeyA:
 		return true, tab.selectAll()
 	case input.KeyKeyS:

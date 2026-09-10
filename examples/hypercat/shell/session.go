@@ -45,6 +45,7 @@ type Session struct {
 	// Reaped is closed once the child has been waited for.
 	Reaped chan struct{}
 
+	command    string // executable used to choose dropped-path quoting
 	cmd        Process
 	stop       chan struct{}
 	readerDone chan struct{}
@@ -65,7 +66,7 @@ func StartCommand(cols, rows int, argv []string) (*Session, error) {
 		return nil, err
 	}
 	s := &Session{
-		Pty: device, cmd: cmd,
+		Pty: device, cmd: cmd, command: argv[0],
 		Output:     make(chan []byte, 64),
 		Reaped:     make(chan struct{}),
 		stop:       make(chan struct{}),

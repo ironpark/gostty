@@ -76,7 +76,7 @@ func (tab *terminal) writeClipboard(req *gostty.ClipboardRequest) {
 	n, err := req.ContentCount()
 	if err == nil && n > 0 {
 		if data, err := req.ContentData(0); err == nil {
-			tab.clipboard.hold(data)
+			tab.clipboard.Hold(data)
 		}
 	}
 	_ = req.Allow(false)
@@ -85,5 +85,5 @@ func (tab *terminal) writeClipboard(req *gostty.ClipboardRequest) {
 // This demo immediately shares clipboard contents with the running program.
 // A production emulator should ask for permission before answering OSC 52 reads.
 func (tab *terminal) readClipboard(req *gostty.ClipboardRequest) {
-	_ = req.ReplyText(string(tab.clipboard.paste()), false)
+	_ = req.ReplyText(string(tab.clipboard.Paste()), false)
 }

@@ -7,6 +7,8 @@ import (
 
 	"github.com/ironpark/gostty"
 	"github.com/ironpark/gostty/examples/hypercat/fonts"
+	"github.com/ironpark/gostty/examples/hypercat/internal/appearance"
+	"github.com/ironpark/gostty/examples/hypercat/internal/desktop"
 	"github.com/ironpark/gostty/examples/hypercat/internal/frontend"
 	"github.com/ironpark/gostty/examples/hypercat/internal/graphics"
 	"github.com/ironpark/gostty/examples/hypercat/shell"
@@ -42,8 +44,8 @@ type terminal struct {
 	cat     *thecat.Companion
 
 	// Shared window resources.
-	settings  *appearance
-	clipboard *sharedClipboard
+	settings  *appearance.State
+	clipboard *desktop.Clipboard
 
 	// This update's host input and reusable terminal encoder buffers.
 	input       frontend.Input
@@ -237,8 +239,8 @@ func (tab *terminal) onScreen(f func(*gostty.Screen) error) error {
 
 // fonts and emoji are the window's, shared with every other tab: what a tab
 // draws with follows the settings panel wherever it was opened.
-func (tab *terminal) fonts() *fonts.Set   { return tab.settings.fonts }
-func (tab *terminal) emoji() *fonts.Emoji { return tab.settings.emoji }
+func (tab *terminal) fonts() *fonts.Set   { return tab.settings.Fonts() }
+func (tab *terminal) emoji() *fonts.Emoji { return tab.settings.Emoji() }
 
 // Tab switches reset interaction state and invalidate the visible grid.
 func (tab *terminal) activate() {

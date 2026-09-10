@@ -187,3 +187,6 @@ func (win *window) serviceTabs() error {
 	}
 	return nil
 }
+
+// wrap brings an index back into [0, n).
+func wrap(i, n int) int { return (i%n + n) % n }

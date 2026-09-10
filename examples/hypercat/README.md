@@ -30,6 +30,12 @@ shell <--pty-- input.EncodeKey <-- KeyEvent <-- keys.Reader <-- Ebitengine
 
 The root contains the gostty integration. Ebitengine input polling, window
 callbacks, and drawing live in [`internal/frontend/`](internal/frontend/).
+Window and terminal integration stay here; supporting packages own fonts, keys,
+PTYs, UI, and the cat. [`settings.go`](settings.go) applies shared appearance
+changes to native terminals; [`internal/appearance/`](internal/appearance/) owns
+settings and font resources. [`terminal_events.go`](terminal_events.go) connects OSC 52 to
+[`internal/desktop/`](internal/desktop/), which owns clipboard storage and URL
+launching, plus file creation and completion for HTML exports. Standalone protocol demos live in `scripts/`.
 Start with these files:
 
 1. [`main.go`](main.go): install the PNG decoder, create the window and first
@@ -42,10 +48,10 @@ Start with these files:
 3. [`terminal_input.go`](terminal_input.go): route terminal input, filter host
    shortcuts, encode keys with `input.EncodeKey`, and paste with
    `input.EncodePaste`. Window input priority is in
-   [`window_input.go`](window_input.go): tabs → panels → terminal.
+   [`window.go`](window.go): tabs → panels → terminal.
 4. [`render_frame.go`](render_frame.go): read cells, dirty rows, colors, cursor,
    and grapheme clusters from `RenderState` during updates.
-5. [`window.go`](window.go) and [`presentation.go`](presentation.go): implement
+5. [`window.go`](window.go) and [`render_frame.go`](render_frame.go): implement
    the frontend contract. `Update` services shells and routes supplied input;
    `Resize` keeps terminal and PTY geometry in sync; `Present` supplies cached
    data for drawing without reading native handles.
@@ -84,14 +90,16 @@ the feed → encode → snapshot flow:
 | --- | --- |
 | Ebitengine window, input collection, and rendering | [`internal/frontend/`](internal/frontend/) |
 | Tab lifecycle, shortcuts, and tab bar | [`window_tabs.go`](window_tabs.go), [`ui/tabbar.go`](ui/tabbar.go) |
-| Search/settings panels | [`window_panels.go`](window_panels.go), [`ui/`](ui/) |
-| OSC events and clipboard callbacks | [`terminal_events.go`](terminal_events.go) |
-| Shared system clipboard | [`window_clipboard.go`](window_clipboard.go) |
+| Search/settings panels | [`window.go`](window.go), [`ui/`](ui/) |
+| OSC events | [`terminal_events.go`](terminal_events.go) |
+| Shared clipboard and OSC 52 callbacks | [`terminal_events.go`](terminal_events.go), [`internal/desktop/`](internal/desktop/) |
 | Mouse and focus reporting | [`terminal_mouse.go`](terminal_mouse.go) |
 | Selection, scrollback, and search | [`terminal_selection.go`](terminal_selection.go), [`terminal_scroll.go`](terminal_scroll.go), [`terminal_search.go`](terminal_search.go) |
 | Hyperlinks and file drops | [`terminal_hyperlink.go`](terminal_hyperlink.go), [`terminal_drop.go`](terminal_drop.go) |
+| HTML export formatting and file lifecycle | [`terminal_scroll.go`](terminal_scroll.go), [`internal/desktop/export.go`](internal/desktop/export.go) |
+| Dropped-path MIME representations | [`internal/filedrop/`](internal/filedrop/) |
 | Kitty image snapshots, textures, and PNG decoding | [`internal/graphics/`](internal/graphics/) |
-| Shared appearance and per-terminal palette | [`window_settings.go`](window_settings.go), [`terminal_style.go`](terminal_style.go) |
+| Shared appearance and per-terminal palette | [`settings.go`](settings.go), [`internal/appearance/`](internal/appearance/) |
 | Grid coordinates and content sizing | [`terminal_geometry.go`](terminal_geometry.go) |
 | Platform keyboard state and repeats | [`keys/`](keys/) |
 | Font discovery, loading, and emoji | [`fonts/`](fonts/) |
@@ -108,7 +116,10 @@ converts raw image samples.
 on close, even when its output queue is full. The existing `fonts`, `keys`,
 `shell`, `thecat`, and `ui` packages retain their import paths. These packages
 handle supporting work without depending on the command's window or terminal
-types. `internal/frontend` and `internal/graphics` are private to this example.
+types. All `internal/` packages are private to this example. `appearance` manages
+settings without window or terminal references; `desktop` handles OS services;
+`filedrop` converts paths and MIME representations without native or GUI handles.
+The root keeps protocol decisions and resource ownership visible.
 
 Run the example's regression tests from the repository root:
 
@@ -156,15 +167,15 @@ move between matches and Escape to close.
 
 ## Kitty graphics
 
-Run these commands inside HyperCat Term, Ghostty, or Kitty:
+From `examples/hypercat`, run these commands inside HyperCat Term, Ghostty, or Kitty:
 
 ```sh
-./kittydemo.py
-./kittydemo.py --cells 20x10
-./kittydemo.py --rgba
-./kittydemo.py --png
-./kittydemo.py --z -1
-./kittydemo.py --query
+./scripts/kittydemo.py
+./scripts/kittydemo.py --cells 20x10
+./scripts/kittydemo.py --rgba
+./scripts/kittydemo.py --png
+./scripts/kittydemo.py --z -1
+./scripts/kittydemo.py --query
 ```
 
 The demo sends raw RGB and RGBA by default and a PNG with `--png`. Library
@@ -180,7 +191,8 @@ Mono, and falls back to a bundled bitmap font.
 
 Override font paths with `GOSTTY_FONT` (normal text), `GOSTTY_FONT_CJK` (wide
 characters), or `GOSTTY_FONT_EMOJI` (colour emoji). Windows renders emoji through
-the text font.
+the text font. The bundled bitmap fallback also supports size changes, in whole
+scale steps.
 
 The cat walks on the terminal's cell grid and follows output and scrollback.
 In settings, choose `off`, `on`, or `hyper`. Hyper mode adds faster movement,
@@ -211,6 +223,13 @@ so `Stream.DragLeave` and the operation the program answered with are logged
 rather than acted on. A hyperlink that soft-wraps is underlined a row at a time,
 since the hovered row is the only one scanned; what opens is the whole URI
 either way.
+
+Dropped-path quoting follows the shell executable used to start the tab:
+POSIX quoting by default, double quotes for `cmd.exe`, and literal strings for
+PowerShell. Starting a different shell inside a tab does not change that choice.
+Paths containing line breaks or NUL are rejected; `cmd.exe` also rejects paths
+with quotes, `%`, or `!`, whose meaning depends on expansion state. A rejected
+drop is logged without pasting a partial path list or closing the window.
 
 The example is its own Go module, so its UI, PTY, and clipboard dependencies
 stay out of the bindings' `go.mod`. The repository's `go.work` builds it against

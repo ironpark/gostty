@@ -5,12 +5,12 @@ There is nothing to install: the protocol is an escape sequence, so this writes
 one. It exists so the example terminal's image support can be exercised without
 icat, timg or anything else on the machine.
 
-    ./kittydemo.py                    # a generated 128x128 gradient
-    ./kittydemo.py --cells 20x10      # scaled to a cell box
-    ./kittydemo.py --rgba             # with an alpha channel
-    ./kittydemo.py --z -1             # behind the text
-    ./kittydemo.py --query            # ask whether images work at all
-    ./kittydemo.py --reply            # let the terminal answer, to see it work
+    ./scripts/kittydemo.py                    # a generated 128x128 gradient
+    ./scripts/kittydemo.py --cells 20x10      # scaled to a cell box
+    ./scripts/kittydemo.py --rgba             # with an alpha channel
+    ./scripts/kittydemo.py --z -1             # behind the text
+    ./scripts/kittydemo.py --query            # ask whether images work at all
+    ./scripts/kittydemo.py --reply            # let the terminal answer, to see it work
 
 Run it in the example terminal, or in Ghostty or Kitty to check the sequences
 themselves are right.

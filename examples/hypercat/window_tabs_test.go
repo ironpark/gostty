@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,14 +10,12 @@ import (
 	"time"
 
 	"github.com/ironpark/gostty"
-	"github.com/ironpark/gostty/examples/hypercat/fonts"
 	"github.com/ironpark/gostty/examples/hypercat/internal/shelltest"
 	"github.com/ironpark/gostty/examples/hypercat/keys"
 	"github.com/ironpark/gostty/examples/hypercat/shell"
 	"github.com/ironpark/gostty/examples/hypercat/thecat"
 	"github.com/ironpark/gostty/examples/hypercat/ui"
 	"github.com/ironpark/gostty/input"
-	"io"
 )
 
 func TestTabsKeepIndependentTerminalsAndShareClipboard(t *testing.T) {
@@ -34,7 +33,7 @@ func TestTabsKeepIndependentTerminalsAndShareClipboard(t *testing.T) {
 	if len(second.panels.Search.Query) != 0 {
 		t.Fatal("search state leaked to new tab")
 	}
-	if second.settings.cat != thecat.ModeHyper || (second.cat != nil && second.cat.Mode() != thecat.ModeHyper) {
+	if second.settings.CatMode() != thecat.ModeHyper || (second.cat != nil && second.cat.Mode() != thecat.ModeHyper) {
 		t.Fatal("new tab did not open in the window's cat mode")
 	}
 	if second.settings != first.settings {
@@ -69,8 +68,8 @@ func TestTabsKeepIndependentTerminalsAndShareClipboard(t *testing.T) {
 			t.Fatal("terminal pointer offset does not match tab bar")
 		}
 	}
-	first.clipboard.hold([]byte("shared"))
-	if string(second.clipboard.paste()) != "shared" {
+	first.clipboard.Hold([]byte("shared"))
+	if string(second.clipboard.Paste()) != "shared" {
 		t.Fatal("fallback clipboard is not shared")
 	}
 	win.selectTab(0)
@@ -288,26 +287,21 @@ func TestSettingsChangeAppliesToEveryTab(t *testing.T) {
 	if _, err := win.applyPanel(second, ui.Actions{SettingsDelta: 1}); err != nil {
 		t.Fatal(err)
 	}
-	if first.cat != nil && first.cat.Mode() != win.settings.cat {
-		t.Errorf("the other tab's cat is %v, want %v", first.cat.Mode(), win.settings.cat)
+	if first.cat != nil && first.cat.Mode() != win.settings.CatMode() {
+		t.Errorf("the other tab's cat is %v, want %v", first.cat.Mode(), win.settings.CatMode())
 	}
 
-	// The test window carries stub metrics rather than real faces, so the font
-	// rows need the system fonts the panel would be stepping through.
-	win.settings.families = fonts.Discover()
-	if len(win.settings.families) == 0 {
-		return // no system fonts on this machine
-	}
+	// Size changes also apply when the bitmap fallback is the only font.
 	first.relayout, second.relayout = false, false
-	sizeBefore := win.settings.size
+	sizeBefore := win.settings.Size()
 	second.panels.Settings.Row = ui.SettingSize
 	if _, err := win.applyPanel(second, ui.Actions{SettingsDelta: 1}); err != nil {
 		t.Fatal(err)
 	}
-	if win.settings.size == sizeBefore {
+	if win.settings.Size() == sizeBefore {
 		t.Fatal("the font size did not change")
 	}
-	if first.settings.fonts != second.settings.fonts {
+	if first.settings.Fonts() != second.settings.Fonts() {
 		t.Error("the tabs are drawing with different faces")
 	}
 	if !first.relayout {

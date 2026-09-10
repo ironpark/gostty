@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/ironpark/gostty"
-	"github.com/ironpark/gostty/examples/hypercat/fonts"
+	"github.com/ironpark/gostty/examples/hypercat/internal/desktop"
 	"github.com/ironpark/gostty/examples/hypercat/shell"
 )
 
@@ -35,8 +35,8 @@ func TestStartFailureClosesTerminalResources(t *testing.T) {
 	t.Setenv(shell.Var, filepath.Join(t.TempDir(), "missing-shell"))
 	tab := &terminal{
 		cols: 80, rows: 24,
-		settings:  &appearance{fonts: &fonts.Set{CellWidth: 10, CellHeight: 20}},
-		clipboard: &sharedClipboard{},
+		settings:  testAppearance(),
+		clipboard: &desktop.Clipboard{},
 	}
 	t.Cleanup(tab.close)
 	if err := tab.start(); err == nil {
