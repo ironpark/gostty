@@ -44,8 +44,8 @@ pub const plugin: plugin_api.Plugin = .{
     .TypeOptions = Options,
     // A `String()` needs fields to name, which only a value struct has here;
     // the generator already writes one for every enum.
-    .targets = &.{.value},
-    .min_contract = .{ .major = 2, .minor = 0 },
+    .subjects = &.{.value},
+    .min_contract = .{ .major = 3, .minor = 0 },
     .validate = validateDocument,
     .type_hook = typeHook,
     // Written by the renderings below. The frame adds an import only to a

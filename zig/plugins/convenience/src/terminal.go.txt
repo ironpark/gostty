@@ -137,3 +137,279 @@ func (t *Terminal) NewStreamWithConfig(cfg StreamConfig) (_ *Stream, err error) 
 	}
 	return s, nil
 }
+
+// TerminalOption configures a Terminal.
+type TerminalOption func(*TerminalConfig)
+
+// WithScrollbackMaxBytes sets the maximum scrollback allocation in bytes.
+// Zero disables scrollback immediately.
+func WithScrollbackMaxBytes(bytes uint) TerminalOption {
+	return func(c *TerminalConfig) { c.ScrollbackMaxBytes = &bytes }
+}
+
+// WithScrollbackMaxLines sets the maximum number of physical lines retained in scrollback.
+func WithScrollbackMaxLines(lines uint) TerminalOption {
+	return func(c *TerminalConfig) { c.ScrollbackMaxLines = &lines }
+}
+
+// WithDefaultBackgroundColor sets the default background color (0xRRGGBB).
+func WithDefaultBackgroundColor(rgb uint32) TerminalOption {
+	return func(c *TerminalConfig) { c.BackgroundColor = &rgb }
+}
+
+// WithDefaultForegroundColor sets the default foreground color (0xRRGGBB).
+func WithDefaultForegroundColor(rgb uint32) TerminalOption {
+	return func(c *TerminalConfig) { c.ForegroundColor = &rgb }
+}
+
+// WithDefaultCursorColor sets the default cursor color (0xRRGGBB).
+func WithDefaultCursorColor(rgb uint32) TerminalOption {
+	return func(c *TerminalConfig) { c.CursorColor = &rgb }
+}
+
+// WithDefaultCursorBlink sets the default cursor blink state.
+func WithDefaultCursorBlink(blink bool) TerminalOption {
+	return func(c *TerminalConfig) { c.CursorBlink = &blink }
+}
+
+// WithModeDefault sets both the current value and reset default of a terminal mode.
+func WithModeDefault(mode Mode, enabled bool) TerminalOption {
+	return func(c *TerminalConfig) {
+		c.ModeDefaults = append(c.ModeDefaults, ModeDefault{Mode: mode, Enabled: enabled})
+	}
+}
+
+// NewTerminalWithOptions creates and configures a terminal using functional options.
+func NewTerminalWithOptions(cols, rows uint16, opts ...TerminalOption) (*Terminal, error) {
+	cfg := TerminalConfig{Cols: cols, Rows: rows}
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+	return NewTerminalWithConfig(cfg)
+}
+
+// MustNewTerminalWithOptions creates a terminal using functional options, panicking on failure.
+func MustNewTerminalWithOptions(cols, rows uint16, opts ...TerminalOption) *Terminal {
+	term, err := NewTerminalWithOptions(cols, rows, opts...)
+	if err != nil {
+		panic(err)
+	}
+	return term
+}
+
+// StreamOption configures a Stream.
+type StreamOption func(*StreamConfig)
+
+// WithContinuationMaxBytes sets the maximum number of replay-safe VT continuation bytes retained.
+func WithContinuationMaxBytes(bytes uint) StreamOption {
+	return func(c *StreamConfig) { c.ContinuationMaxBytes = bytes }
+}
+
+// WithUnknownMaxBytes sets the maximum number of bytes retained for an unsupported escape sequence.
+func WithUnknownMaxBytes(bytes uint) StreamOption {
+	return func(c *StreamConfig) { c.UnknownMaxBytes = bytes }
+}
+
+// WithVersionReport configures the application identity returned by XTVERSION.
+func WithVersionReport(name, version string) StreamOption {
+	return func(c *StreamConfig) { c.Version = &VersionReport{Name: name, Version: version} }
+}
+
+// WithEnquiryResponse configures the response to ENQ (0x05).
+func WithEnquiryResponse(response string) StreamOption {
+	return func(c *StreamConfig) { c.EnquiryResponse = response }
+}
+
+// WithColorScheme sets the terminal color scheme (ColorSchemeDark or ColorSchemeLight).
+func WithColorScheme(scheme ColorScheme) StreamOption {
+	return func(c *StreamConfig) { c.ColorScheme = &scheme }
+}
+
+// WithClipboardReadHandler registers a handler for clipboard read requests.
+func WithClipboardReadHandler(handler ClipboardHandler) StreamOption {
+	return func(c *StreamConfig) { c.ClipboardRead = handler }
+}
+
+// WithClipboardWriteHandler registers a handler for clipboard write requests.
+func WithClipboardWriteHandler(handler ClipboardHandler) StreamOption {
+	return func(c *StreamConfig) { c.ClipboardWrite = handler }
+}
+
+// NewStreamWithOptions creates a child stream and applies functional options before returning it.
+func (t *Terminal) NewStreamWithOptions(opts ...StreamOption) (*Stream, error) {
+	var cfg StreamConfig
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+	return t.NewStreamWithConfig(cfg)
+}
+
+// FormatString formats the active screen area according to opts and returns the result as a string.
+func (t *Terminal) FormatString(opts FormatOptions) (string, error) {
+	var buf strings.Builder
+	if err := t.Format(opts, &buf); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+// PlainText returns the active screen area formatted as plain text.
+// If trim is true, trailing whitespace on non-empty lines is omitted.
+func (t *Terminal) PlainText(trim bool) (string, error) {
+	return t.FormatString(FormatOptions{
+		Format:                  FormatterFormatPlain,
+		KeepTrailingWhitespace: !trim,
+	})
+}
+
+// FormatString formats the screen contents (including scrollback) according to opts and returns a string.
+func (s *Screen) FormatString(opts FormatOptions) (string, error) {
+	var buf strings.Builder
+	if err := s.Format(opts, &buf); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+// PlainText returns the screen contents (including scrollback) formatted as plain text.
+// If trim is true, trailing whitespace on non-empty lines is omitted.
+func (s *Screen) PlainText(trim bool) (string, error) {
+	return s.FormatString(FormatOptions{
+		Format:                  FormatterFormatPlain,
+		KeepTrailingWhitespace: !trim,
+	})
+}
+
+// WriteString writes str to the stream, satisfying io.StringWriter.
+// The data is fed into the VT stream without copying.
+func (s *Stream) WriteString(str string) (int, error) {
+	if len(str) == 0 {
+		return 0, nil
+	}
+	p := unsafe.Slice(unsafe.StringData(str), len(str))
+	if err := s.Feed(p); err != nil {
+		return 0, err
+	}
+	return len(str), nil
+}
+
+// Session pairs a Terminal with its primary Stream, managing their joint lifecycle.
+// It implements io.Writer, io.StringWriter, and io.Closer.
+// All writes to Session feed into its primary Stream.
+type Session struct {
+	Terminal *Terminal
+	Stream   *Stream
+}
+
+// SessionConfig configures both Terminal and its primary Stream.
+type SessionConfig struct {
+	Terminal TerminalConfig
+	Stream   StreamConfig
+}
+
+// SessionOption configures a Session.
+type SessionOption func(*SessionConfig)
+
+// WithTerminalConfig sets the underlying TerminalConfig.
+func WithTerminalConfig(cfg TerminalConfig) SessionOption {
+	return func(c *SessionConfig) { c.Terminal = cfg }
+}
+
+// WithStreamConfig sets the underlying StreamConfig.
+func WithStreamConfig(cfg StreamConfig) SessionOption {
+	return func(c *SessionConfig) { c.Stream = cfg }
+}
+
+// WithTerminalOptions applies functional options to the session's terminal.
+func WithTerminalOptions(opts ...TerminalOption) SessionOption {
+	return func(c *SessionConfig) {
+		for _, opt := range opts {
+			opt(&c.Terminal)
+		}
+	}
+}
+
+// WithStreamOptions applies functional options to the session's stream.
+func WithStreamOptions(opts ...StreamOption) SessionOption {
+	return func(c *SessionConfig) {
+		for _, opt := range opts {
+			opt(&c.Stream)
+		}
+	}
+}
+
+// NewSession creates a Terminal and a primary Stream wired to it.
+// If creation fails, any allocated resources are cleanly closed.
+func NewSession(cols, rows uint16, opts ...SessionOption) (*Session, error) {
+	cfg := SessionConfig{
+		Terminal: TerminalConfig{Cols: cols, Rows: rows},
+	}
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+	term, err := NewTerminalWithConfig(cfg.Terminal)
+	if err != nil {
+		return nil, err
+	}
+	stream, err := term.NewStreamWithConfig(cfg.Stream)
+	if err != nil {
+		_ = term.Close()
+		return nil, err
+	}
+	return &Session{
+		Terminal: term,
+		Stream:   stream,
+	}, nil
+}
+
+// MustNewSession creates a Session, panicking on error.
+func MustNewSession(cols, rows uint16, opts ...SessionOption) *Session {
+	sess, err := NewSession(cols, rows, opts...)
+	if err != nil {
+		panic(err)
+	}
+	return sess
+}
+
+// Write feeds bytes into the session's primary stream, satisfying io.Writer.
+func (s *Session) Write(p []byte) (int, error) {
+	return s.Stream.Write(p)
+}
+
+// WriteString feeds str into the session's primary stream, satisfying io.StringWriter.
+func (s *Session) WriteString(str string) (int, error) {
+	return s.Stream.WriteString(str)
+}
+
+// FormatString formats the active screen area and returns the result as a string.
+func (s *Session) FormatString(opts FormatOptions) (string, error) {
+	return s.Terminal.FormatString(opts)
+}
+
+// PlainText returns the active screen area formatted as plain text.
+func (s *Session) PlainText(trim bool) (string, error) {
+	return s.Terminal.PlainText(trim)
+}
+
+// Close closes the stream followed by the terminal, respecting handle hierarchy.
+func (s *Session) Close() error {
+	var errStream, errTerm error
+	if s.Stream != nil {
+		errStream = s.Stream.Close()
+	}
+	if s.Terminal != nil {
+		errTerm = s.Terminal.Close()
+	}
+	if errStream != nil {
+		return errStream
+	}
+	return errTerm
+}
+
+var (
+	_ io.Writer       = (*Session)(nil)
+	_ io.StringWriter = (*Session)(nil)
+	_ io.Closer       = (*Session)(nil)
+	_ io.StringWriter = (*Stream)(nil)
+)
+

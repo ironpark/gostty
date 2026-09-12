@@ -27,12 +27,12 @@ pub const Options = struct {};
 pub const plugin: plugin_api.Plugin = .{
     .name = name,
     .FunctionOptions = Options,
-    .targets = &.{.function},
-    .min_contract = .{ .major = 2, .minor = 0 },
+    .subjects = &.{.function},
+    .min_contract = .{ .major = 3, .minor = 0 },
     .Facts = struct { enabled: bool },
     .analyze = analyze,
     .method_hook = methodHook,
-    .go_files = &.{.{ .enabled = packageHasVariant, .pathAlloc = helperPath, .render = renderHelpers }},
+    .source_files = &.{.{ .enabled = packageHasVariant, .pathAlloc = helperPath, .render = renderHelpers }},
 };
 
 fn methodHook(context: plugin_api.Context, writer: *std.Io.Writer, function: abi.AbiFn) !void {
@@ -42,12 +42,12 @@ fn methodHook(context: plugin_api.Context, writer: *std.Io.Writer, function: abi
 
     try writer.print(
         "\n// Must{0s} calls {0s} and panics with its typed error on failure.\n",
-        .{method.go_name},
+        .{method.public_name},
     );
     if (method.receiver) |receiver|
-        try writer.print("func ({s} *{s}) Must{s}", .{ method.receiver_name.?, receiver, method.go_name })
+        try writer.print("func ({s} *{s}) Must{s}", .{ method.receiver_name.?, receiver, method.public_name })
     else
-        try writer.print("func Must{s}", .{method.go_name});
+        try writer.print("func Must{s}", .{method.public_name});
     // The parameter list and the results are the generator's own, with only
     // the trailing error taken off; what is left is counted rather than
     // parsed, and the count picks the wrapper.
@@ -60,15 +60,15 @@ fn methodHook(context: plugin_api.Context, writer: *std.Io.Writer, function: abi
         else => "return gosttyMustMatch(",
     });
     if (method.receiver_name) |receiver_name|
-        try writer.print("{s}.{s}(", .{ receiver_name, method.go_name })
+        try writer.print("{s}.{s}(", .{ receiver_name, method.public_name })
     else
-        try writer.print("{s}(", .{method.go_name});
+        try writer.print("{s}(", .{method.public_name});
     try context.writeCallArguments(writer, function);
     try writer.writeAll(")) }\n");
 }
 
 fn helperPath(context: plugin_api.Context) ![]u8 {
-    return context.goFilePathAlloc(helper_file);
+    return context.sourceFilePathAlloc(helper_file);
 }
 
 const helper_file = "zigo_must_gen.go";
@@ -123,7 +123,7 @@ fn analyze(context: plugin_api.AnalyzeContext) !void {
             try context.diagnose(.{
                 .severity = .@"error",
                 .code = name ++ "002",
-                .message = try std.fmt.allocPrint(allocator, "`{s}` needs a public checked Go signature for a Must variant", .{entry.go_name}),
+                .message = try std.fmt.allocPrint(allocator, "`{s}` needs a public checked Go signature for a Must variant", .{entry.public_name}),
                 .site = plugin_api.site.functionSite(function.origin.*),
                 .hint = "Select a public method or a free function that can return an error.",
             });
@@ -131,7 +131,7 @@ fn analyze(context: plugin_api.AnalyzeContext) !void {
         const enabled = entry.is_public and entry.has_error;
         try context.facts.put(allocator, plugin, .function(function.origin.*), .{ .enabled = enabled });
         if (!enabled) continue;
-        const must_name = try std.fmt.allocPrint(allocator, "Must{s}", .{entry.go_name});
+        const must_name = try std.fmt.allocPrint(allocator, "Must{s}", .{entry.public_name});
         const origin = function.origin.*;
         const path = try plugin_api.site.functionDeclarationAlloc(allocator, origin);
         if (origin.receiver == null) for (render.program.types) |declaration| {
@@ -145,7 +145,7 @@ fn analyze(context: plugin_api.AnalyzeContext) !void {
             });
         };
         for (functions, info) |other, other_info| {
-            if (!other_info.is_public or !semantic.optionalStringEqual(origin.receiver, other.origin.receiver) or !semantic.optionalStringEqual(origin.package, other.origin.package) or !std.mem.eql(u8, must_name, other_info.go_name)) continue;
+            if (!other_info.is_public or !semantic.optionalStringEqual(origin.receiver, other.origin.receiver) or !semantic.optionalStringEqual(origin.package, other.origin.package) or !std.mem.eql(u8, must_name, other_info.public_name)) continue;
             const other_path = try plugin_api.site.functionDeclarationAlloc(allocator, other.origin.*);
             try context.diagnose(.{
                 .severity = .@"error",

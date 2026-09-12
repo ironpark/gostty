@@ -15,5 +15,5 @@ type BuildInfo struct {
 
 // GetBuildInfo identifies the bundled native build. Values are fixed at generation time.
 func GetBuildInfo() BuildInfo {
-	return BuildInfo{GhosttyRevision: "492300cad104195411d12217dd22f1cd05f31376", ZigoVersion: "0.21.0", Optimize: "ReleaseSafe", SIMD: true, KittyGraphics: true, TmuxControlMode: false}
+	return BuildInfo{GhosttyRevision: "492300cad104195411d12217dd22f1cd05f31376", ZigoVersion: "0.22.0", Optimize: "ReleaseSafe", SIMD: true, KittyGraphics: true, TmuxControlMode: false}
 }

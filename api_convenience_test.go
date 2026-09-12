@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -492,3 +493,104 @@ func TestNilClipboardRegistrationPreservesHandler(t *testing.T) {
 		})
 	}
 }
+
+func TestFunctionalOptionsAndConvenience(t *testing.T) {
+	term := MustNewTerminalWithOptions(
+		80, 24,
+		WithScrollbackMaxLines(500),
+		WithDefaultBackgroundColor(0x123456),
+		WithDefaultCursorBlink(true),
+	)
+	defer term.Close()
+
+	if term.MustCols() != 80 || term.MustRows() != 24 {
+		t.Fatalf("unexpected dimensions: %dx%d", term.MustCols(), term.MustRows())
+	}
+
+	stream, err := term.NewStreamWithOptions(
+		WithContinuationMaxBytes(128),
+		WithVersionReport("testapp", "1.0"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer stream.Close()
+
+	// Test Stream.WriteString (io.StringWriter)
+	n, err := stream.WriteString("Hello, world!\r\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != len("Hello, world!\r\n") {
+		t.Fatalf("WriteString wrote %d bytes, want %d", n, len("Hello, world!\r\n"))
+	}
+
+	// Test FormatString and PlainText on Terminal
+	plain, err := term.PlainText(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(plain, "Hello, world!") {
+		t.Fatalf("PlainText = %q, want containing %q", plain, "Hello, world!")
+	}
+
+	// Test FormatString on Screen
+	screen, err := term.ActiveScreen()
+	if err != nil {
+		t.Fatal(err)
+	}
+	screenPlain, err := screen.PlainText(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(screenPlain, "Hello, world!") {
+		t.Fatalf("screen PlainText = %q, want containing %q", screenPlain, "Hello, world!")
+	}
+}
+
+func TestSession(t *testing.T) {
+	sess, err := NewSession(80, 24,
+		WithTerminalOptions(WithScrollbackMaxLines(100)),
+		WithStreamOptions(WithVersionReport("sessapp", "2.0")),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sess.Close()
+
+	// Test io.Writer via fmt.Fprintf
+	fmt.Fprintf(sess, "fmt write test: %d\r\n", 42)
+	written, err := sess.WriteString("line 1\r\n")
+	if err != nil || written != len("line 1\r\n") {
+		t.Fatalf("WriteString = %d, %v", written, err)
+	}
+
+	// Feed VT data (bold, colored)
+	_, _ = sess.Write([]byte("\033[1;32mBold Green\033[0m\r\n"))
+
+	// Test PlainText
+	text, err := sess.PlainText(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(text, "fmt write test: 42") || !strings.Contains(text, "line 1") || !strings.Contains(text, "Bold Green") {
+		t.Fatalf("Session PlainText = %q", text)
+	}
+
+	// Test FormatString (HTML)
+	html, err := sess.FormatString(FormatOptions{Format: FormatterFormatHtml})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(html, "Bold Green") {
+		t.Fatalf("Session HTML = %q", html)
+	}
+
+	// Test MustNewSession
+	mustSess := MustNewSession(40, 10)
+	defer mustSess.Close()
+	if mustSess.Terminal.MustCols() != 40 || mustSess.Terminal.MustRows() != 10 {
+		t.Fatalf("unexpected MustNewSession dimensions")
+	}
+}
+

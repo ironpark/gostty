@@ -10,8 +10,8 @@ pub const Options = struct { feature: Feature };
 pub const plugin: plugin_api.Plugin = .{
     .name = "CONVENIENCE",
     .TypeOptions = Options,
-    .targets = &.{.handle},
-    .min_contract = .{ .major = 2, .minor = 0 },
+    .subjects = &.{.handle},
+    .min_contract = .{ .major = 3, .minor = 0 },
     .validate = validateDocument,
     .type_hook = typeHook,
 };
@@ -37,6 +37,9 @@ fn requirements(feature: Feature) []const Requirement {
             .{ .owner = "Terminal", .method = "SetDefaultCursorColor" },
             .{ .owner = "Terminal", .method = "SetDefaultCursorBlink" },
             .{ .owner = "Terminal", .method = "SetDefaultMode" },
+            .{ .owner = "Terminal", .method = "Format" },
+            .{ .owner = "Screen", .method = "Format" },
+            .{ .owner = "Stream", .method = "Feed" },
             .{ .owner = "Stream", .method = "SetUnknownMaxBytes" },
             .{ .owner = "Stream", .method = "SetVersionReport" },
             .{ .owner = "Stream", .method = "SetEnquiryResponse" },
@@ -71,7 +74,7 @@ fn validateDocument(context: plugin_api.ValidateContext) !void {
             });
         }
         for (requirements(options.feature)) |required| {
-            if (try hasMethod(allocator, document, required)) continue;
+            if (try hasMethod(allocator, document, context.target, required)) continue;
             try context.diagnose(.{
                 .severity = .@"error",
                 .code = "CONVENIENCE003",
@@ -83,11 +86,11 @@ fn validateDocument(context: plugin_api.ValidateContext) !void {
     }
 }
 
-fn hasMethod(allocator: std.mem.Allocator, document: semantic.Semantic, required: Requirement) !bool {
+fn hasMethod(allocator: std.mem.Allocator, document: semantic.Semantic, target: anytype, required: Requirement) !bool {
     for (document.functions) |function| {
         if (function.package != null) continue;
         if (!std.mem.eql(u8, function.receiver orelse function.goOwner() orelse "", required.owner)) continue;
-        const name = try semantic.publicFunctionNameAlloc(allocator, document, function);
+        const name = try target.publicFunctionNameAlloc(allocator, document, function);
         defer allocator.free(name);
         if (std.mem.eql(u8, name, required.method)) return true;
     }

@@ -27,13 +27,13 @@ const metadata_id: plugin_api.DeclarationId = .{ .kind = .document, .name = "bui
 
 pub const plugin: plugin_api.Plugin = .{
     .name = "BUILD_INFO",
-    .min_contract = .{ .major = 2, .minor = 0 },
+    .min_contract = .{ .major = 3, .minor = 0 },
     .Config = Config,
     .TypeOptions = Options,
     .Facts = Metadata,
-    .targets = &.{.handle},
+    .subjects = &.{.handle},
     .validate = validate,
-    .go_files = &.{.{ .scope = .document, .pathAlloc = filePath, .render = renderFile }},
+    .source_files = &.{.{ .scope = .document, .pathAlloc = filePath, .render = renderFile }},
     .artifacts = &.{.{ .pathAlloc = artifactPath, .render = renderArtifact }},
 };
 
@@ -72,7 +72,7 @@ fn validate(context: plugin_api.ValidateContext) !void {
 }
 
 fn filePath(context: plugin_api.Context) ![]u8 {
-    return context.goFilePathAlloc("zigo_build_info_gen.go");
+    return context.sourceFilePathAlloc("zigo_build_info_gen.go");
 }
 
 fn renderFile(context: plugin_api.Context, writer: *std.Io.Writer) !void {

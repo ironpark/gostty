@@ -1,6 +1,6 @@
 {
   "ghostty_revision": "492300cad104195411d12217dd22f1cd05f31376",
-  "zigo_version": "0.21.0",
+  "zigo_version": "0.22.0",
   "optimize": "ReleaseSafe",
   "simd": true,
   "kitty_graphics": true,

@@ -37,12 +37,12 @@ pub const Options = struct {
 
 pub const plugin: plugin_api.Plugin = .{
     .name = name,
-    .min_contract = .{ .major = 2, .minor = 0 },
+    .min_contract = .{ .major = 3, .minor = 0 },
     .TypeOptions = Options,
     // The rule is about how a group of declarations is spelled, which is not
     // a property of the kind of type they hang off: `ColorName` is an enum
     // whose one wrapper is `colorNameDefault`.
-    .targets = &.{ .handle, .enumeration, .value },
+    .subjects = &.{ .handle, .enumeration, .value },
     .transform = transform,
 };
 
@@ -97,7 +97,7 @@ fn transform(context: plugin_api.TransformContext) !semantic.Semantic {
         const prefix = try prefixOf(allocator, declaration, options);
         var trimmed_any = false;
         for (functions) |*function| {
-            if (function.go_name != null) continue;
+            if (function.goName() != null) continue;
             if (!std.mem.eql(u8, ownerOf(function.*) orelse continue, declaration.name)) continue;
             if (isLifecycle(document, function.*)) continue;
             const trimmed = try stripAlloc(allocator, function.name, prefix) orelse continue;

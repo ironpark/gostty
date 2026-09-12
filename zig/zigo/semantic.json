@@ -1808,7 +1808,9 @@
     {
       "child_of_receiver": true,
       "doc": "Create a VT stream that applies escape sequences to `terminal`.\n\n`continuation_max_bytes` caps the unfinished-sequence suffix the stream\ntracks across feeds; zero disables tracking.",
-      "go_owner": "Stream",
+      "go": {
+        "owner": "Stream"
+      },
       "name": "newStream",
       "ownership": "caller",
       "params": [
@@ -1869,7 +1871,9 @@
       "boxed": "create",
       "child_of_receiver": true,
       "doc": "Start searching `t` for `needle`, which is copied.\n\nThe search is fed once here, so it has seen the terminal before it is\nreturned and `tick` can make progress immediately. Returned by value, like\n`Terminal.init`: zigo boxes the result and frees the box in `close`.",
-      "go_owner": "Search",
+      "go": {
+        "owner": "Search"
+      },
       "name": "newSearch",
       "ownership": "caller",
       "params": [
@@ -1934,7 +1938,9 @@
       "boxed": "create",
       "child_of_receiver": true,
       "doc": "Start a selection gesture over `t`, with ghostty's standard click behaviors:\nsingle click clears, double selects a word, triple selects a line.\n\nReturned by value, like `Terminal.init`: zigo boxes it and frees the box in\n`Close`.",
-      "go_owner": "Gesture",
+      "go": {
+        "owner": "Gesture"
+      },
       "name": "newGesture",
       "ownership": "caller",
       "params": [
@@ -1976,7 +1982,9 @@
       "boxed": "create",
       "child_of_receiver": true,
       "doc": "Start tracking the cell at `x`, `y` in the coordinate system `tag` names,\non the active screen. `error.OutOfBounds` if there is no such cell.\n\nReturned by value, like `Terminal.init`: zigo boxes the result and frees\nthe box in `close`.",
-      "go_owner": "GridRef",
+      "go": {
+        "owner": "GridRef"
+      },
       "name": "newGridRef",
       "ownership": "caller",
       "params": [
@@ -7529,7 +7537,9 @@
     },
     {
       "doc": "Feed bytes to the parser, applying them to the terminal.",
-      "implements": "writer",
+      "go": {
+        "implements": "writer"
+      },
       "name": "feed",
       "ownership": "borrowed",
       "params": [
@@ -7567,8 +7577,10 @@
     },
     {
       "doc": "Take the next event a feed produced, absent when the queue is empty.\n\nThe payload accessors below describe the event this returned, until the\nnext call.",
-      "iterator": {
-        "name": "Events"
+      "go": {
+        "iterator": {
+          "name": "Events"
+        }
       },
       "name": "nextEvent",
       "ownership": "borrowed",
@@ -7590,8 +7602,10 @@
     },
     {
       "doc": "Consume one queued event and materialize its complete payload in one\nbinding call. Shares the queue and current payload with NextEvent.",
-      "iterator": {
-        "name": "EventValues"
+      "go": {
+        "iterator": {
+          "name": "EventValues"
+        }
       },
       "name": "nextEventValue",
       "ownership": "caller",
@@ -9068,7 +9082,9 @@
     },
     {
       "doc": "Create a standalone OSC parser.\n\nThe parser is given an allocator, so the sequences that are allowed to grow\npast ghostty's 2 KiB inline buffer -- OSC 52 clipboard writes, mainly -- are\nparsed rather than dropped.",
-      "go_owner": "OSCParser",
+      "go": {
+        "owner": "OSCParser"
+      },
       "name": "newOSCParser",
       "ownership": "caller",
       "params": [
@@ -9210,7 +9226,9 @@
     {
       "boxed": "create",
       "doc": "Decode a snapshot from `reader`. `max_continuation_bytes` bounds the\nunfinished-sequence suffix the snapshot may carry.\n\nWrapped because ghostty's `decode` takes an options struct; returned by\nvalue so zigo boxes it and `Snapshot.deinit` frees it.",
-      "go_owner": "Snapshot",
+      "go": {
+        "owner": "Snapshot"
+      },
       "name": "DecodeSnapshot",
       "ownership": "caller",
       "params": [
@@ -9439,7 +9457,9 @@
     {
       "boxed": "create",
       "doc": "Start decoding `data`, which is copied.\n\nNothing is read until `snapshotDecoderReady`.",
-      "go_owner": "SnapshotDecoder",
+      "go": {
+        "owner": "SnapshotDecoder"
+      },
       "name": "newSnapshotDecoder",
       "ownership": "caller",
       "params": [
@@ -9800,7 +9820,9 @@
     {
       "boxed": "create",
       "doc": "An empty render state, filled by the first `RenderState.update`. Returned\nby value so zigo boxes it and `RenderState.deinit` frees it; ghostty spells\nthe empty state as a constant, which has no function to bind.",
-      "go_owner": "RenderState",
+      "go": {
+        "owner": "RenderState"
+      },
       "name": "newRenderState",
       "ownership": "caller",
       "params": [],
@@ -10450,7 +10472,9 @@
       "symbol": "zg_render_state_render_hyperlink_at"
     },
     {
-      "go_owner": "KittyImages",
+      "go": {
+        "owner": "KittyImages"
+      },
       "name": "newKittyImages",
       "ownership": "caller",
       "params": [
@@ -10950,7 +10974,7 @@
     }
   ],
   "io": "target.io",
-  "ir_version": 1,
+  "ir_version": 2,
   "package": "gostty",
   "packages": [
     {
@@ -12768,7 +12792,7 @@
         "signed": false
       },
       "text": true,
-      "zig_path": "terminal.modes.Mode__enum_40481"
+      "zig_path": "terminal.modes.Mode__enum_40502"
     },
     {
       "exhaustive": true,
