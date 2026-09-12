@@ -7,6 +7,7 @@ import (
 	"github.com/ironpark/gostty/examples/hypercat/internal/desktop"
 	"github.com/ironpark/gostty/examples/hypercat/internal/frontend"
 	"github.com/ironpark/gostty/examples/hypercat/keys"
+	"github.com/ironpark/gostty/examples/hypercat/thecat"
 	"github.com/ironpark/gostty/examples/hypercat/ui"
 )
 
@@ -21,6 +22,7 @@ type window struct {
 	windowTitle        string
 	settings           *appearance.State
 	clipboard          desktop.Clipboard
+	cat                *thecat.Companion // one companion for the entire window
 	// The tab and the title the window is currently named after. Kept so that
 	// the title is only formatted when a program actually renames itself:
 	// Update runs sixty times a second, and `windowTitle.String` allocates.
@@ -41,6 +43,7 @@ func (win *window) close() {
 	}
 	win.tabs = nil
 	win.active = 0
+	win.cat = nil
 }
 
 // Update runs one frame: every tab is serviced, the window takes the input that
@@ -64,8 +67,9 @@ func (win *window) Update(in frontend.Input) error {
 	if err := tab.refreshSnapshot(); err != nil {
 		return err
 	}
+	win.syncCatWorld()
 	if !tabInputConsumed {
-		tab.updateCat()
+		win.updateCat()
 	}
 	return nil
 }
@@ -105,7 +109,7 @@ func (win *window) routeInput(m keys.Mods, focused bool) (bool, error) {
 			return false, err
 		}
 	}
-	return false, tab.updateInput(m, panelTook)
+	return false, tab.updateInput(m, panelTook, focused && win.pokeCat())
 }
 
 // applyPanel gives a panel result its effect, in two halves: the tab does what
@@ -164,8 +168,10 @@ func (win *window) Present() frontend.Presentation {
 	if tab.panels.Mode == ui.Settings {
 		settings = win.settingsValues()
 	}
+	frame := tab.presentation()
+	frame.Cat = win.cat
 	return frontend.Presentation{
-		Renderer: &tab.renderer, Frame: tab.presentation(),
+		Renderer: &tab.renderer, Frame: frame,
 		Panels: &tab.panels, Settings: settings,
 		TabBar: &win.tabBar, Active: win.active, Count: len(win.tabs), TabTitle: win.tabTitle,
 		Title: win.windowTitle, LinkPointer: tab.reports.focused && tab.frame.link.valid(),

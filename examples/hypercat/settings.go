@@ -45,13 +45,10 @@ func (win *window) setTheme(index int) error {
 	return nil
 }
 
-// setCatMode keeps the setting and every tab's companion in step. The setting
-// is what a new tab starts its cat in; the companions are what draw.
+// setCatMode updates the window's single companion and shared setting.
 func (win *window) setCatMode(mode thecat.Mode) {
 	win.settings.SetCatMode(mode)
-	for _, tab := range win.tabs {
-		tab.cat.SetMode(mode)
-	}
+	win.cat.SetMode(mode)
 }
 
 // applyFont reloads resources once, then invalidates every tab's geometry.
@@ -68,12 +65,10 @@ func (win *window) invalidateTabs() {
 }
 
 // settingsValues formats the panel labels. It lives here rather than in
-// appearance because the cat row's truth is the current tab's, and this is the
-// only layer holding both the window's settings and that tab.
+// appearance because the window knows whether its companion loaded.
 func (win *window) settingsValues() ui.SettingsValues {
-	tab := win.current()
 	cat := "unavailable"
-	if tab != nil && tab.cat != nil {
+	if win.cat != nil {
 		cat = win.settings.CatMode().String()
 	}
 	return ui.SettingsValues{

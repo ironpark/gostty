@@ -10,11 +10,11 @@ import (
 
 // updateInput routes input only; the window refreshes the viewport afterwards.
 // An open panel consumes the keyboard while selection remains available.
-func (tab *terminal) updateInput(m keys.Mods, panelTook bool) error {
+func (tab *terminal) updateInput(m keys.Mods, panelTook, pointerConsumed bool) error {
 	if !tab.reports.focused {
 		return nil
 	}
-	if err := tab.handlePointer(m); err != nil {
+	if err := tab.handlePointer(m, pointerConsumed); err != nil {
 		return err
 	}
 	if panelTook {

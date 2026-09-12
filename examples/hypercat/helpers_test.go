@@ -31,6 +31,7 @@ func newTabTestApp(t *testing.T) *window {
 		t.Fatal(err)
 	}
 	win.tabs = []*terminal{tab}
+	win.startCat()
 	t.Cleanup(win.close)
 	return win
 }

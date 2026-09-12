@@ -12,7 +12,6 @@ import (
 	"github.com/ironpark/gostty/examples/hypercat/internal/frontend"
 	"github.com/ironpark/gostty/examples/hypercat/internal/graphics"
 	"github.com/ironpark/gostty/examples/hypercat/shell"
-	"github.com/ironpark/gostty/examples/hypercat/thecat"
 	"github.com/ironpark/gostty/examples/hypercat/ui"
 )
 
@@ -41,7 +40,6 @@ type terminal struct {
 	panels  ui.Panels
 	reports reportState
 	title   windowTitle
-	cat     *thecat.Companion
 
 	// Shared window resources.
 	settings  *appearance.State
@@ -94,7 +92,6 @@ func (tab *terminal) start() (err error) {
 	if err != nil {
 		return err
 	}
-	tab.startCat()
 	return nil
 }
 
@@ -251,5 +248,4 @@ func (tab *terminal) activate() {
 func (tab *terminal) deactivate() {
 	tab.endGesture()
 	tab.reports.mouseGrabbed = false
-	tab.cat.ClearHover()
 }

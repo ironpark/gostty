@@ -68,3 +68,36 @@ func TestFrontendInputPreservesRouting(t *testing.T) {
 		t.Fatal("closing a tab let typing reach a terminal")
 	}
 }
+
+func TestSharedCatClickOpensOnlyActiveTabSettings(t *testing.T) {
+	win := newTabTestApp(t)
+	if win.cat == nil {
+		t.Fatal("window companion did not load")
+	}
+	if err := win.addTab(); err != nil {
+		t.Fatal(err)
+	}
+	for index := range win.tabs {
+		win.selectTab(index)
+		for _, tab := range win.tabs {
+			tab.panels.Mode = ui.None
+		}
+		win.cat.Place(120, 180)
+		x, y, w, h := win.cat.Box()
+		in := frontend.Input{
+			Focused: true, X: int(x + w/2), Y: int(y+h/2) + win.current().offsetY,
+			Left: frontend.Button{Pressed: true, Down: true}, DeltaSeconds: 1.0 / 60,
+		}
+		if err := win.Update(in); err != nil {
+			t.Fatal(err)
+		}
+		for i, tab := range win.tabs {
+			if (tab.panels.Mode == ui.Settings) != (i == index) {
+				t.Fatalf("click on tab %d changed panel in tab %d", index, i)
+			}
+			if tab.sel.dragging {
+				t.Fatal("cat click also started selection")
+			}
+		}
+	}
+}

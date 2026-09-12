@@ -33,7 +33,7 @@ func TestTabsKeepIndependentTerminalsAndShareClipboard(t *testing.T) {
 	if len(second.panels.Search.Query) != 0 {
 		t.Fatal("search state leaked to new tab")
 	}
-	if second.settings.CatMode() != thecat.ModeHyper || (second.cat != nil && second.cat.Mode() != thecat.ModeHyper) {
+	if second.settings.CatMode() != thecat.ModeHyper || (win.cat != nil && win.cat.Mode() != thecat.ModeHyper) {
 		t.Fatal("new tab did not open in the window's cat mode")
 	}
 	if second.settings != first.settings {
@@ -287,8 +287,8 @@ func TestSettingsChangeAppliesToEveryTab(t *testing.T) {
 	if _, err := win.applyPanel(second, ui.Actions{SettingsDelta: 1}); err != nil {
 		t.Fatal(err)
 	}
-	if first.cat != nil && first.cat.Mode() != win.settings.CatMode() {
-		t.Errorf("the other tab's cat is %v, want %v", first.cat.Mode(), win.settings.CatMode())
+	if win.cat != nil && win.cat.Mode() != win.settings.CatMode() {
+		t.Errorf("the window's cat is %v, want %v", win.cat.Mode(), win.settings.CatMode())
 	}
 
 	// Size changes also apply when the bitmap fallback is the only font.
@@ -352,5 +352,66 @@ func TestCloseTabPreservesOrActivatesCurrentTab(t *testing.T) {
 				t.Fatal("closing a background tab reset the active tab's interaction state")
 			}
 		})
+	}
+}
+
+func TestWindowCatSurvivesTabChangesAndFollowsActiveGrid(t *testing.T) {
+	win := newTabTestApp(t)
+	first := win.current()
+	feedTab(t, first, "x")
+	cat := win.cat
+	if cat == nil {
+		t.Fatal("window companion did not load")
+	}
+	cat.Place(120, 180)
+	cat.Poke()
+	x, y := cat.Feet()
+	state, stamina := cat.State(), cat.Stamina()
+	check := func() {
+		t.Helper()
+		if win.cat != cat || win.Present().Frame.Cat != cat {
+			t.Fatal("tab change replaced the window companion")
+		}
+		if gx, gy := cat.Feet(); gx != x || gy != y || cat.State() != state || cat.Stamina() != stamina {
+			t.Fatal("tab change reset the companion's position, animation, or stamina")
+		}
+	}
+	if err := win.addTab(); err != nil {
+		t.Fatal(err)
+	}
+	second := win.current()
+	feedTab(t, second, "   y")
+	check()
+	if cat.HasInk(0, 0) || !cat.HasInk(3, 0) {
+		t.Fatal("cat still follows first tab's cells")
+	}
+	win.selectTab(0)
+	check()
+	if !cat.HasInk(0, 0) || cat.HasInk(3, 0) {
+		t.Fatal("cat did not follow tab switch")
+	}
+	win.selectTab(1)
+	if err := win.addTab(); err != nil {
+		t.Fatal(err)
+	}
+	check()
+	win.closeTab(2) // close the active tab, returning to second
+	check()
+	if win.current() != second || !cat.HasInk(3, 0) {
+		t.Fatal("closing active tab left the wrong cat world")
+	}
+	win.closeTab(0) // closing a background tab must not reset the companion
+	check()
+	win.setCatMode(thecat.ModeOff)
+	if cat.Enabled() {
+		t.Fatal("window cat ignored off setting")
+	}
+	win.setCatMode(thecat.ModeHyper)
+	if win.cat != cat || cat.Mode() != thecat.ModeHyper {
+		t.Fatal("mode change replaced the companion")
+	}
+	win.closeTab(0)
+	if win.cat != cat || cat.HasInk != nil {
+		t.Fatal("last tab close replaced cat or retained the closed grid")
 	}
 }

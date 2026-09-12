@@ -52,6 +52,8 @@ func (win *window) selectTab(index int) {
 	}
 	win.active = index
 	win.current().activate()
+	win.cat.ClearHover()
+	win.syncCatWorld()
 }
 
 // cycleTab selects the tab `step` away from the active one, wrapping.
@@ -70,6 +72,8 @@ func (win *window) closeTab(index int) {
 	win.tabs = slices.Delete(win.tabs, index, index+1)
 	if len(win.tabs) == 0 {
 		win.active = 0
+		win.cat.ClearHover()
+		win.syncCatWorld()
 		return
 	}
 	if index < win.active {
@@ -78,6 +82,8 @@ func (win *window) closeTab(index int) {
 	win.active = min(win.active, len(win.tabs)-1)
 	if wasActive {
 		win.current().activate()
+		win.cat.ClearHover()
+		win.syncCatWorld()
 	}
 }
 

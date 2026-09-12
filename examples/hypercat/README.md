@@ -105,7 +105,7 @@ the feed → encode → snapshot flow:
 | Platform keyboard state and repeats | [`keys/`](keys/) |
 | Font discovery, loading, and emoji | [`fonts/`](fonts/) |
 | PTY and shell process lifecycle | [`shell/`](shell/) |
-| Animated cat and its connection to the cell grid | [`terminal_cat.go`](terminal_cat.go), [`thecat/`](thecat/) |
+| Animated cat and its connection to the cell grid | [`window_cat.go`](window_cat.go), [`thecat/`](thecat/) |
 
 `internal/graphics` depends on gostty and Ebitengine, with no dependency on the
 command. Its `Cache` borrows a terminal: the tab creates it at startup and calls
@@ -154,8 +154,10 @@ go test ./examples/hypercat/...
 | Ctrl+Shift+, / Cmd+, | Open settings. |
 | Click the cat | Interact with the cat and open settings. |
 
-Each tab has its own shell, scrollback, selection, search, and cat. Background
-tabs continue processing output and terminal replies. The font, theme, and cat
+Each tab has its own shell, scrollback, selection, and search. One cat belongs
+to the window and keeps its position and animation across tab switches,
+following the active tab's grid. Background tabs continue processing output
+and terminal replies. The font, theme, and cat
 settings belong to the window, so a change made from any tab's settings panel
 applies to every tab, including ones opened later. The clipboard is shared
 across tabs. When a shell exits, its tab closes;
@@ -195,7 +197,8 @@ characters), or `GOSTTY_FONT_EMOJI` (colour emoji). Windows renders emoji throug
 the text font. The bundled bitmap fallback also supports size changes, in whole
 scale steps.
 
-The cat walks on the terminal's cell grid and follows output and scrollback.
+The window's single cat walks on the active terminal's cell grid and follows
+its output and scrollback. Opening or closing tabs does not create a new cat.
 In settings, choose `off`, `on`, or `hyper`. Hyper mode adds faster movement,
 infinite stamina, and visual effects.
 

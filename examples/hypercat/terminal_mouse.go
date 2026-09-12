@@ -7,8 +7,8 @@ import (
 	"github.com/ironpark/gostty/input"
 )
 
-// handlePointer gives the tab bar and cat first refusal on pointer input.
-func (tab *terminal) handlePointer(m keys.Mods) error {
+// handlePointer handles terminal pointer input after window-owned interactions.
+func (tab *terminal) handlePointer(m keys.Mods, consumed bool) error {
 	_, y := tab.cursorPosition()
 	if y < 0 {
 		if !tab.input.Left.Down {
@@ -16,7 +16,7 @@ func (tab *terminal) handlePointer(m keys.Mods) error {
 		}
 		return nil
 	}
-	if !tab.pokeCat() {
+	if !consumed {
 		if err := tab.handleMouse(m); err != nil {
 			return err
 		}

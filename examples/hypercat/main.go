@@ -48,6 +48,7 @@ func run() error {
 		return err
 	}
 
+	win.startCat()
 	win.clipboard.Init()
 
 	return frontend.Run(win, frontend.Config{

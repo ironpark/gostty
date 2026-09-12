@@ -312,7 +312,7 @@ func (tab *terminal) presentation() frontend.Frame {
 		Link:      frontend.Link{URI: f.link.uri, Row: f.link.row, Start: f.link.start, End: f.link.end},
 		Scrollbar: frontend.Scrollbar{Bar: f.scrollbar.bar, Visible: f.scrollbar.visible},
 		Fonts:     tab.fonts(), Emoji: tab.emoji(), Theme: tab.currentTheme(), Scale: tab.settings.Scale(),
-		Images: tab.images, Cat: tab.cat,
+		Images: tab.images,
 	}
 }
 
