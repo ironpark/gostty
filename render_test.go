@@ -482,7 +482,7 @@ func TestRenderCursorColor(t *testing.T) {
 		t.Fatalf("Update: %v", err)
 	}
 	rgb, ok, err := state.CursorColor()
-	if err != nil || !ok || rgb != 0xff0000 {
+	if err != nil || !ok || rgb.Uint32() != 0xff0000 {
 		t.Errorf("CursorColor() = %#06x, %v, %v; want 0xff0000, true, nil", rgb, ok, err)
 	}
 }

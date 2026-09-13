@@ -163,7 +163,7 @@ func TestThemePalette(t *testing.T) {
 			t.Errorf("theme %q left ANSI red as %06x", ui.ThemeAt(i).Name, plain)
 		}
 		want := ui.ThemeAt(i).Palette[1]
-		if got := tab.frame.cells[0].Fg; got != ui.Packed(want) {
+		if got := tab.frame.cells[0].Fg; got.Uint32() != ui.Packed(want) {
 			t.Errorf("ANSI red under %q = %06x, want the theme's %v", ui.ThemeAt(i).Name, got, want)
 		}
 		return

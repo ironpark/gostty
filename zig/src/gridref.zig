@@ -22,6 +22,7 @@ const render = @import("render.zig");
 const Allocator = std.mem.Allocator;
 const Terminal = common.Terminal;
 const ScreenKey = common.ScreenKey;
+const RGB = common.RGB;
 const packColor = common.packColor;
 const RenderCell = render.RenderCell;
 
@@ -226,7 +227,7 @@ fn cellFromPin(t: *const Terminal, pin: vt.Pin) RenderCell {
     return out;
 }
 
-fn resolveColor(t: *const Terminal, c: vt.Style.Color) ?u32 {
+fn resolveColor(t: *const Terminal, c: vt.Style.Color) ?RGB {
     return switch (c) {
         .none => null,
         .palette => |i| packColor(t.colors.palette.current[i]),

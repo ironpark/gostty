@@ -190,11 +190,11 @@ func (te *Terminal) zigoTakeLocked() (zigoTerminalCleanupState, bool) {
 // zero or false from an omitted setting. Configuration is copied during creation.
 type TerminalConfig struct {
 	Cols, Rows         uint16
-	ScrollbackMaxBytes *uint   // Zero disables scrollback immediately.
-	ScrollbackMaxLines *uint   // Pruned at native page boundaries, not an exact row cap.
-	BackgroundColor    *uint32 // Default 0xRRGGBB.
-	ForegroundColor    *uint32 // Default 0xRRGGBB.
-	CursorColor        *uint32 // Default 0xRRGGBB.
+	ScrollbackMaxBytes *uint // Zero disables scrollback immediately.
+	ScrollbackMaxLines *uint // Pruned at native page boundaries, not an exact row cap.
+	BackgroundColor    *RGB
+	ForegroundColor    *RGB
+	CursorColor        *RGB
 	CursorBlink        *bool
 	ModeDefaults       []ModeDefault
 }
@@ -509,6 +509,45 @@ func NewConfiguredSession(cols, rows uint16, opts ...SessionOption) (*Session, e
 	return NewSession(term).AddStream(stream), nil
 }
 
+// New is the short way in, and what most programs want: a terminal with a
+// stream already wired to it, under one handle with one Close.
+//
+//	t, err := gostty.New(80, 24)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	defer t.Close()
+//	fmt.Fprintf(t, "Hello, \033[1;32mworld\033[0m!\r\n")
+//	out, _ := t.PlainText(true)
+//
+// A Session is an io.Writer, so VT data goes in through fmt.Fprintf, io.Copy,
+// or anything else that writes. Reach the pieces with Terminal() and Stream()
+// when a call is not on the session itself.
+//
+// Terminal is not an io.Writer, and deliberately: a stream carries parser
+// state across writes and is a child handle with its own lifetime, so a
+// terminal that made one silently would be a terminal whose Close could fail
+// for a reason the caller never asked for. The session is where that pair is
+// owned together.
+//
+// NewTerminal is still there for a caller who wants the terminal alone --
+// replaying a snapshot, or driving it only through the printing methods.
+func New(cols, rows uint16, opts ...SessionOption) (*Session, error) {
+	return NewConfiguredSession(cols, rows, opts...)
+}
+
+// MustNew creates a session with New and panics on failure. For tests and for
+// program startup, where a failure has nowhere to go.
+func MustNew(cols, rows uint16, opts ...SessionOption) *Session {
+	return MustNewConfiguredSession(cols, rows, opts...)
+}
+
+// Formatter returns a reusable formatter for the session terminal's active
+// screen area.
+func (s *Session) Formatter(opts FormatOptions) *Formatter {
+	return s.Terminal().Formatter(opts)
+}
+
 // MustNewConfiguredSession creates a configured session, panicking on failure.
 func MustNewConfiguredSession(cols, rows uint16, opts ...SessionOption) *Session {
 	sess, err := NewConfiguredSession(cols, rows, opts...)
@@ -563,6 +602,209 @@ var (
 	_ io.Closer       = (*Session)(nil)
 	_ io.StringWriter = (*Stream)(nil)
 )
+
+// RGB is the color type every binding call hands over and takes back. The
+// binding used to spell a color as a `uint32` holding `0xRRGGBB`, which is a
+// layout a caller had to be told about; three named bytes say it instead.
+//
+// RGB satisfies image/color.Color through RGBA, so it can be handed to the
+// standard drawing packages without a conversion written at the call site.
+
+// NewRGB builds a color from its three channels.
+func NewRGB(r, g, b uint8) RGB {
+	return RGB{R: r, G: g, B: b}
+}
+
+// RGBFromUint32 reads a color from the packed 0xRRGGBB form, which is how VT
+// sequences and most configuration formats carry one. Bits above the low 24
+// are ignored.
+func RGBFromUint32(v uint32) RGB {
+	return RGB{R: uint8(v >> 16), G: uint8(v >> 8), B: uint8(v)}
+}
+
+// Uint32 returns the color packed as 0xRRGGBB.
+func (c RGB) Uint32() uint32 {
+	return uint32(c.R)<<16 | uint32(c.G)<<8 | uint32(c.B)
+}
+
+// RGBA implements image/color.Color. The terminal has no alpha channel, so the
+// color is always fully opaque, and each channel is scaled to 16 bits the way
+// the standard library's own 8-bit colors are.
+func (c RGB) RGBA() (r, g, b, a uint32) {
+	r = uint32(c.R)
+	r |= r << 8
+	g = uint32(c.G)
+	g |= g << 8
+	b = uint32(c.B)
+	b |= b << 8
+	return r, g, b, 0xffff
+}
+
+const zigoHexDigits = "0123456789abcdef"
+
+// String returns the color in CSS hex form, "#rrggbb".
+func (c RGB) String() string {
+	out := [7]byte{'#'}
+	for i, v := range [3]uint8{c.R, c.G, c.B} {
+		out[1+i*2] = zigoHexDigits[v>>4]
+		out[2+i*2] = zigoHexDigits[v&0xf]
+	}
+	return string(out[:])
+}
+
+// ParseRGB reads "#rrggbb" or "rrggbb", in either case. The three-digit CSS
+// shorthand is not accepted: it is ambiguous next to a truncated six-digit
+// value, and nothing the terminal emits uses it.
+func ParseRGB(text string) (RGB, error) {
+	fail := func() (RGB, error) {
+		return RGB{}, &RangeError{Operation: "ParseRGB", Parameter: "text", Type: `a "#rrggbb" color`}
+	}
+	body := strings.TrimPrefix(text, "#")
+	if len(body) != 6 {
+		return fail()
+	}
+	var out [3]uint8
+	for i := range out {
+		hi, okHi := zigoHexNibble(body[i*2])
+		lo, okLo := zigoHexNibble(body[i*2+1])
+		if !okHi || !okLo {
+			return fail()
+		}
+		out[i] = hi<<4 | lo
+	}
+	return RGB{R: out[0], G: out[1], B: out[2]}, nil
+}
+
+func zigoHexNibble(b byte) (uint8, bool) {
+	switch {
+	case b >= '0' && b <= '9':
+		return b - '0', true
+	case b >= 'a' && b <= 'f':
+		return b - 'a' + 10, true
+	case b >= 'A' && b <= 'F':
+		return b - 'A' + 10, true
+	}
+	return 0, false
+}
+
+// Formatter formats the same target repeatedly under one set of options,
+// reusing its buffer across calls. Format and Screen.Format allocate a result
+// per call, which is right for a one-off dump and wasteful for a renderer
+// doing it every frame; a Formatter is the second case.
+//
+// A Formatter owns no native resource. It holds the handle it was built from
+// and nothing else, so there is no Close: it is done with when it goes out of
+// scope, and a call after its target is closed reports ErrInvalidHandle the
+// same way a direct call would.
+//
+// A Formatter is not safe for concurrent use, and the slice Append and Bytes
+// return is only valid until the next call on the same Formatter.
+type Formatter struct {
+	// Exactly one of these is set. A terminal formats its active screen area
+	// as it is now, which is what a renderer wants; a screen formats its whole
+	// contents including scrollback, and stays the screen it was built from
+	// even after the program switches away from it.
+	terminal *Terminal
+	screen   *Screen
+	opts     FormatOptions
+	buf      []byte
+}
+
+// Formatter returns a reusable formatter for the terminal's active screen
+// area. It follows the active screen, so a program switching to the alternate
+// screen changes what the same Formatter produces.
+func (t *Terminal) Formatter(opts FormatOptions) *Formatter {
+	return &Formatter{terminal: t, opts: opts}
+}
+
+// Formatter returns a reusable formatter for the screen's contents, scrollback
+// included. It stays bound to this screen whether or not it is the active one.
+func (s *Screen) Formatter(opts FormatOptions) *Formatter {
+	return &Formatter{screen: s, opts: opts}
+}
+
+// Options returns the options the formatter writes with.
+func (f *Formatter) Options() FormatOptions { return f.opts }
+
+// SetOptions replaces the options for subsequent calls.
+func (f *Formatter) SetOptions(opts FormatOptions) { f.opts = opts }
+
+// zigoInto writes one formatting pass into w.
+func (f *Formatter) zigoInto(w io.Writer) error {
+	if f.screen != nil {
+		return f.screen.Format(f.opts, w)
+	}
+	return f.terminal.Format(f.opts, w)
+}
+
+// zigoFill refills the internal buffer with one formatting pass.
+func (f *Formatter) zigoFill() error {
+	dst := zigoAppendWriter{buf: f.buf[:0]}
+	err := f.zigoInto(&dst)
+	f.buf = dst.buf
+	return err
+}
+
+// Bytes formats into the formatter's own buffer and returns it. The slice is
+// only valid until the next call on this Formatter; copy it, or use Append,
+// to keep it.
+func (f *Formatter) Bytes() ([]byte, error) {
+	if err := f.zigoFill(); err != nil {
+		return nil, err
+	}
+	return f.buf, nil
+}
+
+// Append formats and appends the result to dst, returning the extended slice.
+// This is the allocation-free form: a caller that keeps one slice across
+// frames and passes it back as dst[:0] never allocates after the first.
+func (f *Formatter) Append(dst []byte) ([]byte, error) {
+	out := zigoAppendWriter{buf: dst}
+	if err := f.zigoInto(&out); err != nil {
+		return dst, err
+	}
+	return out.buf, nil
+}
+
+// String formats and returns the result as a string. Unlike Bytes, the result
+// is a copy the caller may keep.
+func (f *Formatter) String() (string, error) {
+	if err := f.zigoFill(); err != nil {
+		return "", err
+	}
+	return string(f.buf), nil
+}
+
+// WriteTo formats straight into w, satisfying io.WriteTo. Nothing is buffered
+// on the way, so this is the cheapest form when the destination is a file or a
+// network connection rather than memory.
+func (f *Formatter) WriteTo(w io.Writer) (int64, error) {
+	counted := zigoCountingWriter{inner: w}
+	err := f.zigoInto(&counted)
+	return counted.written, err
+}
+
+// zigoAppendWriter collects writes into a growable slice.
+type zigoAppendWriter struct{ buf []byte }
+
+func (w *zigoAppendWriter) Write(p []byte) (int, error) {
+	w.buf = append(w.buf, p...)
+	return len(p), nil
+}
+
+// zigoCountingWriter forwards writes and counts the bytes, for io.WriterTo.
+type zigoCountingWriter struct {
+	inner   io.Writer
+	written int64
+}
+
+func (w *zigoCountingWriter) Write(p []byte) (int, error) {
+	n, err := w.inner.Write(p)
+	w.written += int64(n)
+	return n, err
+}
+
+var _ io.WriterTo = (*Formatter)(nil)
 
 // Screen represents a native Zig handle.
 type Screen struct {

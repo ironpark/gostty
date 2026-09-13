@@ -653,6 +653,12 @@ typedef struct zg_format_options {
     uint8_t resolve_palette;
 } zg_format_options;
 
+typedef struct zg_rgb {
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+} zg_rgb;
+
 typedef struct zg_scrollbar {
     uint64_t total;
     uint64_t offset;
@@ -711,16 +717,16 @@ typedef struct zg_snapshot_progress {
 } zg_snapshot_progress;
 
 typedef struct zg_render_colors {
-    uint32_t background;
-    uint32_t foreground;
-    uint32_t cursor;
+    zg_rgb background;
+    zg_rgb foreground;
+    zg_rgb cursor;
     uint8_t cursor_has_value;
 } zg_render_colors;
 
 typedef struct zg_render_cell {
     uint32_t codepoint;
-    uint32_t fg;
-    uint32_t bg;
+    zg_rgb fg;
+    zg_rgb bg;
     uint32_t flags;
 } zg_render_cell;
 
@@ -758,10 +764,16 @@ typedef struct zg_kitty_image {
 typedef struct zg_attribute_snapshot_t {
     zg_attribute_tag tag;
     zg_underline underline;
-    uint32_t underline_color_rgb;
+    uint8_t underline_color_rgb_r;
+    uint8_t underline_color_rgb_g;
+    uint8_t underline_color_rgb_b;
     uint8_t underline_color_256;
-    uint32_t direct_color_fg;
-    uint32_t direct_color_bg;
+    uint8_t direct_color_fg_r;
+    uint8_t direct_color_fg_g;
+    uint8_t direct_color_fg_b;
+    uint8_t direct_color_bg_r;
+    uint8_t direct_color_bg_g;
+    uint8_t direct_color_bg_b;
     uint8_t color_256_fg;
     uint8_t color_256_bg;
     zg_color_name named_fg;
@@ -898,29 +910,29 @@ ZIGO_EXPORT int32_t zg_terminal_set_pwd(zg_terminal * self, const uint8_t * pwd_
 ZIGO_EXPORT int32_t zg_terminal_get_pwd(zg_terminal * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
 ZIGO_EXPORT int32_t zg_terminal_get_title(zg_terminal * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
 ZIGO_EXPORT int32_t zg_terminal_set_title(zg_terminal * self, const uint8_t * t_ptr, size_t t_len);
-ZIGO_EXPORT int32_t zg_terminal_background_color(zg_terminal * self, uint8_t * out_result_has, uint32_t * out_result);
-ZIGO_EXPORT int32_t zg_terminal_foreground_color(zg_terminal * self, uint8_t * out_result_has, uint32_t * out_result);
-ZIGO_EXPORT int32_t zg_terminal_cursor_color(zg_terminal * self, uint8_t * out_result_has, uint32_t * out_result);
-ZIGO_EXPORT int32_t zg_terminal_palette_colors(zg_terminal * self, uint32_t * dst_ptr, size_t dst_len, size_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_background_color(zg_terminal * self, uint8_t * out_result_has, zg_rgb * out_result);
+ZIGO_EXPORT int32_t zg_terminal_foreground_color(zg_terminal * self, uint8_t * out_result_has, zg_rgb * out_result);
+ZIGO_EXPORT int32_t zg_terminal_cursor_color(zg_terminal * self, uint8_t * out_result_has, zg_rgb * out_result);
+ZIGO_EXPORT int32_t zg_terminal_palette_colors(zg_terminal * self, zg_rgb * dst_ptr, size_t dst_len, size_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_mode_enabled(zg_terminal * self, uint16_t mode, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_set_mode(zg_terminal * self, uint16_t mode, uint8_t value);
-ZIGO_EXPORT int32_t zg_terminal_set_attribute(zg_terminal * self, uint8_t attr_tag, uint8_t attr_underline, uint32_t attr_underline_color_rgb, uint8_t attr_underline_color_256, uint32_t attr_direct_color_fg, uint32_t attr_direct_color_bg, uint8_t attr_color_256_fg, uint8_t attr_color_256_bg, uint8_t attr_named_fg, uint8_t attr_named_bg, uint8_t attr_bright_named_fg, uint8_t attr_bright_named_bg);
+ZIGO_EXPORT int32_t zg_terminal_set_attribute(zg_terminal * self, uint8_t attr_tag, uint8_t attr_underline, uint8_t attr_underline_color_rgb_r, uint8_t attr_underline_color_rgb_g, uint8_t attr_underline_color_rgb_b, uint8_t attr_underline_color_256, uint8_t attr_direct_color_fg_r, uint8_t attr_direct_color_fg_g, uint8_t attr_direct_color_fg_b, uint8_t attr_direct_color_bg_r, uint8_t attr_direct_color_bg_g, uint8_t attr_direct_color_bg_b, uint8_t attr_color_256_fg, uint8_t attr_color_256_bg, uint8_t attr_named_fg, uint8_t attr_named_bg, uint8_t attr_bright_named_fg, uint8_t attr_bright_named_bg);
 ZIGO_EXPORT int32_t zg_terminal_set_protected_mode(zg_terminal * self, uint8_t mode);
 ZIGO_EXPORT int32_t zg_terminal_configure_charset(zg_terminal * self, uint8_t slot, uint8_t set);
 ZIGO_EXPORT int32_t zg_terminal_invoke_charset(zg_terminal * self, uint8_t active, uint8_t slot, uint8_t single);
 ZIGO_EXPORT int32_t zg_terminal_deccolm(zg_terminal * self, uint8_t mode);
 ZIGO_EXPORT int32_t zg_terminal_compression_activity(zg_terminal * self, uint64_t * out_result);
-ZIGO_EXPORT int32_t zg_terminal_set_default_background_color(zg_terminal * self, uint32_t rgb);
-ZIGO_EXPORT int32_t zg_terminal_set_default_foreground_color(zg_terminal * self, uint32_t rgb);
-ZIGO_EXPORT int32_t zg_terminal_set_default_cursor_color(zg_terminal * self, uint32_t rgb);
+ZIGO_EXPORT int32_t zg_terminal_set_default_background_color(zg_terminal * self, const zg_rgb * rgb);
+ZIGO_EXPORT int32_t zg_terminal_set_default_foreground_color(zg_terminal * self, const zg_rgb * rgb);
+ZIGO_EXPORT int32_t zg_terminal_set_default_cursor_color(zg_terminal * self, const zg_rgb * rgb);
 ZIGO_EXPORT int32_t zg_terminal_set_default_cursor_style(zg_terminal * self, uint8_t configured_style);
 ZIGO_EXPORT int32_t zg_terminal_set_default_cursor_blink(zg_terminal * self, uint8_t blink);
 ZIGO_EXPORT int32_t zg_terminal_reset_default_cursor_blink(zg_terminal * self);
-ZIGO_EXPORT int32_t zg_terminal_palette_color(zg_terminal * self, uint8_t idx, uint32_t * out_result);
-ZIGO_EXPORT int32_t zg_terminal_set_palette_color(zg_terminal * self, uint8_t idx, uint32_t rgb);
+ZIGO_EXPORT int32_t zg_terminal_palette_color(zg_terminal * self, uint8_t idx, zg_rgb * out_result);
+ZIGO_EXPORT int32_t zg_terminal_set_palette_color(zg_terminal * self, uint8_t idx, const zg_rgb * rgb);
 ZIGO_EXPORT int32_t zg_terminal_reset_palette_color(zg_terminal * self, uint8_t idx);
 ZIGO_EXPORT int32_t zg_terminal_reset_palette(zg_terminal * self);
-ZIGO_EXPORT int32_t zg_terminal_set_default_palette_color(zg_terminal * self, uint8_t idx, uint32_t rgb);
+ZIGO_EXPORT int32_t zg_terminal_set_default_palette_color(zg_terminal * self, uint8_t idx, const zg_rgb * rgb);
 ZIGO_EXPORT int32_t zg_terminal_reset_default_palette(zg_terminal * self);
 ZIGO_EXPORT int32_t zg_terminal_set_default_mode(zg_terminal * self, uint16_t mode, uint8_t value);
 ZIGO_EXPORT int32_t zg_terminal_reset_modes(zg_terminal * self);
@@ -987,7 +999,7 @@ ZIGO_EXPORT int32_t zg_gesture_autoscroll_tick(zg_gesture * self, const zg_gestu
 ZIGO_EXPORT int32_t zg_gesture_deep_press(zg_gesture * self, uint8_t * out_result_has, zg_selection * out_result);
 ZIGO_EXPORT int32_t zg_gesture_release(zg_gesture * self, uint16_t x, uint16_t y);
 ZIGO_EXPORT int32_t zg_gesture_reset(zg_gesture * self);
-ZIGO_EXPORT uint8_t zg_color_name_default(uint8_t self, uint32_t * out_result);
+ZIGO_EXPORT uint8_t zg_color_name_default(uint8_t self, zg_rgb * out_result);
 ZIGO_EXPORT int32_t zg_stream_free_stream(zg_stream * self);
 ZIGO_EXPORT int32_t zg_stream_at_ground(zg_stream * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_stream_feed_until_ground(zg_stream * self, const uint8_t * data_ptr, size_t data_len, zg_feed_boundary * out_result);
@@ -1060,12 +1072,12 @@ ZIGO_EXPORT int32_t zg_render_state_cursor(zg_render_state * self, uint64_t * ou
 ZIGO_EXPORT int32_t zg_render_state_colors(zg_render_state * self, zg_render_colors * out_result);
 ZIGO_EXPORT int32_t zg_render_state_cell_count(zg_render_state * self, size_t * out_result);
 ZIGO_EXPORT int32_t zg_render_state_cells(zg_render_state * self, zg_render_cell * dst_ptr, size_t dst_len, size_t * out_result);
-ZIGO_EXPORT int32_t zg_render_state_background(zg_render_state * self, uint32_t * out_result);
-ZIGO_EXPORT int32_t zg_render_state_foreground(zg_render_state * self, uint32_t * out_result);
+ZIGO_EXPORT int32_t zg_render_state_background(zg_render_state * self, zg_rgb * out_result);
+ZIGO_EXPORT int32_t zg_render_state_foreground(zg_render_state * self, zg_rgb * out_result);
 ZIGO_EXPORT int32_t zg_render_state_cursor_x(zg_render_state * self, uint8_t * out_result_has, uint16_t * out_result);
 ZIGO_EXPORT int32_t zg_render_state_cursor_y(zg_render_state * self, uint8_t * out_result_has, uint16_t * out_result);
 ZIGO_EXPORT int32_t zg_render_state_cursor_wide_tail(zg_render_state * self, uint8_t * out_result_has, uint8_t * out_result);
-ZIGO_EXPORT int32_t zg_render_state_cursor_color(zg_render_state * self, uint8_t * out_result_has, uint32_t * out_result);
+ZIGO_EXPORT int32_t zg_render_state_cursor_color(zg_render_state * self, uint8_t * out_result_has, zg_rgb * out_result);
 ZIGO_EXPORT int32_t zg_render_state_dirty(zg_render_state * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_render_state_dirty_rows(zg_render_state * self, uint16_t * dst_ptr, size_t dst_len, size_t * out_result);
 ZIGO_EXPORT int32_t zg_render_state_row_cells(zg_render_state * self, uint16_t y, zg_render_cell * dst_ptr, size_t dst_len, size_t * out_result);

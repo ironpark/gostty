@@ -2050,9 +2050,13 @@ func (te *Terminal) ResizeCells(width uint16, height uint16, cellWidth uint32, c
 	return nil
 }
 
-// Format the active area -- the rows on screen, not the scrollback -- with
-// the terminal's colors and, for styled output, its palette, modes and
-// other state a replay needs. `Screen.format` covers the scrollback too.
+// Format the active screen with the terminal's colors and, for styled output,
+// its palette, modes and other state a replay needs.
+//
+// Scrollback is included: ghostty's terminal formatter walks the whole page
+// list of the active screen, not just the rows on display. This differs from
+// `Screen.format` only in that it follows whichever screen is active rather
+// than staying with the one it was given.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
@@ -2149,63 +2153,67 @@ func (te *Terminal) SetTitle(t string) error {
 // BackgroundColor: The current background color: what OSC 11 set, else the default.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-func (te *Terminal) BackgroundColor() (uint32, bool, error) {
+func (te *Terminal) BackgroundColor() (RGB, bool, error) {
 	ptr, err := zigoCheckedPointer("Terminal.BackgroundColor receiver", te)
 	if err != nil {
-		return 0, false, err
+		return RGB{}, false, err
 	}
 	defer te.zigoRelease()
 	result, zigoHas, code := raw.TerminalBackgroundColor(ptr)
 	if code != 0 {
-		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.BackgroundColor", code), te)
+		return RGB{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.BackgroundColor", code), te)
 	}
-	return result, zigoHas, nil
+	return zigoRGBFromRaw(result), zigoHas, nil
 }
 
 // ForegroundColor: The current foreground color: what OSC 10 set, else the default.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-func (te *Terminal) ForegroundColor() (uint32, bool, error) {
+func (te *Terminal) ForegroundColor() (RGB, bool, error) {
 	ptr, err := zigoCheckedPointer("Terminal.ForegroundColor receiver", te)
 	if err != nil {
-		return 0, false, err
+		return RGB{}, false, err
 	}
 	defer te.zigoRelease()
 	result, zigoHas, code := raw.TerminalForegroundColor(ptr)
 	if code != 0 {
-		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ForegroundColor", code), te)
+		return RGB{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ForegroundColor", code), te)
 	}
-	return result, zigoHas, nil
+	return zigoRGBFromRaw(result), zigoHas, nil
 }
 
 // CursorColor: The current cursor color, if one was set or configured. Null means the
 // cursor takes the foreground color.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-func (te *Terminal) CursorColor() (uint32, bool, error) {
+func (te *Terminal) CursorColor() (RGB, bool, error) {
 	ptr, err := zigoCheckedPointer("Terminal.CursorColor receiver", te)
 	if err != nil {
-		return 0, false, err
+		return RGB{}, false, err
 	}
 	defer te.zigoRelease()
 	result, zigoHas, code := raw.TerminalCursorColor(ptr)
 	if code != 0 {
-		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorColor", code), te)
+		return RGB{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorColor", code), te)
 	}
-	return result, zigoHas, nil
+	return zigoRGBFromRaw(result), zigoHas, nil
 }
 
 // PaletteColors: Copy the current 256-color palette into `dst` and return how many entries
 // were written: 256, or `dst.len` if shorter.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-func (te *Terminal) PaletteColors(dst []uint32) (uint, error) {
+func (te *Terminal) PaletteColors(dst []RGB) (uint, error) {
 	ptr, err := zigoCheckedPointer("Terminal.PaletteColors receiver", te)
 	if err != nil {
 		return 0, err
 	}
 	defer te.zigoRelease()
-	result, code := raw.TerminalPaletteColors(ptr, dst)
+	var dstRaw []raw.RGBData
+	if len(dst) != 0 {
+		dstRaw = unsafe.Slice((*raw.RGBData)(unsafe.Pointer(&dst[0])), len(dst))
+	}
+	result, code := raw.TerminalPaletteColors(ptr, dstRaw)
 	if code != 0 {
 		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PaletteColors", code), te)
 	}
@@ -2257,7 +2265,7 @@ func (te *Terminal) SetAttribute(attr Attribute) error {
 		return err
 	}
 	defer te.zigoRelease()
-	code := raw.TerminalSetAttribute(ptr, uint8(attr.tag), uint8(attr.underline), attr.underlineColorRgb, attr.underlineColor256, attr.directColorFg, attr.directColorBg, attr.color256Fg, attr.color256Bg, uint8(attr.namedFg), uint8(attr.namedBg), uint8(attr.brightNamedFg), uint8(attr.brightNamedBg))
+	code := raw.TerminalSetAttribute(ptr, uint8(attr.tag), uint8(attr.underline), attr.underlineColorRgb.R, attr.underlineColorRgb.G, attr.underlineColorRgb.B, attr.underlineColor256, attr.directColorFg.R, attr.directColorFg.G, attr.directColorFg.B, attr.directColorBg.R, attr.directColorBg.G, attr.directColorBg.B, attr.color256Fg, attr.color256Bg, uint8(attr.namedFg), uint8(attr.namedBg), uint8(attr.brightNamedFg), uint8(attr.brightNamedBg))
 	if code != 0 {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetAttribute", code), te)
 	}
@@ -2368,13 +2376,13 @@ func (te *Terminal) CompressionActivity() (uint64, error) {
 // overrides it and again after OSC 111 resets it.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-func (te *Terminal) SetDefaultBackgroundColor(rgb uint32) error {
+func (te *Terminal) SetDefaultBackgroundColor(rgb RGB) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetDefaultBackgroundColor receiver", te)
 	if err != nil {
 		return err
 	}
 	defer te.zigoRelease()
-	code := raw.TerminalSetDefaultBackgroundColor(ptr, rgb)
+	code := raw.TerminalSetDefaultBackgroundColor(ptr, zigoRGBToRaw(rgb))
 	if code != 0 {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultBackgroundColor", code), te)
 	}
@@ -2384,13 +2392,13 @@ func (te *Terminal) SetDefaultBackgroundColor(rgb uint32) error {
 // SetDefaultForegroundColor: Set the configured default foreground. See `setDefaultBackgroundColor`.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-func (te *Terminal) SetDefaultForegroundColor(rgb uint32) error {
+func (te *Terminal) SetDefaultForegroundColor(rgb RGB) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetDefaultForegroundColor receiver", te)
 	if err != nil {
 		return err
 	}
 	defer te.zigoRelease()
-	code := raw.TerminalSetDefaultForegroundColor(ptr, rgb)
+	code := raw.TerminalSetDefaultForegroundColor(ptr, zigoRGBToRaw(rgb))
 	if code != 0 {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultForegroundColor", code), te)
 	}
@@ -2400,13 +2408,13 @@ func (te *Terminal) SetDefaultForegroundColor(rgb uint32) error {
 // SetDefaultCursorColor: Set the configured default cursor color. See `setDefaultBackgroundColor`.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-func (te *Terminal) SetDefaultCursorColor(rgb uint32) error {
+func (te *Terminal) SetDefaultCursorColor(rgb RGB) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetDefaultCursorColor receiver", te)
 	if err != nil {
 		return err
 	}
 	defer te.zigoRelease()
-	code := raw.TerminalSetDefaultCursorColor(ptr, rgb)
+	code := raw.TerminalSetDefaultCursorColor(ptr, zigoRGBToRaw(rgb))
 	if code != 0 {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultCursorColor", code), te)
 	}
@@ -2466,32 +2474,32 @@ func (te *Terminal) ResetDefaultCursorBlink() error {
 	return nil
 }
 
-// PaletteColor: Read one entry of the 256 color palette as `0xRRGGBB`.
+// PaletteColor: Read one entry of the 256 color palette.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-func (te *Terminal) PaletteColor(idx uint8) (uint32, error) {
+func (te *Terminal) PaletteColor(idx uint8) (RGB, error) {
 	ptr, err := zigoCheckedPointer("Terminal.PaletteColor receiver", te)
 	if err != nil {
-		return 0, err
+		return RGB{}, err
 	}
 	defer te.zigoRelease()
 	result, code := raw.TerminalPaletteColor(ptr, idx)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PaletteColor", code), te)
+		return RGB{}, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PaletteColor", code), te)
 	}
-	return result, nil
+	return zigoRGBFromRaw(result), nil
 }
 
 // SetPaletteColor: Override one palette entry, as OSC 4 does.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-func (te *Terminal) SetPaletteColor(idx uint8, rgb uint32) error {
+func (te *Terminal) SetPaletteColor(idx uint8, rgb RGB) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetPaletteColor receiver", te)
 	if err != nil {
 		return err
 	}
 	defer te.zigoRelease()
-	code := raw.TerminalSetPaletteColor(ptr, idx, rgb)
+	code := raw.TerminalSetPaletteColor(ptr, idx, zigoRGBToRaw(rgb))
 	if code != 0 {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetPaletteColor", code), te)
 	}
@@ -2539,13 +2547,13 @@ func (te *Terminal) ResetPalette() error {
 // copy of the current defaults.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
-func (te *Terminal) SetDefaultPaletteColor(idx uint8, rgb uint32) error {
+func (te *Terminal) SetDefaultPaletteColor(idx uint8, rgb RGB) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetDefaultPaletteColor receiver", te)
 	if err != nil {
 		return err
 	}
 	defer te.zigoRelease()
-	code := raw.TerminalSetDefaultPaletteColor(ptr, idx, rgb)
+	code := raw.TerminalSetDefaultPaletteColor(ptr, idx, zigoRGBToRaw(rgb))
 	if code != 0 {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultPaletteColor", code), te)
 	}
@@ -3761,7 +3769,7 @@ func (g *Gesture) Reset() error {
 	return nil
 }
 
-// Default: The color's default value as `0xRRGGBB`, or null when the name has none.
+// Default: The color's default value, or null when the name has none.
 //
 // Only the sixteen named colors have one. The enum is open because every
 // other 256-color palette index is a valid value, and those take their
@@ -3770,9 +3778,9 @@ func (g *Gesture) Reset() error {
 //
 // Wrapped because ghostty returns `color.RGB`, a `packed struct(u24)` with
 // no C representation, behind an error union.
-func (c ColorName) Default() (uint32, bool) {
+func (c ColorName) Default() (RGB, bool) {
 	zigoResult, zigoHas := raw.ColorNameDefault(uint8(c))
-	return zigoResult, zigoHas
+	return zigoRGBFromRaw(zigoResult), zigoHas
 }
 
 // AtGround: Whether the parser is between UTF-8 codepoints and VT sequences.
@@ -5336,37 +5344,37 @@ func (r *RenderState) Cells(dst []RenderCell) (uint, error) {
 	return result, nil
 }
 
-// Background: The terminal's default background, 0xRRGGBB. Already reversed if the
+// Background: The terminal's default background. Already reversed if the
 // terminal is in reverse-video mode.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-func (r *RenderState) Background() (uint32, error) {
+func (r *RenderState) Background() (RGB, error) {
 	ptr, err := zigoCheckedPointer("RenderState.Background receiver", r)
 	if err != nil {
-		return 0, err
+		return RGB{}, err
 	}
 	defer r.zigoRelease()
 	result, code := raw.RenderStateBackground(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Background", code), r)
+		return RGB{}, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Background", code), r)
 	}
-	return result, nil
+	return zigoRGBFromRaw(result), nil
 }
 
 // Foreground calls the Zig function RenderState.foreground.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-func (r *RenderState) Foreground() (uint32, error) {
+func (r *RenderState) Foreground() (RGB, error) {
 	ptr, err := zigoCheckedPointer("RenderState.Foreground receiver", r)
 	if err != nil {
-		return 0, err
+		return RGB{}, err
 	}
 	defer r.zigoRelease()
 	result, code := raw.RenderStateForeground(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Foreground", code), r)
+		return RGB{}, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Foreground", code), r)
 	}
-	return result, nil
+	return zigoRGBFromRaw(result), nil
 }
 
 // CursorX: The cursor's column within the viewport, or false if it is scrolled out.
@@ -5420,22 +5428,22 @@ func (r *RenderState) CursorWideTail() (bool, bool, error) {
 	return result != 0, zigoHas, nil
 }
 
-// CursorColor: The cursor color as of this frame, 0xRRGGBB, or null when the program has
+// CursorColor: The cursor color as of this frame, or null when the program has
 // not set one and the renderer should pick. Read from the snapshot rather
 // than the terminal so it matches the cells drawn beside it.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-func (r *RenderState) CursorColor() (uint32, bool, error) {
+func (r *RenderState) CursorColor() (RGB, bool, error) {
 	ptr, err := zigoCheckedPointer("RenderState.CursorColor receiver", r)
 	if err != nil {
-		return 0, false, err
+		return RGB{}, false, err
 	}
 	defer r.zigoRelease()
 	result, zigoHas, code := raw.RenderStateCursorColor(ptr)
 	if code != 0 {
-		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.CursorColor", code), r)
+		return RGB{}, false, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.CursorColor", code), r)
 	}
-	return result, zigoHas, nil
+	return zigoRGBFromRaw(result), zigoHas, nil
 }
 
 // Dirty: What changed since `RenderState.clean`. `RenderState.update` raises this;

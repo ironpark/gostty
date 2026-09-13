@@ -6,35 +6,35 @@ import "testing"
 // the OSC 10/11/12 changes a program makes.
 func TestColors(t *testing.T) {
 	term, stream := newStreamPair(t, 20, 3)
-	if err := term.SetDefaultBackgroundColor(0x101010); err != nil {
+	if err := term.SetDefaultBackgroundColor(RGBFromUint32(0x101010)); err != nil {
 		t.Fatal(err)
 	}
-	if bg, ok, err := term.BackgroundColor(); err != nil || !ok || bg != 0x101010 {
+	if bg, ok, err := term.BackgroundColor(); err != nil || !ok || bg.Uint32() != 0x101010 {
 		t.Errorf("BackgroundColor() = %#x, %v, %v; want default 0x101010", bg, ok, err)
 	}
 	// OSC 11 overrides the default.
 	feed(t, stream, "\x1b]11;rgb:ff/00/00\x1b\\")
-	if bg, ok, err := term.BackgroundColor(); err != nil || !ok || bg != 0xff0000 {
+	if bg, ok, err := term.BackgroundColor(); err != nil || !ok || bg.Uint32() != 0xff0000 {
 		t.Errorf("BackgroundColor() after OSC 11 = %#x, %v, %v; want 0xff0000", bg, ok, err)
 	}
 	// OSC 111 resets to the default.
 	feed(t, stream, "\x1b]111\x1b\\")
-	if bg, _, _ := term.BackgroundColor(); bg != 0x101010 {
+	if bg, _, _ := term.BackgroundColor(); bg.Uint32() != 0x101010 {
 		t.Errorf("BackgroundColor() after OSC 111 = %#x; want 0x101010", bg)
 	}
 
 	// Palette entry 1 is red by default; OSC 4 changes it.
-	palette := make([]uint32, 256)
+	palette := make([]RGB, 256)
 	if _, err := term.PaletteColors(palette); err != nil {
 		t.Fatal(err)
 	}
 	before := palette[1]
 	feed(t, stream, "\x1b]4;1;rgb:12/34/56\x1b\\")
 	n, err := term.PaletteColors(palette)
-	if palette[1] != 0x123456 || palette[1] == before {
+	if palette[1].Uint32() != 0x123456 || palette[1] == before {
 		t.Errorf("palette[1] after OSC 4 = %#x; want 0x123456", palette[1])
 	}
-	if err != nil || n != 256 || palette[1] != 0x123456 {
+	if err != nil || n != 256 || palette[1].Uint32() != 0x123456 {
 		t.Errorf("PaletteColors() = %d, %v, [1]=%#x", n, err, palette[1])
 	}
 	if n, _ := term.PaletteColors(palette[:16]); n != 16 {
@@ -140,10 +140,10 @@ func TestColorNameDefault(t *testing.T) {
 	if !ok {
 		t.Fatal("ColorNameRed.Default() reported no default")
 	}
-	if rgb != 0xCC6666 {
+	if rgb.Uint32() != 0xCC6666 {
 		t.Errorf("ColorNameRed.Default() = %#06x, want 0xcc6666", rgb)
 	}
-	if rgb, ok := ColorNameBrightWhite.Default(); !ok || rgb != 0xEAEAEA {
+	if rgb, ok := ColorNameBrightWhite.Default(); !ok || rgb.Uint32() != 0xEAEAEA {
 		t.Errorf("ColorNameBrightWhite.Default() = %#06x, %v; want 0xeaeaea, true", rgb, ok)
 	}
 	// The enum is open: every other palette index is a valid value, and those

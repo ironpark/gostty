@@ -61,9 +61,13 @@ pub const FormatOptions = extern struct {
     }
 };
 
-/// Format the active area -- the rows on screen, not the scrollback -- with
-/// the terminal's colors and, for styled output, its palette, modes and
-/// other state a replay needs. `Screen.format` covers the scrollback too.
+/// Format the active screen with the terminal's colors and, for styled output,
+/// its palette, modes and other state a replay needs.
+///
+/// Scrollback is included: ghostty's terminal formatter walks the whole page
+/// list of the active screen, not just the rows on display. This differs from
+/// `Screen.format` only in that it follows whichever screen is active rather
+/// than staying with the one it was given.
 pub fn formatTerminal(self: *Terminal, opts: FormatOptions, writer: *std.Io.Writer) !void {
     var f = vt.formatter.TerminalFormatter.init(self, opts.toGhostty());
     f.opts.background = self.colors.background.get();

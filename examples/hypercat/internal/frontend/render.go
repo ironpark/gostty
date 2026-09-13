@@ -107,9 +107,9 @@ var matchHighlight = color.RGBA{R: 0xb5, G: 0x89, B: 0x00, A: 0xff}
 
 func (tab *Renderer) cellBackground(cell gostty.RenderCell) color.RGBA {
 	if cell.Flags.Selected {
-		return tab.themeColor(ui.RGB(cell.Fg))
+		return tab.themeColor(ui.FromColor(cell.Fg))
 	}
-	return tab.themeColor(ui.RGB(cell.Bg))
+	return tab.themeColor(ui.FromColor(cell.Bg))
 }
 
 func (tab *Renderer) cellBackgroundAt(i int) color.RGBA {
@@ -139,9 +139,9 @@ func (tab *Renderer) drawRowGlyphs(dst *ebiten.Image, row int) {
 			continue
 		}
 
-		fg := tab.themeColor(ui.RGB(cell.Fg))
+		fg := tab.themeColor(ui.FromColor(cell.Fg))
 		if flags.Selected {
-			fg = tab.themeColor(ui.RGB(cell.Bg))
+			fg = tab.themeColor(ui.FromColor(cell.Bg))
 		}
 		if flags.Faint {
 			fg = color.RGBA{R: fg.R / 2, G: fg.G / 2, B: fg.B / 2, A: 0xff}

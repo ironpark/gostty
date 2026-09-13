@@ -421,6 +421,23 @@ type FormatOptions struct {
 	ResolvePalette bool
 }
 
+// RGB mirrors the Zig `extern struct` of the same name.
+type RGB struct {
+	// R: The red channel.
+	R uint8
+	// G: The green channel.
+	G uint8
+	// B: The blue channel.
+	B uint8
+}
+
+// RGB is reinterpreted as raw.RGBData instead of copied, so the two
+// layouts must stay identical.
+var _ = [1]struct{}{}[unsafe.Sizeof(RGB{})-unsafe.Sizeof(raw.RGBData{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(RGB{}.R)-unsafe.Offsetof(raw.RGBData{}.R)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RGB{}.G)-unsafe.Offsetof(raw.RGBData{}.G)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RGB{}.B)-unsafe.Offsetof(raw.RGBData{}.B)]
+
 // Scrollbar mirrors the Zig `extern struct` of the same name.
 type Scrollbar struct {
 	// Total size of the scrollable area.
@@ -597,14 +614,13 @@ var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgress{}.Pad)-unsafe.Offsetof(ra
 
 // RenderColors mirrors the Zig `extern struct` of the same name.
 type RenderColors struct {
-	// Background: The terminal's default background as `0xRRGGBB`, after any OSC 11 the
-	// program set. What an unstyled cell should be painted with.
-	Background uint32
-	// Foreground: The default foreground as `0xRRGGBB`, after any OSC 10.
-	Foreground uint32
-	// Cursor: The cursor colour as `0xRRGGBB`, meaningful only when
-	// `cursor_has_value` is set.
-	Cursor uint32
+	// Background: The terminal's default background, after any OSC 11 the program set.
+	// What an unstyled cell should be painted with.
+	Background RGB
+	// Foreground: The default foreground, after any OSC 10.
+	Foreground RGB
+	// Cursor: The cursor colour, meaningful only when `cursor_has_value` is set.
+	Cursor RGB
 	// CursorHasValue: Whether the program set a cursor colour at all. When false the cursor
 	// is the embedder's to colour, conventionally with `foreground`.
 	CursorHasValue bool
@@ -615,11 +631,11 @@ type RenderCell struct {
 	// Codepoint: The cell's codepoint, or 0 for an empty cell. Only the first codepoint
 	// of a grapheme cluster; combining marks are not carried across.
 	Codepoint rune
-	// Fg: Foreground as `0xRRGGBB`, already resolved: palette indices and
+	// Fg: Foreground, already resolved: palette indices and
 	// defaults are looked up, so this is the colour to paint with.
-	Fg uint32
-	// Bg: Background as `0xRRGGBB`, resolved the same way as `fg`.
-	Bg uint32
+	Fg RGB
+	// Bg: Background, resolved the same way as `fg`.
+	Bg RGB
 	// Flags: Style bits for this cell -- bold, underline, selection and the rest.
 	// Carried as the backing integer in array positions; read a named field
 	// off it with `CellFlagsFromBacking`.
@@ -766,6 +782,22 @@ func zigoFormatOptionsToRaw(value FormatOptions) raw.FormatOptionsData {
 	}
 }
 
+func zigoRGBToRaw(value RGB) raw.RGBData {
+	return raw.RGBData{
+		R: value.R,
+		G: value.G,
+		B: value.B,
+	}
+}
+
+func zigoRGBFromRaw(value raw.RGBData) RGB {
+	return RGB{
+		R: value.R,
+		G: value.G,
+		B: value.B,
+	}
+}
+
 func zigoScrollbarFromRaw(value raw.ScrollbarData) Scrollbar {
 	return Scrollbar{
 		Total:  value.Total,
@@ -841,9 +873,9 @@ func zigoSnapshotProgressFromRaw(value raw.SnapshotProgressData) SnapshotProgres
 
 func zigoRenderColorsFromRaw(value raw.RenderColorsData) RenderColors {
 	return RenderColors{
-		Background:     value.Background,
-		Foreground:     value.Foreground,
-		Cursor:         value.Cursor,
+		Background:     zigoRGBFromRaw(value.Background),
+		Foreground:     zigoRGBFromRaw(value.Foreground),
+		Cursor:         zigoRGBFromRaw(value.Cursor),
 		CursorHasValue: value.CursorHasValue != 0,
 	}
 }
@@ -851,8 +883,8 @@ func zigoRenderColorsFromRaw(value raw.RenderColorsData) RenderColors {
 func zigoRenderCellFromRaw(value raw.RenderCellData) RenderCell {
 	return RenderCell{
 		Codepoint: rune(value.Codepoint),
-		Fg:        value.Fg,
-		Bg:        value.Bg,
+		Fg:        zigoRGBFromRaw(value.Fg),
+		Bg:        zigoRGBFromRaw(value.Bg),
 		Flags:     CellFlagsFromBacking(value.Flags),
 	}
 }
@@ -933,7 +965,7 @@ func zigoAttributeFromRaw(value raw.AttributeData) Attribute {
 	case AttributeTagUnderline:
 		return AttributeUnderline(Underline(value.Underline))
 	case AttributeTagUnderlineColorRgb:
-		return AttributeUnderlineColorRgb(value.UnderlineColorRgb)
+		return AttributeUnderlineColorRgb(RGB{R: value.UnderlineColorRgbR, G: value.UnderlineColorRgbG, B: value.UnderlineColorRgbB})
 	case AttributeTagUnderlineColor256:
 		return AttributeUnderlineColor256(value.UnderlineColor256)
 	case AttributeTagResetUnderlineColor:
@@ -959,9 +991,9 @@ func zigoAttributeFromRaw(value raw.AttributeData) Attribute {
 	case AttributeTagResetStrikethrough:
 		return AttributeResetStrikethrough()
 	case AttributeTagDirectColorFg:
-		return AttributeDirectColorFg(value.DirectColorFg)
+		return AttributeDirectColorFg(RGB{R: value.DirectColorFgR, G: value.DirectColorFgG, B: value.DirectColorFgB})
 	case AttributeTagDirectColorBg:
-		return AttributeDirectColorBg(value.DirectColorBg)
+		return AttributeDirectColorBg(RGB{R: value.DirectColorBgR, G: value.DirectColorBgG, B: value.DirectColorBgB})
 	case AttributeTagColor256Fg:
 		return AttributeColor256Fg(value.Color256Fg)
 	case AttributeTagColor256Bg:
@@ -989,10 +1021,10 @@ func zigoAttributeFromRaw(value raw.AttributeData) Attribute {
 type Attribute struct {
 	tag               AttributeTag
 	underline         Underline
-	underlineColorRgb uint32
+	underlineColorRgb RGB
 	underlineColor256 uint8
-	directColorFg     uint32
-	directColorBg     uint32
+	directColorFg     RGB
+	directColorBg     RGB
 	color256Fg        uint8
 	color256Bg        uint8
 	namedFg           ColorName
@@ -1010,7 +1042,7 @@ func (value Attribute) AsUnderline() (Underline, bool) {
 }
 
 // AsUnderlineColorRgb returns the underline_color_rgb payload and whether it is the active variant.
-func (value Attribute) AsUnderlineColorRgb() (uint32, bool) {
+func (value Attribute) AsUnderlineColorRgb() (RGB, bool) {
 	return value.underlineColorRgb, value.tag == AttributeTagUnderlineColorRgb
 }
 
@@ -1020,12 +1052,12 @@ func (value Attribute) AsUnderlineColor256() (uint8, bool) {
 }
 
 // AsDirectColorFg returns the direct_color_fg payload and whether it is the active variant.
-func (value Attribute) AsDirectColorFg() (uint32, bool) {
+func (value Attribute) AsDirectColorFg() (RGB, bool) {
 	return value.directColorFg, value.tag == AttributeTagDirectColorFg
 }
 
 // AsDirectColorBg returns the direct_color_bg payload and whether it is the active variant.
-func (value Attribute) AsDirectColorBg() (uint32, bool) {
+func (value Attribute) AsDirectColorBg() (RGB, bool) {
 	return value.directColorBg, value.tag == AttributeTagDirectColorBg
 }
 
@@ -1095,8 +1127,8 @@ func AttributeUnderline(value Underline) Attribute {
 }
 
 // AttributeUnderlineColorRgb constructs the underline_color_rgb variant.
-func AttributeUnderlineColorRgb(n uint32) Attribute {
-	return Attribute{tag: AttributeTagUnderlineColorRgb, underlineColorRgb: n}
+func AttributeUnderlineColorRgb(value RGB) Attribute {
+	return Attribute{tag: AttributeTagUnderlineColorRgb, underlineColorRgb: value}
 }
 
 // AttributeUnderlineColor256 constructs the underline_color_256 variant.
@@ -1160,13 +1192,13 @@ func AttributeResetStrikethrough() Attribute {
 }
 
 // AttributeDirectColorFg constructs the direct_color_fg variant.
-func AttributeDirectColorFg(n uint32) Attribute {
-	return Attribute{tag: AttributeTagDirectColorFg, directColorFg: n}
+func AttributeDirectColorFg(value RGB) Attribute {
+	return Attribute{tag: AttributeTagDirectColorFg, directColorFg: value}
 }
 
 // AttributeDirectColorBg constructs the direct_color_bg variant.
-func AttributeDirectColorBg(n uint32) Attribute {
-	return Attribute{tag: AttributeTagDirectColorBg, directColorBg: n}
+func AttributeDirectColorBg(value RGB) Attribute {
+	return Attribute{tag: AttributeTagDirectColorBg, directColorBg: value}
 }
 
 // AttributeColor256Fg constructs the color_256_fg variant.

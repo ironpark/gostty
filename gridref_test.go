@@ -164,7 +164,7 @@ func TestGridRefCellStyleAndGraphemes(t *testing.T) {
 	if err != nil || !ok {
 		t.Fatalf("Cell = %v, %v", ok, err)
 	}
-	if cell.Codepoint != 'e' || cell.Fg != 0xFF8800 || !cell.Flags.Bold {
+	if cell.Codepoint != 'e' || cell.Fg.Uint32() != 0xFF8800 || !cell.Flags.Bold {
 		t.Errorf("Cell = %+v; want 'e', fg 0xFF8800, bold", cell)
 	}
 	var buf [4]rune

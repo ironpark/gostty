@@ -64,7 +64,7 @@ func TestAttributeTag(t *testing.T) {
 		want AttributeTag
 	}{
 		{AttributeBold(), AttributeTagBold},
-		{AttributeDirectColorFg(0xFF8000), AttributeTagDirectColorFg},
+		{AttributeDirectColorFg(RGBFromUint32(0xFF8000)), AttributeTagDirectColorFg},
 		{AttributeUnderline(UnderlineCurly), AttributeTagUnderline},
 		{AttributeNamedBg(ColorNameRed), AttributeTagNamedBg},
 	} {
@@ -78,7 +78,7 @@ func TestAttributeTag(t *testing.T) {
 // equivalent escape sequence does.
 func TestSetAttributeDirectColor(t *testing.T) {
 	viaAPI := newTerm(t, 20, 3)
-	if err := viaAPI.SetAttribute(AttributeDirectColorFg(0xFF0000)); err != nil {
+	if err := viaAPI.SetAttribute(AttributeDirectColorFg(RGBFromUint32(0xFF0000))); err != nil {
 		t.Fatalf("SetAttribute: %v", err)
 	}
 	fromAPI := attrs(t, viaAPI)

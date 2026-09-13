@@ -63,6 +63,14 @@ func RGB(v uint32) color.RGBA {
 	return color.RGBA{R: uint8(v >> 16), G: uint8(v >> 8), B: uint8(v), A: 0xff}
 }
 
+// FromColor converts any color.Color to the opaque RGBA the renderer draws
+// with. The bindings' own RGB satisfies color.Color, so a cell colour comes
+// through this rather than through a layout the caller has to know.
+func FromColor(c color.Color) color.RGBA {
+	r, g, b, _ := c.RGBA()
+	return color.RGBA{R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(b >> 8), A: 0xff}
+}
+
 func Packed(c color.RGBA) uint32 {
 	return uint32(c.R)<<16 | uint32(c.G)<<8 | uint32(c.B)
 }

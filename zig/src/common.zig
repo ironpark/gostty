@@ -70,13 +70,27 @@ pub fn mirror(comptime To: type, from: anytype) To {
     };
 }
 
-// Colours are `0xRRGGBB` everywhere the binding hands one over, so a renderer
-// keeps a single representation.
+/// A 24-bit color, one byte per channel.
+///
+/// ghostty's own `color.RGB` is a `packed struct(u24)`, which has no C
+/// representation and so cannot cross. This is the same three bytes in a
+/// layout that can. It is a struct rather than the `0xRRGGBB` integer the
+/// binding used before because an integer says nothing about which end the
+/// red byte is on, and a renderer reading `fg` should not have to find the
+/// documentation to shift it apart.
+pub const RGB = extern struct {
+    /// The red channel.
+    r: u8,
+    /// The green channel.
+    g: u8,
+    /// The blue channel.
+    b: u8,
+};
 
-pub fn packColor(c: vt.color.RGB) u32 {
-    return (@as(u32, c.r) << 16) | (@as(u32, c.g) << 8) | c.b;
+pub fn packColor(c: vt.color.RGB) RGB {
+    return .{ .r = c.r, .g = c.g, .b = c.b };
 }
 
-pub fn unpackColor(v: u32) vt.color.RGB {
-    return .{ .r = @truncate(v >> 16), .g = @truncate(v >> 8), .b = @truncate(v) };
+pub fn unpackColor(v: RGB) vt.color.RGB {
+    return .{ .r = v.r, .g = v.g, .b = v.b };
 }

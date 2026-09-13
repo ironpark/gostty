@@ -42,7 +42,7 @@ func (tab *terminal) applyPalette() error {
 		return tab.vt.ResetPalette()
 	}
 	for i, c := range palette {
-		if err := tab.vt.SetDefaultPaletteColor(uint8(i), ui.Packed(c)); err != nil {
+		if err := tab.vt.SetDefaultPaletteColor(uint8(i), gostty.RGBFromUint32(ui.Packed(c))); err != nil {
 			return err
 		}
 	}

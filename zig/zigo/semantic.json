@@ -2345,7 +2345,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 105,
+            "line": 106,
             "column": 33
           },
           "type": {
@@ -2359,7 +2359,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 105,
+            "line": 106,
             "column": 48
           },
           "type": {
@@ -2375,7 +2375,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 105,
+            "line": 106,
             "column": 56
           },
           "type": {
@@ -2402,7 +2402,7 @@
       },
       "source": {
         "path": "gridref.zig",
-        "line": 105,
+        "line": 106,
         "column": 8
       },
       "zig_path": "newGridRef",
@@ -3246,7 +3246,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 68,
+            "line": 69,
             "column": 39
           },
           "type": {
@@ -3277,7 +3277,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "terminal.zig",
-        "line": 68,
+        "line": 69,
         "column": 8
       },
       "zig_path": "historyString",
@@ -3389,7 +3389,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 90,
+            "line": 91,
             "column": 36
           },
           "type": {
@@ -3406,7 +3406,7 @@
       },
       "source": {
         "path": "config.zig",
-        "line": 90,
+        "line": 91,
         "column": 8
       },
       "zig_path": "setTabstop",
@@ -3423,7 +3423,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 95,
+            "line": 96,
             "column": 38
           },
           "type": {
@@ -3440,7 +3440,7 @@
       },
       "source": {
         "path": "config.zig",
-        "line": 95,
+        "line": 96,
         "column": 8
       },
       "zig_path": "unsetTabstop",
@@ -3457,7 +3457,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 102,
+            "line": 103,
             "column": 39
           },
           "type": {
@@ -3474,7 +3474,7 @@
       },
       "source": {
         "path": "config.zig",
-        "line": 102,
+        "line": 103,
         "column": 8
       },
       "zig_path": "resetTabstops",
@@ -3695,7 +3695,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 229,
+            "line": 230,
             "column": 47
           },
           "type": {
@@ -3712,7 +3712,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 229,
+        "line": 230,
         "column": 8
       },
       "zig_path": "setScrollbackMaxBytes",
@@ -3729,7 +3729,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 234,
+        "line": 235,
         "column": 8
       },
       "zig_path": "clearScrollbackMaxBytes",
@@ -3749,7 +3749,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 239,
+            "line": 240,
             "column": 47
           },
           "type": {
@@ -3766,7 +3766,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 239,
+        "line": 240,
         "column": 8
       },
       "zig_path": "setScrollbackMaxLines",
@@ -3783,7 +3783,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 244,
+        "line": 245,
         "column": 8
       },
       "zig_path": "clearScrollbackMaxLines",
@@ -4079,7 +4079,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 33,
+            "line": 34,
             "column": 32
           },
           "type": {
@@ -4092,7 +4092,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 33,
+            "line": 34,
             "column": 48
           },
           "type": {
@@ -4108,7 +4108,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 33,
+            "line": 34,
             "column": 60
           },
           "type": {
@@ -4132,7 +4132,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 33,
+        "line": 34,
         "column": 8
       },
       "zig_path": "resize",
@@ -4150,7 +4150,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 46,
+            "line": 47,
             "column": 5
           },
           "type": {
@@ -4160,22 +4160,6 @@
         {
           "direction": "in",
           "name": "width",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 47,
-            "column": 5
-          },
-          "type": {
-            "bits": 16,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        },
-        {
-          "direction": "in",
-          "name": "height",
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
@@ -4191,11 +4175,27 @@
         },
         {
           "direction": "in",
-          "name": "cell_width",
+          "name": "height",
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
             "line": 49,
+            "column": 5
+          },
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "direction": "in",
+          "name": "cell_width",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 50,
             "column": 5
           },
           "type": {
@@ -4211,7 +4211,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 50,
+            "line": 51,
             "column": 5
           },
           "type": {
@@ -4235,14 +4235,14 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 44,
+        "line": 45,
         "column": 8
       },
       "zig_path": "resizeCells",
       "symbol": "zg_terminal_resize_cells"
     },
     {
-      "doc": "Format the active area -- the rows on screen, not the scrollback -- with\nthe terminal's colors and, for styled output, its palette, modes and\nother state a replay needs. `Screen.format` covers the scrollback too.",
+      "doc": "Format the active screen with the terminal's colors and, for styled output,\nits palette, modes and other state a replay needs.\n\nScrollback is included: ghostty's terminal formatter walks the whole page\nlist of the active screen, not just the rows on display. This differs from\n`Screen.format` only in that it follows whichever screen is active rather\nthan staying with the one it was given.",
       "name": "Format",
       "ownership": "borrowed",
       "params": [
@@ -4252,7 +4252,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 67,
+            "line": 71,
             "column": 40
           },
           "type": {
@@ -4266,7 +4266,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 67,
+            "line": 71,
             "column": 61
           },
           "type": {
@@ -4286,7 +4286,7 @@
       },
       "source": {
         "path": "format.zig",
-        "line": 67,
+        "line": 71,
         "column": 8
       },
       "zig_path": "formatTerminal",
@@ -4444,16 +4444,14 @@
       "receiver": "Terminal",
       "return": {
         "child": {
-          "bits": 32,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
+          "kind": "value_struct",
+          "ref": "RGB"
         },
         "kind": "optional"
       },
       "source": {
         "path": "terminal.zig",
-        "line": 252,
+        "line": 253,
         "column": 8
       },
       "zig_path": "backgroundColor",
@@ -4467,16 +4465,14 @@
       "receiver": "Terminal",
       "return": {
         "child": {
-          "bits": 32,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
+          "kind": "value_struct",
+          "ref": "RGB"
         },
         "kind": "optional"
       },
       "source": {
         "path": "terminal.zig",
-        "line": 257,
+        "line": 258,
         "column": 8
       },
       "zig_path": "foregroundColor",
@@ -4490,16 +4486,14 @@
       "receiver": "Terminal",
       "return": {
         "child": {
-          "bits": 32,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
+          "kind": "value_struct",
+          "ref": "RGB"
         },
         "kind": "optional"
       },
       "source": {
         "path": "terminal.zig",
-        "line": 263,
+        "line": 264,
         "column": 8
       },
       "zig_path": "cursorColor",
@@ -4516,16 +4510,14 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 269,
+            "line": 270,
             "column": 45
           },
           "type": {
             "const": false,
             "element": {
-              "bits": 32,
-              "is_usize": false,
-              "kind": "int",
-              "signed": false
+              "kind": "value_struct",
+              "ref": "RGB"
             },
             "kind": "slice"
           },
@@ -4541,7 +4533,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 269,
+        "line": 270,
         "column": 8
       },
       "zig_path": "paletteColors",
@@ -4558,7 +4550,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 297,
+            "line": 298,
             "column": 43
           },
           "type": {
@@ -4573,7 +4565,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 297,
+        "line": 298,
         "column": 8
       },
       "zig_path": "modeEnabled",
@@ -4590,7 +4582,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 305,
+            "line": 306,
             "column": 33
           },
           "type": {
@@ -4604,7 +4596,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 305,
+            "line": 306,
             "column": 45
           },
           "type": {
@@ -4618,7 +4610,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 305,
+        "line": 306,
         "column": 8
       },
       "zig_path": "setMode",
@@ -4638,7 +4630,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 208,
+            "line": 209,
             "column": 38
           },
           "type": {
@@ -4660,7 +4652,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 208,
+        "line": 209,
         "column": 8
       },
       "zig_path": "setAttribute",
@@ -4882,14 +4874,12 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 277,
+            "line": 278,
             "column": 51
           },
           "type": {
-            "bits": 32,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
+            "kind": "value_struct",
+            "ref": "RGB"
           }
         }
       ],
@@ -4899,7 +4889,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 277,
+        "line": 278,
         "column": 8
       },
       "zig_path": "setDefaultBackgroundColor",
@@ -4916,14 +4906,12 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 282,
+            "line": 283,
             "column": 51
           },
           "type": {
-            "bits": 32,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
+            "kind": "value_struct",
+            "ref": "RGB"
           }
         }
       ],
@@ -4933,7 +4921,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 282,
+        "line": 283,
         "column": 8
       },
       "zig_path": "setDefaultForegroundColor",
@@ -4950,14 +4938,12 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 287,
+            "line": 288,
             "column": 47
           },
           "type": {
-            "bits": 32,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
+            "kind": "value_struct",
+            "ref": "RGB"
           }
         }
       ],
@@ -4967,7 +4953,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 287,
+        "line": 288,
         "column": 8
       },
       "zig_path": "setDefaultCursorColor",
@@ -5018,7 +5004,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 218,
+            "line": 219,
             "column": 47
           },
           "type": {
@@ -5032,7 +5018,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 218,
+        "line": 219,
         "column": 8
       },
       "zig_path": "setDefaultCursorBlink",
@@ -5049,14 +5035,14 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 223,
+        "line": 224,
         "column": 8
       },
       "zig_path": "resetDefaultCursorBlink",
       "symbol": "zg_terminal_reset_default_cursor_blink"
     },
     {
-      "doc": "Read one entry of the 256 color palette as `0xRRGGBB`.",
+      "doc": "Read one entry of the 256 color palette.",
       "name": "paletteColor",
       "ownership": "borrowed",
       "params": [
@@ -5066,7 +5052,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 22,
+            "line": 23,
             "column": 38
           },
           "type": {
@@ -5079,14 +5065,12 @@
       ],
       "receiver": "Terminal",
       "return": {
-        "bits": 32,
-        "is_usize": false,
-        "kind": "int",
-        "signed": false
+        "kind": "value_struct",
+        "ref": "RGB"
       },
       "source": {
         "path": "config.zig",
-        "line": 22,
+        "line": 23,
         "column": 8
       },
       "zig_path": "paletteColor",
@@ -5103,7 +5087,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 27,
+            "line": 28,
             "column": 41
           },
           "type": {
@@ -5119,14 +5103,12 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 27,
+            "line": 28,
             "column": 50
           },
           "type": {
-            "bits": 32,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
+            "kind": "value_struct",
+            "ref": "RGB"
           }
         }
       ],
@@ -5136,7 +5118,7 @@
       },
       "source": {
         "path": "config.zig",
-        "line": 27,
+        "line": 28,
         "column": 8
       },
       "zig_path": "setPaletteColor",
@@ -5153,7 +5135,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 32,
+            "line": 33,
             "column": 43
           },
           "type": {
@@ -5170,7 +5152,7 @@
       },
       "source": {
         "path": "config.zig",
-        "line": 32,
+        "line": 33,
         "column": 8
       },
       "zig_path": "resetPaletteColor",
@@ -5187,7 +5169,7 @@
       },
       "source": {
         "path": "config.zig",
-        "line": 37,
+        "line": 38,
         "column": 8
       },
       "zig_path": "resetPalette",
@@ -5205,7 +5187,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 48,
+            "line": 49,
             "column": 48
           },
           "type": {
@@ -5218,7 +5200,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 48,
+            "line": 49,
             "column": 64
           },
           "type": {
@@ -5234,14 +5216,12 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 48,
+            "line": 49,
             "column": 73
           },
           "type": {
-            "bits": 32,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
+            "kind": "value_struct",
+            "ref": "RGB"
           }
         }
       ],
@@ -5257,7 +5237,7 @@
       },
       "source": {
         "path": "config.zig",
-        "line": 48,
+        "line": 49,
         "column": 8
       },
       "zig_path": "setDefaultPaletteColor",
@@ -5275,7 +5255,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 55,
+            "line": 56,
             "column": 45
           },
           "type": {
@@ -5289,7 +5269,7 @@
       },
       "source": {
         "path": "config.zig",
-        "line": 55,
+        "line": 56,
         "column": 8
       },
       "zig_path": "resetDefaultPalette",
@@ -5306,7 +5286,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 61,
+            "line": 62,
             "column": 40
           },
           "type": {
@@ -5320,7 +5300,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 61,
+            "line": 62,
             "column": 52
           },
           "type": {
@@ -5334,7 +5314,7 @@
       },
       "source": {
         "path": "config.zig",
-        "line": 61,
+        "line": 62,
         "column": 8
       },
       "zig_path": "setDefaultMode",
@@ -5351,7 +5331,7 @@
       },
       "source": {
         "path": "config.zig",
-        "line": 66,
+        "line": 67,
         "column": 8
       },
       "zig_path": "resetModes",
@@ -5368,7 +5348,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 74,
+            "line": 75,
             "column": 34
           },
           "type": {
@@ -5383,7 +5363,7 @@
       },
       "source": {
         "path": "config.zig",
-        "line": 74,
+        "line": 75,
         "column": 8
       },
       "zig_path": "saveMode",
@@ -5400,7 +5380,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 82,
+            "line": 83,
             "column": 37
           },
           "type": {
@@ -5415,7 +5395,7 @@
       },
       "source": {
         "path": "config.zig",
-        "line": 82,
+        "line": 83,
         "column": 8
       },
       "zig_path": "restoreMode",
@@ -5483,7 +5463,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 121,
+            "line": 122,
             "column": 5
           },
           "type": {
@@ -5496,7 +5476,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 122,
+            "line": 123,
             "column": 5
           },
           "type": {
@@ -5510,7 +5490,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 123,
+            "line": 124,
             "column": 5
           },
           "type": {
@@ -5530,7 +5510,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 124,
+            "line": 125,
             "column": 5
           },
           "type": {
@@ -5550,7 +5530,7 @@
       },
       "source": {
         "path": "config.zig",
-        "line": 119,
+        "line": 120,
         "column": 8
       },
       "zig_path": "setKittyGraphicsLoadingLimits",
@@ -5821,7 +5801,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 185,
+            "line": 186,
             "column": 29
           },
           "type": {
@@ -5835,7 +5815,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 185,
+            "line": 186,
             "column": 44
           },
           "type": {
@@ -5851,7 +5831,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 185,
+            "line": 186,
             "column": 52
           },
           "type": {
@@ -5872,7 +5852,7 @@
       },
       "source": {
         "path": "gridref.zig",
-        "line": 185,
+        "line": 186,
         "column": 8
       },
       "zig_path": "cellAt",
@@ -5890,7 +5870,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 192,
+            "line": 193,
             "column": 34
           },
           "type": {
@@ -5903,7 +5883,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 192,
+            "line": 193,
             "column": 50
           },
           "type": {
@@ -5917,7 +5897,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 192,
+            "line": 193,
             "column": 65
           },
           "type": {
@@ -5933,7 +5913,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 192,
+            "line": 193,
             "column": 73
           },
           "type": {
@@ -5968,7 +5948,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "gridref.zig",
-        "line": 192,
+        "line": 193,
         "column": 8
       },
       "zig_path": "hyperlinkAt",
@@ -6534,7 +6514,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 77,
+            "line": 81,
             "column": 36
           },
           "type": {
@@ -6548,7 +6528,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 77,
+            "line": 81,
             "column": 57
           },
           "type": {
@@ -6568,7 +6548,7 @@
       },
       "source": {
         "path": "format.zig",
-        "line": 77,
+        "line": 81,
         "column": 8
       },
       "zig_path": "screenFormat",
@@ -6585,7 +6565,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 85,
+            "line": 89,
             "column": 45
           },
           "type": {
@@ -6599,7 +6579,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 85,
+            "line": 89,
             "column": 66
           },
           "type": {
@@ -6613,7 +6593,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 85,
+            "line": 89,
             "column": 82
           },
           "type": {
@@ -6633,7 +6613,7 @@
       },
       "source": {
         "path": "format.zig",
-        "line": 85,
+        "line": 89,
         "column": 8
       },
       "zig_path": "screenFormatSelection",
@@ -7164,7 +7144,7 @@
       },
       "source": {
         "path": "gridref.zig",
-        "line": 119,
+        "line": 120,
         "column": 8
       },
       "zig_path": "gridRefClose",
@@ -7181,7 +7161,7 @@
       },
       "source": {
         "path": "gridref.zig",
-        "line": 125,
+        "line": 126,
         "column": 8
       },
       "zig_path": "gridRefHasValue",
@@ -7198,7 +7178,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 133,
+            "line": 134,
             "column": 43
           },
           "type": {
@@ -7217,7 +7197,7 @@
       },
       "source": {
         "path": "gridref.zig",
-        "line": 133,
+        "line": 134,
         "column": 8
       },
       "zig_path": "gridRefPoint",
@@ -7234,7 +7214,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 144,
+            "line": 145,
             "column": 35
           },
           "type": {
@@ -7248,7 +7228,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 144,
+            "line": 145,
             "column": 50
           },
           "type": {
@@ -7264,7 +7244,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 144,
+            "line": 145,
             "column": 58
           },
           "type": {
@@ -7287,7 +7267,7 @@
       },
       "source": {
         "path": "gridref.zig",
-        "line": 144,
+        "line": 145,
         "column": 8
       },
       "zig_path": "gridRefSet",
@@ -7308,7 +7288,7 @@
       },
       "source": {
         "path": "gridref.zig",
-        "line": 159,
+        "line": 160,
         "column": 8
       },
       "zig_path": "gridRefCell",
@@ -7326,7 +7306,7 @@
           "retention": "borrowed",
           "semantic": "codepoint",
           "source": {
-            "line": 169,
+            "line": 170,
             "column": 47
           },
           "type": {
@@ -7357,7 +7337,7 @@
       },
       "source": {
         "path": "gridref.zig",
-        "line": 169,
+        "line": 170,
         "column": 8
       },
       "zig_path": "gridRefGraphemes",
@@ -7375,7 +7355,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 176,
+            "line": 177,
             "column": 50
           },
           "type": {
@@ -7407,7 +7387,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "gridref.zig",
-        "line": 176,
+        "line": 177,
         "column": 8
       },
       "zig_path": "gridRefHyperlinkUri",
@@ -7792,7 +7772,7 @@
       "covers": [
         "ColorName.default"
       ],
-      "doc": "The color's default value as `0xRRGGBB`, or null when the name has none.\n\nOnly the sixteen named colors have one. The enum is open because every\nother 256-color palette index is a valid value, and those take their\ncolor from the palette rather than from a default; read them with\n`paletteColors`.\n\nWrapped because ghostty returns `color.RGB`, a `packed struct(u24)` with\nno C representation, behind an error union.",
+      "doc": "The color's default value, or null when the name has none.\n\nOnly the sixteen named colors have one. The enum is open because every\nother 256-color palette index is a valid value, and those take their\ncolor from the palette rather than from a default; read them with\n`paletteColors`.\n\nWrapped because ghostty returns `color.RGB`, a `packed struct(u24)` with\nno C representation, behind an error union.",
       "name": "colorNameDefault",
       "ownership": "borrowed",
       "params": [],
@@ -7800,16 +7780,14 @@
       "receiver_kind": "value",
       "return": {
         "child": {
-          "bits": 32,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
+          "kind": "value_struct",
+          "ref": "RGB"
         },
         "kind": "optional"
       },
       "source": {
         "path": "terminal.zig",
-        "line": 84,
+        "line": 85,
         "column": 8
       },
       "zig_path": "colorNameDefault",
@@ -10239,7 +10217,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 73,
+        "line": 74,
         "column": 8
       },
       "symbol": "zg_new_render_state"
@@ -10399,7 +10377,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 78,
+        "line": 79,
         "column": 8
       },
       "zig_path": "renderCellCount",
@@ -10416,7 +10394,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 84,
+            "line": 85,
             "column": 40
           },
           "type": {
@@ -10445,27 +10423,25 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 84,
+        "line": 85,
         "column": 8
       },
       "zig_path": "renderCells",
       "symbol": "zg_render_state_render_cells"
     },
     {
-      "doc": "The terminal's default background, 0xRRGGBB. Already reversed if the\nterminal is in reverse-video mode.",
+      "doc": "The terminal's default background. Already reversed if the\nterminal is in reverse-video mode.",
       "name": "renderBackground",
       "ownership": "borrowed",
       "params": [],
       "receiver": "RenderState",
       "return": {
-        "bits": 32,
-        "is_usize": false,
-        "kind": "int",
-        "signed": false
+        "kind": "value_struct",
+        "ref": "RGB"
       },
       "source": {
         "path": "render.zig",
-        "line": 268,
+        "line": 269,
         "column": 8
       },
       "zig_path": "renderBackground",
@@ -10477,14 +10453,12 @@
       "params": [],
       "receiver": "RenderState",
       "return": {
-        "bits": 32,
-        "is_usize": false,
-        "kind": "int",
-        "signed": false
+        "kind": "value_struct",
+        "ref": "RGB"
       },
       "source": {
         "path": "render.zig",
-        "line": 272,
+        "line": 273,
         "column": 8
       },
       "zig_path": "renderForeground",
@@ -10507,7 +10481,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 277,
+        "line": 278,
         "column": 8
       },
       "zig_path": "renderCursorX",
@@ -10529,7 +10503,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 282,
+        "line": 283,
         "column": 8
       },
       "zig_path": "renderCursorY",
@@ -10549,30 +10523,28 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 291,
+        "line": 292,
         "column": 8
       },
       "zig_path": "renderCursorWideTail",
       "symbol": "zg_render_state_render_cursor_wide_tail"
     },
     {
-      "doc": "The cursor color as of this frame, 0xRRGGBB, or null when the program has\nnot set one and the renderer should pick. Read from the snapshot rather\nthan the terminal so it matches the cells drawn beside it.",
+      "doc": "The cursor color as of this frame, or null when the program has\nnot set one and the renderer should pick. Read from the snapshot rather\nthan the terminal so it matches the cells drawn beside it.",
       "name": "renderCursorColor",
       "ownership": "borrowed",
       "params": [],
       "receiver": "RenderState",
       "return": {
         "child": {
-          "bits": 32,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
+          "kind": "value_struct",
+          "ref": "RGB"
         },
         "kind": "optional"
       },
       "source": {
         "path": "render.zig",
-        "line": 299,
+        "line": 300,
         "column": 8
       },
       "zig_path": "renderCursorColor",
@@ -10590,7 +10562,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 176,
+        "line": 177,
         "column": 8
       },
       "zig_path": "renderDirty",
@@ -10607,7 +10579,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 187,
+            "line": 188,
             "column": 44
           },
           "type": {
@@ -10638,7 +10610,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 187,
+        "line": 188,
         "column": 8
       },
       "zig_path": "renderDirtyRows",
@@ -10655,7 +10627,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 96,
+            "line": 97,
             "column": 43
           },
           "type": {
@@ -10671,7 +10643,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 96,
+            "line": 97,
             "column": 51
           },
           "type": {
@@ -10700,7 +10672,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 96,
+        "line": 97,
         "column": 8
       },
       "zig_path": "renderRowCells",
@@ -10717,7 +10689,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 203,
+            "line": 204,
             "column": 44
           },
           "type": {
@@ -10733,7 +10705,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 203,
+            "line": 204,
             "column": 52
           },
           "type": {
@@ -10750,7 +10722,7 @@
           "retention": "borrowed",
           "semantic": "codepoint",
           "source": {
-            "line": 203,
+            "line": 204,
             "column": 60
           },
           "type": {
@@ -10781,7 +10753,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 203,
+        "line": 204,
         "column": 8
       },
       "zig_path": "renderGraphemes",
@@ -10802,7 +10774,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 231,
+            "line": 232,
             "column": 46
           },
           "type": {
@@ -10815,7 +10787,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 231,
+            "line": 232,
             "column": 62
           },
           "type": {
@@ -10831,7 +10803,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 231,
+            "line": 232,
             "column": 70
           },
           "type": {
@@ -10866,7 +10838,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "render.zig",
-        "line": 231,
+        "line": 232,
         "column": 8
       },
       "zig_path": "renderHyperlinkAt",
@@ -13280,7 +13252,7 @@
         "signed": false
       },
       "text": true,
-      "zig_path": "terminal.modes.Mode__enum_40920"
+      "zig_path": "terminal.modes.Mode__enum_40926"
     },
     {
       "exhaustive": true,
@@ -13588,10 +13560,8 @@
         {
           "name": "underline_color_rgb",
           "type": {
-            "bits": 32,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
+            "kind": "value_struct",
+            "ref": "RGB"
           },
           "value": 7
         },
@@ -13685,20 +13655,16 @@
         {
           "name": "direct_color_fg",
           "type": {
-            "bits": 32,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
+            "kind": "value_struct",
+            "ref": "RGB"
           },
           "value": 20
         },
         {
           "name": "direct_color_bg",
           "type": {
-            "bits": 32,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
+            "kind": "value_struct",
+            "ref": "RGB"
           },
           "value": 21
         },
@@ -13784,6 +13750,45 @@
         "ref": "AttributeTag"
       },
       "zig_path": "terminal.Attribute"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "doc": "The red channel.",
+          "name": "r",
+          "type": {
+            "bits": 8,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "doc": "The green channel.",
+          "name": "g",
+          "type": {
+            "bits": 8,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "doc": "The blue channel.",
+          "name": "b",
+          "type": {
+            "bits": 8,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "kind": "value_struct",
+      "layout": "extern",
+      "name": "RGB",
+      "zig_path": "common.RGB"
     },
     {
       "exhaustive": true,
@@ -15607,33 +15612,27 @@
       "exhaustive": true,
       "fields": [
         {
-          "doc": "The terminal's default background as `0xRRGGBB`, after any OSC 11 the\nprogram set. What an unstyled cell should be painted with.",
+          "doc": "The terminal's default background, after any OSC 11 the program set.\nWhat an unstyled cell should be painted with.",
           "name": "background",
           "type": {
-            "bits": 32,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
+            "kind": "value_struct",
+            "ref": "RGB"
           }
         },
         {
-          "doc": "The default foreground as `0xRRGGBB`, after any OSC 10.",
+          "doc": "The default foreground, after any OSC 10.",
           "name": "foreground",
           "type": {
-            "bits": 32,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
+            "kind": "value_struct",
+            "ref": "RGB"
           }
         },
         {
-          "doc": "The cursor colour as `0xRRGGBB`, meaningful only when\n`cursor_has_value` is set.",
+          "doc": "The cursor colour, meaningful only when `cursor_has_value` is set.",
           "name": "cursor",
           "type": {
-            "bits": 32,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
+            "kind": "value_struct",
+            "ref": "RGB"
           }
         },
         {
@@ -15664,23 +15663,19 @@
           }
         },
         {
-          "doc": "Foreground as `0xRRGGBB`, already resolved: palette indices and\ndefaults are looked up, so this is the colour to paint with.",
+          "doc": "Foreground, already resolved: palette indices and\ndefaults are looked up, so this is the colour to paint with.",
           "name": "fg",
           "type": {
-            "bits": 32,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
+            "kind": "value_struct",
+            "ref": "RGB"
           }
         },
         {
-          "doc": "Background as `0xRRGGBB`, resolved the same way as `fg`.",
+          "doc": "Background, resolved the same way as `fg`.",
           "name": "bg",
           "type": {
-            "bits": 32,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
+            "kind": "value_struct",
+            "ref": "RGB"
           }
         },
         {

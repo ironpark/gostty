@@ -11,6 +11,7 @@ const common = @import("common.zig");
 
 const Allocator = std.mem.Allocator;
 const Terminal = common.Terminal;
+const RGB = common.RGB;
 const packColor = common.packColor;
 const unpackColor = common.unpackColor;
 const Underline = common.Underline;
@@ -72,7 +73,7 @@ pub fn historyString(self: *Terminal, gpa: Allocator) ![]const u8 {
 /// One of the 16 named ANSI colors.
 pub const ColorName = vt.color.Name;
 
-/// The color's default value as `0xRRGGBB`, or null when the name has none.
+/// The color's default value, or null when the name has none.
 ///
 /// Only the sixteen named colors have one. The enum is open because every
 /// other 256-color palette index is a valid value, and those take their
@@ -81,7 +82,7 @@ pub const ColorName = vt.color.Name;
 ///
 /// Wrapped because ghostty returns `color.RGB`, a `packed struct(u24)` with
 /// no C representation, behind an error union.
-pub fn colorNameDefault(name: ColorName) ?u32 {
+pub fn colorNameDefault(name: ColorName) ?RGB {
     return packColor(name.default() catch return null);
 }
 
@@ -91,7 +92,7 @@ pub fn colorNameDefault(name: ColorName) ?u32 {
 /// from crossing: its `unknown` variant carries the raw CSI parameters, which
 /// are a parser detail rather than something a caller sets, and its color
 /// variants carry a `packed struct(u24)` that has no C representation. RGB is
-/// carried here as `0xRRGGBB` instead.
+/// carried here as `RGB` instead.
 pub const Attribute = union(enum) {
     unset,
     bold,
@@ -100,7 +101,7 @@ pub const Attribute = union(enum) {
     reset_italic,
     faint,
     underline: Underline,
-    underline_color_rgb: u32,
+    underline_color_rgb: RGB,
     underline_color_256: u8,
     reset_underline_color,
     overline,
@@ -113,8 +114,8 @@ pub const Attribute = union(enum) {
     reset_invisible,
     strikethrough,
     reset_strikethrough,
-    direct_color_fg: u32,
-    direct_color_bg: u32,
+    direct_color_fg: RGB,
+    direct_color_bg: RGB,
     color_256_fg: u8,
     color_256_bg: u8,
     named_fg: ColorName,
@@ -245,28 +246,28 @@ pub fn clearScrollbackMaxLines(self: *Terminal) void {
     self.setScrollbackMaxLines(null);
 }
 
-// Colors. Everything is `0xRRGGBB`, the same packing `RenderCell` uses, so a
+// Colors. Everything is `RGB`, the same type `RenderCell` uses, so a
 // renderer keeps one color representation.
 
 /// The current background color: what OSC 11 set, else the default.
-pub fn backgroundColor(self: *const Terminal) ?u32 {
+pub fn backgroundColor(self: *const Terminal) ?RGB {
     return packColor(self.colors.background.get() orelse return null);
 }
 
 /// The current foreground color: what OSC 10 set, else the default.
-pub fn foregroundColor(self: *const Terminal) ?u32 {
+pub fn foregroundColor(self: *const Terminal) ?RGB {
     return packColor(self.colors.foreground.get() orelse return null);
 }
 
 /// The current cursor color, if one was set or configured. Null means the
 /// cursor takes the foreground color.
-pub fn cursorColor(self: *const Terminal) ?u32 {
+pub fn cursorColor(self: *const Terminal) ?RGB {
     return packColor(self.colors.cursor.get() orelse return null);
 }
 
 /// Copy the current 256-color palette into `dst` and return how many entries
 /// were written: 256, or `dst.len` if shorter.
-pub fn paletteColors(self: *const Terminal, dst: []u32) usize {
+pub fn paletteColors(self: *const Terminal, dst: []RGB) usize {
     const n = @min(dst.len, self.colors.palette.current.len);
     for (dst[0..n], self.colors.palette.current[0..n]) |*out, c| out.* = packColor(c);
     return n;
@@ -274,17 +275,17 @@ pub fn paletteColors(self: *const Terminal, dst: []u32) usize {
 
 /// Set the configured default background: the value in effect until OSC 11
 /// overrides it and again after OSC 111 resets it.
-pub fn setDefaultBackgroundColor(self: *Terminal, rgb: u32) void {
+pub fn setDefaultBackgroundColor(self: *Terminal, rgb: RGB) void {
     self.colors.background.default = unpackColor(rgb);
 }
 
 /// Set the configured default foreground. See `setDefaultBackgroundColor`.
-pub fn setDefaultForegroundColor(self: *Terminal, rgb: u32) void {
+pub fn setDefaultForegroundColor(self: *Terminal, rgb: RGB) void {
     self.colors.foreground.default = unpackColor(rgb);
 }
 
 /// Set the configured default cursor color. See `setDefaultBackgroundColor`.
-pub fn setDefaultCursorColor(self: *Terminal, rgb: u32) void {
+pub fn setDefaultCursorColor(self: *Terminal, rgb: RGB) void {
     self.colors.cursor.default = unpackColor(rgb);
 }
 

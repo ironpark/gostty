@@ -22,7 +22,7 @@ func paletteColor(t *testing.T, term *Terminal, idx uint8) uint32 {
 	if err != nil {
 		t.Fatalf("PaletteColor(%d): %v", idx, err)
 	}
-	return got
+	return got.Uint32()
 }
 
 func TestPaletteDefaults(t *testing.T) {
@@ -37,7 +37,7 @@ func TestPaletteDefaults(t *testing.T) {
 
 func TestSetAndResetPaletteColor(t *testing.T) {
 	term := newTerm(t, 20, 5)
-	if err := term.SetPaletteColor(1, 0x123456); err != nil {
+	if err := term.SetPaletteColor(1, RGBFromUint32(0x123456)); err != nil {
 		t.Fatalf("SetPaletteColor: %v", err)
 	}
 	if got := paletteColor(t, term, 1); got != 0x123456 {
@@ -58,7 +58,7 @@ func TestSetAndResetPaletteColor(t *testing.T) {
 func TestResetPalette(t *testing.T) {
 	term := newTerm(t, 20, 5)
 	for idx := uint8(0); idx < 8; idx++ {
-		if err := term.SetPaletteColor(idx, 0x010203); err != nil {
+		if err := term.SetPaletteColor(idx, RGBFromUint32(0x010203)); err != nil {
 			t.Fatalf("SetPaletteColor(%d): %v", idx, err)
 		}
 	}
@@ -80,13 +80,13 @@ func TestResetPalette(t *testing.T) {
 // later reset lands on.
 func TestSetDefaultPaletteColor(t *testing.T) {
 	term := newTerm(t, 20, 5)
-	if err := term.SetPaletteColor(1, 0xAAAAAA); err != nil {
+	if err := term.SetPaletteColor(1, RGBFromUint32(0xAAAAAA)); err != nil {
 		t.Fatalf("SetPaletteColor: %v", err)
 	}
-	if err := term.SetDefaultPaletteColor(1, 0x00FF00); err != nil {
+	if err := term.SetDefaultPaletteColor(1, RGBFromUint32(0x00FF00)); err != nil {
 		t.Fatalf("SetDefaultPaletteColor: %v", err)
 	}
-	if err := term.SetDefaultPaletteColor(2, 0x0000FF); err != nil {
+	if err := term.SetDefaultPaletteColor(2, RGBFromUint32(0x0000FF)); err != nil {
 		t.Fatalf("SetDefaultPaletteColor: %v", err)
 	}
 	if got := paletteColor(t, term, 1); got != 0xAAAAAA {
@@ -106,10 +106,10 @@ func TestSetDefaultPaletteColor(t *testing.T) {
 
 func TestResetDefaultPalette(t *testing.T) {
 	term := newTerm(t, 20, 5)
-	if err := term.SetDefaultPaletteColor(1, 0x00FF00); err != nil {
+	if err := term.SetDefaultPaletteColor(1, RGBFromUint32(0x00FF00)); err != nil {
 		t.Fatalf("SetDefaultPaletteColor: %v", err)
 	}
-	if err := term.SetPaletteColor(2, 0xAAAAAA); err != nil {
+	if err := term.SetPaletteColor(2, RGBFromUint32(0xAAAAAA)); err != nil {
 		t.Fatalf("SetPaletteColor: %v", err)
 	}
 	if err := term.ResetDefaultPalette(); err != nil {

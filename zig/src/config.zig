@@ -14,17 +14,18 @@ const common = @import("common.zig");
 
 const Allocator = std.mem.Allocator;
 const Terminal = common.Terminal;
+const RGB = common.RGB;
 const packColor = common.packColor;
 const unpackColor = common.unpackColor;
 const Mode = vt.Mode;
 
-/// Read one entry of the 256 color palette as `0xRRGGBB`.
-pub fn paletteColor(self: *Terminal, idx: u8) u32 {
+/// Read one entry of the 256 color palette.
+pub fn paletteColor(self: *Terminal, idx: u8) RGB {
     return packColor(self.colors.palette.current[idx]);
 }
 
 /// Override one palette entry, as OSC 4 does.
-pub fn setPaletteColor(self: *Terminal, idx: u8, rgb: u32) void {
+pub fn setPaletteColor(self: *Terminal, idx: u8, rgb: RGB) void {
     self.colors.palette.set(idx, unpackColor(rgb));
 }
 
@@ -45,7 +46,7 @@ pub fn resetPalette(self: *Terminal) void {
 /// value `resetPaletteColor` will later restore that moves. ghostty only
 /// offers this a whole palette at a time, so the single entry is edited into a
 /// copy of the current defaults.
-pub fn setDefaultPaletteColor(self: *Terminal, gpa: Allocator, idx: u8, rgb: u32) !void {
+pub fn setDefaultPaletteColor(self: *Terminal, gpa: Allocator, idx: u8, rgb: RGB) !void {
     var def = self.colors.palette.original.*;
     def[idx] = unpackColor(rgb);
     try self.colors.palette.changeDefault(gpa, def);

@@ -1211,32 +1211,44 @@ func TerminalSetTitle(self unsafe.Pointer, t string) int32 {
 }
 
 // TerminalBackgroundColor calls the generated C ABI wrapper for zg_terminal_background_color.
-func TerminalBackgroundColor(self unsafe.Pointer) (uint32, bool, int32) {
+func TerminalBackgroundColor(self unsafe.Pointer) (RGBData, bool, int32) {
 	var outResultHas C.uint8_t
-	var outResult C.uint32_t
+	var outResult C.zg_rgb
 	code := int32(C.zg_terminal_background_color((*C.zg_terminal)(self), &outResultHas, &outResult))
-	return uint32(outResult), outResultHas != 0, code
+	return RGBData{
+		R: uint8(outResult.r),
+		G: uint8(outResult.g),
+		B: uint8(outResult.b),
+	}, outResultHas != 0, code
 }
 
 // TerminalForegroundColor calls the generated C ABI wrapper for zg_terminal_foreground_color.
-func TerminalForegroundColor(self unsafe.Pointer) (uint32, bool, int32) {
+func TerminalForegroundColor(self unsafe.Pointer) (RGBData, bool, int32) {
 	var outResultHas C.uint8_t
-	var outResult C.uint32_t
+	var outResult C.zg_rgb
 	code := int32(C.zg_terminal_foreground_color((*C.zg_terminal)(self), &outResultHas, &outResult))
-	return uint32(outResult), outResultHas != 0, code
+	return RGBData{
+		R: uint8(outResult.r),
+		G: uint8(outResult.g),
+		B: uint8(outResult.b),
+	}, outResultHas != 0, code
 }
 
 // TerminalCursorColor calls the generated C ABI wrapper for zg_terminal_cursor_color.
-func TerminalCursorColor(self unsafe.Pointer) (uint32, bool, int32) {
+func TerminalCursorColor(self unsafe.Pointer) (RGBData, bool, int32) {
 	var outResultHas C.uint8_t
-	var outResult C.uint32_t
+	var outResult C.zg_rgb
 	code := int32(C.zg_terminal_cursor_color((*C.zg_terminal)(self), &outResultHas, &outResult))
-	return uint32(outResult), outResultHas != 0, code
+	return RGBData{
+		R: uint8(outResult.r),
+		G: uint8(outResult.g),
+		B: uint8(outResult.b),
+	}, outResultHas != 0, code
 }
 
 // TerminalPaletteColors calls the generated C ABI wrapper for zg_terminal_palette_colors.
-func TerminalPaletteColors(self unsafe.Pointer, dst []uint32) (uint, int32) {
-	dstPtr := (*C.uint32_t)(zigoSlicePtr(dst))
+func TerminalPaletteColors(self unsafe.Pointer, dst []RGBData) (uint, int32) {
+	dstPtr := (*C.zg_rgb)(zigoSlicePtr(dst))
 	var outResult C.size_t
 	code := int32(C.zg_terminal_palette_colors((*C.zg_terminal)(self), dstPtr, C.size_t(len(dst)), &outResult))
 	return uint(outResult), code
@@ -1256,8 +1268,8 @@ func TerminalSetMode(self unsafe.Pointer, mode uint16, value uint8) int32 {
 }
 
 // TerminalSetAttribute calls the generated C ABI wrapper for zg_terminal_set_attribute.
-func TerminalSetAttribute(self unsafe.Pointer, attr_tag uint8, attr_underline uint8, attr_underline_color_rgb uint32, attr_underline_color_256 uint8, attr_direct_color_fg uint32, attr_direct_color_bg uint32, attr_color_256_fg uint8, attr_color_256_bg uint8, attr_named_fg uint8, attr_named_bg uint8, attr_bright_named_fg uint8, attr_bright_named_bg uint8) int32 {
-	code := int32(C.zg_terminal_set_attribute((*C.zg_terminal)(self), C.uint8_t(attr_tag), C.uint8_t(attr_underline), C.uint32_t(attr_underline_color_rgb), C.uint8_t(attr_underline_color_256), C.uint32_t(attr_direct_color_fg), C.uint32_t(attr_direct_color_bg), C.uint8_t(attr_color_256_fg), C.uint8_t(attr_color_256_bg), C.uint8_t(attr_named_fg), C.uint8_t(attr_named_bg), C.uint8_t(attr_bright_named_fg), C.uint8_t(attr_bright_named_bg)))
+func TerminalSetAttribute(self unsafe.Pointer, attr_tag uint8, attr_underline uint8, attr_underline_color_rgb_r uint8, attr_underline_color_rgb_g uint8, attr_underline_color_rgb_b uint8, attr_underline_color_256 uint8, attr_direct_color_fg_r uint8, attr_direct_color_fg_g uint8, attr_direct_color_fg_b uint8, attr_direct_color_bg_r uint8, attr_direct_color_bg_g uint8, attr_direct_color_bg_b uint8, attr_color_256_fg uint8, attr_color_256_bg uint8, attr_named_fg uint8, attr_named_bg uint8, attr_bright_named_fg uint8, attr_bright_named_bg uint8) int32 {
+	code := int32(C.zg_terminal_set_attribute((*C.zg_terminal)(self), C.uint8_t(attr_tag), C.uint8_t(attr_underline), C.uint8_t(attr_underline_color_rgb_r), C.uint8_t(attr_underline_color_rgb_g), C.uint8_t(attr_underline_color_rgb_b), C.uint8_t(attr_underline_color_256), C.uint8_t(attr_direct_color_fg_r), C.uint8_t(attr_direct_color_fg_g), C.uint8_t(attr_direct_color_fg_b), C.uint8_t(attr_direct_color_bg_r), C.uint8_t(attr_direct_color_bg_g), C.uint8_t(attr_direct_color_bg_b), C.uint8_t(attr_color_256_fg), C.uint8_t(attr_color_256_bg), C.uint8_t(attr_named_fg), C.uint8_t(attr_named_bg), C.uint8_t(attr_bright_named_fg), C.uint8_t(attr_bright_named_bg)))
 	return code
 }
 
@@ -1293,20 +1305,32 @@ func TerminalCompressionActivity(self unsafe.Pointer) (uint64, int32) {
 }
 
 // TerminalSetDefaultBackgroundColor calls the generated C ABI wrapper for zg_terminal_set_default_background_color.
-func TerminalSetDefaultBackgroundColor(self unsafe.Pointer, rgb uint32) int32 {
-	code := int32(C.zg_terminal_set_default_background_color((*C.zg_terminal)(self), C.uint32_t(rgb)))
+func TerminalSetDefaultBackgroundColor(self unsafe.Pointer, rgb RGBData) int32 {
+	var crgb C.zg_rgb
+	crgb.r = C.uint8_t(rgb.R)
+	crgb.g = C.uint8_t(rgb.G)
+	crgb.b = C.uint8_t(rgb.B)
+	code := int32(C.zg_terminal_set_default_background_color((*C.zg_terminal)(self), &crgb))
 	return code
 }
 
 // TerminalSetDefaultForegroundColor calls the generated C ABI wrapper for zg_terminal_set_default_foreground_color.
-func TerminalSetDefaultForegroundColor(self unsafe.Pointer, rgb uint32) int32 {
-	code := int32(C.zg_terminal_set_default_foreground_color((*C.zg_terminal)(self), C.uint32_t(rgb)))
+func TerminalSetDefaultForegroundColor(self unsafe.Pointer, rgb RGBData) int32 {
+	var crgb C.zg_rgb
+	crgb.r = C.uint8_t(rgb.R)
+	crgb.g = C.uint8_t(rgb.G)
+	crgb.b = C.uint8_t(rgb.B)
+	code := int32(C.zg_terminal_set_default_foreground_color((*C.zg_terminal)(self), &crgb))
 	return code
 }
 
 // TerminalSetDefaultCursorColor calls the generated C ABI wrapper for zg_terminal_set_default_cursor_color.
-func TerminalSetDefaultCursorColor(self unsafe.Pointer, rgb uint32) int32 {
-	code := int32(C.zg_terminal_set_default_cursor_color((*C.zg_terminal)(self), C.uint32_t(rgb)))
+func TerminalSetDefaultCursorColor(self unsafe.Pointer, rgb RGBData) int32 {
+	var crgb C.zg_rgb
+	crgb.r = C.uint8_t(rgb.R)
+	crgb.g = C.uint8_t(rgb.G)
+	crgb.b = C.uint8_t(rgb.B)
+	code := int32(C.zg_terminal_set_default_cursor_color((*C.zg_terminal)(self), &crgb))
 	return code
 }
 
@@ -1329,15 +1353,23 @@ func TerminalResetDefaultCursorBlink(self unsafe.Pointer) int32 {
 }
 
 // TerminalPaletteColor calls the generated C ABI wrapper for zg_terminal_palette_color.
-func TerminalPaletteColor(self unsafe.Pointer, idx uint8) (uint32, int32) {
-	var outResult C.uint32_t
+func TerminalPaletteColor(self unsafe.Pointer, idx uint8) (RGBData, int32) {
+	var outResult C.zg_rgb
 	code := int32(C.zg_terminal_palette_color((*C.zg_terminal)(self), C.uint8_t(idx), &outResult))
-	return uint32(outResult), code
+	return RGBData{
+		R: uint8(outResult.r),
+		G: uint8(outResult.g),
+		B: uint8(outResult.b),
+	}, code
 }
 
 // TerminalSetPaletteColor calls the generated C ABI wrapper for zg_terminal_set_palette_color.
-func TerminalSetPaletteColor(self unsafe.Pointer, idx uint8, rgb uint32) int32 {
-	code := int32(C.zg_terminal_set_palette_color((*C.zg_terminal)(self), C.uint8_t(idx), C.uint32_t(rgb)))
+func TerminalSetPaletteColor(self unsafe.Pointer, idx uint8, rgb RGBData) int32 {
+	var crgb C.zg_rgb
+	crgb.r = C.uint8_t(rgb.R)
+	crgb.g = C.uint8_t(rgb.G)
+	crgb.b = C.uint8_t(rgb.B)
+	code := int32(C.zg_terminal_set_palette_color((*C.zg_terminal)(self), C.uint8_t(idx), &crgb))
 	return code
 }
 
@@ -1354,8 +1386,12 @@ func TerminalResetPalette(self unsafe.Pointer) int32 {
 }
 
 // TerminalSetDefaultPaletteColor calls the generated C ABI wrapper for zg_terminal_set_default_palette_color.
-func TerminalSetDefaultPaletteColor(self unsafe.Pointer, idx uint8, rgb uint32) int32 {
-	code := int32(C.zg_terminal_set_default_palette_color((*C.zg_terminal)(self), C.uint8_t(idx), C.uint32_t(rgb)))
+func TerminalSetDefaultPaletteColor(self unsafe.Pointer, idx uint8, rgb RGBData) int32 {
+	var crgb C.zg_rgb
+	crgb.r = C.uint8_t(rgb.R)
+	crgb.g = C.uint8_t(rgb.G)
+	crgb.b = C.uint8_t(rgb.B)
+	code := int32(C.zg_terminal_set_default_palette_color((*C.zg_terminal)(self), C.uint8_t(idx), &crgb))
 	return code
 }
 
@@ -1481,9 +1517,17 @@ func TerminalCellAt(self unsafe.Pointer, tag uint8, x uint16, y uint32) (RenderC
 	code := int32(C.zg_terminal_cell_at((*C.zg_terminal)(self), C.uint8_t(tag), C.uint16_t(x), C.uint32_t(y), &outResultHas, &outResult))
 	return RenderCellData{
 		Codepoint: uint32(outResult.codepoint),
-		Fg:        uint32(outResult.fg),
-		Bg:        uint32(outResult.bg),
-		Flags:     uint32(outResult.flags),
+		Fg: RGBData{
+			R: uint8(outResult.fg.r),
+			G: uint8(outResult.fg.g),
+			B: uint8(outResult.fg.b),
+		},
+		Bg: RGBData{
+			R: uint8(outResult.bg.r),
+			G: uint8(outResult.bg.g),
+			B: uint8(outResult.bg.b),
+		},
+		Flags: uint32(outResult.flags),
 	}, outResultHas != 0, code
 }
 
@@ -1867,9 +1911,17 @@ func GridRefCell(self unsafe.Pointer) (RenderCellData, bool, int32) {
 	code := int32(C.zg_grid_ref_cell((*C.zg_grid_ref)(self), &outResultHas, &outResult))
 	return RenderCellData{
 		Codepoint: uint32(outResult.codepoint),
-		Fg:        uint32(outResult.fg),
-		Bg:        uint32(outResult.bg),
-		Flags:     uint32(outResult.flags),
+		Fg: RGBData{
+			R: uint8(outResult.fg.r),
+			G: uint8(outResult.fg.g),
+			B: uint8(outResult.fg.b),
+		},
+		Bg: RGBData{
+			R: uint8(outResult.bg.r),
+			G: uint8(outResult.bg.g),
+			B: uint8(outResult.bg.b),
+		},
+		Flags: uint32(outResult.flags),
 	}, outResultHas != 0, code
 }
 
@@ -2026,10 +2078,14 @@ func GestureReset(self unsafe.Pointer) int32 {
 }
 
 // ColorNameDefault calls the generated C ABI wrapper for zg_color_name_default.
-func ColorNameDefault(self uint8) (uint32, bool) {
-	var outResult C.uint32_t
+func ColorNameDefault(self uint8) (RGBData, bool) {
+	var outResult C.zg_rgb
 	outResultHas := C.zg_color_name_default(C.uint8_t(self), &outResult) != 0
-	return uint32(outResult), outResultHas
+	return RGBData{
+		R: uint8(outResult.r),
+		G: uint8(outResult.g),
+		B: uint8(outResult.b),
+	}, outResultHas
 }
 
 // StreamFreeStream calls the generated C ABI wrapper for zg_stream_free_stream.
@@ -2592,9 +2648,21 @@ func RenderStateColors(self unsafe.Pointer) (RenderColorsData, int32) {
 	var outResult C.zg_render_colors
 	code := int32(C.zg_render_state_colors((*C.zg_render_state)(self), &outResult))
 	return RenderColorsData{
-		Background:     uint32(outResult.background),
-		Foreground:     uint32(outResult.foreground),
-		Cursor:         uint32(outResult.cursor),
+		Background: RGBData{
+			R: uint8(outResult.background.r),
+			G: uint8(outResult.background.g),
+			B: uint8(outResult.background.b),
+		},
+		Foreground: RGBData{
+			R: uint8(outResult.foreground.r),
+			G: uint8(outResult.foreground.g),
+			B: uint8(outResult.foreground.b),
+		},
+		Cursor: RGBData{
+			R: uint8(outResult.cursor.r),
+			G: uint8(outResult.cursor.g),
+			B: uint8(outResult.cursor.b),
+		},
 		CursorHasValue: uint8(outResult.cursor_has_value),
 	}, code
 }
@@ -2618,26 +2686,42 @@ func RenderStateCells(self unsafe.Pointer, dst []RenderCellData) (uint, int32) {
 	for i := 0; i < int(outResult) && i < len(dst); i++ {
 		dst[i] = RenderCellData{
 			Codepoint: uint32(dstValues[i].codepoint),
-			Fg:        uint32(dstValues[i].fg),
-			Bg:        uint32(dstValues[i].bg),
-			Flags:     uint32(dstValues[i].flags),
+			Fg: RGBData{
+				R: uint8(dstValues[i].fg.r),
+				G: uint8(dstValues[i].fg.g),
+				B: uint8(dstValues[i].fg.b),
+			},
+			Bg: RGBData{
+				R: uint8(dstValues[i].bg.r),
+				G: uint8(dstValues[i].bg.g),
+				B: uint8(dstValues[i].bg.b),
+			},
+			Flags: uint32(dstValues[i].flags),
 		}
 	}
 	return uint(outResult), code
 }
 
 // RenderStateBackground calls the generated C ABI wrapper for zg_render_state_background.
-func RenderStateBackground(self unsafe.Pointer) (uint32, int32) {
-	var outResult C.uint32_t
+func RenderStateBackground(self unsafe.Pointer) (RGBData, int32) {
+	var outResult C.zg_rgb
 	code := int32(C.zg_render_state_background((*C.zg_render_state)(self), &outResult))
-	return uint32(outResult), code
+	return RGBData{
+		R: uint8(outResult.r),
+		G: uint8(outResult.g),
+		B: uint8(outResult.b),
+	}, code
 }
 
 // RenderStateForeground calls the generated C ABI wrapper for zg_render_state_foreground.
-func RenderStateForeground(self unsafe.Pointer) (uint32, int32) {
-	var outResult C.uint32_t
+func RenderStateForeground(self unsafe.Pointer) (RGBData, int32) {
+	var outResult C.zg_rgb
 	code := int32(C.zg_render_state_foreground((*C.zg_render_state)(self), &outResult))
-	return uint32(outResult), code
+	return RGBData{
+		R: uint8(outResult.r),
+		G: uint8(outResult.g),
+		B: uint8(outResult.b),
+	}, code
 }
 
 // RenderStateCursorX calls the generated C ABI wrapper for zg_render_state_cursor_x.
@@ -2665,11 +2749,15 @@ func RenderStateCursorWideTail(self unsafe.Pointer) (uint8, bool, int32) {
 }
 
 // RenderStateCursorColor calls the generated C ABI wrapper for zg_render_state_cursor_color.
-func RenderStateCursorColor(self unsafe.Pointer) (uint32, bool, int32) {
+func RenderStateCursorColor(self unsafe.Pointer) (RGBData, bool, int32) {
 	var outResultHas C.uint8_t
-	var outResult C.uint32_t
+	var outResult C.zg_rgb
 	code := int32(C.zg_render_state_cursor_color((*C.zg_render_state)(self), &outResultHas, &outResult))
-	return uint32(outResult), outResultHas != 0, code
+	return RGBData{
+		R: uint8(outResult.r),
+		G: uint8(outResult.g),
+		B: uint8(outResult.b),
+	}, outResultHas != 0, code
 }
 
 // RenderStateDirty calls the generated C ABI wrapper for zg_render_state_dirty.
@@ -2699,9 +2787,17 @@ func RenderStateRowCells(self unsafe.Pointer, y uint16, dst []RenderCellData) (u
 	for i := 0; i < int(outResult) && i < len(dst); i++ {
 		dst[i] = RenderCellData{
 			Codepoint: uint32(dstValues[i].codepoint),
-			Fg:        uint32(dstValues[i].fg),
-			Bg:        uint32(dstValues[i].bg),
-			Flags:     uint32(dstValues[i].flags),
+			Fg: RGBData{
+				R: uint8(dstValues[i].fg.r),
+				G: uint8(dstValues[i].fg.g),
+				B: uint8(dstValues[i].fg.b),
+			},
+			Bg: RGBData{
+				R: uint8(dstValues[i].bg.r),
+				G: uint8(dstValues[i].bg.g),
+				B: uint8(dstValues[i].bg.b),
+			},
+			Flags: uint32(dstValues[i].flags),
 		}
 	}
 	return uint(outResult), code
@@ -2833,18 +2929,24 @@ func SgrAttributeAt(params []uint16, colonMask uint32, index uint) (AttributeDat
 	var outResult C.zg_attribute_snapshot_t
 	code := int32(C.zg_sgr_attribute_at(paramsPtr, C.size_t(len(params)), C.uint32_t(colonMask), C.size_t(index), &outResult))
 	return AttributeData{
-		Tag:               uint8(outResult.tag),
-		Underline:         uint8(outResult.underline),
-		UnderlineColorRgb: uint32(outResult.underline_color_rgb),
-		UnderlineColor256: uint8(outResult.underline_color_256),
-		DirectColorFg:     uint32(outResult.direct_color_fg),
-		DirectColorBg:     uint32(outResult.direct_color_bg),
-		Color256Fg:        uint8(outResult.color_256_fg),
-		Color256Bg:        uint8(outResult.color_256_bg),
-		NamedFg:           uint8(outResult.named_fg),
-		NamedBg:           uint8(outResult.named_bg),
-		BrightNamedFg:     uint8(outResult.bright_named_fg),
-		BrightNamedBg:     uint8(outResult.bright_named_bg),
+		Tag:                uint8(outResult.tag),
+		Underline:          uint8(outResult.underline),
+		UnderlineColorRgbR: uint8(outResult.underline_color_rgb_r),
+		UnderlineColorRgbG: uint8(outResult.underline_color_rgb_g),
+		UnderlineColorRgbB: uint8(outResult.underline_color_rgb_b),
+		UnderlineColor256:  uint8(outResult.underline_color_256),
+		DirectColorFgR:     uint8(outResult.direct_color_fg_r),
+		DirectColorFgG:     uint8(outResult.direct_color_fg_g),
+		DirectColorFgB:     uint8(outResult.direct_color_fg_b),
+		DirectColorBgR:     uint8(outResult.direct_color_bg_r),
+		DirectColorBgG:     uint8(outResult.direct_color_bg_g),
+		DirectColorBgB:     uint8(outResult.direct_color_bg_b),
+		Color256Fg:         uint8(outResult.color_256_fg),
+		Color256Bg:         uint8(outResult.color_256_bg),
+		NamedFg:            uint8(outResult.named_fg),
+		NamedBg:            uint8(outResult.named_bg),
+		BrightNamedFg:      uint8(outResult.bright_named_fg),
+		BrightNamedBg:      uint8(outResult.bright_named_bg),
 	}, code
 }
 
@@ -2911,6 +3013,13 @@ type FormatOptionsData struct {
 	NoStyles               uint8
 	NoHyperlinks           uint8
 	ResolvePalette         uint8
+}
+
+// RGBData mirrors the zg_rgb layout, padding included.
+type RGBData struct {
+	R uint8
+	G uint8
+	B uint8
 }
 
 // ScrollbarData mirrors the zg_scrollbar layout, padding included.
@@ -2985,18 +3094,18 @@ type SnapshotProgressData struct {
 
 // RenderColorsData mirrors the zg_render_colors layout, padding included.
 type RenderColorsData struct {
-	Background     uint32
-	Foreground     uint32
-	Cursor         uint32
+	Background     RGBData
+	Foreground     RGBData
+	Cursor         RGBData
 	CursorHasValue uint8
-	_              [3]byte
 }
 
 // RenderCellData mirrors the zg_render_cell layout, padding included.
 type RenderCellData struct {
 	Codepoint uint32
-	Fg        uint32
-	Bg        uint32
+	Fg        RGBData
+	Bg        RGBData
+	_         [2]byte
 	Flags     uint32
 }
 
@@ -3036,21 +3145,24 @@ type KittyImageData struct {
 
 // AttributeData mirrors the zg_attribute_snapshot_t layout, padding included.
 type AttributeData struct {
-	Tag               uint8
-	Underline         uint8
-	_                 [2]byte
-	UnderlineColorRgb uint32
-	UnderlineColor256 uint8
-	_                 [3]byte
-	DirectColorFg     uint32
-	DirectColorBg     uint32
-	Color256Fg        uint8
-	Color256Bg        uint8
-	NamedFg           uint8
-	NamedBg           uint8
-	BrightNamedFg     uint8
-	BrightNamedBg     uint8
-	_                 [2]byte
+	Tag                uint8
+	Underline          uint8
+	UnderlineColorRgbR uint8
+	UnderlineColorRgbG uint8
+	UnderlineColorRgbB uint8
+	UnderlineColor256  uint8
+	DirectColorFgR     uint8
+	DirectColorFgG     uint8
+	DirectColorFgB     uint8
+	DirectColorBgR     uint8
+	DirectColorBgG     uint8
+	DirectColorBgB     uint8
+	Color256Fg         uint8
+	Color256Bg         uint8
+	NamedFg            uint8
+	NamedBg            uint8
+	BrightNamedFg      uint8
+	BrightNamedBg      uint8
 }
 
 // KeyEventData slices are copied from C memory as one run, so it must match zg_key_event byte for byte.
@@ -3104,6 +3216,12 @@ var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.Cursor)-unsafe.Offseto
 var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.NoStyles)-unsafe.Offsetof(C.zg_format_options{}.no_styles)]
 var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.NoHyperlinks)-unsafe.Offsetof(C.zg_format_options{}.no_hyperlinks)]
 var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.ResolvePalette)-unsafe.Offsetof(C.zg_format_options{}.resolve_palette)]
+
+// RGBData slices are copied from C memory as one run, so it must match zg_rgb byte for byte.
+var _ = [1]struct{}{}[unsafe.Sizeof(RGBData{})-unsafe.Sizeof(C.zg_rgb{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(RGBData{}.R)-unsafe.Offsetof(C.zg_rgb{}.r)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RGBData{}.G)-unsafe.Offsetof(C.zg_rgb{}.g)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RGBData{}.B)-unsafe.Offsetof(C.zg_rgb{}.b)]
 
 // ScrollbarData slices are copied from C memory as one run, so it must match zg_scrollbar byte for byte.
 var _ = [1]struct{}{}[unsafe.Sizeof(ScrollbarData{})-unsafe.Sizeof(C.zg_scrollbar{})]
@@ -3211,10 +3329,16 @@ var _ = [1]struct{}{}[unsafe.Offsetof(KittyImageData{}.Pad)-unsafe.Offsetof(C.zg
 var _ = [1]struct{}{}[unsafe.Sizeof(AttributeData{})-unsafe.Sizeof(C.zg_attribute_snapshot_t{})]
 var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.Tag)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.tag)]
 var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.Underline)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.underline)]
-var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.UnderlineColorRgb)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.underline_color_rgb)]
+var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.UnderlineColorRgbR)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.underline_color_rgb_r)]
+var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.UnderlineColorRgbG)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.underline_color_rgb_g)]
+var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.UnderlineColorRgbB)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.underline_color_rgb_b)]
 var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.UnderlineColor256)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.underline_color_256)]
-var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.DirectColorFg)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.direct_color_fg)]
-var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.DirectColorBg)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.direct_color_bg)]
+var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.DirectColorFgR)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.direct_color_fg_r)]
+var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.DirectColorFgG)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.direct_color_fg_g)]
+var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.DirectColorFgB)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.direct_color_fg_b)]
+var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.DirectColorBgR)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.direct_color_bg_r)]
+var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.DirectColorBgG)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.direct_color_bg_g)]
+var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.DirectColorBgB)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.direct_color_bg_b)]
 var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.Color256Fg)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.color_256_fg)]
 var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.Color256Bg)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.color_256_bg)]
 var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.NamedFg)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.named_fg)]

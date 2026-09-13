@@ -291,7 +291,7 @@ func TestSGRColonUnderlineStyle(t *testing.T) {
 }
 
 func TestSGRTruecolor(t *testing.T) {
-	const orange = uint32(0xFF8800)
+	orange := RGBFromUint32(0xFF8800)
 
 	// Semicolon form: CSI 38;2;255;136;0 m
 	expectSGR(t, parseSGR(t, []uint16{38, 2, 255, 136, 0}, 0), AttributeDirectColorFg(orange))

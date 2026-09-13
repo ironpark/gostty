@@ -167,8 +167,8 @@ func (f *frame) readColors(state *gostty.RenderState, theme ui.Theme) error {
 	if err != nil {
 		return err
 	}
-	f.colors.terminalBg = ui.RGB(colors.Background)
-	f.colors.terminalFg = ui.RGB(colors.Foreground)
+	f.colors.terminalBg = ui.FromColor(colors.Background)
+	f.colors.terminalFg = ui.FromColor(colors.Foreground)
 	if theme.Terminal {
 		f.colors.bg, f.colors.fg = f.colors.terminalBg, f.colors.terminalFg
 	} else {
@@ -201,7 +201,7 @@ func (f *frame) readCursor(state *gostty.RenderState) error {
 	if err != nil {
 		return err
 	}
-	f.cursor.color, f.cursor.hasColor = ui.RGB(rgba), ok
+	f.cursor.color, f.cursor.hasColor = ui.FromColor(rgba), ok
 	return nil
 }
 

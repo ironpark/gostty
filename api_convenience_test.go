@@ -138,7 +138,7 @@ func TestRenderMetadataSnapshot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if colors.Foreground != 0x112233 || colors.Background != 0x445566 || colors.Cursor != 0x778899 || !colors.CursorHasValue {
+	if colors.Foreground.Uint32() != 0x112233 || colors.Background.Uint32() != 0x445566 || colors.Cursor.Uint32() != 0x778899 || !colors.CursorHasValue {
 		t.Fatalf("colors = %+v", colors)
 	}
 	feed(t, s, "\x1b[1;1H\x1b[?25l\x1b]11;#000000\x07")
@@ -152,14 +152,14 @@ func TestRenderMetadataSnapshot(t *testing.T) {
 	if err != nil || after.Visible {
 		t.Fatalf("updated cursor = %+v, %v", after, err)
 	}
-	if colors.Background != 0x445566 || cursor.X != 3 {
+	if colors.Background.Uint32() != 0x445566 || cursor.X != 3 {
 		t.Fatal("retained metadata changed")
 	}
 }
 
 func TestConfigurationConstructors(t *testing.T) {
 	zero := uint(0)
-	black := uint32(0)
+	black := RGB{}
 	noBlink := false
 	term, err := NewTerminalWithConfig(TerminalConfig{Cols: 10, Rows: 2, ScrollbackMaxBytes: &zero, ScrollbackMaxLines: &zero, BackgroundColor: &black, CursorBlink: &noBlink, ModeDefaults: []ModeDefault{{Mode: ModeCursorVisible, Enabled: false}}})
 	if err != nil {
@@ -201,7 +201,7 @@ func TestConfigurationConstructors(t *testing.T) {
 		t.Fatalf("explicit false = %+v, %v", cursor, err)
 	}
 	colors, err := state.Colors()
-	if err != nil || colors.Background != 0 {
+	if err != nil || colors.Background != (RGB{}) {
 		t.Fatalf("explicit black = %+v, %v", colors, err)
 	}
 	for _, cfg := range []TerminalConfig{{}, {Cols: 1}, {Rows: 1}} {
@@ -498,7 +498,7 @@ func TestNilClipboardRegistrationPreservesHandler(t *testing.T) {
 func TestFunctionalOptionsAndConvenience(t *testing.T) {
 	// The background color is not one ghostty's Options can carry across the
 	// ABI, so it comes from TerminalConfig rather than a constructor option.
-	bg := uint32(0x123456)
+	bg := RGBFromUint32(0x123456)
 	term, err := NewTerminalWithConfig(
 		TerminalConfig{Cols: 80, Rows: 24, BackgroundColor: &bg},
 		WithScrollbackMaxLines(500),

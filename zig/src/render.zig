@@ -9,6 +9,7 @@ const vt = @import("ghostty_vt");
 const common = @import("common.zig");
 
 const Allocator = std.mem.Allocator;
+const RGB = common.RGB;
 const packColor = common.packColor;
 const Underline = common.Underline;
 
@@ -56,11 +57,11 @@ pub const RenderCell = extern struct {
     /// The cell's codepoint, or 0 for an empty cell. Only the first codepoint
     /// of a grapheme cluster; combining marks are not carried across.
     codepoint: u32,
-    /// Foreground as `0xRRGGBB`, already resolved: palette indices and
+    /// Foreground, already resolved: palette indices and
     /// defaults are looked up, so this is the colour to paint with.
-    fg: u32,
-    /// Background as `0xRRGGBB`, resolved the same way as `fg`.
-    bg: u32,
+    fg: RGB,
+    /// Background, resolved the same way as `fg`.
+    bg: RGB,
     /// Style bits for this cell -- bold, underline, selection and the rest.
     /// Carried as the backing integer in array positions; read a named field
     /// off it with `CellFlagsFromBacking`.
@@ -103,7 +104,7 @@ pub fn renderRowCells(self: *RenderState, y: u16, dst: []RenderCell) !usize {
 
 /// What every cell of a frame starts from: the colors the terminal falls back
 /// to, resolved once per frame rather than once per row.
-const RowDefaults = struct { fg: u32, bg: u32 };
+const RowDefaults = struct { fg: RGB, bg: RGB };
 
 fn rowDefaults(self: *RenderState) RowDefaults {
     return .{
@@ -239,7 +240,7 @@ pub fn renderHyperlinkAt(self: *RenderState, gpa: Allocator, x: u16, y: u16) !?[
     return try gpa.dupe(u8, entry.uri.slice(pg.memory));
 }
 
-fn resolveColor(self: *RenderState, c: vt.Style.Color) ?u32 {
+fn resolveColor(self: *RenderState, c: vt.Style.Color) ?RGB {
     return switch (c) {
         .none => null,
         .palette => |i| packColor(self.colors.palette[i]),
@@ -263,13 +264,13 @@ pub fn mergeFlags(out: CellFlags, f: anytype) CellFlags {
     return merged;
 }
 
-/// The terminal's default background, 0xRRGGBB. Already reversed if the
+/// The terminal's default background. Already reversed if the
 /// terminal is in reverse-video mode.
-pub fn renderBackground(self: *RenderState) u32 {
+pub fn renderBackground(self: *RenderState) RGB {
     return packColor(self.colors.background);
 }
 
-pub fn renderForeground(self: *RenderState) u32 {
+pub fn renderForeground(self: *RenderState) RGB {
     return packColor(self.colors.foreground);
 }
 
@@ -293,10 +294,10 @@ pub fn renderCursorWideTail(self: *RenderState) ?bool {
     return vp.wide_tail;
 }
 
-/// The cursor color as of this frame, 0xRRGGBB, or null when the program has
+/// The cursor color as of this frame, or null when the program has
 /// not set one and the renderer should pick. Read from the snapshot rather
 /// than the terminal so it matches the cells drawn beside it.
-pub fn renderCursorColor(self: *RenderState) ?u32 {
+pub fn renderCursorColor(self: *RenderState) ?RGB {
     return packColor(self.colors.cursor orelse return null);
 }
 
@@ -314,17 +315,16 @@ pub const RenderCursor = packed struct(u64) {
     _pad: u25 = 0,
 };
 
-/// Resolved frame colors, all 0xRRGGBB. Cursor is meaningful only when
+/// Resolved frame colors. Cursor is meaningful only when
 /// cursor_has_value is true. Palette reads remain on Terminal.
 pub const RenderColors = extern struct {
-    /// The terminal's default background as `0xRRGGBB`, after any OSC 11 the
-    /// program set. What an unstyled cell should be painted with.
-    background: u32,
-    /// The default foreground as `0xRRGGBB`, after any OSC 10.
-    foreground: u32,
-    /// The cursor colour as `0xRRGGBB`, meaningful only when
-    /// `cursor_has_value` is set.
-    cursor: u32,
+    /// The terminal's default background, after any OSC 11 the program set.
+    /// What an unstyled cell should be painted with.
+    background: RGB,
+    /// The default foreground, after any OSC 10.
+    foreground: RGB,
+    /// The cursor colour, meaningful only when `cursor_has_value` is set.
+    cursor: RGB,
     /// Whether the program set a cursor colour at all. When false the cursor
     /// is the embedder's to colour, conventionally with `foreground`.
     cursor_has_value: bool,
@@ -353,7 +353,7 @@ pub fn renderColors(self: *RenderState) RenderColors {
     return .{
         .background = renderBackground(self),
         .foreground = renderForeground(self),
-        .cursor = renderCursorColor(self) orelse 0,
+        .cursor = renderCursorColor(self) orelse .{ .r = 0, .g = 0, .b = 0 },
         .cursor_has_value = self.colors.cursor != null,
     };
 }

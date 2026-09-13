@@ -84,6 +84,9 @@ const common_ = @import("common.zig");
 
 pub const io = common_.io;
 pub const Terminal = common_.Terminal;
+/// Aliased here because the generated shim spells every registered type as
+/// `root.<Name>`, and every color that crosses the boundary is one of these.
+pub const RGB = common_.RGB;
 pub const CursorStyle = common_.CursorStyle;
 pub const CursorStyleReq = common_.CursorStyleReq;
 pub const ScreenKey = common_.ScreenKey;
