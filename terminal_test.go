@@ -18,11 +18,11 @@ func newTerm(t *testing.T, cols, rows uint16) *Terminal {
 
 func TestTerminalSize(t *testing.T) {
 	term := newTerm(t, 80, 24)
-	if got, err := term.Cols(); err != nil || got != 80 {
-		t.Errorf("Cols() = %d, %v; want 80, nil", got, err)
+	if got := term.Cols(); got != 80 {
+		t.Errorf("Cols() = %d; want 80", got)
 	}
-	if got, err := term.Rows(); err != nil || got != 24 {
-		t.Errorf("Rows() = %d, %v; want 24, nil", got, err)
+	if got := term.Rows(); got != 24 {
+		t.Errorf("Rows() = %d; want 24", got)
 	}
 }
 
@@ -49,11 +49,11 @@ func TestPrintStringAndDump(t *testing.T) {
 		t.Errorf("PlainString() = %q, want %q", got, want)
 	}
 
-	if x, err := term.CursorX(); err != nil || x != 5 {
-		t.Errorf("CursorX() = %d, %v; want 5, nil", x, err)
+	if x := term.CursorX(); x != 5 {
+		t.Errorf("CursorX() = %d; want 5", x)
 	}
-	if y, err := term.CursorY(); err != nil || y != 1 {
-		t.Errorf("CursorY() = %d, %v; want 1, nil", y, err)
+	if y := term.CursorY(); y != 1 {
+		t.Errorf("CursorY() = %d; want 1", y)
 	}
 }
 
@@ -70,8 +70,8 @@ func TestPrintStringUTF8(t *testing.T) {
 		t.Errorf("PlainString() = %q, want prefix %q", got, "안녕😀")
 	}
 	// Each of these is a wide cell, so the cursor advanced by 6 columns.
-	if x, err := term.CursorX(); err != nil || x != 6 {
-		t.Errorf("CursorX() = %d, %v; want 6, nil", x, err)
+	if x := term.CursorX(); x != 6 {
+		t.Errorf("CursorX() = %d; want 6", x)
 	}
 }
 
@@ -88,12 +88,9 @@ func TestCursorStyleRoundTrip(t *testing.T) {
 		{CursorStyleReqSteadyBlock, CursorStyleBlock},
 	} {
 		if err := term.SetCursorStyle(tc.req); err != nil {
-			t.Fatalf("SetCursorStyle(%v): %v", tc.req, err)
+			t.Fatalf("SetCursorStyle(%v):", tc.req)
 		}
-		got, err := term.CursorStyle()
-		if err != nil {
-			t.Fatalf("CursorStyle: %v", err)
-		}
+		got := term.CursorStyle()
 		if got != tc.want {
 			t.Errorf("after SetCursorStyle(%v), CursorStyle() = %v, want %v", tc.req, got, tc.want)
 		}
@@ -135,9 +132,24 @@ func TestUseAfterClose(t *testing.T) {
 	if err := term.Close(); err != nil {
 		t.Fatalf("second Close: %v", err)
 	}
-	if _, err := term.Cols(); !errors.Is(err, ErrInvalidHandle) {
-		t.Errorf("Cols() after Close = %v, want ErrInvalidHandle", err)
-	}
+	// Cols has no error to return any more, so a read through a closed handle
+	// panics rather than reporting. That is the trade the plain name buys: the
+	// error was a defect, and a defect is not a value to branch on.
+	func() {
+		defer func() {
+			switch r := recover().(type) {
+			case nil:
+				t.Error("Cols() after Close did not panic")
+			case error:
+				if !errors.Is(r, ErrInvalidHandle) {
+					t.Errorf("Cols() after Close panicked with %v, want ErrInvalidHandle", r)
+				}
+			default:
+				t.Errorf("Cols() after Close panicked with %T", r)
+			}
+		}()
+		_ = term.Cols()
+	}()
 }
 
 func TestBackspace(t *testing.T) {

@@ -35,6 +35,56 @@ func encodedSnapshot(t *testing.T) []byte {
 }
 
 // A snapshot round-trips the screen, scrollback and an unfinished sequence.
+// A snapshot can hand back a terminal of its own rather than only filling one
+// the caller already made. Both consume the snapshot, and they consume the
+// same one: whichever runs first takes it.
+func TestSnapshotNewTerminal(t *testing.T) {
+	term := MustNewTerminal(20, 3)
+	defer term.Close()
+	stream, err := term.NewStream(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer stream.Close()
+	if _, err := stream.WriteString("snapshot me\r\n"); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	if err := stream.WriteSnapshot(&buf); err != nil {
+		t.Fatal(err)
+	}
+	decoded, err := DecodeSnapshot(bytes.NewReader(buf.Bytes()), 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer decoded.Close()
+
+	restored, err := decoded.NewTerminal()
+	if err != nil {
+		t.Fatalf("NewTerminal:")
+	}
+	defer restored.Close()
+	if restored.Cols() != 20 || restored.Rows() != 3 {
+		t.Fatalf("restored dimensions = %dx%d, want 20x3", restored.Cols(), restored.Rows())
+	}
+	text, err := restored.PlainText(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(text, "snapshot me") {
+		t.Fatalf("restored PlainText = %q", text)
+	}
+
+	// The snapshot gives its terminal up once, by either route.
+	if _, err := decoded.NewTerminal(); err == nil {
+		t.Error("second NewTerminal succeeded")
+	}
+	if err := decoded.RestoreInto(term); err == nil {
+		t.Error("RestoreInto after NewTerminal succeeded")
+	}
+}
+
 func TestSnapshotRoundTrip(t *testing.T) {
 	snap := encodedSnapshot(t)
 
@@ -58,7 +108,7 @@ func TestSnapshotRoundTrip(t *testing.T) {
 	if err := decoded.RestoreInto(restored); err == nil {
 		t.Error("second RestoreInto succeeded")
 	}
-	if cols, _ := restored.Cols(); cols != 10 {
+	if cols := restored.Cols(); cols != 10 {
 		t.Errorf("restored Cols() = %d, want 10", cols)
 	}
 	if got, err := restored.PlainString(); err != nil || got != "two\nthree" {
@@ -144,7 +194,7 @@ func TestSnapshotDecoderIncremental(t *testing.T) {
 	}
 
 	// The terminal is drawable now, with the active area but no scrollback.
-	if cols, _ := restored.Cols(); cols != 10 {
+	if cols := restored.Cols(); cols != 10 {
 		t.Errorf("restored Cols() = %d, want 10", cols)
 	}
 	if got, err := restored.PlainString(); err != nil || got != "line\ntail" {

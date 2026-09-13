@@ -14,9 +14,16 @@ const Terminal = common.Terminal;
 /// A terminal always has a region: with no margins set it covers the whole
 /// screen, so `bottom` is `rows - 1` and `right` is `cols - 1`.
 pub const ScrollRegion = extern struct {
+    /// First row that scrolls, zero-based and inclusive (DECSTBM top).
     top: u16,
+    /// Last row that scrolls, inclusive. A full-height region ends at
+    /// `rows - 1`.
     bottom: u16,
+    /// First column that scrolls, inclusive (DECSLRM left). Meaningful only
+    /// while left-right margin mode is on; otherwise it is 0.
     left: u16,
+    /// Last column that scrolls, inclusive. Without margin mode it is
+    /// `cols - 1`.
     right: u16,
 };
 

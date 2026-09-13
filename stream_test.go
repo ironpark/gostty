@@ -53,14 +53,8 @@ func TestStreamCursorPosition(t *testing.T) {
 	// CUP: move to row 3, column 7 (1-based).
 	feed(t, stream, "\x1b[3;7H")
 
-	x, err := term.CursorX()
-	if err != nil {
-		t.Fatalf("CursorX: %v", err)
-	}
-	y, err := term.CursorY()
-	if err != nil {
-		t.Fatalf("CursorY: %v", err)
-	}
+	x := term.CursorX()
+	y := term.CursorY()
 	if x != 6 || y != 2 {
 		t.Errorf("cursor = (%d,%d), want (6,2)", x, y)
 	}
@@ -101,14 +95,8 @@ func TestStreamSplitEscapeSequence(t *testing.T) {
 	feed(t, stream, "\x1b[3")
 	feed(t, stream, ";7H")
 
-	x, err := term.CursorX()
-	if err != nil {
-		t.Fatalf("CursorX: %v", err)
-	}
-	y, err := term.CursorY()
-	if err != nil {
-		t.Fatalf("CursorY: %v", err)
-	}
+	x := term.CursorX()
+	y := term.CursorY()
 	if x != 6 || y != 2 {
 		t.Errorf("cursor = (%d,%d), want (6,2); parser state lost across Feed", x, y)
 	}
@@ -119,10 +107,7 @@ func TestStreamDECSCUSR(t *testing.T) {
 	// DECSCUSR 3: blinking underline.
 	feed(t, stream, "\x1b[3 q")
 
-	got, err := term.CursorStyle()
-	if err != nil {
-		t.Fatalf("CursorStyle: %v", err)
-	}
+	got := term.CursorStyle()
 	if got != CursorStyleUnderline {
 		t.Errorf("CursorStyle() = %v, want %v", got, CursorStyleUnderline)
 	}
@@ -132,10 +117,7 @@ func TestStreamNoSemanticFailure(t *testing.T) {
 	_, stream := newStreamPair(t, 20, 3)
 	feed(t, stream, "\x1b[31mhello\x1b[0m\r\n\x1b[2Jworld")
 
-	failed, err := stream.Failed()
-	if err != nil {
-		t.Fatalf("Failed: %v", err)
-	}
+	failed := stream.Failed()
 	if failed {
 		t.Error("stream reported a semantic failure on well-formed input")
 	}
@@ -164,7 +146,7 @@ func TestStreamKeepsTerminalOpen(t *testing.T) {
 	}
 
 	// The terminal is still usable after the refusal.
-	if _, err := term.Cols(); err != nil {
+	if _ = term.Cols(); false {
 		t.Errorf("Cols() after a refused Close: %v", err)
 	}
 

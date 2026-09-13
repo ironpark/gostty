@@ -56,9 +56,14 @@ pub const RenderCell = extern struct {
     /// The cell's codepoint, or 0 for an empty cell. Only the first codepoint
     /// of a grapheme cluster; combining marks are not carried across.
     codepoint: u32,
-    /// 0xRRGGBB.
+    /// Foreground as `0xRRGGBB`, already resolved: palette indices and
+    /// defaults are looked up, so this is the colour to paint with.
     fg: u32,
+    /// Background as `0xRRGGBB`, resolved the same way as `fg`.
     bg: u32,
+    /// Style bits for this cell -- bold, underline, selection and the rest.
+    /// Carried as the backing integer in array positions; read a named field
+    /// off it with `CellFlagsFromBacking`.
     flags: CellFlags,
 };
 
@@ -312,9 +317,16 @@ pub const RenderCursor = packed struct(u64) {
 /// Resolved frame colors, all 0xRRGGBB. Cursor is meaningful only when
 /// cursor_has_value is true. Palette reads remain on Terminal.
 pub const RenderColors = extern struct {
+    /// The terminal's default background as `0xRRGGBB`, after any OSC 11 the
+    /// program set. What an unstyled cell should be painted with.
     background: u32,
+    /// The default foreground as `0xRRGGBB`, after any OSC 10.
     foreground: u32,
+    /// The cursor colour as `0xRRGGBB`, meaningful only when
+    /// `cursor_has_value` is set.
     cursor: u32,
+    /// Whether the program set a cursor colour at all. When false the cursor
+    /// is the embedder's to colour, conventionally with `foreground`.
     cursor_has_value: bool,
 };
 

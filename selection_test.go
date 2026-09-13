@@ -21,7 +21,7 @@ func TestSelectionOperations(t *testing.T) {
 	} {
 		got, err := screen.SelectionContains(sel, tc.x, tc.y)
 		if err != nil || got != tc.want {
-			t.Errorf("SelectionContains(%d,%d) = %v, %v; want %v", tc.x, tc.y, got, err, tc.want)
+			t.Errorf("SelectionContains(%d,%d) = %v, %v, %v; want %v", tc.x, tc.y, got, err, tc.want, err)
 		}
 	}
 

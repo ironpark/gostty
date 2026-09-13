@@ -33,11 +33,11 @@ func TestCharsetState(t *testing.T) {
 	if got, err := term.Charset(CharsetSlotG0); err != nil || got != CharsetUTF8 {
 		t.Errorf("Charset(G0) = %v, %v; want utf8, nil", got, err)
 	}
-	if got, err := term.CharsetGl(); err != nil || got != CharsetSlotG0 {
-		t.Errorf("CharsetGl() = %v, %v; want G0, nil", got, err)
+	if got := term.CharsetGl(); got != CharsetSlotG0 {
+		t.Errorf("CharsetGl() = %v; want G0", got)
 	}
-	if got, err := term.CharsetGr(); err != nil || got != CharsetSlotG2 {
-		t.Errorf("CharsetGr() = %v, %v; want G2, nil", got, err)
+	if got := term.CharsetGr(); got != CharsetSlotG2 {
+		t.Errorf("CharsetGr() = %v; want G2", got)
 	}
 
 	// SCS: G0 to DEC special graphics, G1 to British.
@@ -51,65 +51,62 @@ func TestCharsetState(t *testing.T) {
 
 	// LS2 moves GL to G2; LS1R moves GR to G1.
 	feed(t, stream, "\x1bn\x1b~")
-	if got, err := term.CharsetGl(); err != nil || got != CharsetSlotG2 {
-		t.Errorf("CharsetGl() after LS2 = %v, %v; want G2, nil", got, err)
+	if got := term.CharsetGl(); got != CharsetSlotG2 {
+		t.Errorf("CharsetGl() after LS2 = %v; want G2", got)
 	}
-	if got, err := term.CharsetGr(); err != nil || got != CharsetSlotG1 {
-		t.Errorf("CharsetGr() after LS1R = %v, %v; want G1, nil", got, err)
+	if got := term.CharsetGr(); got != CharsetSlotG1 {
+		t.Errorf("CharsetGr() after LS1R = %v; want G1", got)
 	}
 }
 
 func TestCharsetSingleShift(t *testing.T) {
 	term, stream := newStreamPair(t, 20, 5)
 
-	if _, ok, err := term.CharsetSingleShift(); err != nil || ok {
-		t.Errorf("CharsetSingleShift() ok = %v, %v; want false, nil", ok, err)
+	if _, ok := term.CharsetSingleShift(); ok {
+		t.Errorf("CharsetSingleShift() ok = %v; want false", ok)
 	}
 
 	// SS2 arms G2 for exactly one character.
 	feed(t, stream, "\x1bN")
-	slot, ok, err := term.CharsetSingleShift()
-	if err != nil {
-		t.Fatalf("CharsetSingleShift: %v", err)
-	}
+	slot, ok := term.CharsetSingleShift()
 	if !ok || slot != CharsetSlotG2 {
 		t.Errorf("CharsetSingleShift() = %v, %v; want G2, true", slot, ok)
 	}
 
 	// Printing consumes it.
 	feed(t, stream, "x")
-	if _, ok, err := term.CharsetSingleShift(); err != nil || ok {
-		t.Errorf("CharsetSingleShift() after print ok = %v, %v; want false, nil", ok, err)
+	if _, ok := term.CharsetSingleShift(); ok {
+		t.Errorf("CharsetSingleShift() after print ok = %v; want false", ok)
 	}
 }
 
 func TestProtectedModeAndCursorProtected(t *testing.T) {
 	term, stream := newStreamPair(t, 20, 5)
 
-	if got, err := term.ProtectedMode(); err != nil || got != ProtectedModeOff {
-		t.Errorf("ProtectedMode() = %v, %v; want off, nil", got, err)
+	if got := term.ProtectedMode(); got != ProtectedModeOff {
+		t.Errorf("ProtectedMode() = %v; want off", got)
 	}
-	if got, err := term.CursorProtected(); err != nil || got {
-		t.Errorf("CursorProtected() = %v, %v; want false, nil", got, err)
+	if got := term.CursorProtected(); got {
+		t.Errorf("CursorProtected() = %v; want false", got)
 	}
 
 	// DECSCA 1: protect what is printed from now on.
 	feed(t, stream, "\x1b[1\"q")
-	if got, err := term.ProtectedMode(); err != nil || got != ProtectedModeDec {
-		t.Errorf("ProtectedMode() = %v, %v; want dec, nil", got, err)
+	if got := term.ProtectedMode(); got != ProtectedModeDec {
+		t.Errorf("ProtectedMode() = %v; want dec", got)
 	}
-	if got, err := term.CursorProtected(); err != nil || !got {
-		t.Errorf("CursorProtected() = %v, %v; want true, nil", got, err)
+	if got := term.CursorProtected(); !got {
+		t.Errorf("CursorProtected() = %v; want true", got)
 	}
 
 	// DECSCA 0 clears the pen but leaves the most recent mode, which is what
 	// ECH keys off.
 	feed(t, stream, "\x1b[0\"q")
-	if got, err := term.CursorProtected(); err != nil || got {
-		t.Errorf("CursorProtected() after DECSCA 0 = %v, %v; want false, nil", got, err)
+	if got := term.CursorProtected(); got {
+		t.Errorf("CursorProtected() after DECSCA 0 = %v; want false", got)
 	}
-	if got, err := term.ProtectedMode(); err != nil || got != ProtectedModeDec {
-		t.Errorf("ProtectedMode() after DECSCA 0 = %v, %v; want dec, nil", got, err)
+	if got := term.ProtectedMode(); got != ProtectedModeDec {
+		t.Errorf("ProtectedMode() after DECSCA 0 = %v; want dec", got)
 	}
 }
 
@@ -117,23 +114,23 @@ func TestCursorPendingWrap(t *testing.T) {
 	term, stream := newStreamPair(t, 5, 3)
 
 	feed(t, stream, "abcd")
-	if got, err := term.CursorPendingWrap(); err != nil || got {
-		t.Errorf("CursorPendingWrap() = %v, %v; want false, nil", got, err)
+	if got := term.CursorPendingWrap(); got {
+		t.Errorf("CursorPendingWrap() = %v; want false", got)
 	}
 
 	// The fifth character fills the last column: the cursor stays there with
 	// the LCF set until the next print soft-wraps.
 	feed(t, stream, "e")
-	if got, err := term.CursorPendingWrap(); err != nil || !got {
-		t.Errorf("CursorPendingWrap() at last column = %v, %v; want true, nil", got, err)
+	if got := term.CursorPendingWrap(); !got {
+		t.Errorf("CursorPendingWrap() at last column = %v; want true", got)
 	}
-	if got, err := term.CursorX(); err != nil || got != 4 {
-		t.Errorf("CursorX() = %v, %v; want 4, nil", got, err)
+	if got := term.CursorX(); got != 4 {
+		t.Errorf("CursorX() = %v; want 4", got)
 	}
 
 	feed(t, stream, "f")
-	if got, err := term.CursorPendingWrap(); err != nil || got {
-		t.Errorf("CursorPendingWrap() after wrap = %v, %v; want false, nil", got, err)
+	if got := term.CursorPendingWrap(); got {
+		t.Errorf("CursorPendingWrap() after wrap = %v; want false", got)
 	}
 }
 
@@ -176,17 +173,17 @@ func TestMouseTrackingAndFormat(t *testing.T) {
 func TestPixelSize(t *testing.T) {
 	term := newTerm(t, 20, 5)
 
-	if got, err := term.WidthPx(); err != nil || got != 0 {
-		t.Errorf("WidthPx() = %v, %v; want 0, nil", got, err)
+	if got := term.WidthPx(); got != 0 {
+		t.Errorf("WidthPx() = %v; want 0", got)
 	}
 	if err := term.ResizeCells(20, 5, 7, 15); err != nil {
 		t.Fatalf("ResizeCells: %v", err)
 	}
-	if got, err := term.WidthPx(); err != nil || got != 20*7 {
-		t.Errorf("WidthPx() = %v, %v; want 140, nil", got, err)
+	if got := term.WidthPx(); got != 20*7 {
+		t.Errorf("WidthPx() = %v; want 140", got)
 	}
-	if got, err := term.HeightPx(); err != nil || got != 5*15 {
-		t.Errorf("HeightPx() = %v, %v; want 75, nil", got, err)
+	if got := term.HeightPx(); got != 5*15 {
+		t.Errorf("HeightPx() = %v; want 75", got)
 	}
 }
 
@@ -195,14 +192,14 @@ func TestTerminalFlags(t *testing.T) {
 
 	// Unknown focus and visibility are reported optimistically, so an
 	// embedder that never tells the terminal behaves as if it were on screen.
-	if got, err := term.Focused(); err != nil || !got {
-		t.Errorf("Focused() = %v, %v; want true, nil", got, err)
+	if got := term.Focused(); !got {
+		t.Errorf("Focused() = %v; want true", got)
 	}
-	if got, err := term.Visible(); err != nil || !got {
-		t.Errorf("Visible() = %v, %v; want true, nil", got, err)
+	if got := term.Visible(); !got {
+		t.Errorf("Visible() = %v; want true", got)
 	}
-	if got, err := term.PasswordInput(); err != nil || got {
-		t.Errorf("PasswordInput() = %v, %v; want false, nil", got, err)
+	if got := term.PasswordInput(); got {
+		t.Errorf("PasswordInput() = %v; want false", got)
 	}
 }
 

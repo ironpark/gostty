@@ -5,6 +5,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
+typedef uint8_t zg_log_level;
+#define ZG_LOG_LEVEL_ERR 0
+#define ZG_LOG_LEVEL_WARN 1
+#define ZG_LOG_LEVEL_INFO 2
+#define ZG_LOG_LEVEL_DEBUG 3
+
 typedef int32_t zg_key;
 #define ZG_KEY_UNIDENTIFIED 0
 #define ZG_KEY_BACKQUOTE 1
@@ -809,6 +815,7 @@ ZIGO_EXPORT int32_t zg_kitty_images_generation(const zg_kitty_images * self, uin
 ZIGO_EXPORT void zg_sys_on_png_decode_request(size_t userdata);
 ZIGO_EXPORT int32_t zg_sys_reply_png_image(uint32_t width, uint32_t height, const uint8_t * rgba_ptr, size_t rgba_len);
 ZIGO_EXPORT void zg_sys_on_secure_random_request(size_t userdata);
+ZIGO_EXPORT void zg_sys_on_log(size_t userdata);
 ZIGO_EXPORT void zg_sys_clear(void);
 ZIGO_EXPORT int32_t zg_sys_reply_secure_random(const uint8_t * bytes_ptr, size_t bytes_len);
 ZIGO_EXPORT uint8_t zg_key_codepoint(int32_t self, uint32_t * out_result);
@@ -827,7 +834,7 @@ ZIGO_EXPORT uint8_t zg_key_from_w3c(const uint8_t * w3cCode_ptr, size_t w3cCode_
 ZIGO_EXPORT int32_t zg_input_encode_focus(size_t writer_userdata, uint8_t event);
 ZIGO_EXPORT uint8_t zg_input_is_safe_paste(const uint8_t * data_ptr, size_t data_len);
 ZIGO_EXPORT int32_t zg_encode_paste(size_t writer_userdata, const zg_terminal * terminal, const uint8_t * data_ptr, size_t data_len);
-ZIGO_EXPORT int32_t zg_terminal_new_terminal(uint16_t cols, uint16_t rows, zg_terminal * * out_result);
+ZIGO_EXPORT int32_t zg_terminal_new_terminal(uint16_t cols, uint16_t rows, const size_t * max_scrollback_bytes, const size_t * max_scrollback_lines, uint8_t default_cursor_style, const uint8_t * default_cursor_blink, zg_terminal * * out_result);
 ZIGO_EXPORT int32_t zg_terminal_deinit(zg_terminal * self);
 ZIGO_EXPORT int32_t zg_terminal_new_stream(zg_terminal * self, size_t continuation_max_bytes, zg_stream * * out_result);
 ZIGO_EXPORT int32_t zg_terminal_new_search(zg_terminal * self, const uint8_t * needle_unowned_ptr, size_t needle_unowned_len, zg_search * * out_result);
@@ -857,7 +864,7 @@ ZIGO_EXPORT int32_t zg_terminal_switch_screen(zg_terminal * self, uint8_t key, z
 ZIGO_EXPORT int32_t zg_terminal_switch_screen_mode(zg_terminal * self, uint8_t mode, uint8_t enabled);
 ZIGO_EXPORT int32_t zg_terminal_active_screen(zg_terminal * self, zg_screen * * out_result);
 ZIGO_EXPORT int32_t zg_terminal_screen(zg_terminal * self, uint8_t key, zg_screen * * out_result);
-ZIGO_EXPORT int32_t zg_terminal_print_attributes_into(zg_terminal * self, uint8_t * dst_ptr, size_t dst_len, size_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_print_attributes_into(zg_terminal * self, uint8_t * buf_ptr, size_t buf_len, size_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_history_string(zg_terminal * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
 ZIGO_EXPORT int32_t zg_terminal_horizontal_tab(zg_terminal * self);
 ZIGO_EXPORT int32_t zg_terminal_horizontal_tab_back(zg_terminal * self);
@@ -1037,6 +1044,7 @@ ZIGO_EXPORT int32_t zg_osc_parser_reset(zg_osc_parser * self);
 ZIGO_EXPORT int32_t zg_decode_snapshot(const uint8_t * reader_data, size_t reader_data_len, size_t reader_userdata, size_t max_continuation_bytes, zg_snapshot * * out_result);
 ZIGO_EXPORT int32_t zg_snapshot_deinit(zg_snapshot * self);
 ZIGO_EXPORT int32_t zg_snapshot_restore_into(zg_snapshot * self, zg_terminal * term);
+ZIGO_EXPORT int32_t zg_snapshot_snapshot_terminal(zg_snapshot * self, zg_terminal * * out_result);
 ZIGO_EXPORT int32_t zg_snapshot_continuation(zg_snapshot * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
 ZIGO_EXPORT int32_t zg_new_snapshot_decoder(const uint8_t * data_ptr, size_t data_len, zg_snapshot_decoder * * out_result);
 ZIGO_EXPORT int32_t zg_snapshot_decoder_free_snapshot_decoder(zg_snapshot_decoder * self);

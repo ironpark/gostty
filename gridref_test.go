@@ -43,7 +43,7 @@ func TestGridRefFollowsCellIntoScrollback(t *testing.T) {
 	}
 	var buf [4]rune
 	if n, err := ref.Graphemes(buf[:]); err != nil || n != 1 || buf[0] != 'A' {
-		t.Errorf("Graphemes = %d, %v, %v; want 1 'A'", n, err, buf[:n])
+		t.Errorf("Graphemes = %d, %v, %v, %v; want 1 'A'", n, err, buf[:n], err)
 	}
 }
 
@@ -169,7 +169,7 @@ func TestGridRefCellStyleAndGraphemes(t *testing.T) {
 	}
 	var buf [4]rune
 	if n, err := ref.Graphemes(buf[:]); err != nil || n != 2 || buf[0] != 'e' || buf[1] != 0x301 {
-		t.Errorf("Graphemes = %d, %v, %v; want [e U+0301]", n, err, buf[:n])
+		t.Errorf("Graphemes = %d, %v, %v, %v; want [e U+0301]", n, err, buf[:n], err)
 	}
 	if _, err := ref.Graphemes(buf[:1]); !errors.Is(err, ErrNoSpaceLeft) {
 		t.Errorf("Graphemes short buffer = %v; want ErrNoSpaceLeft", err)

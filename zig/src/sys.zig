@@ -8,12 +8,16 @@
 //! Each hook is answered from inside the callback, the way a clipboard request
 //! is: the callback receives the request and replies before returning.
 //!
-//! Bound as `root.sys.*`. The callback types stay at the root, because a zigo
-//! `.callback` entry names a type rather than a namespace.
+//! Bound as `root.sys.*`. The callback types are declared at the Zig root
+//! because a `.callback` entry names a type rather than a namespace, but that
+//! is a Zig-side placement only: the generated `PngDecodeHandler` and
+//! `SecureRandomHandler` land in the Go `sys` package with everything else
+//! `zigo.package` collects, not at the Go root.
 const std = @import("std");
 const vt = @import("ghostty_vt");
 
 const Allocator = std.mem.Allocator;
+const common = @import("common.zig");
 const root = @import("root.zig");
 const PngDecodeFn = root.PngDecodeFn;
 const SecureRandomFn = root.SecureRandomFn;
@@ -24,6 +28,35 @@ var png_userdata: usize = 0;
 /// is pending. ghostty bounds it, so an oversized image fails the reply.
 var png_alloc: ?Allocator = null;
 var png_result: ?vt.sys.Image = null;
+
+/// How serious a log line is, mirroring `std.log.Level` in its order.
+pub const LogLevel = enum(u8) {
+    /// Something has gone wrong. It may be recoverable.
+    err,
+    /// It is uncertain whether something has gone wrong, but it is worth
+    /// investigating.
+    warn,
+    /// General messages about what the terminal is doing.
+    info,
+    /// Only useful while debugging. Nothing at this level is emitted unless
+    /// the native library was built in Debug.
+    debug,
+};
+
+/// Receives one log line from ghostty. `scope` names the subsystem and
+/// `message` is already formatted. Both are borrowed for the call: copy them
+/// to keep them. `userdata` is last, where zigo expects the handle.
+pub const LogFn = *const fn (
+    level: LogLevel,
+    scope: [*]const u8,
+    scope_len: usize,
+    message: [*]const u8,
+    message_len: usize,
+    userdata: usize,
+) callconv(.c) void;
+
+var log_callback: ?LogFn = null;
+var log_userdata: usize = 0;
 
 var random_callback: ?SecureRandomFn = null;
 var random_userdata: usize = 0;
@@ -41,6 +74,54 @@ fn decodePng(alloc: Allocator, data: []const u8) vt.sys.DecodeError!vt.sys.Image
     }
     callback(data.ptr, data.len, png_userdata);
     return png_result orelse error.InvalidData;
+}
+
+/// What `std_options.logFn` points at. `std.log` calls this with the format
+/// and its arguments still separate, so the message is rendered here; there is
+/// no allocator on this path and no failure it could report, so the buffer is
+/// a fixed one on the stack and a message longer than it is cut rather than
+/// dropped. Called on whichever thread produced the log line, which for a
+/// parse diagnostic is the thread inside `feed`.
+pub fn logFn(
+    comptime level: std.log.Level,
+    comptime scope: @EnumLiteral(),
+    comptime format: []const u8,
+    args: anytype,
+) void {
+    const callback = log_callback orelse return;
+    var buffer: [2048]u8 = undefined;
+    var writer: std.Io.Writer = .fixed(&buffer);
+    // Truncation is the only outcome worth having: a diagnostic that does not
+    // fit is still worth most of itself.
+    writer.print(format, args) catch {};
+    const message = writer.buffered();
+    const scope_name = @tagName(scope);
+    callback(
+        common.mirror(LogLevel, level),
+        scope_name.ptr,
+        scope_name.len,
+        message.ptr,
+        message.len,
+        log_userdata,
+    );
+}
+
+/// Install the log sink. ghostty writes its internal diagnostics with
+/// `std.log`, which reads the compile root's `std_options` -- the generated
+/// shim, which forwards this library's. Without a sink those lines go to
+/// stderr and an embedder has no way to take them.
+///
+/// Which lines arrive is `std.log`'s own threshold, not this hook's: `.info`
+/// and above for the release builds, everything in Debug. A parse diagnostic
+/// -- an unimplemented mode, a malformed Kitty payload -- is `.warn`, so it
+/// arrives in the archives this repository ships.
+///
+/// Process-global, and called on whichever thread logged, so a handler that
+/// touches shared state has to do its own locking. The strings are valid for
+/// the call only.
+pub fn onLog(callback: LogFn, userdata: usize) void {
+    log_callback = callback;
+    log_userdata = userdata;
 }
 
 fn randomSecure(buffer: []u8) vt.sys.RandomSecureError!void {
@@ -103,4 +184,5 @@ pub fn clear() void {
     vt.sys.decode_png = null;
     random_callback = null;
     vt.sys.random_secure = null;
+    log_callback = null;
 }

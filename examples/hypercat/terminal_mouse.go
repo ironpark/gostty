@@ -159,10 +159,7 @@ func (tab *terminal) handleWheel(m keys.Mods) error {
 		}
 	}
 
-	screen, err := tab.vt.ActiveScreenKey()
-	if err != nil {
-		return err
-	}
+	screen := tab.vt.ActiveScreenKey()
 	if screen == gostty.ScreenKeyAlternate {
 		return tab.wheelAsArrows(notches)
 	}

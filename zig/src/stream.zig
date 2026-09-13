@@ -824,6 +824,10 @@ pub fn freeStream(self: *Stream, gpa: Allocator) void {
 
 /// Result of a bounded parser feed. Consumed is valid even if Reached is false.
 pub const FeedBoundary = extern struct {
+    /// Bytes taken from the input. When `reached` is false this is all of
+    /// them; otherwise it stops just past the sequence that ended at ground.
     consumed: usize,
+    /// Whether the parser came back to ground within the input. False means
+    /// the input ended mid-sequence and the rest is still pending.
     reached: bool,
 };

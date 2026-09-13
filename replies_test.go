@@ -27,7 +27,7 @@ func TestWriteRepliesRetainsOutputOnFailure(t *testing.T) {
 			_, stream := newStreamPair(t, 20, 3)
 			feed(t, stream, "\x1b[5n")
 			if err := stream.WriteReplies(tc.writer); !errors.Is(err, tc.want) {
-				t.Fatalf("WriteReplies error = %v, want %v", err, tc.want)
+				t.Fatalf("WriteReplies error = %v, want %v, %v", err, tc.want, err)
 			}
 			if has, err := stream.HasReplies(); err != nil || !has {
 				t.Fatalf("HasReplies after failed write = %v, %v; want true, nil", has, err)

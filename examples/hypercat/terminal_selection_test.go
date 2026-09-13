@@ -18,8 +18,8 @@ func TestClickCountsSelectWordAndOutput(t *testing.T) {
 	if got, want := selected(t, tab), "hello"; got != want {
 		t.Errorf("a double click selected %q, want %q", got, want)
 	}
-	if count, err := tab.sel.gesture.ClickCount(); err != nil || count != 2 {
-		t.Errorf("ClickCount() = %d, %v; want 2", count, err)
+	if count := tab.sel.gesture.ClickCount(); count != 2 {
+		t.Errorf("ClickCount() = %d; want 2", count)
 	}
 }
 
@@ -39,8 +39,8 @@ func TestDragSelectsFromTheAnchor(t *testing.T) {
 	if got, want := selected(t, tab), "hello world"; got != want {
 		t.Errorf("extending the drag selected %q, want %q", got, want)
 	}
-	if dragged, err := tab.sel.gesture.Dragged(); err != nil || !dragged {
-		t.Errorf("Dragged() = %v, %v; want true", dragged, err)
+	if dragged := tab.sel.gesture.Dragged(); !dragged {
+		t.Errorf("Dragged() = %v; want true", dragged)
 	}
 }
 
@@ -69,8 +69,8 @@ func TestEndGestureResetsTheClickCount(t *testing.T) {
 
 	tab.pressAtCell(t, 1, 0)
 	tab.endGesture()
-	if count, err := tab.sel.gesture.ClickCount(); err != nil || count != 0 {
-		t.Errorf("ClickCount() after endGesture = %d, %v; want 0", count, err)
+	if count := tab.sel.gesture.ClickCount(); count != 0 {
+		t.Errorf("ClickCount() after endGesture = %d; want 0", count)
 	}
 	if tab.sel.dragging {
 		t.Error("a drag survived the end of the gesture")

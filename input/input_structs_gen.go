@@ -83,17 +83,20 @@ var _ fmt.Stringer = KeyMods{}
 
 // KeyEvent mirrors the Zig `extern struct` of the same name.
 type KeyEvent struct {
-	// Action corresponds to the Zig field action.
+	// Action: The action: press, release, etc.
 	Action KeyAction
-	// Key corresponds to the Zig field key.
+	// Key: The keycode of the physical key that was pressed. This is agnostic
+	// to the layout. Layout-dependent matching can only be done via the
+	// UTF-8 or unshifted codepoint.
 	Key Key
-	// Mods corresponds to the Zig field mods.
+	// Mods are the modifiers that are pressed.
 	Mods KeyMods
-	// ConsumedMods corresponds to the Zig field consumed_mods.
+	// ConsumedMods: Modifiers that were consumed producing the event text. Effective
+	// modifiers are `mods` minus these.
 	ConsumedMods KeyMods
-	// Composing corresponds to the Zig field composing.
+	// Composing: True while the event is part of an unfinished dead-key composition.
 	Composing bool
-	// UnshiftedCodepoint corresponds to the Zig field unshifted_codepoint.
+	// UnshiftedCodepoint: The codepoint the key produces unshifted, or zero for none.
 	UnshiftedCodepoint rune
 }
 
@@ -101,13 +104,14 @@ type KeyEvent struct {
 type MouseEvent struct {
 	// Action corresponds to the Zig field action.
 	Action MouseAction
-	// Button corresponds to the Zig field button.
+	// Button: The button the event is about. Ignored unless `has_button` is set,
+	// which a motion event without a held button leaves clear.
 	Button MouseButton
 	// HasButton corresponds to the Zig field has_button.
 	HasButton bool
 	// Mods corresponds to the Zig field mods.
 	Mods KeyMods
-	// X corresponds to the Zig field x.
+	// X: Position in already-DPI-scaled pixels, relative to the surface.
 	X float32
 	// Y corresponds to the Zig field y.
 	Y float32
@@ -115,11 +119,11 @@ type MouseEvent struct {
 
 // RenderSize mirrors the Zig `extern struct` of the same name.
 type RenderSize struct {
-	// ScreenWidth corresponds to the Zig field screen_width.
+	// ScreenWidth: The size of the area the grid is drawn into, padding included.
 	ScreenWidth uint32
 	// ScreenHeight corresponds to the Zig field screen_height.
 	ScreenHeight uint32
-	// CellWidth corresponds to the Zig field cell_width.
+	// CellWidth: The size of one cell.
 	CellWidth uint32
 	// CellHeight corresponds to the Zig field cell_height.
 	CellHeight uint32

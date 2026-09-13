@@ -57,9 +57,7 @@ func TestKittyNoImages(t *testing.T) {
 	if got := placements(t, images, term); len(got) != 0 {
 		t.Errorf("placements on a fresh terminal = %d, want 0", len(got))
 	}
-	if gen, err := images.Generation(); err != nil {
-		t.Fatalf("Generation: %v", err)
-	} else if gen != 0 {
+	if gen := images.Generation(); gen != 0 {
 		t.Errorf("generation on a fresh terminal = %d, want 0", gen)
 	}
 }
@@ -91,10 +89,7 @@ func TestKittyTransmitAndPlace(t *testing.T) {
 		t.Errorf("source size = %dx%d, want 2x2", p.SourceWidth, p.SourceHeight)
 	}
 
-	gen, err := images.Generation()
-	if err != nil {
-		t.Fatalf("Generation: %v", err)
-	}
+	gen := images.Generation()
 	if gen == 0 {
 		t.Error("generation is still 0 after a transmit")
 	}
@@ -218,10 +213,7 @@ func TestKittyDelete(t *testing.T) {
 	images := kittyImages(t)
 
 	transmit(t, stream, 1, 0, 0)
-	before, err := images.Generation()
-	if err != nil {
-		t.Fatalf("Generation: %v", err)
-	}
+	before := images.Generation()
 	_ = placements(t, images, term)
 
 	// a=d,d=I deletes the image with id i and every placement of it.
@@ -230,10 +222,7 @@ func TestKittyDelete(t *testing.T) {
 	if got := placements(t, images, term); len(got) != 0 {
 		t.Errorf("placements after delete = %d, want 0", len(got))
 	}
-	after, err := images.Generation()
-	if err != nil {
-		t.Fatalf("Generation: %v", err)
-	}
+	after := images.Generation()
 	if after == before {
 		t.Error("the generation did not move for a delete")
 	}

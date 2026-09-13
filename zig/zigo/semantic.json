@@ -39,6 +39,11 @@
       "type": "Snapshot"
     },
     {
+      "deinit": "deinit",
+      "init": "snapshotTerminal",
+      "type": "Terminal"
+    },
+    {
       "deinit": "freeSnapshotDecoder",
       "init": "newSnapshotDecoder",
       "type": "SnapshotDecoder"
@@ -63,7 +68,9 @@
       },
       "doc": "The current column count, read without touching page memory.",
       "ext": {
-        "MUSTOPT": {}
+        "MUSTOPT": {
+          "replace": true
+        }
       },
       "name": "cols",
       "ownership": "borrowed",
@@ -84,7 +91,9 @@
       },
       "doc": "The number of populated rows, read without touching page memory.",
       "ext": {
-        "MUSTOPT": {}
+        "MUSTOPT": {
+          "replace": true
+        }
       },
       "name": "rows",
       "ownership": "borrowed",
@@ -104,7 +113,9 @@
         "setter": false
       },
       "ext": {
-        "MUSTOPT": {}
+        "MUSTOPT": {
+          "replace": true
+        }
       },
       "name": "cursorX",
       "ownership": "borrowed",
@@ -124,7 +135,9 @@
         "setter": false
       },
       "ext": {
-        "MUSTOPT": {}
+        "MUSTOPT": {
+          "replace": true
+        }
       },
       "name": "cursorY",
       "ownership": "borrowed",
@@ -143,6 +156,11 @@
         "path": "screens.active.cursor.cursor_style",
         "setter": false
       },
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "cursorStyle",
       "ownership": "borrowed",
       "params": [],
@@ -157,6 +175,11 @@
       "field_access": {
         "path": "screens.active_key",
         "setter": false
+      },
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
       },
       "name": "activeScreenKey",
       "ownership": "borrowed",
@@ -173,6 +196,11 @@
         "path": "screens.active.cursor.pending_wrap",
         "setter": false
       },
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "cursorPendingWrap",
       "ownership": "borrowed",
       "params": [],
@@ -187,6 +215,11 @@
         "path": "screens.active.cursor.protected",
         "setter": false
       },
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "cursorProtected",
       "ownership": "borrowed",
       "params": [],
@@ -200,6 +233,11 @@
       "field_access": {
         "path": "width_px",
         "setter": false
+      },
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
       },
       "name": "widthPx",
       "ownership": "borrowed",
@@ -218,6 +256,11 @@
         "path": "height_px",
         "setter": false
       },
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "heightPx",
       "ownership": "borrowed",
       "params": [],
@@ -235,6 +278,11 @@
         "path": "flags.focused",
         "setter": false
       },
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "focused",
       "ownership": "borrowed",
       "params": [],
@@ -249,6 +297,11 @@
         "path": "flags.visible",
         "setter": false
       },
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "visible",
       "ownership": "borrowed",
       "params": [],
@@ -262,6 +315,11 @@
       "field_access": {
         "path": "flags.password_input",
         "setter": false
+      },
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
       },
       "name": "passwordInput",
       "ownership": "borrowed",
@@ -278,6 +336,11 @@
         "setter": false
       },
       "doc": "The slot GL resolves to: the set used for codepoints up to 127.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "charsetGL",
       "ownership": "borrowed",
       "params": [],
@@ -294,6 +357,11 @@
         "setter": false
       },
       "doc": "The slot GR resolves to: the set used for 8-bit printable codepoints.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "charsetGR",
       "ownership": "borrowed",
       "params": [],
@@ -310,6 +378,11 @@
         "setter": false
       },
       "doc": "The slot a pending single shift (SS2/SS3) will use for exactly one character, or absent if none is pending.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "charsetSingleShift",
       "ownership": "borrowed",
       "params": [],
@@ -329,6 +402,11 @@
         "setter": false
       },
       "doc": "The most recent protected mode (DECSCA or the older SPA/EPA) on the active screen. This never returns to off once set, until the screen is reset: ECH and friends key off the most recent mode, not the current pen.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "protectedMode",
       "ownership": "borrowed",
       "params": [],
@@ -345,6 +423,11 @@
         "setter": false
       },
       "doc": "How many clicks the current sequence is at: 0 before any press, then 1, 2 or 3. What an emulator switches on to decide what a click means.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "clickCount",
       "ownership": "borrowed",
       "params": [],
@@ -363,6 +446,11 @@
         "setter": false
       },
       "doc": "Whether the pointer has left the pressed cell during this gesture. Read it on release: a click that never dragged is the one that should follow a hyperlink or move the shell cursor, rather than one that happened to end where it started after a round trip.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "dragged",
       "ownership": "borrowed",
       "params": [],
@@ -378,6 +466,11 @@
         "setter": false
       },
       "doc": "True once a sequence failed in a way the terminal could not absorb, such as an allocation failure. Streams are best-effort and keep going.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "failed",
       "ownership": "borrowed",
       "params": [],
@@ -393,6 +486,11 @@
         "setter": false
       },
       "doc": "The last command parsed, or `invalid` if `end` has not said yes.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "command",
       "ownership": "borrowed",
       "params": [],
@@ -409,6 +507,11 @@
         "setter": false
       },
       "doc": "OSC 0 and OSC 2: the window title. ghostty does not decode it. Under title mode 0 the bytes are hex, and otherwise they are UTF-8 or latin1 depending on how the terminal was set up, which only the embedder knows.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "windowTitle",
       "ownership": "borrowed",
       "params": [],
@@ -432,6 +535,11 @@
         "setter": false
       },
       "doc": "OSC 1: the icon name. Not well defined by any specification, and ghostty itself ignores it.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "icon",
       "ownership": "borrowed",
       "params": [],
@@ -455,6 +563,11 @@
         "setter": false
       },
       "doc": "OSC 7: the shell's working directory, as a `file://` URL. ghostty does not check that it is one, and neither does this.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "pwd",
       "ownership": "borrowed",
       "params": [],
@@ -478,6 +591,11 @@
         "setter": false
       },
       "doc": "OSC 8: the link target.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "hyperlinkURI",
       "ownership": "borrowed",
       "params": [],
@@ -501,6 +619,11 @@
         "setter": false
       },
       "doc": "OSC 8: the link's `id=` parameter, empty when it carried none. Two runs sharing an id are one link even when they are not adjacent.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "hyperlinkID",
       "ownership": "borrowed",
       "params": [],
@@ -524,6 +647,11 @@
         "setter": false
       },
       "doc": "OSC 9 and OSC 777: the notification title.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "notificationTitle",
       "ownership": "borrowed",
       "params": [],
@@ -547,6 +675,11 @@
         "setter": false
       },
       "doc": "OSC 9 and OSC 777: the notification body.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "notificationBody",
       "ownership": "borrowed",
       "params": [],
@@ -570,6 +703,11 @@
         "setter": false
       },
       "doc": "OSC 52: the base64 payload to put on the clipboard, or a bare `?` when the program is asking to read the clipboard rather than to write it.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "clipboardData",
       "ownership": "borrowed",
       "params": [],
@@ -593,6 +731,11 @@
         "setter": false
       },
       "doc": "OSC 52: which selection the request names, as the protocol's own character (`c` for clipboard, `p` for primary, `s` for the configured default), or zero for any other command.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "clipboardSelection",
       "ownership": "borrowed",
       "params": [],
@@ -611,6 +754,11 @@
         "setter": false
       },
       "doc": "OSC 22: the pointer shape, usually a W3C CSS cursor name. ghostty parses whatever string is given without validating it.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "mouseShape",
       "ownership": "borrowed",
       "params": [],
@@ -634,6 +782,11 @@
         "setter": false
       },
       "doc": "OSC 133: which prompt boundary this sequence marks.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "semanticPromptAction",
       "ownership": "borrowed",
       "params": [],
@@ -650,6 +803,11 @@
         "setter": false
       },
       "doc": "OSC 133: the raw, unvalidated option string that followed the action.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "semanticPromptOptions",
       "ownership": "borrowed",
       "params": [],
@@ -673,6 +831,11 @@
         "setter": false
       },
       "doc": "OSC 9;4: what the program says about its progress.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "progressState",
       "ownership": "borrowed",
       "params": [],
@@ -689,6 +852,11 @@
         "setter": false
       },
       "doc": "OSC 9;4: percent complete, or -1 when the report carried no percentage.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "progressValue",
       "ownership": "borrowed",
       "params": [],
@@ -707,6 +875,11 @@
         "setter": false
       },
       "doc": "The number of rows the last update covered.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "rows",
       "ownership": "borrowed",
       "params": [],
@@ -725,6 +898,11 @@
         "setter": false
       },
       "doc": "The number of columns the last update covered.",
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "cols",
       "ownership": "borrowed",
       "params": [],
@@ -742,6 +920,11 @@
         "path": "cursor.visible",
         "setter": false
       },
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "cursorVisible",
       "ownership": "borrowed",
       "params": [],
@@ -755,6 +938,11 @@
       "field_access": {
         "path": "cursor.visual_style",
         "setter": false
+      },
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
       },
       "name": "cursorStyle",
       "ownership": "borrowed",
@@ -771,6 +959,11 @@
         "path": "cursor.blinking",
         "setter": false
       },
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "cursorBlinking",
       "ownership": "borrowed",
       "params": [],
@@ -785,6 +978,11 @@
         "path": "cursor.password_input",
         "setter": false
       },
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
+      },
       "name": "cursorPasswordInput",
       "ownership": "borrowed",
       "params": [],
@@ -798,6 +996,11 @@
       "field_access": {
         "path": "generation",
         "setter": false
+      },
+      "ext": {
+        "MUSTOPT": {
+          "replace": true
+        }
       },
       "name": "generation",
       "ownership": "borrowed",
@@ -826,7 +1029,7 @@
           "name_source": "ast",
           "retention": "retained",
           "source": {
-            "line": 59,
+            "line": 140,
             "column": 27
           },
           "type": {
@@ -863,7 +1066,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 59,
+            "line": 140,
             "column": 50
           },
           "type": {
@@ -879,7 +1082,7 @@
       },
       "source": {
         "path": "sys.zig",
-        "line": 59,
+        "line": 140,
         "column": 8
       },
       "symbol": "zg_sys_on_png_decode_request"
@@ -897,7 +1100,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 67,
+            "line": 148,
             "column": 22
           },
           "type": {
@@ -913,7 +1116,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 67,
+            "line": 148,
             "column": 34
           },
           "type": {
@@ -929,7 +1132,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 67,
+            "line": 148,
             "column": 47
           },
           "type": {
@@ -957,7 +1160,7 @@
       },
       "source": {
         "path": "sys.zig",
-        "line": 67,
+        "line": 148,
         "column": 8
       },
       "symbol": "zg_sys_reply_png_image"
@@ -977,7 +1180,7 @@
           "name_source": "ast",
           "retention": "retained",
           "source": {
-            "line": 84,
+            "line": 165,
             "column": 30
           },
           "type": {
@@ -1010,7 +1213,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 84,
+            "line": 165,
             "column": 56
           },
           "type": {
@@ -1026,10 +1229,103 @@
       },
       "source": {
         "path": "sys.zig",
-        "line": 84,
+        "line": 165,
         "column": 8
       },
       "symbol": "zg_sys_on_secure_random_request"
+    },
+    {
+      "doc": "Install the log sink. ghostty writes its internal diagnostics with\n`std.log`, which reads the compile root's `std_options` -- the generated\nshim, which forwards this library's. Without a sink those lines go to\nstderr and an embedder has no way to take them.\n\nWhich lines arrive is `std.log`'s own threshold, not this hook's: `.info`\nand above for the release builds, everything in Debug. A parse diagnostic\n-- an unimplemented mode, a malformed Kitty payload -- is `.warn`, so it\narrives in the archives this repository ships.\n\nProcess-global, and called on whichever thread logged, so a handler that\ntouches shared state has to do its own locking. The strings are valid for\nthe call only.",
+      "name": "onLog",
+      "package": "sys",
+      "namespace": "sys",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "reentrancy": "allowed",
+          "thread": "caller",
+          "name": "callback",
+          "name_source": "ast",
+          "retention": "retained",
+          "source": {
+            "line": 122,
+            "column": 14
+          },
+          "type": {
+            "c_callconv": true,
+            "has_userdata": true,
+            "kind": "callback",
+            "param_semantics": [
+              null,
+              "utf8_string",
+              "utf8_string",
+              null
+            ],
+            "params": [
+              {
+                "kind": "enum",
+                "ref": "LogLevel"
+              },
+              {
+                "const": true,
+                "element": {
+                  "bits": 8,
+                  "is_usize": false,
+                  "kind": "int",
+                  "signed": false
+                },
+                "kind": "slice"
+              },
+              {
+                "const": true,
+                "element": {
+                  "bits": 8,
+                  "is_usize": false,
+                  "kind": "int",
+                  "signed": false
+                },
+                "kind": "slice"
+              },
+              {
+                "bits": 64,
+                "is_usize": true,
+                "kind": "int",
+                "signed": false
+              }
+            ],
+            "ref": "LogHandler",
+            "return": {
+              "kind": "void"
+            }
+          }
+        },
+        {
+          "direction": "in",
+          "name": "userdata",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 122,
+            "column": 31
+          },
+          "type": {
+            "bits": 64,
+            "is_usize": true,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "return": {
+        "kind": "void"
+      },
+      "source": {
+        "path": "sys.zig",
+        "line": 122,
+        "column": 8
+      },
+      "symbol": "zg_sys_on_log"
     },
     {
       "doc": "Remove both hooks: PNG transmissions are refused again and entropy\ncomes from the platform. Releases the Go callbacks.",
@@ -1043,7 +1339,7 @@
       },
       "source": {
         "path": "sys.zig",
-        "line": 101,
+        "line": 182,
         "column": 8
       },
       "symbol": "zg_sys_clear"
@@ -1061,7 +1357,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 92,
+            "line": 173,
             "column": 26
           },
           "type": {
@@ -1088,7 +1384,7 @@
       },
       "source": {
         "path": "sys.zig",
-        "line": 92,
+        "line": 173,
         "column": 8
       },
       "symbol": "zg_sys_reply_secure_random"
@@ -1738,8 +2034,63 @@
                 "kind": "int",
                 "signed": false
               }
+            },
+            {
+              "default": {
+                "int": 10000
+              },
+              "name": "max_scrollback_bytes",
+              "type": {
+                "child": {
+                  "bits": 64,
+                  "is_usize": true,
+                  "kind": "int",
+                  "signed": false
+                },
+                "kind": "optional"
+              }
+            },
+            {
+              "default": {
+                "null": {}
+              },
+              "name": "max_scrollback_lines",
+              "type": {
+                "child": {
+                  "bits": 64,
+                  "is_usize": true,
+                  "kind": "int",
+                  "signed": false
+                },
+                "kind": "optional"
+              }
+            },
+            {
+              "default": {
+                "enum": "block"
+              },
+              "name": "default_cursor_style",
+              "type": {
+                "kind": "enum",
+                "ref": "CursorStyle"
+              }
+            },
+            {
+              "default": {
+                "bool": false
+              },
+              "name": "default_cursor_blink",
+              "type": {
+                "child": {
+                  "kind": "bool"
+                },
+                "kind": "optional"
+              }
             }
           ],
+          "go": {
+            "options": {}
+          },
           "name": "opts",
           "name_source": "ast",
           "retention": "borrowed",
@@ -1951,7 +2302,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 152,
+            "line": 157,
             "column": 33
           },
           "type": {
@@ -1972,7 +2323,7 @@
       },
       "source": {
         "path": "gesture.zig",
-        "line": 152,
+        "line": 157,
         "column": 8
       },
       "zig_path": "newGesture",
@@ -1994,7 +2345,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 102,
+            "line": 105,
             "column": 33
           },
           "type": {
@@ -2008,7 +2359,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 102,
+            "line": 105,
             "column": 48
           },
           "type": {
@@ -2024,7 +2375,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 102,
+            "line": 105,
             "column": 56
           },
           "type": {
@@ -2051,7 +2402,7 @@
       },
       "source": {
         "path": "gridref.zig",
-        "line": 102,
+        "line": 105,
         "column": 8
       },
       "zig_path": "newGridRef",
@@ -2359,7 +2710,9 @@
     {
       "doc": "Carriage return moves the cursor to the first column.",
       "ext": {
-        "MUSTOPT": {}
+        "MUSTOPT": {
+          "replace": false
+        }
       },
       "name": "carriageReturn",
       "ownership": "borrowed",
@@ -2400,7 +2753,9 @@
     {
       "doc": "Backspace moves the cursor back a column (but not less than 0).",
       "ext": {
-        "MUSTOPT": {}
+        "MUSTOPT": {
+          "replace": false
+        }
       },
       "name": "backspace",
       "ownership": "borrowed",
@@ -2419,7 +2774,9 @@
     {
       "doc": "Returns true if the cursor is currently at a prompt. Another way to look\nat this is it returns false if the shell is currently outputting something.\nThis requires shell integration (semantic prompt integration).\n\nIf the shell integration doesn't exist, this will always return false.",
       "ext": {
-        "MUSTOPT": {}
+        "MUSTOPT": {
+          "replace": false
+        }
       },
       "name": "cursorIsAtPrompt",
       "ownership": "borrowed",
@@ -2438,7 +2795,9 @@
     {
       "doc": "Full reset.\n\nThis will attempt to free the existing screen memory but if that fails\nthis will reuse the existing memory. In the latter case, memory may\nbe wasted (since its unused) but it isn't leaked.",
       "ext": {
-        "MUSTOPT": {}
+        "MUSTOPT": {
+          "replace": false
+        }
       },
       "name": "fullReset",
       "ownership": "borrowed",
@@ -2457,7 +2816,9 @@
     {
       "doc": "Move the cursor up amount lines. If amount is greater than the maximum\nmove distance then it is internally adjusted to the maximum. If amount is\n0, adjust it to 1.",
       "ext": {
-        "MUSTOPT": {}
+        "MUSTOPT": {
+          "replace": false
+        }
       },
       "name": "cursorUp",
       "ownership": "borrowed",
@@ -2493,7 +2854,9 @@
     {
       "doc": "Move the cursor down amount lines. If amount is greater than the maximum\nmove distance then it is internally adjusted to the maximum. This sequence\nwill not scroll the screen or scroll region. If amount is 0, adjust it to 1.",
       "ext": {
-        "MUSTOPT": {}
+        "MUSTOPT": {
+          "replace": false
+        }
       },
       "name": "cursorDown",
       "ownership": "borrowed",
@@ -2529,7 +2892,9 @@
     {
       "doc": "Move the cursor to the left amount cells. If amount is 0, adjust it to 1.",
       "ext": {
-        "MUSTOPT": {}
+        "MUSTOPT": {
+          "replace": false
+        }
       },
       "name": "cursorLeft",
       "ownership": "borrowed",
@@ -2565,7 +2930,9 @@
     {
       "doc": "Move the cursor right amount columns. If amount is greater than the\nmaximum move distance then it is internally adjusted to the maximum.\nThis sequence will not scroll the screen or scroll region. If amount is\n0, adjust it to 1.",
       "ext": {
-        "MUSTOPT": {}
+        "MUSTOPT": {
+          "replace": false
+        }
       },
       "name": "cursorRight",
       "ownership": "borrowed",
@@ -2817,21 +3184,18 @@
       "symbol": "zg_terminal_screen"
     },
     {
-      "covers": [
-        "Terminal.printAttributes"
-      ],
-      "doc": "Write the cursor's current SGR attributes into `dst` as a DECRPSS response\nbody, and report how many bytes were written.\n\nWrapped because ghostty returns a slice into the caller's buffer, and zigo\nreports a written count instead.",
+      "doc": "Print the active attributes as a string. This is used to respond to DECRQSS\nrequests.\n\nBoolean attributes are printed first, followed by foreground color, then\nbackground color. Each attribute is separated by a semicolon.",
       "name": "printAttributesInto",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "out",
-          "name": "dst",
+          "name": "buf",
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 64,
-            "column": 45
+            "line": 3847,
+            "column": 41
           },
           "type": {
             "const": false,
@@ -2843,7 +3207,7 @@
             },
             "kind": "slice"
           },
-          "written": "return"
+          "written": "returned_slice"
         }
       ],
       "receiver": "Terminal",
@@ -2860,18 +3224,18 @@
         }
       },
       "source": {
-        "path": "terminal.zig",
-        "line": 64,
+        "path": "terminal/Terminal.zig",
+        "line": 3847,
         "column": 8
       },
-      "zig_path": "printAttributesInto",
+      "zig_path": "Terminal.printAttributes",
       "symbol": "zg_terminal_print_attributes_into"
     },
     {
       "covers": [
         "Screen.dumpStringAlloc"
       ],
-      "doc": "The scrollback contents, oldest row first, newline separated.\n\nWrapped because the region is chosen with `point.Point`, a tagged union\ncarrying a coordinate, which zigo cannot take by value.",
+      "doc": "The scrollback contents, oldest row first, newline separated.\n\nWrapped to fix the region. zigo takes `point.Point` by value now -- its\npayload is an `extern struct` -- so this could hand the union to Go and let\na caller pick any of the four origins. It does not, because the rest of this\nbinding spells a position as `(tag, x, y)` (`cellAt`, `hyperlinkAt`,\n`newGridRef`), and the other three origins are already reachable:\n`plainString` is the active area and `Screen.format` is the screen with its\nscrollback. What is left for this one to be is the scrollback, named.",
       "name": "historyString",
       "ownership": "caller",
       "params": [
@@ -2882,7 +3246,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 73,
+            "line": 68,
             "column": 39
           },
           "type": {
@@ -2913,7 +3277,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "terminal.zig",
-        "line": 73,
+        "line": 68,
         "column": 8
       },
       "zig_path": "historyString",
@@ -3331,7 +3695,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 234,
+            "line": 229,
             "column": 47
           },
           "type": {
@@ -3348,7 +3712,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 234,
+        "line": 229,
         "column": 8
       },
       "zig_path": "setScrollbackMaxBytes",
@@ -3365,7 +3729,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 239,
+        "line": 234,
         "column": 8
       },
       "zig_path": "clearScrollbackMaxBytes",
@@ -3385,7 +3749,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 244,
+            "line": 239,
             "column": 47
           },
           "type": {
@@ -3402,7 +3766,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 244,
+        "line": 239,
         "column": 8
       },
       "zig_path": "setScrollbackMaxLines",
@@ -3419,7 +3783,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 249,
+        "line": 244,
         "column": 8
       },
       "zig_path": "clearScrollbackMaxLines",
@@ -3888,7 +4252,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 66,
+            "line": 67,
             "column": 40
           },
           "type": {
@@ -3902,7 +4266,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 66,
+            "line": 67,
             "column": 61
           },
           "type": {
@@ -3922,7 +4286,7 @@
       },
       "source": {
         "path": "format.zig",
-        "line": 66,
+        "line": 67,
         "column": 8
       },
       "zig_path": "formatTerminal",
@@ -4089,7 +4453,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 257,
+        "line": 252,
         "column": 8
       },
       "zig_path": "backgroundColor",
@@ -4112,7 +4476,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 262,
+        "line": 257,
         "column": 8
       },
       "zig_path": "foregroundColor",
@@ -4135,7 +4499,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 268,
+        "line": 263,
         "column": 8
       },
       "zig_path": "cursorColor",
@@ -4152,7 +4516,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 274,
+            "line": 269,
             "column": 45
           },
           "type": {
@@ -4177,7 +4541,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 274,
+        "line": 269,
         "column": 8
       },
       "zig_path": "paletteColors",
@@ -4194,7 +4558,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 302,
+            "line": 297,
             "column": 43
           },
           "type": {
@@ -4209,7 +4573,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 302,
+        "line": 297,
         "column": 8
       },
       "zig_path": "modeEnabled",
@@ -4226,7 +4590,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 310,
+            "line": 305,
             "column": 33
           },
           "type": {
@@ -4240,7 +4604,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 310,
+            "line": 305,
             "column": 45
           },
           "type": {
@@ -4254,7 +4618,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 310,
+        "line": 305,
         "column": 8
       },
       "zig_path": "setMode",
@@ -4274,7 +4638,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 213,
+            "line": 208,
             "column": 38
           },
           "type": {
@@ -4296,7 +4660,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 213,
+        "line": 208,
         "column": 8
       },
       "zig_path": "setAttribute",
@@ -4518,6 +4882,40 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
+            "line": 277,
+            "column": 51
+          },
+          "type": {
+            "bits": 32,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "receiver": "Terminal",
+      "return": {
+        "kind": "void"
+      },
+      "source": {
+        "path": "terminal.zig",
+        "line": 277,
+        "column": 8
+      },
+      "zig_path": "setDefaultBackgroundColor",
+      "symbol": "zg_terminal_set_default_background_color"
+    },
+    {
+      "doc": "Set the configured default foreground. See `setDefaultBackgroundColor`.",
+      "name": "setDefaultForegroundColor",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "rgb",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
             "line": 282,
             "column": 51
           },
@@ -4538,40 +4936,6 @@
         "line": 282,
         "column": 8
       },
-      "zig_path": "setDefaultBackgroundColor",
-      "symbol": "zg_terminal_set_default_background_color"
-    },
-    {
-      "doc": "Set the configured default foreground. See `setDefaultBackgroundColor`.",
-      "name": "setDefaultForegroundColor",
-      "ownership": "borrowed",
-      "params": [
-        {
-          "direction": "in",
-          "name": "rgb",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 287,
-            "column": 51
-          },
-          "type": {
-            "bits": 32,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        }
-      ],
-      "receiver": "Terminal",
-      "return": {
-        "kind": "void"
-      },
-      "source": {
-        "path": "terminal.zig",
-        "line": 287,
-        "column": 8
-      },
       "zig_path": "setDefaultForegroundColor",
       "symbol": "zg_terminal_set_default_foreground_color"
     },
@@ -4586,7 +4950,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 292,
+            "line": 287,
             "column": 47
           },
           "type": {
@@ -4603,7 +4967,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 292,
+        "line": 287,
         "column": 8
       },
       "zig_path": "setDefaultCursorColor",
@@ -4654,7 +5018,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 223,
+            "line": 218,
             "column": 47
           },
           "type": {
@@ -4668,7 +5032,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 223,
+        "line": 218,
         "column": 8
       },
       "zig_path": "setDefaultCursorBlink",
@@ -4685,7 +5049,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 228,
+        "line": 223,
         "column": 8
       },
       "zig_path": "resetDefaultCursorBlink",
@@ -5203,7 +5567,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 351,
+            "line": 364,
             "column": 36
           },
           "type": {
@@ -5224,7 +5588,7 @@
       },
       "source": {
         "path": "kitty.zig",
-        "line": 351,
+        "line": 364,
         "column": 8
       },
       "zig_path": "kittyImage",
@@ -5241,7 +5605,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 370,
+            "line": 383,
             "column": 40
           },
           "type": {
@@ -5257,7 +5621,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 370,
+            "line": 383,
             "column": 55
           },
           "type": {
@@ -5288,7 +5652,7 @@
       },
       "source": {
         "path": "kitty.zig",
-        "line": 370,
+        "line": 383,
         "column": 8
       },
       "zig_path": "kittyImageData",
@@ -5306,7 +5670,7 @@
       },
       "source": {
         "path": "state.zig",
-        "line": 24,
+        "line": 31,
         "column": 8
       },
       "zig_path": "scrollRegion",
@@ -5323,7 +5687,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 35,
+            "line": 42,
             "column": 33
           },
           "type": {
@@ -5339,7 +5703,7 @@
       },
       "source": {
         "path": "state.zig",
-        "line": 35,
+        "line": 42,
         "column": 8
       },
       "zig_path": "charset",
@@ -5357,7 +5721,7 @@
       },
       "source": {
         "path": "state.zig",
-        "line": 60,
+        "line": 67,
         "column": 8
       },
       "zig_path": "mouseTracking",
@@ -5374,7 +5738,7 @@
       },
       "source": {
         "path": "state.zig",
-        "line": 65,
+        "line": 72,
         "column": 8
       },
       "zig_path": "mouseTrackingSendsMotion",
@@ -5392,7 +5756,7 @@
       },
       "source": {
         "path": "state.zig",
-        "line": 91,
+        "line": 98,
         "column": 8
       },
       "zig_path": "mouseReportFormat",
@@ -5409,7 +5773,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 114,
+            "line": 121,
             "column": 36
           },
           "type": {
@@ -5425,7 +5789,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 114,
+            "line": 121,
             "column": 47
           },
           "type": {
@@ -5440,7 +5804,7 @@
       },
       "source": {
         "path": "state.zig",
-        "line": 114,
+        "line": 121,
         "column": 8
       },
       "zig_path": "modeReport",
@@ -5457,7 +5821,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 182,
+            "line": 185,
             "column": 29
           },
           "type": {
@@ -5471,7 +5835,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 182,
+            "line": 185,
             "column": 44
           },
           "type": {
@@ -5487,7 +5851,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 182,
+            "line": 185,
             "column": 52
           },
           "type": {
@@ -5508,7 +5872,7 @@
       },
       "source": {
         "path": "gridref.zig",
-        "line": 182,
+        "line": 185,
         "column": 8
       },
       "zig_path": "cellAt",
@@ -5526,7 +5890,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 189,
+            "line": 192,
             "column": 34
           },
           "type": {
@@ -5539,7 +5903,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 189,
+            "line": 192,
             "column": 50
           },
           "type": {
@@ -5553,7 +5917,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 189,
+            "line": 192,
             "column": 65
           },
           "type": {
@@ -5569,7 +5933,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 189,
+            "line": 192,
             "column": 73
           },
           "type": {
@@ -5604,7 +5968,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "gridref.zig",
-        "line": 189,
+        "line": 192,
         "column": 8
       },
       "zig_path": "hyperlinkAt",
@@ -5613,7 +5977,9 @@
     {
       "doc": "Returns true if the viewport is scrolled to the bottom of the screen.",
       "ext": {
-        "MUSTOPT": {}
+        "MUSTOPT": {
+          "replace": false
+        }
       },
       "name": "viewportIsBottom",
       "ownership": "borrowed",
@@ -5699,7 +6065,7 @@
       },
       "source": {
         "path": "screen.zig",
-        "line": 188,
+        "line": 194,
         "column": 8
       },
       "zig_path": "screenHasSelection",
@@ -5823,7 +6189,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 158,
+            "line": 164,
             "column": 40
           },
           "type": {
@@ -5839,7 +6205,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 158,
+            "line": 164,
             "column": 48
           },
           "type": {
@@ -5856,7 +6222,7 @@
           "retention": "borrowed",
           "semantic": "codepoint",
           "source": {
-            "line": 158,
+            "line": 164,
             "column": 56
           },
           "type": {
@@ -5883,7 +6249,7 @@
       },
       "source": {
         "path": "screen.zig",
-        "line": 158,
+        "line": 164,
         "column": 8
       },
       "zig_path": "screenSelectWord",
@@ -5903,7 +6269,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 169,
+            "line": 175,
             "column": 40
           },
           "type": {
@@ -5919,7 +6285,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 169,
+            "line": 175,
             "column": 48
           },
           "type": {
@@ -5942,7 +6308,7 @@
       },
       "source": {
         "path": "screen.zig",
-        "line": 169,
+        "line": 175,
         "column": 8
       },
       "zig_path": "screenSelectLine",
@@ -5962,7 +6328,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 180,
+            "line": 186,
             "column": 42
           },
           "type": {
@@ -5978,7 +6344,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 180,
+            "line": 186,
             "column": 50
           },
           "type": {
@@ -6001,7 +6367,7 @@
       },
       "source": {
         "path": "screen.zig",
-        "line": 180,
+        "line": 186,
         "column": 8
       },
       "zig_path": "screenSelectOutput",
@@ -6022,7 +6388,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 193,
+            "line": 199,
             "column": 45
           },
           "type": {
@@ -6054,7 +6420,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "screen.zig",
-        "line": 193,
+        "line": 199,
         "column": 8
       },
       "zig_path": "screenSelectionString",
@@ -6075,7 +6441,7 @@
       },
       "source": {
         "path": "screen.zig",
-        "line": 86,
+        "line": 92,
         "column": 8
       },
       "zig_path": "screenSelection",
@@ -6092,7 +6458,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 93,
+            "line": 99,
             "column": 42
           },
           "type": {
@@ -6113,7 +6479,7 @@
       },
       "source": {
         "path": "screen.zig",
-        "line": 93,
+        "line": 99,
         "column": 8
       },
       "zig_path": "screenSetSelection",
@@ -6133,7 +6499,7 @@
       },
       "source": {
         "path": "screen.zig",
-        "line": 125,
+        "line": 131,
         "column": 8
       },
       "zig_path": "screenViewportTop",
@@ -6151,7 +6517,7 @@
       },
       "source": {
         "path": "screen.zig",
-        "line": 144,
+        "line": 150,
         "column": 8
       },
       "zig_path": "screenScrollbar",
@@ -6168,7 +6534,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 76,
+            "line": 77,
             "column": 36
           },
           "type": {
@@ -6182,7 +6548,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 76,
+            "line": 77,
             "column": 57
           },
           "type": {
@@ -6202,7 +6568,7 @@
       },
       "source": {
         "path": "format.zig",
-        "line": 76,
+        "line": 77,
         "column": 8
       },
       "zig_path": "screenFormat",
@@ -6219,7 +6585,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 84,
+            "line": 85,
             "column": 45
           },
           "type": {
@@ -6233,7 +6599,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 84,
+            "line": 85,
             "column": 66
           },
           "type": {
@@ -6247,7 +6613,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 84,
+            "line": 85,
             "column": 82
           },
           "type": {
@@ -6267,7 +6633,7 @@
       },
       "source": {
         "path": "format.zig",
-        "line": 84,
+        "line": 85,
         "column": 8
       },
       "zig_path": "screenFormatSelection",
@@ -6284,7 +6650,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 109,
+            "line": 115,
             "column": 47
           },
           "type": {
@@ -6298,7 +6664,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 109,
+            "line": 115,
             "column": 63
           },
           "type": {
@@ -6314,7 +6680,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 109,
+            "line": 115,
             "column": 71
           },
           "type": {
@@ -6331,7 +6697,7 @@
       },
       "source": {
         "path": "screen.zig",
-        "line": 109,
+        "line": 115,
         "column": 8
       },
       "zig_path": "screenSelectionContains",
@@ -6348,7 +6714,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 117,
+            "line": 123,
             "column": 45
           },
           "type": {
@@ -6362,7 +6728,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 117,
+            "line": 123,
             "column": 61
           },
           "type": {
@@ -6381,7 +6747,7 @@
       },
       "source": {
         "path": "screen.zig",
-        "line": 117,
+        "line": 123,
         "column": 8
       },
       "zig_path": "screenSelectionAdjust",
@@ -6402,7 +6768,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 201,
+            "line": 207,
             "column": 44
           },
           "type": {
@@ -6423,7 +6789,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 201,
+            "line": 207,
             "column": 61
           },
           "type": {
@@ -6451,7 +6817,7 @@
       },
       "source": {
         "path": "screen.zig",
-        "line": 201,
+        "line": 207,
         "column": 8
       },
       "zig_path": "screenStartHyperlink",
@@ -6798,7 +7164,7 @@
       },
       "source": {
         "path": "gridref.zig",
-        "line": 116,
+        "line": 119,
         "column": 8
       },
       "zig_path": "gridRefClose",
@@ -6815,7 +7181,7 @@
       },
       "source": {
         "path": "gridref.zig",
-        "line": 122,
+        "line": 125,
         "column": 8
       },
       "zig_path": "gridRefHasValue",
@@ -6832,7 +7198,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 130,
+            "line": 133,
             "column": 43
           },
           "type": {
@@ -6851,7 +7217,7 @@
       },
       "source": {
         "path": "gridref.zig",
-        "line": 130,
+        "line": 133,
         "column": 8
       },
       "zig_path": "gridRefPoint",
@@ -6868,7 +7234,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 141,
+            "line": 144,
             "column": 35
           },
           "type": {
@@ -6882,7 +7248,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 141,
+            "line": 144,
             "column": 50
           },
           "type": {
@@ -6898,7 +7264,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 141,
+            "line": 144,
             "column": 58
           },
           "type": {
@@ -6921,7 +7287,7 @@
       },
       "source": {
         "path": "gridref.zig",
-        "line": 141,
+        "line": 144,
         "column": 8
       },
       "zig_path": "gridRefSet",
@@ -6942,7 +7308,7 @@
       },
       "source": {
         "path": "gridref.zig",
-        "line": 156,
+        "line": 159,
         "column": 8
       },
       "zig_path": "gridRefCell",
@@ -6960,7 +7326,7 @@
           "retention": "borrowed",
           "semantic": "codepoint",
           "source": {
-            "line": 166,
+            "line": 169,
             "column": 47
           },
           "type": {
@@ -6991,7 +7357,7 @@
       },
       "source": {
         "path": "gridref.zig",
-        "line": 166,
+        "line": 169,
         "column": 8
       },
       "zig_path": "gridRefGraphemes",
@@ -7009,7 +7375,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 173,
+            "line": 176,
             "column": 50
           },
           "type": {
@@ -7041,7 +7407,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "gridref.zig",
-        "line": 173,
+        "line": 176,
         "column": 8
       },
       "zig_path": "gridRefHyperlinkUri",
@@ -7059,7 +7425,7 @@
       },
       "source": {
         "path": "gesture.zig",
-        "line": 165,
+        "line": 170,
         "column": 8
       },
       "zig_path": "gestureClose",
@@ -7076,7 +7442,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 179,
+            "line": 184,
             "column": 5
           },
           "type": {
@@ -7090,7 +7456,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 180,
+            "line": 185,
             "column": 5
           },
           "type": {
@@ -7104,7 +7470,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 181,
+            "line": 186,
             "column": 5
           },
           "type": {
@@ -7119,7 +7485,7 @@
       },
       "source": {
         "path": "gesture.zig",
-        "line": 177,
+        "line": 182,
         "column": 8
       },
       "zig_path": "gestureSetBehaviors",
@@ -7137,7 +7503,7 @@
           "retention": "borrowed",
           "semantic": "codepoint",
           "source": {
-            "line": 193,
+            "line": 198,
             "column": 49
           },
           "type": {
@@ -7164,7 +7530,7 @@
       },
       "source": {
         "path": "gesture.zig",
-        "line": 193,
+        "line": 198,
         "column": 8
       },
       "zig_path": "gestureSetWordBoundaries",
@@ -7181,7 +7547,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 202,
+            "line": 207,
             "column": 43
           },
           "type": {
@@ -7196,7 +7562,7 @@
       },
       "source": {
         "path": "gesture.zig",
-        "line": 202,
+        "line": 207,
         "column": 8
       },
       "zig_path": "gestureSetGeometry",
@@ -7213,7 +7579,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 216,
+            "line": 221,
             "column": 37
           },
           "type": {
@@ -7238,7 +7604,7 @@
       },
       "source": {
         "path": "gesture.zig",
-        "line": 216,
+        "line": 221,
         "column": 8
       },
       "zig_path": "gesturePress",
@@ -7255,7 +7621,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 248,
+            "line": 253,
             "column": 36
           },
           "type": {
@@ -7274,7 +7640,7 @@
       },
       "source": {
         "path": "gesture.zig",
-        "line": 248,
+        "line": 253,
         "column": 8
       },
       "zig_path": "gestureDrag",
@@ -7292,7 +7658,7 @@
       },
       "source": {
         "path": "gesture.zig",
-        "line": 266,
+        "line": 271,
         "column": 8
       },
       "zig_path": "gestureAutoscroll",
@@ -7309,7 +7675,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 277,
+            "line": 282,
             "column": 46
           },
           "type": {
@@ -7328,7 +7694,7 @@
       },
       "source": {
         "path": "gesture.zig",
-        "line": 277,
+        "line": 282,
         "column": 8
       },
       "zig_path": "gestureAutoscrollTick",
@@ -7349,7 +7715,7 @@
       },
       "source": {
         "path": "gesture.zig",
-        "line": 295,
+        "line": 300,
         "column": 8
       },
       "zig_path": "gestureDeepPress",
@@ -7366,7 +7732,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 309,
+            "line": 314,
             "column": 39
           },
           "type": {
@@ -7382,7 +7748,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 309,
+            "line": 314,
             "column": 47
           },
           "type": {
@@ -7399,7 +7765,7 @@
       },
       "source": {
         "path": "gesture.zig",
-        "line": 309,
+        "line": 314,
         "column": 8
       },
       "zig_path": "gestureRelease",
@@ -7416,7 +7782,7 @@
       },
       "source": {
         "path": "gesture.zig",
-        "line": 321,
+        "line": 326,
         "column": 8
       },
       "zig_path": "gestureReset",
@@ -7443,7 +7809,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 89,
+        "line": 84,
         "column": 8
       },
       "zig_path": "colorNameDefault",
@@ -7538,7 +7904,10 @@
     {
       "doc": "Feed bytes to the parser, applying them to the terminal.",
       "go": {
-        "implements": "writer"
+        "implements": [
+          "writer",
+          "string_writer"
+        ]
       },
       "name": "feed",
       "ownership": "borrowed",
@@ -7967,7 +8336,7 @@
           "name_source": "ast",
           "retention": "retained",
           "source": {
-            "line": 138,
+            "line": 142,
             "column": 30
           },
           "type": {
@@ -8013,7 +8382,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 138,
+            "line": 142,
             "column": 48
           },
           "type": {
@@ -8030,7 +8399,7 @@
       },
       "source": {
         "path": "dnd.zig",
-        "line": 138,
+        "line": 142,
         "column": 8
       },
       "zig_path": "onDrag",
@@ -8047,7 +8416,7 @@
       },
       "source": {
         "path": "dnd.zig",
-        "line": 147,
+        "line": 151,
         "column": 8
       },
       "zig_path": "dragActive",
@@ -8072,7 +8441,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "dnd.zig",
-        "line": 156,
+        "line": 160,
         "column": 8
       },
       "zig_path": "dragRegisteredMimes",
@@ -8093,7 +8462,7 @@
       },
       "source": {
         "path": "dnd.zig",
-        "line": 164,
+        "line": 168,
         "column": 8
       },
       "zig_path": "dragClientAccepted",
@@ -8110,7 +8479,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 175,
+            "line": 179,
             "column": 32
           },
           "type": {
@@ -8125,7 +8494,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 175,
+            "line": 179,
             "column": 46
           },
           "type": {
@@ -8153,7 +8522,7 @@
       },
       "source": {
         "path": "dnd.zig",
-        "line": 175,
+        "line": 179,
         "column": 8
       },
       "zig_path": "dragMove",
@@ -8177,7 +8546,7 @@
       },
       "source": {
         "path": "dnd.zig",
-        "line": 187,
+        "line": 191,
         "column": 8
       },
       "zig_path": "dragLeave",
@@ -8195,7 +8564,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 201,
+            "line": 205,
             "column": 35
           },
           "type": {
@@ -8215,7 +8584,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 201,
+            "line": 205,
             "column": 53
           },
           "type": {
@@ -8243,7 +8612,7 @@
       },
       "source": {
         "path": "dnd.zig",
-        "line": 201,
+        "line": 205,
         "column": 8
       },
       "zig_path": "dragAddItem",
@@ -8260,7 +8629,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 216,
+            "line": 220,
             "column": 32
           },
           "type": {
@@ -8282,7 +8651,7 @@
       },
       "source": {
         "path": "dnd.zig",
-        "line": 216,
+        "line": 220,
         "column": 8
       },
       "zig_path": "dragDrop",
@@ -8299,7 +8668,7 @@
       },
       "source": {
         "path": "dnd.zig",
-        "line": 227,
+        "line": 231,
         "column": 8
       },
       "zig_path": "dragClearItems",
@@ -8482,7 +8851,9 @@
     {
       "doc": "Whether the terminal has answered a query since the last `writeReplies`.",
       "ext": {
-        "MUSTOPT": {}
+        "MUSTOPT": {
+          "replace": false
+        }
       },
       "name": "hasReplies",
       "ownership": "borrowed",
@@ -9095,7 +9466,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 208,
+            "line": 175,
             "column": 21
           },
           "type": {
@@ -9117,7 +9488,7 @@
       },
       "source": {
         "path": "parser.zig",
-        "line": 208,
+        "line": 175,
         "column": 8
       },
       "symbol": "zg_new_osc_parser"
@@ -9133,7 +9504,7 @@
       },
       "source": {
         "path": "parser.zig",
-        "line": 215,
+        "line": 182,
         "column": 8
       },
       "zig_path": "freeOSCParser",
@@ -9150,7 +9521,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 107,
+            "line": 80,
             "column": 35
           },
           "type": {
@@ -9171,7 +9542,7 @@
       },
       "source": {
         "path": "parser.zig",
-        "line": 107,
+        "line": 80,
         "column": 12
       },
       "symbol": "zg_osc_parser_feed"
@@ -9187,7 +9558,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 112,
+            "line": 85,
             "column": 34
           },
           "type": {
@@ -9202,7 +9573,7 @@
       },
       "source": {
         "path": "parser.zig",
-        "line": 112,
+        "line": 85,
         "column": 12
       },
       "symbol": "zg_osc_parser_end"
@@ -9218,7 +9589,7 @@
       },
       "source": {
         "path": "parser.zig",
-        "line": 123,
+        "line": 96,
         "column": 12
       },
       "symbol": "zg_osc_parser_reset"
@@ -9377,7 +9748,7 @@
       "symbol": "zg_snapshot_deinit"
     },
     {
-      "doc": "Replace `term` with the terminal the snapshot holds: its size, screens,\nscrollback, modes and colors. The snapshot gives its terminal up once;\na second call fails. Streams on `term` keep pointing at it, but their\nparser state belongs to the old contents, so open a new stream and feed\nit `continuation` before any new input.\n\nzigo allows one constructor per handle and `newTerminal` is it, so a\nrestore fills a terminal the caller made rather than returning one.",
+      "doc": "Replace `term` with the terminal the snapshot holds: its size, screens,\nscrollback, modes and colors. The snapshot gives its terminal up once;\na second call fails. Streams on `term` keep pointing at it, but their\nparser state belongs to the old contents, so open a new stream and feed\nit `continuation` before any new input.\n\nKept beside `snapshotTerminal` rather than replaced by it: this one keeps\nthe caller's handle identity, so anything already holding that `*Terminal`\ngoes on holding the right one. Take the new handle when there is nothing to\nkeep, restore into an existing one when there is.",
       "name": "snapshotRestoreInto",
       "ownership": "borrowed",
       "params": [
@@ -9388,7 +9759,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 42,
+            "line": 44,
             "column": 45
           },
           "type": {
@@ -9401,7 +9772,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 42,
+            "line": 44,
             "column": 61
           },
           "type": {
@@ -9424,11 +9795,41 @@
       },
       "source": {
         "path": "snapshot.zig",
-        "line": 42,
+        "line": 44,
         "column": 8
       },
       "zig_path": "snapshotRestoreInto",
       "symbol": "zg_snapshot_snapshot_restore_into"
+    },
+    {
+      "boxed": "create",
+      "doc": "The terminal the snapshot holds, as a handle of its own: its size, screens,\nscrollback, modes and colors. The snapshot gives its terminal up once; a\nsecond call, or a call after `restoreInto`, fails.\n\nThe returned terminal has no streams. Open one and feed it `continuation`\nbefore any new input, the same as after a restore.",
+      "go": {
+        "owner": "Terminal"
+      },
+      "name": "snapshotTerminal",
+      "ownership": "caller",
+      "params": [],
+      "receiver": "Snapshot",
+      "return": {
+        "error_set": [
+          "TerminalTaken"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "const": false,
+          "kind": "opaque_ptr",
+          "nullable": false,
+          "ref": "Terminal"
+        }
+      },
+      "source": {
+        "path": "snapshot.zig",
+        "line": 57,
+        "column": 8
+      },
+      "zig_path": "snapshotTerminal",
+      "symbol": "zg_snapshot_snapshot_terminal"
     },
     {
       "doc": "The bytes of the unfinished sequence the snapshot was taken in, empty\nwhen the stream was at ground. Feed them to the restored terminal's\nstream before any new input.",
@@ -9448,7 +9849,7 @@
       },
       "source": {
         "path": "snapshot.zig",
-        "line": 58,
+        "line": 71,
         "column": 8
       },
       "zig_path": "snapshotContinuation",
@@ -9470,7 +9871,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 114,
+            "line": 128,
             "column": 27
           },
           "type": {
@@ -9483,7 +9884,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 114,
+            "line": 128,
             "column": 43
           },
           "type": {
@@ -9512,7 +9913,7 @@
       },
       "source": {
         "path": "snapshot.zig",
-        "line": 114,
+        "line": 128,
         "column": 8
       },
       "symbol": "zg_new_snapshot_decoder"
@@ -9529,7 +9930,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 129,
+            "line": 143,
             "column": 52
           },
           "type": {
@@ -9543,7 +9944,7 @@
       },
       "source": {
         "path": "snapshot.zig",
-        "line": 129,
+        "line": 143,
         "column": 8
       },
       "zig_path": "freeSnapshotDecoder",
@@ -9561,7 +9962,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 139,
+            "line": 153,
             "column": 53
           },
           "type": {
@@ -9574,7 +9975,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 139,
+            "line": 153,
             "column": 69
           },
           "type": {
@@ -9640,7 +10041,7 @@
       },
       "source": {
         "path": "snapshot.zig",
-        "line": 139,
+        "line": 153,
         "column": 8
       },
       "zig_path": "snapshotDecoderReady",
@@ -9658,7 +10059,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 149,
+            "line": 163,
             "column": 59
           },
           "type": {
@@ -9671,7 +10072,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 149,
+            "line": 163,
             "column": 75
           },
           "type": {
@@ -9694,7 +10095,7 @@
       },
       "source": {
         "path": "snapshot.zig",
-        "line": 149,
+        "line": 163,
         "column": 8
       },
       "zig_path": "snapshotDecoderRestoreInto",
@@ -9718,7 +10119,7 @@
       },
       "source": {
         "path": "snapshot.zig",
-        "line": 155,
+        "line": 169,
         "column": 8
       },
       "zig_path": "snapshotDecoderContinuation",
@@ -9736,7 +10137,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 167,
+            "line": 181,
             "column": 52
           },
           "type": {
@@ -9749,7 +10150,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 167,
+            "line": 181,
             "column": 68
           },
           "type": {
@@ -9811,7 +10212,7 @@
       },
       "source": {
         "path": "snapshot.zig",
-        "line": 167,
+        "line": 181,
         "column": 8
       },
       "zig_path": "snapshotDecoderNext",
@@ -9838,7 +10239,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 68,
+        "line": 73,
         "column": 8
       },
       "symbol": "zg_new_render_state"
@@ -9960,7 +10361,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 323,
+        "line": 335,
         "column": 8
       },
       "zig_path": "renderCursor",
@@ -9978,7 +10379,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 340,
+        "line": 352,
         "column": 8
       },
       "zig_path": "renderColors",
@@ -9998,7 +10399,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 73,
+        "line": 78,
         "column": 8
       },
       "zig_path": "renderCellCount",
@@ -10015,7 +10416,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 79,
+            "line": 84,
             "column": 40
           },
           "type": {
@@ -10044,7 +10445,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 79,
+        "line": 84,
         "column": 8
       },
       "zig_path": "renderCells",
@@ -10064,7 +10465,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 263,
+        "line": 268,
         "column": 8
       },
       "zig_path": "renderBackground",
@@ -10083,7 +10484,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 267,
+        "line": 272,
         "column": 8
       },
       "zig_path": "renderForeground",
@@ -10106,7 +10507,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 272,
+        "line": 277,
         "column": 8
       },
       "zig_path": "renderCursorX",
@@ -10128,7 +10529,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 277,
+        "line": 282,
         "column": 8
       },
       "zig_path": "renderCursorY",
@@ -10148,7 +10549,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 286,
+        "line": 291,
         "column": 8
       },
       "zig_path": "renderCursorWideTail",
@@ -10171,7 +10572,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 294,
+        "line": 299,
         "column": 8
       },
       "zig_path": "renderCursorColor",
@@ -10189,7 +10590,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 171,
+        "line": 176,
         "column": 8
       },
       "zig_path": "renderDirty",
@@ -10206,7 +10607,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 182,
+            "line": 187,
             "column": 44
           },
           "type": {
@@ -10237,7 +10638,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 182,
+        "line": 187,
         "column": 8
       },
       "zig_path": "renderDirtyRows",
@@ -10254,7 +10655,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 91,
+            "line": 96,
             "column": 43
           },
           "type": {
@@ -10270,7 +10671,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 91,
+            "line": 96,
             "column": 51
           },
           "type": {
@@ -10299,7 +10700,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 91,
+        "line": 96,
         "column": 8
       },
       "zig_path": "renderRowCells",
@@ -10316,7 +10717,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 198,
+            "line": 203,
             "column": 44
           },
           "type": {
@@ -10332,7 +10733,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 198,
+            "line": 203,
             "column": 52
           },
           "type": {
@@ -10349,7 +10750,7 @@
           "retention": "borrowed",
           "semantic": "codepoint",
           "source": {
-            "line": 198,
+            "line": 203,
             "column": 60
           },
           "type": {
@@ -10380,7 +10781,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 198,
+        "line": 203,
         "column": 8
       },
       "zig_path": "renderGraphemes",
@@ -10401,7 +10802,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 226,
+            "line": 231,
             "column": 46
           },
           "type": {
@@ -10414,7 +10815,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 226,
+            "line": 231,
             "column": 62
           },
           "type": {
@@ -10430,7 +10831,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 226,
+            "line": 231,
             "column": 70
           },
           "type": {
@@ -10465,7 +10866,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "render.zig",
-        "line": 226,
+        "line": 231,
         "column": 8
       },
       "zig_path": "renderHyperlinkAt",
@@ -10485,7 +10886,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 158,
+            "line": 167,
             "column": 23
           },
           "type": {
@@ -10507,7 +10908,7 @@
       },
       "source": {
         "path": "kitty.zig",
-        "line": 158,
+        "line": 167,
         "column": 8
       },
       "symbol": "zg_new_kitty_images"
@@ -10523,7 +10924,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 164,
+            "line": 173,
             "column": 44
           },
           "type": {
@@ -10537,7 +10938,7 @@
       },
       "source": {
         "path": "kitty.zig",
-        "line": 164,
+        "line": 173,
         "column": 8
       },
       "zig_path": "freeKittyImages",
@@ -10554,7 +10955,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 176,
+            "line": 185,
             "column": 40
           },
           "type": {
@@ -10577,7 +10978,7 @@
       },
       "source": {
         "path": "kitty.zig",
-        "line": 176,
+        "line": 185,
         "column": 8
       },
       "zig_path": "kittyUpdate",
@@ -10597,7 +10998,7 @@
       },
       "source": {
         "path": "kitty.zig",
-        "line": 323,
+        "line": 332,
         "column": 8
       },
       "zig_path": "kittyPlacementCount",
@@ -10614,7 +11015,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 328,
+            "line": 337,
             "column": 44
           },
           "type": {
@@ -10643,7 +11044,7 @@
       },
       "source": {
         "path": "kitty.zig",
-        "line": 328,
+        "line": 337,
         "column": 8
       },
       "zig_path": "kittyPlacements",
@@ -10838,7 +11239,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 235,
+            "line": 202,
             "column": 26
           },
           "type": {
@@ -10858,7 +11259,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 235,
+            "line": 202,
             "column": 47
           },
           "type": {
@@ -10883,7 +11284,7 @@
       },
       "source": {
         "path": "parser.zig",
-        "line": 235,
+        "line": 202,
         "column": 8
       },
       "symbol": "zg_sgr_attribute_count"
@@ -10899,7 +11300,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 264,
+            "line": 231,
             "column": 23
           },
           "type": {
@@ -10919,7 +11320,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 264,
+            "line": 231,
             "column": 44
           },
           "type": {
@@ -10935,7 +11336,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 264,
+            "line": 231,
             "column": 61
           },
           "type": {
@@ -10952,7 +11353,7 @@
       },
       "source": {
         "path": "parser.zig",
-        "line": 264,
+        "line": 231,
         "column": 8
       },
       "symbol": "zg_sgr_attribute_at"
@@ -10978,7 +11379,7 @@
   "package": "gostty",
   "packages": [
     {
-      "doc": "Package sys installs the process-global hooks libghostty-vt cannot provide in a library build: a PNG decoder for Kitty graphics and a secure entropy source for Kitty clipboard grants.",
+      "doc": "Package sys installs the process-global hooks libghostty-vt cannot provide in a library build: a PNG decoder for Kitty graphics, a secure entropy source for Kitty clipboard grants, and a sink for the diagnostics ghostty writes with std.log.",
       "name": "sys",
       "path": "sys"
     },
@@ -10989,6 +11390,29 @@
     }
   ],
   "prefix": "zg",
+  "sessions": [
+    {
+      "children": [
+        {
+          "type": "Stream"
+        },
+        {
+          "type": "Search",
+          "plural": "Searches"
+        },
+        {
+          "type": "Gesture"
+        },
+        {
+          "type": "GridRef",
+          "plural": "GridRefs"
+        }
+      ],
+      "doc": "Session owns a terminal and every handle it handed out, so a caller\nholds one thing and closes it once. Adopting a child hands its lifetime\nover: `Close` closes the children first, in reverse adoption order,\nthen the terminal.",
+      "name": "Session",
+      "primary": "Terminal"
+    }
+  ],
   "types": [
     {
       "exhaustive": true,
@@ -11005,6 +11429,50 @@
       "name": "SecureRandomHandler",
       "package": "sys",
       "zig_path": "*const fn (usize, usize) callconv(.c) void"
+    },
+    {
+      "exhaustive": true,
+      "fields": [],
+      "kind": "callback",
+      "name": "LogHandler",
+      "package": "sys",
+      "zig_path": "*const fn (sys.LogLevel, [*]const u8, usize, [*]const u8, usize, usize) callconv(.c) void"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "doc": "Something has gone wrong. It may be recoverable.",
+          "name": "err",
+          "value": 0
+        },
+        {
+          "doc": "It is uncertain whether something has gone wrong, but it is worth\ninvestigating.",
+          "name": "warn",
+          "value": 1
+        },
+        {
+          "doc": "General messages about what the terminal is doing.",
+          "name": "info",
+          "value": 2
+        },
+        {
+          "doc": "Only useful while debugging. Nothing at this level is emitted unless\nthe native library was built in Debug.",
+          "name": "debug",
+          "value": 3
+        }
+      ],
+      "kind": "enum",
+      "name": "LogLevel",
+      "package": "sys",
+      "tag_type": {
+        "bits": 8,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "text": true,
+      "zig_path": "sys.LogLevel"
     },
     {
       "exhaustive": true,
@@ -11764,6 +12232,7 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "The action: press, release, etc.",
           "name": "action",
           "type": {
             "kind": "enum",
@@ -11771,6 +12240,7 @@
           }
         },
         {
+          "doc": "The keycode of the physical key that was pressed. This is agnostic\nto the layout. Layout-dependent matching can only be done via the\nUTF-8 or unshifted codepoint.",
           "name": "key",
           "type": {
             "kind": "enum",
@@ -11778,6 +12248,7 @@
           }
         },
         {
+          "doc": "Mods are the modifiers that are pressed.",
           "name": "mods",
           "type": {
             "kind": "value_struct",
@@ -11785,6 +12256,7 @@
           }
         },
         {
+          "doc": "Modifiers that were consumed producing the event text. Effective\nmodifiers are `mods` minus these.",
           "name": "consumed_mods",
           "type": {
             "kind": "value_struct",
@@ -11792,12 +12264,14 @@
           }
         },
         {
+          "doc": "True while the event is part of an unfinished dead-key composition.",
           "name": "composing",
           "type": {
             "kind": "bool"
           }
         },
         {
+          "doc": "The codepoint the key produces unshifted, or zero for none.",
           "name": "unshifted_codepoint",
           "semantic": "codepoint",
           "type": {
@@ -12011,6 +12485,7 @@
           }
         },
         {
+          "doc": "The button the event is about. Ignored unless `has_button` is set,\nwhich a motion event without a held button leaves clear.",
           "name": "button",
           "type": {
             "kind": "enum",
@@ -12031,6 +12506,7 @@
           }
         },
         {
+          "doc": "Position in already-DPI-scaled pixels, relative to the surface.",
           "name": "x",
           "type": {
             "bits": 32,
@@ -12055,6 +12531,7 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "The size of the area the grid is drawn into, padding included.",
           "name": "screen_width",
           "type": {
             "bits": 32,
@@ -12073,6 +12550,7 @@
           }
         },
         {
+          "doc": "The size of one cell.",
           "name": "cell_width",
           "type": {
             "bits": 32,
@@ -12292,18 +12770,22 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "The rows a program can address: what the cursor moves in. The\nbottom-right includes rows not yet written to.",
           "name": "active",
           "value": 0
         },
         {
+          "doc": "What is on screen right now, so the origin moves as the user scrolls.",
           "name": "viewport",
           "value": 1
         },
         {
+          "doc": "Every row from the top of the scrollback; the coordinates a\n`Selection` uses.",
           "name": "screen",
           "value": 2
         },
         {
+          "doc": "Only the rows above the active area.",
           "name": "history",
           "value": 3
         }
@@ -12329,6 +12811,7 @@
       },
       "fields": [
         {
+          "doc": "Column, zero-based.",
           "name": "x",
           "type": {
             "bits": 16,
@@ -12338,6 +12821,7 @@
           }
         },
         {
+          "doc": "Row, in the coordinate space of the `PointTag` it was read with:\nviewport-relative for `.viewport`, scrollback-inclusive for `.screen`.",
           "name": "y",
           "type": {
             "bits": 32,
@@ -12445,6 +12929,7 @@
           "value": 3
         },
         {
+          "doc": "This is an extension added by Kitty to move the viewport into the\nscrollback and then erase the display.",
           "name": "scroll_complete",
           "value": 22
         }
@@ -12579,14 +13064,17 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "Legacy alternate screen mode. This goes to the alternate\nscreen or primary screen and only copies the cursor. The\nscreen is not erased.",
           "name": "47",
           "value": 0
         },
         {
+          "doc": "Alternate screen mode where the alternate screen is cleared\non exit. The primary screen is never cleared. The cursor is\ncopied.",
           "name": "1047",
           "value": 1
         },
         {
+          "doc": "Save primary screen cursor, switch to alternate screen,\nand clear the alternate screen on entry. On exit,\ndo not clear the screen, and restore the cursor on the\nprimary screen.",
           "name": "1049",
           "value": 2
         }
@@ -12792,7 +13280,7 @@
         "signed": false
       },
       "text": true,
-      "zig_path": "terminal.modes.Mode__enum_40502"
+      "zig_path": "terminal.modes.Mode__enum_40920"
     },
     {
       "exhaustive": true,
@@ -12804,6 +13292,7 @@
       },
       "fields": [
         {
+          "doc": "Column of the corner the selection was started from, zero-based.",
           "name": "start_x",
           "type": {
             "bits": 16,
@@ -12813,6 +13302,7 @@
           }
         },
         {
+          "doc": "Row of that corner, in screen coordinates: scrollback included, so it\ndoes not move when the viewport scrolls.",
           "name": "start_y",
           "type": {
             "bits": 32,
@@ -12822,6 +13312,7 @@
           }
         },
         {
+          "doc": "Column of the corner the selection was dragged to. It may be left of\n`start_x`; a selection is not normalised to a direction.",
           "name": "end_x",
           "type": {
             "bits": 16,
@@ -12831,6 +13322,7 @@
           }
         },
         {
+          "doc": "Row of that corner, in the same screen coordinates as `start_y`.",
           "name": "end_y",
           "type": {
             "bits": 32,
@@ -12840,6 +13332,7 @@
           }
         },
         {
+          "doc": "A rectangle between the two corners rather than a run of lines.",
           "name": "rectangle",
           "type": {
             "kind": "bool"
@@ -12855,14 +13348,17 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "Plain text.",
           "name": "plain",
           "value": 0
         },
         {
+          "doc": "VT sequences that replay colors, styles and links; lines end in CRLF.",
           "name": "vt",
           "value": 1
         },
         {
+          "doc": "HTML with inline styles; palette colors become CSS variables unless\n`resolve_palette` is set.",
           "name": "html",
           "value": 2
         }
@@ -12882,6 +13378,7 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "Which of the three renderings to emit. The zero value is plain text.",
           "name": "format",
           "type": {
             "kind": "enum",
@@ -12889,36 +13386,42 @@
           }
         },
         {
+          "doc": "Join soft-wrapped lines back into one instead of emitting them as\nthey are laid out at the current width.",
           "name": "unwrap",
           "type": {
             "kind": "bool"
           }
         },
         {
+          "doc": "Keep trailing spaces on lines that have other text. Trailing blank\nlines are always dropped.",
           "name": "keep_trailing_whitespace",
           "type": {
             "kind": "bool"
           }
         },
         {
+          "doc": "Include the cursor position. Styled formats only.",
           "name": "cursor",
           "type": {
             "kind": "bool"
           }
         },
         {
+          "doc": "Leave out text styles. Styled formats only.",
           "name": "no_styles",
           "type": {
             "kind": "bool"
           }
         },
         {
+          "doc": "Leave out OSC 8 hyperlinks. Styled formats only.",
           "name": "no_hyperlinks",
           "type": {
             "kind": "bool"
           }
         },
         {
+          "doc": "Resolve palette indices to the terminal's current RGB values rather\nthan emitting the index. Styled formats only.",
           "name": "resolve_palette",
           "type": {
             "kind": "bool"
@@ -12989,26 +13492,32 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "No underline. What `SGR 24` resets to.",
           "name": "none",
           "value": 0
         },
         {
+          "doc": "One line, the ordinary `SGR 4`.",
           "name": "single",
           "value": 1
         },
         {
+          "doc": "Two lines (`SGR 4:2`). Distinct from a doubly-struck glyph.",
           "name": "double",
           "value": 2
         },
         {
+          "doc": "A wave, conventionally used to mark a spelling or syntax error (`SGR 4:3`).",
           "name": "curly",
           "value": 3
         },
         {
+          "doc": "A dotted line (`SGR 4:4`).",
           "name": "dotted",
           "value": 4
         },
         {
+          "doc": "A dashed line (`SGR 4:5`).",
           "name": "dashed",
           "value": 5
         }
@@ -13260,6 +13769,7 @@
           "value": 29
         },
         {
+          "doc": "An SGR code ghostty does not implement. Added last so the tag values Go\nalready knows do not move. ghostty's own variant carries the raw\nparameters that stumped it; those are a parser detail, so only the fact\ncrosses. Applying it is a no-op, which is what ghostty does with it too.",
           "name": "unknown",
           "type": {
             "kind": "void"
@@ -13417,10 +13927,12 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "Next selection, in reverse order (newest to oldest),\nnon-wrapping.",
           "name": "next",
           "value": 0
         },
         {
+          "doc": "Prev selection, in forward order (oldest to newest),\nnon-wrapping.",
           "name": "prev",
           "value": 1
         }
@@ -13439,10 +13951,12 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "Scroll so the match is visible, only if it is not already.",
           "name": "if_needed",
           "value": 0
         },
         {
+          "doc": "Never scroll.",
           "name": "none",
           "value": 1
         }
@@ -13461,14 +13975,17 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "`tick` can make progress without terminal access.",
           "name": "running",
           "value": 0
         },
         {
+          "doc": "Blocked until the next `feed`. This is also the initial\nstate, since a search that has never been fed has never\nseen the terminal.",
           "name": "feed_required",
           "value": 1
         },
         {
+          "doc": "Caught up with the terminal state as of the last feed.",
           "name": "complete",
           "value": 2
         }
@@ -13487,14 +14004,17 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "All searches are complete.",
           "name": "complete",
           "value": 0
         },
         {
+          "doc": "Progress was made on at least one screen.",
           "name": "progress",
           "value": 1
         },
         {
+          "doc": "All incomplete searches are blocked on feed.",
           "name": "blocked",
           "value": 2
         }
@@ -13513,6 +14033,7 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "Total size of the scrollable area.",
           "name": "total",
           "type": {
             "bits": 64,
@@ -13522,6 +14043,7 @@
           }
         },
         {
+          "doc": "The offset into the total area that the viewport is at. This is\nguaranteed to be less than or equal to total. This includes the\nvisible row.",
           "name": "offset",
           "type": {
             "bits": 64,
@@ -13531,6 +14053,7 @@
           }
         },
         {
+          "doc": "The length of the visible area. This is including the offset row.",
           "name": "len",
           "type": {
             "bits": 64,
@@ -13653,6 +14176,7 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "Scroll to the top of the scrollback",
           "name": "top",
           "type": {
             "kind": "void"
@@ -13660,6 +14184,7 @@
           "value": 0
         },
         {
+          "doc": "Scroll to the bottom, i.e. the top of the active area",
           "name": "bottom",
           "type": {
             "kind": "void"
@@ -13667,6 +14192,7 @@
           "value": 1
         },
         {
+          "doc": "Scroll by some delta amount, up is negative.",
           "name": "delta",
           "type": {
             "bits": 64,
@@ -13677,6 +14203,7 @@
           "value": 2
         },
         {
+          "doc": "Scroll to the given absolute row offset from the top of the\nscrollable area. A value of zero is the top row. The requested\nrow becomes the first visible row of the viewport, clamped so\nthe viewport never scrolls beyond the top of the active area.\nThis is the same row space as PageList.Scrollbar offset.",
           "name": "row",
           "type": {
             "bits": 64,
@@ -13735,6 +14262,7 @@
       },
       "fields": [
         {
+          "doc": "First row that scrolls, zero-based and inclusive (DECSTBM top).",
           "name": "top",
           "type": {
             "bits": 16,
@@ -13744,6 +14272,7 @@
           }
         },
         {
+          "doc": "Last row that scrolls, inclusive. A full-height region ends at\n`rows - 1`.",
           "name": "bottom",
           "type": {
             "bits": 16,
@@ -13753,6 +14282,7 @@
           }
         },
         {
+          "doc": "First column that scrolls, inclusive (DECSLRM left). Meaningful only\nwhile left-right margin mode is on; otherwise it is 0.",
           "name": "left",
           "type": {
             "bits": 16,
@@ -13762,6 +14292,7 @@
           }
         },
         {
+          "doc": "Last column that scrolls, inclusive. Without margin mode it is\n`cols - 1`.",
           "name": "right",
           "type": {
             "bits": 16,
@@ -13780,22 +14311,27 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "No reporting.",
           "name": "none",
           "value": 0
         },
         {
+          "doc": "Mode 9: press only.",
           "name": "x10",
           "value": 1
         },
         {
+          "doc": "Mode 1000: press and release.",
           "name": "normal",
           "value": 2
         },
         {
+          "doc": "Mode 1002: press, release, and motion while a button is held.",
           "name": "button",
           "value": 3
         },
         {
+          "doc": "Mode 1003: press, release, and all motion.",
           "name": "any",
           "value": 4
         }
@@ -13815,22 +14351,27 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "The original single-byte encoding, coordinates offset by 32.",
           "name": "x10",
           "value": 0
         },
         {
+          "doc": "Mode 1005: UTF-8 coordinates.",
           "name": "utf8",
           "value": 1
         },
         {
+          "doc": "Mode 1006: SGR.",
           "name": "sgr",
           "value": 2
         },
         {
+          "doc": "Mode 1015: urxvt.",
           "name": "urxvt",
           "value": 3
         },
         {
+          "doc": "Mode 1016: SGR with pixel coordinates.",
           "name": "sgr_pixels",
           "value": 4
         }
@@ -13850,6 +14391,7 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "The terminal does not implement this mode.",
           "name": "not_recognized",
           "value": 0
         },
@@ -13862,10 +14404,12 @@
           "value": 2
         },
         {
+          "doc": "Always on; setting or resetting it does nothing.",
           "name": "permanently_set",
           "value": 3
         },
         {
+          "doc": "Always off; setting or resetting it does nothing.",
           "name": "permanently_reset",
           "value": 4
         }
@@ -13885,18 +14429,22 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "Cell-granular drag. A press of its own selects nothing, which is what\nmakes a single click clear the selection.",
           "name": "cell",
           "value": 0
         },
         {
+          "doc": "The word under the press, then word-granular drag.",
           "name": "word",
           "value": 1
         },
         {
+          "doc": "The line under the press, then line-granular drag.",
           "name": "line",
           "value": 2
         },
         {
+          "doc": "The shell command output the press is inside, which needs OSC 133\nprompt marks to exist at all.",
           "name": "output",
           "value": 3
         }
@@ -13943,6 +14491,7 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "Columns in the rendered grid.",
           "name": "columns",
           "type": {
             "bits": 32,
@@ -13952,6 +14501,7 @@
           }
         },
         {
+          "doc": "One cell's width in surface pixels.",
           "name": "cell_width",
           "type": {
             "bits": 32,
@@ -13961,6 +14511,7 @@
           }
         },
         {
+          "doc": "Padding before the first column, in surface pixels.",
           "name": "padding_left",
           "type": {
             "bits": 32,
@@ -13970,6 +14521,7 @@
           }
         },
         {
+          "doc": "The surface height in pixels, which is where a downward drag starts\nasking for autoscroll.",
           "name": "screen_height",
           "type": {
             "bits": 32,
@@ -13988,6 +14540,7 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "Column of the cell under the pointer, in viewport coordinates.",
           "name": "x",
           "type": {
             "bits": 16,
@@ -13997,6 +14550,7 @@
           }
         },
         {
+          "doc": "Row of that cell, in viewport coordinates: 0 is the top visible row,\nnot the top of the scrollback.",
           "name": "y",
           "type": {
             "bits": 16,
@@ -14006,6 +14560,7 @@
           }
         },
         {
+          "doc": "Pointer x in surface pixels from the top left. Kept apart from the\ncell because both the multi-click distance test and the within-cell\nselection threshold need sub-cell precision.",
           "name": "xpos",
           "type": {
             "bits": 64,
@@ -14013,6 +14568,7 @@
           }
         },
         {
+          "doc": "Pointer y in surface pixels, for the same reason as `xpos`.",
           "name": "ypos",
           "type": {
             "bits": 64,
@@ -14020,6 +14576,7 @@
           }
         },
         {
+          "doc": "How far a second press may be from the first and still count as a\nrepeat. One cell width is a reasonable choice.",
           "name": "max_distance",
           "type": {
             "bits": 64,
@@ -14027,6 +14584,7 @@
           }
         },
         {
+          "doc": "How long after a press a second one still counts as a repeat. Zero\ndisables multi-click entirely: every press is then a fresh single\nclick, which is also the honest setting for a caller with no clock.",
           "name": "repeat_interval_ns",
           "type": {
             "bits": 64,
@@ -14036,6 +14594,7 @@
           }
         },
         {
+          "doc": "When the press happened, in nanoseconds on a monotonic clock.\n\nPassed in rather than read from a clock here: the embedder already has\nthe timestamp the window system delivered with the event, that one is\nthe truth about when the user clicked (a queued event can reach the\nterminal much later), and a test can drive double clicks without\nsleeping. Only differences matter, so any epoch will do. Time that runs\nbackwards ends the click sequence.",
           "name": "time_ns",
           "type": {
             "bits": 64,
@@ -14054,6 +14613,7 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "The cell under the pointer, in viewport coordinates. For an autoscroll\ntick this is resolved after the viewport moves, so it names the row that\nscrolled under the pointer.",
           "name": "x",
           "type": {
             "bits": 16,
@@ -14063,6 +14623,7 @@
           }
         },
         {
+          "doc": "Row of that cell, in viewport coordinates.",
           "name": "y",
           "type": {
             "bits": 16,
@@ -14072,6 +14633,7 @@
           }
         },
         {
+          "doc": "Pointer x in surface pixels from the top left.",
           "name": "xpos",
           "type": {
             "bits": 64,
@@ -14079,6 +14641,7 @@
           }
         },
         {
+          "doc": "Pointer y in surface pixels from the top left.",
           "name": "ypos",
           "type": {
             "bits": 64,
@@ -14086,6 +14649,7 @@
           }
         },
         {
+          "doc": "Select the block between the two corners rather than the flow of text.",
           "name": "rectangle",
           "type": {
             "kind": "bool"
@@ -14136,26 +14700,32 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "BEL. No payload.",
           "name": "bell",
           "value": 0
         },
         {
+          "doc": "OSC 0/2. The title at the time of the change is on eventTitle.",
           "name": "title_changed",
           "value": 1
         },
         {
+          "doc": "OSC 7. The directory at the time of the change is on eventPwd.",
           "name": "pwd_changed",
           "value": 2
         },
         {
+          "doc": "OSC 9 or 777. `eventTitle` and `eventBody` carry the text.",
           "name": "desktop_notification",
           "value": 3
         },
         {
+          "doc": "OSC 9;4. `eventProgressState` and `eventProgress` carry the report.",
           "name": "progress_report",
           "value": 4
         },
         {
+          "doc": "A sequence this library does not implement, captured so it can be\nlooked at. Only APC today. `eventSequence` carries the content.\n\nOff until `setUnknownMaxBytes` turns it on: capturing costs a buffer\nper stream, and a program that never sends an unknown sequence would\npay it for nothing.",
           "name": "unknown_sequence",
           "value": 5
         }
@@ -14233,22 +14803,27 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "The program registered to accept drops, re-registered, or unregistered.\n`dragActive` says which, and `dragRegisteredMimes` lists the types it\nasked for so they can be registered with the window system.",
           "name": "registration",
           "value": 0
         },
         {
+          "doc": "The program answered the drag currently over the terminal. The\n`accepted` argument carries the answer.",
           "name": "acceptance",
           "value": 1
         },
         {
+          "doc": "The program finished with the drop and did nothing with it.",
           "name": "concluded_none",
           "value": 2
         },
         {
+          "doc": "The program copied the drop.",
           "name": "concluded_copy",
           "value": 3
         },
         {
+          "doc": "The program moved the drop.",
           "name": "concluded_move",
           "value": 4
         }
@@ -14340,6 +14915,7 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "Column of the cell under the pointer, zero-based from the top left.",
           "name": "cell_x",
           "type": {
             "bits": 32,
@@ -14349,6 +14925,7 @@
           }
         },
         {
+          "doc": "Row of that cell, zero-based from the top left.",
           "name": "cell_y",
           "type": {
             "bits": 32,
@@ -14358,6 +14935,7 @@
           }
         },
         {
+          "doc": "Pointer x in pixels, relative to the top left of the content area.",
           "name": "pixel_x",
           "type": {
             "bits": 32,
@@ -14367,6 +14945,7 @@
           }
         },
         {
+          "doc": "Pointer y in pixels, relative to the top left of the content area.",
           "name": "pixel_y",
           "type": {
             "bits": 32,
@@ -14376,6 +14955,7 @@
           }
         },
         {
+          "doc": "What the source is offering -- copy, move, link -- as a flag set. The\nreply picks one of these and no other.",
           "name": "operations",
           "type": {
             "kind": "value_struct",
@@ -14486,18 +15066,22 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "Policy or the user said no.",
           "name": "denied",
           "value": 0
         },
         {
+          "doc": "This embedder cannot reach that clipboard.",
           "name": "unsupported",
           "value": 1
         },
         {
+          "doc": "The clipboard is temporarily unavailable.",
           "name": "busy",
           "value": 2
         },
         {
+          "doc": "Reading or writing the clipboard failed.",
           "name": "io_error",
           "value": 3
         }
@@ -14523,6 +15107,7 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "Bytes taken from the input. When `reached` is false this is all of\nthem; otherwise it stops just past the sequence that ended at ground.",
           "name": "consumed",
           "type": {
             "bits": 64,
@@ -14532,6 +15117,7 @@
           }
         },
         {
+          "doc": "Whether the parser came back to ground within the input. False means\nthe input ended mid-sequence and the rest is still pending.",
           "name": "reached",
           "type": {
             "kind": "bool"
@@ -14771,13 +15357,13 @@
       "kind": "enum",
       "name": "OSCCommand",
       "tag_type": {
-        "bits": 8,
+        "bits": 5,
         "is_usize": false,
         "kind": "int",
         "signed": false
       },
       "text": true,
-      "zig_path": "parser.OSCCommand"
+      "zig_path": "lib.enum.Enum(.{ .zig = {} },&.{ &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)], &.{ ... }[0..(...)] }[0..27])"
     },
     {
       "exhaustive": true,
@@ -14902,6 +15488,7 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "Rows prepended above what that screen already had, or zero when the\npage was read and validated but dropped -- because the screen is gone,\nthe terminal was resized, or the scrollback has no room.",
           "name": "rows",
           "type": {
             "bits": 64,
@@ -14911,6 +15498,7 @@
           }
         },
         {
+          "doc": "Pages still to come for the same screen.",
           "name": "remaining",
           "type": {
             "bits": 32,
@@ -14920,6 +15508,7 @@
           }
         },
         {
+          "doc": "Padding so the struct's layout matches across the C ABI. Not data.",
           "name": "_pad",
           "type": {
             "bits": 32,
@@ -15018,6 +15607,7 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "The terminal's default background as `0xRRGGBB`, after any OSC 11 the\nprogram set. What an unstyled cell should be painted with.",
           "name": "background",
           "type": {
             "bits": 32,
@@ -15027,6 +15617,7 @@
           }
         },
         {
+          "doc": "The default foreground as `0xRRGGBB`, after any OSC 10.",
           "name": "foreground",
           "type": {
             "bits": 32,
@@ -15036,6 +15627,7 @@
           }
         },
         {
+          "doc": "The cursor colour as `0xRRGGBB`, meaningful only when\n`cursor_has_value` is set.",
           "name": "cursor",
           "type": {
             "bits": 32,
@@ -15045,6 +15637,7 @@
           }
         },
         {
+          "doc": "Whether the program set a cursor colour at all. When false the cursor\nis the embedder's to colour, conventionally with `foreground`.",
           "name": "cursor_has_value",
           "type": {
             "kind": "bool"
@@ -15060,6 +15653,7 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "The cell's codepoint, or 0 for an empty cell. Only the first codepoint\nof a grapheme cluster; combining marks are not carried across.",
           "name": "codepoint",
           "semantic": "codepoint",
           "type": {
@@ -15070,6 +15664,7 @@
           }
         },
         {
+          "doc": "Foreground as `0xRRGGBB`, already resolved: palette indices and\ndefaults are looked up, so this is the colour to paint with.",
           "name": "fg",
           "type": {
             "bits": 32,
@@ -15079,6 +15674,7 @@
           }
         },
         {
+          "doc": "Background as `0xRRGGBB`, resolved the same way as `fg`.",
           "name": "bg",
           "type": {
             "bits": 32,
@@ -15088,6 +15684,7 @@
           }
         },
         {
+          "doc": "Style bits for this cell -- bold, underline, selection and the rest.\nCarried as the backing integer in array positions; read a named field\noff it with `CellFlagsFromBacking`.",
           "name": "flags",
           "type": {
             "kind": "value_struct",
@@ -15173,6 +15770,7 @@
           }
         },
         {
+          "doc": "Narrow, wide, or a spacer the renderer should skip.",
           "name": "wide",
           "type": {
             "kind": "enum",
@@ -15180,6 +15778,7 @@
           }
         },
         {
+          "doc": "Whether the cell falls inside the screen's selection.",
           "name": "selected",
           "type": {
             "kind": "bool"
@@ -15205,18 +15804,22 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "Not a wide character, cell width 1.",
           "name": "narrow",
           "value": 0
         },
         {
+          "doc": "Wide character, cell width 2.",
           "name": "wide",
           "value": 1
         },
         {
+          "doc": "Spacer after wide character. Do not render.",
           "name": "spacer_tail",
           "value": 2
         },
         {
+          "doc": "Spacer at the end of a soft-wrapped line to indicate that a wide\ncharacter is continued on the next line.",
           "name": "spacer_head",
           "value": 3
         }
@@ -15235,14 +15838,17 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "Nothing: a renderer can skip the frame.",
           "name": "clean",
           "value": 0
         },
         {
+          "doc": "Some rows; `renderDirtyRows` names them.",
           "name": "partial",
           "value": 1
         },
         {
+          "doc": "Everything: colors or dimensions changed, so every row needs drawing.",
           "name": "full",
           "value": 2
         }
@@ -15261,14 +15867,17 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "Under the cell backgrounds: `z < -2^30`.",
           "name": "below_bg",
           "value": 0
         },
         {
+          "doc": "Over the backgrounds but under the text: `-2^30 <= z < 0`.",
           "name": "below_text",
           "value": 1
         },
         {
+          "doc": "Over the text: `z >= 0`.",
           "name": "above_text",
           "value": 2
         }
@@ -15288,6 +15897,7 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "The image to draw. Look it up with `kittyImage`.",
           "name": "image_id",
           "type": {
             "bits": 32,
@@ -15297,6 +15907,7 @@
           }
         },
         {
+          "doc": "Which placement of that image this is. Together with `image_id` it\nidentifies the placement for as long as it exists.",
           "name": "placement_id",
           "type": {
             "bits": 32,
@@ -15306,6 +15917,7 @@
           }
         },
         {
+          "doc": "Where the top-left corner goes, in viewport cells. The row is negative\nwhen the image has scrolled partly above the viewport, and either can be\nnegative for a placement positioned relative to another one.",
           "name": "viewport_col",
           "type": {
             "bits": 32,
@@ -15315,6 +15927,7 @@
           }
         },
         {
+          "doc": "The row of that corner, in viewport cells, negative under the same\nconditions as `viewport_col`.",
           "name": "viewport_row",
           "type": {
             "bits": 32,
@@ -15324,6 +15937,7 @@
           }
         },
         {
+          "doc": "Horizontal offset within that cell, in pixels.",
           "name": "x_offset",
           "type": {
             "bits": 32,
@@ -15333,6 +15947,7 @@
           }
         },
         {
+          "doc": "Vertical offset within that cell, in pixels.",
           "name": "y_offset",
           "type": {
             "bits": 32,
@@ -15342,6 +15957,7 @@
           }
         },
         {
+          "doc": "How big to draw it, in pixels. This is the source rectangle scaled to\nwhatever the program asked for, so it is what the image should be\nstretched to rather than its natural size.",
           "name": "pixel_width",
           "type": {
             "bits": 32,
@@ -15351,6 +15967,7 @@
           }
         },
         {
+          "doc": "The height to draw it at, in pixels; the other half of `pixel_width`.",
           "name": "pixel_height",
           "type": {
             "bits": 32,
@@ -15360,6 +15977,7 @@
           }
         },
         {
+          "doc": "The same size in cells, which is what the placement occupies on the\ngrid. Useful for clipping; the pixel size is what to draw.",
           "name": "grid_cols",
           "type": {
             "bits": 32,
@@ -15369,6 +15987,7 @@
           }
         },
         {
+          "doc": "The same height in cells, the other half of `grid_cols`.",
           "name": "grid_rows",
           "type": {
             "bits": 32,
@@ -15378,6 +15997,7 @@
           }
         },
         {
+          "doc": "The part of the image to draw, in image pixels. Already clamped to the\nimage, and a zero-sized request already turned into the full dimension.",
           "name": "source_x",
           "type": {
             "bits": 32,
@@ -15387,6 +16007,7 @@
           }
         },
         {
+          "doc": "Top edge of that rectangle, in image pixels.",
           "name": "source_y",
           "type": {
             "bits": 32,
@@ -15396,6 +16017,7 @@
           }
         },
         {
+          "doc": "Width of that rectangle, in image pixels.",
           "name": "source_width",
           "type": {
             "bits": 32,
@@ -15405,6 +16027,7 @@
           }
         },
         {
+          "doc": "Height of that rectangle, in image pixels.",
           "name": "source_height",
           "type": {
             "bits": 32,
@@ -15414,6 +16037,7 @@
           }
         },
         {
+          "doc": "Stacking order. The snapshot is sorted by it, so drawing the array in\norder is correct; `layer` is the same value split into the three bands\na renderer draws in.",
           "name": "z",
           "type": {
             "bits": 32,
@@ -15423,6 +16047,7 @@
           }
         },
         {
+          "doc": "Which band `z` falls in.",
           "name": "layer",
           "type": {
             "kind": "enum",
@@ -15430,12 +16055,14 @@
           }
         },
         {
+          "doc": "True for a placement the program positioned with unicode placeholders\nrather than at a cursor position.\n\nIt has no position of its own -- the cells that reference it decide\nwhere it goes -- so `viewport_col` and `viewport_row` are zero and mean\nnothing. Everything else is filled in, because a renderer that scans\ncells for placeholders finds the placement by `image_id` and\n`placement_id` and needs its source rectangle and size. A renderer that\ndoes not do that scan should skip these.",
           "name": "virtual",
           "type": {
             "kind": "bool"
           }
         },
         {
+          "doc": "Padding so the struct's layout matches across the C ABI. Not data.",
           "name": "_pad",
           "type": {
             "bits": 16,
@@ -15454,6 +16081,7 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "Changes whenever the bytes behind `kittyImageData` change, including\nwhen an animation advances a frame. Cache textures on it.",
           "name": "generation",
           "type": {
             "bits": 64,
@@ -15463,6 +16091,7 @@
           }
         },
         {
+          "doc": "The length `kittyImageData` will write.",
           "name": "data_len",
           "type": {
             "bits": 64,
@@ -15472,6 +16101,7 @@
           }
         },
         {
+          "doc": "The image's own size in pixels, which is what `source_*` on a placement\nindexes into. Not the size it is drawn at.",
           "name": "width",
           "type": {
             "bits": 32,
@@ -15481,6 +16111,7 @@
           }
         },
         {
+          "doc": "The image's own height in pixels, the other half of `width`.",
           "name": "height",
           "type": {
             "bits": 32,
@@ -15490,6 +16121,7 @@
           }
         },
         {
+          "doc": "How the bytes `kittyImageData` writes are laid out per pixel.",
           "name": "format",
           "type": {
             "kind": "enum",
@@ -15497,6 +16129,7 @@
           }
         },
         {
+          "doc": "Whether those bytes are compressed, and how. `.none` for most images.",
           "name": "compression",
           "type": {
             "kind": "enum",
@@ -15504,6 +16137,7 @@
           }
         },
         {
+          "doc": "Padding so the struct's layout matches across the C ABI. Not data.",
           "name": "_pad",
           "type": {
             "bits": 16,
@@ -15522,22 +16156,27 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "Three bytes per pixel.",
           "name": "rgb",
           "value": 0
         },
         {
+          "doc": "Four bytes per pixel.",
           "name": "rgba",
           "value": 1
         },
         {
+          "doc": "A PNG file. Never seen by Go: ghostty refuses PNG transmissions until\na decoder is installed with `onPngDecodeRequest`, and with one the\nimage is decoded on arrival and stored as `rgba`. Kept so the tags\nmirror ghostty's.",
           "name": "png",
           "value": 2
         },
         {
+          "doc": "Two bytes per pixel. Only reachable by decoding a PNG.",
           "name": "gray_alpha",
           "value": 3
         },
         {
+          "doc": "One byte per pixel. Only reachable by decoding a PNG.",
           "name": "gray",
           "value": 4
         }
@@ -15593,6 +16232,49 @@
             "is_usize": false,
             "kind": "int",
             "signed": false
+          }
+        },
+        {
+          "doc": "The maximum size of scrollback in bytes. Null is unlimited and zero\ndisables scrollback.",
+          "name": "max_scrollback_bytes",
+          "type": {
+            "child": {
+              "bits": 64,
+              "is_usize": true,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "optional"
+          }
+        },
+        {
+          "doc": "The maximum number of physical scrollback rows, excluding the active\narea. Null is unlimited. The effective limit permits at least one\nstandard page and only complete historical pages are pruned.",
+          "name": "max_scrollback_lines",
+          "type": {
+            "child": {
+              "bits": 64,
+              "is_usize": true,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "optional"
+          }
+        },
+        {
+          "doc": "Cursor state restored by DECSCUSR default and RIS.",
+          "name": "default_cursor_style",
+          "type": {
+            "kind": "enum",
+            "ref": "CursorStyle"
+          }
+        },
+        {
+          "name": "default_cursor_blink",
+          "type": {
+            "child": {
+              "kind": "bool"
+            },
+            "kind": "optional"
           }
         }
       ],

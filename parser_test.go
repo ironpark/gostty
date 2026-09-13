@@ -29,10 +29,7 @@ func parseOSC(t *testing.T, p *OSCParser, payload string) OSCCommand {
 	if !ok {
 		t.Fatalf("End(%q) reported no command", payload)
 	}
-	kind, err := p.Command()
-	if err != nil {
-		t.Fatalf("Command(%q): %v", payload, err)
-	}
+	kind := p.Command()
 	return kind
 }
 
@@ -41,15 +38,12 @@ func TestOSCParserWindowTitle(t *testing.T) {
 	if kind := parseOSC(t, p, "0;hello world"); kind != OSCCommandChangeWindowTitle {
 		t.Fatalf("kind = %v, want ChangeWindowTitle", kind)
 	}
-	title, err := p.WindowTitle()
-	if err != nil {
-		t.Fatalf("WindowTitle: %v", err)
-	}
+	title := p.WindowTitle()
 	if title != "hello world" {
 		t.Fatalf("WindowTitle = %q, want %q", title, "hello world")
 	}
 	// Every accessor answers for its own command only.
-	if icon, _ := p.Icon(); icon != "" {
+	if icon := p.Icon(); icon != "" {
 		t.Fatalf("Icon = %q, want empty for a title sequence", icon)
 	}
 }
@@ -59,7 +53,7 @@ func TestOSCParserIcon(t *testing.T) {
 	if kind := parseOSC(t, p, "1;icon-name"); kind != OSCCommandChangeWindowIcon {
 		t.Fatalf("kind = %v, want ChangeWindowIcon", kind)
 	}
-	if icon, _ := p.Icon(); icon != "icon-name" {
+	if icon := p.Icon(); icon != "icon-name" {
 		t.Fatalf("Icon = %q, want %q", icon, "icon-name")
 	}
 }
@@ -70,10 +64,7 @@ func TestOSCParserPwd(t *testing.T) {
 	if kind := parseOSC(t, p, "7;"+url); kind != OSCCommandReportPwd {
 		t.Fatalf("kind = %v, want ReportPwd", kind)
 	}
-	pwd, err := p.Pwd()
-	if err != nil {
-		t.Fatalf("Pwd: %v", err)
-	}
+	pwd := p.Pwd()
 	if pwd != url {
 		t.Fatalf("Pwd = %q, want %q", pwd, url)
 	}
@@ -84,20 +75,20 @@ func TestOSCParserHyperlink(t *testing.T) {
 	if kind := parseOSC(t, p, "8;;https://example.com/"); kind != OSCCommandHyperlinkStart {
 		t.Fatalf("kind = %v, want HyperlinkStart", kind)
 	}
-	if uri, _ := p.HyperlinkUri(); uri != "https://example.com/" {
+	if uri := p.HyperlinkUri(); uri != "https://example.com/" {
 		t.Fatalf("HyperlinkUri = %q, want the URI", uri)
 	}
-	if id, _ := p.HyperlinkID(); id != "" {
+	if id := p.HyperlinkID(); id != "" {
 		t.Fatalf("HyperlinkID = %q, want empty for a link with no id", id)
 	}
 
 	if kind := parseOSC(t, p, "8;id=42;https://example.com/two"); kind != OSCCommandHyperlinkStart {
 		t.Fatalf("kind = %v, want HyperlinkStart", kind)
 	}
-	if uri, _ := p.HyperlinkUri(); uri != "https://example.com/two" {
+	if uri := p.HyperlinkUri(); uri != "https://example.com/two" {
 		t.Fatalf("HyperlinkUri = %q, want the URI", uri)
 	}
-	if id, _ := p.HyperlinkID(); id != "42" {
+	if id := p.HyperlinkID(); id != "42" {
 		t.Fatalf("HyperlinkID = %q, want %q", id, "42")
 	}
 
@@ -112,17 +103,11 @@ func TestOSCParserProgressReport(t *testing.T) {
 	if kind := parseOSC(t, p, "9;4;1;50"); kind != OSCCommandConemuProgressReport {
 		t.Fatalf("kind = %v, want ConemuProgressReport", kind)
 	}
-	state, err := p.ProgressState()
-	if err != nil {
-		t.Fatalf("ProgressState: %v", err)
-	}
+	state := p.ProgressState()
 	if state != ProgressStateSet {
 		t.Fatalf("ProgressState = %v, want Set", state)
 	}
-	value, err := p.ProgressValue()
-	if err != nil {
-		t.Fatalf("ProgressValue: %v", err)
-	}
+	value := p.ProgressValue()
 	if value != 50 {
 		t.Fatalf("ProgressValue = %d, want 50", value)
 	}
@@ -132,7 +117,7 @@ func TestOSCParserProgressReport(t *testing.T) {
 	if kind := parseOSC(t, p, "9;4;3"); kind != OSCCommandConemuProgressReport {
 		t.Fatalf("kind = %v, want ConemuProgressReport", kind)
 	}
-	if value, _ := p.ProgressValue(); value != -1 {
+	if value := p.ProgressValue(); value != -1 {
 		t.Fatalf("ProgressValue = %d, want -1", value)
 	}
 }
@@ -142,10 +127,10 @@ func TestOSCParserDesktopNotification(t *testing.T) {
 	if kind := parseOSC(t, p, "777;notify;build;done"); kind != OSCCommandShowDesktopNotification {
 		t.Fatalf("kind = %v, want ShowDesktopNotification", kind)
 	}
-	if title, _ := p.NotificationTitle(); title != "build" {
+	if title := p.NotificationTitle(); title != "build" {
 		t.Fatalf("NotificationTitle = %q, want %q", title, "build")
 	}
-	if body, _ := p.NotificationBody(); body != "done" {
+	if body := p.NotificationBody(); body != "done" {
 		t.Fatalf("NotificationBody = %q, want %q", body, "done")
 	}
 }
@@ -155,14 +140,11 @@ func TestOSCParserClipboard(t *testing.T) {
 	if kind := parseOSC(t, p, "52;c;aGVsbG8="); kind != OSCCommandClipboardContents {
 		t.Fatalf("kind = %v, want ClipboardContents", kind)
 	}
-	sel, err := p.ClipboardSelection()
-	if err != nil {
-		t.Fatalf("ClipboardSelection: %v", err)
-	}
+	sel := p.ClipboardSelection()
 	if sel != 'c' {
 		t.Fatalf("ClipboardSelection = %q, want 'c'", rune(sel))
 	}
-	if data, _ := p.ClipboardData(); data != "aGVsbG8=" {
+	if data := p.ClipboardData(); data != "aGVsbG8=" {
 		t.Fatalf("ClipboardData = %q, want the base64 payload", data)
 	}
 }
@@ -172,10 +154,7 @@ func TestOSCParserSemanticPrompt(t *testing.T) {
 	if kind := parseOSC(t, p, "133;A"); kind != OSCCommandSemanticPrompt {
 		t.Fatalf("kind = %v, want SemanticPrompt", kind)
 	}
-	action, err := p.SemanticPromptAction()
-	if err != nil {
-		t.Fatalf("SemanticPromptAction: %v", err)
-	}
+	action := p.SemanticPromptAction()
 	if action != SemanticPromptActionFreshLineNewPrompt {
 		t.Fatalf("SemanticPromptAction = %v, want FreshLineNewPrompt", action)
 	}
@@ -186,7 +165,7 @@ func TestOSCParserMouseShape(t *testing.T) {
 	if kind := parseOSC(t, p, "22;pointer"); kind != OSCCommandMouseShape {
 		t.Fatalf("kind = %v, want MouseShape", kind)
 	}
-	if shape, _ := p.MouseShape(); shape != "pointer" {
+	if shape := p.MouseShape(); shape != "pointer" {
 		t.Fatalf("MouseShape = %q, want %q", shape, "pointer")
 	}
 }
@@ -206,7 +185,7 @@ func TestOSCParserSplitFeed(t *testing.T) {
 	if ok, err := p.End(OSCTerminatorBel); err != nil || !ok {
 		t.Fatalf("End = %v, %v; want true, nil", ok, err)
 	}
-	if title, _ := p.WindowTitle(); title != "split title" {
+	if title := p.WindowTitle(); title != "split title" {
 		t.Fatalf("WindowTitle = %q, want %q", title, "split title")
 	}
 }
@@ -231,10 +210,10 @@ func TestOSCParserGarbage(t *testing.T) {
 	if ok {
 		t.Fatal("End reported a command for garbage input")
 	}
-	if kind, _ := p.Command(); kind != OSCCommandInvalid {
+	if kind := p.Command(); kind != OSCCommandInvalid {
 		t.Fatalf("Command = %v, want Invalid", kind)
 	}
-	if title, _ := p.WindowTitle(); title != "" {
+	if title := p.WindowTitle(); title != "" {
 		t.Fatalf("WindowTitle = %q, want empty", title)
 	}
 }

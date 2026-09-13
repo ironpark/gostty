@@ -18,16 +18,41 @@ type ModeDefault struct {
 	Enabled bool
 }
 
-// NewTerminalWithConfig creates and configures a terminal. A failed setting
-// closes the newly created terminal; no partially configured handle escapes.
-func NewTerminalWithConfig(cfg TerminalConfig) (_ *Terminal, err error) {
+// NewTerminalWithConfig creates and configures a terminal. The settings
+// ghostty's own Options carries -- scrollback and the cursor defaults -- are
+// passed to the constructor, so they hold from the first byte fed rather than
+// from a setter afterwards. Colors and mode defaults cannot cross at
+// construction and are applied after; a failure in one of those closes the
+// newly created terminal, so no partially configured handle escapes.
+func NewTerminalWithConfig(cfg TerminalConfig, extra ...TerminalOption) (_ *Terminal, err error) {
 	if cfg.Cols == 0 {
 		return nil, &RangeError{Operation: "NewTerminalWithConfig", Parameter: "Cols", Type: "nonzero cell count"}
 	}
 	if cfg.Rows == 0 {
 		return nil, &RangeError{Operation: "NewTerminalWithConfig", Parameter: "Rows", Type: "nonzero cell count"}
 	}
-	term, err := NewTerminal(cfg.Cols, cfg.Rows)
+	for _, mode := range cfg.ModeDefaults {
+		if !mode.Mode.IsKnown() {
+			return nil, &RangeError{Operation: "NewTerminalWithConfig", Parameter: "ModeDefaults", Type: "known Mode"}
+		}
+	}
+
+	// A nil field means "leave ghostty's default", which is what omitting the
+	// option does, so the nil checks decide whether to append rather than what
+	// to pass.
+	opts := make([]TerminalOption, 0, 3+len(extra))
+	if cfg.ScrollbackMaxBytes != nil {
+		opts = append(opts, WithTerminalMaxScrollbackBytes(cfg.ScrollbackMaxBytes))
+	}
+	if cfg.ScrollbackMaxLines != nil {
+		opts = append(opts, WithTerminalMaxScrollbackLines(cfg.ScrollbackMaxLines))
+	}
+	if cfg.CursorBlink != nil {
+		opts = append(opts, WithTerminalDefaultCursorBlink(cfg.CursorBlink))
+	}
+	opts = append(opts, extra...)
+
+	term, err := NewTerminal(cfg.Cols, cfg.Rows, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -36,16 +61,6 @@ func NewTerminalWithConfig(cfg TerminalConfig) (_ *Terminal, err error) {
 			_ = term.Close()
 		}
 	}()
-	if cfg.ScrollbackMaxBytes != nil {
-		if err = term.SetScrollbackMaxBytes(*cfg.ScrollbackMaxBytes); err != nil {
-			return nil, err
-		}
-	}
-	if cfg.ScrollbackMaxLines != nil {
-		if err = term.SetScrollbackMaxLines(*cfg.ScrollbackMaxLines); err != nil {
-			return nil, err
-		}
-	}
 	if cfg.BackgroundColor != nil {
 		if err = term.SetDefaultBackgroundColor(*cfg.BackgroundColor); err != nil {
 			return nil, err
@@ -61,15 +76,7 @@ func NewTerminalWithConfig(cfg TerminalConfig) (_ *Terminal, err error) {
 			return nil, err
 		}
 	}
-	if cfg.CursorBlink != nil {
-		if err = term.SetDefaultCursorBlink(*cfg.CursorBlink); err != nil {
-			return nil, err
-		}
-	}
 	for _, mode := range cfg.ModeDefaults {
-		if !mode.Mode.IsKnown() {
-			return nil, &RangeError{Operation: "NewTerminalWithConfig", Parameter: "ModeDefaults", Type: "known Mode"}
-		}
 		if err = term.SetDefaultMode(mode.Mode, mode.Enabled); err != nil {
 			return nil, err
 		}
@@ -138,59 +145,33 @@ func (t *Terminal) NewStreamWithConfig(cfg StreamConfig) (_ *Stream, err error) 
 	return s, nil
 }
 
-// TerminalOption configures a Terminal.
-type TerminalOption func(*TerminalConfig)
+// The option constructors below take values where the generated ones take
+// pointers. `?usize` and `?bool` in ghostty's Options are three-state -- unset,
+// or set to a number that may be zero -- so the generated `With*` spell that
+// with a pointer. A caller who is calling the option at all has a value in
+// hand, and `&` on a literal is not Go one can write, so these wrap it.
 
 // WithScrollbackMaxBytes sets the maximum scrollback allocation in bytes.
 // Zero disables scrollback immediately.
 func WithScrollbackMaxBytes(bytes uint) TerminalOption {
-	return func(c *TerminalConfig) { c.ScrollbackMaxBytes = &bytes }
+	return WithTerminalMaxScrollbackBytes(&bytes)
 }
 
-// WithScrollbackMaxLines sets the maximum number of physical lines retained in scrollback.
+// WithScrollbackMaxLines sets the maximum number of physical lines retained in
+// scrollback. Pruned at native page boundaries, not an exact row cap.
 func WithScrollbackMaxLines(lines uint) TerminalOption {
-	return func(c *TerminalConfig) { c.ScrollbackMaxLines = &lines }
+	return WithTerminalMaxScrollbackLines(&lines)
 }
 
-// WithDefaultBackgroundColor sets the default background color (0xRRGGBB).
-func WithDefaultBackgroundColor(rgb uint32) TerminalOption {
-	return func(c *TerminalConfig) { c.BackgroundColor = &rgb }
-}
-
-// WithDefaultForegroundColor sets the default foreground color (0xRRGGBB).
-func WithDefaultForegroundColor(rgb uint32) TerminalOption {
-	return func(c *TerminalConfig) { c.ForegroundColor = &rgb }
-}
-
-// WithDefaultCursorColor sets the default cursor color (0xRRGGBB).
-func WithDefaultCursorColor(rgb uint32) TerminalOption {
-	return func(c *TerminalConfig) { c.CursorColor = &rgb }
-}
-
-// WithDefaultCursorBlink sets the default cursor blink state.
+// WithDefaultCursorBlink sets the cursor blink state restored by DECSCUSR
+// default and RIS.
 func WithDefaultCursorBlink(blink bool) TerminalOption {
-	return func(c *TerminalConfig) { c.CursorBlink = &blink }
+	return WithTerminalDefaultCursorBlink(&blink)
 }
 
-// WithModeDefault sets both the current value and reset default of a terminal mode.
-func WithModeDefault(mode Mode, enabled bool) TerminalOption {
-	return func(c *TerminalConfig) {
-		c.ModeDefaults = append(c.ModeDefaults, ModeDefault{Mode: mode, Enabled: enabled})
-	}
-}
-
-// NewTerminalWithOptions creates and configures a terminal using functional options.
-func NewTerminalWithOptions(cols, rows uint16, opts ...TerminalOption) (*Terminal, error) {
-	cfg := TerminalConfig{Cols: cols, Rows: rows}
-	for _, opt := range opts {
-		opt(&cfg)
-	}
-	return NewTerminalWithConfig(cfg)
-}
-
-// MustNewTerminalWithOptions creates a terminal using functional options, panicking on failure.
-func MustNewTerminalWithOptions(cols, rows uint16, opts ...TerminalOption) *Terminal {
-	term, err := NewTerminalWithOptions(cols, rows, opts...)
+// MustNewTerminal creates a terminal with the given options, panicking on failure.
+func MustNewTerminal(cols, rows uint16, opts ...TerminalOption) *Terminal {
+	term, err := NewTerminal(cols, rows, opts...)
 	if err != nil {
 		panic(err)
 	}
@@ -280,34 +261,16 @@ func (s *Screen) PlainText(trim bool) (string, error) {
 	})
 }
 
-// WriteString writes str to the stream, satisfying io.StringWriter.
-// The data is fed into the VT stream without copying.
-func (s *Stream) WriteString(str string) (int, error) {
-	if len(str) == 0 {
-		return 0, nil
-	}
-	p := unsafe.Slice(unsafe.StringData(str), len(str))
-	if err := s.Feed(p); err != nil {
-		return 0, err
-	}
-	return len(str), nil
-}
-
-// Session pairs a Terminal with its primary Stream, managing their joint lifecycle.
-// It implements io.Writer, io.StringWriter, and io.Closer.
-// All writes to Session feed into its primary Stream.
-type Session struct {
-	Terminal *Terminal
-	Stream   *Stream
-}
-
-// SessionConfig configures both Terminal and its primary Stream.
+// SessionConfig configures both the terminal a session owns and its primary
+// stream. TerminalOptions are the generated constructor options, applied after
+// the fields TerminalConfig maps to the same options, so they win on conflict.
 type SessionConfig struct {
-	Terminal TerminalConfig
-	Stream   StreamConfig
+	Terminal        TerminalConfig
+	TerminalOptions []TerminalOption
+	Stream          StreamConfig
 }
 
-// SessionOption configures a Session.
+// SessionOption configures a SessionConfig.
 type SessionOption func(*SessionConfig)
 
 // WithTerminalConfig sets the underlying TerminalConfig.
@@ -320,12 +283,12 @@ func WithStreamConfig(cfg StreamConfig) SessionOption {
 	return func(c *SessionConfig) { c.Stream = cfg }
 }
 
-// WithTerminalOptions applies functional options to the session's terminal.
+// WithTerminalOptions adds constructor options for the session's terminal.
+// A TerminalOption is the generated kind, which the constructor consumes; it
+// cannot be applied to a TerminalConfig, so it is collected rather than run here.
 func WithTerminalOptions(opts ...TerminalOption) SessionOption {
 	return func(c *SessionConfig) {
-		for _, opt := range opts {
-			opt(&c.Terminal)
-		}
+		c.TerminalOptions = append(c.TerminalOptions, opts...)
 	}
 }
 
@@ -338,16 +301,16 @@ func WithStreamOptions(opts ...StreamOption) SessionOption {
 	}
 }
 
-// NewSession creates a Terminal and a primary Stream wired to it.
-// If creation fails, any allocated resources are cleanly closed.
-func NewSession(cols, rows uint16, opts ...SessionOption) (*Session, error) {
-	cfg := SessionConfig{
-		Terminal: TerminalConfig{Cols: cols, Rows: rows},
-	}
+// NewConfiguredSession creates a terminal and a primary stream wired to it, and
+// adopts both into a session. NewSession adopts an already-built terminal; this
+// builds the pair from a configuration. If either step fails, nothing escapes:
+// whatever was allocated is closed before the error is returned.
+func NewConfiguredSession(cols, rows uint16, opts ...SessionOption) (*Session, error) {
+	cfg := SessionConfig{Terminal: TerminalConfig{Cols: cols, Rows: rows}}
 	for _, opt := range opts {
 		opt(&cfg)
 	}
-	term, err := NewTerminalWithConfig(cfg.Terminal)
+	term, err := NewTerminalWithConfig(cfg.Terminal, cfg.TerminalOptions...)
 	if err != nil {
 		return nil, err
 	}
@@ -356,54 +319,55 @@ func NewSession(cols, rows uint16, opts ...SessionOption) (*Session, error) {
 		_ = term.Close()
 		return nil, err
 	}
-	return &Session{
-		Terminal: term,
-		Stream:   stream,
-	}, nil
+	return NewSession(term).AddStream(stream), nil
 }
 
-// MustNewSession creates a Session, panicking on error.
-func MustNewSession(cols, rows uint16, opts ...SessionOption) *Session {
-	sess, err := NewSession(cols, rows, opts...)
+// MustNewConfiguredSession creates a configured session, panicking on failure.
+func MustNewConfiguredSession(cols, rows uint16, opts ...SessionOption) *Session {
+	sess, err := NewConfiguredSession(cols, rows, opts...)
 	if err != nil {
 		panic(err)
 	}
 	return sess
 }
 
+// Stream returns the session's primary stream: the first one adopted, which is
+// the one NewConfiguredSession wired to the terminal. It is nil for a session
+// that has adopted no stream, and after Close.
+func (s *Session) Stream() *Stream {
+	streams := s.Streams()
+	if len(streams) == 0 {
+		return nil
+	}
+	return streams[0]
+}
+
 // Write feeds bytes into the session's primary stream, satisfying io.Writer.
 func (s *Session) Write(p []byte) (int, error) {
-	return s.Stream.Write(p)
+	stream := s.Stream()
+	if stream == nil {
+		return 0, &HandleError{Operation: "Session.Write"}
+	}
+	return stream.Write(p)
 }
 
 // WriteString feeds str into the session's primary stream, satisfying io.StringWriter.
 func (s *Session) WriteString(str string) (int, error) {
-	return s.Stream.WriteString(str)
+	stream := s.Stream()
+	if stream == nil {
+		return 0, &HandleError{Operation: "Session.WriteString"}
+	}
+	return stream.WriteString(str)
 }
 
 // FormatString formats the active screen area and returns the result as a string.
 func (s *Session) FormatString(opts FormatOptions) (string, error) {
-	return s.Terminal.FormatString(opts)
+	return s.Terminal().FormatString(opts)
 }
 
 // PlainText returns the active screen area formatted as plain text.
 func (s *Session) PlainText(trim bool) (string, error) {
-	return s.Terminal.PlainText(trim)
-}
-
-// Close closes the stream followed by the terminal, respecting handle hierarchy.
-func (s *Session) Close() error {
-	var errStream, errTerm error
-	if s.Stream != nil {
-		errStream = s.Stream.Close()
-	}
-	if s.Terminal != nil {
-		errTerm = s.Terminal.Close()
-	}
-	if errStream != nil {
-		return errStream
-	}
-	return errTerm
+	return s.Terminal().PlainText(trim)
 }
 
 var (
@@ -412,4 +376,3 @@ var (
 	_ io.Closer       = (*Session)(nil)
 	_ io.StringWriter = (*Stream)(nil)
 )
-

@@ -62,9 +62,15 @@ pub fn screenSelectRange(
 /// ghostty's own `Selection` holds tracked pins into page memory, which cannot
 /// cross the C boundary; this is the same information as coordinates.
 pub const Selection = extern struct {
+    /// Column of the corner the selection was started from, zero-based.
     start_x: u16,
+    /// Row of that corner, in screen coordinates: scrollback included, so it
+    /// does not move when the viewport scrolls.
     start_y: u32,
+    /// Column of the corner the selection was dragged to. It may be left of
+    /// `start_x`; a selection is not normalised to a direction.
     end_x: u16,
+    /// Row of that corner, in the same screen coordinates as `start_y`.
     end_y: u32,
     /// A rectangle between the two corners rather than a run of lines.
     rectangle: bool,

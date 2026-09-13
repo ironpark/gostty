@@ -15,9 +15,9 @@ func TestSwitchScreen(t *testing.T) {
 		t.Fatalf("PrintString: %v", err)
 	}
 
-	key, err := term.ActiveScreenKey()
-	if err != nil || key != ScreenKeyPrimary {
-		t.Fatalf("ActiveScreenKey() = %v, %v; want primary, nil", key, err)
+	key := term.ActiveScreenKey()
+	if key != ScreenKeyPrimary {
+		t.Fatalf("ActiveScreenKey() = %v; want primary", key)
 	}
 
 	// The screen being left comes back, so a caller can keep a handle to the
@@ -26,8 +26,8 @@ func TestSwitchScreen(t *testing.T) {
 	if err != nil || !ok || primary == nil {
 		t.Fatalf("SwitchScreen(alternate) = %v, %v, %v; want screen, true, nil", primary, ok, err)
 	}
-	if key, err := term.ActiveScreenKey(); err != nil || key != ScreenKeyAlternate {
-		t.Fatalf("ActiveScreenKey() = %v, %v; want alternate, nil", key, err)
+	if key := term.ActiveScreenKey(); key != ScreenKeyAlternate {
+		t.Fatalf("ActiveScreenKey() = %v; want alternate", key)
 	}
 	if got := screen(t, term); strings.TrimSpace(got) != "" {
 		t.Errorf("alternate screen = %q, want empty", got)
@@ -41,7 +41,7 @@ func TestSwitchScreen(t *testing.T) {
 	}
 
 	if _, ok, err := term.SwitchScreen(ScreenKeyPrimary); err != nil || !ok {
-		t.Fatalf("SwitchScreen(primary) = ok %v, err %v; want true, nil", ok, err)
+		t.Fatalf("SwitchScreen(primary) = ok %v, %v; want true, nil", ok, err)
 	}
 	if got, want := screen(t, term), "primary"; got != want {
 		t.Errorf("primary screen after switching back = %q, want %q", got, want)
@@ -151,7 +151,7 @@ func TestBorrowedScreen(t *testing.T) {
 	}
 	text, ok, err := sc.SelectionString()
 	if err != nil || !ok {
-		t.Fatalf("SelectionString() = ok %v, err %v; want true, nil", ok, err)
+		t.Fatalf("SelectionString() = ok %v, %v; want true, nil", ok, err)
 	}
 	if got, want := strings.TrimSpace(text), "hello"; got != want {
 		t.Errorf("SelectionString() = %q, want %q", got, want)
@@ -164,7 +164,7 @@ func TestBorrowedScreen(t *testing.T) {
 		t.Fatalf("HasSelection() after clear = %v, %v; want false, nil", has, err)
 	}
 	if text, ok, err := sc.SelectionString(); err != nil || ok {
-		t.Errorf("SelectionString() with no selection = %q, ok %v, err %v; want absent, nil", text, ok, err)
+		t.Errorf("SelectionString() with no selection = %q, ok %v, %v; want absent, nil", text, ok, err)
 	}
 
 	// A borrowed handle does not keep the terminal open.
@@ -181,10 +181,10 @@ func TestOptionalScreen(t *testing.T) {
 	term := newTerm(t, 20, 3)
 
 	if _, ok, err := term.Screen(ScreenKeyAlternate); err != nil || ok {
-		t.Errorf("Screen(alternate) before use = ok %v, err %v; want false, nil", ok, err)
+		t.Errorf("Screen(alternate) before use = ok %v, %v; want false, nil", ok, err)
 	}
 	if _, ok, err := term.Screen(ScreenKeyPrimary); err != nil || !ok {
-		t.Errorf("Screen(primary) = ok %v, err %v; want true, nil", ok, err)
+		t.Errorf("Screen(primary) = ok %v, %v; want true, nil", ok, err)
 	}
 
 	if _, _, err := term.SwitchScreen(ScreenKeyAlternate); err != nil {
@@ -192,7 +192,7 @@ func TestOptionalScreen(t *testing.T) {
 	}
 	alt, ok, err := term.Screen(ScreenKeyAlternate)
 	if err != nil || !ok {
-		t.Fatalf("Screen(alternate) after switching = ok %v, err %v; want true, nil", ok, err)
+		t.Fatalf("Screen(alternate) after switching = ok %v, %v; want true, nil", ok, err)
 	}
 
 	// The primary screen is still reachable while the alternate is active.
@@ -204,7 +204,7 @@ func TestOptionalScreen(t *testing.T) {
 	}
 	text, ok, err := alt.SelectionString()
 	if err != nil || !ok {
-		t.Fatalf("SelectionString() = ok %v, err %v; want true, nil", ok, err)
+		t.Fatalf("SelectionString() = ok %v, %v; want true, nil", ok, err)
 	}
 	if got, want := strings.TrimSpace(text), "on alternate"; got != want {
 		t.Errorf("alternate selection = %q, want %q", got, want)

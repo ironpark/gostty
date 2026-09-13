@@ -15,7 +15,7 @@ func TestEnumTextRoundTrip(t *testing.T) {
 		}
 		got, err := ParseCursorStyle(string(text))
 		if err != nil || got != style {
-			t.Errorf("ParseCursorStyle(%q) = %v, %v; want %v", text, got, err, style)
+			t.Errorf("ParseCursorStyle(%q) = %v, %v, %v; want %v", text, got, err, style, err)
 		}
 	}
 	if _, err := ParseCursorStyle("wedge"); err == nil {
@@ -31,7 +31,7 @@ func TestEnumTextRoundTrip(t *testing.T) {
 	unknown := EraseLine(7)
 	got, err := ParseEraseLine(unknown.String())
 	if err != nil || got != unknown {
-		t.Errorf("ParseEraseLine(%q) = %v, %v; want %v", unknown.String(), got, err, unknown)
+		t.Errorf("ParseEraseLine(%q) = %v, %v, %v; want %v", unknown.String(), got, err, unknown, err)
 	}
 }
 

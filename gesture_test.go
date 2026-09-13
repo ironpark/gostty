@@ -84,16 +84,16 @@ func TestGestureClickCounts(t *testing.T) {
 	if _, ok := pressAt(t, g, 1, 0, 0); ok {
 		t.Error("first press produced a selection; want none so the caller clears")
 	}
-	if count, err := g.ClickCount(); err != nil || count != 1 {
-		t.Fatalf("ClickCount() = %d, %v; want 1, nil", count, err)
+	if count := g.ClickCount(); count != 1 {
+		t.Fatalf("ClickCount() = %d; want 1", count)
 	}
 
 	sel, ok := pressAt(t, g, 1, 0, 1000)
 	if !ok {
 		t.Fatal("second press produced no selection; want the word")
 	}
-	if count, err := g.ClickCount(); err != nil || count != 2 {
-		t.Errorf("ClickCount() = %d, %v; want 2, nil", count, err)
+	if count := g.ClickCount(); count != 2 {
+		t.Errorf("ClickCount() = %d; want 2", count)
 	}
 	if got, want := selectionText(t, term, sel), "hello"; got != want {
 		t.Errorf("double click selected %q, want %q", got, want)
@@ -103,8 +103,8 @@ func TestGestureClickCounts(t *testing.T) {
 	if !ok {
 		t.Fatal("third press produced no selection; want the line")
 	}
-	if count, err := g.ClickCount(); err != nil || count != 3 {
-		t.Errorf("ClickCount() = %d, %v; want 3, nil", count, err)
+	if count := g.ClickCount(); count != 3 {
+		t.Errorf("ClickCount() = %d; want 3", count)
 	}
 	if got, want := selectionText(t, term, sel), "hello world"; got != want {
 		t.Errorf("triple click selected %q, want %q", got, want)
@@ -114,8 +114,8 @@ func TestGestureClickCounts(t *testing.T) {
 	if _, ok := pressAt(t, g, 1, 0, 2000+testRepeatNanos+1); ok {
 		t.Error("press after the repeat interval produced a selection; want a fresh single click")
 	}
-	if count, err := g.ClickCount(); err != nil || count != 1 {
-		t.Errorf("ClickCount() = %d, %v; want 1, nil", count, err)
+	if count := g.ClickCount(); count != 1 {
+		t.Errorf("ClickCount() = %d; want 1", count)
 	}
 }
 
@@ -131,8 +131,8 @@ func TestGesturePressDistanceResets(t *testing.T) {
 	if _, ok := pressAt(t, g, 8, 0, 1000); ok {
 		t.Error("press a screen away produced a selection; want a fresh single click")
 	}
-	if count, err := g.ClickCount(); err != nil || count != 1 {
-		t.Errorf("ClickCount() = %d, %v; want 1, nil", count, err)
+	if count := g.ClickCount(); count != 1 {
+		t.Errorf("ClickCount() = %d; want 1", count)
 	}
 }
 
@@ -146,8 +146,8 @@ func TestGestureDragAndRelease(t *testing.T) {
 	g := newGesture(t, term, 20, 3)
 
 	pressAt(t, g, 0, 0, 0)
-	if dragged, err := g.Dragged(); err != nil || dragged {
-		t.Errorf("Dragged() right after the press = %v, %v; want false, nil", dragged, err)
+	if dragged := g.Dragged(); dragged {
+		t.Errorf("Dragged() right after the press = %v; want false", dragged)
 	}
 
 	// Past 60% of cell 4, so cell 4 is included: "hello".
@@ -158,8 +158,8 @@ func TestGestureDragAndRelease(t *testing.T) {
 	if got, want := selectionText(t, term, sel), "hello"; got != want {
 		t.Errorf("drag to cell 4 selected %q, want %q", got, want)
 	}
-	if dragged, err := g.Dragged(); err != nil || !dragged {
-		t.Errorf("Dragged() after moving = %v, %v; want true, nil", dragged, err)
+	if dragged := g.Dragged(); !dragged {
+		t.Errorf("Dragged() after moving = %v; want true", dragged)
 	}
 
 	// Extending the drag extends the selection rather than starting a new one.
@@ -179,19 +179,19 @@ func TestGestureDragAndRelease(t *testing.T) {
 	if err := g.Release(10, 0); err != nil {
 		t.Fatalf("Release: %v", err)
 	}
-	if dragged, err := g.Dragged(); err != nil || !dragged {
-		t.Errorf("Dragged() after release = %v, %v; want true, nil", dragged, err)
+	if dragged := g.Dragged(); !dragged {
+		t.Errorf("Dragged() after release = %v; want true", dragged)
 	}
 	// Release keeps the click count so the next nearby press can be a double
 	// click; it is Reset that ends the sequence.
-	if count, err := g.ClickCount(); err != nil || count != 1 {
-		t.Errorf("ClickCount() after release = %d, %v; want 1, nil", count, err)
+	if count := g.ClickCount(); count != 1 {
+		t.Errorf("ClickCount() after release = %d; want 1", count)
 	}
 	if err := g.Reset(); err != nil {
 		t.Fatalf("Reset: %v", err)
 	}
-	if count, err := g.ClickCount(); err != nil || count != 0 {
-		t.Errorf("ClickCount() after reset = %d, %v; want 0, nil", count, err)
+	if count := g.ClickCount(); count != 0 {
+		t.Errorf("ClickCount() after reset = %d; want 0", count)
 	}
 
 	// With no gesture in progress a drag selects nothing.
@@ -347,8 +347,8 @@ func TestGestureDeepPress(t *testing.T) {
 	if got, want := selectionText(t, term, sel), "hello"; got != want {
 		t.Errorf("deep press selected %q, want %q", got, want)
 	}
-	if count, err := g.ClickCount(); err != nil || count != 0 {
-		t.Errorf("ClickCount() after a deep press = %d, %v; want 0, nil", count, err)
+	if count := g.ClickCount(); count != 0 {
+		t.Errorf("ClickCount() after a deep press = %d; want 0", count)
 	}
 	if _, ok, err := g.Drag(GestureDragEvent{X: 10, Y: 0, Xpos: 109, Ypos: 5}); err != nil || ok {
 		t.Errorf("Drag() after a deep press = %v, %v; want no selection", ok, err)
@@ -364,7 +364,7 @@ func TestGesturePressOutsideViewport(t *testing.T) {
 	if _, ok := pressAt(t, g, 0, 9, 0); ok {
 		t.Error("press below the viewport produced a selection")
 	}
-	if count, err := g.ClickCount(); err != nil || count != 0 {
-		t.Errorf("ClickCount() after an out-of-bounds press = %d, %v; want 0, nil", count, err)
+	if count := g.ClickCount(); count != 0 {
+		t.Errorf("ClickCount() after an out-of-bounds press = %d; want 0", count)
 	}
 }

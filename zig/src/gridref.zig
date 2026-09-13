@@ -49,7 +49,10 @@ pub const PointTag = enum(u8) {
 /// A position in one of the coordinate systems `PointTag` names. `y` is
 /// wider than `x` because the scrollback can hold more rows than a page.
 pub const GridPoint = extern struct {
+    /// Column, zero-based.
     x: u16 = 0,
+    /// Row, in the coordinate space of the `PointTag` it was read with:
+    /// viewport-relative for `.viewport`, scrollback-inclusive for `.screen`.
     y: u32 = 0,
 };
 

@@ -30,6 +30,7 @@ pub const FormatterFormat = enum(u8) {
 /// zero value, so a Go `FormatOptions{}` is plain text, trimmed, with styles
 /// and links included where the format can carry them.
 pub const FormatOptions = extern struct {
+    /// Which of the three renderings to emit. The zero value is plain text.
     format: FormatterFormat = .plain,
     /// Join soft-wrapped lines back into one instead of emitting them as
     /// they are laid out at the current width.

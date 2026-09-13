@@ -12,8 +12,8 @@ func TestSwitchScreenMode(t *testing.T) {
 	if err := term.SwitchScreenMode(SwitchScreenMode1049, true); err != nil {
 		t.Fatal(err)
 	}
-	if key, err := term.ActiveScreenKey(); err != nil || key != ScreenKeyAlternate {
-		t.Fatalf("ActiveScreenKey() = %v, %v; want alternate", key, err)
+	if key := term.ActiveScreenKey(); key != ScreenKeyAlternate {
+		t.Fatalf("ActiveScreenKey() = %v; want alternate", key)
 	}
 	if err := term.PrintString("alternate"); err != nil {
 		t.Fatal(err)
@@ -21,12 +21,12 @@ func TestSwitchScreenMode(t *testing.T) {
 	if err := term.SwitchScreenMode(SwitchScreenMode1049, false); err != nil {
 		t.Fatal(err)
 	}
-	if key, err := term.ActiveScreenKey(); err != nil || key != ScreenKeyPrimary {
-		t.Fatalf("ActiveScreenKey() = %v, %v; want primary", key, err)
+	if key := term.ActiveScreenKey(); key != ScreenKeyPrimary {
+		t.Fatalf("ActiveScreenKey() = %v; want primary", key)
 	}
 	got, err := term.PlainString()
 	if err != nil || got != "primary" {
-		t.Errorf("PlainString() = %q, %v; want %q", got, err, "primary")
+		t.Errorf("PlainString() = %q, %v; want %q", got, "primary", err)
 	}
 }
 
@@ -55,7 +55,7 @@ func TestHyperlink(t *testing.T) {
 	}
 	got, err := term.PlainString()
 	if err != nil || got != "link" {
-		t.Errorf("PlainString() = %q, %v; want %q", got, err, "link")
+		t.Errorf("PlainString() = %q, %v; want %q", got, "link", err)
 	}
 }
 
@@ -67,7 +67,7 @@ func TestSearchNeedle(t *testing.T) {
 	}
 	defer search.Close()
 	if got, err := search.Needle(); err != nil || got != "needle" {
-		t.Errorf("Needle() = %q, %v; want %q", got, err, "needle")
+		t.Errorf("Needle() = %q, %v; want %q", got, "needle", err)
 	}
 }
 

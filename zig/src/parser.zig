@@ -33,37 +33,10 @@ pub const SemanticPromptAction = vt.osc.Command.SemanticPrompt.Action;
 /// than silently lost. `OSCParser` exposes payloads for the subset an embedder
 /// normally acts on; for the rest the kind is the whole answer.
 ///
-/// Mirrored rather than reused because `osc.Command.Key` is built by
-/// `lib.Enum`, whose type name is a generic instantiation zigo cannot bind.
-pub const OSCCommand = enum(u8) {
-    invalid,
-    change_window_title,
-    change_window_icon,
-    semantic_prompt,
-    clipboard_contents,
-    report_pwd,
-    mouse_shape,
-    color_operation,
-    kitty_color_protocol,
-    show_desktop_notification,
-    hyperlink_start,
-    hyperlink_end,
-    conemu_sleep,
-    conemu_show_message_box,
-    conemu_change_tab_title,
-    conemu_progress_report,
-    conemu_wait_input,
-    conemu_guimacro,
-    conemu_run_process,
-    conemu_output_environment_variable,
-    conemu_xterm_emulation,
-    conemu_comment,
-    kitty_text_sizing,
-    kitty_clipboard_protocol,
-    kitty_dnd_protocol,
-    context_signal,
-    kitty_desktop_notification,
-};
+/// Bound straight out of ghostty rather than mirrored. `lib.Enum` builds it,
+/// so the type name is a generic instantiation; zigo registers it under the
+/// name this alias gives, which is what lets the binding name it at all.
+pub const OSCCommand = vt.osc.Command.Key;
 
 /// A standalone OSC parser: bytes in, one command out.
 ///
@@ -128,16 +101,10 @@ pub const OSCParser = struct {
     /// Copy out of `cmd` whatever this binding exposes. Commands with no
     /// accessors leave every slot empty: their kind is the whole payload.
     fn capture(self: *OSCParser, cmd: *const vt.osc.Command) void {
-        // ghostty's tag enum is a `lib.Enum`, so the mirror is matched by name
-        // rather than by value, resolved at compile time per tag. A new
-        // upstream command that `OSCCommand` does not list yet is `invalid`
-        // rather than a shift of every kind Go already knows.
-        self.kind = switch (cmd.*) {
-            inline else => |_, tag| if (@hasField(OSCCommand, @tagName(tag)))
-                @field(OSCCommand, @tagName(tag))
-            else
-                .invalid,
-        };
+        // `vt.osc.Command` is a `union(Key)` and `OSCCommand` is that `Key`,
+        // so the kind is the active tag. Nothing to keep in step: a command
+        // added upstream arrives as its own name rather than as `invalid`.
+        self.kind = cmd.*;
 
         switch (cmd.*) {
             .change_window_title => |v| self.window_title = self.dupe(v),

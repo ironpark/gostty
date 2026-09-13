@@ -20,7 +20,7 @@ const trimmed = p.trimmed;
 // what registers the type is the `define()` result below reaching
 // `.declarations` -- so the lifecycle and the methods are written in one place
 // per type without naming it twice.
-const Terminal = api.handle("Terminal", .{
+pub const Terminal = api.handle("Terminal", .{
     .fields = &.{
         // Read straight off the terminal rather than through ghostty's `cols()`
         // and `rows()`, which is where these two sentences come from: the
@@ -29,25 +29,25 @@ const Terminal = api.handle("Terminal", .{
         mustField(.{ .path = "rows", .doc = "The number of populated rows, read without touching page memory." }),
         mustField(.{ .path = "screens.active.cursor.x", .name = "cursorX" }),
         mustField(.{ .path = "screens.active.cursor.y", .name = "cursorY" }),
-        .{ .path = "screens.active.cursor.cursor_style", .name = "cursorStyle" },
-        .{ .path = "screens.active_key", .name = "activeScreenKey" },
+        mustField(.{ .path = "screens.active.cursor.cursor_style", .name = "cursorStyle" }),
+        mustField(.{ .path = "screens.active_key", .name = "activeScreenKey" }),
         // The LCF: set once printing has filled the last column, so the next
         // print soft-wraps instead of overwriting.
-        .{ .path = "screens.active.cursor.pending_wrap", .name = "cursorPendingWrap" },
-        .{ .path = "screens.active.cursor.protected", .name = "cursorProtected" },
-        .{ .path = "width_px", .name = "widthPx" },
-        .{ .path = "height_px", .name = "heightPx" },
-        .{ .path = "flags.focused", .name = "focused" },
-        .{ .path = "flags.visible", .name = "visible" },
-        .{ .path = "flags.password_input", .name = "passwordInput" },
+        mustField(.{ .path = "screens.active.cursor.pending_wrap", .name = "cursorPendingWrap" }),
+        mustField(.{ .path = "screens.active.cursor.protected", .name = "cursorProtected" }),
+        mustField(.{ .path = "width_px", .name = "widthPx" }),
+        mustField(.{ .path = "height_px", .name = "heightPx" }),
+        mustField(.{ .path = "flags.focused", .name = "focused" }),
+        mustField(.{ .path = "flags.visible", .name = "visible" }),
+        mustField(.{ .path = "flags.password_input", .name = "passwordInput" }),
         // Charset state and the protected mode are plain reads off the active
         // screen, so they are paths rather than wrappers that would forward to
         // exactly these fields. Only `charset` stays a function: it takes a
         // slot, so there is no one field for it to be.
-        .{ .path = "screens.active.charset.gl", .name = "charsetGL", .doc = "The slot GL resolves to: the set used for codepoints up to 127." },
-        .{ .path = "screens.active.charset.gr", .name = "charsetGR", .doc = "The slot GR resolves to: the set used for 8-bit printable codepoints." },
-        .{ .path = "screens.active.charset.single_shift", .name = "charsetSingleShift", .doc = "The slot a pending single shift (SS2/SS3) will use for exactly one character, or absent if none is pending." },
-        .{ .path = "screens.active.protected_mode", .name = "protectedMode", .doc = "The most recent protected mode (DECSCA or the older SPA/EPA) on the active screen. This never returns to off once set, until the screen is reset: ECH and friends key off the most recent mode, not the current pen." },
+        mustField(.{ .path = "screens.active.charset.gl", .name = "charsetGL", .doc = "The slot GL resolves to: the set used for codepoints up to 127." }),
+        mustField(.{ .path = "screens.active.charset.gr", .name = "charsetGR", .doc = "The slot GR resolves to: the set used for 8-bit printable codepoints." }),
+        mustField(.{ .path = "screens.active.charset.single_shift", .name = "charsetSingleShift", .doc = "The slot a pending single shift (SS2/SS3) will use for exactly one character, or absent if none is pending." }),
+        mustField(.{ .path = "screens.active.protected_mode", .name = "protectedMode", .doc = "The most recent protected mode (DECSCA or the older SPA/EPA) on the active screen. This never returns to off once set, until the screen is reset: ECH and friends key off the most recent mode, not the current pen." }),
     },
 }).documented(
     \\Terminal owns mutable terminal state. Serialize all calls, including
@@ -68,8 +68,8 @@ const Search = trimmed(api.handle("Search", .{})).context();
 const GridRef = trimmed(api.handle("GridRef", .{})).context();
 
 const Gesture = trimmed(api.handle("Gesture", .{ .fields = &.{
-    .{ .path = "inner.left_click_count", .name = "clickCount", .doc = "How many clicks the current sequence is at: 0 before any press, then 1, 2 or 3. What an emulator switches on to decide what a click means." },
-    .{ .path = "inner.left_click_dragged", .name = "dragged", .doc = "Whether the pointer has left the pressed cell during this gesture. Read it on release: a click that never dragged is the one that should follow a hyperlink or move the shell cursor, rather than one that happened to end where it started after a round trip." },
+    mustField(.{ .path = "inner.left_click_count", .name = "clickCount", .doc = "How many clicks the current sequence is at: 0 before any press, then 1, 2 or 3. What an emulator switches on to decide what a click means." }),
+    mustField(.{ .path = "inner.left_click_dragged", .name = "dragged", .doc = "Whether the pointer has left the pressed cell during this gesture. Read it on release: a click that never dragged is the one that should follow a hyperlink or move the shell cursor, rather than one that happened to end where it started after a round trip." }),
 } })).context();
 
 const ColorName = trimmed(enumeration("ColorName", .{ .text = true, .open = true })).context();
@@ -77,14 +77,29 @@ const ColorName = trimmed(enumeration("ColorName", .{ .text = true, .open = true
 // One group per type: the constructor that makes it, the destructor that ends
 // it, and everything a caller can do in between.
 const terminal_group = Terminal.define(&.{
-    // `Terminal.init` returns by value and takes an `Options` whose `colors`
-    // field holds optionals that cannot cross the C ABI. `flatten` picks the
-    // two fields that can and leaves the rest at their Zig defaults, so
-    // ghostty's own constructor is bound without a wrapper.
+    // `Terminal.init` returns by value and takes an `Options`. `options` lowers
+    // it exactly as `flatten` does -- same C symbol, same shim -- and splits the
+    // listed fields by whether Zig gave them a default: `cols` and `rows` have
+    // none, because there is no right size to assume, so they stay positional,
+    // and the rest become `With*`. ghostty's own constructor is still bound
+    // without a wrapper, and now with its own defaults rather than only two of
+    // its fields.
+    //
+    // What is left out is what cannot cross: `colors` holds optionals inside a
+    // struct and `default_modes` is an unregistered packed struct (both
+    // ZIGO040). Those stay post-construction setters, which is what
+    // `TerminalConfig` in the convenience plugin is for.
     Terminal.func("init", .{
         .name = "newTerminal",
         .role = .{ .constructor = .{ .type = Terminal.typeRef() } },
-        .params = &.{zigo.param.flatten(2, &.{ "cols", "rows" })},
+        .params = &.{zigo.param.options(2, &.{
+            "cols",
+            "rows",
+            "max_scrollback_bytes",
+            "max_scrollback_lines",
+            "default_cursor_style",
+            "default_cursor_blink",
+        }, .{})},
     }),
     Terminal.func("deinit", .{ .role = .{ .destructor = Terminal.typeRef() } }),
 
@@ -125,9 +140,13 @@ const terminal_group = Terminal.define(&.{
     Terminal.func("switchScreenMode", .{}),
     api.func("activeScreen", .{ .returns = zigo.result.borrowed() }),
     api.func("screen", .{ .returns = zigo.result.borrowed() }),
-    api.func("printAttributesInto", .{
-        .params = &.{out(1)},
-        .covers = &.{Terminal.ref("printAttributes")},
+    // ghostty writes into the caller's buffer and returns the prefix it filled.
+    // `.returned_slice` takes that slice's length as the written count, so the
+    // Go signature is the same as any other out buffer and no wrapper has to
+    // exist just to say `.len`.
+    Terminal.func("printAttributes", .{
+        .name = "printAttributesInto",
+        .params = &.{zigo.param.output(1, .returned_slice)},
     }),
     api.func("historyString", .{
         .returns = zigo.result.owned(),
@@ -312,8 +331,37 @@ const color_name_group = ColorName.define(&.{
     api.func("colorNameDefault", .{ .covers = &.{ColorName.ref("default")} }),
 });
 
+// The terminal and every child it hands out, as one object with one `Close`.
+// A terminal refuses to close while a child is open, so the order is a contract
+// rather than a preference; the generator writes it, closing children in
+// reverse adoption order and the terminal last, joining every error and
+// tolerating a second call.
+//
+// All four children are here. Searches, gestures and grid references are
+// shorter-lived than a stream and a caller may well close them by hand, but
+// adopting them is what makes forgetting one harmless: `Close` is the single
+// place that has to be right. `Search` needs `.plural` because the accessor is
+// the base name plus `s`, and this one's is not `Searchs`.
+const session = zigo.session(.{
+    .name = "Session",
+    .primary = Terminal.typeRef(),
+    .children = &.{
+        .{ .type = Stream.typeRef() },
+        .{ .type = Search.typeRef(), .plural = "Searches" },
+        .{ .type = Gesture.typeRef() },
+        .{ .type = GridRef.typeRef(), .plural = "GridRefs" },
+    },
+    .doc =
+    \\Session owns a terminal and every handle it handed out, so a caller
+    \\holds one thing and closes it once. Adopting a child hands its lifetime
+    \\over: `Close` closes the children first, in reverse adoption order,
+    \\then the terminal.
+    ,
+});
+
 pub const declarations = [_]zigo.Entry{
     terminal_group,
+    session,
     screen_group,
     search_group,
     grid_ref_group,
@@ -334,7 +382,14 @@ pub const declarations = [_]zigo.Entry{
     enumeration("FormatterFormat", .{ .text = true }),
     api.val("FormatOptions", .{}),
     enumeration("SelectionAdjustment", .{ .text = true }),
-    enumeration("Underline", .{}),
+    enumeration("Underline", .{ .docs = &.{
+        .{ .name = "none", .doc = "No underline. What `SGR 24` resets to." },
+        .{ .name = "single", .doc = "One line, the ordinary `SGR 4`." },
+        .{ .name = "double", .doc = "Two lines (`SGR 4:2`). Distinct from a doubly-struck glyph." },
+        .{ .name = "curly", .doc = "A wave, conventionally used to mark a spelling or syntax error (`SGR 4:3`)." },
+        .{ .name = "dotted", .doc = "A dotted line (`SGR 4:4`)." },
+        .{ .name = "dashed", .doc = "A dashed line (`SGR 4:5`)." },
+    } }),
     api.taggedUnion("Attribute", .{}),
     enumeration("SearchDirection", .{}),
     enumeration("SearchScroll", .{}),

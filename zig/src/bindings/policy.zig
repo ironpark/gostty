@@ -52,11 +52,24 @@ pub fn withMust(comptime entry: zigo.Entry) zigo.Entry {
     return entry.use(must.plugin, .{});
 }
 
-/// The same policy for a field accessor. A field has no body to fail in, so
-/// the only errors are the handle ones above, and these are the reads a caller
-/// makes often enough that branching on them at every call is noise.
+/// The same policy for a field accessor, and taken further: `.replace` gives
+/// the panicking form the plain name and does not export the checked one, so
+/// `Cols()` returns `uint16` rather than `(uint16, error)`.
+///
+/// A field has no body to fail in. The only error is a dead or poisoned
+/// handle, which a caller holding that handle cannot act on and would only
+/// propagate, so `if err != nil` on every read is noise around a defect. Go
+/// answers the same way where the shape is the same -- `reflect.Value.Int`
+/// panics on misuse rather than offering a checked twin. Keeping both names
+/// would have doubled the surface to no end: that is the reason the blanket
+/// `Must*` was turned down in 0.8.0, and it applies to `MustCols` beside
+/// `Cols` just as well.
+///
+/// This is for field reads only. The calls that *do* something keep their
+/// `error`, even the ones that cannot fail in Zig, because there a returned
+/// error is the ordinary Go shape.
 pub fn mustField(comptime field: zigo.HandleField) zigo.HandleField {
-    return field.extend(must.plugin, .{});
+    return field.extend(must.plugin, .{ .replace = true });
 }
 
 /// A type whose methods drop the prefix naming the type. ghostty declares them
@@ -82,12 +95,17 @@ pub fn trimmedAs(comptime entry: zigo.Entry, comptime prefix: []const u8) zigo.E
 /// two long enough to want listing, and for every open one, where `IsKnown` is
 /// the only way to tell a tag from a number the pty made up. A false there
 /// means "not a name this binding knows", not "not a value ghostty accepts".
+/// `.docs` writes the Go doc of individual members. Most of these enums are
+/// ghostty's, re-exported by alias, so there is no line in this repository to
+/// hang a `///` on; the binding is the only place the sentence can live. A
+/// member left out of the list still takes ghostty's `///` when it has one.
 pub fn enumeration(comptime name: []const u8, comptime opts: struct {
     text: bool = false,
     open: bool = false,
     kit: bool = false,
+    docs: []const zigo.EnumField = &.{},
 }) zigo.Entry {
-    const declared = api.enumType(name, .{ .exhaustive = !opts.open });
+    const declared = api.enumType(name, .{ .exhaustive = !opts.open, .fields = opts.docs });
     const texted = if (opts.text) declared.use(zigo.features.text, .{}) else declared;
     return if (opts.open or opts.kit) texted.use(enumkit.plugin, .{}) else texted;
 }

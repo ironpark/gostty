@@ -231,10 +231,7 @@ func TestResetModesClearsSavedModes(t *testing.T) {
 
 func cursorX(t *testing.T, term *Terminal) uint16 {
 	t.Helper()
-	x, err := term.CursorX()
-	if err != nil {
-		t.Fatalf("CursorX: %v", err)
-	}
+	x := term.CursorX()
 	return x
 }
 

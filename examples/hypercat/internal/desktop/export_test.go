@@ -25,7 +25,7 @@ func TestSaveTempDoesNotOverwritePreviousExports(t *testing.T) {
 		}
 		got, err := os.ReadFile(name)
 		if err != nil || string(got) != body {
-			t.Fatalf("export = %q, %v; want %q", got, err, body)
+			t.Fatalf("export = %q, %v, %v; want %q", got, err, body, err)
 		}
 	}
 	entries, err := os.ReadDir(dir)

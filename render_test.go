@@ -19,14 +19,8 @@ func TestRenderCells(t *testing.T) {
 		t.Fatalf("Update: %v", err)
 	}
 
-	rows, err := state.Rows()
-	if err != nil {
-		t.Fatalf("Rows: %v", err)
-	}
-	cols, err := state.Cols()
-	if err != nil {
-		t.Fatalf("Cols: %v", err)
-	}
+	rows := state.Rows()
+	cols := state.Cols()
 	if rows != 3 || cols != 10 {
 		t.Fatalf("viewport = %dx%d, want 10x3", cols, rows)
 	}
@@ -109,8 +103,8 @@ func TestRenderCursor(t *testing.T) {
 	if err != nil || !ok || y != 1 {
 		t.Errorf("CursorY() = %d, %v, %v; want 1, true, nil", y, ok, err)
 	}
-	if visible, err := state.CursorVisible(); err != nil || !visible {
-		t.Errorf("CursorVisible() = %v, %v; want true", visible, err)
+	if visible := state.CursorVisible(); !visible {
+		t.Errorf("CursorVisible() = %v; want true", visible)
 	}
 }
 
@@ -343,12 +337,9 @@ func TestRenderStateFollowsViewport(t *testing.T) {
 		}
 		cells := make([]RenderCell, n)
 		if _, err := state.Cells(cells); err != nil {
-			t.Fatalf("Cells: %v", err)
+			t.Fatalf("Cells")
 		}
-		cols, err := state.Cols()
-		if err != nil {
-			t.Fatalf("Cols: %v", err)
-		}
+		cols := state.Cols()
 		var out []rune
 		for _, cell := range cells[:cols] {
 			if cell.Codepoint > ' ' {
@@ -415,7 +406,7 @@ func TestRenderDirtyRows(t *testing.T) {
 	}
 	cells := make([]RenderCell, 10)
 	if n, err := state.RowCells(1, cells); err != nil || n != 10 || cells[0].Codepoint != 'T' {
-		t.Errorf("RowCells(1) = %v, %v, first %q", n, err, cells[0].Codepoint)
+		t.Errorf("RowCells(1) = %v, first %q, %v", n, cells[0].Codepoint, err)
 	}
 	if n, err := state.RowCells(9, cells); err != nil || n != 0 {
 		t.Errorf("RowCells off grid = %v, %v", n, err)
@@ -447,20 +438,20 @@ func TestRenderCursorState(t *testing.T) {
 	if err := state.Update(term); err != nil {
 		t.Fatalf("Update: %v", err)
 	}
-	if blinking, err := state.CursorBlinking(); err != nil || !blinking {
-		t.Errorf("CursorBlinking() after DECSCUSR 1 = %v, %v; want true", blinking, err)
+	if blinking := state.CursorBlinking(); !blinking {
+		t.Errorf("CursorBlinking() after DECSCUSR 1 = %v; want true", blinking)
 	}
 	feed(t, stream, "\x1b[2 q")
 	if err := state.Update(term); err != nil {
 		t.Fatalf("Update: %v", err)
 	}
-	if blinking, err := state.CursorBlinking(); err != nil || blinking {
-		t.Errorf("CursorBlinking() after DECSCUSR 2 = %v, %v; want false", blinking, err)
+	if blinking := state.CursorBlinking(); blinking {
+		t.Errorf("CursorBlinking() after DECSCUSR 2 = %v; want false", blinking)
 	}
 
 	// Nothing has claimed a password field, and the cursor is on a narrow cell.
-	if pw, err := state.CursorPasswordInput(); err != nil || pw {
-		t.Errorf("CursorPasswordInput() = %v, %v; want false", pw, err)
+	if pw := state.CursorPasswordInput(); pw {
+		t.Errorf("CursorPasswordInput() = %v; want false", pw)
 	}
 	tail, ok, err := state.CursorWideTail()
 	if err != nil || !ok || tail {

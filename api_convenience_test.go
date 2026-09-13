@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -495,16 +496,21 @@ func TestNilClipboardRegistrationPreservesHandler(t *testing.T) {
 }
 
 func TestFunctionalOptionsAndConvenience(t *testing.T) {
-	term := MustNewTerminalWithOptions(
-		80, 24,
+	// The background color is not one ghostty's Options can carry across the
+	// ABI, so it comes from TerminalConfig rather than a constructor option.
+	bg := uint32(0x123456)
+	term, err := NewTerminalWithConfig(
+		TerminalConfig{Cols: 80, Rows: 24, BackgroundColor: &bg},
 		WithScrollbackMaxLines(500),
-		WithDefaultBackgroundColor(0x123456),
 		WithDefaultCursorBlink(true),
 	)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer term.Close()
 
-	if term.MustCols() != 80 || term.MustRows() != 24 {
-		t.Fatalf("unexpected dimensions: %dx%d", term.MustCols(), term.MustRows())
+	if term.Cols() != 80 || term.Rows() != 24 {
+		t.Fatalf("unexpected dimensions: %dx%d", term.Cols(), term.Rows())
 	}
 
 	stream, err := term.NewStreamWithOptions(
@@ -549,7 +555,7 @@ func TestFunctionalOptionsAndConvenience(t *testing.T) {
 }
 
 func TestSession(t *testing.T) {
-	sess, err := NewSession(80, 24,
+	sess, err := NewConfiguredSession(80, 24,
 		WithTerminalOptions(WithScrollbackMaxLines(100)),
 		WithStreamOptions(WithVersionReport("sessapp", "2.0")),
 	)
@@ -586,11 +592,202 @@ func TestSession(t *testing.T) {
 		t.Fatalf("Session HTML = %q", html)
 	}
 
-	// Test MustNewSession
-	mustSess := MustNewSession(40, 10)
+	// Test MustNewConfiguredSession
+	mustSess := MustNewConfiguredSession(40, 10)
 	defer mustSess.Close()
-	if mustSess.Terminal.MustCols() != 40 || mustSess.Terminal.MustRows() != 10 {
-		t.Fatalf("unexpected MustNewSession dimensions")
+	if mustSess.Terminal().Cols() != 40 || mustSess.Terminal().Rows() != 10 {
+		t.Fatalf("unexpected MustNewConfiguredSession dimensions")
 	}
 }
 
+// The session's lifecycle is generated, so what is tested here is the contract
+// the generator promises and the hand-written adapters lean on: more than one
+// stream per session, Close in reverse adoption order, Close being idempotent,
+// and adoption after Close closing rather than leaking.
+// The constructor options and Stream.WriteString are both generated now, so
+// what is checked here is that the generated surface carries the contract the
+// hand-written code used to: ghostty's own defaults when an option is omitted,
+// the option winning when it is given, and both io interfaces on one stream.
+func TestGeneratedTerminalOptions(t *testing.T) {
+	// Omitting every option leaves ghostty's defaults, which for the cursor
+	// style is block.
+	plain, err := NewTerminal(10, 3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plain.Close()
+	if got := plain.CursorStyle(); got != CursorStyleBlock {
+		t.Fatalf("default CursorStyle = %v, want %v", got, CursorStyleBlock)
+	}
+
+	term, err := NewTerminal(10, 3,
+		WithTerminalDefaultCursorStyle(CursorStyleBar),
+		WithScrollbackMaxLines(7),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer term.Close()
+	if got := term.CursorStyle(); got != CursorStyleBar {
+		t.Fatalf("CursorStyle = %v, want %v", got, CursorStyleBar)
+	}
+
+	// The value-taking wrapper and the generated pointer form are the same
+	// option, so they have to agree.
+	lines := uint(7)
+	if _, err := NewTerminal(10, 3, WithTerminalMaxScrollbackLines(&lines)); err != nil {
+		t.Fatal(err)
+	}
+
+	// MustNewTerminal is the panicking form of the generated constructor.
+	must := MustNewTerminal(4, 2)
+	defer must.Close()
+	if must.Cols() != 4 || must.Rows() != 2 {
+		t.Fatalf("MustNewTerminal dimensions = %dx%d", must.Cols(), must.Rows())
+	}
+}
+
+func TestStreamImplementsBothWriters(t *testing.T) {
+	sess, err := NewConfiguredSession(40, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sess.Close()
+	stream := sess.Stream()
+
+	var _ io.Writer = stream
+	var _ io.StringWriter = stream
+
+	// io.WriteString picks WriteString over Write when the target has it.
+	n, err := io.WriteString(stream, "abc\r\n")
+	if err != nil || n != 5 {
+		t.Fatalf("io.WriteString = %d, %v", n, err)
+	}
+	if _, err := stream.Write([]byte("def\r\n")); err != nil {
+		t.Fatal(err)
+	}
+	text, err := sess.PlainText(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(text, "abc") || !strings.Contains(text, "def") {
+		t.Fatalf("PlainText = %q, want both writes", text)
+	}
+}
+
+func TestSessionAdoptsManyStreams(t *testing.T) {
+	term, err := NewTerminal(20, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sess := NewSession(term)
+	first, err := term.NewStream(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := term.NewStream(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sess.AddStream(first).AddStream(nil, second)
+
+	if got := sess.Streams(); len(got) != 2 || got[0] != first || got[1] != second {
+		t.Fatalf("Streams() = %v, want [first second]", got)
+	}
+	if sess.Stream() != first {
+		t.Fatalf("Stream() is not the first stream adopted")
+	}
+	if sess.Terminal() != term {
+		t.Fatalf("Terminal() is not the adopted terminal")
+	}
+
+	// A terminal refuses to close while a stream is open, so a Close that
+	// succeeds is itself the evidence the order was streams-then-terminal.
+	if err := sess.Close(); err != nil {
+		t.Fatalf("Close = %v", err)
+	}
+	if err := sess.Close(); err != nil {
+		t.Fatalf("second Close = %v, want the first result", err)
+	}
+
+	// Nothing survives the session, and the adapters report a closed stream
+	// rather than panicking on the empty slice.
+	if _, err := sess.Write([]byte("x")); !errors.Is(err, ErrInvalidHandle) {
+		t.Fatalf("Write after Close = %v, want ErrInvalidHandle", err)
+	}
+	if _, err := sess.WriteString("x"); !errors.Is(err, ErrInvalidHandle) {
+		t.Fatalf("WriteString after Close = %v, want ErrInvalidHandle", err)
+	}
+}
+
+// All four child kinds go into one session, so Close is the single place the
+// ordering has to be right. A terminal refuses to close while any child is
+// open, so a Close that succeeds is the evidence.
+func TestSessionAdoptsEveryChildKind(t *testing.T) {
+	term, err := NewTerminal(20, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sess := NewSession(term)
+
+	stream, err := term.NewStream(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	search, err := term.NewSearch("needle")
+	if err != nil {
+		t.Fatal(err)
+	}
+	gesture, err := term.NewGesture()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ref, err := term.NewGridRef(PointTagViewport, 0, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sess.AddStream(stream).AddSearch(search).AddGesture(gesture).AddGridRef(ref)
+
+	if len(sess.Streams()) != 1 || len(sess.Searches()) != 1 ||
+		len(sess.Gestures()) != 1 || len(sess.GridRefs()) != 1 {
+		t.Fatalf("not every child was adopted")
+	}
+	if err := sess.Close(); err != nil {
+		t.Fatalf("Close = %v, want the terminal to close after all four children", err)
+	}
+	if _, err := stream.Write([]byte("x")); !errors.Is(err, ErrInvalidHandle) {
+		t.Fatalf("stream survived Close: %v", err)
+	}
+}
+
+func TestSessionAdoptionAfterCloseDoesNotLeak(t *testing.T) {
+	term, err := NewTerminal(20, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// A second terminal outlives the session so the late stream has a parent
+	// that is still open; the session is the only thing that can close it.
+	other, err := NewTerminal(20, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer other.Close()
+	late, err := other.NewStream(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sess := NewSession(term)
+	if err := sess.Close(); err != nil {
+		t.Fatal(err)
+	}
+	sess.AddStream(late)
+	if got := sess.Streams(); len(got) != 0 {
+		t.Fatalf("Streams() after Close = %v, want empty", got)
+	}
+	// `other` closes cleanly in the deferred call only if `late` is already
+	// closed; an open child makes Terminal.Close fail with HandleInUseError.
+	if _, err := late.Write([]byte("x")); !errors.Is(err, ErrInvalidHandle) {
+		t.Fatalf("late stream Write = %v, want ErrInvalidHandle", err)
+	}
+}

@@ -98,26 +98,34 @@ pub const KittyPlacement = extern struct {
     /// when the image has scrolled partly above the viewport, and either can be
     /// negative for a placement positioned relative to another one.
     viewport_col: i32,
+    /// The row of that corner, in viewport cells, negative under the same
+    /// conditions as `viewport_col`.
     viewport_row: i32,
-    /// Offset within that cell, in pixels.
+    /// Horizontal offset within that cell, in pixels.
     x_offset: u32,
+    /// Vertical offset within that cell, in pixels.
     y_offset: u32,
 
     /// How big to draw it, in pixels. This is the source rectangle scaled to
     /// whatever the program asked for, so it is what the image should be
     /// stretched to rather than its natural size.
     pixel_width: u32,
+    /// The height to draw it at, in pixels; the other half of `pixel_width`.
     pixel_height: u32,
     /// The same size in cells, which is what the placement occupies on the
     /// grid. Useful for clipping; the pixel size is what to draw.
     grid_cols: u32,
+    /// The same height in cells, the other half of `grid_cols`.
     grid_rows: u32,
 
     /// The part of the image to draw, in image pixels. Already clamped to the
     /// image, and a zero-sized request already turned into the full dimension.
     source_x: u32,
+    /// Top edge of that rectangle, in image pixels.
     source_y: u32,
+    /// Width of that rectangle, in image pixels.
     source_width: u32,
+    /// Height of that rectangle, in image pixels.
     source_height: u32,
 
     /// Stacking order. The snapshot is sorted by it, so drawing the array in
@@ -136,6 +144,7 @@ pub const KittyPlacement = extern struct {
     /// `placement_id` and needs its source rectangle and size. A renderer that
     /// does not do that scan should skip these.
     virtual: bool,
+    /// Padding so the struct's layout matches across the C ABI. Not data.
     _pad: u16 = 0,
 };
 
@@ -341,9 +350,13 @@ pub const KittyImage = extern struct {
     /// The image's own size in pixels, which is what `source_*` on a placement
     /// indexes into. Not the size it is drawn at.
     width: u32,
+    /// The image's own height in pixels, the other half of `width`.
     height: u32,
+    /// How the bytes `kittyImageData` writes are laid out per pixel.
     format: KittyFormat,
+    /// Whether those bytes are compressed, and how. `.none` for most images.
     compression: KittyCompression,
+    /// Padding so the struct's layout matches across the C ABI. Not data.
     _pad: u16 = 0,
 };
 

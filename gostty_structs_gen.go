@@ -259,9 +259,11 @@ type CellFlags struct {
 	Strikethrough bool
 	Overline      bool
 	Underline     Underline
-	Wide          CellWidth
-	Selected      bool
-	Pad           uint32
+	// Wide: Narrow, wide, or a spacer the renderer should skip.
+	Wide CellWidth
+	// Selected: Whether the cell falls inside the screen's selection.
+	Selected bool
+	Pad      uint32
 }
 
 func zigoCellFlagsToBacking(value CellFlags) uint32 {
@@ -351,9 +353,10 @@ var _ fmt.Stringer = CellFlags{}
 
 // GridPoint mirrors the Zig `extern struct` of the same name.
 type GridPoint struct {
-	// X corresponds to the Zig field x.
+	// X: Column, zero-based.
 	X uint16
-	// Y corresponds to the Zig field y.
+	// Y: Row, in the coordinate space of the `PointTag` it was read with:
+	// viewport-relative for `.viewport`, scrollback-inclusive for `.screen`.
 	Y uint32
 }
 
@@ -374,15 +377,17 @@ var _ fmt.Stringer = GridPoint{}
 
 // Selection mirrors the Zig `extern struct` of the same name.
 type Selection struct {
-	// StartX corresponds to the Zig field start_x.
+	// StartX: Column of the corner the selection was started from, zero-based.
 	StartX uint16
-	// StartY corresponds to the Zig field start_y.
+	// StartY: Row of that corner, in screen coordinates: scrollback included, so it
+	// does not move when the viewport scrolls.
 	StartY uint32
-	// EndX corresponds to the Zig field end_x.
+	// EndX: Column of the corner the selection was dragged to. It may be left of
+	// `start_x`; a selection is not normalised to a direction.
 	EndX uint16
-	// EndY corresponds to the Zig field end_y.
+	// EndY: Row of that corner, in the same screen coordinates as `start_y`.
 	EndY uint32
-	// Rectangle corresponds to the Zig field rectangle.
+	// Rectangle: A rectangle between the two corners rather than a run of lines.
 	Rectangle bool
 }
 
@@ -397,29 +402,34 @@ var _ fmt.Stringer = Selection{}
 
 // FormatOptions mirrors the Zig `extern struct` of the same name.
 type FormatOptions struct {
-	// Format corresponds to the Zig field format.
+	// Format: Which of the three renderings to emit. The zero value is plain text.
 	Format FormatterFormat
-	// Unwrap corresponds to the Zig field unwrap.
+	// Unwrap: Join soft-wrapped lines back into one instead of emitting them as
+	// they are laid out at the current width.
 	Unwrap bool
-	// KeepTrailingWhitespace corresponds to the Zig field keep_trailing_whitespace.
+	// KeepTrailingWhitespace: Keep trailing spaces on lines that have other text. Trailing blank
+	// lines are always dropped.
 	KeepTrailingWhitespace bool
-	// Cursor corresponds to the Zig field cursor.
+	// Cursor: Include the cursor position. Styled formats only.
 	Cursor bool
-	// NoStyles corresponds to the Zig field no_styles.
+	// NoStyles: Leave out text styles. Styled formats only.
 	NoStyles bool
-	// NoHyperlinks corresponds to the Zig field no_hyperlinks.
+	// NoHyperlinks: Leave out OSC 8 hyperlinks. Styled formats only.
 	NoHyperlinks bool
-	// ResolvePalette corresponds to the Zig field resolve_palette.
+	// ResolvePalette: Resolve palette indices to the terminal's current RGB values rather
+	// than emitting the index. Styled formats only.
 	ResolvePalette bool
 }
 
 // Scrollbar mirrors the Zig `extern struct` of the same name.
 type Scrollbar struct {
-	// Total corresponds to the Zig field total.
+	// Total size of the scrollable area.
 	Total uint64
-	// Offset corresponds to the Zig field offset.
+	// Offset: The offset into the total area that the viewport is at. This is
+	// guaranteed to be less than or equal to total. This includes the
+	// visible row.
 	Offset uint64
-	// Len corresponds to the Zig field len.
+	// Len: The length of the visible area. This is including the offset row.
 	Len uint64
 }
 
@@ -432,13 +442,16 @@ var _ = [1]struct{}{}[unsafe.Offsetof(Scrollbar{}.Len)-unsafe.Offsetof(raw.Scrol
 
 // ScrollRegion mirrors the Zig `extern struct` of the same name.
 type ScrollRegion struct {
-	// Top corresponds to the Zig field top.
+	// Top: First row that scrolls, zero-based and inclusive (DECSTBM top).
 	Top uint16
-	// Bottom corresponds to the Zig field bottom.
+	// Bottom: Last row that scrolls, inclusive. A full-height region ends at
+	// `rows - 1`.
 	Bottom uint16
-	// Left corresponds to the Zig field left.
+	// Left: First column that scrolls, inclusive (DECSLRM left). Meaningful only
+	// while left-right margin mode is on; otherwise it is 0.
 	Left uint16
-	// Right corresponds to the Zig field right.
+	// Right: Last column that scrolls, inclusive. Without margin mode it is
+	// `cols - 1`.
 	Right uint16
 }
 
@@ -461,13 +474,14 @@ var _ fmt.Stringer = ScrollRegion{}
 
 // GestureGeometry mirrors the Zig `extern struct` of the same name.
 type GestureGeometry struct {
-	// Columns corresponds to the Zig field columns.
+	// Columns in the rendered grid.
 	Columns uint32
-	// CellWidth corresponds to the Zig field cell_width.
+	// CellWidth: One cell's width in surface pixels.
 	CellWidth uint32
-	// PaddingLeft corresponds to the Zig field padding_left.
+	// PaddingLeft: Padding before the first column, in surface pixels.
 	PaddingLeft uint32
-	// ScreenHeight corresponds to the Zig field screen_height.
+	// ScreenHeight: The surface height in pixels, which is where a downward drag starts
+	// asking for autoscroll.
 	ScreenHeight uint32
 }
 
@@ -481,19 +495,32 @@ var _ = [1]struct{}{}[unsafe.Offsetof(GestureGeometry{}.ScreenHeight)-unsafe.Off
 
 // GesturePressEvent mirrors the Zig `extern struct` of the same name.
 type GesturePressEvent struct {
-	// X corresponds to the Zig field x.
+	// X: Column of the cell under the pointer, in viewport coordinates.
 	X uint16
-	// Y corresponds to the Zig field y.
+	// Y: Row of that cell, in viewport coordinates: 0 is the top visible row,
+	// not the top of the scrollback.
 	Y uint16
-	// Xpos corresponds to the Zig field xpos.
+	// Xpos: Pointer x in surface pixels from the top left. Kept apart from the
+	// cell because both the multi-click distance test and the within-cell
+	// selection threshold need sub-cell precision.
 	Xpos float64
-	// Ypos corresponds to the Zig field ypos.
+	// Ypos: Pointer y in surface pixels, for the same reason as `xpos`.
 	Ypos float64
-	// MaxDistance corresponds to the Zig field max_distance.
+	// MaxDistance: How far a second press may be from the first and still count as a
+	// repeat. One cell width is a reasonable choice.
 	MaxDistance float64
-	// RepeatIntervalNs corresponds to the Zig field repeat_interval_ns.
+	// RepeatIntervalNs: How long after a press a second one still counts as a repeat. Zero
+	// disables multi-click entirely: every press is then a fresh single
+	// click, which is also the honest setting for a caller with no clock.
 	RepeatIntervalNs uint64
-	// TimeNs corresponds to the Zig field time_ns.
+	// TimeNs: When the press happened, in nanoseconds on a monotonic clock.
+	//
+	// Passed in rather than read from a clock here: the embedder already has
+	// the timestamp the window system delivered with the event, that one is
+	// the truth about when the user clicked (a queued event can reach the
+	// terminal much later), and a test can drive double clicks without
+	// sleeping. Only differences matter, so any epoch will do. Time that runs
+	// backwards ends the click sequence.
 	TimeNs int64
 }
 
@@ -510,47 +537,54 @@ var _ = [1]struct{}{}[unsafe.Offsetof(GesturePressEvent{}.TimeNs)-unsafe.Offseto
 
 // GestureDragEvent mirrors the Zig `extern struct` of the same name.
 type GestureDragEvent struct {
-	// X corresponds to the Zig field x.
+	// X: The cell under the pointer, in viewport coordinates. For an autoscroll
+	// tick this is resolved after the viewport moves, so it names the row that
+	// scrolled under the pointer.
 	X uint16
-	// Y corresponds to the Zig field y.
+	// Y: Row of that cell, in viewport coordinates.
 	Y uint16
-	// Xpos corresponds to the Zig field xpos.
+	// Xpos: Pointer x in surface pixels from the top left.
 	Xpos float64
-	// Ypos corresponds to the Zig field ypos.
+	// Ypos: Pointer y in surface pixels from the top left.
 	Ypos float64
-	// Rectangle corresponds to the Zig field rectangle.
+	// Rectangle: Select the block between the two corners rather than the flow of text.
 	Rectangle bool
 }
 
 // DragMove mirrors the Zig `extern struct` of the same name.
 type DragMove struct {
-	// CellX corresponds to the Zig field cell_x.
+	// CellX: Column of the cell under the pointer, zero-based from the top left.
 	CellX uint32
-	// CellY corresponds to the Zig field cell_y.
+	// CellY: Row of that cell, zero-based from the top left.
 	CellY uint32
-	// PixelX corresponds to the Zig field pixel_x.
+	// PixelX: Pointer x in pixels, relative to the top left of the content area.
 	PixelX int32
-	// PixelY corresponds to the Zig field pixel_y.
+	// PixelY: Pointer y in pixels, relative to the top left of the content area.
 	PixelY int32
-	// Operations corresponds to the Zig field operations.
+	// Operations: What the source is offering -- copy, move, link -- as a flag set. The
+	// reply picks one of these and no other.
 	Operations DragOperations
 }
 
 // FeedBoundary mirrors the Zig `extern struct` of the same name.
 type FeedBoundary struct {
-	// Consumed corresponds to the Zig field consumed.
+	// Consumed: Bytes taken from the input. When `reached` is false this is all of
+	// them; otherwise it stops just past the sequence that ended at ground.
 	Consumed uint
-	// Reached corresponds to the Zig field reached.
+	// Reached: Whether the parser came back to ground within the input. False means
+	// the input ended mid-sequence and the rest is still pending.
 	Reached bool
 }
 
 // SnapshotProgress mirrors the Zig `extern struct` of the same name.
 type SnapshotProgress struct {
-	// Rows corresponds to the Zig field rows.
+	// Rows prepended above what that screen already had, or zero when the
+	// page was read and validated but dropped -- because the screen is gone,
+	// the terminal was resized, or the scrollback has no room.
 	Rows uint64
-	// Remaining corresponds to the Zig field remaining.
+	// Remaining: Pages still to come for the same screen.
 	Remaining uint32
-	// Pad corresponds to the Zig field _pad.
+	// Pad: Padding so the struct's layout matches across the C ABI. Not data.
 	Pad uint32
 }
 
@@ -563,83 +597,110 @@ var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgress{}.Pad)-unsafe.Offsetof(ra
 
 // RenderColors mirrors the Zig `extern struct` of the same name.
 type RenderColors struct {
-	// Background corresponds to the Zig field background.
+	// Background: The terminal's default background as `0xRRGGBB`, after any OSC 11 the
+	// program set. What an unstyled cell should be painted with.
 	Background uint32
-	// Foreground corresponds to the Zig field foreground.
+	// Foreground: The default foreground as `0xRRGGBB`, after any OSC 10.
 	Foreground uint32
-	// Cursor corresponds to the Zig field cursor.
+	// Cursor: The cursor colour as `0xRRGGBB`, meaningful only when
+	// `cursor_has_value` is set.
 	Cursor uint32
-	// CursorHasValue corresponds to the Zig field cursor_has_value.
+	// CursorHasValue: Whether the program set a cursor colour at all. When false the cursor
+	// is the embedder's to colour, conventionally with `foreground`.
 	CursorHasValue bool
 }
 
 // RenderCell mirrors the Zig `extern struct` of the same name.
 type RenderCell struct {
-	// Codepoint corresponds to the Zig field codepoint.
+	// Codepoint: The cell's codepoint, or 0 for an empty cell. Only the first codepoint
+	// of a grapheme cluster; combining marks are not carried across.
 	Codepoint rune
-	// Fg corresponds to the Zig field fg.
+	// Fg: Foreground as `0xRRGGBB`, already resolved: palette indices and
+	// defaults are looked up, so this is the colour to paint with.
 	Fg uint32
-	// Bg corresponds to the Zig field bg.
+	// Bg: Background as `0xRRGGBB`, resolved the same way as `fg`.
 	Bg uint32
-	// Flags corresponds to the Zig field flags.
+	// Flags: Style bits for this cell -- bold, underline, selection and the rest.
+	// Carried as the backing integer in array positions; read a named field
+	// off it with `CellFlagsFromBacking`.
 	Flags CellFlags
 }
 
 // KittyPlacement mirrors the Zig `extern struct` of the same name.
 type KittyPlacement struct {
-	// ImageID corresponds to the Zig field image_id.
+	// ImageID: The image to draw. Look it up with `kittyImage`.
 	ImageID uint32
-	// PlacementID corresponds to the Zig field placement_id.
+	// PlacementID: Which placement of that image this is. Together with `image_id` it
+	// identifies the placement for as long as it exists.
 	PlacementID uint32
-	// ViewportCol corresponds to the Zig field viewport_col.
+	// ViewportCol: Where the top-left corner goes, in viewport cells. The row is negative
+	// when the image has scrolled partly above the viewport, and either can be
+	// negative for a placement positioned relative to another one.
 	ViewportCol int32
-	// ViewportRow corresponds to the Zig field viewport_row.
+	// ViewportRow: The row of that corner, in viewport cells, negative under the same
+	// conditions as `viewport_col`.
 	ViewportRow int32
-	// XOffset corresponds to the Zig field x_offset.
+	// XOffset: Horizontal offset within that cell, in pixels.
 	XOffset uint32
-	// YOffset corresponds to the Zig field y_offset.
+	// YOffset: Vertical offset within that cell, in pixels.
 	YOffset uint32
-	// PixelWidth corresponds to the Zig field pixel_width.
+	// PixelWidth: How big to draw it, in pixels. This is the source rectangle scaled to
+	// whatever the program asked for, so it is what the image should be
+	// stretched to rather than its natural size.
 	PixelWidth uint32
-	// PixelHeight corresponds to the Zig field pixel_height.
+	// PixelHeight: The height to draw it at, in pixels; the other half of `pixel_width`.
 	PixelHeight uint32
-	// GridCols corresponds to the Zig field grid_cols.
+	// GridCols: The same size in cells, which is what the placement occupies on the
+	// grid. Useful for clipping; the pixel size is what to draw.
 	GridCols uint32
-	// GridRows corresponds to the Zig field grid_rows.
+	// GridRows: The same height in cells, the other half of `grid_cols`.
 	GridRows uint32
-	// SourceX corresponds to the Zig field source_x.
+	// SourceX: The part of the image to draw, in image pixels. Already clamped to the
+	// image, and a zero-sized request already turned into the full dimension.
 	SourceX uint32
-	// SourceY corresponds to the Zig field source_y.
+	// SourceY: Top edge of that rectangle, in image pixels.
 	SourceY uint32
-	// SourceWidth corresponds to the Zig field source_width.
+	// SourceWidth: Width of that rectangle, in image pixels.
 	SourceWidth uint32
-	// SourceHeight corresponds to the Zig field source_height.
+	// SourceHeight: Height of that rectangle, in image pixels.
 	SourceHeight uint32
-	// Z corresponds to the Zig field z.
+	// Z: Stacking order. The snapshot is sorted by it, so drawing the array in
+	// order is correct; `layer` is the same value split into the three bands
+	// a renderer draws in.
 	Z int32
-	// Layer corresponds to the Zig field layer.
+	// Layer: Which band `z` falls in.
 	Layer KittyLayer
-	// Virtual corresponds to the Zig field virtual.
+	// Virtual: True for a placement the program positioned with unicode placeholders
+	// rather than at a cursor position.
+	//
+	// It has no position of its own -- the cells that reference it decide
+	// where it goes -- so `viewport_col` and `viewport_row` are zero and mean
+	// nothing. Everything else is filled in, because a renderer that scans
+	// cells for placeholders finds the placement by `image_id` and
+	// `placement_id` and needs its source rectangle and size. A renderer that
+	// does not do that scan should skip these.
 	Virtual bool
-	// Pad corresponds to the Zig field _pad.
+	// Pad: Padding so the struct's layout matches across the C ABI. Not data.
 	Pad uint16
 }
 
 // KittyImage mirrors the Zig `extern struct` of the same name.
 type KittyImage struct {
-	// Generation corresponds to the Zig field generation.
+	// Generation: Changes whenever the bytes behind `kittyImageData` change, including
+	// when an animation advances a frame. Cache textures on it.
 	Generation uint64
-	// DataLen corresponds to the Zig field data_len.
+	// DataLen: The length `kittyImageData` will write.
 	DataLen uint64
-	// Width corresponds to the Zig field width.
+	// Width: The image's own size in pixels, which is what `source_*` on a placement
+	// indexes into. Not the size it is drawn at.
 	Width uint32
-	// Height corresponds to the Zig field height.
+	// Height: The image's own height in pixels, the other half of `width`.
 	Height uint32
-	// Format corresponds to the Zig field format.
+	// Format: How the bytes `kittyImageData` writes are laid out per pixel.
 	Format KittyFormat
-	// Compression corresponds to the Zig field compression.
+	// Compression: Whether those bytes are compressed, and how. `.none` for most images.
 	Compression KittyCompression
-	// Pad corresponds to the Zig field _pad.
+	// Pad: Padding so the struct's layout matches across the C ABI. Not data.
 	Pad uint16
 }
 

@@ -26,8 +26,8 @@ func TestCursorMovement(t *testing.T) {
 	if err := term.CursorLeft(3); err != nil {
 		t.Fatalf("CursorLeft: %v", err)
 	}
-	x, _ := term.CursorX()
-	y, _ := term.CursorY()
+	x := term.CursorX()
+	y := term.CursorY()
 	if x != 6 || y != 1 {
 		t.Errorf("cursor = (%d,%d), want (6,1)", x, y)
 	}
@@ -41,8 +41,8 @@ func TestCursorMovement(t *testing.T) {
 	if err := term.RestoreCursor(); err != nil {
 		t.Fatalf("RestoreCursor: %v", err)
 	}
-	x, _ = term.CursorX()
-	y, _ = term.CursorY()
+	x = term.CursorX()
+	y = term.CursorY()
 	if x != 6 || y != 1 {
 		t.Errorf("cursor after restore = (%d,%d), want (6,1)", x, y)
 	}
@@ -129,7 +129,7 @@ func TestTabStops(t *testing.T) {
 	if err := term.HorizontalTab(); err != nil {
 		t.Fatalf("HorizontalTab: %v", err)
 	}
-	x, _ := term.CursorX()
+	x := term.CursorX()
 	if x != 8 {
 		t.Errorf("CursorX after tab = %d, want 8", x)
 	}
@@ -142,7 +142,7 @@ func TestTabStops(t *testing.T) {
 	if err := term.HorizontalTab(); err != nil {
 		t.Fatalf("HorizontalTab: %v", err)
 	}
-	x, _ = term.CursorX()
+	x = term.CursorX()
 	if x != 39 {
 		t.Errorf("CursorX after tab with no stops = %d, want 39", x)
 	}
@@ -188,7 +188,7 @@ func TestPwdAndTitleRoundTrip(t *testing.T) {
 	term := newTerm(t, 10, 2)
 
 	if _, ok, err := term.GetPwd(); err != nil || ok {
-		t.Errorf("GetPwd() on a fresh terminal = ok %v, err %v; want false, nil", ok, err)
+		t.Errorf("GetPwd() on a fresh terminal = ok %v %v; want false, nil", ok, err)
 	}
 
 	if err := term.SetPwd("/tmp"); err != nil {
@@ -248,8 +248,8 @@ func TestResize(t *testing.T) {
 	if err := term.Resize(40, 10); err != nil {
 		t.Fatalf("Resize: %v", err)
 	}
-	cols, _ := term.Cols()
-	rows, _ := term.Rows()
+	cols := term.Cols()
+	rows := term.Rows()
 	if cols != 40 || rows != 10 {
 		t.Errorf("size after resize = %dx%d, want 40x10", cols, rows)
 	}
@@ -301,8 +301,8 @@ func TestDeccolm(t *testing.T) {
 	if err := term.Deccolm(DeccolmMode80Cols); err != nil {
 		t.Fatalf("Deccolm(80): %v", err)
 	}
-	if cols, err := term.Cols(); err != nil || cols != 80 {
-		t.Errorf("Cols() = %d, %v; want 80, nil", cols, err)
+	if cols := term.Cols(); cols != 80 {
+		t.Errorf("Cols() = %d; want 80", cols)
 	}
 }
 
@@ -353,12 +353,9 @@ func TestScrollViewport(t *testing.T) {
 func TestSetDefaultCursor(t *testing.T) {
 	term := newTerm(t, 10, 2)
 	if err := term.SetDefaultCursorStyle(CursorStyleUnderline); err != nil {
-		t.Fatalf("SetDefaultCursorStyle: %v", err)
+		t.Fatalf("SetDefaultCursorStyle")
 	}
-	got, err := term.CursorStyle()
-	if err != nil {
-		t.Fatalf("CursorStyle: %v", err)
-	}
+	got := term.CursorStyle()
 	if got != CursorStyleUnderline {
 		t.Errorf("CursorStyle() = %v, want %v", got, CursorStyleUnderline)
 	}

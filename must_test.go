@@ -27,32 +27,20 @@ func TestMustVariantsMatchTheCheckedCall(t *testing.T) {
 
 	// A field accessor has no body to fail in, so its Must variant differs
 	// from the checked read only in the branch it removes.
-	cols, err := term.Cols()
-	if err != nil {
-		t.Fatalf("Cols: %v", err)
-	}
-	if got := term.MustCols(); got != cols {
+	cols := term.Cols()
+	if got := term.Cols(); got != cols {
 		t.Errorf("MustCols() = %d, want %d", got, cols)
 	}
-	rows, err := term.Rows()
-	if err != nil {
-		t.Fatalf("Rows: %v", err)
-	}
-	if got := term.MustRows(); got != rows {
+	rows := term.Rows()
+	if got := term.Rows(); got != rows {
 		t.Errorf("MustRows() = %d, want %d", got, rows)
 	}
-	x, err := term.CursorX()
-	if err != nil {
-		t.Fatalf("CursorX: %v", err)
-	}
-	if got := term.MustCursorX(); got != x {
+	x := term.CursorX()
+	if got := term.CursorX(); got != x {
 		t.Errorf("MustCursorX() = %d, want %d", got, x)
 	}
-	y, err := term.CursorY()
-	if err != nil {
-		t.Fatalf("CursorY: %v", err)
-	}
-	if got := term.MustCursorY(); got != y {
+	y := term.CursorY()
+	if got := term.CursorY(); got != y {
 		t.Errorf("MustCursorY() = %d, want %d", got, y)
 	}
 

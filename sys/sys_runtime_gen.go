@@ -30,6 +30,11 @@ type PngDecodeHandler func([]byte)
 // Thread: caller; the callback runs on the thread that initiated the native call.
 type SecureRandomHandler func(uint)
 
+// LogHandler is the Go callback signature accepted by the generated binding.
+// Reentrancy: allowed; the callback may re-enter the binding while it is running.
+// Thread: caller; the callback runs on the thread that initiated the native call.
+type LogHandler func(LogLevel, string, string)
+
 var zigoActiveCallbackHandles atomic.Int64
 
 type zigoCallbackHandle = cgo.Handle
@@ -43,6 +48,15 @@ func zigoNewPngDecodeHandlerHandle(value PngDecodeHandler) zigoCallbackHandle {
 
 func zigoNewSecureRandomHandlerHandle(value SecureRandomHandler) zigoCallbackHandle {
 	stored := (func(uint))(value)
+	handle := cgo.NewHandle(&raw.CallbackState{Fn: stored})
+	zigoActiveCallbackHandles.Add(1)
+	return handle
+}
+
+func zigoNewLogHandlerHandle(value LogHandler) zigoCallbackHandle {
+	stored := func(p0 uint8, p1 string, p2 string) {
+		value(LogLevel(p0), p1, p2)
+	}
 	handle := cgo.NewHandle(&raw.CallbackState{Fn: stored})
 	zigoActiveCallbackHandles.Add(1)
 	return handle

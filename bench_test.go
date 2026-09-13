@@ -13,7 +13,7 @@ func BenchmarkTerminalCols(b *testing.B) {
 	defer term.Close()
 	b.ResetTimer()
 	for b.Loop() {
-		_, _ = term.Cols()
+		_ = term.Cols()
 	}
 }
 

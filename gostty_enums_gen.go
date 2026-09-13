@@ -176,13 +176,15 @@ func (value ColorName) IsKnown() bool {
 type PointTag uint8
 
 const (
-	// PointTagActive corresponds to the Zig tag active.
+	// PointTagActive: The rows a program can address: what the cursor moves in. The
+	// bottom-right includes rows not yet written to.
 	PointTagActive PointTag = 0
-	// PointTagViewport corresponds to the Zig tag viewport.
+	// PointTagViewport: What is on screen right now, so the origin moves as the user scrolls.
 	PointTagViewport PointTag = 1
-	// PointTagScreen corresponds to the Zig tag screen.
+	// PointTagScreen: Every row from the top of the scrollback; the coordinates a
+	// `Selection` uses.
 	PointTagScreen PointTag = 2
-	// PointTagHistory corresponds to the Zig tag history.
+	// PointTagHistory: Only the rows above the active area.
 	PointTagHistory PointTag = 3
 )
 
@@ -340,7 +342,8 @@ const (
 	EraseDisplayComplete EraseDisplay = 2
 	// EraseDisplayScrollback corresponds to the Zig tag scrollback.
 	EraseDisplayScrollback EraseDisplay = 3
-	// EraseDisplayScrollComplete corresponds to the Zig tag scroll_complete.
+	// EraseDisplayScrollComplete: This is an extension added by Kitty to move the viewport into the
+	// scrollback and then erase the display.
 	EraseDisplayScrollComplete EraseDisplay = 22
 )
 
@@ -582,11 +585,18 @@ func (value ScreenKey) String() string {
 type SwitchScreenMode uint8
 
 const (
-	// SwitchScreenMode47 corresponds to the Zig tag 47.
+	// SwitchScreenMode47: Legacy alternate screen mode. This goes to the alternate
+	// screen or primary screen and only copies the cursor. The
+	// screen is not erased.
 	SwitchScreenMode47 SwitchScreenMode = 0
-	// SwitchScreenMode1047 corresponds to the Zig tag 1047.
+	// SwitchScreenMode1047: Alternate screen mode where the alternate screen is cleared
+	// on exit. The primary screen is never cleared. The cursor is
+	// copied.
 	SwitchScreenMode1047 SwitchScreenMode = 1
-	// SwitchScreenMode1049 corresponds to the Zig tag 1049.
+	// SwitchScreenMode1049: Save primary screen cursor, switch to alternate screen,
+	// and clear the alternate screen on entry. On exit,
+	// do not clear the screen, and restore the cursor on the
+	// primary screen.
 	SwitchScreenMode1049 SwitchScreenMode = 2
 )
 
@@ -1043,11 +1053,12 @@ func (value Mode) IsKnown() bool {
 type FormatterFormat uint8
 
 const (
-	// FormatterFormatPlain corresponds to the Zig tag plain.
+	// FormatterFormatPlain text.
 	FormatterFormatPlain FormatterFormat = 0
-	// FormatterFormatVt corresponds to the Zig tag vt.
+	// FormatterFormatVt sequences that replay colors, styles and links; lines end in CRLF.
 	FormatterFormatVt FormatterFormat = 1
-	// FormatterFormatHtml corresponds to the Zig tag html.
+	// FormatterFormatHtml with inline styles; palette colors become CSS variables unless
+	// `resolve_palette` is set.
 	FormatterFormatHtml FormatterFormat = 2
 )
 
@@ -1186,17 +1197,17 @@ func (value *SelectionAdjustment) UnmarshalText(text []byte) error {
 type Underline uint8
 
 const (
-	// UnderlineNone corresponds to the Zig tag none.
+	// UnderlineNone: No underline. What `SGR 24` resets to.
 	UnderlineNone Underline = 0
-	// UnderlineSingle corresponds to the Zig tag single.
+	// UnderlineSingle: One line, the ordinary `SGR 4`.
 	UnderlineSingle Underline = 1
-	// UnderlineDouble corresponds to the Zig tag double.
+	// UnderlineDouble: Two lines (`SGR 4:2`). Distinct from a doubly-struck glyph.
 	UnderlineDouble Underline = 2
-	// UnderlineCurly corresponds to the Zig tag curly.
+	// UnderlineCurly: A wave, conventionally used to mark a spelling or syntax error (`SGR 4:3`).
 	UnderlineCurly Underline = 3
-	// UnderlineDotted corresponds to the Zig tag dotted.
+	// UnderlineDotted: A dotted line (`SGR 4:4`).
 	UnderlineDotted Underline = 4
-	// UnderlineDashed corresponds to the Zig tag dashed.
+	// UnderlineDashed: A dashed line (`SGR 4:5`).
 	UnderlineDashed Underline = 5
 )
 
@@ -1331,9 +1342,11 @@ func (value AttributeTag) String() string {
 type SearchDirection uint8
 
 const (
-	// SearchDirectionNext corresponds to the Zig tag next.
+	// SearchDirectionNext selection, in reverse order (newest to oldest),
+	// non-wrapping.
 	SearchDirectionNext SearchDirection = 0
-	// SearchDirectionPrev corresponds to the Zig tag prev.
+	// SearchDirectionPrev selection, in forward order (oldest to newest),
+	// non-wrapping.
 	SearchDirectionPrev SearchDirection = 1
 )
 
@@ -1354,9 +1367,9 @@ func (value SearchDirection) String() string {
 type SearchScroll uint8
 
 const (
-	// SearchScrollIfNeeded corresponds to the Zig tag if_needed.
+	// SearchScrollIfNeeded: Scroll so the match is visible, only if it is not already.
 	SearchScrollIfNeeded SearchScroll = 0
-	// SearchScrollNone corresponds to the Zig tag none.
+	// SearchScrollNone: Never scroll.
 	SearchScrollNone SearchScroll = 1
 )
 
@@ -1377,11 +1390,13 @@ func (value SearchScroll) String() string {
 type SearchState uint8
 
 const (
-	// SearchStateRunning corresponds to the Zig tag running.
+	// SearchStateRunning: `tick` can make progress without terminal access.
 	SearchStateRunning SearchState = 0
-	// SearchStateFeedRequired corresponds to the Zig tag feed_required.
+	// SearchStateFeedRequired: Blocked until the next `feed`. This is also the initial
+	// state, since a search that has never been fed has never
+	// seen the terminal.
 	SearchStateFeedRequired SearchState = 1
-	// SearchStateComplete corresponds to the Zig tag complete.
+	// SearchStateComplete: Caught up with the terminal state as of the last feed.
 	SearchStateComplete SearchState = 2
 )
 
@@ -1403,11 +1418,11 @@ func (value SearchState) String() string {
 type SearchProgress uint8
 
 const (
-	// SearchProgressComplete corresponds to the Zig tag complete.
+	// SearchProgressComplete: All searches are complete.
 	SearchProgressComplete SearchProgress = 0
-	// SearchProgressProgress corresponds to the Zig tag progress.
+	// SearchProgressProgress was made on at least one screen.
 	SearchProgressProgress SearchProgress = 1
-	// SearchProgressBlocked corresponds to the Zig tag blocked.
+	// SearchProgressBlocked: All incomplete searches are blocked on feed.
 	SearchProgressBlocked SearchProgress = 2
 )
 
@@ -1562,15 +1577,15 @@ func (value ScrollViewportTag) String() string {
 type MouseTracking uint8
 
 const (
-	// MouseTrackingNone corresponds to the Zig tag none.
+	// MouseTrackingNone: No reporting.
 	MouseTrackingNone MouseTracking = 0
-	// MouseTrackingX10 corresponds to the Zig tag x10.
+	// MouseTrackingX10: Mode 9: press only.
 	MouseTrackingX10 MouseTracking = 1
-	// MouseTrackingNormal corresponds to the Zig tag normal.
+	// MouseTrackingNormal: Mode 1000: press and release.
 	MouseTrackingNormal MouseTracking = 2
-	// MouseTrackingButton corresponds to the Zig tag button.
+	// MouseTrackingButton: Mode 1002: press, release, and motion while a button is held.
 	MouseTrackingButton MouseTracking = 3
-	// MouseTrackingAny corresponds to the Zig tag any.
+	// MouseTrackingAny: Mode 1003: press, release, and all motion.
 	MouseTrackingAny MouseTracking = 4
 )
 
@@ -1626,15 +1641,15 @@ func (value *MouseTracking) UnmarshalText(text []byte) error {
 type MouseReportFormat uint8
 
 const (
-	// MouseReportFormatX10 corresponds to the Zig tag x10.
+	// MouseReportFormatX10: The original single-byte encoding, coordinates offset by 32.
 	MouseReportFormatX10 MouseReportFormat = 0
-	// MouseReportFormatUTF8 corresponds to the Zig tag utf8.
+	// MouseReportFormatUTF8: Mode 1005: UTF-8 coordinates.
 	MouseReportFormatUTF8 MouseReportFormat = 1
-	// MouseReportFormatSgr corresponds to the Zig tag sgr.
+	// MouseReportFormatSgr: Mode 1006: SGR.
 	MouseReportFormatSgr MouseReportFormat = 2
-	// MouseReportFormatUrxvt corresponds to the Zig tag urxvt.
+	// MouseReportFormatUrxvt: Mode 1015: urxvt.
 	MouseReportFormatUrxvt MouseReportFormat = 3
-	// MouseReportFormatSgrPixels corresponds to the Zig tag sgr_pixels.
+	// MouseReportFormatSgrPixels: Mode 1016: SGR with pixel coordinates.
 	MouseReportFormatSgrPixels MouseReportFormat = 4
 )
 
@@ -1690,15 +1705,15 @@ func (value *MouseReportFormat) UnmarshalText(text []byte) error {
 type ModeReport uint8
 
 const (
-	// ModeReportNotRecognized corresponds to the Zig tag not_recognized.
+	// ModeReportNotRecognized: The terminal does not implement this mode.
 	ModeReportNotRecognized ModeReport = 0
 	// ModeReportSet corresponds to the Zig tag set.
 	ModeReportSet ModeReport = 1
 	// ModeReportReset corresponds to the Zig tag reset.
 	ModeReportReset ModeReport = 2
-	// ModeReportPermanentlySet corresponds to the Zig tag permanently_set.
+	// ModeReportPermanentlySet: Always on; setting or resetting it does nothing.
 	ModeReportPermanentlySet ModeReport = 3
-	// ModeReportPermanentlyReset corresponds to the Zig tag permanently_reset.
+	// ModeReportPermanentlyReset: Always off; setting or resetting it does nothing.
 	ModeReportPermanentlyReset ModeReport = 4
 )
 
@@ -1754,13 +1769,15 @@ func (value *ModeReport) UnmarshalText(text []byte) error {
 type GestureBehavior uint8
 
 const (
-	// GestureBehaviorCell corresponds to the Zig tag cell.
+	// GestureBehaviorCell: Cell-granular drag. A press of its own selects nothing, which is what
+	// makes a single click clear the selection.
 	GestureBehaviorCell GestureBehavior = 0
-	// GestureBehaviorWord corresponds to the Zig tag word.
+	// GestureBehaviorWord: The word under the press, then word-granular drag.
 	GestureBehaviorWord GestureBehavior = 1
-	// GestureBehaviorLine corresponds to the Zig tag line.
+	// GestureBehaviorLine: The line under the press, then line-granular drag.
 	GestureBehaviorLine GestureBehavior = 2
-	// GestureBehaviorOutput corresponds to the Zig tag output.
+	// GestureBehaviorOutput: The shell command output the press is inside, which needs OSC 133
+	// prompt marks to exist at all.
 	GestureBehaviorOutput GestureBehavior = 3
 )
 
@@ -1867,17 +1884,22 @@ func (value *GestureAutoscrollDirection) UnmarshalText(text []byte) error {
 type StreamEvent uint8
 
 const (
-	// StreamEventBell corresponds to the Zig tag bell.
+	// StreamEventBell: BEL. No payload.
 	StreamEventBell StreamEvent = 0
-	// StreamEventTitleChanged corresponds to the Zig tag title_changed.
+	// StreamEventTitleChanged: OSC 0/2. The title at the time of the change is on eventTitle.
 	StreamEventTitleChanged StreamEvent = 1
-	// StreamEventPwdChanged corresponds to the Zig tag pwd_changed.
+	// StreamEventPwdChanged: OSC 7. The directory at the time of the change is on eventPwd.
 	StreamEventPwdChanged StreamEvent = 2
-	// StreamEventDesktopNotification corresponds to the Zig tag desktop_notification.
+	// StreamEventDesktopNotification: OSC 9 or 777. `eventTitle` and `eventBody` carry the text.
 	StreamEventDesktopNotification StreamEvent = 3
-	// StreamEventProgressReport corresponds to the Zig tag progress_report.
+	// StreamEventProgressReport: OSC 9;4. `eventProgressState` and `eventProgress` carry the report.
 	StreamEventProgressReport StreamEvent = 4
-	// StreamEventUnknownSequence corresponds to the Zig tag unknown_sequence.
+	// StreamEventUnknownSequence: A sequence this library does not implement, captured so it can be
+	// looked at. Only APC today. `eventSequence` carries the content.
+	//
+	// Off until `setUnknownMaxBytes` turns it on: capturing costs a buffer
+	// per stream, and a program that never sends an unknown sequence would
+	// pay it for nothing.
 	StreamEventUnknownSequence StreamEvent = 5
 )
 
@@ -2049,15 +2071,18 @@ func (value *ColorScheme) UnmarshalText(text []byte) error {
 type DragEvent uint8
 
 const (
-	// DragEventRegistration corresponds to the Zig tag registration.
+	// DragEventRegistration: The program registered to accept drops, re-registered, or unregistered.
+	// `dragActive` says which, and `dragRegisteredMimes` lists the types it
+	// asked for so they can be registered with the window system.
 	DragEventRegistration DragEvent = 0
-	// DragEventAcceptance corresponds to the Zig tag acceptance.
+	// DragEventAcceptance: The program answered the drag currently over the terminal. The
+	// `accepted` argument carries the answer.
 	DragEventAcceptance DragEvent = 1
-	// DragEventConcludedNone corresponds to the Zig tag concluded_none.
+	// DragEventConcludedNone: The program finished with the drop and did nothing with it.
 	DragEventConcludedNone DragEvent = 2
-	// DragEventConcludedCopy corresponds to the Zig tag concluded_copy.
+	// DragEventConcludedCopy: The program copied the drop.
 	DragEventConcludedCopy DragEvent = 3
-	// DragEventConcludedMove corresponds to the Zig tag concluded_move.
+	// DragEventConcludedMove: The program moved the drop.
 	DragEventConcludedMove DragEvent = 4
 )
 
@@ -2241,13 +2266,13 @@ func (value ClipboardLocation) IsKnown() bool {
 type ClipboardDenial uint8
 
 const (
-	// ClipboardDenialDenied corresponds to the Zig tag denied.
+	// ClipboardDenialDenied: Policy or the user said no.
 	ClipboardDenialDenied ClipboardDenial = 0
-	// ClipboardDenialUnsupported corresponds to the Zig tag unsupported.
+	// ClipboardDenialUnsupported: This embedder cannot reach that clipboard.
 	ClipboardDenialUnsupported ClipboardDenial = 1
-	// ClipboardDenialBusy corresponds to the Zig tag busy.
+	// ClipboardDenialBusy: The clipboard is temporarily unavailable.
 	ClipboardDenialBusy ClipboardDenial = 2
-	// ClipboardDenialIoError corresponds to the Zig tag io_error.
+	// ClipboardDenialIoError: Reading or writing the clipboard failed.
 	ClipboardDenialIoError ClipboardDenial = 3
 )
 
@@ -2572,13 +2597,14 @@ func (value *SemanticPromptAction) UnmarshalText(text []byte) error {
 type CellWidth uint8
 
 const (
-	// CellWidthNarrow corresponds to the Zig tag narrow.
+	// CellWidthNarrow: Not a wide character, cell width 1.
 	CellWidthNarrow CellWidth = 0
-	// CellWidthWide corresponds to the Zig tag wide.
+	// CellWidthWide character, cell width 2.
 	CellWidthWide CellWidth = 1
-	// CellWidthSpacerTail corresponds to the Zig tag spacer_tail.
+	// CellWidthSpacerTail: Spacer after wide character. Do not render.
 	CellWidthSpacerTail CellWidth = 2
-	// CellWidthSpacerHead corresponds to the Zig tag spacer_head.
+	// CellWidthSpacerHead: Spacer at the end of a soft-wrapped line to indicate that a wide
+	// character is continued on the next line.
 	CellWidthSpacerHead CellWidth = 3
 )
 
@@ -2601,11 +2627,11 @@ func (value CellWidth) String() string {
 type RenderDirty uint8
 
 const (
-	// RenderDirtyClean corresponds to the Zig tag clean.
+	// RenderDirtyClean: Nothing: a renderer can skip the frame.
 	RenderDirtyClean RenderDirty = 0
-	// RenderDirtyPartial corresponds to the Zig tag partial.
+	// RenderDirtyPartial: Some rows; `renderDirtyRows` names them.
 	RenderDirtyPartial RenderDirty = 1
-	// RenderDirtyFull corresponds to the Zig tag full.
+	// RenderDirtyFull: Everything: colors or dimensions changed, so every row needs drawing.
 	RenderDirtyFull RenderDirty = 2
 )
 
@@ -2627,11 +2653,11 @@ func (value RenderDirty) String() string {
 type KittyLayer uint8
 
 const (
-	// KittyLayerBelowBg corresponds to the Zig tag below_bg.
+	// KittyLayerBelowBg: Under the cell backgrounds: `z < -2^30`.
 	KittyLayerBelowBg KittyLayer = 0
-	// KittyLayerBelowText corresponds to the Zig tag below_text.
+	// KittyLayerBelowText: Over the backgrounds but under the text: `-2^30 <= z < 0`.
 	KittyLayerBelowText KittyLayer = 1
-	// KittyLayerAboveText corresponds to the Zig tag above_text.
+	// KittyLayerAboveText: Over the text: `z >= 0`.
 	KittyLayerAboveText KittyLayer = 2
 )
 
@@ -2681,15 +2707,18 @@ func (value *KittyLayer) UnmarshalText(text []byte) error {
 type KittyFormat uint8
 
 const (
-	// KittyFormatRgb corresponds to the Zig tag rgb.
+	// KittyFormatRgb: Three bytes per pixel.
 	KittyFormatRgb KittyFormat = 0
-	// KittyFormatRgba corresponds to the Zig tag rgba.
+	// KittyFormatRgba: Four bytes per pixel.
 	KittyFormatRgba KittyFormat = 1
-	// KittyFormatPng corresponds to the Zig tag png.
+	// KittyFormatPng: A PNG file. Never seen by Go: ghostty refuses PNG transmissions until
+	// a decoder is installed with `onPngDecodeRequest`, and with one the
+	// image is decoded on arrival and stored as `rgba`. Kept so the tags
+	// mirror ghostty's.
 	KittyFormatPng KittyFormat = 2
-	// KittyFormatGrayAlpha corresponds to the Zig tag gray_alpha.
+	// KittyFormatGrayAlpha: Two bytes per pixel. Only reachable by decoding a PNG.
 	KittyFormatGrayAlpha KittyFormat = 3
-	// KittyFormatGray corresponds to the Zig tag gray.
+	// KittyFormatGray: One byte per pixel. Only reachable by decoding a PNG.
 	KittyFormatGray KittyFormat = 4
 )
 

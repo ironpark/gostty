@@ -37,13 +37,26 @@ pub fn decodeSnapshot(gpa: Allocator, reader: *std.Io.Reader, max_continuation_b
 /// parser state belongs to the old contents, so open a new stream and feed
 /// it `continuation` before any new input.
 ///
-/// zigo allows one constructor per handle and `newTerminal` is it, so a
-/// restore fills a terminal the caller made rather than returning one.
+/// Kept beside `snapshotTerminal` rather than replaced by it: this one keeps
+/// the caller's handle identity, so anything already holding that `*Terminal`
+/// goes on holding the right one. Take the new handle when there is nothing to
+/// keep, restore into an existing one when there is.
 pub fn snapshotRestoreInto(self: *Snapshot, gpa: Allocator, term: *Terminal) error{TerminalTaken}!void {
     if (self.terminal == null) return error.TerminalTaken;
     const restored = self.toOwned();
     term.deinit(gpa);
     term.* = restored;
+}
+
+/// The terminal the snapshot holds, as a handle of its own: its size, screens,
+/// scrollback, modes and colors. The snapshot gives its terminal up once; a
+/// second call, or a call after `restoreInto`, fails.
+///
+/// The returned terminal has no streams. Open one and feed it `continuation`
+/// before any new input, the same as after a restore.
+pub fn snapshotTerminal(self: *Snapshot) error{TerminalTaken}!Terminal {
+    if (self.terminal == null) return error.TerminalTaken;
+    return self.toOwned();
 }
 
 // `Snapshot` is the decoded form itself, so the decoder's entry points
@@ -105,6 +118,7 @@ pub const SnapshotProgress = extern struct {
     rows: u64,
     /// Pages still to come for the same screen.
     remaining: u32,
+    /// Padding so the struct's layout matches across the C ABI. Not data.
     _pad: u32 = 0,
 };
 

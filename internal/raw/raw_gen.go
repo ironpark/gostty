@@ -211,6 +211,18 @@ func zg_sys_on_secure_random_request_go_callback_callback(p0 C.size_t, p1 C.size
 	callback(uint(p0))
 }
 
+//export zg_sys_on_log_go_callback_callback
+func zg_sys_on_log_go_callback_callback(p0 C.uint8_t, p1 *C.uint8_t, p1_len C.size_t, p2 *C.uint8_t, p2_len C.size_t, p3 C.size_t) {
+	state := cgo.Handle(p3).Value().(*CallbackState)
+	defer func() {
+		if value := recover(); value != nil {
+			state.record(value)
+		}
+	}()
+	callback := state.Fn.(func(uint8, string, string))
+	callback(uint8(p0), string(unsafe.Slice((*byte)(unsafe.Pointer(p1)), int(p1_len))), string(unsafe.Slice((*byte)(unsafe.Pointer(p2)), int(p2_len))))
+}
+
 //export zg_stream_on_drag_go_callback_callback
 func zg_stream_on_drag_go_callback_callback(p0 C.uint32_t, p1 *C.uint8_t, p1_len C.size_t, p2 C.size_t) {
 	state := cgo.Handle(p2).Value().(*CallbackState)
@@ -599,6 +611,11 @@ func SysOnSecureRandomRequest(callbackHandle uintptr) {
 	C.zg_sys_on_secure_random_request(C.size_t(callbackHandle))
 }
 
+// SysOnLog calls the generated C ABI wrapper for zg_sys_on_log.
+func SysOnLog(callbackHandle uintptr) {
+	C.zg_sys_on_log(C.size_t(callbackHandle))
+}
+
 // SysClear calls the generated C ABI wrapper for zg_sys_clear.
 func SysClear() {
 	C.zg_sys_clear()
@@ -732,9 +749,27 @@ func EncodePaste(writerHandle uintptr, terminal unsafe.Pointer, data []uint8) in
 }
 
 // TerminalNewTerminal calls the generated C ABI wrapper for zg_terminal_new_terminal.
-func TerminalNewTerminal(cols uint16, rows uint16) (unsafe.Pointer, int32) {
+func TerminalNewTerminal(cols uint16, rows uint16, maxScrollbackBytes *uint, maxScrollbackLines *uint, defaultCursorStyle uint8, defaultCursorBlink *uint8) (unsafe.Pointer, int32) {
+	var maxScrollbackBytesValue C.size_t
+	var maxScrollbackBytesPtr *C.size_t
+	if maxScrollbackBytes != nil {
+		maxScrollbackBytesValue = C.size_t(*maxScrollbackBytes)
+		maxScrollbackBytesPtr = &maxScrollbackBytesValue
+	}
+	var maxScrollbackLinesValue C.size_t
+	var maxScrollbackLinesPtr *C.size_t
+	if maxScrollbackLines != nil {
+		maxScrollbackLinesValue = C.size_t(*maxScrollbackLines)
+		maxScrollbackLinesPtr = &maxScrollbackLinesValue
+	}
+	var defaultCursorBlinkValue C.uint8_t
+	var defaultCursorBlinkPtr *C.uint8_t
+	if defaultCursorBlink != nil {
+		defaultCursorBlinkValue = C.uint8_t(*defaultCursorBlink)
+		defaultCursorBlinkPtr = &defaultCursorBlinkValue
+	}
 	var outResult *C.zg_terminal
-	code := int32(C.zg_terminal_new_terminal(C.uint16_t(cols), C.uint16_t(rows), &outResult))
+	code := int32(C.zg_terminal_new_terminal(C.uint16_t(cols), C.uint16_t(rows), maxScrollbackBytesPtr, maxScrollbackLinesPtr, C.uint8_t(defaultCursorStyle), defaultCursorBlinkPtr, &outResult))
 	return unsafe.Pointer(outResult), code
 }
 
@@ -934,10 +969,10 @@ func TerminalScreen(self unsafe.Pointer, key uint8) (unsafe.Pointer, int32) {
 }
 
 // TerminalPrintAttributesInto calls the generated C ABI wrapper for zg_terminal_print_attributes_into.
-func TerminalPrintAttributesInto(self unsafe.Pointer, dst []uint8) (uint, int32) {
-	dstPtr := (*C.uint8_t)(zigoSlicePtr(dst))
+func TerminalPrintAttributesInto(self unsafe.Pointer, buf []uint8) (uint, int32) {
+	bufPtr := (*C.uint8_t)(zigoSlicePtr(buf))
 	var outResult C.size_t
-	code := int32(C.zg_terminal_print_attributes_into((*C.zg_terminal)(self), dstPtr, C.size_t(len(dst)), &outResult))
+	code := int32(C.zg_terminal_print_attributes_into((*C.zg_terminal)(self), bufPtr, C.size_t(len(buf)), &outResult))
 	return uint(outResult), code
 }
 
@@ -2451,6 +2486,13 @@ func SnapshotDeinit(self unsafe.Pointer) int32 {
 func SnapshotRestoreInto(self unsafe.Pointer, term unsafe.Pointer) int32 {
 	code := int32(C.zg_snapshot_restore_into((*C.zg_snapshot)(self), (*C.zg_terminal)(term)))
 	return code
+}
+
+// SnapshotSnapshotTerminal calls the generated C ABI wrapper for zg_snapshot_snapshot_terminal.
+func SnapshotSnapshotTerminal(self unsafe.Pointer) (unsafe.Pointer, int32) {
+	var outResult *C.zg_terminal
+	code := int32(C.zg_snapshot_snapshot_terminal((*C.zg_snapshot)(self), &outResult))
+	return unsafe.Pointer(outResult), code
 }
 
 // SnapshotContinuation calls the generated C ABI wrapper for zg_snapshot_continuation.

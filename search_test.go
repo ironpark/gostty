@@ -95,7 +95,7 @@ func TestSearchSelect(t *testing.T) {
 	}
 	text, ok, err := sc.SelectionString()
 	if err != nil || !ok {
-		t.Fatalf("SelectionString() = ok %v, err %v; want true, nil", ok, err)
+		t.Fatalf("SelectionString() = ok %v, %v; want true, nil", ok, err)
 	}
 	if got, want := strings.TrimSpace(text), "needle"; got != want {
 		t.Errorf("selected text = %q, want %q", got, want)
@@ -285,12 +285,9 @@ func TestSearchDirectionOrder(t *testing.T) {
 		}
 		cells := make([]RenderCell, n)
 		if _, err := state.Cells(cells); err != nil {
-			t.Fatalf("Cells: %v", err)
+			t.Fatalf("Cells:")
 		}
-		cols, err := state.Cols()
-		if err != nil {
-			t.Fatalf("Cols: %v", err)
-		}
+		cols := state.Cols()
 		var out []rune
 		for _, cell := range cells[:cols] {
 			if cell.Codepoint > ' ' {
@@ -371,7 +368,7 @@ func TestSearchIncremental(t *testing.T) {
 		ticks++
 	}
 	if state, err := s.Status(); err != nil || state != SearchStateComplete {
-		t.Fatalf("Status() = %v, %v after %d ticks; want complete", state, err, ticks)
+		t.Fatalf("Status() = %v after %d ticks; want complete", state, ticks)
 	}
 	n, err := s.MatchCount()
 	if err != nil {

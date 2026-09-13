@@ -56,20 +56,15 @@ pub fn resizeCells(
     });
 }
 
-/// Write the cursor's current SGR attributes into `dst` as a DECRPSS response
-/// body, and report how many bytes were written.
-///
-/// Wrapped because ghostty returns a slice into the caller's buffer, and zigo
-/// reports a written count instead.
-pub fn printAttributesInto(self: *Terminal, dst: []u8) !usize {
-    const written = try self.printAttributes(dst);
-    return written.len;
-}
-
 /// The scrollback contents, oldest row first, newline separated.
 ///
-/// Wrapped because the region is chosen with `point.Point`, a tagged union
-/// carrying a coordinate, which zigo cannot take by value.
+/// Wrapped to fix the region. zigo takes `point.Point` by value now -- its
+/// payload is an `extern struct` -- so this could hand the union to Go and let
+/// a caller pick any of the four origins. It does not, because the rest of this
+/// binding spells a position as `(tag, x, y)` (`cellAt`, `hyperlinkAt`,
+/// `newGridRef`), and the other three origins are already reachable:
+/// `plainString` is the active area and `Screen.format` is the screen with its
+/// scrollback. What is left for this one to be is the scrollback, named.
 pub fn historyString(self: *Terminal, gpa: Allocator) ![]const u8 {
     return try self.screens.active.dumpStringAlloc(gpa, .{ .history = .{} });
 }

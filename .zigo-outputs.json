@@ -50,11 +50,19 @@
       "kind": "go"
     },
     {
+      "path": "gostty_sessions_gen.go",
+      "kind": "go"
+    },
+    {
       "path": "zigo_must_gen.go",
       "kind": "go"
     },
     {
       "path": "sys/sys_gen.go",
+      "kind": "go"
+    },
+    {
+      "path": "sys/sys_enums_gen.go",
       "kind": "go"
     },
     {

@@ -61,12 +61,16 @@ pub const DragOperations = packed struct(u8) {
 
 /// Where a native drag is over the terminal, and what it allows.
 pub const DragMove = extern struct {
-    /// The cell under the pointer, zero-based from the top left.
+    /// Column of the cell under the pointer, zero-based from the top left.
     cell_x: u32 = 0,
+    /// Row of that cell, zero-based from the top left.
     cell_y: u32 = 0,
-    /// The pointer in pixels, relative to the top left of the content area.
+    /// Pointer x in pixels, relative to the top left of the content area.
     pixel_x: i32 = 0,
+    /// Pointer y in pixels, relative to the top left of the content area.
     pixel_y: i32 = 0,
+    /// What the source is offering -- copy, move, link -- as a flag set. The
+    /// reply picks one of these and no other.
     operations: DragOperations = .{},
 
     fn toGhostty(self: DragMove) dnd.State.MoveEvent {

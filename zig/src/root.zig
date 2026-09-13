@@ -54,6 +54,15 @@ pub fn freeBuffer(gpa: Allocator, buffer: []u8) void {
 /// passes back.
 pub const PngDecodeFn = *const fn (data: [*]const u8, len: usize, userdata: usize) callconv(.c) void;
 
+/// Aliased here as well as in `sys` because the generated shim spells every
+/// registered type as `root.<Name>`, including one a sub-package owns.
+pub const LogLevel = sys.LogLevel;
+
+/// The compile root's `std_options` is the only one `std.log` reads, and for a
+/// zigo build that root is the generated shim, which forwards this. Without it
+/// ghostty's diagnostics have no way out of the library.
+pub const std_options: std.Options = .{ .logFn = sys.logFn };
+
 /// Draws `len` bytes of secure entropy and answers with `sys.replySecureRandom`
 /// before returning; returning without a reply fails the operation.
 pub const SecureRandomFn = *const fn (len: usize, userdata: usize) callconv(.c) void;
@@ -176,7 +185,6 @@ pub const EraseLine = terminal_.EraseLine;
 pub const TabClear = terminal_.TabClear;
 pub const resize = terminal_.resize;
 pub const resizeCells = terminal_.resizeCells;
-pub const printAttributesInto = terminal_.printAttributesInto;
 pub const historyString = terminal_.historyString;
 pub const ColorName = terminal_.ColorName;
 pub const colorNameDefault = terminal_.colorNameDefault;
@@ -214,6 +222,7 @@ const snapshot_ = @import("snapshot.zig");
 pub const Snapshot = snapshot_.Snapshot;
 pub const decodeSnapshot = snapshot_.decodeSnapshot;
 pub const snapshotRestoreInto = snapshot_.snapshotRestoreInto;
+pub const snapshotTerminal = snapshot_.snapshotTerminal;
 pub const snapshotContinuation = snapshot_.snapshotContinuation;
 pub const SnapshotDecoder = snapshot_.SnapshotDecoder;
 pub const SnapshotProgress = snapshot_.SnapshotProgress;

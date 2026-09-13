@@ -15,8 +15,10 @@ type SnapshotSource interface {
 	// parser state belongs to the old contents, so open a new stream and feed
 	// it `continuation` before any new input.
 	//
-	// zigo allows one constructor per handle and `newTerminal` is it, so a
-	// restore fills a terminal the caller made rather than returning one.
+	// Kept beside `snapshotTerminal` rather than replaced by it: this one keeps
+	// the caller's handle identity, so anything already holding that `*Terminal`
+	// goes on holding the right one. Take the new handle when there is nothing to
+	// keep, restore into an existing one when there is.
 	RestoreInto(term *Terminal) error
 	// Continuation: The bytes of the unfinished sequence the snapshot was taken in, empty
 	// when the stream was at ground. Feed them to the restored terminal's

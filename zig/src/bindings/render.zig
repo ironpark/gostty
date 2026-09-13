@@ -1,5 +1,6 @@
 //! Frame snapshots, Kitty placements and binary snapshot restoration.
 const p = @import("policy.zig");
+const Terminal = @import("terminal.zig").Terminal;
 const zigo = p.zigo;
 const api = p.api;
 const flags = p.flags;
@@ -8,6 +9,7 @@ const out = p.out;
 const outCodepoints = p.outCodepoints;
 const bytesArg = p.bytesArg;
 const trimmed = p.trimmed;
+const mustField = p.mustField;
 const trimmedAs = p.trimmedAs;
 
 const Snapshot = trimmed(api.handle("Snapshot", .{})).context();
@@ -15,12 +17,12 @@ const Snapshot = trimmed(api.handle("Snapshot", .{})).context();
 const SnapshotDecoder = trimmed(api.handle("SnapshotDecoder", .{})).context();
 
 const RenderState = trimmedAs(api.handle("RenderState", .{ .fields = &.{
-    .{ .path = "rows", .doc = "The number of rows the last update covered." },
-    .{ .path = "cols", .doc = "The number of columns the last update covered." },
-    .{ .path = "cursor.visible", .name = "cursorVisible" },
-    .{ .path = "cursor.visual_style", .name = "cursorStyle" },
-    .{ .path = "cursor.blinking", .name = "cursorBlinking" },
-    .{ .path = "cursor.password_input", .name = "cursorPasswordInput" },
+    mustField(.{ .path = "rows", .doc = "The number of rows the last update covered." }),
+    mustField(.{ .path = "cols", .doc = "The number of columns the last update covered." }),
+    mustField(.{ .path = "cursor.visible", .name = "cursorVisible" }),
+    mustField(.{ .path = "cursor.visual_style", .name = "cursorStyle" }),
+    mustField(.{ .path = "cursor.blinking", .name = "cursorBlinking" }),
+    mustField(.{ .path = "cursor.password_input", .name = "cursorPasswordInput" }),
 } }).documented(
     \\RenderState owns a render snapshot. Update requires exclusive access to both
     \\the terminal and this state. After Update, reads do not touch the terminal,
@@ -30,7 +32,7 @@ const RenderState = trimmedAs(api.handle("RenderState", .{ .fields = &.{
 ), "render").context();
 
 const KittyImages = trimmedAs(api.handle("KittyImages", .{ .fields = &.{
-    .{ .path = "generation" },
+    mustField(.{ .path = "generation" }),
 } }), "kitty").context();
 
 const snapshot_group = Snapshot.define(&.{
@@ -42,6 +44,12 @@ const snapshot_group = Snapshot.define(&.{
     }),
     Snapshot.func("deinit", .{ .role = .{ .destructor = Snapshot.typeRef() } }),
     api.func("snapshotRestoreInto", .{}),
+    // The second constructor for `Terminal`. 0.26.0 pairs each `.constructs`
+    // claim with the type's one destructor, so a snapshot can hand back a
+    // handle of its own instead of only filling one the caller already made.
+    api.func("snapshotTerminal", .{
+        .role = .{ .constructor = .{ .type = Terminal.typeRef(), .receiver = .member } },
+    }),
     // The bytes a stream had half-parsed when the snapshot was taken: a
     // fragment of a VT sequence, which is not text.
     api.func("snapshotContinuation", .{ .returns = .{ .semantic = .opaque_bytes } }),

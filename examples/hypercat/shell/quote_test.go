@@ -24,7 +24,7 @@ func TestQuotePathsUsesSessionShell(t *testing.T) {
 			s := &Session{command: tt.command}
 			got, err := s.QuotePaths(tt.paths)
 			if err != nil || got != tt.want {
-				t.Fatalf("QuotePaths = %q, %v; want %q", got, err, tt.want)
+				t.Fatalf("QuotePaths = %q, %v, %v; want %q", got, err, tt.want, err)
 			}
 		})
 	}

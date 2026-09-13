@@ -20,18 +20,30 @@ const semantic = @import("semantic");
 /// leave `go-doctor` naming the same thing twice.
 pub const name = "MUSTOPT";
 
-/// A declaration says `extend(must.plugin, .{})`. There is nothing to
-/// configure: asking for the variant is the whole decision.
-pub const Options = struct {};
+/// A declaration says `extend(must.plugin, .{})` for the variant beside the
+/// checked method, or `.{ .replace = true }` for the variant instead of it.
+pub const Options = struct {
+    /// Take the declaration's whole public surface. The panicking form is
+    /// written under the plain name and the checked form is not exported at
+    /// all, so one declaration is one Go method rather than two.
+    ///
+    /// For the reads where an error is not a condition to branch on -- a field
+    /// off a live handle -- this is what Go does elsewhere: `reflect.Value.Int`
+    /// panics on misuse rather than offering `MustInt`. It is the right choice
+    /// only where a caller has nothing to do with the error, which is the same
+    /// judgement asking for the variant at all already requires.
+    replace: bool = false,
+};
 
 pub const plugin: plugin_api.Plugin = .{
     .name = name,
     .FunctionOptions = Options,
     .subjects = &.{.function},
-    .min_contract = .{ .major = 3, .minor = 0 },
-    .Facts = struct { enabled: bool },
+    .min_contract = .{ .major = 3, .minor = 1 },
+    .Facts = struct { enabled: bool, replace: bool },
     .analyze = analyze,
     .method_hook = methodHook,
+    .replaces_method = replacesMethod,
     .source_files = &.{.{ .enabled = packageHasVariant, .pathAlloc = helperPath, .render = renderHelpers }},
 };
 
@@ -40,14 +52,30 @@ fn methodHook(context: plugin_api.Context, writer: *std.Io.Writer, function: abi
     if (!fact.enabled) return;
     const method = context.method.?;
 
-    try writer.print(
-        "\n// Must{0s} calls {0s} and panics with its typed error on failure.\n",
-        .{method.public_name},
-    );
-    if (method.receiver) |receiver|
-        try writer.print("func ({s} *{s}) Must{s}", .{ method.receiver_name.?, receiver, method.public_name })
-    else
-        try writer.print("func Must{s}", .{method.public_name});
+    // Claimed or not, the wrapper is the same shape: the generator's own
+    // signature with the trailing error removed, calling the body it wrote.
+    // What differs is the name it is written under and the name it calls --
+    // `checked_name` is the unexported one on a claimed declaration.
+    if (fact.replace) {
+        try writer.print(
+            "\n// {0s} panics with its typed error on failure. The error is a dead or\n" ++
+                "// poisoned handle, which is a defect rather than a condition to branch on.\n",
+            .{method.public_name},
+        );
+        if (method.receiver) |receiver|
+            try writer.print("func ({s} *{s}) {s}", .{ method.receiver_name.?, receiver, method.public_name })
+        else
+            try writer.print("func {s}", .{method.public_name});
+    } else {
+        try writer.print(
+            "\n// Must{0s} calls {0s} and panics with its typed error on failure.\n",
+            .{method.public_name},
+        );
+        if (method.receiver) |receiver|
+            try writer.print("func ({s} *{s}) Must{s}", .{ method.receiver_name.?, receiver, method.public_name })
+        else
+            try writer.print("func Must{s}", .{method.public_name});
+    }
     // The parameter list and the results are the generator's own, with only
     // the trailing error taken off; what is left is counted rather than
     // parsed, and the count picks the wrapper.
@@ -60,9 +88,9 @@ fn methodHook(context: plugin_api.Context, writer: *std.Io.Writer, function: abi
         else => "return gosttyMustMatch(",
     });
     if (method.receiver_name) |receiver_name|
-        try writer.print("{s}.{s}(", .{ receiver_name, method.public_name })
+        try writer.print("{s}.{s}(", .{ receiver_name, method.checked_name })
     else
-        try writer.print("{s}(", .{method.public_name});
+        try writer.print("{s}(", .{method.checked_name});
     try context.writeCallArguments(writer, function);
     try writer.writeAll(")) }\n");
 }
@@ -118,7 +146,7 @@ fn analyze(context: plugin_api.AnalyzeContext) !void {
     const info = try allocator.alloc(plugin_api.FunctionInfo, functions.len);
     for (functions, info) |function, *entry| entry.* = try render.functionInfo(function);
     for (functions, info) |function, entry| {
-        _ = try render.functionOptions(plugin, function.origin.*) orelse continue;
+        const options = try render.functionOptions(plugin, function.origin.*) orelse continue;
         if (!entry.is_public or !entry.has_error) {
             try context.diagnose(.{
                 .severity = .@"error",
@@ -129,8 +157,11 @@ fn analyze(context: plugin_api.AnalyzeContext) !void {
             });
         }
         const enabled = entry.is_public and entry.has_error;
-        try context.facts.put(allocator, plugin, .function(function.origin.*), .{ .enabled = enabled });
-        if (!enabled) continue;
+        try context.facts.put(allocator, plugin, .function(function.origin.*), .{
+            .enabled = enabled,
+            .replace = enabled and options.replace,
+        });
+        if (!enabled or options.replace) continue;
         const must_name = try std.fmt.allocPrint(allocator, "Must{s}", .{entry.public_name});
         const origin = function.origin.*;
         const path = try plugin_api.site.functionDeclarationAlloc(allocator, origin);
@@ -156,4 +187,12 @@ fn analyze(context: plugin_api.AnalyzeContext) !void {
             });
         }
     }
+}
+
+/// Claim the declaration when the binding asked to replace rather than add.
+/// The generator still writes the whole checked body, under the unexported
+/// name the hook above calls.
+fn replacesMethod(context: plugin_api.Context, function: abi.AbiFn) !bool {
+    const fact = try context.options.facts.get(plugin, .function(function.origin.*)) orelse return false;
+    return fact.replace;
 }

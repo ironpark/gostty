@@ -84,13 +84,16 @@ pub const GestureGeometry = extern struct {
 
 /// A press of the primary button.
 pub const GesturePressEvent = extern struct {
-    /// The cell under the pointer, in viewport coordinates.
+    /// Column of the cell under the pointer, in viewport coordinates.
     x: u16 = 0,
+    /// Row of that cell, in viewport coordinates: 0 is the top visible row,
+    /// not the top of the scrollback.
     y: u16 = 0,
-    /// The pointer in surface pixels from the top left. Kept apart from the
+    /// Pointer x in surface pixels from the top left. Kept apart from the
     /// cell because both the multi-click distance test and the within-cell
     /// selection threshold need sub-cell precision.
     xpos: f64 = 0,
+    /// Pointer y in surface pixels, for the same reason as `xpos`.
     ypos: f64 = 0,
     /// How far a second press may be from the first and still count as a
     /// repeat. One cell width is a reasonable choice.
@@ -117,9 +120,11 @@ pub const GestureDragEvent = extern struct {
     /// tick this is resolved after the viewport moves, so it names the row that
     /// scrolled under the pointer.
     x: u16 = 0,
+    /// Row of that cell, in viewport coordinates.
     y: u16 = 0,
-    /// The pointer in surface pixels from the top left.
+    /// Pointer x in surface pixels from the top left.
     xpos: f64 = 0,
+    /// Pointer y in surface pixels from the top left.
     ypos: f64 = 0,
     /// Select the block between the two corners rather than the flow of text.
     rectangle: bool = false,
