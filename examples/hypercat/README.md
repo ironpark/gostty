@@ -21,106 +21,70 @@ This example demonstrates:
 - OSC 8 hyperlinks and OSC 72 drag and drop
 - terminal replies and OSC side effects such as title, bell, and progress
 
-```text
-shell --pty--> Stream.Feed --> Terminal --> RenderState --> Ebitengine
-shell <--pty-- input.EncodeKey <-- KeyEvent <-- keys.Reader <-- Ebitengine
-```
-
 ## Reading the example
 
-The root contains the gostty integration. Ebitengine input polling, window
-callbacks, and drawing live in [`internal/frontend/`](internal/frontend/).
-Window and terminal integration stay here; supporting packages own fonts, keys,
-PTYs, UI, and the cat. [`settings.go`](settings.go) fans a settings change out
-to every tab and formats the panel; [`terminal_style.go`](terminal_style.go)
-applies one to a native terminal; [`internal/appearance/`](internal/appearance/)
-owns the shared font resources. [`terminal_events.go`](terminal_events.go) connects OSC 52 to
-[`internal/desktop/`](internal/desktop/), which owns clipboard storage, URL
-launching, and atomic temporary-file creation. Standalone protocol demos live in `scripts/`.
-Start with these files:
+The command is one Go package, split by domain. Everything a gostty user
+came to see -- feeding the stream, reading the render state, encoding input,
+answering the OSC side channels -- is in the root; the supporting packages
+(`fonts`, `keys`, `shell`, `thecat`, `ui`) own fonts, platform keyboard
+state, the pty, the cat and the widgets, and know nothing about the terminal.
+Read the root in this order:
 
-1. [`main.go`](main.go): install the PNG decoder, create the window and first
-   terminal, and call `frontend.Run`. Deferred cleanup closes all terminals.
-2. [`terminal.go`](terminal.go): one terminal's resources and lifecycle, in
-   execution order: `start` → `readOutput` → `refreshSnapshot` → `resize` →
-   `close`. `readOutput` shows `Stream.Feed`, event dispatch and
-   `Stream.WriteReplies` together. `refreshSnapshot` collects the cells and
-   overlays that the next draw consumes. `resize` updates both terminal and PTY.
-3. [`terminal_input.go`](terminal_input.go): route terminal input, filter host
-   shortcuts, encode keys with `input.EncodeKey`, and paste with
-   `input.EncodePaste`. Window input priority is in
-   [`window.go`](window.go): tabs → panels → terminal.
-4. [`render_frame.go`](render_frame.go): read cells, dirty rows, colors, cursor,
-   and grapheme clusters from `RenderState` during updates.
-5. [`window.go`](window.go) and [`render_frame.go`](render_frame.go): implement
-   the frontend contract. `Update` services shells and routes supplied input;
-   `Resize` keeps terminal and PTY geometry in sync; `Present` supplies cached
-   data for drawing without reading native handles.
+1. [`main.go`](main.go): install the PNG decoder, open the window, start the
+   first tab, and hand the window to Ebitengine.
+2. [`terminal.go`](terminal.go): one tab's terminal, in execution order.
+   `start` builds a `gostty.Session` (terminal, stream, gesture) and the
+   shell; `readOutput` is `Stream.Feed`, event dispatch and
+   `Stream.WriteReplies` together; `refreshSnapshot` reads what the next draw
+   needs; `resize` keeps the terminal and the pty the same size. The OSC
+   events and the theme's palette are here too.
+3. [`input.go`](input.go): what the host reports each frame (`hostInput`),
+   and what the terminal does with it: host shortcuts are taken out of the
+   key stream, the rest goes through `input.EncodeKey`, `EncodePaste`,
+   `EncodeMouse` and `EncodeFocus`. The encoders read the terminal's modes,
+   so whether the mouse is the program's or the selection's is their answer.
+4. [`frame.go`](frame.go): `RenderState` → cells, dirty rows, colours,
+   cursor and grapheme clusters, plus the `grid` that turns cells into pixels
+   everywhere.
+5. [`draw.go`](draw.go): those cells → pixels. Two GPU layers so Kitty
+   images can sit between backgrounds and text, repainted a dirty row at a
+   time.
+6. [`window.go`](window.go): the Ebitengine game. `update` services every
+   tab, routes input (tab bar and shortcuts → panels → terminal), and takes
+   the snapshot; `Draw` composes the active tab, its panels and the tab bar.
+   Tabs, the window title and the cat live here; [`settings.go`](settings.go)
+   holds the font, theme and cat mode every tab shares and fans a change out.
 
 ```text
-internal/frontend                    root (gostty integration)
-  Ebitengine.Update → Input ────────→ window.Update
-                                       ├─ PTY → Feed → events → replies
-                                       ├─ input → EncodeKey/Mouse/Paste → PTY
-                                       └─ RenderState → cached snapshot
-  Ebitengine.Draw   ← Presentation ← window.Present
-  Ebitengine.Layout ───────────────→ window.Resize → terminal + PTY
+shell --pty--> Stream.Feed --> Terminal --> RenderState --> frame --> draw
+shell <--pty-- input.EncodeKey <-- keys.Reader <-- hostInput <-- Ebitengine
 ```
 
-The frontend drives three methods: `Update(Input)`, `Resize(width, height,
-scale)`, and `Present() Presentation`. No Ebitengine types cross this contract.
-The frontend owns the window and GPU drawing; the root owns native terminal
-handles and protocol decisions. Its `window` model manages the tab list and
-shared settings; each `terminal` owns its shell, snapshot, selection, and search.
+The shell's reader goroutine only queues bytes; Ebitengine serialises `update`
+and `Draw`, so every gostty call happens on the window loop. `Draw` never
+reads a native handle: it paints what `update` read into the frame, which is
+why a frame can be drawn without an update in between. Background tabs keep
+parsing output and sending replies.
 
-`Presentation` borrows cached cells, clusters, and overlays until the next
-update. Drawing consumes pending repaint marks but performs no native terminal
-reads. Keyboard events are collected only after tab and panel routing decide
-who owns typing and how long the active terminal has had focus.
+### Optional features
 
-The shell's reader goroutine only queues bytes. The frontend serializes model
-callbacks, so terminal access stays in the window loop. Background terminals
-continue parsing output and sending replies.
-
-### Optional features and host plumbing
-
-These parts support the full demo but can be skipped on the first pass through
-the feed → encode → snapshot flow:
-
-| Concern | Files or package |
+| Concern | File |
 | --- | --- |
-| Ebitengine window, input collection, and rendering | [`internal/frontend/`](internal/frontend/) |
-| Tab lifecycle, shortcuts, and tab bar | [`window_tabs.go`](window_tabs.go), [`ui/tabbar.go`](ui/tabbar.go) |
-| Search/settings panels | [`window.go`](window.go), [`ui/`](ui/) |
-| OSC events | [`terminal_events.go`](terminal_events.go) |
-| Shared clipboard and OSC 52 callbacks | [`terminal_events.go`](terminal_events.go), [`internal/desktop/`](internal/desktop/) |
-| Mouse and focus reporting | [`terminal_mouse.go`](terminal_mouse.go) |
-| Selection, scrollback, and search | [`terminal_selection.go`](terminal_selection.go), [`terminal_scroll.go`](terminal_scroll.go), [`terminal_search.go`](terminal_search.go) |
-| Hyperlinks and file drops | [`terminal_hyperlink.go`](terminal_hyperlink.go), [`terminal_drop.go`](terminal_drop.go) |
-| HTML export formatting and file lifecycle | [`terminal_scroll.go`](terminal_scroll.go), [`internal/desktop/export.go`](internal/desktop/export.go) |
-| Dropped-path MIME representations | [`internal/filedrop/`](internal/filedrop/) |
-| Kitty image snapshots, textures, and PNG decoding | [`internal/graphics/`](internal/graphics/) |
-| Shared appearance and per-terminal palette | [`settings.go`](settings.go), [`terminal_style.go`](terminal_style.go), [`internal/appearance/`](internal/appearance/) |
-| Grid coordinates and content sizing | [`terminal_geometry.go`](terminal_geometry.go) |
+| Selection through `Gesture`: click counts, words and output, block drags, autoscroll; the viewport and scrollbar; HTML export through the formatter | [`selection.go`](selection.go) |
+| Scrollback search, driven a slice a frame, with viewport highlights | [`search.go`](search.go) |
+| The clipboard and OSC 52, OSC 8 hyperlinks, OSC 72 drag and drop, temporary files | [`desktop.go`](desktop.go) |
+| Kitty graphics: placements, textures by generation, raw and PNG decoding | [`kitty.go`](kitty.go) |
+| Tab lifecycle, shortcuts, tab bar, window title, the cat's grid | [`window.go`](window.go) |
+| Shared font, theme and cat settings, and the settings panel's labels | [`settings.go`](settings.go) |
+| Panels, tab bar, themes | [`ui/`](ui/) |
 | Platform keyboard state and repeats | [`keys/`](keys/) |
 | Font discovery, loading, and emoji | [`fonts/`](fonts/) |
 | PTY and shell process lifecycle | [`shell/`](shell/) |
-| Animated cat and its connection to the cell grid | [`window_cat.go`](window_cat.go), [`thecat/`](thecat/) |
+| The animated cat | [`thecat/`](thecat/) |
 
-`internal/graphics` depends on gostty and Ebitengine, with no dependency on the
-command. Its `Cache` borrows a terminal: the tab creates it at startup and calls
-`Refresh` during updates; the frontend draws its cached layers. The tab closes
-it before the terminal. `png.go` handles the process-wide decoder callback; `pixels.go`
-converts raw image samples.
-
-`shell/` handles platform differences and stops, terminates, and reaps the shell
-on close, even when its output queue is full. The existing `fonts`, `keys`,
-`shell`, `thecat`, and `ui` packages retain their import paths. These packages
-handle supporting work without depending on the command's window or terminal
-types. All `internal/` packages are private to this example. `appearance` manages
-settings without window or terminal references; `desktop` handles OS services;
-`filedrop` converts paths and MIME representations without native or GUI handles.
-The root keeps protocol decisions and resource ownership visible.
+`shell/` handles the platform differences and stops, terminates, and reaps the
+shell on close, even when its output queue is full. `internal/shelltest` runs
+the test binary as the shell for the root and `shell` tests.
 
 Run the example's regression tests from the repository root:
 

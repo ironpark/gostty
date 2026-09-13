@@ -5,7 +5,6 @@ import (
 
 	"github.com/ironpark/gostty"
 	"github.com/ironpark/gostty/examples/hypercat/fonts"
-	"github.com/ironpark/gostty/examples/hypercat/internal/appearance"
 	"github.com/ironpark/gostty/examples/hypercat/internal/shelltest"
 	"github.com/ironpark/gostty/examples/hypercat/keys"
 )
@@ -21,7 +20,7 @@ import (
 func newTabTestApp(t *testing.T) *window {
 	t.Helper()
 	shelltest.Shell(t, "echo")
-	win := &window{dsf: 1, settings: testAppearance()}
+	win := &window{dsf: 1, settings: testSettings()}
 	tab := &terminal{
 		clipboard: &win.clipboard, settings: win.settings,
 		cols: 80, rows: 24,
@@ -103,9 +102,9 @@ func screenOf(t *testing.T, tab *terminal) *gostty.Screen {
 // The tab tests run this binary as their shell, so it has to be able to be one.
 func TestMain(m *testing.M) { shelltest.Main(m) }
 
-// testAppearance supplies deterministic grid metrics without system discovery.
-func testAppearance() *appearance.State {
-	s := appearance.New(nil, fonts.DefaultSize, 1)
-	s.SetMetrics(&fonts.Set{CellWidth: 10, CellHeight: 20})
+// testSettings supplies deterministic grid metrics without system discovery.
+func testSettings() *settings {
+	s := newSettings(nil, fonts.DefaultSize, 1)
+	s.fonts = &fonts.Set{CellWidth: 10, CellHeight: 20}
 	return s
 }

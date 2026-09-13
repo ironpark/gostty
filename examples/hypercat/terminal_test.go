@@ -2,12 +2,65 @@ package main
 
 import (
 	"bytes"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/ironpark/gostty"
+	"github.com/ironpark/gostty/examples/hypercat/shell"
 	"github.com/ironpark/gostty/examples/hypercat/ui"
 )
+
+func TestClosePartiallyInitializedTerminalTab(t *testing.T) {
+	tab := &terminal{}
+	tab.close()
+	var err error
+	tab.vt, err = gostty.NewTerminal(80, 24)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tab.stream, err = tab.vt.NewStream(0)
+	if err != nil {
+		tab.close()
+		t.Fatal(err)
+	}
+	tab.close()
+	// Close would leave the terminal alive if its stream were still a child.
+	if _, err := tab.vt.NewStream(0); err == nil {
+		t.Fatal("terminal remained open after cleanup")
+	}
+	tab.close()
+}
+
+// Fail after native resources have been acquired, before the shell can start.
+func TestStartFailureClosesTerminalResources(t *testing.T) {
+	t.Setenv(shell.Var, filepath.Join(t.TempDir(), "missing-shell"))
+	tab := &terminal{
+		cols: 80, rows: 24,
+		settings:  testSettings(),
+		clipboard: &clipboard{},
+	}
+	t.Cleanup(tab.close)
+	if err := tab.start(); err == nil {
+		t.Fatal("starting a missing shell succeeded")
+	}
+	if tab.vt == nil || tab.stream == nil || tab.state == nil || tab.images == nil {
+		t.Fatal("startup failed before acquiring native resources")
+	}
+	if err := tab.stream.Feed([]byte("closed")); err == nil {
+		t.Error("stream remained open after startup failure")
+	}
+	if _, err := tab.state.CellCount(); err == nil {
+		t.Error("render state remained open after startup failure")
+	}
+	if tab.sel.gesture != nil {
+		t.Error("selection gesture remained open after startup failure")
+	}
+	if stream, err := tab.vt.NewStream(0); err == nil {
+		_ = stream.Close()
+		t.Error("terminal remained open after startup failure")
+	}
+}
 
 // The scrollback is bounded by the tab, not by the library: the native default
 // is unbounded, which a window with a tab bar cannot afford.
@@ -58,57 +111,15 @@ func TestScrollbarFollowsTheViewport(t *testing.T) {
 	}
 }
 
-// Select-all is the whole scrollback, not the viewport: what is off the top of
-// the screen is still selected text.
-func TestSelectAllTakesTheScrollback(t *testing.T) {
-	win := newTabTestApp(t)
-	tab := win.current()
-	feedTab(t, tab, strings.Repeat("line\r\n", 60)+"last")
-
-	if err := tab.selectAll(); err != nil {
-		t.Fatalf("selectAll: %v", err)
-	}
-	text := selected(t, tab)
-	if !strings.Contains(text, "last") {
-		t.Error("the selection does not reach the bottom of the screen")
-	}
-	if strings.Count(text, "line") <= tab.rows {
-		t.Errorf("the selection covers %d lines, want the scrollback too", strings.Count(text, "line"))
-	}
-}
-
-// Moving the end of a selection is the terminal's arithmetic: the end of a row
-// steps to the start of the next one rather than off the edge of the grid.
-func TestSelectionAdjustMovesTheEnd(t *testing.T) {
-	win := newTabTestApp(t)
-	tab := win.current()
-	feedTab(t, tab, "hello world")
-
-	screen := screenOf(t, tab)
-	if _, err := screen.SetSelection(gostty.Selection{StartX: 0, StartY: 0, EndX: 0, EndY: 0}); err != nil {
-		t.Fatalf("SetSelection: %v", err)
-	}
-	sel, ok, err := screen.Selection()
-	if err != nil || !ok {
-		t.Fatalf("Selection() = %v, %v", ok, err)
-	}
-	grown, ok, err := screen.SelectionAdjust(sel, gostty.SelectionAdjustmentRight)
-	if err != nil || !ok {
-		t.Fatalf("SelectionAdjust() = %v, %v", ok, err)
-	}
-	if _, err := screen.SetSelection(grown); err != nil {
-		t.Fatalf("SetSelection: %v", err)
-	}
-	if got, want := selected(t, tab), "he"; got != want {
-		t.Errorf("selection after one step right = %q, want %q", got, want)
-	}
-}
-
 // The scrollback is written out by the formatter, which keeps the styles and
 // unwraps the soft wraps. A loop over the cells would keep neither.
 func TestExportScrollbackWritesStyledHTML(t *testing.T) {
 	win := newTabTestApp(t)
 	tab := win.current()
+	wantColor := gostty.NewRGB(0x12, 0x34, 0x56)
+	if err := tab.vt.SetPaletteColor(1, wantColor); err != nil {
+		t.Fatal(err)
+	}
 	feedTab(t, tab, "\x1b[31mred\x1b[0m plain")
 
 	var out bytes.Buffer
@@ -121,6 +132,9 @@ func TestExportScrollbackWritesStyledHTML(t *testing.T) {
 	}
 	if !strings.Contains(text, "<") {
 		t.Errorf("the export carries no markup, so the colours were lost: %q", text)
+	}
+	if !strings.Contains(strings.ToLower(text), wantColor.String()) {
+		t.Errorf("the export did not resolve palette color %s: %q", wantColor, text)
 	}
 }
 

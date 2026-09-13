@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/ironpark/gostty"
-	"github.com/ironpark/gostty/examples/hypercat/internal/frontend"
 )
 
 // A cell holds a grapheme cluster, not a codepoint. The cell says "e" and the
@@ -20,12 +19,12 @@ func TestCellsCarryTheirWholeCluster(t *testing.T) {
 	if got := tab.frame.cells[0].Codepoint; got != 'e' {
 		t.Fatalf("first cell codepoint = %q, want the cluster's base", got)
 	}
-	if got, want := tab.presentation().ClusterAt(0, 0, tab.frame.cells[0]), "e\u0301"; got != want {
+	if got, want := tab.frame.clusterAt(0), "e\u0301"; got != want {
 		t.Errorf("clusterAt(0, 0) = %q, want %q", got, want)
 	}
 	// A cell with nothing but its codepoint is not remembered as a cluster, so
 	// the map stays the size of the rare case rather than of the grid.
-	if got, want := tab.presentation().ClusterAt(1, 0, tab.frame.cells[1]), "t"; got != want {
+	if got, want := tab.frame.clusterAt(1), "t"; got != want {
 		t.Errorf("clusterAt(1, 0) = %q, want %q", got, want)
 	}
 	if tab.frame.clusters[1] != "" {
@@ -48,7 +47,7 @@ func TestGraphemeClusteringPutsAnEmojiInOneCell(t *testing.T) {
 	if got := tab.frame.cells[0].Flags.Wide; got != gostty.CellWidthWide {
 		t.Errorf("the flag's cell is %v, want a wide one", got)
 	}
-	if got, want := tab.presentation().ClusterAt(0, 0, tab.frame.cells[0]), "\U0001F1F0\U0001F1F7"; got != want {
+	if got, want := tab.frame.clusterAt(0), "\U0001F1F0\U0001F1F7"; got != want {
 		t.Errorf("clusterAt(0, 0) = %q, want the whole flag %q", got, want)
 	}
 	// The next column is the wide cell's tail, so the text after it starts at
@@ -80,7 +79,7 @@ func TestClustersAreNotRereadForARepaint(t *testing.T) {
 	feedTab(t, tab, "e\u0301tude")
 
 	// A repaint with no new output: every row is marked, none was rewritten.
-	tab.frame.redraw.MarkAll()
+	tab.frame.redraw.markAll()
 	if err := tab.refreshSnapshot(); err != nil {
 		t.Fatalf("refresh: %v", err)
 	}
@@ -91,7 +90,7 @@ func TestClustersAreNotRereadForARepaint(t *testing.T) {
 		t.Error("a row nothing was printed to counts as rewritten")
 	}
 	// The text did not move, so what was read before still stands.
-	if got, want := tab.presentation().ClusterAt(0, 0, tab.frame.cells[0]), "e\u0301"; got != want {
+	if got, want := tab.frame.clusterAt(0), "e\u0301"; got != want {
 		t.Errorf("clusterAt after a repaint = %q, want %q", got, want)
 	}
 }
@@ -136,16 +135,16 @@ func TestCursorBlinkFollowsTheTerminal(t *testing.T) {
 // period, from the clock rather than from a frame counter.
 func TestCursorLitHalfThePeriod(t *testing.T) {
 	base := time.Unix(0, 0)
-	if !frontend.CursorLit(false, base.Add(frontend.CursorBlinkPeriod*3/4)) {
+	if !cursorLit(false, base.Add(cursorBlinkPeriod*3/4)) {
 		t.Error("a steady cursor went dark")
 	}
-	if !frontend.CursorLit(true, base) {
+	if !cursorLit(true, base) {
 		t.Error("a blinking cursor is dark at the start of its period")
 	}
-	if frontend.CursorLit(true, base.Add(frontend.CursorBlinkPeriod*3/4)) {
+	if cursorLit(true, base.Add(cursorBlinkPeriod*3/4)) {
 		t.Error("a blinking cursor is lit in the second half of its period")
 	}
-	if !frontend.CursorLit(true, base.Add(frontend.CursorBlinkPeriod+1)) {
+	if !cursorLit(true, base.Add(cursorBlinkPeriod+1)) {
 		t.Error("the next period did not start lit")
 	}
 }
@@ -161,10 +160,10 @@ func TestBlinkingCellsRepaintOnThePhase(t *testing.T) {
 	if !tab.frame.cells[0].Flags.Blink {
 		t.Fatal("the cell is not marked as blinking")
 	}
-	tab.frame.redraw.Clear()
+	tab.frame.redraw.clear()
 
 	// Turning the phase over marks the row holding the blinking cell.
-	tab.frame.blink = !frontend.BlinkLit(time.Now())
+	tab.frame.blink = !blinkLit(time.Now())
 	tab.frame.tickBlink(time.Now(), tab.grid())
 	if !tab.frame.redraw.marked(0) {
 		t.Error("the row with the blinking cell was not repainted")
@@ -172,8 +171,8 @@ func TestBlinkingCellsRepaintOnThePhase(t *testing.T) {
 
 	// A screen with nothing blinking costs nothing.
 	feedTab(t, tab, "\x1b[2J\x1b[Hsteady")
-	tab.frame.redraw.Clear()
-	tab.frame.blink = !frontend.BlinkLit(time.Now())
+	tab.frame.redraw.clear()
+	tab.frame.blink = !blinkLit(time.Now())
 	tab.frame.tickBlink(time.Now(), tab.grid())
 	if tab.frame.redraw.marked(0) {
 		t.Error("a row with nothing blinking was repainted for the phase")
@@ -209,7 +208,7 @@ func TestCursorOnAWideCharacter(t *testing.T) {
 	if !tab.frame.cursor.wideTail {
 		t.Fatal("cursor is not on the wide character's tail")
 	}
-	i := tab.presentation().CursorCellIndex()
+	i := tab.frame.cursorCellIndex(tab.grid())
 	if i < 0 || tab.frame.cells[i].Codepoint != '한' {
 		t.Errorf("cursorCellIndex() = %d, want the cell holding the character", i)
 	}
@@ -221,7 +220,7 @@ func TestRedrawSetFollowsTheGrid(t *testing.T) {
 	if !r.all {
 		t.Fatal("a new grid should be redrawn whole")
 	}
-	r.Clear()
+	r.clear()
 	r.mark(1)
 	r.mark(7) // off the grid: ignored rather than a panic
 	r.mark(-1)
@@ -229,7 +228,7 @@ func TestRedrawSetFollowsTheGrid(t *testing.T) {
 		t.Fatalf("rows = %v all = %v", r.rows, r.all)
 	}
 	r.resize(3) // same size keeps its marks
-	if r.all || !r.Take(1) || r.Take(1) {
+	if r.all || !r.take(1) || r.take(1) {
 		t.Fatal("resizing to the same size lost the marks, or take did not claim its row")
 	}
 	r.resize(4)
@@ -244,7 +243,7 @@ func TestMatchChangesMarkOnlyTheRowsThatChanged(t *testing.T) {
 	// about the font.
 	g := grid{cols: 4, rows: 3}
 	tab.frame.redraw.resize(3)
-	tab.frame.redraw.Clear()
+	tab.frame.redraw.clear()
 	tab.search.previous = []bool{false, false, false, false, true, false, false, false, false, false, false, false}
 	tab.search.cells = []bool{false, false, false, false, true, false, false, false, false, false, true, false}
 	tab.markMatchChanges(g)
@@ -252,10 +251,65 @@ func TestMatchChangesMarkOnlyTheRowsThatChanged(t *testing.T) {
 		t.Fatalf("rows = %v, want only the third", tab.frame.redraw.rows)
 	}
 	// A cleared search leaves a shorter (empty) set; the old rows still repaint.
-	tab.frame.redraw.Clear()
+	tab.frame.redraw.clear()
 	tab.search.cells = nil
 	tab.markMatchChanges(g)
 	if tab.frame.redraw.rows[0] || !tab.frame.redraw.rows[1] || tab.frame.redraw.rows[2] {
 		t.Fatalf("rows = %v, want only the second", tab.frame.redraw.rows)
+	}
+}
+
+// A 10x20 cell, which is what the tab tests are built on.
+var testGrid = grid{cols: 80, rows: 24, cellW: 10, cellH: 20}
+
+// A pointer outside the grid still points at a cell: a drag that runs off the
+// window selects to the edge rather than to nowhere.
+func TestGridCellAtClampsToTheGrid(t *testing.T) {
+	for _, test := range []struct{ px, py, col, row int }{
+		{0, 0, 0, 0},
+		{15, 25, 1, 1},
+		{9, 19, 0, 0},        // inside the first cell
+		{-40, -40, 0, 0},     // above and left of the grid
+		{5000, 5000, 79, 23}, // past the last cell
+	} {
+		col, row := testGrid.cellAt(test.px, test.py)
+		if col != test.col || row != test.row {
+			t.Errorf("cellAt(%d, %d) = (%d, %d), want (%d, %d)",
+				test.px, test.py, col, row, test.col, test.row)
+		}
+	}
+}
+
+// The size the input encoders are told is the same grid, so a mouse report
+// lands on the cell the pointer is over.
+func TestGridRenderSize(t *testing.T) {
+	size := testGrid.renderSize()
+	if size.CellWidth != 10 || size.CellHeight != 20 {
+		t.Errorf("renderSize() cell = %dx%d, want 10x20", size.CellWidth, size.CellHeight)
+	}
+	if size.ScreenWidth != 800 || size.ScreenHeight != 480 {
+		t.Errorf("renderSize() screen = %dx%d, want 800x480", size.ScreenWidth, size.ScreenHeight)
+	}
+}
+
+// The tab builds its grid from its own column count and the window's font, so
+// a resize or a font change is carried by both halves at once.
+func TestTabGridFollowsTheTabAndTheFont(t *testing.T) {
+	win := newTabTestApp(t)
+	tab := win.current()
+
+	g := tab.grid()
+	if g.cols != tab.cols || g.rows != tab.rows {
+		t.Errorf("grid() = %dx%d cells, want the tab's %dx%d", g.cols, g.rows, tab.cols, tab.rows)
+	}
+	if g.cellW != tab.settings.fonts.CellWidth || g.cellH != tab.settings.fonts.CellHeight {
+		t.Errorf("grid() cell = %vx%v, want the font set's %vx%v",
+			g.cellW, g.cellH, tab.settings.fonts.CellWidth, tab.settings.fonts.CellHeight)
+	}
+	if err := tab.resize(40, 12); err != nil {
+		t.Fatalf("resize: %v", err)
+	}
+	if g := tab.grid(); g.cols != 40 || g.rows != 12 {
+		t.Errorf("grid() after a resize = %dx%d, want 40x12", g.cols, g.rows)
 	}
 }

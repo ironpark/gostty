@@ -1,15 +1,36 @@
-// Command hypercat demonstrates the PTY → gostty → window flow.
-// Read main.go, terminal.go, terminal_input.go, and render_frame.go.
-// internal/frontend owns the Ebitengine window, input polling, and rendering.
+// Command hypercat is a small GUI terminal emulator built on gostty and
+// Ebitengine. It exists to show the binding in use, so read it in this order:
+//
+//   - terminal.go: one terminal. Shell output → Stream.Feed → events → replies.
+//   - input.go:    host keyboard and mouse → input.EncodeKey/EncodeMouse → pty.
+//   - frame.go:    RenderState → the cells, cursor and colours a frame is drawn from.
+//   - draw.go:     those cells → pixels, with Ebitengine.
+//   - window.go:   the frame loop, tabs, and what the window shares between them.
+//
+// selection.go, search.go, desktop.go and kitty.go are the optional features:
+// the selection gesture, scrollback search, OSC 8/52/72 and Kitty graphics.
 package main
 
 import (
 	"log"
 
-	"github.com/ironpark/gostty/examples/hypercat/internal/frontend"
-	"github.com/ironpark/gostty/examples/hypercat/internal/graphics"
+	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/ironpark/gostty/examples/hypercat/ui"
 	"github.com/ironpark/gostty/sys"
+)
+
+const (
+	initialCols = 100
+	initialRows = 30
+
+	// appName is the window title until a program sets one, and the prefix of
+	// every title a program does set.
+	appName = "Hyper Cat Term /ᐠ ˵> ⩊ <˵マ"
+
+	// What this program calls itself to the programs running in it: XTVERSION
+	// is answered with a name and a number.
+	reportName    = "hypercat"
+	reportVersion = "0.1.0"
 )
 
 func main() {
@@ -18,28 +39,13 @@ func main() {
 	}
 }
 
-const (
-	initialCols = 100
-	initialRows = 30
-
-	// appName is what the window is called before a program has said anything
-	// about itself, and the name every title it does set is shown under.
-	appName = "Hyper Cat Term /ᐠ ˵> ⩊ <˵マ"
-
-	// What this program calls itself to the programs running in it, which is
-	// the window title with the decoration taken off: XTVERSION is answered
-	// with it, and something parsing that answer wants a name and a number.
-	reportName    = "hypercat"
-	reportVersion = "0.1.0"
-)
-
-// run creates the first tab and runs the window until all tabs close.
-// Call it from main: Ebitengine owns the main thread.
+// run creates the first tab and runs the window until the last tab closes.
+// Ebitengine owns the main thread, so this is called from main directly.
 func run() error {
 	// libghostty-vt has no PNG decoder of its own, so without this a Kitty
 	// `f=100` transmission is refused. With it, PNGs are decoded as they
 	// arrive and reach the renderer as RGBA like every other format.
-	sys.OnPngDecodeRequest(graphics.DecodePNG)
+	sys.OnPngDecodeRequest(decodePNG)
 	defer sys.Clear()
 
 	win := newWindow()
@@ -47,13 +53,14 @@ func run() error {
 	if err := win.addTab(); err != nil {
 		return err
 	}
-
 	win.startCat()
-	win.clipboard.Init()
+	win.clipboard.init()
 
-	return frontend.Run(win, frontend.Config{
-		Title:  appName,
-		Width:  int(win.settings.Fonts().CellWidth * initialCols / win.dsf),
-		Height: int(win.settings.Fonts().CellHeight*initialRows/win.dsf + ui.TabBarHeight),
-	})
+	cell := win.settings.fonts
+	ebiten.SetWindowSize(int(cell.CellWidth*initialCols/win.dsf), int(cell.CellHeight*initialRows/win.dsf+ui.TabBarHeight))
+	ebiten.SetWindowTitle(appName)
+	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+	ebiten.SetScreenClearedEveryFrame(false)
+	// RunGame returns nil when update ends the loop with ebiten.Termination.
+	return ebiten.RunGame(win)
 }

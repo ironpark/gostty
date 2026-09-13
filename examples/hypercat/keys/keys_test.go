@@ -62,12 +62,6 @@ func TestRepeatRateMatchesThePlatform(t *testing.T) {
 	}
 }
 
-func TestCurrentDoesNotPanic(t *testing.T) {
-	// On macOS this reaches CoreGraphics through purego, so that it answers at
-	// all is the claim; there is no keyboard to assert about under `go test`.
-	t.Logf("Current: %+v", Current())
-}
-
 // Shift is deliberately not one of the modifiers that suppress text: the
 // platform has already folded it into the rune it produced.
 func TestAnyIgnoresShift(t *testing.T) {

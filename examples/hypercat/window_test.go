@@ -33,7 +33,7 @@ func TestTabsKeepIndependentTerminalsAndShareClipboard(t *testing.T) {
 	if len(second.panels.Search.Query) != 0 {
 		t.Fatal("search state leaked to new tab")
 	}
-	if second.settings.CatMode() != thecat.ModeHyper || (win.cat != nil && win.cat.Mode() != thecat.ModeHyper) {
+	if second.settings.cat != thecat.ModeHyper || (win.cat != nil && win.cat.Mode() != thecat.ModeHyper) {
 		t.Fatal("new tab did not open in the window's cat mode")
 	}
 	if second.settings != first.settings {
@@ -68,8 +68,8 @@ func TestTabsKeepIndependentTerminalsAndShareClipboard(t *testing.T) {
 			t.Fatal("terminal pointer offset does not match tab bar")
 		}
 	}
-	first.clipboard.Hold([]byte("shared"))
-	if string(second.clipboard.Paste()) != "shared" {
+	first.clipboard.hold([]byte("shared"))
+	if string(second.clipboard.paste()) != "shared" {
 		t.Fatal("fallback clipboard is not shared")
 	}
 	win.selectTab(0)
@@ -287,21 +287,21 @@ func TestSettingsChangeAppliesToEveryTab(t *testing.T) {
 	if _, err := win.applyPanel(second, ui.Actions{SettingsDelta: 1}); err != nil {
 		t.Fatal(err)
 	}
-	if win.cat != nil && win.cat.Mode() != win.settings.CatMode() {
-		t.Errorf("the window's cat is %v, want %v", win.cat.Mode(), win.settings.CatMode())
+	if win.cat != nil && win.cat.Mode() != win.settings.cat {
+		t.Errorf("the window's cat is %v, want %v", win.cat.Mode(), win.settings.cat)
 	}
 
 	// Size changes also apply when the bitmap fallback is the only font.
 	first.relayout, second.relayout = false, false
-	sizeBefore := win.settings.Size()
+	sizeBefore := win.settings.size
 	second.panels.Settings.Row = ui.SettingSize
 	if _, err := win.applyPanel(second, ui.Actions{SettingsDelta: 1}); err != nil {
 		t.Fatal(err)
 	}
-	if win.settings.Size() == sizeBefore {
+	if win.settings.size == sizeBefore {
 		t.Fatal("the font size did not change")
 	}
-	if first.settings.Fonts() != second.settings.Fonts() {
+	if first.settings.fonts != second.settings.fonts {
 		t.Error("the tabs are drawing with different faces")
 	}
 	if !first.relayout {
@@ -369,7 +369,7 @@ func TestWindowCatSurvivesTabChangesAndFollowsActiveGrid(t *testing.T) {
 	state, stamina := cat.State(), cat.Stamina()
 	check := func() {
 		t.Helper()
-		if win.cat != cat || win.Present().Frame.Cat != cat {
+		if win.cat != cat {
 			t.Fatal("tab change replaced the window companion")
 		}
 		if gx, gy := cat.Feet(); gx != x || gy != y || cat.State() != state || cat.Stamina() != stamina {

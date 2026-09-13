@@ -59,11 +59,11 @@ func TestSearchHighlightBuffersRefreshAndClear(t *testing.T) {
 		t.Fatal("search did not highlight only the matching cells")
 	}
 	tab.closeSearch()
-	tab.frame.redraw.Clear()
+	tab.frame.redraw.clear()
 	if err := tab.refreshMatches(); err != nil {
 		t.Fatal(err)
 	}
-	if len(tab.search.cells) != 0 || !tab.frame.redraw.Take(0) {
+	if len(tab.search.cells) != 0 || !tab.frame.redraw.take(0) {
 		t.Fatal("closing search did not clear and repaint old highlights")
 	}
 	tab.panels.Search.Query = []rune("plain")
