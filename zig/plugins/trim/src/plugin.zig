@@ -37,7 +37,6 @@ pub const Options = struct {
 
 pub const plugin: plugin_api.Plugin = .{
     .name = name,
-    .min_contract = .{ .major = 3, .minor = 0 },
     .TypeOptions = Options,
     // The rule is about how a group of declarations is spelled, which is not
     // a property of the kind of type they hang off: `ColorName` is an enum
@@ -112,7 +111,7 @@ fn transform(context: plugin_api.TransformContext) !semantic.Semantic {
             .severity = .@"error",
             .code = name ++ "002",
             .message = try std.fmt.allocPrint(allocator, "`{s}` trims `{s}`, which no method of it starts with", .{ declaration.name, prefix }),
-            .site = .{ .path = "semantic.json", .declaration = declaration.name },
+            .site = plugin_api.site.typeSite(declaration),
             .hint = "write the prefix as the Zig declarations spell it, or drop the plugin from this type",
         });
     }

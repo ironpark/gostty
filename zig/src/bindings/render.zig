@@ -23,19 +23,19 @@ const RenderState = trimmedAs(api.handle("RenderState", .{ .fields = &.{
     mustField(.{ .path = "cursor.visual_style", .name = "cursorStyle" }),
     mustField(.{ .path = "cursor.blinking", .name = "cursorBlinking" }),
     mustField(.{ .path = "cursor.password_input", .name = "cursorPasswordInput" }),
-} }).documented(
+} }).with(.{ .doc =
     \\RenderState owns a render snapshot. Update requires exclusive access to both
     \\the terminal and this state. After Update, reads do not touch the terminal,
     \\but must be serialized with Update, Clean and Close on this state. Copied
     \\cell, cursor and color values can be retained across updates. Call Clean
     \\only after successfully drawing the frame.
-), "render").context();
+}), "render").context();
 
 const KittyImages = trimmedAs(api.handle("KittyImages", .{ .fields = &.{
     mustField(.{ .path = "generation" }),
 } }), "kitty").context();
 
-const snapshot_group = Snapshot.define(&.{
+const snapshot_group = Snapshot.members(&.{
     // `decodeSnapshot` reads the serialized form off an `io.Reader`, so there
     // is no buffer here to call text or bytes.
     api.func("decodeSnapshot", .{
@@ -57,7 +57,7 @@ const snapshot_group = Snapshot.define(&.{
 
 // The incremental form: `ready` hands over a drawable terminal, then `next`
 // prepends the scrollback a page at a time.
-const snapshot_decoder_group = SnapshotDecoder.define(&.{
+const snapshot_decoder_group = SnapshotDecoder.members(&.{
     api.func("newSnapshotDecoder", .{
         .role = .{ .constructor = .{ .type = SnapshotDecoder.typeRef() } },
         // The serialized snapshot format, not text.
@@ -72,7 +72,7 @@ const snapshot_decoder_group = SnapshotDecoder.define(&.{
 
 // `RenderState` is ghostty's own renderer-facing snapshot; a frame is one
 // `update` plus one `cells` crossing.
-const render_state_group = RenderState.define(&.{
+const render_state_group = RenderState.members(&.{
     api.func("newRenderState", .{ .role = .{ .constructor = .{ .type = RenderState.typeRef() } } }),
     RenderState.func("deinit", .{ .role = .{ .destructor = RenderState.typeRef() } }),
     // ghostty's `update` wraps `beginUpdate`/`endUpdate`; the terminal
@@ -102,7 +102,7 @@ const render_state_group = RenderState.define(&.{
 // The same kind of snapshot as `RenderState`, for the images rather than the
 // cells: one `update` and one `placements` crossing per frame, with the pixels
 // fetched by id only when their generation says they changed.
-const kitty_images_group = KittyImages.define(&.{
+const kitty_images_group = KittyImages.members(&.{
     api.func("newKittyImages", .{ .role = .{ .constructor = .{ .type = KittyImages.typeRef() } } }),
     api.func("freeKittyImages", .{ .role = .{ .destructor = KittyImages.typeRef() } }),
     api.func("kittyUpdate", .{}),
@@ -134,16 +134,16 @@ pub const declarations = [_]zigo.Entry{
     snapshot_source,
     render_state_group,
     kitty_images_group,
-    api.val("SnapshotProgress", .{}),
-    api.val("RenderCursor", .{}),
-    api.val("RenderColors", .{}),
-    api.val("RenderCell", .{ .fields = &.{.{ .name = "codepoint", .semantic = .codepoint }} }),
+    api.value("SnapshotProgress", .{}),
+    api.value("RenderCursor", .{}),
+    api.value("RenderColors", .{}),
+    api.value("RenderCell", .{ .fields = &.{.{ .name = "codepoint", .semantic = .codepoint }} }),
     flags("CellFlags", "_pad"),
     enumeration("CellWidth", .{}),
     enumeration("RenderDirty", .{}),
     enumeration("KittyLayer", .{ .text = true }),
-    api.val("KittyPlacement", .{}),
-    api.val("KittyImage", .{}),
+    api.value("KittyPlacement", .{}),
+    api.value("KittyImage", .{}),
     enumeration("KittyFormat", .{}),
     enumeration("KittyCompression", .{}),
 };

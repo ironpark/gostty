@@ -33,11 +33,11 @@ func TestCharsetState(t *testing.T) {
 	if got, err := term.Charset(CharsetSlotG0); err != nil || got != CharsetUTF8 {
 		t.Errorf("Charset(G0) = %v, %v; want utf8, nil", got, err)
 	}
-	if got := term.CharsetGl(); got != CharsetSlotG0 {
-		t.Errorf("CharsetGl() = %v; want G0", got)
+	if got := term.CharsetGL(); got != CharsetSlotG0 {
+		t.Errorf("CharsetGL() = %v; want G0", got)
 	}
-	if got := term.CharsetGr(); got != CharsetSlotG2 {
-		t.Errorf("CharsetGr() = %v; want G2", got)
+	if got := term.CharsetGR(); got != CharsetSlotG2 {
+		t.Errorf("CharsetGR() = %v; want G2", got)
 	}
 
 	// SCS: G0 to DEC special graphics, G1 to British.
@@ -51,11 +51,11 @@ func TestCharsetState(t *testing.T) {
 
 	// LS2 moves GL to G2; LS1R moves GR to G1.
 	feed(t, stream, "\x1bn\x1b~")
-	if got := term.CharsetGl(); got != CharsetSlotG2 {
-		t.Errorf("CharsetGl() after LS2 = %v; want G2", got)
+	if got := term.CharsetGL(); got != CharsetSlotG2 {
+		t.Errorf("CharsetGL() after LS2 = %v; want G2", got)
 	}
-	if got := term.CharsetGr(); got != CharsetSlotG1 {
-		t.Errorf("CharsetGr() after LS1R = %v; want G1", got)
+	if got := term.CharsetGR(); got != CharsetSlotG1 {
+		t.Errorf("CharsetGR() after LS1R = %v; want G1", got)
 	}
 }
 

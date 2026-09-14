@@ -5,31 +5,31 @@ package sys
 
 import "github.com/ironpark/gostty/internal/raw"
 
-// OnPngDecodeRequest: Install the PNG decoder. Until one is installed ghostty refuses PNG
+// OnPNGDecodeRequest: Install the PNG decoder. Until one is installed ghostty refuses PNG
 // Kitty transmissions outright; with one, the image is decoded as it
 // arrives and reaches `kittyImage` as `rgba`. Process-global, and read
 // from whichever thread feeds a stream, so install it at startup.
 // Callback callback reentrancy: allowed; it may re-enter the binding while it is running.
 // Callback callback thread: caller; it runs on the thread that initiated the native call.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func OnPngDecodeRequest(callback PngDecodeHandler) {
+func OnPNGDecodeRequest(callback PNGDecodeHandler) {
 	if callback == nil {
-		panic(&CallbackError{Operation: "OnPngDecodeRequest", Callback: "callback", Err: ErrNilCallback})
+		panic(&CallbackError{Operation: "OnPNGDecodeRequest", Callback: "callback", Err: ErrNilCallback})
 	}
-	callbackHandle := zigoNewPngDecodeHandlerHandle(callback)
+	callbackHandle := zigoNewPNGDecodeHandlerHandle(callback)
 	raw.SysOnPngDecodeRequest(uintptr(callbackHandle))
 	if zigoCallbackPanicPending() {
-		zigoRethrowCallbackPanic("OnPngDecodeRequest", callbackHandle)
+		zigoRethrowCallbackPanic("OnPNGDecodeRequest", callbackHandle)
 	}
 }
 
-// ReplyPngImage: Answer the pending PNG request with decoded pixels, four bytes per pixel,
+// ReplyPNGImage: Answer the pending PNG request with decoded pixels, four bytes per pixel,
 // row-major. `rgba` is copied; it must be exactly `width * height * 4` bytes.
 // Native failures are returned as generated error values.
-func ReplyPngImage(width uint32, height uint32, rgba []byte) error {
+func ReplyPNGImage(width uint32, height uint32, rgba []byte) error {
 	code := raw.SysReplyPngImage(width, height, rgba)
 	if code != 0 {
-		return zigoErrorForCode("ReplyPngImage", code)
+		return zigoErrorForCode("ReplyPNGImage", code)
 	}
 	return nil
 }

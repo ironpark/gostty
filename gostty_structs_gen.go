@@ -123,7 +123,7 @@ func (value DragOperations) String() string {
 
 // DragOperations satisfies fmt.Stringer as a value, which is the form `%v` is
 // handed; a pointer receiver would stop this compiling.
-var _ fmt.Stringer = DragOperations{}
+var _ fmt.Stringer = *new(DragOperations)
 
 // DragNotice mirrors the Zig packed struct of the same name.
 type DragNotice struct {
@@ -176,7 +176,7 @@ func (value DragNotice) String() string {
 
 // DragNotice satisfies fmt.Stringer as a value, which is the form `%v` is
 // handed; a pointer receiver would stop this compiling.
-var _ fmt.Stringer = DragNotice{}
+var _ fmt.Stringer = *new(DragNotice)
 
 // RenderCursor mirrors the Zig packed struct of the same name.
 type RenderCursor struct {
@@ -332,7 +332,7 @@ func (value CellFlags) String() string {
 
 // CellFlags satisfies fmt.Stringer as a value, which is the form `%v` is
 // handed; a pointer receiver would stop this compiling.
-var _ fmt.Stringer = CellFlags{}
+var _ fmt.Stringer = *new(CellFlags)
 
 // GridPoint mirrors the Zig `extern struct` of the same name.
 type GridPoint struct {
@@ -356,7 +356,7 @@ func (value GridPoint) String() string {
 
 // GridPoint satisfies fmt.Stringer as a value, which is the form `%v` is
 // handed; a pointer receiver would stop this compiling.
-var _ fmt.Stringer = GridPoint{}
+var _ fmt.Stringer = *new(GridPoint)
 
 // Selection mirrors the Zig `extern struct` of the same name.
 type Selection struct {
@@ -381,7 +381,7 @@ func (value Selection) String() string {
 
 // Selection satisfies fmt.Stringer as a value, which is the form `%v` is
 // handed; a pointer receiver would stop this compiling.
-var _ fmt.Stringer = Selection{}
+var _ fmt.Stringer = *new(Selection)
 
 // FormatOptions mirrors the Zig `extern struct` of the same name.
 type FormatOptions struct {
@@ -476,7 +476,7 @@ func (value ScrollRegion) String() string {
 
 // ScrollRegion satisfies fmt.Stringer as a value, which is the form `%v` is
 // handed; a pointer receiver would stop this compiling.
-var _ fmt.Stringer = ScrollRegion{}
+var _ fmt.Stringer = *new(ScrollRegion)
 
 // GestureGeometry mirrors the Zig `extern struct` of the same name.
 type GestureGeometry struct {

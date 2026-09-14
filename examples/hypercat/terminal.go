@@ -129,7 +129,7 @@ func (tab *terminal) readOutput() (bool, error) {
 			if !ok {
 				return fed, io.EOF // the shell exited
 			}
-			if err := tab.stream.Feed(chunk); err != nil {
+			if _, err := tab.stream.Write(chunk); err != nil {
 				return fed, fmt.Errorf("feed: %w", err)
 			}
 			fed = true

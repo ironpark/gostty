@@ -1,6 +1,6 @@
 //! Key, mouse, focus and paste encoding in the input Go package.
 const p = @import("policy.zig");
-const input = api.in("input");
+const input = api.namespace("input");
 const zigo = p.zigo;
 const api = p.api;
 const flags = p.flags;
@@ -21,7 +21,7 @@ const input_package = zigo.package(.{
         // ghostty's own methods on the enum, bound as Go value-receiver
         // methods; the two that map onto a key rather than off one are the
         // wrappers below, which take no receiver.
-        Key.define(Key.funcs(.{ .names = &.{
+        Key.members(Key.funcs(.{ .names = &.{
             "codepoint",
             "printable",
             "modifier",
@@ -34,13 +34,13 @@ const input_package = zigo.package(.{
             Key.func("w3c", .{ .name = "W3C" }),
         }),
         enumeration("KeyAction", .{ .text = true }),
-        api.val("KeyEvent", .{ .fields = &.{.{ .name = "unshifted_codepoint", .semantic = .codepoint }} }),
+        api.value("KeyEvent", .{ .fields = &.{.{ .name = "unshifted_codepoint", .semantic = .codepoint }} }),
         flags("KeyMods", "_padding"),
         enumeration("FocusEvent", .{ .text = true }),
         enumeration("MouseAction", .{ .text = true }),
         enumeration("MouseButton", .{ .text = true }),
-        api.val("MouseEvent", .{}),
-        api.val("RenderSize", .{}),
+        api.value("MouseEvent", .{}),
+        api.value("RenderSize", .{}),
 
         api.func("encodeKey", .{}),
         api.func("encodeMouse", .{}),

@@ -2,12 +2,11 @@
 //! Shared policies live in bindings/policy.zig; ownership exceptions stay beside
 //! the declarations they affect. Go package paths are independent of this layout.
 const zigo = @import("zigo");
-const gostty = @import("gostty");
 const api = @import("bindings/policy.zig").api;
-const unicode = api.in("unicode");
+const unicode = api.namespace("unicode");
 
-pub const bindings = zigo.define(.{
-    .root = gostty,
+// `api` is `zigo.scope(gostty)`, which is the one place the root is named.
+pub const bindings = zigo.define(api, .{
     .allocator = .smp_allocator,
     .io = .{ .path = "io" },
     .defaults = .{

@@ -38,7 +38,7 @@ func TestEnumTextRoundTrip(t *testing.T) {
 // EventValues ranges over NextEventValue until the queue is empty.
 func TestStreamEventValues(t *testing.T) {
 	_, s := newStreamPair(t, 20, 3)
-	if err := s.Feed([]byte("\x07\x1b]0;hi\x07")); err != nil {
+	if _, err := s.Write([]byte("\x07\x1b]0;hi\x07")); err != nil {
 		t.Fatal(err)
 	}
 	var got []StreamEvent

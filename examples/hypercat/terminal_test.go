@@ -47,7 +47,7 @@ func TestStartFailureClosesTerminalResources(t *testing.T) {
 	if tab.vt == nil || tab.stream == nil || tab.state == nil || tab.images == nil {
 		t.Fatal("startup failed before acquiring native resources")
 	}
-	if err := tab.stream.Feed([]byte("closed")); err == nil {
+	if _, err := tab.stream.Write([]byte("closed")); err == nil {
 		t.Error("stream remained open after startup failure")
 	}
 	if _, err := tab.state.CellCount(); err == nil {

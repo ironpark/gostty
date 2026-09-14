@@ -75,8 +75,8 @@ func TestOSCParserHyperlink(t *testing.T) {
 	if kind := parseOSC(t, p, "8;;https://example.com/"); kind != OSCCommandHyperlinkStart {
 		t.Fatalf("kind = %v, want HyperlinkStart", kind)
 	}
-	if uri := p.HyperlinkUri(); uri != "https://example.com/" {
-		t.Fatalf("HyperlinkUri = %q, want the URI", uri)
+	if uri := p.HyperlinkURI(); uri != "https://example.com/" {
+		t.Fatalf("HyperlinkURI = %q, want the URI", uri)
 	}
 	if id := p.HyperlinkID(); id != "" {
 		t.Fatalf("HyperlinkID = %q, want empty for a link with no id", id)
@@ -85,8 +85,8 @@ func TestOSCParserHyperlink(t *testing.T) {
 	if kind := parseOSC(t, p, "8;id=42;https://example.com/two"); kind != OSCCommandHyperlinkStart {
 		t.Fatalf("kind = %v, want HyperlinkStart", kind)
 	}
-	if uri := p.HyperlinkUri(); uri != "https://example.com/two" {
-		t.Fatalf("HyperlinkUri = %q, want the URI", uri)
+	if uri := p.HyperlinkURI(); uri != "https://example.com/two" {
+		t.Fatalf("HyperlinkURI = %q, want the URI", uri)
 	}
 	if id := p.HyperlinkID(); id != "42" {
 		t.Fatalf("HyperlinkID = %q, want %q", id, "42")

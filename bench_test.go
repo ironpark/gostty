@@ -25,7 +25,7 @@ func BenchmarkFeedEmpty(b *testing.B) {
 	var data []byte
 	b.ResetTimer()
 	for b.Loop() {
-		_ = stream.Feed(data)
+		_, _ = stream.Write(data)
 	}
 }
 
@@ -39,7 +39,7 @@ func BenchmarkFeedLine(b *testing.B) {
 	b.SetBytes(int64(len(data)))
 	b.ResetTimer()
 	for b.Loop() {
-		_ = stream.Feed(data)
+		_, _ = stream.Write(data)
 	}
 }
 

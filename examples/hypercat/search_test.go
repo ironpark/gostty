@@ -9,7 +9,7 @@ import (
 func TestSearchPanelActionsManageNativeSearch(t *testing.T) {
 	win := newTabTestApp(t)
 	tab := win.current()
-	if err := tab.stream.Feed([]byte("needle in the terminal")); err != nil {
+	if _, err := tab.stream.Write([]byte("needle in the terminal")); err != nil {
 		t.Fatal(err)
 	}
 	handle := func(in ui.Input) {

@@ -31,14 +31,14 @@ pub const api = zigo.scope(gostty);
 /// the `fmt.Stringer` assertion beside the method, in the value form `%v`
 /// actually uses.
 pub fn flags(comptime name: []const u8, comptime pad: []const u8) zigo.Entry {
-    return api.val(name, .{}).use(stringer.plugin, .{ .style = .flags, .omit = &.{pad} });
+    return api.value(name, .{}).use(stringer.plugin, .{ .style = .flags, .omit = &.{pad} });
 }
 
 /// A value struct that prints as all of its fields, `GridPoint{X:3, Y:4}`.
 /// For the coordinate-like ones, where every field is part of the answer and
 /// Go's own `%v` would give the numbers with no names on them.
 pub fn printed(comptime name: []const u8) zigo.Entry {
-    return api.val(name, .{}).use(stringer.plugin, .{ .style = .fields });
+    return api.value(name, .{}).use(stringer.plugin, .{ .style = .fields });
 }
 
 /// Adds `Must<Name>`, which panics with the error the checked call would have
@@ -105,9 +105,8 @@ pub fn enumeration(comptime name: []const u8, comptime opts: struct {
     kit: bool = false,
     docs: []const zigo.EnumField = &.{},
 }) zigo.Entry {
-    const declared = api.enumType(name, .{ .exhaustive = !opts.open, .fields = opts.docs });
-    const texted = if (opts.text) declared.use(zigo.features.text, .{}) else declared;
-    return if (opts.open or opts.kit) texted.use(enumkit.plugin, .{}) else texted;
+    const declared = api.enumeration(name, .{ .exhaustive = !opts.open, .text = opts.text, .fields = opts.docs });
+    return if (opts.open or opts.kit) declared.use(enumkit.plugin, .{}) else declared;
 }
 
 /// One Go callback type: retained by whatever took it, free to re-enter the
@@ -118,10 +117,8 @@ pub fn enumeration(comptime name: []const u8, comptime opts: struct {
 /// declared.
 pub fn callback(comptime decl: []const u8, comptime go_name: []const u8) zigo.Entry {
     return api.callback(decl, .{
-        .retention = .retained,
-        .reentrancy = .allowed,
-        .thread = .caller,
-    }).named(go_name);
+        .contract = .{ .retention = .retained, .reentrancy = .allowed, .thread = .caller },
+    }).with(.{ .name = go_name });
 }
 
 /// A caller-provided buffer the function fills and reports the length of.

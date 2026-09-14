@@ -45,7 +45,7 @@ func run() error {
 	// libghostty-vt has no PNG decoder of its own, so without this a Kitty
 	// `f=100` transmission is refused. With it, PNGs are decoded as they
 	// arrive and reach the renderer as RGBA like every other format.
-	sys.OnPngDecodeRequest(decodePNG)
+	sys.OnPNGDecodeRequest(decodePNG)
 	defer sys.Clear()
 
 	win := newWindow()

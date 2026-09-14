@@ -4,13 +4,12 @@
 //! Declaration options select the variants; typed analysis records the decision
 //! once and verifies the final public signature and name before emission.
 //!
-//! The variant never spells its own signature. It renders the one the
-//! generator just wrote for the checked method and takes `error` off the end,
+//! The variant never spells its own signature. It takes the one the
+//! generator just wrote for the checked method and drops `error` off the end,
 //! so the two cannot disagree about a parameter name, a package qualifier or
 //! a borrowed-view result. Everything this plugin decides for itself is which
 //! of three wrappers to call, and that follows from how many results are left.
 const std = @import("std");
-const abi = @import("abi");
 const plugin_api = @import("plugin");
 const semantic = @import("semantic");
 
@@ -39,60 +38,62 @@ pub const plugin: plugin_api.Plugin = .{
     .name = name,
     .FunctionOptions = Options,
     .subjects = &.{.function},
-    .min_contract = .{ .major = 3, .minor = 1 },
     .Facts = struct { enabled: bool, replace: bool },
     .analyze = analyze,
-    .method_hook = methodHook,
-    .replaces_method = replacesMethod,
+    .visit = visit,
+    .claims = claims,
     .source_files = &.{.{ .enabled = packageHasVariant, .pathAlloc = helperPath, .render = renderHelpers }},
 };
 
-fn methodHook(context: plugin_api.Context, writer: *std.Io.Writer, function: abi.AbiFn) !void {
-    const fact = try context.options.facts.get(plugin, .function(function.origin.*)) orelse return;
+/// The variant, written after the checked method it mirrors.
+fn visit(context: plugin_api.Context, node: plugin_api.Node, b: *plugin_api.Builder) !void {
+    const function = switch (node) {
+        .function => |value| value,
+        else => return,
+    };
+    const fact = try context.facts.get(plugin, .function(function.origin.*)) orelse return;
     if (!fact.enabled) return;
     const method = context.method.?;
+    const allocator = context.allocator;
 
     // Claimed or not, the wrapper is the same shape: the generator's own
     // signature with the trailing error removed, calling the body it wrote.
     // What differs is the name it is written under and the name it calls --
     // `checked_name` is the unexported one on a claimed declaration.
-    if (fact.replace) {
-        try writer.print(
-            "\n// {0s} panics with its typed error on failure. The error is a dead or\n" ++
-                "// poisoned handle, which is a defect rather than a condition to branch on.\n",
+    const public_name = if (fact.replace)
+        method.public_name
+    else
+        try std.fmt.allocPrint(allocator, "Must{s}", .{method.public_name});
+    const doc = if (fact.replace)
+        try std.fmt.allocPrint(
+            allocator,
+            "{0s} panics with its typed error on failure. The error is a dead or\npoisoned handle, which is a defect rather than a condition to branch on.",
             .{method.public_name},
-        );
-        if (method.receiver) |receiver|
-            try writer.print("func ({s} *{s}) {s}", .{ method.receiver_name.?, receiver, method.public_name })
-        else
-            try writer.print("func {s}", .{method.public_name});
-    } else {
-        try writer.print(
-            "\n// Must{0s} calls {0s} and panics with its typed error on failure.\n",
-            .{method.public_name},
-        );
-        if (method.receiver) |receiver|
-            try writer.print("func ({s} *{s}) Must{s}", .{ method.receiver_name.?, receiver, method.public_name })
-        else
-            try writer.print("func Must{s}", .{method.public_name});
-    }
+        )
+    else
+        try std.fmt.allocPrint(allocator, "{0s} calls {1s} and panics with its typed error on failure.", .{ public_name, method.public_name });
+
+    const callee = if (method.receiver_name) |receiver|
+        try b.selName(receiver, method.checked_name)
+    else
+        b.ident(method.checked_name);
+    const forwarded = try b.callForwarding(callee, function);
     // The parameter list and the results are the generator's own, with only
     // the trailing error taken off; what is left is counted rather than
     // parsed, and the count picks the wrapper.
-    try context.writeParameters(writer, function);
-    const results = try context.writeResultType(writer, function, .{ .omit_error = true });
-    try writer.writeAll(" { ");
-    try writer.writeAll(switch (results) {
-        0 => "gosttyMustSucceed(",
-        1 => "return gosttyMustValue(",
-        else => "return gosttyMustMatch(",
-    });
-    if (method.receiver_name) |receiver_name|
-        try writer.print("{s}.{s}(", .{ receiver_name, method.checked_name })
-    else
-        try writer.print("{s}(", .{method.checked_name});
-    try context.writeCallArguments(writer, function);
-    try writer.writeAll(")) }\n");
+    const body: plugin_api.gobuild.Stmt = switch (try b.resultCount(function, .{ .omit_error = true })) {
+        0 => b.exprStmt(try b.callName("gosttyMustSucceed", &.{forwarded})),
+        1 => try b.ret(&.{try b.callName("gosttyMustValue", &.{forwarded})}),
+        else => try b.ret(&.{try b.callName("gosttyMustMatch", &.{forwarded})}),
+    };
+    try b.emit(&.{try b.func(.{
+        .doc = .{ .text = doc },
+        .receiver = if (method.receiver) |receiver| .{ .name = method.receiver_name.?, .type = receiver, .pointer = true } else null,
+        .name = public_name,
+        .signature = .{ .function = .{ .function = function, .options = .{ .omit_error = true } } },
+        .body = &.{body},
+        .single_line = true,
+    })}, .{ .blank_before = true });
 }
 
 fn helperPath(context: plugin_api.Context) ![]u8 {
@@ -132,7 +133,7 @@ fn renderHelpers(_: plugin_api.Context, writer: *std.Io.Writer) !void {
 fn packageHasVariant(context: plugin_api.Context) !bool {
     for (context.program.functions) |function| {
         if (!plugin_api.packageMatches(function.origin.package, context.options.active_package)) continue;
-        if (try context.options.facts.get(plugin, .function(function.origin.*))) |fact| {
+        if (try context.facts.get(plugin, .function(function.origin.*))) |fact| {
             if (fact.enabled) return true;
         }
     }
@@ -146,7 +147,7 @@ fn analyze(context: plugin_api.AnalyzeContext) !void {
     const info = try allocator.alloc(plugin_api.FunctionInfo, functions.len);
     for (functions, info) |function, *entry| entry.* = try render.functionInfo(function);
     for (functions, info) |function, entry| {
-        const options = try render.functionOptions(plugin, function.origin.*) orelse continue;
+        const options = try render.optionsOf(plugin, .function, function.origin.ext) orelse continue;
         if (!entry.is_public or !entry.has_error) {
             try context.diagnose(.{
                 .severity = .@"error",
@@ -191,8 +192,12 @@ fn analyze(context: plugin_api.AnalyzeContext) !void {
 
 /// Claim the declaration when the binding asked to replace rather than add.
 /// The generator still writes the whole checked body, under the unexported
-/// name the hook above calls.
-fn replacesMethod(context: plugin_api.Context, function: abi.AbiFn) !bool {
-    const fact = try context.options.facts.get(plugin, .function(function.origin.*)) orelse return false;
+/// name the visit above calls. Only a function has a public surface to claim.
+fn claims(context: plugin_api.Context, node: plugin_api.Node) !bool {
+    const function = switch (node) {
+        .function => |value| value,
+        else => return false,
+    };
+    const fact = try context.facts.get(plugin, .function(function.origin.*)) orelse return false;
     return fact.replace;
 }

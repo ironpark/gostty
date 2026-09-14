@@ -23,7 +23,7 @@ func TestWriteContinuation(t *testing.T) {
 	})
 
 	// Leave the parser mid-sequence.
-	if err := stream.Feed([]byte("ok\x1b[3")); err != nil {
+	if _, err := stream.Write([]byte("ok\x1b[3")); err != nil {
 		t.Fatalf("Feed: %v", err)
 	}
 

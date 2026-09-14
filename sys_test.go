@@ -38,7 +38,7 @@ func transmitPNG(t *testing.T, s *Stream, id int, data []byte) {
 func installPNGDecoder(t *testing.T) *int {
 	t.Helper()
 	calls := new(int)
-	sys.OnPngDecodeRequest(func(data []byte) {
+	sys.OnPNGDecodeRequest(func(data []byte) {
 		*calls++
 		img, err := png.Decode(bytes.NewReader(data))
 		if err != nil {
@@ -52,8 +52,8 @@ func installPNGDecoder(t *testing.T) *int {
 				rgba.Set(x, y, img.At(x, y))
 			}
 		}
-		if err := sys.ReplyPngImage(uint32(b.Dx()), uint32(b.Dy()), rgba.Pix); err != nil {
-			t.Errorf("ReplyPngImage: %v", err)
+		if err := sys.ReplyPNGImage(uint32(b.Dx()), uint32(b.Dy()), rgba.Pix); err != nil {
+			t.Errorf("ReplyPNGImage: %v", err)
 		}
 	})
 	t.Cleanup(sys.Clear)
@@ -103,14 +103,14 @@ func TestPngDecodedOnArrival(t *testing.T) {
 // having none, and a reply of the wrong size is refused before it can.
 func TestPngDecoderMustReply(t *testing.T) {
 	var sizeErr error
-	sys.OnPngDecodeRequest(func([]byte) {
-		sizeErr = sys.ReplyPngImage(2, 2, []byte{1, 2, 3, 4})
+	sys.OnPNGDecodeRequest(func([]byte) {
+		sizeErr = sys.ReplyPNGImage(2, 2, []byte{1, 2, 3, 4})
 	})
 	t.Cleanup(sys.Clear)
 	term, stream := newStreamPair(t, 20, 5)
 	transmitPNG(t, stream, 7, redPNG(t))
 	if !errors.Is(sizeErr, sys.ErrSizeMismatch) {
-		t.Errorf("ReplyPngImage with 4 bytes for 2x2 = %v, want ErrSizeMismatch", sizeErr)
+		t.Errorf("ReplyPNGImage with 4 bytes for 2x2 = %v, want ErrSizeMismatch", sizeErr)
 	}
 	if _, ok, err := term.KittyImage(7); err != nil || ok {
 		t.Errorf("KittyImage(7) after an unanswered decode = ok %v, err %v; want false, nil", ok, err)
@@ -119,8 +119,8 @@ func TestPngDecoderMustReply(t *testing.T) {
 
 // Replies are only meaningful inside a request.
 func TestSysRepliesOutsideRequest(t *testing.T) {
-	if err := sys.ReplyPngImage(1, 1, []byte{0, 0, 0, 0}); !errors.Is(err, sys.ErrNoPendingRequest) {
-		t.Errorf("ReplyPngImage outside a request = %v, want ErrNoPendingRequest", err)
+	if err := sys.ReplyPNGImage(1, 1, []byte{0, 0, 0, 0}); !errors.Is(err, sys.ErrNoPendingRequest) {
+		t.Errorf("ReplyPNGImage outside a request = %v, want ErrNoPendingRequest", err)
 	}
 	if err := sys.ReplySecureRandom([]byte{1}); !errors.Is(err, sys.ErrNoPendingRequest) {
 		t.Errorf("ReplySecureRandom outside a request = %v, want ErrNoPendingRequest", err)
@@ -135,7 +135,7 @@ func TestSysRepliesOutsideRequest(t *testing.T) {
 // allowed and they still match what was transmitted.
 func TestPngBytesAreCopied(t *testing.T) {
 	var kept []byte
-	sys.OnPngDecodeRequest(func(data []byte) { kept = data })
+	sys.OnPNGDecodeRequest(func(data []byte) { kept = data })
 	t.Cleanup(sys.Clear)
 	_, stream := newStreamPair(t, 20, 5)
 	src := redPNG(t)

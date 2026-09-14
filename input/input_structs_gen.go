@@ -79,7 +79,7 @@ func (value KeyMods) String() string {
 
 // KeyMods satisfies fmt.Stringer as a value, which is the form `%v` is
 // handed; a pointer receiver would stop this compiling.
-var _ fmt.Stringer = KeyMods{}
+var _ fmt.Stringer = *new(KeyMods)
 
 // KeyEvent mirrors the Zig `extern struct` of the same name.
 type KeyEvent struct {

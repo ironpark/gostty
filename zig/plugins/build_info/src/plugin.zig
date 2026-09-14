@@ -1,5 +1,6 @@
 //! Build provenance shared by the Go API and machine-readable artifact.
 const std = @import("std");
+const abi = @import("abi");
 const plugin_api = @import("plugin");
 
 pub const Config = struct {
@@ -23,52 +24,63 @@ pub const Metadata = struct {
     kitty_graphics: bool,
     tmux_control_mode: bool,
 };
-const metadata_id: plugin_api.DeclarationId = .{ .kind = .document, .name = "build" };
 
 pub const plugin: plugin_api.Plugin = .{
     .name = "BUILD_INFO",
-    .min_contract = .{ .major = 3, .minor = 0 },
     .Config = Config,
     .TypeOptions = Options,
-    .Facts = Metadata,
     .subjects = &.{.handle},
     .validate = validate,
     .source_files = &.{.{ .scope = .document, .pathAlloc = filePath, .render = renderFile }},
     .artifacts = &.{.{ .pathAlloc = artifactPath, .render = renderArtifact }},
 };
 
+/// The one handle carrying the feature options, checked here so the two
+/// renderings below can take it for granted.
 fn validate(context: plugin_api.ValidateContext) !void {
-    const config = try context.config(plugin);
     var found = false;
     for (context.document.types) |declaration| {
-        const features = try context.optionsOf(plugin, .type, declaration.ext) orelse continue;
+        _ = try context.optionsOf(plugin, .type, declaration.ext) orelse continue;
         if (found or declaration.package != null) {
             try context.diagnose(.{
                 .severity = .@"error",
                 .code = "BUILD_INFO002",
                 .message = "build information needs exactly one root-package handle",
-                .site = .{ .path = "semantic.json", .declaration = declaration.name },
+                .site = plugin_api.site.typeSite(declaration),
                 .hint = "Attach native feature options only to Terminal.",
             });
             continue;
         }
         found = true;
-        try context.facts.put(context.allocator, plugin, metadata_id, .{
+    }
+    if (!found) try context.diagnose(.{
+        .severity = .@"error",
+        .code = "BUILD_INFO003",
+        .message = "native build feature information is missing",
+        .site = plugin_api.site.documentSite("BUILD_INFO"),
+        .hint = "Attach BUILD_INFO feature options to Terminal.",
+    });
+}
+
+/// The build configuration joined with the feature options off the handle
+/// that carries them. Read from the program rather than from facts because
+/// an artifact renders without a fact store, and the source file has no
+/// reason to read the same thing another way.
+fn metadata(allocator: std.mem.Allocator, program: abi.Program, config: Config) !Metadata {
+    for (program.types) |declaration| {
+        if (declaration.package != null) continue;
+        const features = try plugin_api.optionsOn(plugin, .type, allocator, declaration.ext) orelse continue;
+        return .{
             .ghostty_revision = config.ghostty_revision,
             .zigo_version = config.zigo_version,
             .optimize = config.optimize,
             .simd = features.simd,
             .kitty_graphics = features.kitty_graphics,
             .tmux_control_mode = features.tmux_control_mode,
-        });
+        };
     }
-    if (!found) try context.diagnose(.{
-        .severity = .@"error",
-        .code = "BUILD_INFO003",
-        .message = "native build feature information is missing",
-        .site = .{ .path = "semantic.json", .declaration = "BUILD_INFO" },
-        .hint = "Attach BUILD_INFO feature options to Terminal.",
-    });
+    // `validate` already refused a document without the handle.
+    return error.MissingBuildInfo;
 }
 
 fn filePath(context: plugin_api.Context) ![]u8 {
@@ -76,15 +88,25 @@ fn filePath(context: plugin_api.Context) ![]u8 {
 }
 
 fn renderFile(context: plugin_api.Context, writer: *std.Io.Writer) !void {
-    const options = (try context.options.facts.get(plugin, metadata_id)).?;
-    try writer.writeAll(@embedFile("build_info.go.txt"));
-    try writer.writeAll("// GetBuildInfo identifies the bundled native build. Values are fixed at generation time.\nfunc GetBuildInfo() BuildInfo { return BuildInfo{GhosttyRevision: ");
-    try std.json.Stringify.value(options.ghostty_revision, .{}, writer);
-    try writer.writeAll(", ZigoVersion: ");
-    try std.json.Stringify.value(options.zigo_version, .{}, writer);
-    try writer.writeAll(", Optimize: ");
-    try std.json.Stringify.value(options.optimize, .{}, writer);
-    try writer.print(", SIMD: {}, KittyGraphics: {}, TmuxControlMode: {}}} }}\n", .{ options.simd, options.kitty_graphics, options.tmux_control_mode });
+    const info = try metadata(context.allocator, context.program, try context.config(plugin));
+    const b = context.builder();
+    try b.render(writer, &.{
+        .{ .raw = @embedFile("build_info.go.txt") },
+        try b.func(.{
+            .doc = .{ .text = "GetBuildInfo identifies the bundled native build. Values are fixed at generation time." },
+            .name = "GetBuildInfo",
+            .signature = .{ .explicit = .{ .results = &.{b.ident("BuildInfo")} } },
+            .body = &.{try b.ret(&.{try b.composite(b.ident("BuildInfo"), &.{
+                .{ .key = "GhosttyRevision", .value = b.string(info.ghostty_revision) },
+                .{ .key = "ZigoVersion", .value = b.string(info.zigo_version) },
+                .{ .key = "Optimize", .value = b.string(info.optimize) },
+                .{ .key = "SIMD", .value = b.boolean(info.simd) },
+                .{ .key = "KittyGraphics", .value = b.boolean(info.kitty_graphics) },
+                .{ .key = "TmuxControlMode", .value = b.boolean(info.tmux_control_mode) },
+            })})},
+            .single_line = true,
+        }),
+    }, .{});
 }
 
 fn artifactPath(context: plugin_api.ArtifactContext) ![]u8 {
@@ -92,7 +114,7 @@ fn artifactPath(context: plugin_api.ArtifactContext) ![]u8 {
 }
 
 fn renderArtifact(context: plugin_api.ArtifactContext, writer: *std.Io.Writer) !void {
-    const metadata = (try context.options.facts.get(plugin, metadata_id)).?;
-    try std.json.Stringify.value(metadata, .{ .whitespace = .indent_2 }, writer);
+    const info = try metadata(context.allocator, context.program, try context.config(plugin));
+    try std.json.Stringify.value(info, .{ .whitespace = .indent_2 }, writer);
     try writer.writeByte('\n');
 }

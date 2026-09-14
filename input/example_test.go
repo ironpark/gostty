@@ -120,7 +120,7 @@ func ExampleKey() {
 	key, ok := input.KeyFromW3C("ArrowLeft")
 	fmt.Println(key, ok)
 
-	a, _ := input.KeyFromAscii('a')
+	a, _ := input.KeyFromASCII('a')
 	codepoint, hasCodepoint := a.Codepoint()
 	fmt.Printf("%s: printable=%v codepoint=%q(%v) w3c=%s\n",
 		a, a.Printable(), codepoint, hasCodepoint, a.W3C())

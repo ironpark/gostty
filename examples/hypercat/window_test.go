@@ -39,10 +39,10 @@ func TestTabsKeepIndependentTerminalsAndShareClipboard(t *testing.T) {
 	if second.settings != first.settings {
 		t.Fatal("new tab did not share the window's fonts and theme")
 	}
-	if err := first.stream.Feed([]byte("first")); err != nil {
+	if _, err := first.stream.Write([]byte("first")); err != nil {
 		t.Fatal(err)
 	}
-	if err := second.stream.Feed([]byte("second")); err != nil {
+	if _, err := second.stream.Write([]byte("second")); err != nil {
 		t.Fatal(err)
 	}
 	for _, test := range []struct {
@@ -149,7 +149,7 @@ func TestFailedNewTabLeavesExistingTabAlive(t *testing.T) {
 	if len(win.tabs) != 1 || win.current() != existing {
 		t.Fatal("failed tab changed existing tabs")
 	}
-	if err := existing.stream.Feed([]byte("still alive")); err != nil {
+	if _, err := existing.stream.Write([]byte("still alive")); err != nil {
 		t.Fatal(err)
 	}
 }

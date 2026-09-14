@@ -126,10 +126,10 @@ func TestSnapshotRoundTrip(t *testing.T) {
 	}
 	defer rs.Close()
 	cont, _ := decoded.Continuation()
-	if err := rs.Feed(cont); err != nil {
+	if _, err := rs.Write(cont); err != nil {
 		t.Fatal(err)
 	}
-	if err := rs.Feed([]byte("DX")); err != nil {
+	if _, err := rs.Write([]byte("DX")); err != nil {
 		t.Fatal(err)
 	}
 	if got, _ := restored.PlainString(); got != "two\nthXee" {

@@ -39,7 +39,7 @@ func newTabTestApp(t *testing.T) *window {
 // which is what a frame of shell output does.
 func feedTab(t *testing.T, tab *terminal, s string) {
 	t.Helper()
-	if err := tab.stream.Feed([]byte(s)); err != nil {
+	if _, err := tab.stream.Write([]byte(s)); err != nil {
 		t.Fatalf("feed: %v", err)
 	}
 	if err := tab.refreshSnapshot(); err != nil {

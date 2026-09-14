@@ -382,7 +382,7 @@ func BenchmarkEventNotificationRead(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if err := s.Feed(data); err != nil {
+		if _, err := s.Write(data); err != nil {
 			b.Fatal(err)
 		}
 		event, ok, err := s.NextEventValue()

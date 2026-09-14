@@ -30,8 +30,8 @@ func newStreamPair(t *testing.T, cols, rows uint16) (*Terminal, *Stream) {
 
 func feed(t *testing.T, s *Stream, data string) {
 	t.Helper()
-	if err := s.Feed([]byte(data)); err != nil {
-		t.Fatalf("Feed(%q): %v", data, err)
+	if _, err := s.Write([]byte(data)); err != nil {
+		t.Fatalf("Write(%q): %v", data, err)
 	}
 }
 

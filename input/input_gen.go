@@ -13,6 +13,7 @@ import (
 
 // Codepoint: Returns the codepoint representing this key, or null if the key is not
 // printable
+// The bool result reports whether a value was present; the value before it is zero when it was not.
 func (k Key) Codepoint() (rune, bool) {
 	zigoResult, zigoHas := raw.KeyCodepoint(int32(k))
 	return rune(zigoResult), zigoHas
@@ -137,7 +138,7 @@ func EncodeMouse(writer io.Writer, terminal *zigo_default.Terminal, event MouseE
 	return nil
 }
 
-// KeyFromAscii: Converts an ASCII character to a key, if possible. This returns
+// KeyFromASCII: Converts an ASCII character to a key, if possible. This returns
 // null if the character is unknown.
 //
 // Note that this can't distinguish between physical keys, i.e. '0'
@@ -146,7 +147,8 @@ func EncodeMouse(writer io.Writer, terminal *zigo_default.Terminal, event MouseE
 //
 // This is what we want, we want people to create keybindings that
 // are independent of the physical key.
-func KeyFromAscii(ch uint8) (Key, bool) {
+// The bool result reports whether a value was present; the value before it is zero when it was not.
+func KeyFromASCII(ch uint8) (Key, bool) {
 	zigoResult, zigoHas := raw.KeyKeyFromAscii(ch)
 	return Key(zigoResult), zigoHas
 }
@@ -156,6 +158,7 @@ func KeyFromAscii(ch uint8) (Key, bool) {
 // All required W3C key codes are supported, but there are a number of
 // non-standard key codes that are not supported. In the case the value is
 // invalid or unsupported, this function will return null.
+// The bool result reports whether a value was present; the value before it is zero when it was not.
 func KeyFromW3C(w3cCode string) (Key, bool) {
 	zigoResult, zigoHas := raw.KeyKeyFromW3C(w3cCode)
 	return Key(zigoResult), zigoHas

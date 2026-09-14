@@ -23,6 +23,23 @@ func zigoPoisonAfterPanic(err error, handles ...zigoHandle) error {
 	return lifecycle.PoisonAfterPanic(err, handles...)
 }
 
+// The lifecycle methods of every handle here stay unexported. The shared
+// runtime reaches them through this registration.
+func init() {
+	lifecycle.Register(lifecycle.Methods[*Terminal]{Acquire: (*Terminal).zigoAcquire, Release: (*Terminal).zigoRelease, Poison: (*Terminal).zigoPoison, AcquireChild: (*Terminal).zigoAcquireChild, DropChild: (*Terminal).zigoDropChild})
+	lifecycle.Register(lifecycle.Methods[*Screen]{Acquire: (*Screen).zigoAcquire, Release: (*Screen).zigoRelease, Poison: (*Screen).zigoPoison})
+	lifecycle.Register(lifecycle.Methods[*Search]{Acquire: (*Search).zigoAcquire, Release: (*Search).zigoRelease, Poison: (*Search).zigoPoison})
+	lifecycle.Register(lifecycle.Methods[*GridRef]{Acquire: (*GridRef).zigoAcquire, Release: (*GridRef).zigoRelease, Poison: (*GridRef).zigoPoison})
+	lifecycle.Register(lifecycle.Methods[*Gesture]{Acquire: (*Gesture).zigoAcquire, Release: (*Gesture).zigoRelease, Poison: (*Gesture).zigoPoison})
+	lifecycle.Register(lifecycle.Methods[*Stream]{Acquire: (*Stream).zigoAcquire, Release: (*Stream).zigoRelease, Poison: (*Stream).zigoPoison})
+	lifecycle.Register(lifecycle.Methods[*ClipboardRequest]{Acquire: (*ClipboardRequest).zigoAcquire, Release: (*ClipboardRequest).zigoRelease, Poison: (*ClipboardRequest).zigoPoison})
+	lifecycle.Register(lifecycle.Methods[*OSCParser]{Acquire: (*OSCParser).zigoAcquire, Release: (*OSCParser).zigoRelease, Poison: (*OSCParser).zigoPoison})
+	lifecycle.Register(lifecycle.Methods[*Snapshot]{Acquire: (*Snapshot).zigoAcquire, Release: (*Snapshot).zigoRelease, Poison: (*Snapshot).zigoPoison})
+	lifecycle.Register(lifecycle.Methods[*SnapshotDecoder]{Acquire: (*SnapshotDecoder).zigoAcquire, Release: (*SnapshotDecoder).zigoRelease, Poison: (*SnapshotDecoder).zigoPoison})
+	lifecycle.Register(lifecycle.Methods[*RenderState]{Acquire: (*RenderState).zigoAcquire, Release: (*RenderState).zigoRelease, Poison: (*RenderState).zigoPoison})
+	lifecycle.Register(lifecycle.Methods[*KittyImages]{Acquire: (*KittyImages).zigoAcquire, Release: (*KittyImages).zigoRelease, Poison: (*KittyImages).zigoPoison})
+}
+
 // DragHandler is the Go callback signature accepted by the generated binding.
 // Reentrancy: allowed; the callback may re-enter the binding while it is running.
 // Thread: caller; the callback runs on the thread that initiated the native call.

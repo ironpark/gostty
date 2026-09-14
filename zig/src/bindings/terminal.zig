@@ -17,7 +17,7 @@ const trimmed = p.trimmed;
 
 // The types, each captured as a context: one declaration that is both the type
 // and the scope its members are selected from. `.context()` only captures --
-// what registers the type is the `define()` result below reaching
+// what registers the type is the `members()` result below reaching
 // `.declarations` -- so the lifecycle and the methods are written in one place
 // per type without naming it twice.
 pub const Terminal = api.handle("Terminal", .{
@@ -49,13 +49,13 @@ pub const Terminal = api.handle("Terminal", .{
         mustField(.{ .path = "screens.active.charset.single_shift", .name = "charsetSingleShift", .doc = "The slot a pending single shift (SS2/SS3) will use for exactly one character, or absent if none is pending." }),
         mustField(.{ .path = "screens.active.protected_mode", .name = "protectedMode", .doc = "The most recent protected mode (DECSCA or the older SPA/EPA) on the active screen. This never returns to off once set, until the screen is reset: ECH and friends key off the most recent mode, not the current pen." }),
     },
-}).documented(
+}).with(.{ .doc =
     \\Terminal owns mutable terminal state. Serialize all calls, including
     \\getters, with calls on its streams, screens, searches, gestures and grid
     \\references. Handle locks protect lifetime only; they do not serialize native
     \\operations. Callbacks may answer their supplied request but must not
     \\recursively feed, resize, reset or close the same terminal.
-).use(convenience.plugin, .{ .feature = .terminal_config }).use(p.build_info.plugin, .{
+}).use(convenience.plugin, .{ .feature = .terminal_config }).use(p.build_info.plugin, .{
     .simd = gostty.build_features.simd,
     .kitty_graphics = gostty.build_features.kitty_graphics,
     .tmux_control_mode = gostty.build_features.tmux_control_mode,
@@ -76,7 +76,7 @@ const ColorName = trimmed(enumeration("ColorName", .{ .text = true, .open = true
 
 // One group per type: the constructor that makes it, the destructor that ends
 // it, and everything a caller can do in between.
-const terminal_group = Terminal.define(&.{
+const terminal_group = Terminal.members(&.{
     // `Terminal.init` returns by value and takes an `Options`. `options` lowers
     // it exactly as `flatten` does -- same C symbol, same shim -- and splits the
     // listed fields by whether Zig gave them a default: `cols` and `rows` have
@@ -252,7 +252,7 @@ const terminal_group = Terminal.define(&.{
     api.func("hyperlinkAt", .{ .returns = zigo.result.owned() }),
 });
 
-const screen_group = Screen.define(&.{
+const screen_group = Screen.members(&.{
     // ghostty takes the screen by value here; zigo passes the handle and the
     // shim copies, so no wrapper is needed.
     Screen.func("viewportIsBottom", .{}),
@@ -283,7 +283,7 @@ const screen_group = Screen.define(&.{
 
 // `newSearch` returns by value, like `Terminal.init`: zigo boxes the result
 // and frees the box in `close`.
-const search_group = Search.define(&.{
+const search_group = Search.members(&.{
     api.func("searchClose", .{ .role = .{ .destructor = Search.typeRef() } }),
     api.func("searchNeedle", .{}),
     api.func("searchStatus", .{}),
@@ -300,7 +300,7 @@ const search_group = Search.define(&.{
 
 // A pin lives in the terminal's page storage and is updated by it, so a
 // reference is a child handle and closes first.
-const grid_ref_group = GridRef.define(&.{
+const grid_ref_group = GridRef.members(&.{
     api.func("gridRefClose", .{ .role = .{ .destructor = GridRef.typeRef() } }),
     api.func("gridRefHasValue", .{}),
     api.func("gridRefPoint", .{}),
@@ -312,7 +312,7 @@ const grid_ref_group = GridRef.define(&.{
 
 // Like `Search`, a gesture holds a tracked pin inside its terminal and hands
 // it back on every call, so it is a child handle and closes first.
-const gesture_group = Gesture.define(&.{
+const gesture_group = Gesture.members(&.{
     api.func("gestureClose", .{ .role = .{ .destructor = Gesture.typeRef() } }),
     api.func("gestureSetBehaviors", .{}),
     api.func("gestureSetWordBoundaries", .{}),
@@ -328,7 +328,7 @@ const gesture_group = Gesture.define(&.{
 
 // A root wrapper, not one of ghostty's own methods on the enum; the receiver
 // comes from the owning type of this group and the wrapper's first argument.
-const color_name_group = ColorName.define(&.{
+const color_name_group = ColorName.members(&.{
     api.func("colorNameDefault", .{ .covers = &.{ColorName.ref("default")} }),
 });
 
@@ -341,16 +341,16 @@ const color_name_group = ColorName.define(&.{
 // All four children are here. Searches, gestures and grid references are
 // shorter-lived than a stream and a caller may well close them by hand, but
 // adopting them is what makes forgetting one harmless: `Close` is the single
-// place that has to be right. `Search` needs `.plural` because the accessor is
-// the base name plus `s`, and this one's is not `Searchs`.
+// place that has to be right. `Search` needs `.accessor` because the default is
+// the type name plus `s`, and this one's is not `Searchs`.
 const session = zigo.session(.{
     .name = "Session",
     .primary = Terminal.typeRef(),
     .children = &.{
         .{ .type = Stream.typeRef() },
-        .{ .type = Search.typeRef(), .plural = "Searches" },
+        .{ .type = Search.typeRef(), .accessor = "Searches" },
         .{ .type = Gesture.typeRef() },
-        .{ .type = GridRef.typeRef(), .plural = "GridRefs" },
+        .{ .type = GridRef.typeRef(), .accessor = "GridRefs" },
     },
     .doc =
     \\Session owns a terminal and every handle it handed out, so a caller
@@ -381,7 +381,7 @@ pub const declarations = [_]zigo.Entry{
     enumeration("Mode", .{ .text = true, .kit = true }),
     printed("Selection"),
     enumeration("FormatterFormat", .{ .text = true }),
-    api.val("FormatOptions", .{}),
+    api.value("FormatOptions", .{}),
     enumeration("SelectionAdjustment", .{ .text = true }),
     enumeration("Underline", .{ .docs = &.{
         .{ .name = "none", .doc = "No underline. What `SGR 24` resets to." },
@@ -396,7 +396,7 @@ pub const declarations = [_]zigo.Entry{
     enumeration("SearchScroll", .{}),
     enumeration("SearchState", .{}),
     enumeration("SearchProgress", .{}),
-    api.val("Scrollbar", .{}),
+    api.value("Scrollbar", .{}),
     enumeration("Charset", .{}),
     enumeration("CharsetSlot", .{}),
     enumeration("CharsetActiveSlot", .{}),
@@ -408,7 +408,7 @@ pub const declarations = [_]zigo.Entry{
     enumeration("ModeReport", .{ .text = true }),
     enumeration("GestureBehavior", .{ .text = true }),
     enumeration("GestureAutoscrollDirection", .{ .text = true }),
-    api.val("GestureGeometry", .{}),
-    api.val("GesturePressEvent", .{}),
-    api.val("GestureDragEvent", .{}),
+    api.value("GestureGeometry", .{}),
+    api.value("GesturePressEvent", .{}),
+    api.value("GestureDragEvent", .{}),
 };

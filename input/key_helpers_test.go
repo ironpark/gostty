@@ -10,12 +10,12 @@ import (
 // The key helpers answer what a key is, for callers mapping platform key
 // codes onto the enum or deciding whether a press can carry text.
 func TestKeyHelpers(t *testing.T) {
-	key, ok := input.KeyFromAscii('a')
+	key, ok := input.KeyFromASCII('a')
 	if !ok || key != input.KeyKeyA {
-		t.Errorf("KeyFromAscii('a') = %v, %v; want %v", key, ok, input.KeyKeyA)
+		t.Errorf("KeyFromASCII('a') = %v, %v; want %v", key, ok, input.KeyKeyA)
 	}
-	if _, ok := input.KeyFromAscii(0x01); ok {
-		t.Error("KeyFromAscii(0x01) reported a key")
+	if _, ok := input.KeyFromASCII(0x01); ok {
+		t.Error("KeyFromASCII(0x01) reported a key")
 	}
 	cp, ok := input.KeyKeyA.Codepoint()
 	if !ok || cp != 'a' {

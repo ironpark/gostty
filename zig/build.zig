@@ -86,6 +86,9 @@ pub fn build(b: *std.Build) void {
     // Shared plugins come directly from the local zigo dependency.
     const zigo_dep = b.dependency("zigo", .{});
     const plugins = [_]zigo.PluginModule{
+        // First, so every plugin that reads a public Go name sees the final
+        // spelling.
+        .{ .name = "spelling", .root_source_file = b.path("plugins/spelling/src/plugin.zig") },
         .{ .name = "build_info", .root_source_file = b.path("plugins/build_info/src/plugin.zig"), .config = build_info_config },
         .{ .name = "convenience", .root_source_file = b.path("plugins/convenience/src/plugin.zig") },
         .{ .name = "stringer", .root_source_file = b.path("plugins/stringer/src/plugin.zig") },
@@ -95,10 +98,12 @@ pub fn build(b: *std.Build) void {
         .{ .name = "enumkit", .root_source_file = zigo_dep.path("plugins/enumkit/src/plugin.zig") },
     };
 
+    // `bindings` is left at its default, `src/bindings.zig` beside the
+    // module root, and `addStandardSteps` runs as part of this call, so the
+    // `go`, `go-check`, `go-abi-check`, ... steps need no second line.
     const bindings = zigo.addGoBindings(b, .{
         .name = "gostty",
         .module = gostty,
-        .bindings = b.path("src/bindings.zig"),
         .plugins = &plugins,
         // Parameter names and doc comments are read from source. Naming the
         // root here lets zigo walk the imported module graph too, so ghostty's
@@ -106,10 +111,13 @@ pub fn build(b: *std.Build) void {
         // `p0`.
         .source_root = b.path("src/root.zig"),
         .go_dir = b.path(".."),
-        .go_module = "github.com/ironpark/gostty",
-        .go_package = "gostty",
-        // Publish at the module root, so the import path is the module itself.
-        .go_package_path = ".",
+        .layout = .{
+            .go_module = "github.com/ironpark/gostty",
+            .go_package = "gostty",
+            // Publish at the module root, so the import path is the module
+            // itself. The raw package keeps its default, `internal/raw`.
+            .go_package_path = ".",
+        },
         .target = target,
         .targets = resolved[1..],
         .optimize = optimize,
@@ -122,7 +130,6 @@ pub fn build(b: *std.Build) void {
         },
     });
 
-    _ = bindings.addStandardSteps(b, .{});
     // A static archive is linked later by cgo, so Zig does not get a final
     // executable link at which to add its runtimes. Bundle them into the
     // binding archive, as ghostty does for its own libghostty-vt

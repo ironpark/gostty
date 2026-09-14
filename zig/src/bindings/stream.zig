@@ -14,13 +14,13 @@ const bytesArg = p.bytesArg;
 // what keeps it true.
 pub const Stream = api.handle("Stream", .{ .fields = &.{
     mustField(.{ .path = "inner.handler.semantic_failure", .name = "failed", .doc = "True once a sequence failed in a way the terminal could not absorb, such as an allocation failure. Streams are best-effort and keep going." }),
-} }).use(satisfies.plugin, .{ .interfaces = &.{"io.WriteCloser"} }).documented(
+} }).use(satisfies.plugin, .{ .interfaces = &.{"io.WriteCloser"} }).with(.{ .doc =
     \\Stream parses VT bytes into its parent terminal. Serialize complete calls,
     \\including event iteration, with all other calls touching the parent or its
     \\children. Callbacks run synchronously; only request-response operations may
     \\reenter the active terminal's bindings. Close the stream before its parent
     \\terminal.
-).context();
+}).context();
 
 const ClipboardRequest = api.handle("ClipboardRequest", .{}).use(convenience.plugin, .{ .feature = .clipboard_reply }).context();
 
@@ -51,7 +51,7 @@ const OSCParser = api.handle("OSCParser", .{
     },
 }).context();
 
-const stream_group = Stream.define(&.{
+const stream_group = Stream.members(&.{
     api.func("freeStream", .{ .role = .{ .destructor = Stream.typeRef() } }),
     Stream.func("atGround", .{}),
     Stream.func("feedUntilGround", .{ .params = &.{bytesArg(1)} }),
@@ -59,7 +59,9 @@ const stream_group = Stream.define(&.{
     // string_writer beside it keeps io.WriteString off the copy path. `feed`
     // takes bytes rather than text -- what arrives from a pty is not UTF-8 by
     // contract -- so the string wrapper lends the string's bytes for the length
-    // of the call rather than converting them. Both call the same `Feed`.
+    // of the call rather than converting them. Both call the same native
+    // `feed`, which stays unexported: `Write` and `WriteString` are the whole
+    // public surface, so a stream is fed the way any `io.Writer` is.
     Stream.func("feed", .{ .params = &.{bytesArg(1)} })
         .use(zigo.features.implements, .{ .kinds = &.{ .writer, .string_writer } }),
     Stream.func("nextEventValue", .{ .returns = zigo.result.releasedBy(api.ref("freeBuffer")) })
@@ -90,15 +92,15 @@ const stream_group = Stream.define(&.{
     // that called it, and the callback answers it through the request it is
     // handed. Both handlers are held by this stream and released when it
     // closes.
-    Stream.func("onClipboardWriteRequest", .{}).documented("Registers a synchronous clipboard-write handler. A nil callback returns ErrNilCallback without replacing the existing handler."),
-    Stream.func("onClipboardReadRequest", .{}).documented("Registers a synchronous clipboard-read handler. A nil callback returns ErrNilCallback without replacing the existing handler."),
+    Stream.func("onClipboardWriteRequest", .{}).with(.{ .doc = "Registers a synchronous clipboard-write handler. A nil callback returns ErrNilCallback without replacing the existing handler." }),
+    Stream.func("onClipboardReadRequest", .{}).with(.{ .doc = "Registers a synchronous clipboard-read handler. A nil callback returns ErrNilCallback without replacing the existing handler." }),
     Stream.func("writeContinuation", .{}),
     Stream.func("hasReplies", .{}),
     Stream.func("writeSnapshot", .{}),
     Stream.func("writeReplies", .{}),
 });
 
-const clipboard_group = ClipboardRequest.define(ClipboardRequest.funcs(.{ .names = &.{
+const clipboard_group = ClipboardRequest.members(ClipboardRequest.funcs(.{ .names = &.{
     "location",
     "name",
     "granted",
@@ -123,7 +125,7 @@ const clipboard_group = ClipboardRequest.define(ClipboardRequest.funcs(.{ .names
 
 // `Stream` needs a `Terminal` behind it; this one parses a sequence and hands
 // back what it said, with no terminal state involved at all.
-const osc_group = OSCParser.define(&[_]zigo.Entry{
+const osc_group = OSCParser.members(&[_]zigo.Entry{
     api.func("newOSCParser", .{ .role = .{ .constructor = .{ .type = OSCParser.typeRef() } } }),
     api.func("freeOSCParser", .{ .role = .{ .destructor = OSCParser.typeRef() } }),
     OSCParser.func("feed", .{ .params = &.{bytesArg(1)} }),
@@ -139,13 +141,13 @@ pub const declarations = [_]zigo.Entry{
     enumeration("DragEvent", .{ .text = true }),
     enumeration("DragOperation", .{ .text = true }),
     flags("DragOperations", "_pad"),
-    api.val("DragMove", .{}),
+    api.value("DragMove", .{}),
     flags("DragNotice", "_pad"),
     callback("DragFn", "DragHandler"),
     enumeration("ClipboardLocation", .{ .text = true, .open = true }),
     enumeration("ClipboardDenial", .{}),
     callback("ClipboardFn", "ClipboardHandler"),
-    api.val("FeedBoundary", .{}),
+    api.value("FeedBoundary", .{}),
     api.materialized("Event", .{ .fields = &.{.{ .name = "sequence", .semantic = .opaque_bytes }} }),
     enumeration("OSCCommand", .{ .text = true }),
     enumeration("OSCTerminator", .{ .text = true }),

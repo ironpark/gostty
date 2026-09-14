@@ -174,13 +174,13 @@ func TestGridRefCellStyleAndGraphemes(t *testing.T) {
 	if _, err := ref.Graphemes(buf[:1]); !errors.Is(err, ErrNoSpaceLeft) {
 		t.Errorf("Graphemes short buffer = %v; want ErrNoSpaceLeft", err)
 	}
-	if _, ok, err := ref.HyperlinkUri(); err != nil || ok {
-		t.Errorf("HyperlinkUri on plain cell = ok %v, %v; want none", ok, err)
+	if _, ok, err := ref.HyperlinkURI(); err != nil || ok {
+		t.Errorf("HyperlinkURI on plain cell = ok %v, %v; want none", ok, err)
 	}
 
 	link := newGridRef(t, term, PointTagActive, 2, 0)
-	if uri, ok, err := link.HyperlinkUri(); err != nil || !ok || uri != "https://example.com" {
-		t.Errorf("HyperlinkUri = %q, %v, %v", uri, ok, err)
+	if uri, ok, err := link.HyperlinkURI(); err != nil || !ok || uri != "https://example.com" {
+		t.Errorf("HyperlinkURI = %q, %v, %v", uri, ok, err)
 	}
 }
 

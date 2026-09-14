@@ -787,10 +787,10 @@ func TerminalNewStream(self unsafe.Pointer, continuationMaxBytes uint) (unsafe.P
 }
 
 // TerminalNewSearch calls the generated C ABI wrapper for zg_terminal_new_search.
-func TerminalNewSearch(self unsafe.Pointer, needleUnowned string) (unsafe.Pointer, int32) {
-	needleUnownedPtr := (*C.uint8_t)(zigoStringPtr(needleUnowned))
+func TerminalNewSearch(self unsafe.Pointer, needle string) (unsafe.Pointer, int32) {
+	needlePtr := (*C.uint8_t)(zigoStringPtr(needle))
 	var outResult *C.zg_search
-	code := int32(C.zg_terminal_new_search((*C.zg_terminal)(self), needleUnownedPtr, C.size_t(len(needleUnowned)), &outResult))
+	code := int32(C.zg_terminal_new_search((*C.zg_terminal)(self), needlePtr, C.size_t(len(needle)), &outResult))
 	return unsafe.Pointer(outResult), code
 }
 
@@ -838,8 +838,8 @@ func TerminalPrint(self unsafe.Pointer, c uint32) int32 {
 }
 
 // TerminalPrintRepeat calls the generated C ABI wrapper for zg_terminal_print_repeat.
-func TerminalPrintRepeat(self unsafe.Pointer, countReq uint) int32 {
-	code := int32(C.zg_terminal_print_repeat((*C.zg_terminal)(self), C.size_t(countReq)))
+func TerminalPrintRepeat(self unsafe.Pointer, count uint) int32 {
+	code := int32(C.zg_terminal_print_repeat((*C.zg_terminal)(self), C.size_t(count)))
 	return code
 }
 
@@ -857,8 +857,8 @@ func TerminalSetCursorStyle(self unsafe.Pointer, value uint8) int32 {
 }
 
 // TerminalSetCursorPos calls the generated C ABI wrapper for zg_terminal_set_cursor_pos.
-func TerminalSetCursorPos(self unsafe.Pointer, rowReq uint, colReq uint) int32 {
-	code := int32(C.zg_terminal_set_cursor_pos((*C.zg_terminal)(self), C.size_t(rowReq), C.size_t(colReq)))
+func TerminalSetCursorPos(self unsafe.Pointer, row uint, col uint) int32 {
+	code := int32(C.zg_terminal_set_cursor_pos((*C.zg_terminal)(self), C.size_t(row), C.size_t(col)))
 	return code
 }
 
@@ -894,26 +894,26 @@ func TerminalFullReset(self unsafe.Pointer) int32 {
 }
 
 // TerminalCursorUp calls the generated C ABI wrapper for zg_terminal_cursor_up.
-func TerminalCursorUp(self unsafe.Pointer, countReq uint) int32 {
-	code := int32(C.zg_terminal_cursor_up((*C.zg_terminal)(self), C.size_t(countReq)))
+func TerminalCursorUp(self unsafe.Pointer, count uint) int32 {
+	code := int32(C.zg_terminal_cursor_up((*C.zg_terminal)(self), C.size_t(count)))
 	return code
 }
 
 // TerminalCursorDown calls the generated C ABI wrapper for zg_terminal_cursor_down.
-func TerminalCursorDown(self unsafe.Pointer, countReq uint) int32 {
-	code := int32(C.zg_terminal_cursor_down((*C.zg_terminal)(self), C.size_t(countReq)))
+func TerminalCursorDown(self unsafe.Pointer, count uint) int32 {
+	code := int32(C.zg_terminal_cursor_down((*C.zg_terminal)(self), C.size_t(count)))
 	return code
 }
 
 // TerminalCursorLeft calls the generated C ABI wrapper for zg_terminal_cursor_left.
-func TerminalCursorLeft(self unsafe.Pointer, countReq uint) int32 {
-	code := int32(C.zg_terminal_cursor_left((*C.zg_terminal)(self), C.size_t(countReq)))
+func TerminalCursorLeft(self unsafe.Pointer, count uint) int32 {
+	code := int32(C.zg_terminal_cursor_left((*C.zg_terminal)(self), C.size_t(count)))
 	return code
 }
 
 // TerminalCursorRight calls the generated C ABI wrapper for zg_terminal_cursor_right.
-func TerminalCursorRight(self unsafe.Pointer, countReq uint) int32 {
-	code := int32(C.zg_terminal_cursor_right((*C.zg_terminal)(self), C.size_t(countReq)))
+func TerminalCursorRight(self unsafe.Pointer, count uint) int32 {
+	code := int32(C.zg_terminal_cursor_right((*C.zg_terminal)(self), C.size_t(count)))
 	return code
 }
 
@@ -1053,14 +1053,14 @@ func TerminalScrollDown(self unsafe.Pointer, count uint) int32 {
 }
 
 // TerminalSetTopAndBottomMargin calls the generated C ABI wrapper for zg_terminal_set_top_and_bottom_margin.
-func TerminalSetTopAndBottomMargin(self unsafe.Pointer, topReq uint, bottomReq uint) int32 {
-	code := int32(C.zg_terminal_set_top_and_bottom_margin((*C.zg_terminal)(self), C.size_t(topReq), C.size_t(bottomReq)))
+func TerminalSetTopAndBottomMargin(self unsafe.Pointer, top uint, bottom uint) int32 {
+	code := int32(C.zg_terminal_set_top_and_bottom_margin((*C.zg_terminal)(self), C.size_t(top), C.size_t(bottom)))
 	return code
 }
 
 // TerminalSetLeftAndRightMargin calls the generated C ABI wrapper for zg_terminal_set_left_and_right_margin.
-func TerminalSetLeftAndRightMargin(self unsafe.Pointer, leftReq uint, rightReq uint) int32 {
-	code := int32(C.zg_terminal_set_left_and_right_margin((*C.zg_terminal)(self), C.size_t(leftReq), C.size_t(rightReq)))
+func TerminalSetLeftAndRightMargin(self unsafe.Pointer, left uint, right uint) int32 {
+	code := int32(C.zg_terminal_set_left_and_right_margin((*C.zg_terminal)(self), C.size_t(left), C.size_t(right)))
 	return code
 }
 
@@ -1113,26 +1113,26 @@ func TerminalInsertBlanks(self unsafe.Pointer, count uint) int32 {
 }
 
 // TerminalDeleteChars calls the generated C ABI wrapper for zg_terminal_delete_chars.
-func TerminalDeleteChars(self unsafe.Pointer, countReq uint) int32 {
-	code := int32(C.zg_terminal_delete_chars((*C.zg_terminal)(self), C.size_t(countReq)))
+func TerminalDeleteChars(self unsafe.Pointer, count uint) int32 {
+	code := int32(C.zg_terminal_delete_chars((*C.zg_terminal)(self), C.size_t(count)))
 	return code
 }
 
 // TerminalEraseChars calls the generated C ABI wrapper for zg_terminal_erase_chars.
-func TerminalEraseChars(self unsafe.Pointer, countReq uint) int32 {
-	code := int32(C.zg_terminal_erase_chars((*C.zg_terminal)(self), C.size_t(countReq)))
+func TerminalEraseChars(self unsafe.Pointer, count uint) int32 {
+	code := int32(C.zg_terminal_erase_chars((*C.zg_terminal)(self), C.size_t(count)))
 	return code
 }
 
 // TerminalEraseLine calls the generated C ABI wrapper for zg_terminal_erase_line.
-func TerminalEraseLine(self unsafe.Pointer, mode uint8, protectedReq uint8) int32 {
-	code := int32(C.zg_terminal_erase_line((*C.zg_terminal)(self), C.uint8_t(mode), C.uint8_t(protectedReq)))
+func TerminalEraseLine(self unsafe.Pointer, mode uint8, protected uint8) int32 {
+	code := int32(C.zg_terminal_erase_line((*C.zg_terminal)(self), C.uint8_t(mode), C.uint8_t(protected)))
 	return code
 }
 
 // TerminalEraseDisplay calls the generated C ABI wrapper for zg_terminal_erase_display.
-func TerminalEraseDisplay(self unsafe.Pointer, mode uint8, protectedReq uint8) int32 {
-	code := int32(C.zg_terminal_erase_display((*C.zg_terminal)(self), C.uint8_t(mode), C.uint8_t(protectedReq)))
+func TerminalEraseDisplay(self unsafe.Pointer, mode uint8, protected uint8) int32 {
+	code := int32(C.zg_terminal_erase_display((*C.zg_terminal)(self), C.uint8_t(mode), C.uint8_t(protected)))
 	return code
 }
 

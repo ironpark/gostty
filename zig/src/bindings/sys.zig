@@ -1,6 +1,6 @@
 //! Process-global system hooks in the sys Go package.
 const p = @import("policy.zig");
-const sys = api.in("sys");
+const sys = api.namespace("sys");
 const zigo = p.zigo;
 const api = p.api;
 const callback = p.callback;
@@ -19,10 +19,8 @@ const sys_package = zigo.package(.{
         // decoder may keep them.
         api.callback("PngDecodeFn", .{
             .params = &.{.{ .index = 0, .semantic = .opaque_bytes }},
-            .retention = .retained,
-            .reentrancy = .allowed,
-            .thread = .caller,
-        }).named("PngDecodeHandler"),
+            .contract = .{ .retention = .retained, .reentrancy = .allowed, .thread = .caller },
+        }).with(.{ .name = "PngDecodeHandler" }),
         callback("SecureRandomFn", "SecureRandomHandler"),
         // The scope and the message are borrowed for the call: `logFn` renders
         // into a stack buffer, so a handler that keeps either has to copy. The
@@ -33,11 +31,9 @@ const sys_package = zigo.package(.{
                 .{ .index = 1, .semantic = .utf8_string },
                 .{ .index = 3, .semantic = .utf8_string },
             },
-            .retention = .retained,
-            .reentrancy = .allowed,
-            .thread = .caller,
-        }).named("LogHandler"),
-        sys.enumType("LogLevel", .{}).use(p.zigo.features.text, .{}),
+            .contract = .{ .retention = .retained, .reentrancy = .allowed, .thread = .caller },
+        }).with(.{ .name = "LogHandler" }),
+        sys.enumeration("LogLevel", .{ .text = true }),
         // Answered from inside the callback the same way a clipboard request
         // is.
         sys.func("onPngDecodeRequest", .{}),

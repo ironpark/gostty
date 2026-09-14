@@ -11,17 +11,20 @@ pub const plugin: plugin_api.Plugin = .{
     .name = "CONVENIENCE",
     .TypeOptions = Options,
     .subjects = &.{.handle},
-    .min_contract = .{ .major = 3, .minor = 0 },
     .validate = validateDocument,
-    .type_hook = typeHook,
+    .visit = visit,
 };
 
-fn typeHook(context: plugin_api.Context, writer: *std.Io.Writer, declaration: semantic.TypeDecl) !void {
-    const options = try context.typeOptions(plugin, declaration) orelse return;
-    try writer.writeAll(switch (options.feature) {
+/// The template goes after the handle it extends, in the file that declares
+/// it. A template is hand-written Go kept beside generated code, which is what
+/// the builder's `raw` declaration is for.
+fn visit(context: plugin_api.Context, node: plugin_api.Node, b: *plugin_api.Builder) !void {
+    if (node != .type) return;
+    const options = try context.optionsOf(plugin, .type, node) orelse return;
+    try b.emit(&.{.{ .raw = switch (options.feature) {
         .terminal_config => @embedFile("terminal.go.txt"),
         .clipboard_reply => @embedFile("clipboard.go.txt"),
-    });
+    } }}, .{});
 }
 
 /// A session the template writes methods on. `requirements` covers the
@@ -54,6 +57,21 @@ fn optionRequirements(feature: Feature) []const OptionRequirement {
     };
 }
 
+/// An `io` wrapper the template calls. `Stream.Write` and `WriteString` are
+/// not functions of the document but the wrappers `implements` writes beside
+/// the bound `feed`, so they are found through that attachment rather than by
+/// public name.
+const ImplementsRequirement = struct { owner: []const u8, kind: semantic.Implements };
+fn implementsRequirements(feature: Feature) []const ImplementsRequirement {
+    return switch (feature) {
+        .terminal_config => &.{
+            .{ .owner = "Stream", .kind = .writer },
+            .{ .owner = "Stream", .kind = .string_writer },
+        },
+        .clipboard_reply => &.{},
+    };
+}
+
 const Requirement = struct { owner: []const u8, method: []const u8 };
 fn requirements(feature: Feature) []const Requirement {
     return switch (feature) {
@@ -66,7 +84,6 @@ fn requirements(feature: Feature) []const Requirement {
             .{ .owner = "Terminal", .method = "SetDefaultMode" },
             .{ .owner = "Terminal", .method = "Format" },
             .{ .owner = "Screen", .method = "Format" },
-            .{ .owner = "Stream", .method = "Feed" },
             .{ .owner = "Stream", .method = "SetUnknownMaxBytes" },
             .{ .owner = "Stream", .method = "SetVersionReport" },
             .{ .owner = "Stream", .method = "SetEnquiryResponse" },
@@ -86,7 +103,7 @@ fn validateDocument(context: plugin_api.ValidateContext) !void {
     const allocator = context.allocator;
     const document = context.document;
     for (document.types) |declaration| {
-        const options = try plugin_api.readOptions(plugin, .type, allocator, declaration.ext) orelse continue;
+        const options = try context.optionsOf(plugin, .type, declaration.ext) orelse continue;
         const expected = switch (options.feature) {
             .terminal_config => "Terminal",
             .clipboard_reply => "ClipboardRequest",
@@ -96,7 +113,7 @@ fn validateDocument(context: plugin_api.ValidateContext) !void {
                 .severity = .@"error",
                 .code = "CONVENIENCE002",
                 .message = try std.fmt.allocPrint(allocator, "{s} requires root-package {s}", .{ @tagName(options.feature), expected }),
-                .site = .{ .path = "semantic.json", .declaration = declaration.name },
+                .site = plugin_api.site.typeSite(declaration),
                 .hint = "Attach this feature to its required handle.",
             });
         }
@@ -106,7 +123,7 @@ fn validateDocument(context: plugin_api.ValidateContext) !void {
                 .severity = .@"error",
                 .code = "CONVENIENCE005",
                 .message = try std.fmt.allocPrint(allocator, "{s} requires {s} to expose option field `{s}`", .{ @tagName(options.feature), required.constructor, required.field }),
-                .site = .{ .path = "semantic.json", .declaration = declaration.name },
+                .site = plugin_api.site.typeSite(declaration),
                 .hint = "List the field in the constructor's zigo.param.options, or drop the adapter that wraps its With* option.",
             });
         }
@@ -116,8 +133,18 @@ fn validateDocument(context: plugin_api.ValidateContext) !void {
                 .severity = .@"error",
                 .code = "CONVENIENCE004",
                 .message = try std.fmt.allocPrint(allocator, "{s} requires session {s} over {s} with child {s}", .{ @tagName(options.feature), required.name, required.primary, required.child }),
-                .site = .{ .path = "semantic.json", .declaration = declaration.name },
+                .site = plugin_api.site.typeSite(declaration),
                 .hint = "Declare the session with zigo.session, or drop the adapter methods that extend it.",
+            });
+        }
+        for (implementsRequirements(options.feature)) |required| {
+            if (try hasImplements(allocator, document, required)) continue;
+            try context.diagnose(.{
+                .severity = .@"error",
+                .code = "CONVENIENCE003",
+                .message = try std.fmt.allocPrint(allocator, "{s} requires a {s}.{s} wrapper", .{ @tagName(options.feature), required.owner, required.kind.interfaceName() }),
+                .site = plugin_api.site.typeSite(declaration),
+                .hint = "Keep the `implements` kind on the method the wrapper is written beside, or update the adapter template.",
             });
         }
         for (requirements(options.feature)) |required| {
@@ -126,7 +153,7 @@ fn validateDocument(context: plugin_api.ValidateContext) !void {
                 .severity = .@"error",
                 .code = "CONVENIENCE003",
                 .message = try std.fmt.allocPrint(allocator, "{s} requires {s}.{s}", .{ @tagName(options.feature), required.owner, required.method }),
-                .site = .{ .path = "semantic.json", .declaration = declaration.name },
+                .site = plugin_api.site.typeSite(declaration),
                 .hint = "Restore the required method or update the adapter template and its requirements together.",
             });
         }
@@ -140,6 +167,16 @@ fn hasMethod(allocator: std.mem.Allocator, document: semantic.Semantic, target: 
         const name = try target.publicFunctionNameAlloc(allocator, document, function);
         defer allocator.free(name);
         if (std.mem.eql(u8, name, required.method)) return true;
+    }
+    return false;
+}
+
+fn hasImplements(allocator: std.mem.Allocator, document: semantic.Semantic, required: ImplementsRequirement) !bool {
+    for (document.functions) |function| {
+        if (function.package != null) continue;
+        if (!std.mem.eql(u8, function.receiver orelse function.goOwner() orelse "", required.owner)) continue;
+        const options = try plugin_api.builtins.implements.read(allocator, function.ext) orelse continue;
+        for (options.kinds) |kind| if (kind == required.kind) return true;
     }
     return false;
 }

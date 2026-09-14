@@ -214,5 +214,5 @@ func decodePNG(data []byte) {
 	b := decoded.Bounds()
 	rgba := image.NewNRGBA(b)
 	draw.Draw(rgba, b, decoded, b.Min, draw.Src)
-	_ = sys.ReplyPngImage(uint32(b.Dx()), uint32(b.Dy()), rgba.Pix)
+	_ = sys.ReplyPNGImage(uint32(b.Dx()), uint32(b.Dy()), rgba.Pix)
 }

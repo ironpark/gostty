@@ -6,13 +6,12 @@
 //! print as `{true false false false false false false false 1 0 true 0}` --
 //! twelve bools with no names against a layout the reader has to hold in their
 //! head. Writing the method by hand means keeping a file beside generated
-//! code, which is what a `type_hook` is for.
+//! code, which is what a visit of the type node is for.
 //!
 //! Two shapes, because the two kinds of struct read differently. A flag set
 //! wants only what is set (`Bold|Underline:Single`); a coordinate or a
 //! geometry wants every field (`GridPoint{X:3, Y:4}`).
 const std = @import("std");
-const naming = @import("naming");
 const plugin_api = @import("plugin");
 const semantic = @import("semantic");
 
@@ -45,9 +44,8 @@ pub const plugin: plugin_api.Plugin = .{
     // A `String()` needs fields to name, which only a value struct has here;
     // the generator already writes one for every enum.
     .subjects = &.{.value},
-    .min_contract = .{ .major = 3, .minor = 0 },
     .validate = validateDocument,
-    .type_hook = typeHook,
+    .visit = visit,
     // Written by the renderings below. The frame adds an import only to a
     // file whose body really spells the qualifier, so a package of pure bool
     // flags never grows an unused `fmt`.
@@ -57,13 +55,15 @@ pub const plugin: plugin_api.Plugin = .{
     },
 };
 
-fn typeHook(context: plugin_api.Context, writer: *std.Io.Writer, declaration: semantic.TypeDecl) !void {
-    const options = try context.typeOptions(plugin, declaration) orelse return;
-    switch (options.style) {
-        .flags => try renderFlags(context, writer, declaration, options),
-        .fields => try renderFields(context, writer, declaration, options),
-    }
-    try assertStringer(writer, declaration);
+fn visit(context: plugin_api.Context, node: plugin_api.Node, b: *plugin_api.Builder) !void {
+    if (node != .type) return;
+    const declaration = node.type;
+    const options = try context.optionsOf(plugin, .type, node) orelse return;
+    const method = switch (options.style) {
+        .flags => try renderFlags(context, b, declaration, options),
+        .fields => try renderFields(context, b, declaration, options),
+    };
+    try b.emit(&.{ method, try assertStringer(b, declaration) }, .{ .blank_after = true });
 }
 
 /// The assertion belongs here rather than to a general interface plugin,
@@ -71,13 +71,34 @@ fn typeHook(context: plugin_api.Context, writer: *std.Io.Writer, declaration: se
 /// the receiver has to be the *value*, since that is the form `%v` is handed
 /// and a pointer's method set would satisfy `(*T)(nil)` either way. Written
 /// next to the method it is about, so the two move together.
-fn assertStringer(writer: *std.Io.Writer, declaration: semantic.TypeDecl) !void {
-    try writer.print(
-        "// {0s} satisfies fmt.Stringer as a value, which is the form `%v` is\n" ++
-            "// handed; a pointer receiver would stop this compiling.\n" ++
-            "var _ fmt.Stringer = {0s}{{}}\n\n",
+fn assertStringer(b: *plugin_api.Builder, declaration: semantic.TypeDecl) !plugin_api.gobuild.Decl {
+    const doc = try std.fmt.allocPrint(
+        b.allocator,
+        "{0s} satisfies fmt.Stringer as a value, which is the form `%v` is\nhanded; a pointer receiver would stop this compiling.",
         .{declaration.name},
     );
+    return b.assertImplements(.{
+        .doc = .{ .text = doc },
+        .interface = try b.selName("fmt", "Stringer"),
+        .type_name = declaration.name,
+        .form = .value,
+    });
+}
+
+/// `func (value T) String() string { body }`, the one header both styles share.
+fn stringMethod(b: *plugin_api.Builder, declaration: semantic.TypeDecl, doc: []const u8, body: []const plugin_api.gobuild.Stmt) !plugin_api.gobuild.Decl {
+    return b.func(.{
+        .doc = .{ .text = doc },
+        .receiver = .{ .name = "value", .type = declaration.name },
+        .name = "String",
+        .signature = .{ .explicit = .{ .results = &.{b.ident("string")} } },
+        .body = body,
+    });
+}
+
+/// `parts = append(parts, <element>)`.
+fn appendPart(b: *plugin_api.Builder, element: plugin_api.gobuild.Expr) !plugin_api.gobuild.Stmt {
+    return b.assign(&.{b.ident("parts")}, "=", &.{try b.callName("append", &.{ b.ident("parts"), element })});
 }
 
 /// `Bold|Underline:Single|Selected`. The test a field has to pass to appear is
@@ -86,76 +107,83 @@ fn assertStringer(writer: *std.Io.Writer, declaration: semantic.TypeDecl) !void 
 /// in every packed struct ghostty declares.
 fn renderFlags(
     context: plugin_api.Context,
-    writer: *std.Io.Writer,
+    b: *plugin_api.Builder,
     declaration: semantic.TypeDecl,
     options: Options,
-) !void {
-    try writer.print(
-        "// String names the set members of {0s}, joined by \"|\". A member left at\n" ++
-            "// its zero value is not named, so the zero {0s} is \"none\".\n" ++
-            "func (value {0s}) String() string {{\n" ++
-            "\tvar parts []string\n",
-        .{declaration.name},
-    );
+) !plugin_api.gobuild.Decl {
+    const allocator = context.allocator;
+    var body: std.ArrayList(plugin_api.gobuild.Stmt) = .empty;
+    defer body.deinit(allocator);
+    try body.append(allocator, b.declare("parts", try b.sliceOf(b.ident("string")), null));
     for (declaration.fields) |field| {
         if (omits(options, field.name)) continue;
-        const member = try naming.pascalAlloc(context.allocator, field.name);
-        defer context.allocator.free(member);
+        const member = try context.identifierAlloc(allocator, field.name, .pascal);
+        const read = try b.sel(b.ident("value"), member);
         if (field.type.? == .bool) {
-            try writer.print(
-                "\tif value.{0s} {{\n\t\tparts = append(parts, \"{0s}\")\n\t}}\n",
-                .{member},
-            );
+            try body.append(allocator, try b.ifStmt(.{
+                .cond = read,
+                .body = &.{try appendPart(b, b.string(member))},
+            }));
             continue;
         }
         // An enum's Go type is an integer, so the zero comparison is the same
         // one an int gets and the `%v` picks up the enum's own `String`.
-        try writer.print(
-            "\tif value.{0s} != 0 {{\n\t\tparts = append(parts, fmt.Sprintf(\"{0s}:%v\", value.{0s}))\n\t}}\n",
-            .{member},
-        );
+        const format = try std.fmt.allocPrint(allocator, "{s}:%v", .{member});
+        try body.append(allocator, try b.ifStmt(.{
+            .cond = try b.bin("!=", read, b.int(0)),
+            .body = &.{try appendPart(b, try b.call(try b.selName("fmt", "Sprintf"), &.{ b.string(format), read }))},
+        }));
     }
-    try writer.writeAll(
-        "\tif len(parts) == 0 {\n\t\treturn \"none\"\n\t}\n" ++
-            "\treturn strings.Join(parts, \"|\")\n}\n\n",
+    try body.append(allocator, try b.ifStmt(.{
+        .cond = try b.bin("==", try b.callName("len", &.{b.ident("parts")}), b.int(0)),
+        .body = &.{try b.ret(&.{b.string("none")})},
+    }));
+    try body.append(allocator, try b.ret(&.{try b.call(try b.selName("strings", "Join"), &.{ b.ident("parts"), b.string("|") })}));
+
+    const doc = try std.fmt.allocPrint(
+        allocator,
+        "String names the set members of {0s}, joined by \"|\". A member left at\nits zero value is not named, so the zero {0s} is \"none\".",
+        .{declaration.name},
     );
+    return stringMethod(b, declaration, doc, body.items);
 }
 
 /// `GridPoint{X:3, Y:4}`. Every field, named, in declaration order -- the
 /// difference from Go's own `%v` on a struct being that the names are there.
 fn renderFields(
     context: plugin_api.Context,
-    writer: *std.Io.Writer,
+    b: *plugin_api.Builder,
     declaration: semantic.TypeDecl,
     options: Options,
-) !void {
-    var format: std.Io.Writer.Allocating = .init(context.allocator);
+) !plugin_api.gobuild.Decl {
+    const allocator = context.allocator;
+    var format: std.Io.Writer.Allocating = .init(allocator);
     defer format.deinit();
-    var arguments: std.Io.Writer.Allocating = .init(context.allocator);
-    defer arguments.deinit();
+    var arguments: std.ArrayList(plugin_api.gobuild.Expr) = .empty;
+    defer arguments.deinit(allocator);
 
     try format.writer.print("{s}{{", .{declaration.name});
-    var written: usize = 0;
     for (declaration.fields) |field| {
         if (omits(options, field.name)) continue;
-        const member = try naming.pascalAlloc(context.allocator, field.name);
-        defer context.allocator.free(member);
-        if (written != 0) try format.writer.writeAll(", ");
+        const member = try context.identifierAlloc(allocator, field.name, .pascal);
+        if (arguments.items.len != 0) try format.writer.writeAll(", ");
         // A codepoint is a `rune`, and a rune printed as a number is the one
         // spelling nobody wants to read; `%q` gives it back as `'a'`.
         const verb = if (semantic.isCodepoint(field.type.?, field.semantic)) "%q" else "%v";
         try format.writer.print("{s}:{s}", .{ member, verb });
-        try arguments.writer.print(", value.{s}", .{member});
-        written += 1;
+        try arguments.append(allocator, try b.sel(b.ident("value"), member));
     }
     try format.writer.writeAll("}");
 
-    try writer.print(
-        "// String renders {0s} as its type name and its fields.\n" ++
-            "func (value {0s}) String() string {{\n" ++
-            "\treturn fmt.Sprintf(\"{1s}\"{2s})\n}}\n\n",
-        .{ declaration.name, format.written(), arguments.written() },
-    );
+    var call_args: std.ArrayList(plugin_api.gobuild.Expr) = .empty;
+    defer call_args.deinit(allocator);
+    try call_args.append(allocator, b.string(try allocator.dupe(u8, format.written())));
+    try call_args.appendSlice(allocator, arguments.items);
+
+    const doc = try std.fmt.allocPrint(allocator, "String renders {0s} as its type name and its fields.", .{declaration.name});
+    return stringMethod(b, declaration, doc, &.{
+        try b.ret(&.{try b.call(try b.selName("fmt", "Sprintf"), call_args.items)}),
+    });
 }
 
 fn omits(options: Options, field_name: []const u8) bool {
@@ -176,7 +204,7 @@ fn validateDocument(context: plugin_api.ValidateContext) !void {
         // A declaration of the wrong kind never reaches here: `.targets` says
         // this plugin takes a value struct, so asking an enum or a handle for
         // a `String` is a Zig compile error on the line that asked.
-        const options = try plugin_api.readOptions(plugin, .type, allocator, declaration.ext) orelse continue;
+        const options = try context.optionsOf(plugin, .type, declaration.ext) orelse continue;
         // A name that matches nothing is how this method quietly stops naming
         // a field: the binding renames it, the omission goes on matching
         // nothing, and the field appears in the output without anyone asking.
@@ -190,7 +218,7 @@ fn validateDocument(context: plugin_api.ValidateContext) !void {
                     "`{s}` omits `{s}`, which is not one of its fields",
                     .{ declaration.name, omitted },
                 ),
-                .site = .{ .path = "semantic.json", .declaration = declaration.name },
+                .site = plugin_api.site.typeSite(declaration),
                 .hint = "`omit` names Zig fields, in the Zig spelling; check the field still exists under that name",
             });
         }
@@ -206,7 +234,7 @@ fn validateDocument(context: plugin_api.ValidateContext) !void {
                     "`{s}.{s}` has no zero value to test, so the `flags` style cannot leave it out",
                     .{ declaration.name, field.name },
                 ),
-                .site = .{ .path = "semantic.json", .declaration = declaration.name },
+                .site = plugin_api.site.typeSite(declaration),
                 .hint = "the `flags` style takes bool, integer and enum fields; use `.style = .fields`, which names every field unconditionally",
             });
         }
