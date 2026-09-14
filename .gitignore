@@ -12,3 +12,6 @@ zig-pkg/
 
 # Scratch git worktrees the agent harness creates.
 .claude/
+
+# Stray `go build ./examples/hypercat` output at the repository root.
+/hypercat
