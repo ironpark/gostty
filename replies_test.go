@@ -223,18 +223,14 @@ func TestUnknownSequence(t *testing.T) {
 	drain := func() []string {
 		t.Helper()
 		var out []string
-		for event, err := range stream.Events() {
+		for event, err := range stream.EventValues() {
 			if err != nil {
-				t.Fatalf("Events: %v", err)
+				t.Fatalf("EventValues: %v", err)
 			}
-			if event != StreamEventUnknownSequence {
+			if event.Kind != StreamEventUnknownSequence {
 				continue
 			}
-			data, err := stream.EventSequence()
-			if err != nil {
-				t.Fatalf("EventSequence: %v", err)
-			}
-			out = append(out, string(data))
+			out = append(out, string(event.Sequence))
 		}
 		return out
 	}

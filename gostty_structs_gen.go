@@ -23,12 +23,6 @@ type Event struct {
 	HasProgress   bool
 }
 
-// EventRecord is an owned Go snapshot of the Zig struct of the same name.
-type EventRecord struct {
-	Value   Event
-	Present bool
-}
-
 const zigoMaterializedMagicVersion = uint64(0x00024f47495a)
 
 func zigoMaterializedU64(buffer []byte, offset uint64) uint64 {
@@ -82,25 +76,6 @@ func zigoDecodeEventInto(buffer []byte, offset uint64, result *Event) {
 	result.ProgressState = ProgressState(zigoMaterializedWord(buffer, offset+72, 1))
 	result.Progress = uint8(zigoMaterializedWord(buffer, offset+73, 1))
 	result.HasProgress = zigoMaterializedWord(buffer, offset+74, 1) != 0
-}
-
-func zigoDecodeEventRecordBuffer(buffer []byte) EventRecord {
-	offset, count := zigoMaterializedHeader(buffer, 1)
-	if count != 1 {
-		panic("zigo: invalid materialized result buffer")
-	}
-	var result EventRecord
-	zigoDecodeEventRecordInto(buffer, offset, &result)
-	return result
-}
-
-func zigoDecodeEventRecordInto(buffer []byte, offset uint64, result *EventRecord) {
-	_ = zigoMaterializedBytes(buffer, offset, 16)
-	{
-		zigoOff0 := zigoMaterializedU64(buffer, offset+0)
-		zigoDecodeEventInto(buffer, zigoOff0, &result.Value)
-	}
-	result.Present = zigoMaterializedWord(buffer, offset+8, 1) != 0
 }
 
 // DragOperations mirrors the Zig packed struct of the same name.
@@ -263,7 +238,10 @@ type CellFlags struct {
 	Wide CellWidth
 	// Selected: Whether the cell falls inside the screen's selection.
 	Selected bool
-	Pad      uint32
+	// HasGrapheme: Whether the base codepoint has combining marks or other grapheme data.
+	// A renderer can skip `renderGraphemes` for the common single-codepoint case.
+	HasGrapheme bool
+	Pad         uint32
 }
 
 func zigoCellFlagsToBacking(value CellFlags) uint32 {
@@ -279,7 +257,8 @@ func zigoCellFlagsToBacking(value CellFlags) uint32 {
 	result |= (uint64(value.Underline) & 0x7) << 8
 	result |= (uint64(value.Wide) & 0x3) << 11
 	result |= (uint64(zigoBoolToUint8(value.Selected)) & 0x1) << 13
-	result |= (uint64(value.Pad) & 0x3ffff) << 14
+	result |= (uint64(zigoBoolToUint8(value.HasGrapheme)) & 0x1) << 14
+	result |= (uint64(value.Pad) & 0x1ffff) << 15
 	return uint32(result)
 }
 
@@ -300,7 +279,8 @@ func CellFlagsFromBacking(value uint32) CellFlags {
 		Underline:     Underline(((uint64(value) >> 8) & 0x7)),
 		Wide:          CellWidth(((uint64(value) >> 11) & 0x3)),
 		Selected:      ((uint64(value) >> 13) & 0x1) != 0,
-		Pad:           uint32(((uint64(value) >> 14) & 0x3ffff)),
+		HasGrapheme:   ((uint64(value) >> 14) & 0x1) != 0,
+		Pad:           uint32(((uint64(value) >> 15) & 0x1ffff)),
 	}
 }
 
@@ -340,6 +320,9 @@ func (value CellFlags) String() string {
 	}
 	if value.Selected {
 		parts = append(parts, "Selected")
+	}
+	if value.HasGrapheme {
+		parts = append(parts, "HasGrapheme")
 	}
 	if len(parts) == 0 {
 		return "none"
@@ -418,6 +401,12 @@ type FormatOptions struct {
 	NoHyperlinks bool
 	// ResolvePalette: Resolve palette indices to the terminal's current RGB values rather
 	// than emitting the index. Styled formats only.
+	//
+	// `Terminal.format` and `Terminal.formatSelection` only. A `Screen` is
+	// borrowed from its terminal and does not carry the palette or the default
+	// colors, so its formatters ignore this and emit the index. Since the
+	// terminal's formatter reaches the scrollback too, format through the
+	// terminal when the output has to carry real colors.
 	ResolvePalette bool
 }
 

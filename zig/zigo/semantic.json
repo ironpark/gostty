@@ -2172,7 +2172,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 795,
+            "line": 742,
             "column": 34
           },
           "type": {
@@ -2185,7 +2185,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 795,
+            "line": 742,
             "column": 55
           },
           "type": {
@@ -2212,7 +2212,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 795,
+        "line": 742,
         "column": 8
       },
       "zig_path": "newStream",
@@ -4252,7 +4252,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 71,
+            "line": 77,
             "column": 40
           },
           "type": {
@@ -4266,7 +4266,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 71,
+            "line": 77,
             "column": 61
           },
           "type": {
@@ -4286,11 +4286,76 @@
       },
       "source": {
         "path": "format.zig",
-        "line": 71,
+        "line": 77,
         "column": 8
       },
       "zig_path": "formatTerminal",
       "symbol": "zg_terminal_format"
+    },
+    {
+      "doc": "Format the part of the active screen inside `sel`, using the terminal's\ndefault colors and palette. Returns false, writing nothing, when `sel` is\noutside the active screen.",
+      "name": "FormatSelection",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "opts",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 88,
+            "column": 49
+          },
+          "type": {
+            "kind": "value_struct",
+            "ref": "FormatOptions"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "sel",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 88,
+            "column": 70
+          },
+          "type": {
+            "kind": "value_struct",
+            "ref": "Selection"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "writer",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 88,
+            "column": 86
+          },
+          "type": {
+            "kind": "io_writer"
+          }
+        }
+      ],
+      "receiver": "Terminal",
+      "return": {
+        "error_set": [
+          "WriteFailed"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "bool"
+        }
+      },
+      "source": {
+        "path": "format.zig",
+        "line": 88,
+        "column": 8
+      },
+      "zig_path": "formatTerminalSelection",
+      "symbol": "zg_terminal_format_selection"
     },
     {
       "doc": "Set the pwd for the terminal.",
@@ -5956,11 +6021,6 @@
     },
     {
       "doc": "Returns true if the viewport is scrolled to the bottom of the screen.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": false
-        }
-      },
       "name": "viewportIsBottom",
       "ownership": "borrowed",
       "params": [],
@@ -6504,7 +6564,7 @@
       "symbol": "zg_screen_screen_scrollbar"
     },
     {
-      "doc": "Format a whole screen, scrollback included. `Terminal.format` is the\nactive area only.",
+      "doc": "Format a whole screen, scrollback included.\n\nUnlike `Terminal.format` this stays with the screen it is given rather than\nfollowing the active one. It also has no terminal to ask, so the default\ncolors and `resolve_palette` do not apply.",
       "name": "screenFormat",
       "ownership": "borrowed",
       "params": [
@@ -6514,7 +6574,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 81,
+            "line": 104,
             "column": 36
           },
           "type": {
@@ -6528,7 +6588,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 81,
+            "line": 104,
             "column": 57
           },
           "type": {
@@ -6548,7 +6608,7 @@
       },
       "source": {
         "path": "format.zig",
-        "line": 81,
+        "line": 104,
         "column": 8
       },
       "zig_path": "screenFormat",
@@ -6565,7 +6625,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 89,
+            "line": 112,
             "column": 45
           },
           "type": {
@@ -6579,7 +6639,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 89,
+            "line": 112,
             "column": 66
           },
           "type": {
@@ -6593,7 +6653,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 89,
+            "line": 112,
             "column": 82
           },
           "type": {
@@ -6613,7 +6673,7 @@
       },
       "source": {
         "path": "format.zig",
-        "line": 89,
+        "line": 112,
         "column": 8
       },
       "zig_path": "screenFormatSelection",
@@ -7805,7 +7865,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 814,
+            "line": 761,
             "column": 34
           },
           "type": {
@@ -7819,7 +7879,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 814,
+        "line": 761,
         "column": 8
       },
       "zig_path": "freeStream",
@@ -7836,7 +7896,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 542,
+        "line": 538,
         "column": 12
       },
       "symbol": "zg_stream_at_ground"
@@ -7852,7 +7912,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 549,
+            "line": 545,
             "column": 43
           },
           "type": {
@@ -7874,7 +7934,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 549,
+        "line": 545,
         "column": 12
       },
       "symbol": "zg_stream_feed_until_ground"
@@ -7896,7 +7956,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 537,
+            "line": 533,
             "column": 32
           },
           "type": {
@@ -7917,38 +7977,13 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 537,
+        "line": 533,
         "column": 12
       },
       "symbol": "zg_stream_feed"
     },
     {
-      "doc": "Take the next event a feed produced, absent when the queue is empty.\n\nThe payload accessors below describe the event this returned, until the\nnext call.",
-      "go": {
-        "iterator": {
-          "name": "Events"
-        }
-      },
-      "name": "nextEvent",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Stream",
-      "return": {
-        "child": {
-          "kind": "enum",
-          "ref": "StreamEvent"
-        },
-        "kind": "optional"
-      },
-      "source": {
-        "path": "stream.zig",
-        "line": 600,
-        "column": 12
-      },
-      "symbol": "zg_stream_next_event"
-    },
-    {
-      "doc": "Consume one queued event and materialize its complete payload in one\nbinding call. Shares the queue and current payload with NextEvent.",
+      "doc": "Consume one queued event and materialize its complete payload in one\nbinding call.",
       "go": {
         "iterator": {
           "name": "EventValues"
@@ -7968,161 +8003,10 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 619,
+        "line": 613,
         "column": 12
       },
       "symbol": "zg_stream_next_event_value"
-    },
-    {
-      "doc": "Explicit presence form of NextEventValue, retained for compatibility.",
-      "name": "nextEventRecord",
-      "ownership": "caller",
-      "params": [],
-      "receiver": "Stream",
-      "release": "freeBuffer",
-      "return": {
-        "kind": "materialized",
-        "ref": "EventRecord"
-      },
-      "source": {
-        "path": "stream.zig",
-        "line": 644,
-        "column": 12
-      },
-      "symbol": "zg_stream_next_event_record"
-    },
-    {
-      "doc": "The current event's title, for title changes and desktop notifications.",
-      "name": "eventTitle",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Stream",
-      "return": {
-        "const": true,
-        "element": {
-          "bits": 8,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "slice"
-      },
-      "return_semantic": "utf8_string",
-      "source": {
-        "path": "stream.zig",
-        "line": 650,
-        "column": 12
-      },
-      "symbol": "zg_stream_event_title"
-    },
-    {
-      "doc": "The current event's notification body, empty for other events.",
-      "name": "eventBody",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Stream",
-      "return": {
-        "const": true,
-        "element": {
-          "bits": 8,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "slice"
-      },
-      "return_semantic": "utf8_string",
-      "source": {
-        "path": "stream.zig",
-        "line": 656,
-        "column": 12
-      },
-      "symbol": "zg_stream_event_body"
-    },
-    {
-      "name": "eventProgressState",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Stream",
-      "return": {
-        "kind": "enum",
-        "ref": "ProgressState"
-      },
-      "source": {
-        "path": "stream.zig",
-        "line": 667,
-        "column": 12
-      },
-      "symbol": "zg_stream_event_progress_state"
-    },
-    {
-      "doc": "The current event's progress percentage, absent when the report carried\nnone.",
-      "name": "eventProgress",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Stream",
-      "return": {
-        "child": {
-          "bits": 8,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "optional"
-      },
-      "source": {
-        "path": "stream.zig",
-        "line": 754,
-        "column": 12
-      },
-      "symbol": "zg_stream_event_progress"
-    },
-    {
-      "doc": "The directory captured when the current pwd-change event occurred.",
-      "name": "eventPwd",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Stream",
-      "return": {
-        "const": true,
-        "element": {
-          "bits": 8,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "slice"
-      },
-      "return_semantic": "utf8_string",
-      "source": {
-        "path": "stream.zig",
-        "line": 662,
-        "column": 12
-      },
-      "symbol": "zg_stream_event_pwd"
-    },
-    {
-      "doc": "The current event's unknown-sequence content, empty for other events.\n\nIts own accessor rather than a second meaning for `eventBody`: one\naccessor whose meaning depends on the event tag is a trap, and the\nevent tag is not in the type system to catch the mistake.",
-      "name": "eventSequence",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "Stream",
-      "return": {
-        "const": true,
-        "element": {
-          "bits": 8,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "slice"
-      },
-      "source": {
-        "path": "stream.zig",
-        "line": 677,
-        "column": 12
-      },
-      "symbol": "zg_stream_event_sequence"
     },
     {
       "doc": "Capture up to `max` bytes of the sequences this library does not\nimplement, and report them as `unknown_sequence` events. Zero, the\ndefault, turns capture off.\n\nA diagnostic: it is how you find out that a program is speaking a\ngraphics protocol you did not wire up, rather than watching it draw\nnothing. The buffer is per stream, which is why it is off by default.",
@@ -8135,7 +8019,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 689,
+            "line": 644,
             "column": 46
           },
           "type": {
@@ -8152,7 +8036,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 689,
+        "line": 644,
         "column": 12
       },
       "symbol": "zg_stream_set_unknown_max_bytes"
@@ -8169,7 +8053,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 703,
+            "line": 658,
             "column": 44
           },
           "type": {
@@ -8190,7 +8074,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 703,
+            "line": 658,
             "column": 62
           },
           "type": {
@@ -8211,7 +8095,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 703,
+        "line": 658,
         "column": 12
       },
       "symbol": "zg_stream_set_version_report"
@@ -8228,7 +8112,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 720,
+            "line": 675,
             "column": 46
           },
           "type": {
@@ -8249,7 +8133,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 720,
+        "line": 675,
         "column": 12
       },
       "symbol": "zg_stream_set_enquiry_response"
@@ -8265,7 +8149,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 735,
+            "line": 690,
             "column": 46
           },
           "type": {
@@ -8280,7 +8164,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 735,
+        "line": 690,
         "column": 12
       },
       "symbol": "zg_stream_color_scheme_changed"
@@ -8296,7 +8180,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 748,
+        "line": 703,
         "column": 12
       },
       "symbol": "zg_stream_clear_color_scheme"
@@ -8665,7 +8549,7 @@
           "name_source": "ast",
           "retention": "retained",
           "source": {
-            "line": 764,
+            "line": 711,
             "column": 9
           },
           "type": {
@@ -8698,7 +8582,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 765,
+            "line": 712,
             "column": 9
           },
           "type": {
@@ -8715,7 +8599,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 762,
+        "line": 709,
         "column": 12
       },
       "symbol": "zg_stream_on_clipboard_write_request"
@@ -8733,7 +8617,7 @@
           "name_source": "ast",
           "retention": "retained",
           "source": {
-            "line": 776,
+            "line": 723,
             "column": 9
           },
           "type": {
@@ -8766,7 +8650,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 777,
+            "line": 724,
             "column": 9
           },
           "type": {
@@ -8783,7 +8667,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 774,
+        "line": 721,
         "column": 12
       },
       "symbol": "zg_stream_on_clipboard_read_request"
@@ -8799,7 +8683,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 576,
+            "line": 572,
             "column": 45
           },
           "type": {
@@ -8821,18 +8705,13 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 576,
+        "line": 572,
         "column": 12
       },
       "symbol": "zg_stream_write_continuation"
     },
     {
       "doc": "Whether the terminal has answered a query since the last `writeReplies`.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": false
-        }
-      },
       "name": "hasReplies",
       "ownership": "borrowed",
       "params": [],
@@ -8842,7 +8721,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 555,
+        "line": 551,
         "column": 12
       },
       "symbol": "zg_stream_has_replies"
@@ -8858,7 +8737,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 583,
+            "line": 579,
             "column": 41
           },
           "type": {
@@ -8904,7 +8783,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 583,
+        "line": 579,
         "column": 12
       },
       "symbol": "zg_stream_write_snapshot"
@@ -8920,7 +8799,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 568,
+            "line": 564,
             "column": 40
           },
           "type": {
@@ -8940,7 +8819,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 568,
+        "line": 564,
         "column": 12
       },
       "symbol": "zg_stream_write_replies"
@@ -8957,7 +8836,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 174,
+        "line": 170,
         "column": 12
       },
       "symbol": "zg_clipboard_request_location"
@@ -8981,7 +8860,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "stream.zig",
-        "line": 181,
+        "line": 177,
         "column": 12
       },
       "symbol": "zg_clipboard_request_name"
@@ -8997,7 +8876,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 189,
+        "line": 185,
         "column": 12
       },
       "symbol": "zg_clipboard_request_granted"
@@ -9013,7 +8892,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 197,
+        "line": 193,
         "column": 12
       },
       "symbol": "zg_clipboard_request_can_remember"
@@ -9032,7 +8911,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 204,
+        "line": 200,
         "column": 12
       },
       "symbol": "zg_clipboard_request_content_count"
@@ -9048,7 +8927,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 210,
+            "line": 206,
             "column": 49
           },
           "type": {
@@ -9073,7 +8952,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "stream.zig",
-        "line": 210,
+        "line": 206,
         "column": 12
       },
       "symbol": "zg_clipboard_request_content_mime"
@@ -9092,7 +8971,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 224,
+        "line": 220,
         "column": 12
       },
       "symbol": "zg_clipboard_request_mime_count"
@@ -9108,7 +8987,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 230,
+            "line": 226,
             "column": 42
           },
           "type": {
@@ -9133,7 +9012,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "stream.zig",
-        "line": 230,
+        "line": 226,
         "column": 12
       },
       "symbol": "zg_clipboard_request_mime"
@@ -9149,7 +9028,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 237,
+            "line": 233,
             "column": 43
           },
           "type": {
@@ -9163,7 +9042,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 237,
+        "line": 233,
         "column": 12
       },
       "symbol": "zg_clipboard_request_allow"
@@ -9180,7 +9059,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 254,
+            "line": 250,
             "column": 47
           },
           "type": {
@@ -9200,7 +9079,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 254,
+            "line": 250,
             "column": 65
           },
           "type": {
@@ -9214,7 +9093,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 254,
+        "line": 250,
         "column": 12
       },
       "symbol": "zg_clipboard_request_reply_text"
@@ -9231,7 +9110,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 159,
+            "line": 155,
             "column": 56
           },
           "type": {
@@ -9245,7 +9124,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 159,
+        "line": 155,
         "column": 12
       },
       "symbol": "zg_clipboard_request_clear_reply_contents"
@@ -9261,7 +9140,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 166,
+            "line": 162,
             "column": 51
           },
           "type": {
@@ -9275,7 +9154,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 166,
+        "line": 162,
         "column": 12
       },
       "symbol": "zg_clipboard_request_reply_contents"
@@ -9291,7 +9170,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 269,
+            "line": 265,
             "column": 42
           },
           "type": {
@@ -9306,7 +9185,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 269,
+        "line": 265,
         "column": 12
       },
       "symbol": "zg_clipboard_request_deny"
@@ -9323,7 +9202,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 149,
+            "line": 145,
             "column": 48
           },
           "type": {
@@ -9337,7 +9216,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 149,
+            "line": 145,
             "column": 64
           },
           "type": {
@@ -9357,7 +9236,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 149,
+            "line": 145,
             "column": 87
           },
           "type": {
@@ -9384,7 +9263,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 149,
+        "line": 145,
         "column": 12
       },
       "symbol": "zg_clipboard_request_add_content"
@@ -9400,7 +9279,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 217,
+            "line": 213,
             "column": 49
           },
           "type": {
@@ -9424,7 +9303,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 217,
+        "line": 213,
         "column": 12
       },
       "symbol": "zg_clipboard_request_content_data"
@@ -10217,7 +10096,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 74,
+        "line": 77,
         "column": 8
       },
       "symbol": "zg_new_render_state"
@@ -10339,7 +10218,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 335,
+        "line": 304,
         "column": 8
       },
       "zig_path": "renderCursor",
@@ -10357,7 +10236,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 352,
+        "line": 321,
         "column": 8
       },
       "zig_path": "renderColors",
@@ -10377,7 +10256,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 79,
+        "line": 82,
         "column": 8
       },
       "zig_path": "renderCellCount",
@@ -10394,7 +10273,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 85,
+            "line": 88,
             "column": 40
           },
           "type": {
@@ -10423,132 +10302,11 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 85,
+        "line": 88,
         "column": 8
       },
       "zig_path": "renderCells",
       "symbol": "zg_render_state_render_cells"
-    },
-    {
-      "doc": "The terminal's default background. Already reversed if the\nterminal is in reverse-video mode.",
-      "name": "renderBackground",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "RenderState",
-      "return": {
-        "kind": "value_struct",
-        "ref": "RGB"
-      },
-      "source": {
-        "path": "render.zig",
-        "line": 269,
-        "column": 8
-      },
-      "zig_path": "renderBackground",
-      "symbol": "zg_render_state_render_background"
-    },
-    {
-      "name": "renderForeground",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "RenderState",
-      "return": {
-        "kind": "value_struct",
-        "ref": "RGB"
-      },
-      "source": {
-        "path": "render.zig",
-        "line": 273,
-        "column": 8
-      },
-      "zig_path": "renderForeground",
-      "symbol": "zg_render_state_render_foreground"
-    },
-    {
-      "doc": "The cursor's column within the viewport, or false if it is scrolled out.",
-      "name": "renderCursorX",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "RenderState",
-      "return": {
-        "child": {
-          "bits": 16,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "optional"
-      },
-      "source": {
-        "path": "render.zig",
-        "line": 278,
-        "column": 8
-      },
-      "zig_path": "renderCursorX",
-      "symbol": "zg_render_state_render_cursor_x"
-    },
-    {
-      "name": "renderCursorY",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "RenderState",
-      "return": {
-        "child": {
-          "bits": 16,
-          "is_usize": false,
-          "kind": "int",
-          "signed": false
-        },
-        "kind": "optional"
-      },
-      "source": {
-        "path": "render.zig",
-        "line": 283,
-        "column": 8
-      },
-      "zig_path": "renderCursorY",
-      "symbol": "zg_render_state_render_cursor_y"
-    },
-    {
-      "doc": "Whether the cursor sits on the tail of a wide character. A renderer that\ndraws a one-cell cursor may want to move it back one column so it covers\nthe character rather than half of it. Null when the cursor is scrolled out\nof the viewport, the same as `renderCursorX`.",
-      "name": "renderCursorWideTail",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "RenderState",
-      "return": {
-        "child": {
-          "kind": "bool"
-        },
-        "kind": "optional"
-      },
-      "source": {
-        "path": "render.zig",
-        "line": 292,
-        "column": 8
-      },
-      "zig_path": "renderCursorWideTail",
-      "symbol": "zg_render_state_render_cursor_wide_tail"
-    },
-    {
-      "doc": "The cursor color as of this frame, or null when the program has\nnot set one and the renderer should pick. Read from the snapshot rather\nthan the terminal so it matches the cells drawn beside it.",
-      "name": "renderCursorColor",
-      "ownership": "borrowed",
-      "params": [],
-      "receiver": "RenderState",
-      "return": {
-        "child": {
-          "kind": "value_struct",
-          "ref": "RGB"
-        },
-        "kind": "optional"
-      },
-      "source": {
-        "path": "render.zig",
-        "line": 300,
-        "column": 8
-      },
-      "zig_path": "renderCursorColor",
-      "symbol": "zg_render_state_render_cursor_color"
     },
     {
       "doc": "What changed since `RenderState.clean`. `RenderState.update` raises this;\nnothing lowers it but `clean`.",
@@ -10562,7 +10320,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 177,
+        "line": 183,
         "column": 8
       },
       "zig_path": "renderDirty",
@@ -10579,7 +10337,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 188,
+            "line": 194,
             "column": 44
           },
           "type": {
@@ -10610,7 +10368,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 188,
+        "line": 194,
         "column": 8
       },
       "zig_path": "renderDirtyRows",
@@ -10627,7 +10385,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 97,
+            "line": 100,
             "column": 43
           },
           "type": {
@@ -10643,7 +10401,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 97,
+            "line": 100,
             "column": 51
           },
           "type": {
@@ -10672,7 +10430,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 97,
+        "line": 100,
         "column": 8
       },
       "zig_path": "renderRowCells",
@@ -10689,7 +10447,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 204,
+            "line": 210,
             "column": 44
           },
           "type": {
@@ -10705,7 +10463,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 204,
+            "line": 210,
             "column": 52
           },
           "type": {
@@ -10722,7 +10480,7 @@
           "retention": "borrowed",
           "semantic": "codepoint",
           "source": {
-            "line": 204,
+            "line": 210,
             "column": 60
           },
           "type": {
@@ -10753,7 +10511,7 @@
       },
       "source": {
         "path": "render.zig",
-        "line": 204,
+        "line": 210,
         "column": 8
       },
       "zig_path": "renderGraphemes",
@@ -10774,7 +10532,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 232,
+            "line": 238,
             "column": 46
           },
           "type": {
@@ -10787,7 +10545,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 232,
+            "line": 238,
             "column": 62
           },
           "type": {
@@ -10803,7 +10561,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 232,
+            "line": 238,
             "column": 70
           },
           "type": {
@@ -10838,7 +10596,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "render.zig",
-        "line": 232,
+        "line": 238,
         "column": 8
       },
       "zig_path": "renderHyperlinkAt",
@@ -13252,7 +13010,7 @@
         "signed": false
       },
       "text": true,
-      "zig_path": "terminal.modes.Mode__enum_40926"
+      "zig_path": "terminal.modes.Mode__enum_40943"
     },
     {
       "exhaustive": true,
@@ -13393,7 +13151,7 @@
           }
         },
         {
-          "doc": "Resolve palette indices to the terminal's current RGB values rather\nthan emitting the index. Styled formats only.",
+          "doc": "Resolve palette indices to the terminal's current RGB values rather\nthan emitting the index. Styled formats only.\n\n`Terminal.format` and `Terminal.formatSelection` only. A `Screen` is\nborrowed from its terminal and does not carry the palette or the default\ncolors, so its formatters ignore this and emit the index. Since the\nterminal's formatter reaches the scrollback too, format through the\nterminal when the output has to carry real colors.",
           "name": "resolve_palette",
           "type": {
             "kind": "bool"
@@ -14710,27 +14468,27 @@
           "value": 0
         },
         {
-          "doc": "OSC 0/2. The title at the time of the change is on eventTitle.",
+          "doc": "OSC 0/2. The Event value carries the title.",
           "name": "title_changed",
           "value": 1
         },
         {
-          "doc": "OSC 7. The directory at the time of the change is on eventPwd.",
+          "doc": "OSC 7. The Event value carries the directory.",
           "name": "pwd_changed",
           "value": 2
         },
         {
-          "doc": "OSC 9 or 777. `eventTitle` and `eventBody` carry the text.",
+          "doc": "OSC 9 or 777. The Event value carries the title and body.",
           "name": "desktop_notification",
           "value": 3
         },
         {
-          "doc": "OSC 9;4. `eventProgressState` and `eventProgress` carry the report.",
+          "doc": "OSC 9;4. The Event value carries the progress state and percentage.",
           "name": "progress_report",
           "value": 4
         },
         {
-          "doc": "A sequence this library does not implement, captured so it can be\nlooked at. Only APC today. `eventSequence` carries the content.\n\nOff until `setUnknownMaxBytes` turns it on: capturing costs a buffer\nper stream, and a program that never sends an unknown sequence would\npay it for nothing.",
+          "doc": "A sequence this library does not implement, captured so it can be\nlooked at. Only APC today. The Event value carries the content.\n\nOff until `setUnknownMaxBytes` turns it on: capturing costs a buffer\nper stream, and a program that never sends an unknown sequence would\npay it for nothing.",
           "name": "unknown_sequence",
           "value": 5
         }
@@ -15224,28 +14982,6 @@
       "materialized_version": 2,
       "name": "Event",
       "zig_path": "stream.Event"
-    },
-    {
-      "exhaustive": true,
-      "fields": [
-        {
-          "name": "value",
-          "type": {
-            "kind": "materialized",
-            "ref": "Event"
-          }
-        },
-        {
-          "name": "present",
-          "type": {
-            "kind": "bool"
-          }
-        }
-      ],
-      "kind": "materialized",
-      "materialized_version": 2,
-      "name": "EventRecord",
-      "zig_path": "stream.EventRecord"
     },
     {
       "exhaustive": true,
@@ -15780,9 +15516,16 @@
           }
         },
         {
+          "doc": "Whether the base codepoint has combining marks or other grapheme data.\nA renderer can skip `renderGraphemes` for the common single-codepoint case.",
+          "name": "has_grapheme",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
           "name": "_pad",
           "type": {
-            "bits": 18,
+            "bits": 17,
             "is_usize": false,
             "kind": "int",
             "signed": false

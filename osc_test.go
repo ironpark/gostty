@@ -13,28 +13,19 @@ type event struct {
 func drain(t *testing.T, s *Stream) []event {
 	t.Helper()
 	var out []event
-	for kind, err := range s.Events() {
+	for value, err := range s.EventValues() {
 		if err != nil {
-			t.Fatalf("Events: %v", err)
+			t.Fatalf("EventValues: %v", err)
 		}
-		ev := event{kind: kind, progress: -1}
-		title, err := s.EventTitle()
-		if err != nil {
-			t.Fatalf("EventTitle: %v", err)
+		ev := event{
+			kind:          value.Kind,
+			title:         value.Title,
+			body:          value.Body,
+			progressState: value.ProgressState,
+			progress:      -1,
 		}
-		ev.title = title
-		body, err := s.EventBody()
-		if err != nil {
-			t.Fatalf("EventBody: %v", err)
-		}
-		ev.body = body
-		if ev.progressState, err = s.EventProgressState(); err != nil {
-			t.Fatalf("EventProgressState: %v", err)
-		}
-		if p, ok, err := s.EventProgress(); err != nil {
-			t.Fatalf("EventProgress: %v", err)
-		} else if ok {
-			ev.progress = int(p)
+		if value.HasProgress {
+			ev.progress = int(value.Progress)
 		}
 		out = append(out, ev)
 	}

@@ -12,7 +12,7 @@ Try [HyperCat Term](examples/hypercat/README.md), the included GUI terminal emul
 with Kitty graphics and animated cats.
 
 [Features](#features) · [Installation](#installation) · [Quick start](#quick-start) ·
-[HyperCat Term](#hypercat-term) · [Usage notes](#usage-notes) · [How it is built](#how-it-is-built)
+[Examples](#examples) · [Usage notes](#usage-notes) · [How it is built](#how-it-is-built)
 
 ## Features
 
@@ -56,28 +56,24 @@ func main() {
 }
 
 func run() error {
-	term, err := gostty.NewTerminal(80, 24)
+	// A session owns a terminal and the stream that parses bytes for it,
+	// so there is one handle and one Close.
+	term, err := gostty.New(80, 24)
 	if err != nil {
 		return err
 	}
 	defer term.Close()
 
-	stream, err := term.NewStream(0)
-	if err != nil {
-		return err
-	}
-	defer stream.Close() // Runs before term.Close(): children must close first.
-
-	// Streams implement io.Writer and parse VT escape sequences.
-	if _, err := fmt.Fprint(stream, "hello\r\n\x1b[31mworld\x1b[0m"); err != nil {
+	// Sessions implement io.Writer and parse VT escape sequences.
+	if _, err := fmt.Fprint(term, "hello\r\n\x1b[31mworld\x1b[0m"); err != nil {
 		return err
 	}
 
-	screen, err := term.PlainString()
+	text, err := term.PlainText()
 	if err != nil {
 		return err
 	}
-	fmt.Println(screen)
+	fmt.Println(text)
 	return nil
 }
 ```
@@ -89,10 +85,36 @@ hello
 world
 ```
 
-`PlainString` removes color formatting. For styled output, use `RenderState` to
-read cells, colors, and cursor state.
+`PlainText` drops the styling. For styled output use a `Formatter`
+(`FormatterFormatVt` or `FormatterFormatHtml`), and for a renderer use
+`RenderState` to read cells, colors, and cursor state.
 
-## HyperCat Term
+Reach the pieces with `term.Terminal()` and `term.Stream()` when a call is not
+on the session itself. `NewTerminal` still builds a terminal on its own, for a
+caller who does not need a parser.
+
+## Examples
+
+| Example | What it shows |
+| --- | --- |
+| [vtdump](examples/vtdump) | The whole binding in one file: feed a capture in, print the screen it produced. |
+| [HyperCat Term](examples/hypercat/README.md) | A complete GUI terminal emulator. |
+
+Runnable examples for each API are in the
+[package documentation](https://pkg.go.dev/github.com/ironpark/gostty#pkg-examples).
+
+### vtdump
+
+A program's stdout is not what you saw on screen -- it is the instructions that
+produced it. `vtdump` runs a capture through a real terminal and prints the grid
+it left:
+
+```sh
+some-build-tool 2>&1 | go run ./examples/vtdump
+go run ./examples/vtdump -format html < session.log > session.html
+```
+
+### HyperCat Term
 
 [HyperCat Term](examples/hypercat/README.md) is a complete example built with
 Ebitengine: a shell running on a PTY, rendered in a window with tabs, search,
@@ -126,9 +148,12 @@ HyperCat demonstrates this integration in [terminal.go](examples/hypercat/termin
 - **Serialize terminal access.** This includes getters and operations on its
   streams, screens, searches, and tracked references. The lifetime mutex does
   not serialize terminal operations.
-- **Close children before their terminal.** Use `defer` in creation order, as in
-  the quick start. Closing a terminal with live children returns `ErrHandleInUse`.
-  `Close` is idempotent; calls on closed handles return `ErrInvalidHandle`.
+- **Close children before their terminal.** A `Session` does this for you.
+  Building the pieces yourself, `defer` in creation order: closing a terminal
+  with live children returns `ErrHandleInUse`. `Close` is idempotent. Field
+  reads such as `Cols()` panic on a closed handle rather than returning
+  `ErrInvalidHandle`, since a dead handle is a defect rather than a condition
+  to branch on.
 - **Keep callbacks synchronous.** Answer clipboard requests during their callback;
   unanswered requests are denied. Defer terminal mutations until the active call
   returns, and obtain user consent before serving clipboard reads.

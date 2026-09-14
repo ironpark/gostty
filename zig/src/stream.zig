@@ -5,7 +5,7 @@
 //! function pointers called mid-feed with borrowed payloads. Reflecting that
 //! into Go would turn every slice into a loose pointer and length and leave a
 //! borrow in a Go callback's hands, so the stream copies each one into a queue
-//! that `nextEvent` drains after the feed returns. Clipboard requests are the
+//! that `nextEventValue` drains after the feed returns. Clipboard requests are the
 //! exception: a program blocks on those, so they stay callbacks.
 const std = @import("std");
 const vt = @import("ghostty_vt");
@@ -21,20 +21,20 @@ const Terminal = common.Terminal;
 /// pointers called from inside a feed with payloads borrowed for the duration
 /// of the call. Rather than reflect that into Go -- where a callback signature
 /// is a raw C signature and the borrow would be a trap -- the stream copies
-/// each one into a queue that `nextEvent` drains after the feed returns.
+/// each one into a queue that `nextEventValue` drains after the feed returns.
 pub const StreamEvent = enum(u8) {
     /// BEL. No payload.
     bell,
-    /// OSC 0/2. The title at the time of the change is on eventTitle.
+    /// OSC 0/2. The Event value carries the title.
     title_changed,
-    /// OSC 7. The directory at the time of the change is on eventPwd.
+    /// OSC 7. The Event value carries the directory.
     pwd_changed,
-    /// OSC 9 or 777. `eventTitle` and `eventBody` carry the text.
+    /// OSC 9 or 777. The Event value carries the title and body.
     desktop_notification,
-    /// OSC 9;4. `eventProgressState` and `eventProgress` carry the report.
+    /// OSC 9;4. The Event value carries the progress state and percentage.
     progress_report,
     /// A sequence this library does not implement, captured so it can be
-    /// looked at. Only APC today. `eventSequence` carries the content.
+    /// looked at. Only APC today. The Event value carries the content.
     ///
     /// Off until `setUnknownMaxBytes` turns it on: capturing costs a buffer
     /// per stream, and a program that never sends an unknown sequence would
@@ -80,10 +80,6 @@ pub const Event = struct {
     progress: u8 = 0,
     has_progress: bool = false,
 };
-
-/// EventRecord preserves the explicit presence form of the event API.
-/// Value is meaningful when Present.
-pub const EventRecord = struct { value: Event = .{}, present: bool = false };
 
 pub const ProgressState = vt.osc.Command.ProgressReport.State;
 
@@ -289,7 +285,7 @@ pub const Stream = struct {
 
     /// Events collected during a feed, oldest first.
     queue: std.ArrayList(Queued) = .empty,
-    /// Events before this index have been handed out; `nextEvent` reads from
+    /// Events before this index have been handed out; `nextEventValue` reads from
     /// here rather than shifting the array on every event.
     queue_head: usize = 0,
 
@@ -326,8 +322,8 @@ pub const Stream = struct {
     on_drag: ?@import("dnd.zig").DragFn = null,
     drag_userdata: usize = 0,
     drag_items: std.ArrayList(vt.kitty.dnd.Item) = .empty,
-    /// What `nextEvent` last handed out. Its payload stays readable until the
-    /// following `nextEvent`.
+    /// What `nextEventValue` is materializing. Its payload stays readable until
+    /// the following call.
     current: ?Queued = null,
 
     const Queued = struct {
@@ -593,11 +589,9 @@ pub const Stream = struct {
         try vt.snapshot.encode(self.gpa, writer, self.inner.handler.terminal, .{ .continuation = cont });
     }
 
-    /// Take the next event a feed produced, absent when the queue is empty.
-    ///
-    /// The payload accessors below describe the event this returned, until the
-    /// next call.
-    pub fn nextEvent(self: *Stream) ?StreamEvent {
+    /// Advance to the next queued event, keeping its owned payload alive while
+    /// nextEventValue copies it into the materialized result.
+    fn nextEvent(self: *Stream) ?StreamEvent {
         if (self.current) |event| {
             event.deinit(self.gpa);
             self.current = null;
@@ -615,7 +609,7 @@ pub const Stream = struct {
     }
 
     /// Consume one queued event and materialize its complete payload in one
-    /// binding call. Shares the queue and current payload with NextEvent.
+    /// binding call.
     pub fn nextEventValue(self: *Stream) ?Event {
         const kind = self.nextEvent() orelse return null;
         const queued = self.current.?;
@@ -630,53 +624,14 @@ pub const Stream = struct {
             .unknown_sequence => event.sequence = queued.sequence,
             .progress_report => {
                 event.progress_state = queued.progress_state;
-                if (self.eventProgress()) |progress| {
-                    event.progress = progress;
+                if (queued.progress <= 100) {
+                    event.progress = queued.progress;
                     event.has_progress = true;
                 }
             },
             else => {},
         }
         return event;
-    }
-
-    /// Explicit presence form of NextEventValue, retained for compatibility.
-    pub fn nextEventRecord(self: *Stream) EventRecord {
-        const event = self.nextEventValue() orelse return .{};
-        return .{ .value = event, .present = true };
-    }
-
-    /// The current event's title, for title changes and desktop notifications.
-    pub fn eventTitle(self: *Stream) []const u8 {
-        const event = self.current orelse return "";
-        return event.title;
-    }
-
-    /// The current event's notification body, empty for other events.
-    pub fn eventBody(self: *Stream) []const u8 {
-        const event = self.current orelse return "";
-        return event.body;
-    }
-
-    /// The directory captured when the current pwd-change event occurred.
-    pub fn eventPwd(self: *Stream) []const u8 {
-        const event = self.current orelse return "";
-        return event.pwd;
-    }
-
-    pub fn eventProgressState(self: *Stream) ProgressState {
-        const event = self.current orelse return .remove;
-        return event.progress_state;
-    }
-
-    /// The current event's unknown-sequence content, empty for other events.
-    ///
-    /// Its own accessor rather than a second meaning for `eventBody`: one
-    /// accessor whose meaning depends on the event tag is a trap, and the
-    /// event tag is not in the type system to catch the mistake.
-    pub fn eventSequence(self: *Stream) []const u8 {
-        const event = self.current orelse return "";
-        return event.sequence;
     }
 
     /// Capture up to `max` bytes of the sequences this library does not
@@ -747,14 +702,6 @@ pub const Stream = struct {
     /// an embedder with no desktop to ask.
     pub fn clearColorScheme(self: *Stream) void {
         self.color_scheme = null;
-    }
-
-    /// The current event's progress percentage, absent when the report carried
-    /// none.
-    pub fn eventProgress(self: *Stream) ?u8 {
-        const event = self.current orelse return null;
-        if (event.progress > 100) return null;
-        return event.progress;
     }
 
     /// Handle clipboard writes (OSC 52 set, Kitty OSC 5522). Without a

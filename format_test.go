@@ -70,8 +70,42 @@ func TestFormat(t *testing.T) {
 	if ok, _ := screen.FormatSelection(FormatOptions{}, Selection{StartY: 99, EndY: 99}, &buf); ok {
 		t.Error("FormatSelection outside the screen reported ok")
 	}
+	buf.Reset()
+	ok, err = term.FormatSelection(FormatOptions{}, Selection{StartX: 6, StartY: 0, EndX: 9, EndY: 0}, &buf)
+	if err != nil || !ok || buf.String() != "bold" {
+		t.Errorf("Terminal.FormatSelection = %q, %v, %v", buf.String(), ok, err)
+	}
 	if f, err := ParseFormatterFormat("html"); err != nil || f != FormatterFormatHtml {
 		t.Errorf("ParseFormatterFormat = %v, %v", f, err)
+	}
+}
+
+func TestTerminalFormatSelectionResolvesPalette(t *testing.T) {
+	term, stream := newStreamPair(t, 10, 2)
+	want := NewRGB(0x12, 0x34, 0x56)
+	if err := term.SetPaletteColor(1, want); err != nil {
+		t.Fatal(err)
+	}
+	feed(t, stream, "\x1b[31mselected omitted")
+
+	var buf bytes.Buffer
+	ok, err := term.FormatSelection(FormatOptions{
+		Format: FormatterFormatHtml, ResolvePalette: true,
+	}, Selection{StartX: 0, StartY: 0, EndX: 7, EndY: 0}, &buf)
+	if err != nil || !ok {
+		t.Fatalf("FormatSelection = %v, %v", ok, err)
+	}
+	text := strings.ToLower(buf.String())
+	if !strings.Contains(text, "selected") || strings.Contains(text, "omitted") {
+		t.Fatalf("FormatSelection selected the wrong text: %q", text)
+	}
+	if !strings.Contains(text, want.String()) {
+		t.Fatalf("FormatSelection did not resolve palette color %s: %q", want, text)
+	}
+
+	buf.Reset()
+	if ok, err := term.FormatSelection(FormatOptions{}, Selection{StartY: 99, EndY: 99}, &buf); err != nil || ok || buf.Len() != 0 {
+		t.Fatalf("out-of-range FormatSelection = %q, %v, %v", buf.String(), ok, err)
 	}
 }
 
@@ -88,6 +122,16 @@ func TestRenderGraphemes(t *testing.T) {
 	defer state.Close()
 	if err := state.Update(term); err != nil {
 		t.Fatal(err)
+	}
+	cells := make([]RenderCell, 20)
+	if _, err := state.Cells(cells); err != nil {
+		t.Fatal(err)
+	}
+	if cells[0].Flags.HasGrapheme {
+		t.Error("plain ASCII cell reported extra grapheme data")
+	}
+	if !cells[1].Flags.HasGrapheme {
+		t.Error("ZWJ cluster did not report its extra grapheme data")
 	}
 	dst := make([]rune, 8)
 	n, err := state.Graphemes(0, 0, dst)

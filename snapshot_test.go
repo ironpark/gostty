@@ -68,7 +68,7 @@ func TestSnapshotNewTerminal(t *testing.T) {
 	if restored.Cols() != 20 || restored.Rows() != 3 {
 		t.Fatalf("restored dimensions = %dx%d, want 20x3", restored.Cols(), restored.Rows())
 	}
-	text, err := restored.PlainText(true)
+	text, err := restored.PlainText()
 	if err != nil {
 		t.Fatal(err)
 	}

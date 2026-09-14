@@ -35,23 +35,23 @@ func TestEnumTextRoundTrip(t *testing.T) {
 	}
 }
 
-// Events ranges over NextEvent until the queue is empty.
-func TestStreamEvents(t *testing.T) {
+// EventValues ranges over NextEventValue until the queue is empty.
+func TestStreamEventValues(t *testing.T) {
 	_, s := newStreamPair(t, 20, 3)
 	if err := s.Feed([]byte("\x07\x1b]0;hi\x07")); err != nil {
 		t.Fatal(err)
 	}
 	var got []StreamEvent
-	for event, err := range s.Events() {
+	for event, err := range s.EventValues() {
 		if err != nil {
 			t.Fatal(err)
 		}
-		got = append(got, event)
+		got = append(got, event.Kind)
 	}
 	if len(got) != 2 || got[0] != StreamEventBell {
-		t.Errorf("Events() = %v, want bell then a title event", got)
+		t.Errorf("EventValues() = %v, want bell then a title event", got)
 	}
-	for range s.Events() {
-		t.Error("Events() yielded after the queue was drained")
+	for range s.EventValues() {
+		t.Error("EventValues() yielded after the queue was drained")
 	}
 }

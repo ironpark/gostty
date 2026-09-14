@@ -72,9 +72,9 @@ func TestEventValuesShareQueueAndStopEarly(t *testing.T) {
 		}
 		break
 	}
-	kind, ok, err := s.NextEvent()
-	if err != nil || !ok || kind != StreamEventTitleChanged {
-		t.Fatalf("next = %v, %v, %v", kind, ok, err)
+	next, ok, err := s.NextEventValue()
+	if err != nil || !ok || next.Kind != StreamEventTitleChanged || next.Title != "next" {
+		t.Fatalf("next = %+v, %v, %v", next, ok, err)
 	}
 	event, ok, err := s.NextEventValue()
 	if err != nil || !ok || event.Kind != StreamEventBell {
@@ -367,78 +367,28 @@ func TestStreamConfigOmittedCallbacksKeepDefaults(t *testing.T) {
 	}
 }
 
-func TestEventRecordSharesCurrentPayload(t *testing.T) {
-	_, s := newStreamPair(t, 10, 2)
-	feed(t, s, "\x1b]777;notify;title;body\x07\a")
-	record, err := s.NextEventRecord()
-	if err != nil || !record.Present || record.Value.Title != "title" || record.Value.Body != "body" {
-		t.Fatalf("record = %+v, %v", record, err)
-	}
-	body, err := s.EventBody()
-	if err != nil || body != record.Value.Body {
-		t.Fatalf("current body = %q, %v", body, err)
-	}
-	event, ok, err := s.NextEventValue()
-	if err != nil || !ok || event.Kind != StreamEventBell || event.Sequence != nil || event.HasProgress {
-		t.Fatalf("next = %+v, %v, %v", event, ok, err)
-	}
-	empty, err := s.NextEventRecord()
-	if err != nil || empty.Present {
-		t.Fatalf("empty = %+v, %v", empty, err)
-	}
-	if err := s.Close(); err != nil {
-		t.Fatal(err)
-	}
-	if record.Value.Title != "title" || record.Value.Body != "body" {
-		t.Fatalf("record did not retain payload: %+v", record)
-	}
-}
-
 func BenchmarkEventNotificationRead(b *testing.B) {
-	for _, materialized := range []bool{false, true} {
-		name := "getters"
-		if materialized {
-			name = "materialized"
+	term, err := NewTerminal(10, 2)
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer term.Close()
+	s, err := term.NewStream(0)
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer s.Close()
+	data := []byte("\x1b]777;notify;title;body\x07")
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if err := s.Feed(data); err != nil {
+			b.Fatal(err)
 		}
-		b.Run(name, func(b *testing.B) {
-			term, err := NewTerminal(10, 2)
-			if err != nil {
-				b.Fatal(err)
-			}
-			defer term.Close()
-			s, err := term.NewStream(0)
-			if err != nil {
-				b.Fatal(err)
-			}
-			defer s.Close()
-			data := []byte("\x1b]777;notify;title;body\x07")
-			b.ReportAllocs()
-			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
-				if err := s.Feed(data); err != nil {
-					b.Fatal(err)
-				}
-				if materialized {
-					event, ok, err := s.NextEventValue()
-					if err != nil || !ok || event.Title != "title" || event.Body != "body" {
-						b.Fatal(event, ok, err)
-					}
-				} else {
-					_, ok, err := s.NextEvent()
-					if err != nil || !ok {
-						b.Fatal(ok, err)
-					}
-					title, err := s.EventTitle()
-					if err != nil || title != "title" {
-						b.Fatal(title, err)
-					}
-					body, err := s.EventBody()
-					if err != nil || body != "body" {
-						b.Fatal(body, err)
-					}
-				}
-			}
-		})
+		event, ok, err := s.NextEventValue()
+		if err != nil || !ok || event.Title != "title" || event.Body != "body" {
+			b.Fatal(event, ok, err)
+		}
 	}
 }
 
@@ -532,7 +482,7 @@ func TestFunctionalOptionsAndConvenience(t *testing.T) {
 	}
 
 	// Test FormatString and PlainText on Terminal
-	plain, err := term.PlainText(true)
+	plain, err := term.PlainText()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -545,7 +495,7 @@ func TestFunctionalOptionsAndConvenience(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	screenPlain, err := screen.PlainText(true)
+	screenPlain, err := screen.PlainText()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -555,7 +505,7 @@ func TestFunctionalOptionsAndConvenience(t *testing.T) {
 }
 
 func TestSession(t *testing.T) {
-	sess, err := NewConfiguredSession(80, 24,
+	sess, err := New(80, 24,
 		WithTerminalOptions(WithScrollbackMaxLines(100)),
 		WithStreamOptions(WithVersionReport("sessapp", "2.0")),
 	)
@@ -575,7 +525,7 @@ func TestSession(t *testing.T) {
 	_, _ = sess.Write([]byte("\033[1;32mBold Green\033[0m\r\n"))
 
 	// Test PlainText
-	text, err := sess.PlainText(true)
+	text, err := sess.PlainText()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -592,11 +542,24 @@ func TestSession(t *testing.T) {
 		t.Fatalf("Session HTML = %q", html)
 	}
 
-	// Test MustNewConfiguredSession
-	mustSess := MustNewConfiguredSession(40, 10)
+	// Test MustNew
+	mustSess := MustNew(40, 10)
 	defer mustSess.Close()
 	if mustSess.Terminal().Cols() != 40 || mustSess.Terminal().Rows() != 10 {
-		t.Fatalf("unexpected MustNewConfiguredSession dimensions")
+		t.Fatalf("unexpected MustNew dimensions")
+	}
+}
+
+func TestSessionStreamDoesNotAllocate(t *testing.T) {
+	sess := MustNew(10, 2)
+	defer sess.Close()
+	want := sess.Stream()
+	if got := testing.AllocsPerRun(1000, func() {
+		if sess.Stream() != want {
+			t.Fatal("Stream returned a different primary stream")
+		}
+	}); got != 0 {
+		t.Fatalf("Stream allocated %v times per call", got)
 	}
 }
 
@@ -648,7 +611,7 @@ func TestGeneratedTerminalOptions(t *testing.T) {
 }
 
 func TestStreamImplementsBothWriters(t *testing.T) {
-	sess, err := NewConfiguredSession(40, 5)
+	sess, err := New(40, 5)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -666,7 +629,7 @@ func TestStreamImplementsBothWriters(t *testing.T) {
 	if _, err := stream.Write([]byte("def\r\n")); err != nil {
 		t.Fatal(err)
 	}
-	text, err := sess.PlainText(true)
+	text, err := sess.PlainText()
 	if err != nil {
 		t.Fatal(err)
 	}

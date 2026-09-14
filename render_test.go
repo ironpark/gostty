@@ -56,12 +56,12 @@ func TestRenderCells(t *testing.T) {
 	}
 
 	// A cell past the text keeps the terminal's defaults.
-	fg, err := state.Foreground()
+	colors, err := state.Colors()
 	if err != nil {
-		t.Fatalf("Foreground: %v", err)
+		t.Fatalf("Colors: %v", err)
 	}
-	if cells[5].Codepoint != 0 || cells[5].Fg != fg {
-		t.Errorf("blank cell = %+v, want empty with default fg %#06x", cells[5], fg)
+	if cells[5].Codepoint != 0 || cells[5].Fg != colors.Foreground {
+		t.Errorf("blank cell = %+v, want empty with default fg %#06x", cells[5], colors.Foreground)
 	}
 }
 
@@ -95,13 +95,9 @@ func TestRenderCursor(t *testing.T) {
 	if err := state.Update(term); err != nil {
 		t.Fatalf("Update: %v", err)
 	}
-	x, ok, err := state.CursorX()
-	if err != nil || !ok || x != 3 {
-		t.Errorf("CursorX() = %d, %v, %v; want 3, true, nil", x, ok, err)
-	}
-	y, ok, err := state.CursorY()
-	if err != nil || !ok || y != 1 {
-		t.Errorf("CursorY() = %d, %v, %v; want 1, true, nil", y, ok, err)
+	cursor, err := state.Cursor()
+	if err != nil || !cursor.ViewportHasValue || cursor.X != 3 || cursor.Y != 1 {
+		t.Errorf("Cursor() = %+v, %v; want viewport position 3,1", cursor, err)
 	}
 	if visible := state.CursorVisible(); !visible {
 		t.Errorf("CursorVisible() = %v; want true", visible)
@@ -453,9 +449,9 @@ func TestRenderCursorState(t *testing.T) {
 	if pw := state.CursorPasswordInput(); pw {
 		t.Errorf("CursorPasswordInput() = %v; want false", pw)
 	}
-	tail, ok, err := state.CursorWideTail()
-	if err != nil || !ok || tail {
-		t.Errorf("CursorWideTail() = %v, %v, %v; want false, true, nil", tail, ok, err)
+	cursor, err := state.Cursor()
+	if err != nil || !cursor.ViewportHasValue || cursor.WideTail {
+		t.Errorf("Cursor() = %+v, %v; want narrow cursor in viewport", cursor, err)
 	}
 }
 
@@ -472,8 +468,9 @@ func TestRenderCursorColor(t *testing.T) {
 	if err := state.Update(term); err != nil {
 		t.Fatalf("Update: %v", err)
 	}
-	if _, ok, err := state.CursorColor(); err != nil || ok {
-		t.Fatalf("CursorColor() before one is set = ok %v, %v; want false", ok, err)
+	colors, err := state.Colors()
+	if err != nil || colors.CursorHasValue {
+		t.Fatalf("Colors() before cursor color is set = %+v, %v", colors, err)
 	}
 
 	// OSC 12 sets the cursor color.
@@ -481,8 +478,8 @@ func TestRenderCursorColor(t *testing.T) {
 	if err := state.Update(term); err != nil {
 		t.Fatalf("Update: %v", err)
 	}
-	rgb, ok, err := state.CursorColor()
-	if err != nil || !ok || rgb.Uint32() != 0xff0000 {
-		t.Errorf("CursorColor() = %#06x, %v, %v; want 0xff0000, true, nil", rgb, ok, err)
+	colors, err = state.Colors()
+	if err != nil || !colors.CursorHasValue || colors.Cursor.Uint32() != 0xff0000 {
+		t.Errorf("Colors() = %+v, %v; want cursor 0xff0000", colors, err)
 	}
 }

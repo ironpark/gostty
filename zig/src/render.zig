@@ -44,7 +44,10 @@ pub const CellFlags = packed struct(u32) {
     wide: CellWidth = .narrow,
     /// Whether the cell falls inside the screen's selection.
     selected: bool = false,
-    _pad: u18 = 0,
+    /// Whether the base codepoint has combining marks or other grapheme data.
+    /// A renderer can skip `renderGraphemes` for the common single-codepoint case.
+    has_grapheme: bool = false,
+    _pad: u17 = 0,
 };
 
 /// One cell of the viewport, flattened for the C ABI.
@@ -123,7 +126,10 @@ fn fillRow(self: *RenderState, defaults: RowDefaults, y: usize, dst: []RenderCel
             .codepoint = 0,
             .fg = defaults.fg,
             .bg = defaults.bg,
-            .flags = .{ .wide = cell.wide },
+            .flags = .{
+                .wide = cell.wide,
+                .has_grapheme = cell.content_tag == .codepoint_grapheme,
+            },
         };
 
         switch (cell.content_tag) {
@@ -264,43 +270,6 @@ pub fn mergeFlags(out: CellFlags, f: anytype) CellFlags {
     return merged;
 }
 
-/// The terminal's default background. Already reversed if the
-/// terminal is in reverse-video mode.
-pub fn renderBackground(self: *RenderState) RGB {
-    return packColor(self.colors.background);
-}
-
-pub fn renderForeground(self: *RenderState) RGB {
-    return packColor(self.colors.foreground);
-}
-
-/// The cursor's column within the viewport, or false if it is scrolled out.
-pub fn renderCursorX(self: *RenderState) ?u16 {
-    const vp = self.cursor.viewport orelse return null;
-    return vp.x;
-}
-
-pub fn renderCursorY(self: *RenderState) ?u16 {
-    const vp = self.cursor.viewport orelse return null;
-    return vp.y;
-}
-
-/// Whether the cursor sits on the tail of a wide character. A renderer that
-/// draws a one-cell cursor may want to move it back one column so it covers
-/// the character rather than half of it. Null when the cursor is scrolled out
-/// of the viewport, the same as `renderCursorX`.
-pub fn renderCursorWideTail(self: *RenderState) ?bool {
-    const vp = self.cursor.viewport orelse return null;
-    return vp.wide_tail;
-}
-
-/// The cursor color as of this frame, or null when the program has
-/// not set one and the renderer should pick. Read from the snapshot rather
-/// than the terminal so it matches the cells drawn beside it.
-pub fn renderCursorColor(self: *RenderState) ?RGB {
-    return packColor(self.colors.cursor orelse return null);
-}
-
 /// Cursor metadata copied from one render snapshot. Coordinates and wide_tail
 /// are meaningful only when viewport_has_value is true.
 pub const RenderCursor = packed struct(u64) {
@@ -351,9 +320,9 @@ pub fn renderCursor(self: *RenderState) RenderCursor {
 /// Copy the resolved colors of this frame in one boundary crossing.
 pub fn renderColors(self: *RenderState) RenderColors {
     return .{
-        .background = renderBackground(self),
-        .foreground = renderForeground(self),
-        .cursor = renderCursorColor(self) orelse .{ .r = 0, .g = 0, .b = 0 },
+        .background = packColor(self.colors.background),
+        .foreground = packColor(self.colors.foreground),
+        .cursor = if (self.colors.cursor) |color| packColor(color) else .{ .r = 0, .g = 0, .b = 0 },
         .cursor_has_value = self.colors.cursor != null,
     };
 }

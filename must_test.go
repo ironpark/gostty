@@ -44,17 +44,6 @@ func TestMustVariantsMatchTheCheckedCall(t *testing.T) {
 		t.Errorf("MustCursorY() = %d, want %d", got, y)
 	}
 
-	screen, err := term.ActiveScreen()
-	if err != nil {
-		t.Fatalf("ActiveScreen: %v", err)
-	}
-	bottom, err := screen.ViewportIsBottom()
-	if err != nil {
-		t.Fatalf("ViewportIsBottom: %v", err)
-	}
-	if got := screen.MustViewportIsBottom(); got != bottom {
-		t.Errorf("MustViewportIsBottom() = %v, want %v", got, bottom)
-	}
 }
 
 // The variants are declared only on methods whose Zig result carries no error,

@@ -1886,16 +1886,16 @@ type StreamEvent uint8
 const (
 	// StreamEventBell: BEL. No payload.
 	StreamEventBell StreamEvent = 0
-	// StreamEventTitleChanged: OSC 0/2. The title at the time of the change is on eventTitle.
+	// StreamEventTitleChanged: OSC 0/2. The Event value carries the title.
 	StreamEventTitleChanged StreamEvent = 1
-	// StreamEventPwdChanged: OSC 7. The directory at the time of the change is on eventPwd.
+	// StreamEventPwdChanged: OSC 7. The Event value carries the directory.
 	StreamEventPwdChanged StreamEvent = 2
-	// StreamEventDesktopNotification: OSC 9 or 777. `eventTitle` and `eventBody` carry the text.
+	// StreamEventDesktopNotification: OSC 9 or 777. The Event value carries the title and body.
 	StreamEventDesktopNotification StreamEvent = 3
-	// StreamEventProgressReport: OSC 9;4. `eventProgressState` and `eventProgress` carry the report.
+	// StreamEventProgressReport: OSC 9;4. The Event value carries the progress state and percentage.
 	StreamEventProgressReport StreamEvent = 4
 	// StreamEventUnknownSequence: A sequence this library does not implement, captured so it can be
-	// looked at. Only APC today. `eventSequence` carries the content.
+	// looked at. Only APC today. The Event value carries the content.
 	//
 	// Off until `setUnknownMaxBytes` turns it on: capturing costs a buffer
 	// per stream, and a program that never sends an unknown sequence would

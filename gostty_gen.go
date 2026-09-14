@@ -2084,6 +2084,36 @@ func (te *Terminal) Format(opts FormatOptions, writer io.Writer) error {
 	return nil
 }
 
+// FormatSelection: Format the part of the active screen inside `sel`, using the terminal's
+// default colors and palette. Returns false, writing nothing, when `sel` is
+// outside the active screen.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (te *Terminal) FormatSelection(opts FormatOptions, sel Selection, writer io.Writer) (bool, error) {
+	if writer == nil {
+		return false, &StreamError{Operation: "Terminal.FormatSelection", Parameter: "writer", Err: ErrNilStream}
+	}
+	ptr, err := zigoCheckedPointer("Terminal.FormatSelection receiver", te)
+	if err != nil {
+		return false, err
+	}
+	defer te.zigoRelease()
+	writerHandle := zigoNewWriterStreamHandle(writer)
+	defer zigoDeleteCallbackHandle(writerHandle)
+	result, code := raw.TerminalFormatSelection(ptr, zigoFormatOptionsToRaw(opts), zigoSelectionToRaw(sel), uintptr(writerHandle))
+	if zigoCallbackPanicPending() {
+		zigoRethrowCallbackPanic("Terminal.FormatSelection", writerHandle)
+	}
+	if err := zigoStreamError("Terminal.FormatSelection", "writer", writerHandle); err != nil {
+		return false, err
+	}
+	if code != 0 {
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.FormatSelection", code), te)
+	}
+	return result != 0, nil
+}
+
 // SetPwd: Set the pwd for the terminal.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
@@ -2883,9 +2913,6 @@ func (s *Screen) ViewportIsBottom() (bool, error) {
 	return result != 0, nil
 }
 
-// MustViewportIsBottom calls ViewportIsBottom and panics with its typed error on failure.
-func (s *Screen) MustViewportIsBottom() bool { return gosttyMustValue(s.ViewportIsBottom()) }
-
 // ClearSelection: Same as select(null) but can't fail.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
@@ -3120,8 +3147,11 @@ func (s *Screen) Scrollbar() (Scrollbar, error) {
 	return zigoScrollbarFromRaw(result), nil
 }
 
-// Format a whole screen, scrollback included. `Terminal.format` is the
-// active area only.
+// Format a whole screen, scrollback included.
+//
+// Unlike `Terminal.format` this stays with the screen it is given rather than
+// following the active one. It also has no terminal to ask, so the default
+// colors and `resolve_palette` do not apply.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
@@ -3871,51 +3901,8 @@ func (s *Stream) WriteString(str string) (int, error) {
 	return len(str), nil
 }
 
-// NextEvent: Take the next event a feed produced, absent when the queue is empty.
-//
-// The payload accessors below describe the event this returned, until the
-// next call.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) NextEvent() (StreamEvent, bool, error) {
-	ptr, err := zigoCheckedPointer("Stream.NextEvent receiver", s)
-	if err != nil {
-		return 0, false, err
-	}
-	defer s.zigoRelease()
-	result, zigoHas, code := raw.StreamNextEvent(ptr)
-	if zigoCallbackPanicPending() {
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.NextEvent", s.zigoCallbackHandle(slot))
-		}
-	}
-	if code != 0 {
-		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Stream.NextEvent", code), s)
-	}
-	return StreamEvent(result), zigoHas, nil
-}
-
-// Events returns a sequence that calls NextEvent until it reports no value.
-// A failed call yields its error once, with the zero StreamEvent, and the sequence ends.
-func (s *Stream) Events() iter.Seq2[StreamEvent, error] {
-	return func(yield func(StreamEvent, error) bool) {
-		for {
-			value, ok, err := s.NextEvent()
-			if err != nil {
-				var zero StreamEvent
-				yield(zero, err)
-				return
-			}
-			if !ok || !yield(value, nil) {
-				return
-			}
-		}
-	}
-}
-
 // NextEventValue: Consume one queued event and materialize its complete payload in one
-// binding call. Shares the queue and current payload with NextEvent.
+// binding call.
 // It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
@@ -3957,166 +3944,6 @@ func (s *Stream) EventValues() iter.Seq2[Event, error] {
 			}
 		}
 	}
-}
-
-// NextEventRecord: Explicit presence form of NextEventValue, retained for compatibility.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) NextEventRecord() (EventRecord, error) {
-	ptr, err := zigoCheckedPointer("Stream.NextEventRecord receiver", s)
-	if err != nil {
-		return EventRecord{}, err
-	}
-	defer s.zigoRelease()
-	result, code := raw.StreamNextEventRecord(ptr)
-	if zigoCallbackPanicPending() {
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.NextEventRecord", s.zigoCallbackHandle(slot))
-		}
-	}
-	if code != 0 {
-		return EventRecord{}, zigoPoisonAfterPanic(zigoErrorForCode("Stream.NextEventRecord", code), s)
-	}
-	defer raw.FreeBuffer(result)
-	return zigoDecodeEventRecordBuffer(result), nil
-}
-
-// EventTitle: The current event's title, for title changes and desktop notifications.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) EventTitle() (string, error) {
-	ptr, err := zigoCheckedPointer("Stream.EventTitle receiver", s)
-	if err != nil {
-		return "", err
-	}
-	defer s.zigoRelease()
-	result, code := raw.StreamEventTitle(ptr)
-	if zigoCallbackPanicPending() {
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.EventTitle", s.zigoCallbackHandle(slot))
-		}
-	}
-	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("Stream.EventTitle", code), s)
-	}
-	return result, nil
-}
-
-// EventBody: The current event's notification body, empty for other events.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) EventBody() (string, error) {
-	ptr, err := zigoCheckedPointer("Stream.EventBody receiver", s)
-	if err != nil {
-		return "", err
-	}
-	defer s.zigoRelease()
-	result, code := raw.StreamEventBody(ptr)
-	if zigoCallbackPanicPending() {
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.EventBody", s.zigoCallbackHandle(slot))
-		}
-	}
-	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("Stream.EventBody", code), s)
-	}
-	return result, nil
-}
-
-// EventProgressState calls the Zig function Stream.eventProgressState.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) EventProgressState() (ProgressState, error) {
-	ptr, err := zigoCheckedPointer("Stream.EventProgressState receiver", s)
-	if err != nil {
-		return 0, err
-	}
-	defer s.zigoRelease()
-	result, code := raw.StreamEventProgressState(ptr)
-	if zigoCallbackPanicPending() {
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.EventProgressState", s.zigoCallbackHandle(slot))
-		}
-	}
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Stream.EventProgressState", code), s)
-	}
-	return ProgressState(result), nil
-}
-
-// EventProgress: The current event's progress percentage, absent when the report carried
-// none.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) EventProgress() (uint8, bool, error) {
-	ptr, err := zigoCheckedPointer("Stream.EventProgress receiver", s)
-	if err != nil {
-		return 0, false, err
-	}
-	defer s.zigoRelease()
-	result, zigoHas, code := raw.StreamEventProgress(ptr)
-	if zigoCallbackPanicPending() {
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.EventProgress", s.zigoCallbackHandle(slot))
-		}
-	}
-	if code != 0 {
-		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Stream.EventProgress", code), s)
-	}
-	return result, zigoHas, nil
-}
-
-// EventPwd: The directory captured when the current pwd-change event occurred.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) EventPwd() (string, error) {
-	ptr, err := zigoCheckedPointer("Stream.EventPwd receiver", s)
-	if err != nil {
-		return "", err
-	}
-	defer s.zigoRelease()
-	result, code := raw.StreamEventPwd(ptr)
-	if zigoCallbackPanicPending() {
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.EventPwd", s.zigoCallbackHandle(slot))
-		}
-	}
-	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("Stream.EventPwd", code), s)
-	}
-	return result, nil
-}
-
-// EventSequence: The current event's unknown-sequence content, empty for other events.
-//
-// Its own accessor rather than a second meaning for `eventBody`: one
-// accessor whose meaning depends on the event tag is a trap, and the
-// event tag is not in the type system to catch the mistake.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) EventSequence() ([]byte, error) {
-	ptr, err := zigoCheckedPointer("Stream.EventSequence receiver", s)
-	if err != nil {
-		return nil, err
-	}
-	defer s.zigoRelease()
-	result, code := raw.StreamEventSequence(ptr)
-	if zigoCallbackPanicPending() {
-		for slot := range 3 {
-			zigoRethrowCallbackPanic("Stream.EventSequence", s.zigoCallbackHandle(slot))
-		}
-	}
-	if code != 0 {
-		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Stream.EventSequence", code), s)
-	}
-	return result, nil
 }
 
 // SetUnknownMaxBytes: Capture up to `max` bytes of the sequences this library does not
@@ -4628,9 +4455,6 @@ func (s *Stream) HasReplies() (bool, error) {
 	}
 	return result != 0, nil
 }
-
-// MustHasReplies calls HasReplies and panics with its typed error on failure.
-func (s *Stream) MustHasReplies() bool { return gosttyMustValue(s.HasReplies()) }
 
 // WriteSnapshot: Write a snapshot of the terminal this stream feeds, with the
 // stream's unfinished sequence so a restored stream can pick up
@@ -5342,108 +5166,6 @@ func (r *RenderState) Cells(dst []RenderCell) (uint, error) {
 	}
 	zigoRenderCellSliceCopyFromRaw(dst, dstRaw, int(result))
 	return result, nil
-}
-
-// Background: The terminal's default background. Already reversed if the
-// terminal is in reverse-video mode.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (r *RenderState) Background() (RGB, error) {
-	ptr, err := zigoCheckedPointer("RenderState.Background receiver", r)
-	if err != nil {
-		return RGB{}, err
-	}
-	defer r.zigoRelease()
-	result, code := raw.RenderStateBackground(ptr)
-	if code != 0 {
-		return RGB{}, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Background", code), r)
-	}
-	return zigoRGBFromRaw(result), nil
-}
-
-// Foreground calls the Zig function RenderState.foreground.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (r *RenderState) Foreground() (RGB, error) {
-	ptr, err := zigoCheckedPointer("RenderState.Foreground receiver", r)
-	if err != nil {
-		return RGB{}, err
-	}
-	defer r.zigoRelease()
-	result, code := raw.RenderStateForeground(ptr)
-	if code != 0 {
-		return RGB{}, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Foreground", code), r)
-	}
-	return zigoRGBFromRaw(result), nil
-}
-
-// CursorX: The cursor's column within the viewport, or false if it is scrolled out.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (r *RenderState) CursorX() (uint16, bool, error) {
-	ptr, err := zigoCheckedPointer("RenderState.CursorX receiver", r)
-	if err != nil {
-		return 0, false, err
-	}
-	defer r.zigoRelease()
-	result, zigoHas, code := raw.RenderStateCursorX(ptr)
-	if code != 0 {
-		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.CursorX", code), r)
-	}
-	return result, zigoHas, nil
-}
-
-// CursorY calls the Zig function RenderState.cursorY.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (r *RenderState) CursorY() (uint16, bool, error) {
-	ptr, err := zigoCheckedPointer("RenderState.CursorY receiver", r)
-	if err != nil {
-		return 0, false, err
-	}
-	defer r.zigoRelease()
-	result, zigoHas, code := raw.RenderStateCursorY(ptr)
-	if code != 0 {
-		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.CursorY", code), r)
-	}
-	return result, zigoHas, nil
-}
-
-// CursorWideTail: Whether the cursor sits on the tail of a wide character. A renderer that
-// draws a one-cell cursor may want to move it back one column so it covers
-// the character rather than half of it. Null when the cursor is scrolled out
-// of the viewport, the same as `renderCursorX`.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (r *RenderState) CursorWideTail() (bool, bool, error) {
-	ptr, err := zigoCheckedPointer("RenderState.CursorWideTail receiver", r)
-	if err != nil {
-		return false, false, err
-	}
-	defer r.zigoRelease()
-	result, zigoHas, code := raw.RenderStateCursorWideTail(ptr)
-	if code != 0 {
-		return false, false, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.CursorWideTail", code), r)
-	}
-	return result != 0, zigoHas, nil
-}
-
-// CursorColor: The cursor color as of this frame, or null when the program has
-// not set one and the renderer should pick. Read from the snapshot rather
-// than the terminal so it matches the cells drawn beside it.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (r *RenderState) CursorColor() (RGB, bool, error) {
-	ptr, err := zigoCheckedPointer("RenderState.CursorColor receiver", r)
-	if err != nil {
-		return RGB{}, false, err
-	}
-	defer r.zigoRelease()
-	result, zigoHas, code := raw.RenderStateCursorColor(ptr)
-	if code != 0 {
-		return RGB{}, false, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.CursorColor", code), r)
-	}
-	return zigoRGBFromRaw(result), zigoHas, nil
 }
 
 // Dirty: What changed since `RenderState.clean`. `RenderState.update` raises this;

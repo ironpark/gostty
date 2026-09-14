@@ -225,7 +225,8 @@ func (t *Terminal) NewStreamWithOptions(opts ...StreamOption) (*Stream, error) {
 	return t.NewStreamWithConfig(cfg)
 }
 
-// FormatString formats the active screen area according to opts and returns the result as a string.
+// FormatString formats the active screen contents, including scrollback,
+// according to opts and returns the result as a string.
 func (t *Terminal) FormatString(opts FormatOptions) (string, error) {
 	var buf strings.Builder
 	if err := t.Format(opts, &buf); err != nil {
@@ -234,12 +235,12 @@ func (t *Terminal) FormatString(opts FormatOptions) (string, error) {
 	return buf.String(), nil
 }
 
-// PlainText returns the active screen area formatted as plain text.
-// If trim is true, trailing whitespace on non-empty lines is omitted.
-func (t *Terminal) PlainText(trim bool) (string, error) {
+// PlainText returns the active screen contents, including scrollback, as
+// trimmed plain text. Use FormatString with KeepTrailingWhitespace to preserve
+// trailing spaces.
+func (t *Terminal) PlainText() (string, error) {
 	return t.FormatString(FormatOptions{
-		Format:                  FormatterFormatPlain,
-		KeepTrailingWhitespace: !trim,
+		Format: FormatterFormatPlain,
 	})
 }
 
@@ -252,12 +253,11 @@ func (s *Screen) FormatString(opts FormatOptions) (string, error) {
 	return buf.String(), nil
 }
 
-// PlainText returns the screen contents (including scrollback) formatted as plain text.
-// If trim is true, trailing whitespace on non-empty lines is omitted.
-func (s *Screen) PlainText(trim bool) (string, error) {
+// PlainText returns the screen contents (including scrollback) as trimmed plain
+// text. Use FormatString with KeepTrailingWhitespace to preserve trailing spaces.
+func (s *Screen) PlainText() (string, error) {
 	return s.FormatString(FormatOptions{
-		Format:                  FormatterFormatPlain,
-		KeepTrailingWhitespace: !trim,
+		Format: FormatterFormatPlain,
 	})
 }
 
@@ -301,11 +301,32 @@ func WithStreamOptions(opts ...StreamOption) SessionOption {
 	}
 }
 
-// NewConfiguredSession creates a terminal and a primary stream wired to it, and
-// adopts both into a session. NewSession adopts an already-built terminal; this
-// builds the pair from a configuration. If either step fails, nothing escapes:
-// whatever was allocated is closed before the error is returned.
-func NewConfiguredSession(cols, rows uint16, opts ...SessionOption) (*Session, error) {
+// New is the short way in, and what most programs want: a terminal with a
+// stream already wired to it, under one handle with one Close.
+//
+//	t, err := gostty.New(80, 24)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	defer t.Close()
+//	fmt.Fprintf(t, "Hello, \033[1;32mworld\033[0m!\r\n")
+//	out, _ := t.PlainText()
+//
+// A Session is an io.Writer, so VT data goes in through fmt.Fprintf, io.Copy,
+// or anything else that writes. Reach the pieces with Terminal() and Stream()
+// when a call is not on the session itself.
+//
+// Terminal is not an io.Writer, and deliberately: a stream carries parser
+// state across writes and is a child handle with its own lifetime, so a
+// terminal that made one silently would be a terminal whose Close could fail
+// for a reason the caller never asked for. The session is where that pair is
+// owned together.
+//
+// NewTerminal is still there for a caller who wants the terminal alone --
+// replaying a snapshot, or driving it only through the printing methods.
+// NewSession adopts an already-built terminal; New builds the pair from
+// options. If either construction step fails, nothing escapes.
+func New(cols, rows uint16, opts ...SessionOption) (*Session, error) {
 	cfg := SessionConfig{Terminal: TerminalConfig{Cols: cols, Rows: rows}}
 	for _, opt := range opts {
 		opt(&cfg)
@@ -322,63 +343,35 @@ func NewConfiguredSession(cols, rows uint16, opts ...SessionOption) (*Session, e
 	return NewSession(term).AddStream(stream), nil
 }
 
-// New is the short way in, and what most programs want: a terminal with a
-// stream already wired to it, under one handle with one Close.
-//
-//	t, err := gostty.New(80, 24)
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//	defer t.Close()
-//	fmt.Fprintf(t, "Hello, \033[1;32mworld\033[0m!\r\n")
-//	out, _ := t.PlainText(true)
-//
-// A Session is an io.Writer, so VT data goes in through fmt.Fprintf, io.Copy,
-// or anything else that writes. Reach the pieces with Terminal() and Stream()
-// when a call is not on the session itself.
-//
-// Terminal is not an io.Writer, and deliberately: a stream carries parser
-// state across writes and is a child handle with its own lifetime, so a
-// terminal that made one silently would be a terminal whose Close could fail
-// for a reason the caller never asked for. The session is where that pair is
-// owned together.
-//
-// NewTerminal is still there for a caller who wants the terminal alone --
-// replaying a snapshot, or driving it only through the printing methods.
-func New(cols, rows uint16, opts ...SessionOption) (*Session, error) {
-	return NewConfiguredSession(cols, rows, opts...)
-}
-
 // MustNew creates a session with New and panics on failure. For tests and for
 // program startup, where a failure has nowhere to go.
 func MustNew(cols, rows uint16, opts ...SessionOption) *Session {
-	return MustNewConfiguredSession(cols, rows, opts...)
-}
-
-// Formatter returns a reusable formatter for the session terminal's active
-// screen area.
-func (s *Session) Formatter(opts FormatOptions) *Formatter {
-	return s.Terminal().Formatter(opts)
-}
-
-// MustNewConfiguredSession creates a configured session, panicking on failure.
-func MustNewConfiguredSession(cols, rows uint16, opts ...SessionOption) *Session {
-	sess, err := NewConfiguredSession(cols, rows, opts...)
+	sess, err := New(cols, rows, opts...)
 	if err != nil {
 		panic(err)
 	}
 	return sess
 }
 
+// Formatter returns a reusable formatter for the session terminal's active
+// screen contents, including scrollback.
+func (s *Session) Formatter(opts FormatOptions) *Formatter {
+	return s.Terminal().Formatter(opts)
+}
+
 // Stream returns the session's primary stream: the first one adopted, which is
-// the one NewConfiguredSession wired to the terminal. It is nil for a session
+// the one New wired to the terminal. It is nil for a session
 // that has adopted no stream, and after Close.
 func (s *Session) Stream() *Stream {
-	streams := s.Streams()
-	if len(streams) == 0 {
+	if s == nil {
 		return nil
 	}
-	return streams[0]
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if len(s.streams) == 0 {
+		return nil
+	}
+	return s.streams[0]
 }
 
 // Write feeds bytes into the session's primary stream, satisfying io.Writer.
@@ -404,9 +397,10 @@ func (s *Session) FormatString(opts FormatOptions) (string, error) {
 	return s.Terminal().FormatString(opts)
 }
 
-// PlainText returns the active screen area formatted as plain text.
-func (s *Session) PlainText(trim bool) (string, error) {
-	return s.Terminal().PlainText(trim)
+// PlainText returns the active screen contents, including scrollback, as
+// trimmed plain text.
+func (s *Session) PlainText() (string, error) {
+	return s.Terminal().PlainText()
 }
 
 var (

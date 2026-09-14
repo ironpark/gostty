@@ -87,12 +87,6 @@ const render_state_group = RenderState.define(&.{
     api.func("renderColors", .{}),
     api.func("renderCellCount", .{}),
     api.func("renderCells", .{ .params = &.{out(1)} }),
-    api.func("renderBackground", .{}),
-    api.func("renderForeground", .{}),
-    api.func("renderCursorX", .{}),
-    api.func("renderCursorY", .{}),
-    api.func("renderCursorWideTail", .{}),
-    api.func("renderCursorColor", .{}),
     // Partial redraw: which rows changed, one row's cells, and marking them
     // drawn.
     api.func("renderDirty", .{}),

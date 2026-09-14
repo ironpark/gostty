@@ -211,6 +211,34 @@ func TestOptionalScreen(t *testing.T) {
 	}
 }
 
+// SelectAll covers the whole screen history, not only the rows currently in
+// the viewport.
+func TestSelectAllIncludesScrollback(t *testing.T) {
+	term, stream := newStreamPair(t, 20, 3)
+	if err := term.SetScrollbackMaxBytes(1 << 20); err != nil {
+		t.Fatalf("SetScrollbackMaxBytes: %v", err)
+	}
+	for range 10 {
+		feed(t, stream, "line\r\n")
+	}
+	feed(t, stream, "last")
+
+	screen, err := term.ActiveScreen()
+	if err != nil {
+		t.Fatalf("ActiveScreen: %v", err)
+	}
+	if _, err := screen.SelectAll(); err != nil {
+		t.Fatalf("SelectAll: %v", err)
+	}
+	text, ok, err := screen.SelectionString()
+	if err != nil || !ok {
+		t.Fatalf("SelectionString() = ok %v, %v; want true, nil", ok, err)
+	}
+	if !strings.Contains(text, "last") || strings.Count(text, "line") <= int(term.Rows()) {
+		t.Errorf("selection = %q, want the viewport and its scrollback", text)
+	}
+}
+
 // What a GUI needs to draw a scrollbar, in rows. ghostty keeps the total
 // incrementally and caches the offset, so this is cheap enough per frame.
 func TestScreenScrollbar(t *testing.T) {

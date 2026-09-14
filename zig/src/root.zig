@@ -97,7 +97,6 @@ pub const Underline = common_.Underline;
 const stream_ = @import("stream.zig");
 
 pub const Event = stream_.Event;
-pub const EventRecord = stream_.EventRecord;
 pub const StreamEvent = stream_.StreamEvent;
 pub const ProgressState = stream_.ProgressState;
 pub const ColorScheme = stream_.ColorScheme;
@@ -216,6 +215,7 @@ const format_ = @import("format.zig");
 pub const FormatterFormat = format_.FormatterFormat;
 pub const FormatOptions = format_.FormatOptions;
 pub const formatTerminal = format_.formatTerminal;
+pub const formatTerminalSelection = format_.formatTerminalSelection;
 pub const screenFormat = format_.screenFormat;
 pub const screenFormatSelection = format_.screenFormatSelection;
 
@@ -268,12 +268,6 @@ pub const renderDirty = render_.renderDirty;
 pub const renderDirtyRows = render_.renderDirtyRows;
 pub const renderGraphemes = render_.renderGraphemes;
 pub const renderHyperlinkAt = render_.renderHyperlinkAt;
-pub const renderBackground = render_.renderBackground;
-pub const renderForeground = render_.renderForeground;
-pub const renderCursorX = render_.renderCursorX;
-pub const renderCursorY = render_.renderCursorY;
-pub const renderCursorWideTail = render_.renderCursorWideTail;
-pub const renderCursorColor = render_.renderCursorColor;
 
 // Kitty graphics, snapshotted per frame.
 const kitty_ = @import("kitty.zig");

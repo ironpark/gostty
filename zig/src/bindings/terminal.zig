@@ -188,6 +188,7 @@ const terminal_group = Terminal.define(&.{
 
     // Metadata the terminal tracks for the shell.
     api.func("formatTerminal", .{ .name = "Format" }),
+    api.func("formatTerminalSelection", .{ .name = "FormatSelection" }),
     Terminal.func("setPwd", .{}),
     // Both return `?[:0]const u8`, which the utf8 inference does not reach --
     // dropping these two hints turns the Go results from `string` into
@@ -254,7 +255,7 @@ const terminal_group = Terminal.define(&.{
 const screen_group = Screen.define(&.{
     // ghostty takes the screen by value here; zigo passes the handle and the
     // shim copies, so no wrapper is needed.
-    withMust(Screen.func("viewportIsBottom", .{})),
+    Screen.func("viewportIsBottom", .{}),
     Screen.func("clearSelection", .{}),
     Screen.func("endHyperlink", .{}),
     // Wrappers whose receiver zigo infers from their first argument. The

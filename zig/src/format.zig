@@ -46,6 +46,12 @@ pub const FormatOptions = extern struct {
     no_hyperlinks: bool = false,
     /// Resolve palette indices to the terminal's current RGB values rather
     /// than emitting the index. Styled formats only.
+    ///
+    /// `Terminal.format` and `Terminal.formatSelection` only. A `Screen` is
+    /// borrowed from its terminal and does not carry the palette or the default
+    /// colors, so its formatters ignore this and emit the index. Since the
+    /// terminal's formatter reaches the scrollback too, format through the
+    /// terminal when the output has to carry real colors.
     resolve_palette: bool = false,
 
     fn toGhostty(self: FormatOptions) vt.formatter.Options {
@@ -76,8 +82,25 @@ pub fn formatTerminal(self: *Terminal, opts: FormatOptions, writer: *std.Io.Writ
     try f.format(writer);
 }
 
-/// Format a whole screen, scrollback included. `Terminal.format` is the
-/// active area only.
+/// Format the part of the active screen inside `sel`, using the terminal's
+/// default colors and palette. Returns false, writing nothing, when `sel` is
+/// outside the active screen.
+pub fn formatTerminalSelection(self: *Terminal, opts: FormatOptions, sel: Selection, writer: *std.Io.Writer) !bool {
+    const inner = selectionToPins(screen.activeScreen(self), sel) orelse return false;
+    var f = vt.formatter.TerminalFormatter.init(self, opts.toGhostty());
+    f.content = .{ .selection = inner };
+    f.opts.background = self.colors.background.get();
+    f.opts.foreground = self.colors.foreground.get();
+    if (opts.resolve_palette) f.opts.palette = &self.colors.palette.current;
+    try f.format(writer);
+    return true;
+}
+
+/// Format a whole screen, scrollback included.
+///
+/// Unlike `Terminal.format` this stays with the screen it is given rather than
+/// following the active one. It also has no terminal to ask, so the default
+/// colors and `resolve_palette` do not apply.
 pub fn screenFormat(self: *Screen, opts: FormatOptions, writer: *std.Io.Writer) !void {
     var f = vt.formatter.ScreenFormatter.init(self, opts.toGhostty());
     f.extra = opts.screenExtra();

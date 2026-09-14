@@ -1168,6 +1168,27 @@ func TerminalFormat(self unsafe.Pointer, opts FormatOptionsData, writerHandle ui
 	return code
 }
 
+// TerminalFormatSelection calls the generated C ABI wrapper for zg_terminal_format_selection.
+func TerminalFormatSelection(self unsafe.Pointer, opts FormatOptionsData, sel SelectionData, writerHandle uintptr) (uint8, int32) {
+	var copts C.zg_format_options
+	copts.format = C.uint8_t(opts.Format)
+	copts.unwrap = C.uint8_t(opts.Unwrap)
+	copts.keep_trailing_whitespace = C.uint8_t(opts.KeepTrailingWhitespace)
+	copts.cursor = C.uint8_t(opts.Cursor)
+	copts.no_styles = C.uint8_t(opts.NoStyles)
+	copts.no_hyperlinks = C.uint8_t(opts.NoHyperlinks)
+	copts.resolve_palette = C.uint8_t(opts.ResolvePalette)
+	var csel C.zg_selection
+	csel.start_x = C.uint16_t(sel.StartX)
+	csel.start_y = C.uint32_t(sel.StartY)
+	csel.end_x = C.uint16_t(sel.EndX)
+	csel.end_y = C.uint32_t(sel.EndY)
+	csel.rectangle = C.uint8_t(sel.Rectangle)
+	var outResult C.uint8_t
+	code := int32(C.zg_terminal_format_selection((*C.zg_terminal)(self), &copts, &csel, C.size_t(writerHandle), &outResult))
+	return uint8(outResult), code
+}
+
 // TerminalSetPwd calls the generated C ABI wrapper for zg_terminal_set_pwd.
 func TerminalSetPwd(self unsafe.Pointer, pwd string) int32 {
 	pwdPtr := (*C.uint8_t)(zigoStringPtr(pwd))
@@ -2119,14 +2140,6 @@ func StreamFeed(self unsafe.Pointer, bytes []uint8) int32 {
 	return code
 }
 
-// StreamNextEvent calls the generated C ABI wrapper for zg_stream_next_event.
-func StreamNextEvent(self unsafe.Pointer) (uint8, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.uint8_t
-	code := int32(C.zg_stream_next_event((*C.zg_stream)(self), &outResultHas, &outResult))
-	return uint8(outResult), outResultHas != 0, code
-}
-
 // StreamNextEventValue calls the generated C ABI wrapper for zg_stream_next_event_value.
 func StreamNextEventValue(self unsafe.Pointer) ([]byte, bool, int32) {
 	var outResultPtr *C.uint8_t
@@ -2143,80 +2156,6 @@ func StreamNextEventValue(self unsafe.Pointer) ([]byte, bool, int32) {
 		result = unsafe.Slice((*uint8)(unsafe.Pointer(outResultPtr)), int(outResultLen))
 	}
 	return result, true, code
-}
-
-// StreamNextEventRecord calls the generated C ABI wrapper for zg_stream_next_event_record.
-func StreamNextEventRecord(self unsafe.Pointer) ([]byte, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_stream_next_event_record((*C.zg_stream)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return nil, code
-	}
-	var result []uint8
-	if outResultLen != 0 {
-		result = unsafe.Slice((*uint8)(unsafe.Pointer(outResultPtr)), int(outResultLen))
-	}
-	return result, code
-}
-
-// StreamEventTitle calls the generated C ABI wrapper for zg_stream_event_title.
-func StreamEventTitle(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_stream_event_title((*C.zg_stream)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
-	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// StreamEventBody calls the generated C ABI wrapper for zg_stream_event_body.
-func StreamEventBody(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_stream_event_body((*C.zg_stream)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
-	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// StreamEventProgressState calls the generated C ABI wrapper for zg_stream_event_progress_state.
-func StreamEventProgressState(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_stream_event_progress_state((*C.zg_stream)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// StreamEventProgress calls the generated C ABI wrapper for zg_stream_event_progress.
-func StreamEventProgress(self unsafe.Pointer) (uint8, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.uint8_t
-	code := int32(C.zg_stream_event_progress((*C.zg_stream)(self), &outResultHas, &outResult))
-	return uint8(outResult), outResultHas != 0, code
-}
-
-// StreamEventPwd calls the generated C ABI wrapper for zg_stream_event_pwd.
-func StreamEventPwd(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_stream_event_pwd((*C.zg_stream)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
-	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// StreamEventSequence calls the generated C ABI wrapper for zg_stream_event_sequence.
-func StreamEventSequence(self unsafe.Pointer) ([]uint8, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_stream_event_sequence((*C.zg_stream)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return nil, code
-	}
-	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
 }
 
 // StreamSetUnknownMaxBytes calls the generated C ABI wrapper for zg_stream_set_unknown_max_bytes.
@@ -2700,64 +2639,6 @@ func RenderStateCells(self unsafe.Pointer, dst []RenderCellData) (uint, int32) {
 		}
 	}
 	return uint(outResult), code
-}
-
-// RenderStateBackground calls the generated C ABI wrapper for zg_render_state_background.
-func RenderStateBackground(self unsafe.Pointer) (RGBData, int32) {
-	var outResult C.zg_rgb
-	code := int32(C.zg_render_state_background((*C.zg_render_state)(self), &outResult))
-	return RGBData{
-		R: uint8(outResult.r),
-		G: uint8(outResult.g),
-		B: uint8(outResult.b),
-	}, code
-}
-
-// RenderStateForeground calls the generated C ABI wrapper for zg_render_state_foreground.
-func RenderStateForeground(self unsafe.Pointer) (RGBData, int32) {
-	var outResult C.zg_rgb
-	code := int32(C.zg_render_state_foreground((*C.zg_render_state)(self), &outResult))
-	return RGBData{
-		R: uint8(outResult.r),
-		G: uint8(outResult.g),
-		B: uint8(outResult.b),
-	}, code
-}
-
-// RenderStateCursorX calls the generated C ABI wrapper for zg_render_state_cursor_x.
-func RenderStateCursorX(self unsafe.Pointer) (uint16, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.uint16_t
-	code := int32(C.zg_render_state_cursor_x((*C.zg_render_state)(self), &outResultHas, &outResult))
-	return uint16(outResult), outResultHas != 0, code
-}
-
-// RenderStateCursorY calls the generated C ABI wrapper for zg_render_state_cursor_y.
-func RenderStateCursorY(self unsafe.Pointer) (uint16, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.uint16_t
-	code := int32(C.zg_render_state_cursor_y((*C.zg_render_state)(self), &outResultHas, &outResult))
-	return uint16(outResult), outResultHas != 0, code
-}
-
-// RenderStateCursorWideTail calls the generated C ABI wrapper for zg_render_state_cursor_wide_tail.
-func RenderStateCursorWideTail(self unsafe.Pointer) (uint8, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.uint8_t
-	code := int32(C.zg_render_state_cursor_wide_tail((*C.zg_render_state)(self), &outResultHas, &outResult))
-	return uint8(outResult), outResultHas != 0, code
-}
-
-// RenderStateCursorColor calls the generated C ABI wrapper for zg_render_state_cursor_color.
-func RenderStateCursorColor(self unsafe.Pointer) (RGBData, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.zg_rgb
-	code := int32(C.zg_render_state_cursor_color((*C.zg_render_state)(self), &outResultHas, &outResult))
-	return RGBData{
-		R: uint8(outResult.r),
-		G: uint8(outResult.g),
-		B: uint8(outResult.b),
-	}, outResultHas != 0, code
 }
 
 // RenderStateDirty calls the generated C ABI wrapper for zg_render_state_dirty.

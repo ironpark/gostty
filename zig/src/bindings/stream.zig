@@ -6,10 +6,8 @@ const mustField = p.mustField;
 const convenience = p.convenience;
 const satisfies = p.satisfies;
 const flags = p.flags;
-const withMust = p.withMust;
 const enumeration = p.enumeration;
 const callback = p.callback;
-const out = p.out;
 const bytesArg = p.bytesArg;
 
 // The `implements` feature on `feed` is what makes this true; the assertion is
@@ -64,18 +62,8 @@ const stream_group = Stream.define(&.{
     // of the call rather than converting them. Both call the same `Feed`.
     Stream.func("feed", .{ .params = &.{bytesArg(1)} })
         .use(zigo.features.implements, .{ .kinds = &.{ .writer, .string_writer } }),
-    // `Events` is the range-over-func form: `for event, err := range s.Events()`.
-    Stream.func("nextEvent", .{}).use(zigo.features.iterator, .{ .name = "Events" }),
     Stream.func("nextEventValue", .{ .returns = zigo.result.releasedBy(api.ref("freeBuffer")) })
         .use(zigo.features.iterator, .{ .name = "EventValues" }),
-    Stream.func("nextEventRecord", .{ .returns = zigo.result.releasedBy(api.ref("freeBuffer")) }),
-    Stream.func("eventTitle", .{}),
-    Stream.func("eventBody", .{}),
-    Stream.func("eventProgressState", .{}),
-    Stream.func("eventProgress", .{}),
-    Stream.func("eventPwd", .{}),
-    // Unknown sequences are bytes, not necessarily UTF-8 text.
-    Stream.func("eventSequence", .{ .returns = .{ .semantic = .opaque_bytes } }),
     Stream.func("setUnknownMaxBytes", .{}),
     Stream.func("setVersionReport", .{}),
     Stream.func("setEnquiryResponse", .{}),
@@ -105,7 +93,7 @@ const stream_group = Stream.define(&.{
     Stream.func("onClipboardWriteRequest", .{}).documented("Registers a synchronous clipboard-write handler. A nil callback returns ErrNilCallback without replacing the existing handler."),
     Stream.func("onClipboardReadRequest", .{}).documented("Registers a synchronous clipboard-read handler. A nil callback returns ErrNilCallback without replacing the existing handler."),
     Stream.func("writeContinuation", .{}),
-    withMust(Stream.func("hasReplies", .{})),
+    Stream.func("hasReplies", .{}),
     Stream.func("writeSnapshot", .{}),
     Stream.func("writeReplies", .{}),
 });
@@ -159,7 +147,6 @@ pub const declarations = [_]zigo.Entry{
     callback("ClipboardFn", "ClipboardHandler"),
     api.val("FeedBoundary", .{}),
     api.materialized("Event", .{ .fields = &.{.{ .name = "sequence", .semantic = .opaque_bytes }} }),
-    api.materialized("EventRecord", .{}),
     enumeration("OSCCommand", .{ .text = true }),
     enumeration("OSCTerminator", .{ .text = true }),
     enumeration("SemanticPromptAction", .{ .text = true }),

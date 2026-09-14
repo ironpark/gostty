@@ -19,7 +19,7 @@ func TestNewSessionWritesAndFormats(t *testing.T) {
 	if _, err := fmt.Fprintf(session, "Hello, \x1b[1;32mworld\x1b[0m!\r\n"); err != nil {
 		t.Fatalf("Fprintf: %v", err)
 	}
-	got, err := session.PlainText(true)
+	got, err := session.PlainText()
 	if err != nil {
 		t.Fatalf("PlainText: %v", err)
 	}
