@@ -231,4 +231,13 @@ func TestModeReport(t *testing.T) {
 	if got, err := term.ModeReport(9999, false); err != nil || got != ModeReportNotRecognized {
 		t.Errorf("ModeReport(9999) = %v, %v; want not_recognized, nil", got, err)
 	}
+	// Full-width queries must not alias insert, wraparound, or erase-color mode.
+	for _, query := range []struct {
+		mode uint16
+		ansi bool
+	}{{32772, true}, {32775, false}, {32885, false}, {65535, false}} {
+		if got, err := term.ModeReport(query.mode, query.ansi); err != nil || got != ModeReportNotRecognized {
+			t.Errorf("ModeReport(%d, %v) = %v, %v; want not_recognized, nil", query.mode, query.ansi, got, err)
+		}
+	}
 }

@@ -76,6 +76,37 @@ func replyString(t *testing.T, stream *Stream) string {
 	return buf.String()
 }
 
+func TestModeQueryReplies(t *testing.T) {
+	for _, tc := range []struct {
+		name, setup, query, want string
+	}{
+		{"ANSI set", "\x1b[4h", "\x1b[4$p", "\x1b[4;1$y"},
+		{"ANSI reset", "\x1b[4l", "\x1b[4$p", "\x1b[4;2$y"},
+		{"DEC namespace", "\x1b[4h\x1b[?4l", "\x1b[?4$p", "\x1b[?4;2$y"},
+		{"unknown ANSI", "", "\x1b[9999$p", "\x1b[9999;0$y"},
+		{"large ANSI does not alias insert", "\x1b[4h", "\x1b[32772$p", "\x1b[32772;0$y"},
+		{"large DEC does not alias wraparound", "\x1b[?7h", "\x1b[?32775$p", "\x1b[?32775;0$y"},
+		{"maximum mode", "", "\x1b[?65535$p", "\x1b[?65535;0$y"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, stream := newStreamPair(t, 20, 3)
+			feed(t, stream, tc.setup)
+			for split := 0; split <= len(tc.query); split++ {
+				feed(t, stream, tc.query[:split])
+				if split < len(tc.query) {
+					if got := replyString(t, stream); got != "" {
+						t.Fatalf("split %d: premature reply %q", split, got)
+					}
+				}
+				feed(t, stream, tc.query[split:])
+				if got := replyString(t, stream); got != tc.want {
+					t.Fatalf("split %d: reply = %q, want %q", split, got, tc.want)
+				}
+			}
+		})
+	}
+}
+
 // CSI c and its two variants. Nothing has to be configured for these: the
 // answers describe the parser, and a program that asks blocks until it gets
 // one.

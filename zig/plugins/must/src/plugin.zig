@@ -40,13 +40,15 @@ pub const plugin: plugin_api.Plugin = .{
     .subjects = &.{.function},
     .Facts = struct { enabled: bool, replace: bool },
     .analyze = analyze,
-    .visit = visit,
-    .claims = claims,
-    .source_files = &.{.{ .enabled = packageHasVariant, .pathAlloc = helperPath, .render = renderHelpers }},
+    .go = .{
+        .visit = visit,
+        .claims = claims,
+        .source_files = &.{.{ .enabled = packageHasVariant, .pathAlloc = helperPath, .render = renderHelpers }},
+    },
 };
 
 /// The variant, written after the checked method it mirrors.
-fn visit(context: plugin_api.Context, node: plugin_api.Node, b: *plugin_api.Builder) !void {
+fn visit(context: plugin_api.GoContext, node: plugin_api.Node, b: *plugin_api.Builder) !void {
     const function = switch (node) {
         .function => |value| value,
         else => return,
@@ -96,7 +98,7 @@ fn visit(context: plugin_api.Context, node: plugin_api.Node, b: *plugin_api.Buil
     })}, .{ .blank_before = true });
 }
 
-fn helperPath(context: plugin_api.Context) ![]u8 {
+fn helperPath(context: plugin_api.GoContext) ![]u8 {
     return context.sourceFilePathAlloc(helper_file);
 }
 
@@ -109,7 +111,7 @@ const helper_file = "zigo_must_gen.go";
 ///
 /// A package with no `Must` variant writes nothing, and the frame drops a file
 /// whose body came out empty.
-fn renderHelpers(_: plugin_api.Context, writer: *std.Io.Writer) !void {
+fn renderHelpers(_: plugin_api.GoContext, writer: *std.Io.Writer) !void {
     try writer.writeAll(
         "// gosttyMustSucceed panics with a typed error, for a Must variant of a\n" ++
             "// function whose only result is the error.\n" ++
@@ -130,7 +132,7 @@ fn renderHelpers(_: plugin_api.Context, writer: *std.Io.Writer) !void {
     );
 }
 
-fn packageHasVariant(context: plugin_api.Context) !bool {
+fn packageHasVariant(context: plugin_api.GoContext) !bool {
     for (context.program.functions) |function| {
         if (!plugin_api.packageMatches(function.origin.package, context.options.active_package)) continue;
         if (try context.facts.get(plugin, .function(function.origin.*))) |fact| {
@@ -141,7 +143,7 @@ fn packageHasVariant(context: plugin_api.Context) !bool {
 }
 
 fn analyze(context: plugin_api.AnalyzeContext) !void {
-    const render = context.render;
+    const render = context.go orelse return;
     const allocator = render.allocator;
     const functions = render.program.functions;
     const info = try allocator.alloc(plugin_api.FunctionInfo, functions.len);
@@ -193,7 +195,7 @@ fn analyze(context: plugin_api.AnalyzeContext) !void {
 /// Claim the declaration when the binding asked to replace rather than add.
 /// The generator still writes the whole checked body, under the unexported
 /// name the visit above calls. Only a function has a public surface to claim.
-fn claims(context: plugin_api.Context, node: plugin_api.Node) !bool {
+fn claims(context: plugin_api.GoContext, node: plugin_api.Node) !bool {
     const function = switch (node) {
         .function => |value| value,
         else => return false,

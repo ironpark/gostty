@@ -45,17 +45,19 @@ pub const plugin: plugin_api.Plugin = .{
     // the generator already writes one for every enum.
     .subjects = &.{.value},
     .validate = validateDocument,
-    .visit = visit,
-    // Written by the renderings below. The frame adds an import only to a
-    // file whose body really spells the qualifier, so a package of pure bool
-    // flags never grows an unused `fmt`.
-    .imports = &.{
-        .{ .qualifier = "fmt", .path = "fmt" },
-        .{ .qualifier = "strings", .path = "strings" },
+    .go = .{
+        .visit = visit,
+        // Written by the renderings below. The frame adds an import only to a
+        // file whose body really spells the qualifier, so a package of pure bool
+        // flags never grows an unused `fmt`.
+        .imports = &.{
+            .{ .qualifier = "fmt", .path = "fmt" },
+            .{ .qualifier = "strings", .path = "strings" },
+        },
     },
 };
 
-fn visit(context: plugin_api.Context, node: plugin_api.Node, b: *plugin_api.Builder) !void {
+fn visit(context: plugin_api.GoContext, node: plugin_api.Node, b: *plugin_api.Builder) !void {
     if (node != .type) return;
     const declaration = node.type;
     const options = try context.optionsOf(plugin, .type, node) orelse return;
@@ -106,7 +108,7 @@ fn appendPart(b: *plugin_api.Builder, element: plugin_api.gobuild.Expr) !plugin_
 /// a bool is `false`, an int is `0`, and an enum's zero tag is the "unset" one
 /// in every packed struct ghostty declares.
 fn renderFlags(
-    context: plugin_api.Context,
+    context: plugin_api.GoContext,
     b: *plugin_api.Builder,
     declaration: semantic.TypeDecl,
     options: Options,
@@ -151,7 +153,7 @@ fn renderFlags(
 /// `GridPoint{X:3, Y:4}`. Every field, named, in declaration order -- the
 /// difference from Go's own `%v` on a struct being that the names are there.
 fn renderFields(
-    context: plugin_api.Context,
+    context: plugin_api.GoContext,
     b: *plugin_api.Builder,
     declaration: semantic.TypeDecl,
     options: Options,

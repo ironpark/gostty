@@ -31,7 +31,7 @@ pub const plugin: plugin_api.Plugin = .{
     .TypeOptions = Options,
     .subjects = &.{.handle},
     .validate = validate,
-    .source_files = &.{.{ .scope = .document, .pathAlloc = filePath, .render = renderFile }},
+    .go = .{ .source_files = &.{.{ .scope = .document, .pathAlloc = filePath, .render = renderFile }} },
     .artifacts = &.{.{ .pathAlloc = artifactPath, .render = renderArtifact }},
 };
 
@@ -83,11 +83,11 @@ fn metadata(allocator: std.mem.Allocator, program: abi.Program, config: Config) 
     return error.MissingBuildInfo;
 }
 
-fn filePath(context: plugin_api.Context) ![]u8 {
+fn filePath(context: plugin_api.GoContext) ![]u8 {
     return context.sourceFilePathAlloc("zigo_build_info_gen.go");
 }
 
-fn renderFile(context: plugin_api.Context, writer: *std.Io.Writer) !void {
+fn renderFile(context: plugin_api.GoContext, writer: *std.Io.Writer) !void {
     const info = try metadata(context.allocator, context.program, try context.config(plugin));
     const b = context.builder();
     try b.render(writer, &.{

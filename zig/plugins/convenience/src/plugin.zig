@@ -12,13 +12,13 @@ pub const plugin: plugin_api.Plugin = .{
     .TypeOptions = Options,
     .subjects = &.{.handle},
     .validate = validateDocument,
-    .visit = visit,
+    .go = .{ .visit = visit },
 };
 
 /// The template goes after the handle it extends, in the file that declares
 /// it. A template is hand-written Go kept beside generated code, which is what
 /// the builder's `raw` declaration is for.
-fn visit(context: plugin_api.Context, node: plugin_api.Node, b: *plugin_api.Builder) !void {
+fn visit(context: plugin_api.GoContext, node: plugin_api.Node, b: *plugin_api.Builder) !void {
     if (node != .type) return;
     const options = try context.optionsOf(plugin, .type, node) orelse return;
     try b.emit(&.{.{ .raw = switch (options.feature) {

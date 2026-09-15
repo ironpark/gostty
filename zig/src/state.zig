@@ -120,7 +120,7 @@ pub const ModeReport = enum(u8) {
 /// could never express.
 pub fn modeReport(self: *Terminal, mode: u16, ansi: bool) ModeReport {
     const report = self.modes.getReport(.{
-        .value = @truncate(mode),
+        .value = mode,
         .ansi = ansi,
     });
     return common.mirror(ModeReport, report.state);

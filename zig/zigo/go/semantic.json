@@ -13108,7 +13108,7 @@
         "signed": false
       },
       "text": true,
-      "zig_path": "terminal.modes.Mode__enum_40879"
+      "zig_path": "terminal.modes.Mode__enum_40977"
     },
     {
       "exhaustive": true,
@@ -13671,7 +13671,7 @@
       "name": "RGB",
       "source": {
         "path": "common.zig",
-        "line": 81,
+        "line": 78,
         "column": 11
       },
       "zig_path": "common.RGB"
