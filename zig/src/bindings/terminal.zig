@@ -118,11 +118,12 @@ const terminal_group = Terminal.members(p.functions(api, .{
     p.withMust(Terminal.func("cursorDown", .{})),
     p.withMust(Terminal.func("cursorLeft", .{})),
     p.withMust(Terminal.func("cursorRight", .{})),
-    Terminal.func("saveCursor", .{}),
-    Terminal.func("restoreCursor", .{}),
-    Terminal.func("index", .{}),
-    Terminal.func("reverseIndex", .{}),
-
+}) ++ Terminal.funcs(.{ .names = &.{
+    "saveCursor",
+    "restoreCursor",
+    "index",
+    "reverseIndex",
+} }) ++ p.functions(api, .{
     // Screens. `switchScreen` returns the screen being left, borrowed, or
     // absent when `key` was already active.
     Terminal.func("switchScreen", .{ .returns = zigo.result.borrowed() }),
@@ -141,13 +142,16 @@ const terminal_group = Terminal.members(p.functions(api, .{
         .returns = zigo.result.owned(),
         .covers = &.{Screen.ref("dumpStringAlloc")},
     }),
-
-    // Tab stops.
-    Terminal.func("horizontalTab", .{}),
-    Terminal.func("horizontalTabBack", .{}),
-    Terminal.func("tabSet", .{}),
-    Terminal.func("tabReset", .{}),
-    Terminal.func("tabClear", .{}),
+}) ++ Terminal.funcs(.{
+    .names = &.{
+        // Tab stops.
+        "horizontalTab",
+        "horizontalTabBack",
+        "tabSet",
+        "tabReset",
+        "tabClear",
+    },
+}) ++ p.functions(api, .{
     "setTabstop",
     "unsetTabstop",
     "resetTabstops",
@@ -162,17 +166,24 @@ const terminal_group = Terminal.members(p.functions(api, .{
     "clearScrollbackMaxBytes",
     api.func("setScrollbackMaxLines", .{ .covers = &.{Terminal.ref("setScrollbackMaxLines")} }),
     "clearScrollbackMaxLines",
-
-    // Editing.
-    Terminal.func("insertLines", .{}),
-    Terminal.func("deleteLines", .{}),
-    Terminal.func("insertBlanks", .{}),
-    Terminal.func("deleteChars", .{}),
-    Terminal.func("eraseChars", .{}),
-    Terminal.func("eraseLine", .{}),
-    Terminal.func("eraseDisplay", .{}),
-    Terminal.func("decaln", .{}),
-    api.func("resize", .{ .covers = &.{Terminal.ref("resize")} }),
+}) ++ Terminal.funcs(.{
+    .names = &.{
+        // Editing.
+        "insertLines",
+        "deleteLines",
+        "insertBlanks",
+        "deleteChars",
+        "eraseChars",
+        "eraseLine",
+        "eraseDisplay",
+        "decaln",
+    },
+}) ++ p.functions(api, .{
+    // Omitted cell_size_px keeps its native null default.
+    Terminal.func("resize", .{
+        .doc = "Change the viewport size, leaving the pixel geometry alone.",
+        .params = &.{zigo.param.flatten(2, &.{ "cols", "rows" })},
+    }),
     "resizeCells",
 
     // Metadata the terminal tracks for the shell.
@@ -371,6 +382,11 @@ pub const declarations = [_]zigo.Entry{
     p.printed("Selection"),
     p.enumeration("FormatterFormat", .{ .text = true }),
     api.value("FormatOptions", .{}),
+    api.value("RGB", .{ .go = .{
+        .type = "RGB",
+        .to_raw = "rgbToRaw",
+        .from_raw = "rgbFromRaw",
+    } }),
     p.enumeration("SelectionAdjustment", .{ .text = true }),
     p.enumeration("Underline", .{ .docs = &.{
         .{ .name = "none", .doc = "No underline. What `SGR 24` resets to." },

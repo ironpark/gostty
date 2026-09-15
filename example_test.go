@@ -92,7 +92,7 @@ func ExampleRGB() {
 		log.Fatal(err)
 	}
 	fmt.Println(bg)
-	fmt.Printf("R=%d G=%d B=%d packed=%#06x\n", bg.R, bg.G, bg.B, bg.Uint32())
+	fmt.Printf("R=%d G=%d B=%d packed=%#06x\n", bg.R(), bg.G(), bg.B(), bg.Uint32())
 
 	parsed, err := gostty.ParseRGB("#ff8800")
 	if err != nil {

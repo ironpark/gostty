@@ -40,12 +40,18 @@ pub const Options = struct {
     replace: bool = false,
 };
 
+/// The analyzed policy each selected function carries into Go rendering.
+pub const variant: plugin_api.Capability = .{
+    .name = "MUSTOPT_VARIANT",
+    .Facts = struct { enabled: bool, replace: bool },
+};
+
 pub const plugin: plugin_api.Plugin = .{
     .name = name,
     .Config = Config,
     .FunctionOptions = Options,
     .subjects = &.{.function},
-    .Facts = struct { enabled: bool, replace: bool },
+    .provides = &.{variant},
     .analyze = analyze,
     .go = .{
         .visit = visit,
@@ -64,7 +70,7 @@ fn visit(context: plugin_api.GoContext, node: plugin_api.Node, b: *plugin_api.Bu
         },
         else => return,
     };
-    const fact = try context.facts.get(plugin, .function(function.origin.*)) orelse return;
+    const fact = try context.facts.get(variant, .function(function.origin.*)) orelse return;
     if (!fact.enabled) return;
     const method = context.method.?;
     const allocator = context.allocator;
@@ -131,7 +137,7 @@ const helper_source =
 fn packageHasVariant(context: plugin_api.GoContext) !bool {
     for (context.program.functions) |function| {
         if (!plugin_api.packageMatches(function.origin.package, context.options.active_package)) continue;
-        if (try context.facts.get(plugin, .function(function.origin.*))) |fact| {
+        if (try context.facts.get(variant, .function(function.origin.*))) |fact| {
             if (fact.enabled) return true;
         }
     }
@@ -157,7 +163,7 @@ fn analyze(context: plugin_api.AnalyzeContext) !void {
             });
         }
         const enabled = entry.is_public and entry.has_error;
-        try context.facts.put(allocator, plugin, .function(function.origin.*), .{
+        try context.provide(plugin, variant, .function(function.origin.*), .{
             .enabled = enabled,
             .replace = enabled and options.replace,
         });
@@ -215,6 +221,6 @@ fn claims(context: plugin_api.GoContext, node: plugin_api.Node) !bool {
         .function => |value| value,
         else => return false,
     };
-    const fact = try context.facts.get(plugin, .function(function.origin.*)) orelse return false;
+    const fact = try context.facts.get(variant, .function(function.origin.*)) orelse return false;
     return fact.replace;
 }

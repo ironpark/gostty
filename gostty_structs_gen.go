@@ -410,23 +410,6 @@ type FormatOptions struct {
 	ResolvePalette bool
 }
 
-// RGB mirrors the Zig `extern struct` of the same name.
-type RGB struct {
-	// R: The red channel.
-	R uint8
-	// G: The green channel.
-	G uint8
-	// B: The blue channel.
-	B uint8
-}
-
-// RGB is reinterpreted as raw.RGBData instead of copied, so the two
-// layouts must stay identical.
-var _ = [1]struct{}{}[unsafe.Sizeof(RGB{})-unsafe.Sizeof(raw.RGBData{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(RGB{}.R)-unsafe.Offsetof(raw.RGBData{}.R)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RGB{}.G)-unsafe.Offsetof(raw.RGBData{}.G)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RGB{}.B)-unsafe.Offsetof(raw.RGBData{}.B)]
-
 // Scrollbar mirrors the Zig `extern struct` of the same name.
 type Scrollbar struct {
 	// Total size of the scrollable area.
@@ -771,19 +754,25 @@ func zigoFormatOptionsToRaw(value FormatOptions) raw.FormatOptionsData {
 	}
 }
 
+// zigoRGBToRaw converts through the binding's `.go` adapter (rgbToRaw).
 func zigoRGBToRaw(value RGB) raw.RGBData {
-	return raw.RGBData{
-		R: value.R,
-		G: value.G,
-		B: value.B,
-	}
+	return rgbToRaw(value)
 }
 
+// zigoRGBFromRaw converts through the binding's `.go` adapter (rgbFromRaw).
 func zigoRGBFromRaw(value raw.RGBData) RGB {
-	return RGB{
-		R: value.R,
-		G: value.G,
-		B: value.B,
+	return rgbFromRaw(value)
+}
+
+func zigoRGBSliceCopyFromRaw(dst []RGB, values []raw.RGBData, count int) {
+	if count > len(dst) {
+		count = len(dst)
+	}
+	if count > len(values) {
+		count = len(values)
+	}
+	for i := 0; i < count; i++ {
+		dst[i] = zigoRGBFromRaw(values[i])
 	}
 }
 
@@ -954,7 +943,7 @@ func zigoAttributeFromRaw(value raw.AttributeData) Attribute {
 	case AttributeTagUnderline:
 		return AttributeUnderline(Underline(value.Underline))
 	case AttributeTagUnderlineColorRgb:
-		return AttributeUnderlineColorRgb(RGB{R: value.UnderlineColorRgbR, G: value.UnderlineColorRgbG, B: value.UnderlineColorRgbB})
+		return AttributeUnderlineColorRgb(zigoRGBFromRaw(raw.RGBData{R: value.UnderlineColorRgbR, G: value.UnderlineColorRgbG, B: value.UnderlineColorRgbB}))
 	case AttributeTagUnderlineColor256:
 		return AttributeUnderlineColor256(value.UnderlineColor256)
 	case AttributeTagResetUnderlineColor:
@@ -980,9 +969,9 @@ func zigoAttributeFromRaw(value raw.AttributeData) Attribute {
 	case AttributeTagResetStrikethrough:
 		return AttributeResetStrikethrough()
 	case AttributeTagDirectColorFg:
-		return AttributeDirectColorFg(RGB{R: value.DirectColorFgR, G: value.DirectColorFgG, B: value.DirectColorFgB})
+		return AttributeDirectColorFg(zigoRGBFromRaw(raw.RGBData{R: value.DirectColorFgR, G: value.DirectColorFgG, B: value.DirectColorFgB}))
 	case AttributeTagDirectColorBg:
-		return AttributeDirectColorBg(RGB{R: value.DirectColorBgR, G: value.DirectColorBgG, B: value.DirectColorBgB})
+		return AttributeDirectColorBg(zigoRGBFromRaw(raw.RGBData{R: value.DirectColorBgR, G: value.DirectColorBgG, B: value.DirectColorBgB}))
 	case AttributeTagColor256Fg:
 		return AttributeColor256Fg(value.Color256Fg)
 	case AttributeTagColor256Bg:

@@ -27,14 +27,6 @@ pub const EraseDisplay = vt.EraseDisplay;
 pub const EraseLine = vt.EraseLine;
 pub const TabClear = vt.TabClear;
 
-/// Change the viewport size, leaving the pixel geometry alone.
-///
-/// Wrapped because `vt.Terminal.Resize` carries a nested optional struct for
-/// the cell size in pixels, which has no C representation.
-pub fn resize(self: *Terminal, gpa: Allocator, width: u16, height: u16) !void {
-    try self.resize(gpa, .{ .cols = width, .rows = height });
-}
-
 /// Change the viewport size and tell the terminal how many pixels a cell is.
 ///
 /// The pixel geometry is only used by the parts of the protocol that measure in

@@ -3036,7 +3036,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 69,
+            "line": 61,
             "column": 39
           },
           "type": {
@@ -3067,7 +3067,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "terminal.zig",
-        "line": 69,
+        "line": 61,
         "column": 8
       },
       "zig_path": "historyString",
@@ -3485,7 +3485,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 230,
+            "line": 222,
             "column": 47
           },
           "type": {
@@ -3502,7 +3502,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 230,
+        "line": 222,
         "column": 8
       },
       "zig_path": "setScrollbackMaxBytes",
@@ -3519,7 +3519,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 235,
+        "line": 227,
         "column": 8
       },
       "zig_path": "clearScrollbackMaxBytes",
@@ -3539,7 +3539,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 240,
+            "line": 232,
             "column": 47
           },
           "type": {
@@ -3556,7 +3556,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 240,
+        "line": 232,
         "column": 8
       },
       "zig_path": "setScrollbackMaxLines",
@@ -3573,7 +3573,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 245,
+        "line": 237,
         "column": 8
       },
       "zig_path": "clearScrollbackMaxLines",
@@ -3855,22 +3855,19 @@
       "symbol": "zg_terminal_decaln"
     },
     {
-      "covers": [
-        "Terminal.resize"
-      ],
-      "doc": "Change the viewport size, leaving the pixel geometry alone.\n\nWrapped because `vt.Terminal.Resize` carries a nested optional struct for\nthe cell size in pixels, which has no C representation.",
+      "doc": "Change the viewport size, leaving the pixel geometry alone.",
       "name": "resize",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
           "injected": "allocator",
-          "name": "gpa",
+          "name": "alloc",
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 34,
-            "column": 32
+            "line": 4028,
+            "column": 5
           },
           "type": {
             "kind": "void"
@@ -3878,34 +3875,36 @@
         },
         {
           "direction": "in",
-          "name": "width",
+          "flatten": [
+            {
+              "name": "cols",
+              "type": {
+                "bits": 16,
+                "is_usize": false,
+                "kind": "int",
+                "signed": false
+              }
+            },
+            {
+              "name": "rows",
+              "type": {
+                "bits": 16,
+                "is_usize": false,
+                "kind": "int",
+                "signed": false
+              }
+            }
+          ],
+          "name": "opts",
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 34,
-            "column": 48
+            "line": 4029,
+            "column": 5
           },
           "type": {
-            "bits": 16,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        },
-        {
-          "direction": "in",
-          "name": "height",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 34,
-            "column": 60
-          },
-          "type": {
-            "bits": 16,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
+            "kind": "value_struct",
+            "ref": "Resize"
           }
         }
       ],
@@ -3921,11 +3920,10 @@
         }
       },
       "source": {
-        "path": "terminal.zig",
-        "line": 34,
+        "path": "terminal/Terminal.zig",
+        "line": 4026,
         "column": 8
       },
-      "zig_path": "resize",
       "symbol": "zg_terminal_resize"
     },
     {
@@ -3940,7 +3938,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 47,
+            "line": 39,
             "column": 5
           },
           "type": {
@@ -3953,7 +3951,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 48,
+            "line": 40,
             "column": 5
           },
           "type": {
@@ -3969,7 +3967,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 49,
+            "line": 41,
             "column": 5
           },
           "type": {
@@ -3985,7 +3983,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 50,
+            "line": 42,
             "column": 5
           },
           "type": {
@@ -4001,7 +3999,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 51,
+            "line": 43,
             "column": 5
           },
           "type": {
@@ -4025,7 +4023,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 45,
+        "line": 37,
         "column": 8
       },
       "zig_path": "resizeCells",
@@ -4306,7 +4304,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 253,
+        "line": 245,
         "column": 8
       },
       "zig_path": "backgroundColor",
@@ -4327,7 +4325,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 258,
+        "line": 250,
         "column": 8
       },
       "zig_path": "foregroundColor",
@@ -4348,7 +4346,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 264,
+        "line": 256,
         "column": 8
       },
       "zig_path": "cursorColor",
@@ -4365,7 +4363,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 270,
+            "line": 262,
             "column": 45
           },
           "type": {
@@ -4388,7 +4386,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 270,
+        "line": 262,
         "column": 8
       },
       "zig_path": "paletteColors",
@@ -4405,7 +4403,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 298,
+            "line": 290,
             "column": 43
           },
           "type": {
@@ -4420,7 +4418,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 298,
+        "line": 290,
         "column": 8
       },
       "zig_path": "modeEnabled",
@@ -4437,7 +4435,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 306,
+            "line": 298,
             "column": 33
           },
           "type": {
@@ -4451,7 +4449,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 306,
+            "line": 298,
             "column": 45
           },
           "type": {
@@ -4465,7 +4463,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 306,
+        "line": 298,
         "column": 8
       },
       "zig_path": "setMode",
@@ -4485,7 +4483,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 209,
+            "line": 201,
             "column": 38
           },
           "type": {
@@ -4507,7 +4505,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 209,
+        "line": 201,
         "column": 8
       },
       "zig_path": "setAttribute",
@@ -4729,7 +4727,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 278,
+            "line": 270,
             "column": 51
           },
           "type": {
@@ -4744,7 +4742,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 278,
+        "line": 270,
         "column": 8
       },
       "zig_path": "setDefaultBackgroundColor",
@@ -4761,7 +4759,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 283,
+            "line": 275,
             "column": 51
           },
           "type": {
@@ -4776,7 +4774,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 283,
+        "line": 275,
         "column": 8
       },
       "zig_path": "setDefaultForegroundColor",
@@ -4793,7 +4791,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 288,
+            "line": 280,
             "column": 47
           },
           "type": {
@@ -4808,7 +4806,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 288,
+        "line": 280,
         "column": 8
       },
       "zig_path": "setDefaultCursorColor",
@@ -4859,7 +4857,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 219,
+            "line": 211,
             "column": 47
           },
           "type": {
@@ -4873,7 +4871,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 219,
+        "line": 211,
         "column": 8
       },
       "zig_path": "setDefaultCursorBlink",
@@ -4890,7 +4888,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 224,
+        "line": 216,
         "column": 8
       },
       "zig_path": "resetDefaultCursorBlink",
@@ -7637,7 +7635,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 85,
+        "line": 77,
         "column": 8
       },
       "zig_path": "colorNameDefault",
@@ -8544,10 +8542,13 @@
           "WriteFailed",
           "OutOfMemory",
           "Overflow",
-          "ScrollbackLimitOverflow",
           "InvalidDimensions",
-          "InvalidScrollingRegion",
           "InvalidScreenCount",
+          "NoPendingState",
+          "NonCanonicalContinuation",
+          "ReplayWouldCommit",
+          "ScrollbackLimitOverflow",
+          "InvalidScrollingRegion",
           "InvalidActiveScreenKey",
           "InvalidPreviousCodepoint",
           "InvalidScrollbackLimit",
@@ -8564,10 +8565,7 @@
           "InvalidSavedCursorFlags",
           "InvalidWideCell",
           "TooManyGraphemes",
-          "PageCountOverflow",
-          "NoPendingState",
-          "NonCanonicalContinuation",
-          "ReplayWouldCommit"
+          "PageCountOverflow"
         ],
         "kind": "error_union",
         "payload": {
@@ -9246,7 +9244,7 @@
     },
     {
       "boxed": "create",
-      "doc": "Decode a snapshot from `reader`. `max_continuation_bytes` bounds the\nunfinished-sequence suffix the snapshot may carry.\n\nWrapped because ghostty's `decode` takes an options struct; returned by\nvalue so zigo boxes it and `Snapshot.deinit` frees it.",
+      "doc": "Decode a snapshot from reader. max_continuation_bytes bounds the unfinished-sequence suffix the snapshot may carry.",
       "go": {
         "owner": "Snapshot"
       },
@@ -9256,13 +9254,19 @@
         {
           "direction": "in",
           "injected": "allocator",
-          "name": "gpa",
-          "name_source": "ast",
+          "name": "allocator",
+          "name_source": "fallback",
           "retention": "borrowed",
-          "source": {
-            "line": 30,
-            "column": 23
-          },
+          "type": {
+            "kind": "void"
+          }
+        },
+        {
+          "direction": "in",
+          "injected": "io",
+          "name": "io",
+          "name_source": "fallback",
+          "retention": "borrowed",
           "type": {
             "kind": "void"
           }
@@ -9270,30 +9274,31 @@
         {
           "direction": "in",
           "name": "reader",
-          "name_source": "ast",
+          "name_source": "sidecar",
           "retention": "borrowed",
-          "source": {
-            "line": 30,
-            "column": 39
-          },
           "type": {
             "kind": "io_reader"
           }
         },
         {
           "direction": "in",
-          "name": "max_continuation_bytes",
-          "name_source": "ast",
+          "flatten": [
+            {
+              "name": "max_continuation_bytes",
+              "type": {
+                "bits": 64,
+                "is_usize": true,
+                "kind": "int",
+                "signed": false
+              }
+            }
+          ],
+          "name": "p3",
+          "name_source": "fallback",
           "retention": "borrowed",
-          "source": {
-            "line": 30,
-            "column": 63
-          },
           "type": {
-            "bits": 64,
-            "is_usize": true,
-            "kind": "int",
-            "signed": false
+            "kind": "value_struct",
+            "ref": "DecodeOptions"
           }
         }
       ],
@@ -9303,13 +9308,10 @@
           "ReadFailed",
           "OutOfMemory",
           "OutOfSpace",
-          "InvalidDimensions",
-          "InvalidScreenCount",
-          "NoPendingState",
-          "NonCanonicalContinuation",
-          "ReplayWouldCommit",
           "InvalidMagic",
           "UnsupportedVersion",
+          "InvalidDimensions",
+          "InvalidScreenCount",
           "InvalidTag",
           "InvalidChecksum",
           "PayloadNotExhausted",
@@ -9339,6 +9341,9 @@
           "NoPages",
           "InsufficientRows",
           "InvalidPageCount",
+          "NoPendingState",
+          "NonCanonicalContinuation",
+          "ReplayWouldCommit",
           "ContinuationLimitExceeded",
           "UnexpectedScreenKey",
           "DuplicateScreen",
@@ -9356,11 +9361,6 @@
           "nullable": false,
           "ref": "Snapshot"
         }
-      },
-      "source": {
-        "path": "snapshot.zig",
-        "line": 30,
-        "column": 8
       },
       "zig_path": "decodeSnapshot",
       "symbol": "zg_decode_snapshot"
@@ -9409,7 +9409,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 44,
+            "line": 39,
             "column": 45
           },
           "type": {
@@ -9422,7 +9422,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 44,
+            "line": 39,
             "column": 61
           },
           "type": {
@@ -9445,7 +9445,7 @@
       },
       "source": {
         "path": "snapshot.zig",
-        "line": 44,
+        "line": 39,
         "column": 8
       },
       "zig_path": "snapshotRestoreInto",
@@ -9475,7 +9475,7 @@
       },
       "source": {
         "path": "snapshot.zig",
-        "line": 57,
+        "line": 52,
         "column": 8
       },
       "zig_path": "snapshotTerminal",
@@ -9499,7 +9499,7 @@
       },
       "source": {
         "path": "snapshot.zig",
-        "line": 71,
+        "line": 66,
         "column": 8
       },
       "zig_path": "snapshotContinuation",
@@ -9521,7 +9521,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 128,
+            "line": 123,
             "column": 27
           },
           "type": {
@@ -9534,7 +9534,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 128,
+            "line": 123,
             "column": 43
           },
           "type": {
@@ -9563,7 +9563,7 @@
       },
       "source": {
         "path": "snapshot.zig",
-        "line": 128,
+        "line": 123,
         "column": 8
       },
       "symbol": "zg_new_snapshot_decoder"
@@ -9580,7 +9580,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 143,
+            "line": 138,
             "column": 52
           },
           "type": {
@@ -9594,7 +9594,7 @@
       },
       "source": {
         "path": "snapshot.zig",
-        "line": 143,
+        "line": 138,
         "column": 8
       },
       "zig_path": "freeSnapshotDecoder",
@@ -9612,7 +9612,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 153,
+            "line": 148,
             "column": 53
           },
           "type": {
@@ -9625,7 +9625,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 153,
+            "line": 148,
             "column": 69
           },
           "type": {
@@ -9643,13 +9643,10 @@
           "ReadFailed",
           "OutOfMemory",
           "OutOfSpace",
-          "InvalidDimensions",
-          "InvalidScreenCount",
-          "NoPendingState",
-          "NonCanonicalContinuation",
-          "ReplayWouldCommit",
           "InvalidMagic",
           "UnsupportedVersion",
+          "InvalidDimensions",
+          "InvalidScreenCount",
           "InvalidTag",
           "InvalidChecksum",
           "PayloadNotExhausted",
@@ -9679,6 +9676,9 @@
           "NoPages",
           "InsufficientRows",
           "InvalidPageCount",
+          "NoPendingState",
+          "NonCanonicalContinuation",
+          "ReplayWouldCommit",
           "ContinuationLimitExceeded",
           "UnexpectedScreenKey",
           "DuplicateScreen",
@@ -9691,7 +9691,7 @@
       },
       "source": {
         "path": "snapshot.zig",
-        "line": 153,
+        "line": 148,
         "column": 8
       },
       "zig_path": "snapshotDecoderReady",
@@ -9709,7 +9709,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 163,
+            "line": 158,
             "column": 59
           },
           "type": {
@@ -9722,7 +9722,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 163,
+            "line": 158,
             "column": 75
           },
           "type": {
@@ -9745,7 +9745,7 @@
       },
       "source": {
         "path": "snapshot.zig",
-        "line": 163,
+        "line": 158,
         "column": 8
       },
       "zig_path": "snapshotDecoderRestoreInto",
@@ -9769,7 +9769,7 @@
       },
       "source": {
         "path": "snapshot.zig",
-        "line": 169,
+        "line": 164,
         "column": 8
       },
       "zig_path": "snapshotDecoderContinuation",
@@ -9787,7 +9787,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 181,
+            "line": 176,
             "column": 52
           },
           "type": {
@@ -9800,7 +9800,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 181,
+            "line": 176,
             "column": 68
           },
           "type": {
@@ -9862,7 +9862,7 @@
       },
       "source": {
         "path": "snapshot.zig",
-        "line": 181,
+        "line": 176,
         "column": 8
       },
       "zig_path": "snapshotDecoderNext",
@@ -12898,7 +12898,7 @@
         "signed": false
       },
       "text": true,
-      "zig_path": "terminal.modes.Mode__enum_42128"
+      "zig_path": "terminal.modes.Mode__enum_42875"
     },
     {
       "exhaustive": true,
@@ -13065,6 +13065,57 @@
         "column": 11
       },
       "zig_path": "format.FormatOptions"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "doc": "The red channel.",
+          "name": "r",
+          "type": {
+            "bits": 8,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "doc": "The green channel.",
+          "name": "g",
+          "type": {
+            "bits": 8,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "doc": "The blue channel.",
+          "name": "b",
+          "type": {
+            "bits": 8,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "go": {
+        "adapter": {
+          "from_raw": "rgbFromRaw",
+          "to_raw": "rgbToRaw",
+          "type": "RGB"
+        }
+      },
+      "kind": "value_struct",
+      "layout": "extern",
+      "name": "RGB",
+      "source": {
+        "path": "common.zig",
+        "line": 78,
+        "column": 11
+      },
+      "zig_path": "common.RGB"
     },
     {
       "exhaustive": true,
@@ -13417,54 +13468,10 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 96,
+        "line": 88,
         "column": 11
       },
       "zig_path": "terminal.Attribute"
-    },
-    {
-      "exhaustive": true,
-      "fields": [
-        {
-          "doc": "The red channel.",
-          "name": "r",
-          "type": {
-            "bits": 8,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        },
-        {
-          "doc": "The green channel.",
-          "name": "g",
-          "type": {
-            "bits": 8,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        },
-        {
-          "doc": "The blue channel.",
-          "name": "b",
-          "type": {
-            "bits": 8,
-            "is_usize": false,
-            "kind": "int",
-            "signed": false
-          }
-        }
-      ],
-      "kind": "value_struct",
-      "layout": "extern",
-      "name": "RGB",
-      "source": {
-        "path": "common.zig",
-        "line": 78,
-        "column": 11
-      },
-      "zig_path": "common.RGB"
     },
     {
       "exhaustive": true,
@@ -14430,7 +14437,8 @@
           "form": "pointer",
           "interfaces": [
             "io.WriteCloser"
-          ]
+          ],
+          "generated": []
         }
       },
       "fields": [],
@@ -15278,7 +15286,7 @@
       "name": "SnapshotDecoder",
       "source": {
         "path": "snapshot.zig",
-        "line": 93,
+        "line": 88,
         "column": 11
       },
       "zig_path": "snapshot.SnapshotDecoder"
@@ -15357,7 +15365,7 @@
       "name": "SnapshotProgress",
       "source": {
         "path": "snapshot.zig",
-        "line": 114,
+        "line": 109,
         "column": 11
       },
       "zig_path": "snapshot.SnapshotProgress"
@@ -16177,6 +16185,61 @@
         "column": 11
       },
       "zig_path": "terminal.Terminal.Options"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "doc": "The new size to resize to",
+          "name": "cols",
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "name": "rows",
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "kind": "value_struct",
+      "name": "Resize",
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 3984,
+        "column": 11
+      },
+      "zig_path": "terminal.Terminal.Resize"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "doc": "Largest non-ground continuation the decoder may allocate and return.\nSet this to zero when only ground-state snapshots are acceptable.",
+          "name": "max_continuation_bytes",
+          "type": {
+            "bits": 64,
+            "is_usize": true,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "kind": "value_struct",
+      "name": "DecodeOptions",
+      "source": {
+        "path": "terminal/snapshot/snapshot.zig",
+        "line": 102,
+        "column": 11
+      },
+      "zig_path": "terminal.snapshot.snapshot.DecodeOptions"
     }
   ],
   "zig_version": "0.16.0"

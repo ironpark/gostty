@@ -44,7 +44,19 @@ func TestMustNewPanicsOnBadSize(t *testing.T) {
 // RGB says which byte is which, rather than leaving a caller to shift an
 // integer apart, and it is a color.Color so it can be drawn with directly.
 func TestRGB(t *testing.T) {
-	c := NewRGB(0x11, 0x22, 0x33)
+	c := RGB{0x11, 0x22, 0x33}
+	if c.R() != 0x11 || c.G() != 0x22 || c.B() != 0x33 {
+		t.Fatalf("channel accessors disagree with RGB byte order: %v", c)
+	}
+	if got := NewRGB(0x11, 0x22, 0x33); got != c {
+		t.Fatalf("NewRGB = %v, want %v", got, c)
+	}
+	for _, sample := range []RGB{{}, {0xff, 0x80, 0x01}} {
+		r, g, b, a := sample.RGBA()
+		if r != uint32(sample[0])*257 || g != uint32(sample[1])*257 || b != uint32(sample[2])*257 || a != 0xffff {
+			t.Errorf("%v.RGBA() = %x %x %x %x", sample, r, g, b, a)
+		}
+	}
 	if got := c.Uint32(); got != 0x112233 {
 		t.Errorf("Uint32() = %#06x, want 0x112233", got)
 	}

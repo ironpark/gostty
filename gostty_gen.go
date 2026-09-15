@@ -2010,18 +2010,15 @@ func (te *Terminal) Decaln() error {
 }
 
 // Resize: Change the viewport size, leaving the pixel geometry alone.
-//
-// Wrapped because `vt.Terminal.Resize` carries a nested optional struct for
-// the cell size in pixels, which has no C representation.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
-func (te *Terminal) Resize(width uint16, height uint16) error {
+func (te *Terminal) Resize(cols uint16, rows uint16) error {
 	ptr, err := zigoCheckedPointer("Terminal.Resize receiver", te)
 	if err != nil {
 		return err
 	}
 	defer te.zigoRelease()
-	code := raw.TerminalResize(ptr, width, height)
+	code := raw.TerminalResize(ptr, cols, rows)
 	if code != 0 {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Resize", code), te)
 	}
@@ -2189,12 +2186,12 @@ func (te *Terminal) SetTitle(t string) error {
 func (te *Terminal) BackgroundColor() (RGB, bool, error) {
 	ptr, err := zigoCheckedPointer("Terminal.BackgroundColor receiver", te)
 	if err != nil {
-		return RGB{}, false, err
+		return *new(RGB), false, err
 	}
 	defer te.zigoRelease()
 	result, zigoHas, code := raw.TerminalBackgroundColor(ptr)
 	if code != 0 {
-		return RGB{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.BackgroundColor", code), te)
+		return *new(RGB), false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.BackgroundColor", code), te)
 	}
 	return zigoRGBFromRaw(result), zigoHas, nil
 }
@@ -2206,12 +2203,12 @@ func (te *Terminal) BackgroundColor() (RGB, bool, error) {
 func (te *Terminal) ForegroundColor() (RGB, bool, error) {
 	ptr, err := zigoCheckedPointer("Terminal.ForegroundColor receiver", te)
 	if err != nil {
-		return RGB{}, false, err
+		return *new(RGB), false, err
 	}
 	defer te.zigoRelease()
 	result, zigoHas, code := raw.TerminalForegroundColor(ptr)
 	if code != 0 {
-		return RGB{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ForegroundColor", code), te)
+		return *new(RGB), false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ForegroundColor", code), te)
 	}
 	return zigoRGBFromRaw(result), zigoHas, nil
 }
@@ -2224,12 +2221,12 @@ func (te *Terminal) ForegroundColor() (RGB, bool, error) {
 func (te *Terminal) CursorColor() (RGB, bool, error) {
 	ptr, err := zigoCheckedPointer("Terminal.CursorColor receiver", te)
 	if err != nil {
-		return RGB{}, false, err
+		return *new(RGB), false, err
 	}
 	defer te.zigoRelease()
 	result, zigoHas, code := raw.TerminalCursorColor(ptr)
 	if code != 0 {
-		return RGB{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorColor", code), te)
+		return *new(RGB), false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorColor", code), te)
 	}
 	return zigoRGBFromRaw(result), zigoHas, nil
 }
@@ -2244,14 +2241,12 @@ func (te *Terminal) PaletteColors(dst []RGB) (uint, error) {
 		return 0, err
 	}
 	defer te.zigoRelease()
-	var dstRaw []raw.RGBData
-	if len(dst) != 0 {
-		dstRaw = unsafe.Slice((*raw.RGBData)(unsafe.Pointer(&dst[0])), len(dst))
-	}
+	dstRaw := make([]raw.RGBData, len(dst))
 	result, code := raw.TerminalPaletteColors(ptr, dstRaw)
 	if code != 0 {
 		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PaletteColors", code), te)
 	}
+	zigoRGBSliceCopyFromRaw(dst, dstRaw, int(result))
 	return result, nil
 }
 
@@ -2300,7 +2295,7 @@ func (te *Terminal) SetAttribute(attr Attribute) error {
 		return err
 	}
 	defer te.zigoRelease()
-	code := raw.TerminalSetAttribute(ptr, uint8(attr.tag), uint8(attr.underline), attr.underlineColorRgb.R, attr.underlineColorRgb.G, attr.underlineColorRgb.B, attr.underlineColor256, attr.directColorFg.R, attr.directColorFg.G, attr.directColorFg.B, attr.directColorBg.R, attr.directColorBg.G, attr.directColorBg.B, attr.color256Fg, attr.color256Bg, uint8(attr.namedFg), uint8(attr.namedBg), uint8(attr.brightNamedFg), uint8(attr.brightNamedBg))
+	code := raw.TerminalSetAttribute(ptr, uint8(attr.tag), uint8(attr.underline), zigoRGBToRaw(attr.underlineColorRgb).R, zigoRGBToRaw(attr.underlineColorRgb).G, zigoRGBToRaw(attr.underlineColorRgb).B, attr.underlineColor256, zigoRGBToRaw(attr.directColorFg).R, zigoRGBToRaw(attr.directColorFg).G, zigoRGBToRaw(attr.directColorFg).B, zigoRGBToRaw(attr.directColorBg).R, zigoRGBToRaw(attr.directColorBg).G, zigoRGBToRaw(attr.directColorBg).B, attr.color256Fg, attr.color256Bg, uint8(attr.namedFg), uint8(attr.namedBg), uint8(attr.brightNamedFg), uint8(attr.brightNamedBg))
 	if code != 0 {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetAttribute", code), te)
 	}
@@ -2515,12 +2510,12 @@ func (te *Terminal) ResetDefaultCursorBlink() error {
 func (te *Terminal) PaletteColor(idx uint8) (RGB, error) {
 	ptr, err := zigoCheckedPointer("Terminal.PaletteColor receiver", te)
 	if err != nil {
-		return RGB{}, err
+		return *new(RGB), err
 	}
 	defer te.zigoRelease()
 	result, code := raw.TerminalPaletteColor(ptr, idx)
 	if code != 0 {
-		return RGB{}, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PaletteColor", code), te)
+		return *new(RGB), zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PaletteColor", code), te)
 	}
 	return zigoRGBFromRaw(result), nil
 }
@@ -4861,11 +4856,7 @@ func (o *OSCParser) Reset() error {
 	return nil
 }
 
-// DecodeSnapshot: Decode a snapshot from `reader`. `max_continuation_bytes` bounds the
-// unfinished-sequence suffix the snapshot may carry.
-//
-// Wrapped because ghostty's `decode` takes an options struct; returned by
-// value so zigo boxes it and `Snapshot.deinit` frees it.
+// DecodeSnapshot: Decode a snapshot from reader. max_continuation_bytes bounds the unfinished-sequence suffix the snapshot may carry.
 // The caller must call Close on the returned handle.
 // Native failures are returned as generated error values.
 // A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
@@ -5463,5 +5454,5 @@ type BuildInfo struct {
 
 // GetBuildInfo identifies the bundled native build. Values are fixed at generation time.
 func GetBuildInfo() BuildInfo {
-	return BuildInfo{GhosttyRevision: "d4c88d8069912b653d707191388ca98e24751f12", ZigoVersion: "0.28.0", Optimize: "ReleaseSafe", SIMD: true, KittyGraphics: true, TmuxControlMode: false}
+	return BuildInfo{GhosttyRevision: "d4c88d8069912b653d707191388ca98e24751f12", ZigoVersion: "0.30.0", Optimize: "ReleaseSafe", SIMD: true, KittyGraphics: true, TmuxControlMode: false}
 }

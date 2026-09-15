@@ -185,7 +185,6 @@ pub const ScrollViewport = terminal_.ScrollViewport;
 pub const EraseDisplay = terminal_.EraseDisplay;
 pub const EraseLine = terminal_.EraseLine;
 pub const TabClear = terminal_.TabClear;
-pub const resize = terminal_.resize;
 pub const resizeCells = terminal_.resizeCells;
 pub const historyString = terminal_.historyString;
 pub const ColorName = terminal_.ColorName;
@@ -223,6 +222,8 @@ pub const screenFormatSelection = format_.screenFormatSelection;
 const snapshot_ = @import("snapshot.zig");
 
 pub const Snapshot = snapshot_.Snapshot;
+// The flattened native parameter is constructed as root.DecodeOptions by zigo.
+pub const DecodeOptions = vt.snapshot.DecodeOptions;
 pub const decodeSnapshot = snapshot_.decodeSnapshot;
 pub const snapshotRestoreInto = snapshot_.snapshotRestoreInto;
 pub const snapshotTerminal = snapshot_.snapshotTerminal;

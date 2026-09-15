@@ -580,39 +580,53 @@ var (
 	_ io.StringWriter = (*Stream)(nil)
 )
 
-// RGB is the color type every binding call hands over and takes back. The
-// binding used to spell a color as a `uint32` holding `0xRRGGBB`, which is a
-// layout a caller had to be told about; three named bytes say it instead.
-//
-// RGB satisfies image/color.Color through RGBA, so it can be handed to the
-// standard drawing packages without a conversion written at the call site.
+// RGB is an opaque color stored as red, green and blue bytes.
+// It implements image/color.Color with a fully opaque alpha channel.
+type RGB [3]byte
+
+// R returns the red channel.
+func (c RGB) R() byte { return c[0] }
+
+// G returns the green channel.
+func (c RGB) G() byte { return c[1] }
+
+// B returns the blue channel.
+func (c RGB) B() byte { return c[2] }
+
+func rgbToRaw(c RGB) raw.RGBData {
+	return raw.RGBData{R: c[0], G: c[1], B: c[2]}
+}
+
+func rgbFromRaw(c raw.RGBData) RGB {
+	return RGB{c.R, c.G, c.B}
+}
 
 // NewRGB builds a color from its three channels.
 func NewRGB(r, g, b uint8) RGB {
-	return RGB{R: r, G: g, B: b}
+	return RGB{r, g, b}
 }
 
 // RGBFromUint32 reads a color from the packed 0xRRGGBB form, which is how VT
 // sequences and most configuration formats carry one. Bits above the low 24
 // are ignored.
 func RGBFromUint32(v uint32) RGB {
-	return RGB{R: uint8(v >> 16), G: uint8(v >> 8), B: uint8(v)}
+	return RGB{uint8(v >> 16), uint8(v >> 8), uint8(v)}
 }
 
 // Uint32 returns the color packed as 0xRRGGBB.
 func (c RGB) Uint32() uint32 {
-	return uint32(c.R)<<16 | uint32(c.G)<<8 | uint32(c.B)
+	return uint32(c.R())<<16 | uint32(c.G())<<8 | uint32(c.B())
 }
 
 // RGBA implements image/color.Color. The terminal has no alpha channel, so the
 // color is always fully opaque, and each channel is scaled to 16 bits the way
 // the standard library's own 8-bit colors are.
 func (c RGB) RGBA() (r, g, b, a uint32) {
-	r = uint32(c.R)
+	r = uint32(c.R())
 	r |= r << 8
-	g = uint32(c.G)
+	g = uint32(c.G())
 	g |= g << 8
-	b = uint32(c.B)
+	b = uint32(c.B())
 	b |= b << 8
 	return r, g, b, 0xffff
 }
@@ -622,7 +636,7 @@ const zigoHexDigits = "0123456789abcdef"
 // String returns the color in CSS hex form, "#rrggbb".
 func (c RGB) String() string {
 	out := [7]byte{'#'}
-	for i, v := range [3]uint8{c.R, c.G, c.B} {
+	for i, v := range [3]uint8{c.R(), c.G(), c.B()} {
 		out[1+i*2] = zigoHexDigits[v>>4]
 		out[2+i*2] = zigoHexDigits[v&0xf]
 	}
@@ -649,7 +663,7 @@ func ParseRGB(text string) (RGB, error) {
 		}
 		out[i] = hi<<4 | lo
 	}
-	return RGB{R: out[0], G: out[1], B: out[2]}, nil
+	return RGB(out), nil
 }
 
 func zigoHexNibble(b byte) (uint8, bool) {

@@ -22,14 +22,9 @@ const io = common.io;
 /// on it to resume mid-sequence.
 pub const Snapshot = vt.snapshot.Decoded;
 
-/// Decode a snapshot from `reader`. `max_continuation_bytes` bounds the
-/// unfinished-sequence suffix the snapshot may carry.
-///
-/// Wrapped because ghostty's `decode` takes an options struct; returned by
-/// value so zigo boxes it and `Snapshot.deinit` frees it.
-pub fn decodeSnapshot(gpa: Allocator, reader: *std.Io.Reader, max_continuation_bytes: usize) !Snapshot {
-    return try vt.snapshot.decode(gpa, io, reader, .{ .max_continuation_bytes = max_continuation_bytes });
-}
+// Bind the native options struct with zigo.param.flatten; allocator and Io
+// are injected and the returned value is boxed by zigo.
+pub const decodeSnapshot = vt.snapshot.decode;
 
 /// Replace `term` with the terminal the snapshot holds: its size, screens,
 /// scrollback, modes and colors. The snapshot gives its terminal up once;

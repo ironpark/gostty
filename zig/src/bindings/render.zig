@@ -32,6 +32,11 @@ const snapshot_group = Snapshot.members(p.functions(api, .{
     // is no buffer here to call text or bytes.
     api.func("decodeSnapshot", .{
         .name = "DecodeSnapshot",
+        .doc = "Decode a snapshot from reader. max_continuation_bytes bounds the unfinished-sequence suffix the snapshot may carry.",
+        .params = &.{
+            .{ .index = 2, .go_name = "reader" },
+            zigo.param.flatten(3, &.{"max_continuation_bytes"}),
+        },
         .role = .{ .constructor = .{ .type = Snapshot.typeRef() } },
     }),
     Snapshot.func("deinit", .{ .role = .{ .destructor = Snapshot.typeRef() } }),

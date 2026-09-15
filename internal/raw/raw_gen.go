@@ -1143,8 +1143,8 @@ func TerminalDecaln(self unsafe.Pointer) int32 {
 }
 
 // TerminalResize calls the generated C ABI wrapper for zg_terminal_resize.
-func TerminalResize(self unsafe.Pointer, width uint16, height uint16) int32 {
-	code := int32(C.zg_terminal_resize((*C.zg_terminal)(self), C.uint16_t(width), C.uint16_t(height)))
+func TerminalResize(self unsafe.Pointer, cols uint16, rows uint16) int32 {
+	code := int32(C.zg_terminal_resize((*C.zg_terminal)(self), C.uint16_t(cols), C.uint16_t(rows)))
 	return code
 }
 
@@ -1269,9 +1269,20 @@ func TerminalCursorColor(self unsafe.Pointer) (RGBData, bool, int32) {
 
 // TerminalPaletteColors calls the generated C ABI wrapper for zg_terminal_palette_colors.
 func TerminalPaletteColors(self unsafe.Pointer, dst []RGBData) (uint, int32) {
-	dstPtr := (*C.zg_rgb)(zigoSlicePtr(dst))
+	var dstValues []C.zg_rgb
+	if len(dst) != 0 {
+		dstValues = make([]C.zg_rgb, len(dst))
+	}
+	dstPtr := (*C.zg_rgb)(zigoSlicePtr(dstValues))
 	var outResult C.size_t
 	code := int32(C.zg_terminal_palette_colors((*C.zg_terminal)(self), dstPtr, C.size_t(len(dst)), &outResult))
+	for i := 0; i < int(outResult) && i < len(dst); i++ {
+		dst[i] = RGBData{
+			R: uint8(dstValues[i].r),
+			G: uint8(dstValues[i].g),
+			B: uint8(dstValues[i].b),
+		}
+	}
 	return uint(outResult), code
 }
 

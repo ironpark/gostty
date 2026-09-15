@@ -903,7 +903,7 @@ ZIGO_EXPORT int32_t zg_terminal_erase_chars(zg_terminal * self, size_t count);
 ZIGO_EXPORT int32_t zg_terminal_erase_line(zg_terminal * self, uint8_t mode, uint8_t protected);
 ZIGO_EXPORT int32_t zg_terminal_erase_display(zg_terminal * self, uint8_t mode, uint8_t protected);
 ZIGO_EXPORT int32_t zg_terminal_decaln(zg_terminal * self);
-ZIGO_EXPORT int32_t zg_terminal_resize(zg_terminal * self, uint16_t width, uint16_t height);
+ZIGO_EXPORT int32_t zg_terminal_resize(zg_terminal * self, uint16_t cols, uint16_t rows);
 ZIGO_EXPORT int32_t zg_terminal_resize_cells(zg_terminal * self, uint16_t width, uint16_t height, uint32_t cell_width, uint32_t cell_height);
 ZIGO_EXPORT int32_t zg_terminal_format(zg_terminal * self, const zg_format_options * opts, size_t writer_userdata);
 ZIGO_EXPORT int32_t zg_terminal_format_selection(zg_terminal * self, const zg_format_options * opts, const zg_selection * sel, size_t writer_userdata, uint8_t * out_result);
