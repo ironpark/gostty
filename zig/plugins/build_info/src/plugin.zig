@@ -31,7 +31,7 @@ pub const plugin: plugin_api.Plugin = .{
     .TypeOptions = Options,
     .subjects = &.{.handle},
     .validate = validate,
-    .go = .{ .source_files = &.{.{ .scope = .document, .pathAlloc = filePath, .render = renderFile }} },
+    .go = .{ .visit = visit },
     .artifacts = &.{.{ .pathAlloc = artifactPath, .render = renderArtifact }},
 };
 
@@ -83,14 +83,12 @@ fn metadata(allocator: std.mem.Allocator, program: abi.Program, config: Config) 
     return error.MissingBuildInfo;
 }
 
-fn filePath(context: plugin_api.GoContext) ![]u8 {
-    return context.sourceFilePathAlloc("zigo_build_info_gen.go");
-}
-
-fn renderFile(context: plugin_api.GoContext, writer: *std.Io.Writer) !void {
+// Build provenance belongs beside the root API, not in its own Go file.
+fn visit(context: plugin_api.GoContext, node: plugin_api.Node, b: *plugin_api.Builder) !void {
+    if (node != .file_end or node.file_end.kind != .api or
+        !plugin_api.packageMatches(null, context.options.active_package)) return;
     const info = try metadata(context.allocator, context.program, try context.config(plugin));
-    const b = context.builder();
-    try b.render(writer, &.{
+    try b.emit(&.{
         .{ .raw = @embedFile("build_info.go.txt") },
         try b.func(.{
             .doc = .{ .text = "GetBuildInfo identifies the bundled native build. Values are fixed at generation time." },
@@ -106,7 +104,7 @@ fn renderFile(context: plugin_api.GoContext, writer: *std.Io.Writer) !void {
             })})},
             .single_line = true,
         }),
-    }, .{});
+    }, .{ .blank_before = true });
 }
 
 fn artifactPath(context: plugin_api.ArtifactContext) ![]u8 {

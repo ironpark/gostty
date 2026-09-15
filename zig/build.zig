@@ -93,10 +93,22 @@ pub fn build(b: *std.Build) void {
         .{ .name = "convenience", .root_source_file = b.path("plugins/convenience/src/plugin.zig") },
         .{ .name = "stringer", .root_source_file = b.path("plugins/stringer/src/plugin.zig") },
         .{ .name = "trim", .root_source_file = b.path("plugins/trim/src/plugin.zig") },
-        .{ .name = "must", .root_source_file = b.path("plugins/must/src/plugin.zig") },
+        .{ .name = "must", .root_source_file = b.path("plugins/must/src/plugin.zig"), .config = zigo.configJson(b, .{ .replace_field_getters = true }) },
         .{ .name = "satisfies", .root_source_file = zigo_dep.path("plugins/satisfies/src/plugin.zig") },
         .{ .name = "enumkit", .root_source_file = zigo_dep.path("plugins/enumkit/src/plugin.zig") },
     };
+
+    const plugin_tests = b.step("test-plugins", "Test binding plugin policies");
+    for (plugins) |entry| {
+        const module = b.createModule(.{
+            .root_source_file = entry.root_source_file.?,
+            .target = b.graph.host,
+            .optimize = optimize,
+        });
+        inline for (.{ "plugin", "semantic", "abi", "naming", "diagnostic", "targets" }) |name|
+            module.addImport(name, zigo_dep.module(name));
+        plugin_tests.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = module })).step);
+    }
 
     // `bindings` is left at its default, `src/bindings.zig` beside the
     // module root, and `addStandardSteps` runs as part of this call, so the

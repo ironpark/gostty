@@ -25,6 +25,17 @@ pub const trim = @import("trim");
 /// here instead of producing a Go API missing a method.
 pub const api = zigo.scope(gostty);
 
+/// Ordered function names mixed with entries carrying explicit native contracts.
+/// Every name resolves through zigo's checked scope; no public API is inferred.
+pub fn functions(comptime scope: type, comptime items: anytype) []const zigo.Entry {
+    comptime var entries: []const zigo.Entry = &.{};
+    inline for (items) |item| {
+        const entry: zigo.Entry = if (@TypeOf(item) == zigo.Entry) item else scope.func(item, .{});
+        entries = entries ++ [_]zigo.Entry{entry};
+    }
+    return entries;
+}
+
 /// A value struct that prints as its set members, `Bold|Underline:Single`.
 /// For the packed structs: a flag set is read one name at a time, and the
 /// backing integer's slack (`_pad`) is not one of the names. `stringer` writes
@@ -50,26 +61,6 @@ pub fn printed(comptime name: []const u8) zigo.Entry {
 /// condition to branch on, so a panic is the honest response.
 pub fn withMust(comptime entry: zigo.Entry) zigo.Entry {
     return entry.use(must.plugin, .{});
-}
-
-/// The same policy for a field accessor, and taken further: `.replace` gives
-/// the panicking form the plain name and does not export the checked one, so
-/// `Cols()` returns `uint16` rather than `(uint16, error)`.
-///
-/// A field has no body to fail in. The only error is a dead or poisoned
-/// handle, which a caller holding that handle cannot act on and would only
-/// propagate, so `if err != nil` on every read is noise around a defect. Go
-/// answers the same way where the shape is the same -- `reflect.Value.Int`
-/// panics on misuse rather than offering a checked twin. Keeping both names
-/// would have doubled the surface to no end: that is the reason the blanket
-/// `Must*` was turned down in 0.8.0, and it applies to `MustCols` beside
-/// `Cols` just as well.
-///
-/// This is for field reads only. The calls that *do* something keep their
-/// `error`, even the ones that cannot fail in Zig, because there a returned
-/// error is the ordinary Go shape.
-pub fn mustField(comptime field: zigo.HandleField) zigo.HandleField {
-    return field.extend(must.plugin, .{ .replace = true });
 }
 
 /// A type whose methods drop the prefix naming the type. ghostty declares them

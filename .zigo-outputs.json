@@ -54,10 +54,6 @@
       "kind": "go"
     },
     {
-      "path": "zigo_must_gen.go",
-      "kind": "go"
-    },
-    {
       "path": "sys/sys_gen.go",
       "kind": "go"
     },
@@ -91,10 +87,6 @@
     },
     {
       "path": "input/input_errors_gen.go",
-      "kind": "go"
-    },
-    {
-      "path": "zigo_build_info_gen.go",
       "kind": "go"
     },
     {

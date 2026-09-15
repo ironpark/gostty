@@ -3,17 +3,6 @@ const p = @import("policy.zig");
 const Stream = @import("stream.zig").Stream;
 const zigo = p.zigo;
 const api = p.api;
-const gostty = p.gostty;
-const convenience = p.convenience;
-const flags = p.flags;
-const printed = p.printed;
-const withMust = p.withMust;
-const mustField = p.mustField;
-const enumeration = p.enumeration;
-const out = p.out;
-const outCodepoints = p.outCodepoints;
-const childConstructor = p.childConstructor;
-const trimmed = p.trimmed;
 
 // The types, each captured as a context: one declaration that is both the type
 // and the scope its members are selected from. `.context()` only captures --
@@ -25,29 +14,29 @@ pub const Terminal = api.handle("Terminal", .{
         // Read straight off the terminal rather than through ghostty's `cols()`
         // and `rows()`, which is where these two sentences come from: the
         // accessor's doc is not the field's, so it is spelled here.
-        mustField(.{ .path = "cols", .doc = "The current column count, read without touching page memory." }),
-        mustField(.{ .path = "rows", .doc = "The number of populated rows, read without touching page memory." }),
-        mustField(.{ .path = "screens.active.cursor.x", .name = "cursorX" }),
-        mustField(.{ .path = "screens.active.cursor.y", .name = "cursorY" }),
-        mustField(.{ .path = "screens.active.cursor.cursor_style", .name = "cursorStyle" }),
-        mustField(.{ .path = "screens.active_key", .name = "activeScreenKey" }),
+        .{ .path = "cols", .doc = "The current column count, read without touching page memory." },
+        .{ .path = "rows", .doc = "The number of populated rows, read without touching page memory." },
+        .{ .path = "screens.active.cursor.x", .name = "cursorX" },
+        .{ .path = "screens.active.cursor.y", .name = "cursorY" },
+        .{ .path = "screens.active.cursor.cursor_style", .name = "cursorStyle" },
+        .{ .path = "screens.active_key", .name = "activeScreenKey" },
         // The LCF: set once printing has filled the last column, so the next
         // print soft-wraps instead of overwriting.
-        mustField(.{ .path = "screens.active.cursor.pending_wrap", .name = "cursorPendingWrap" }),
-        mustField(.{ .path = "screens.active.cursor.protected", .name = "cursorProtected" }),
-        mustField(.{ .path = "width_px", .name = "widthPx" }),
-        mustField(.{ .path = "height_px", .name = "heightPx" }),
-        mustField(.{ .path = "flags.focused", .name = "focused" }),
-        mustField(.{ .path = "flags.visible", .name = "visible" }),
-        mustField(.{ .path = "flags.password_input", .name = "passwordInput" }),
+        .{ .path = "screens.active.cursor.pending_wrap", .name = "cursorPendingWrap" },
+        .{ .path = "screens.active.cursor.protected", .name = "cursorProtected" },
+        .{ .path = "width_px", .name = "widthPx" },
+        .{ .path = "height_px", .name = "heightPx" },
+        .{ .path = "flags.focused", .name = "focused" },
+        .{ .path = "flags.visible", .name = "visible" },
+        .{ .path = "flags.password_input", .name = "passwordInput" },
         // Charset state and the protected mode are plain reads off the active
         // screen, so they are paths rather than wrappers that would forward to
         // exactly these fields. Only `charset` stays a function: it takes a
         // slot, so there is no one field for it to be.
-        mustField(.{ .path = "screens.active.charset.gl", .name = "charsetGL", .doc = "The slot GL resolves to: the set used for codepoints up to 127." }),
-        mustField(.{ .path = "screens.active.charset.gr", .name = "charsetGR", .doc = "The slot GR resolves to: the set used for 8-bit printable codepoints." }),
-        mustField(.{ .path = "screens.active.charset.single_shift", .name = "charsetSingleShift", .doc = "The slot a pending single shift (SS2/SS3) will use for exactly one character, or absent if none is pending." }),
-        mustField(.{ .path = "screens.active.protected_mode", .name = "protectedMode", .doc = "The most recent protected mode (DECSCA or the older SPA/EPA) on the active screen. This never returns to off once set, until the screen is reset: ECH and friends key off the most recent mode, not the current pen." }),
+        .{ .path = "screens.active.charset.gl", .name = "charsetGL", .doc = "The slot GL resolves to: the set used for codepoints up to 127." },
+        .{ .path = "screens.active.charset.gr", .name = "charsetGR", .doc = "The slot GR resolves to: the set used for 8-bit printable codepoints." },
+        .{ .path = "screens.active.charset.single_shift", .name = "charsetSingleShift", .doc = "The slot a pending single shift (SS2/SS3) will use for exactly one character, or absent if none is pending." },
+        .{ .path = "screens.active.protected_mode", .name = "protectedMode", .doc = "The most recent protected mode (DECSCA or the older SPA/EPA) on the active screen. This never returns to off once set, until the screen is reset: ECH and friends key off the most recent mode, not the current pen." },
     },
 }).with(.{ .doc =
     \\Terminal owns mutable terminal state. Serialize all calls, including
@@ -55,28 +44,28 @@ pub const Terminal = api.handle("Terminal", .{
     \\references. Handle locks protect lifetime only; they do not serialize native
     \\operations. Callbacks may answer their supplied request but must not
     \\recursively feed, resize, reset or close the same terminal.
-}).use(convenience.plugin, .{ .feature = .terminal_config }).use(p.build_info.plugin, .{
-    .simd = gostty.build_features.simd,
-    .kitty_graphics = gostty.build_features.kitty_graphics,
-    .tmux_control_mode = gostty.build_features.tmux_control_mode,
+}).use(p.convenience.plugin, .{ .feature = .terminal_config }).use(p.build_info.plugin, .{
+    .simd = p.gostty.build_features.simd,
+    .kitty_graphics = p.gostty.build_features.kitty_graphics,
+    .tmux_control_mode = p.gostty.build_features.tmux_control_mode,
 }).context();
 
-const Screen = trimmed(api.handle("Screen", .{})).context();
+const Screen = p.trimmed(api.handle("Screen", .{})).context();
 
-const Search = trimmed(api.handle("Search", .{})).context();
+const Search = p.trimmed(api.handle("Search", .{})).context();
 
-const GridRef = trimmed(api.handle("GridRef", .{})).context();
+const GridRef = p.trimmed(api.handle("GridRef", .{})).context();
 
-const Gesture = trimmed(api.handle("Gesture", .{ .fields = &.{
-    mustField(.{ .path = "inner.left_click_count", .name = "clickCount", .doc = "How many clicks the current sequence is at: 0 before any press, then 1, 2 or 3. What an emulator switches on to decide what a click means." }),
-    mustField(.{ .path = "inner.left_click_dragged", .name = "dragged", .doc = "Whether the pointer has left the pressed cell during this gesture. Read it on release: a click that never dragged is the one that should follow a hyperlink or move the shell cursor, rather than one that happened to end where it started after a round trip." }),
+const Gesture = p.trimmed(api.handle("Gesture", .{ .fields = &.{
+    .{ .path = "inner.left_click_count", .name = "clickCount", .doc = "How many clicks the current sequence is at: 0 before any press, then 1, 2 or 3. What an emulator switches on to decide what a click means." },
+    .{ .path = "inner.left_click_dragged", .name = "dragged", .doc = "Whether the pointer has left the pressed cell during this gesture. Read it on release: a click that never dragged is the one that should follow a hyperlink or move the shell cursor, rather than one that happened to end where it started after a round trip." },
 } })).context();
 
-const ColorName = trimmed(enumeration("ColorName", .{ .text = true, .open = true })).context();
+const ColorName = p.trimmed(p.enumeration("ColorName", .{ .text = true, .open = true })).context();
 
 // One group per type: the constructor that makes it, the destructor that ends
 // it, and everything a caller can do in between.
-const terminal_group = Terminal.members(&.{
+const terminal_group = Terminal.members(p.functions(api, .{
     // `Terminal.init` returns by value and takes an `Options`. `options` lowers
     // it exactly as `flatten` does -- same C symbol, same shim -- and splits the
     // listed fields by whether Zig gave them a default: `cols` and `rows` have
@@ -107,10 +96,10 @@ const terminal_group = Terminal.members(&.{
     // reaches back through it for an allocator as it tears down, and a search,
     // a gesture and a grid reference all hold pins inside its page storage --
     // so each is a child that has to close before the terminal does.
-    childConstructor("newStream", Stream),
-    childConstructor("newSearch", Search),
-    childConstructor("newGesture", Gesture),
-    childConstructor("newGridRef", GridRef),
+    p.childConstructor("newStream", Stream),
+    p.childConstructor("newSearch", Search),
+    p.childConstructor("newGesture", Gesture),
+    p.childConstructor("newGridRef", GridRef),
 
     // Printing and the cursor.
     Terminal.func("printString", .{}),
@@ -120,15 +109,15 @@ const terminal_group = Terminal.members(&.{
     Terminal.func("printSlice", .{ .params = &.{.{ .index = 1, .semantic = .codepoint }} }),
     Terminal.func("setCursorStyle", .{}),
     Terminal.func("setCursorPos", .{}),
-    withMust(Terminal.func("carriageReturn", .{})),
+    p.withMust(Terminal.func("carriageReturn", .{})),
     Terminal.func("linefeed", .{}),
-    withMust(Terminal.func("backspace", .{})),
-    withMust(Terminal.func("cursorIsAtPrompt", .{})),
-    withMust(Terminal.func("fullReset", .{})),
-    withMust(Terminal.func("cursorUp", .{})),
-    withMust(Terminal.func("cursorDown", .{})),
-    withMust(Terminal.func("cursorLeft", .{})),
-    withMust(Terminal.func("cursorRight", .{})),
+    p.withMust(Terminal.func("backspace", .{})),
+    p.withMust(Terminal.func("cursorIsAtPrompt", .{})),
+    p.withMust(Terminal.func("fullReset", .{})),
+    p.withMust(Terminal.func("cursorUp", .{})),
+    p.withMust(Terminal.func("cursorDown", .{})),
+    p.withMust(Terminal.func("cursorLeft", .{})),
+    p.withMust(Terminal.func("cursorRight", .{})),
     Terminal.func("saveCursor", .{}),
     Terminal.func("restoreCursor", .{}),
     Terminal.func("index", .{}),
@@ -159,9 +148,9 @@ const terminal_group = Terminal.members(&.{
     Terminal.func("tabSet", .{}),
     Terminal.func("tabReset", .{}),
     Terminal.func("tabClear", .{}),
-    api.func("setTabstop", .{}),
-    api.func("unsetTabstop", .{}),
-    api.func("resetTabstops", .{}),
+    "setTabstop",
+    "unsetTabstop",
+    "resetTabstops",
 
     // Scrolling and margins.
     Terminal.func("scrollUp", .{}),
@@ -170,9 +159,9 @@ const terminal_group = Terminal.members(&.{
     Terminal.func("setLeftAndRightMargin", .{}),
     Terminal.func("scrollViewport", .{}),
     api.func("setScrollbackMaxBytes", .{ .covers = &.{Terminal.ref("setScrollbackMaxBytes")} }),
-    api.func("clearScrollbackMaxBytes", .{}),
+    "clearScrollbackMaxBytes",
     api.func("setScrollbackMaxLines", .{ .covers = &.{Terminal.ref("setScrollbackMaxLines")} }),
-    api.func("clearScrollbackMaxLines", .{}),
+    "clearScrollbackMaxLines",
 
     // Editing.
     Terminal.func("insertLines", .{}),
@@ -184,7 +173,7 @@ const terminal_group = Terminal.members(&.{
     Terminal.func("eraseDisplay", .{}),
     Terminal.func("decaln", .{}),
     api.func("resize", .{ .covers = &.{Terminal.ref("resize")} }),
-    api.func("resizeCells", .{}),
+    "resizeCells",
 
     // Metadata the terminal tracks for the shell.
     api.func("formatTerminal", .{ .name = "Format" }),
@@ -198,12 +187,12 @@ const terminal_group = Terminal.members(&.{
     Terminal.func("setTitle", .{}),
 
     // Colors and modes: what a program on the pty asks for.
-    api.func("backgroundColor", .{}),
-    api.func("foregroundColor", .{}),
-    api.func("cursorColor", .{}),
-    api.func("paletteColors", .{ .params = &.{out(1)} }),
-    api.func("modeEnabled", .{}),
-    api.func("setMode", .{}),
+    "backgroundColor",
+    "foregroundColor",
+    "cursorColor",
+    api.func("paletteColors", .{ .params = &.{p.out(1)} }),
+    "modeEnabled",
+    "setMode",
     api.func("setAttribute", .{ .covers = &.{Terminal.ref("setAttribute")} }),
     Terminal.func("setProtectedMode", .{}),
     Terminal.func("configureCharset", .{}),
@@ -213,46 +202,46 @@ const terminal_group = Terminal.members(&.{
 
     // Terminal configuration: what the embedder sets underneath whatever a
     // program on the pty asks for.
-    api.func("setDefaultBackgroundColor", .{}),
-    api.func("setDefaultForegroundColor", .{}),
-    api.func("setDefaultCursorColor", .{}),
+    "setDefaultBackgroundColor",
+    "setDefaultForegroundColor",
+    "setDefaultCursorColor",
     Terminal.func("setDefaultCursorStyle", .{}),
     api.func("setDefaultCursorBlink", .{ .covers = &.{Terminal.ref("setDefaultCursorBlink")} }),
-    api.func("resetDefaultCursorBlink", .{}),
-    api.func("paletteColor", .{}),
-    api.func("setPaletteColor", .{}),
-    api.func("resetPaletteColor", .{}),
-    api.func("resetPalette", .{}),
-    api.func("setDefaultPaletteColor", .{}),
-    api.func("resetDefaultPalette", .{}),
-    api.func("setDefaultMode", .{}),
-    api.func("resetModes", .{}),
-    api.func("saveMode", .{}),
-    api.func("restoreMode", .{}),
+    "resetDefaultCursorBlink",
+    "paletteColor",
+    "setPaletteColor",
+    "resetPaletteColor",
+    "resetPalette",
+    "setDefaultPaletteColor",
+    "resetDefaultPalette",
+    "setDefaultMode",
+    "resetModes",
+    "saveMode",
+    "restoreMode",
 
     // Kitty graphics limits and the pixels themselves.
     Terminal.func("setKittyGraphicsSizeLimit", .{}),
     api.func("setKittyGraphicsLoadingLimits", .{
         .covers = &.{Terminal.ref("setKittyGraphicsLoadingLimits")},
     }),
-    api.func("kittyImage", .{}),
-    api.func("kittyImageData", .{ .params = &.{out(2)} }),
+    "kittyImage",
+    api.func("kittyImageData", .{ .params = &.{p.out(2)} }),
 
     // State reads: the gets for state the bindings could already set, plus the
     // resolved values no single mode flag reports.
-    api.func("scrollRegion", .{}),
-    api.func("charset", .{}),
-    api.func("mouseTracking", .{}),
-    api.func("mouseTrackingSendsMotion", .{}),
-    api.func("mouseReportFormat", .{}),
-    api.func("modeReport", .{}),
+    "scrollRegion",
+    "charset",
+    "mouseTracking",
+    "mouseTrackingSendsMotion",
+    "mouseReportFormat",
+    "modeReport",
 
     // The untracked one-off reads; `GridRef` is the tracked form.
-    api.func("cellAt", .{}),
+    "cellAt",
     api.func("hyperlinkAt", .{ .returns = zigo.result.owned() }),
-});
+}));
 
-const screen_group = Screen.members(&.{
+const screen_group = Screen.members(p.functions(api, .{
     // ghostty takes the screen by value here; zigo passes the handle and the
     // shim copies, so no wrapper is needed.
     Screen.func("viewportIsBottom", .{}),
@@ -261,7 +250,7 @@ const screen_group = Screen.members(&.{
     // Wrappers whose receiver zigo infers from their first argument. The
     // shared prefix is what keeps them apart in Zig; the Go name drops it.
     api.func("screenSelectAll", .{ .covers = &.{Screen.ref("selectAll")} }),
-    api.func("screenHasSelection", .{}),
+    "screenHasSelection",
     api.func("screenSelectRange", .{ .covers = &.{Screen.ref("select")} }),
     api.func("screenSelectWord", .{ .covers = &.{Screen.ref("selectWord")} }),
     api.func("screenSelectLine", .{ .covers = &.{Screen.ref("selectLine")} }),
@@ -270,67 +259,67 @@ const screen_group = Screen.members(&.{
         .returns = zigo.result.owned(),
         .covers = &.{Screen.ref("selectionString")},
     }),
-    api.func("screenSelection", .{}),
-    api.func("screenSetSelection", .{}),
-    api.func("screenViewportTop", .{}),
-    api.func("screenScrollbar", .{}),
-    api.func("screenFormat", .{}),
-    api.func("screenFormatSelection", .{}),
-    api.func("screenSelectionContains", .{}),
-    api.func("screenSelectionAdjust", .{}),
+    "screenSelection",
+    "screenSetSelection",
+    "screenViewportTop",
+    "screenScrollbar",
+    "screenFormat",
+    "screenFormatSelection",
+    "screenSelectionContains",
+    "screenSelectionAdjust",
     api.func("screenStartHyperlink", .{ .covers = &.{Screen.ref("startHyperlink")} }),
-});
+}));
 
 // `newSearch` returns by value, like `Terminal.init`: zigo boxes the result
 // and frees the box in `close`.
-const search_group = Search.members(&.{
+const search_group = Search.members(p.functions(api, .{
     api.func("searchClose", .{ .role = .{ .destructor = Search.typeRef() } }),
-    api.func("searchNeedle", .{}),
-    api.func("searchStatus", .{}),
-    api.func("searchTick", .{}),
-    api.func("searchFeed", .{}),
-    api.func("searchAll", .{}),
-    api.func("searchSelect", .{}),
-    api.func("searchMatchCount", .{}),
-    api.func("searchMatches", .{ .params = &.{out(1)} }),
-    api.func("searchViewportMatches", .{ .params = &.{out(1)} }),
-    api.func("searchSelectedMatch", .{}),
-    api.func("searchSelectedIndex", .{}),
-});
+    "searchNeedle",
+    "searchStatus",
+    "searchTick",
+    "searchFeed",
+    "searchAll",
+    "searchSelect",
+    "searchMatchCount",
+    api.func("searchMatches", .{ .params = &.{p.out(1)} }),
+    api.func("searchViewportMatches", .{ .params = &.{p.out(1)} }),
+    "searchSelectedMatch",
+    "searchSelectedIndex",
+}));
 
 // A pin lives in the terminal's page storage and is updated by it, so a
 // reference is a child handle and closes first.
-const grid_ref_group = GridRef.members(&.{
+const grid_ref_group = GridRef.members(p.functions(api, .{
     api.func("gridRefClose", .{ .role = .{ .destructor = GridRef.typeRef() } }),
-    api.func("gridRefHasValue", .{}),
-    api.func("gridRefPoint", .{}),
-    api.func("gridRefSet", .{}),
-    api.func("gridRefCell", .{}),
-    api.func("gridRefGraphemes", .{ .params = &.{outCodepoints(1)} }),
+    "gridRefHasValue",
+    "gridRefPoint",
+    "gridRefSet",
+    "gridRefCell",
+    api.func("gridRefGraphemes", .{ .params = &.{p.outCodepoints(1)} }),
     api.func("gridRefHyperlinkUri", .{ .returns = zigo.result.owned() }),
-});
+}));
 
 // Like `Search`, a gesture holds a tracked pin inside its terminal and hands
 // it back on every call, so it is a child handle and closes first.
-const gesture_group = Gesture.members(&.{
+const gesture_group = Gesture.members(p.functions(api, .{
     api.func("gestureClose", .{ .role = .{ .destructor = Gesture.typeRef() } }),
-    api.func("gestureSetBehaviors", .{}),
-    api.func("gestureSetWordBoundaries", .{}),
-    api.func("gestureSetGeometry", .{}),
-    api.func("gesturePress", .{}),
-    api.func("gestureDrag", .{}),
-    api.func("gestureAutoscroll", .{}),
-    api.func("gestureAutoscrollTick", .{}),
-    api.func("gestureDeepPress", .{}),
-    api.func("gestureRelease", .{}),
-    api.func("gestureReset", .{}),
-});
+    "gestureSetBehaviors",
+    "gestureSetWordBoundaries",
+    "gestureSetGeometry",
+    "gesturePress",
+    "gestureDrag",
+    "gestureAutoscroll",
+    "gestureAutoscrollTick",
+    "gestureDeepPress",
+    "gestureRelease",
+    "gestureReset",
+}));
 
 // A root wrapper, not one of ghostty's own methods on the enum; the receiver
 // comes from the owning type of this group and the wrapper's first argument.
-const color_name_group = ColorName.members(&.{
+const color_name_group = ColorName.members(p.functions(api, .{
     api.func("colorNameDefault", .{ .covers = &.{ColorName.ref("default")} }),
-});
+}));
 
 // The terminal and every child it hands out, as one object with one `Close`.
 // A terminal refuses to close while a child is open, so the order is a contract
@@ -368,22 +357,22 @@ pub const declarations = [_]zigo.Entry{
     grid_ref_group,
     gesture_group,
     color_name_group,
-    enumeration("PointTag", .{ .text = true }),
-    printed("GridPoint"),
-    enumeration("CursorStyle", .{ .text = true }),
-    enumeration("CursorStyleReq", .{}),
-    enumeration("EraseDisplay", .{}),
-    enumeration("EraseLine", .{ .text = true, .open = true }),
-    enumeration("TabClear", .{ .text = true, .open = true }),
-    enumeration("ProtectedMode", .{}),
-    enumeration("ScreenKey", .{}),
-    enumeration("SwitchScreenMode", .{}),
-    enumeration("Mode", .{ .text = true, .kit = true }),
-    printed("Selection"),
-    enumeration("FormatterFormat", .{ .text = true }),
+    p.enumeration("PointTag", .{ .text = true }),
+    p.printed("GridPoint"),
+    p.enumeration("CursorStyle", .{ .text = true }),
+    p.enumeration("CursorStyleReq", .{}),
+    p.enumeration("EraseDisplay", .{}),
+    p.enumeration("EraseLine", .{ .text = true, .open = true }),
+    p.enumeration("TabClear", .{ .text = true, .open = true }),
+    p.enumeration("ProtectedMode", .{}),
+    p.enumeration("ScreenKey", .{}),
+    p.enumeration("SwitchScreenMode", .{}),
+    p.enumeration("Mode", .{ .text = true, .kit = true }),
+    p.printed("Selection"),
+    p.enumeration("FormatterFormat", .{ .text = true }),
     api.value("FormatOptions", .{}),
-    enumeration("SelectionAdjustment", .{ .text = true }),
-    enumeration("Underline", .{ .docs = &.{
+    p.enumeration("SelectionAdjustment", .{ .text = true }),
+    p.enumeration("Underline", .{ .docs = &.{
         .{ .name = "none", .doc = "No underline. What `SGR 24` resets to." },
         .{ .name = "single", .doc = "One line, the ordinary `SGR 4`." },
         .{ .name = "double", .doc = "Two lines (`SGR 4:2`). Distinct from a doubly-struck glyph." },
@@ -392,22 +381,22 @@ pub const declarations = [_]zigo.Entry{
         .{ .name = "dashed", .doc = "A dashed line (`SGR 4:5`)." },
     } }),
     api.taggedUnion("Attribute", .{}),
-    enumeration("SearchDirection", .{}),
-    enumeration("SearchScroll", .{}),
-    enumeration("SearchState", .{}),
-    enumeration("SearchProgress", .{}),
+    p.enumeration("SearchDirection", .{}),
+    p.enumeration("SearchScroll", .{}),
+    p.enumeration("SearchState", .{}),
+    p.enumeration("SearchProgress", .{}),
     api.value("Scrollbar", .{}),
-    enumeration("Charset", .{}),
-    enumeration("CharsetSlot", .{}),
-    enumeration("CharsetActiveSlot", .{}),
-    enumeration("DeccolmMode", .{}),
+    p.enumeration("Charset", .{}),
+    p.enumeration("CharsetSlot", .{}),
+    p.enumeration("CharsetActiveSlot", .{}),
+    p.enumeration("DeccolmMode", .{}),
     api.taggedUnion("ScrollViewport", .{}),
-    printed("ScrollRegion"),
-    enumeration("MouseTracking", .{ .text = true }),
-    enumeration("MouseReportFormat", .{ .text = true }),
-    enumeration("ModeReport", .{ .text = true }),
-    enumeration("GestureBehavior", .{ .text = true }),
-    enumeration("GestureAutoscrollDirection", .{ .text = true }),
+    p.printed("ScrollRegion"),
+    p.enumeration("MouseTracking", .{ .text = true }),
+    p.enumeration("MouseReportFormat", .{ .text = true }),
+    p.enumeration("ModeReport", .{ .text = true }),
+    p.enumeration("GestureBehavior", .{ .text = true }),
+    p.enumeration("GestureAutoscrollDirection", .{ .text = true }),
     api.value("GestureGeometry", .{}),
     api.value("GesturePressEvent", .{}),
     api.value("GestureDragEvent", .{}),

@@ -19,6 +19,12 @@ const semantic = @import("semantic");
 /// leave `go-doctor` naming the same thing twice.
 pub const name = "MUSTOPT";
 
+pub const Config = struct {
+    /// Field getters only fail for invalid handle lifetime. Give their
+    /// panicking form the plain name; setters and ordinary calls stay checked.
+    replace_field_getters: bool = false,
+};
+
 /// A declaration says `extend(must.plugin, .{})` for the variant beside the
 /// checked method, or `.{ .replace = true }` for the variant instead of it.
 pub const Options = struct {
@@ -36,6 +42,7 @@ pub const Options = struct {
 
 pub const plugin: plugin_api.Plugin = .{
     .name = name,
+    .Config = Config,
     .FunctionOptions = Options,
     .subjects = &.{.function},
     .Facts = struct { enabled: bool, replace: bool },
@@ -43,7 +50,6 @@ pub const plugin: plugin_api.Plugin = .{
     .go = .{
         .visit = visit,
         .claims = claims,
-        .source_files = &.{.{ .enabled = packageHasVariant, .pathAlloc = helperPath, .render = renderHelpers }},
     },
 };
 
@@ -51,6 +57,11 @@ pub const plugin: plugin_api.Plugin = .{
 fn visit(context: plugin_api.GoContext, node: plugin_api.Node, b: *plugin_api.Builder) !void {
     const function = switch (node) {
         .function => |value| value,
+        .file_end => |file| {
+            if (file.kind == .runtime and try packageHasVariant(context))
+                try b.emit(&.{.{ .raw = helper_source }}, .{ .blank_before = true });
+            return;
+        },
         else => return,
     };
     const fact = try context.facts.get(plugin, .function(function.origin.*)) orelse return;
@@ -98,39 +109,24 @@ fn visit(context: plugin_api.GoContext, node: plugin_api.Node, b: *plugin_api.Bu
     })}, .{ .blank_before = true });
 }
 
-fn helperPath(context: plugin_api.GoContext) ![]u8 {
-    return context.sourceFilePathAlloc(helper_file);
-}
-
-const helper_file = "zigo_must_gen.go";
-
-/// The three wrappers the variants delegate to. They are the plugin's own
-/// rather than the generator's `zigoMust`, which is written only when the
-/// built-in variants or a tagged-union projection ask for it -- a plugin that
-/// borrowed it would compile or not depending on an unrelated declaration.
-///
-/// A package with no `Must` variant writes nothing, and the frame drops a file
-/// whose body came out empty.
-fn renderHelpers(_: plugin_api.GoContext, writer: *std.Io.Writer) !void {
-    try writer.writeAll(
-        "// gosttyMustSucceed panics with a typed error, for a Must variant of a\n" ++
-            "// function whose only result is the error.\n" ++
-            "func gosttyMustSucceed(err error) {\n" ++
-            "\tif err != nil {\n\t\tpanic(err)\n\t}\n" ++
-            "}\n\n" ++
-            "// gosttyMustValue panics with a typed error, for a Must variant with one result.\n" ++
-            "func gosttyMustValue[T any](value T, err error) T {\n" ++
-            "\tif err != nil {\n\t\tpanic(err)\n\t}\n" ++
-            "\treturn value\n" ++
-            "}\n\n" ++
-            "// gosttyMustMatch panics with a typed error, for a Must variant whose result\n" ++
-            "// carries a presence flag beside the value.\n" ++
-            "func gosttyMustMatch[T any](value T, matched bool, err error) (T, bool) {\n" ++
-            "\tif err != nil {\n\t\tpanic(err)\n\t}\n" ++
-            "\treturn value, matched\n" ++
-            "}\n",
-    );
-}
+// Emitted once in each package runtime, only when a variant needs it.
+const helper_source =
+    "// gosttyMustSucceed panics with a typed error, for a Must variant of a\n" ++
+    "// function whose only result is the error.\n" ++
+    "func gosttyMustSucceed(err error) {\n" ++
+    "\tif err != nil {\n\t\tpanic(err)\n\t}\n" ++
+    "}\n\n" ++
+    "// gosttyMustValue panics with a typed error, for a Must variant with one result.\n" ++
+    "func gosttyMustValue[T any](value T, err error) T {\n" ++
+    "\tif err != nil {\n\t\tpanic(err)\n\t}\n" ++
+    "\treturn value\n" ++
+    "}\n\n" ++
+    "// gosttyMustMatch panics with a typed error, for a Must variant whose result\n" ++
+    "// carries a presence flag beside the value.\n" ++
+    "func gosttyMustMatch[T any](value T, matched bool, err error) (T, bool) {\n" ++
+    "\tif err != nil {\n\t\tpanic(err)\n\t}\n" ++
+    "\treturn value, matched\n" ++
+    "}\n";
 
 fn packageHasVariant(context: plugin_api.GoContext) !bool {
     for (context.program.functions) |function| {
@@ -145,11 +141,12 @@ fn packageHasVariant(context: plugin_api.GoContext) !bool {
 fn analyze(context: plugin_api.AnalyzeContext) !void {
     const render = context.go orelse return;
     const allocator = render.allocator;
+    const config = try context.config(plugin);
     const functions = render.program.functions;
     const info = try allocator.alloc(plugin_api.FunctionInfo, functions.len);
     for (functions, info) |function, *entry| entry.* = try render.functionInfo(function);
     for (functions, info) |function, entry| {
-        const options = try render.optionsOf(plugin, .function, function.origin.ext) orelse continue;
+        const options = effectiveOptions(config, function.origin.field_access, try render.optionsOf(plugin, .function, function.origin.ext)) orelse continue;
         if (!entry.is_public or !entry.has_error) {
             try context.diagnose(.{
                 .severity = .@"error",
@@ -190,6 +187,24 @@ fn analyze(context: plugin_api.AnalyzeContext) !void {
             });
         }
     }
+}
+
+fn effectiveOptions(config: Config, field: ?semantic.FieldAccess, explicit: ?Options) ?Options {
+    if (explicit) |options| return options;
+    if (config.replace_field_getters) {
+        if (field) |access| if (!access.setter) return .{ .replace = true };
+    }
+    return null;
+}
+
+test "field getter policy excludes setters and respects explicit options" {
+    const config: Config = .{ .replace_field_getters = true };
+    const getter: semantic.FieldAccess = .{ .path = "cols" };
+    try std.testing.expect(effectiveOptions(config, getter, null).?.replace);
+    try std.testing.expect(effectiveOptions(config, .{ .path = "cols", .setter = true }, null) == null);
+    try std.testing.expect(effectiveOptions(config, null, null) == null);
+    try std.testing.expect(effectiveOptions(.{}, getter, null) == null);
+    try std.testing.expect(!effectiveOptions(config, getter, .{ .replace = false }).?.replace);
 }
 
 /// Claim the declaration when the binding asked to replace rather than add.

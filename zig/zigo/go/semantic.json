@@ -67,11 +67,6 @@
         "setter": false
       },
       "doc": "The current column count, read without touching page memory.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "cols",
       "ownership": "borrowed",
       "params": [],
@@ -90,11 +85,6 @@
         "setter": false
       },
       "doc": "The number of populated rows, read without touching page memory.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "rows",
       "ownership": "borrowed",
       "params": [],
@@ -111,11 +101,6 @@
       "field_access": {
         "path": "screens.active.cursor.x",
         "setter": false
-      },
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
       },
       "name": "cursorX",
       "ownership": "borrowed",
@@ -134,11 +119,6 @@
         "path": "screens.active.cursor.y",
         "setter": false
       },
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "cursorY",
       "ownership": "borrowed",
       "params": [],
@@ -156,11 +136,6 @@
         "path": "screens.active.cursor.cursor_style",
         "setter": false
       },
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "cursorStyle",
       "ownership": "borrowed",
       "params": [],
@@ -175,11 +150,6 @@
       "field_access": {
         "path": "screens.active_key",
         "setter": false
-      },
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
       },
       "name": "activeScreenKey",
       "ownership": "borrowed",
@@ -196,11 +166,6 @@
         "path": "screens.active.cursor.pending_wrap",
         "setter": false
       },
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "cursorPendingWrap",
       "ownership": "borrowed",
       "params": [],
@@ -215,11 +180,6 @@
         "path": "screens.active.cursor.protected",
         "setter": false
       },
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "cursorProtected",
       "ownership": "borrowed",
       "params": [],
@@ -233,11 +193,6 @@
       "field_access": {
         "path": "width_px",
         "setter": false
-      },
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
       },
       "name": "widthPx",
       "ownership": "borrowed",
@@ -256,11 +211,6 @@
         "path": "height_px",
         "setter": false
       },
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "heightPx",
       "ownership": "borrowed",
       "params": [],
@@ -278,11 +228,6 @@
         "path": "flags.focused",
         "setter": false
       },
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "focused",
       "ownership": "borrowed",
       "params": [],
@@ -297,11 +242,6 @@
         "path": "flags.visible",
         "setter": false
       },
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "visible",
       "ownership": "borrowed",
       "params": [],
@@ -315,11 +255,6 @@
       "field_access": {
         "path": "flags.password_input",
         "setter": false
-      },
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
       },
       "name": "passwordInput",
       "ownership": "borrowed",
@@ -336,11 +271,6 @@
         "setter": false
       },
       "doc": "The slot GL resolves to: the set used for codepoints up to 127.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "charsetGL",
       "ownership": "borrowed",
       "params": [],
@@ -357,11 +287,6 @@
         "setter": false
       },
       "doc": "The slot GR resolves to: the set used for 8-bit printable codepoints.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "charsetGR",
       "ownership": "borrowed",
       "params": [],
@@ -378,11 +303,6 @@
         "setter": false
       },
       "doc": "The slot a pending single shift (SS2/SS3) will use for exactly one character, or absent if none is pending.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "charsetSingleShift",
       "ownership": "borrowed",
       "params": [],
@@ -402,11 +322,6 @@
         "setter": false
       },
       "doc": "The most recent protected mode (DECSCA or the older SPA/EPA) on the active screen. This never returns to off once set, until the screen is reset: ECH and friends key off the most recent mode, not the current pen.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "protectedMode",
       "ownership": "borrowed",
       "params": [],
@@ -423,11 +338,6 @@
         "setter": false
       },
       "doc": "How many clicks the current sequence is at: 0 before any press, then 1, 2 or 3. What an emulator switches on to decide what a click means.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "clickCount",
       "ownership": "borrowed",
       "params": [],
@@ -446,11 +356,6 @@
         "setter": false
       },
       "doc": "Whether the pointer has left the pressed cell during this gesture. Read it on release: a click that never dragged is the one that should follow a hyperlink or move the shell cursor, rather than one that happened to end where it started after a round trip.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "dragged",
       "ownership": "borrowed",
       "params": [],
@@ -466,11 +371,6 @@
         "setter": false
       },
       "doc": "True once a sequence failed in a way the terminal could not absorb, such as an allocation failure. Streams are best-effort and keep going.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "failed",
       "ownership": "borrowed",
       "params": [],
@@ -486,11 +386,6 @@
         "setter": false
       },
       "doc": "The last command parsed, or `invalid` if `end` has not said yes.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "command",
       "ownership": "borrowed",
       "params": [],
@@ -507,11 +402,6 @@
         "setter": false
       },
       "doc": "OSC 0 and OSC 2: the window title. ghostty does not decode it. Under title mode 0 the bytes are hex, and otherwise they are UTF-8 or latin1 depending on how the terminal was set up, which only the embedder knows.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "windowTitle",
       "ownership": "borrowed",
       "params": [],
@@ -535,11 +425,6 @@
         "setter": false
       },
       "doc": "OSC 1: the icon name. Not well defined by any specification, and ghostty itself ignores it.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "icon",
       "ownership": "borrowed",
       "params": [],
@@ -563,11 +448,6 @@
         "setter": false
       },
       "doc": "OSC 7: the shell's working directory, as a `file://` URL. ghostty does not check that it is one, and neither does this.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "pwd",
       "ownership": "borrowed",
       "params": [],
@@ -591,11 +471,6 @@
         "setter": false
       },
       "doc": "OSC 8: the link target.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "hyperlinkURI",
       "ownership": "borrowed",
       "params": [],
@@ -619,11 +494,6 @@
         "setter": false
       },
       "doc": "OSC 8: the link's `id=` parameter, empty when it carried none. Two runs sharing an id are one link even when they are not adjacent.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "hyperlinkID",
       "ownership": "borrowed",
       "params": [],
@@ -647,11 +517,6 @@
         "setter": false
       },
       "doc": "OSC 9 and OSC 777: the notification title.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "notificationTitle",
       "ownership": "borrowed",
       "params": [],
@@ -675,11 +540,6 @@
         "setter": false
       },
       "doc": "OSC 9 and OSC 777: the notification body.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "notificationBody",
       "ownership": "borrowed",
       "params": [],
@@ -703,11 +563,6 @@
         "setter": false
       },
       "doc": "OSC 52: the base64 payload to put on the clipboard, or a bare `?` when the program is asking to read the clipboard rather than to write it.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "clipboardData",
       "ownership": "borrowed",
       "params": [],
@@ -731,11 +586,6 @@
         "setter": false
       },
       "doc": "OSC 52: which selection the request names, as the protocol's own character (`c` for clipboard, `p` for primary, `s` for the configured default), or zero for any other command.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "clipboardSelection",
       "ownership": "borrowed",
       "params": [],
@@ -754,11 +604,6 @@
         "setter": false
       },
       "doc": "OSC 22: the pointer shape, usually a W3C CSS cursor name. ghostty parses whatever string is given without validating it.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "mouseShape",
       "ownership": "borrowed",
       "params": [],
@@ -782,11 +627,6 @@
         "setter": false
       },
       "doc": "OSC 133: which prompt boundary this sequence marks.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "semanticPromptAction",
       "ownership": "borrowed",
       "params": [],
@@ -803,11 +643,6 @@
         "setter": false
       },
       "doc": "OSC 133: the raw, unvalidated option string that followed the action.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "semanticPromptOptions",
       "ownership": "borrowed",
       "params": [],
@@ -831,11 +666,6 @@
         "setter": false
       },
       "doc": "OSC 9;4: what the program says about its progress.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "progressState",
       "ownership": "borrowed",
       "params": [],
@@ -852,11 +682,6 @@
         "setter": false
       },
       "doc": "OSC 9;4: percent complete, or -1 when the report carried no percentage.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "progressValue",
       "ownership": "borrowed",
       "params": [],
@@ -875,11 +700,6 @@
         "setter": false
       },
       "doc": "The number of rows the last update covered.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "rows",
       "ownership": "borrowed",
       "params": [],
@@ -898,11 +718,6 @@
         "setter": false
       },
       "doc": "The number of columns the last update covered.",
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "cols",
       "ownership": "borrowed",
       "params": [],
@@ -920,11 +735,6 @@
         "path": "cursor.visible",
         "setter": false
       },
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "cursorVisible",
       "ownership": "borrowed",
       "params": [],
@@ -938,11 +748,6 @@
       "field_access": {
         "path": "cursor.visual_style",
         "setter": false
-      },
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
       },
       "name": "cursorStyle",
       "ownership": "borrowed",
@@ -959,11 +764,6 @@
         "path": "cursor.blinking",
         "setter": false
       },
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "cursorBlinking",
       "ownership": "borrowed",
       "params": [],
@@ -978,11 +778,6 @@
         "path": "cursor.password_input",
         "setter": false
       },
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
-      },
       "name": "cursorPasswordInput",
       "ownership": "borrowed",
       "params": [],
@@ -996,11 +791,6 @@
       "field_access": {
         "path": "generation",
         "setter": false
-      },
-      "ext": {
-        "MUSTOPT": {
-          "replace": true
-        }
       },
       "name": "generation",
       "ownership": "borrowed",
@@ -13108,7 +12898,7 @@
         "signed": false
       },
       "text": true,
-      "zig_path": "terminal.modes.Mode__enum_40977"
+      "zig_path": "terminal.modes.Mode__enum_42128"
     },
     {
       "exhaustive": true,

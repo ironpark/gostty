@@ -28,8 +28,7 @@ pub const bindings = zigo.define(api, .{
 
 const declarations = list: {
     @setEvalBranchQuota(1_000_000);
-    break :list @import("bindings/sys.zig").declarations ++
-        @import("bindings/input.zig").declarations ++
+    break :list @import("bindings/packages.zig").declarations ++
         @import("bindings/terminal.zig").declarations ++
         @import("bindings/stream.zig").declarations ++
         @import("bindings/render.zig").declarations ++ [_]zigo.Entry{

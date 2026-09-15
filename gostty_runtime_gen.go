@@ -146,3 +146,28 @@ func zigoReaderBytes(value io.Reader) []byte {
 	}
 	return data
 }
+
+// gosttyMustSucceed panics with a typed error, for a Must variant of a
+// function whose only result is the error.
+func gosttyMustSucceed(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+// gosttyMustValue panics with a typed error, for a Must variant with one result.
+func gosttyMustValue[T any](value T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return value
+}
+
+// gosttyMustMatch panics with a typed error, for a Must variant whose result
+// carries a presence flag beside the value.
+func gosttyMustMatch[T any](value T, matched bool, err error) (T, bool) {
+	if err != nil {
+		panic(err)
+	}
+	return value, matched
+}

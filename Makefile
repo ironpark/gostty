@@ -29,7 +29,7 @@ GO_PKGS := ./... ./examples/hypercat/...
 ZIG_FLAGS := -Doptimize=$(OPTIMIZE) --prefix $(CURDIR)
 
 .DEFAULT_GOAL := help
-.PHONY: help all build generate align-macos-archives test race bench vet example example-sync verify check doctor coverage report fmt clean distclean
+.PHONY: help all build generate align-macos-archives test test-plugins race bench vet example example-sync verify check doctor coverage report fmt clean distclean
 
 help: ## Show this help
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -72,8 +72,11 @@ define run-zig-tool
 	cd $(ZIG_DIR) && $(ZIG) build $(1) $(ZIG_FLAGS)
 endef
 
-test: build ## Run the Go tests
+test: build test-plugins ## Run the Go and binding plugin tests
 	$(GO) test $(GO_PKGS)
+
+test-plugins: ## Test binding plugin policies
+	$(call run-zig-tool,test-plugins)
 
 race: build ## Run the Go tests under the race detector
 	$(GO) test -race -count=2 $(GO_PKGS)
