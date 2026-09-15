@@ -11841,10 +11841,7 @@
       "exhaustive": true,
       "ext": {
         "STRINGER": {
-          "style": "flags",
-          "omit": [
-            "_padding"
-          ]
+          "style": "flags"
         }
       },
       "fields": [
@@ -11885,6 +11882,11 @@
           }
         },
         {
+          "ext": {
+            "STRINGER": {
+              "omit": true
+            }
+          },
           "name": "_padding",
           "type": {
             "bits": 2,
@@ -12184,7 +12186,112 @@
       "exhaustive": true,
       "ext": {
         "CONVENIENCE": {
-          "feature": "terminal_config"
+          "feature": "terminal_config",
+          "target": "terminal.Terminal",
+          "method_sets": [
+            {
+              "owner": "terminal.Terminal",
+              "methods": [
+                {
+                  "function": "terminal.Terminal.init",
+                  "name": "NewTerminal"
+                },
+                {
+                  "function": "newStream",
+                  "name": "NewStream"
+                },
+                {
+                  "function": "setDefaultBackgroundColor",
+                  "name": "SetDefaultBackgroundColor"
+                },
+                {
+                  "function": "setDefaultForegroundColor",
+                  "name": "SetDefaultForegroundColor"
+                },
+                {
+                  "function": "setDefaultCursorColor",
+                  "name": "SetDefaultCursorColor"
+                },
+                {
+                  "function": "setDefaultMode",
+                  "name": "SetDefaultMode"
+                },
+                {
+                  "function": "formatTerminal",
+                  "name": "Format"
+                }
+              ]
+            },
+            {
+              "owner": "terminal.Screen",
+              "methods": [
+                {
+                  "function": "screenFormat",
+                  "name": "Format"
+                }
+              ]
+            },
+            {
+              "owner": "stream.Stream",
+              "methods": [
+                {
+                  "function": "stream.Stream.setUnknownMaxBytes",
+                  "name": "SetUnknownMaxBytes"
+                },
+                {
+                  "function": "stream.Stream.setVersionReport",
+                  "name": "SetVersionReport"
+                },
+                {
+                  "function": "stream.Stream.setEnquiryResponse",
+                  "name": "SetEnquiryResponse"
+                },
+                {
+                  "function": "stream.Stream.colorSchemeChanged",
+                  "name": "ColorSchemeChanged"
+                },
+                {
+                  "function": "stream.Stream.onClipboardReadRequest",
+                  "name": "OnClipboardReadRequest"
+                },
+                {
+                  "function": "stream.Stream.onClipboardWriteRequest",
+                  "name": "OnClipboardWriteRequest"
+                }
+              ]
+            }
+          ],
+          "option_fields": [
+            {
+              "constructor": "terminal.Terminal.init",
+              "field": "max_scrollback_bytes"
+            },
+            {
+              "constructor": "terminal.Terminal.init",
+              "field": "max_scrollback_lines"
+            },
+            {
+              "constructor": "terminal.Terminal.init",
+              "field": "default_cursor_blink"
+            }
+          ],
+          "sessions": [
+            {
+              "name": "Session",
+              "primary": "terminal.Terminal",
+              "child": "stream.Stream"
+            }
+          ],
+          "implements": [
+            {
+              "function": "stream.Stream.feed",
+              "kind": "writer"
+            },
+            {
+              "function": "stream.Stream.feed",
+              "kind": "string_writer"
+            }
+          ]
         },
         "BUILD_INFO": {
           "simd": true,
@@ -12398,8 +12505,7 @@
       "exhaustive": true,
       "ext": {
         "STRINGER": {
-          "style": "fields",
-          "omit": []
+          "style": "fields"
         }
       },
       "fields": [
@@ -12898,14 +13004,13 @@
         "signed": false
       },
       "text": true,
-      "zig_path": "terminal.modes.Mode__enum_42875"
+      "zig_path": "terminal.modes.Mode__enum_36865"
     },
     {
       "exhaustive": true,
       "ext": {
         "STRINGER": {
-          "style": "fields",
-          "omit": []
+          "style": "fields"
         }
       },
       "fields": [
@@ -13979,8 +14084,7 @@
       "exhaustive": true,
       "ext": {
         "STRINGER": {
-          "style": "fields",
-          "omit": []
+          "style": "fields"
         }
       },
       "fields": [
@@ -14455,7 +14559,30 @@
       "exhaustive": true,
       "ext": {
         "CONVENIENCE": {
-          "feature": "clipboard_reply"
+          "feature": "clipboard_reply",
+          "target": "stream.ClipboardRequest",
+          "method_sets": [
+            {
+              "owner": "stream.ClipboardRequest",
+              "methods": [
+                {
+                  "function": "stream.ClipboardRequest.clearReplyContents",
+                  "name": "ClearReplyContents"
+                },
+                {
+                  "function": "stream.ClipboardRequest.addContent",
+                  "name": "AddContent"
+                },
+                {
+                  "function": "stream.ClipboardRequest.replyContents",
+                  "name": "ReplyContents"
+                }
+              ]
+            }
+          ],
+          "option_fields": [],
+          "sessions": [],
+          "implements": []
         }
       },
       "fields": [],
@@ -14675,10 +14802,7 @@
       "exhaustive": true,
       "ext": {
         "STRINGER": {
-          "style": "flags",
-          "omit": [
-            "_pad"
-          ]
+          "style": "flags"
         }
       },
       "fields": [
@@ -14695,6 +14819,11 @@
           }
         },
         {
+          "ext": {
+            "STRINGER": {
+              "omit": true
+            }
+          },
           "name": "_pad",
           "type": {
             "bits": 6,
@@ -14787,10 +14916,7 @@
       "exhaustive": true,
       "ext": {
         "STRINGER": {
-          "style": "flags",
-          "omit": [
-            "_pad"
-          ]
+          "style": "flags"
         }
       },
       "fields": [
@@ -14815,6 +14941,11 @@
           }
         },
         {
+          "ext": {
+            "STRINGER": {
+              "omit": true
+            }
+          },
           "name": "_pad",
           "type": {
             "bits": 15,
@@ -15559,10 +15690,7 @@
       "exhaustive": true,
       "ext": {
         "STRINGER": {
-          "style": "flags",
-          "omit": [
-            "_pad"
-          ]
+          "style": "flags"
         }
       },
       "fields": [
@@ -15644,6 +15772,11 @@
           }
         },
         {
+          "ext": {
+            "STRINGER": {
+              "omit": true
+            }
+          },
           "name": "_pad",
           "type": {
             "bits": 17,

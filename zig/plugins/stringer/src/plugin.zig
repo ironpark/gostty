@@ -23,10 +23,6 @@ pub const name = "STRINGER";
 pub const Options = struct {
     /// How the fields are joined.
     style: Style = .flags,
-    /// Zig field names left out of the rendering. Padding is the reason it
-    /// exists: a packed struct names its slack so the bits add up, and that
-    /// is never something to print.
-    omit: []const []const u8 = &.{},
 
     pub const Style = enum {
         /// Only what is set, joined by `|`: `Bold|Underline:Single`. A bool
@@ -38,12 +34,18 @@ pub const Options = struct {
     };
 };
 
+/// Options attached directly to a generated field. Padding is the reason this
+/// exists: the binding names the actual field, so zigo checks it instead of
+/// leaving this plugin to match a free-text list after generation.
+pub const FieldOptions = struct { omit: bool = false };
+
 pub const plugin: plugin_api.Plugin = .{
     .name = name,
     .TypeOptions = Options,
+    .FieldOptions = FieldOptions,
     // A `String()` needs fields to name, which only a value struct has here;
     // the generator already writes one for every enum.
-    .subjects = &.{.value},
+    .subjects = &.{ .value, .field },
     .validate = validateDocument,
     .go = .{
         .visit = visit,
@@ -62,8 +64,8 @@ fn visit(context: plugin_api.GoContext, node: plugin_api.Node, b: *plugin_api.Bu
     const declaration = node.type;
     const options = try context.optionsOf(plugin, .type, node) orelse return;
     const method = switch (options.style) {
-        .flags => try renderFlags(context, b, declaration, options),
-        .fields => try renderFields(context, b, declaration, options),
+        .flags => try renderFlags(context, b, declaration),
+        .fields => try renderFields(context, b, declaration),
     };
     try b.emit(&.{ method, try assertStringer(b, declaration) }, .{ .blank_after = true });
 }
@@ -111,14 +113,13 @@ fn renderFlags(
     context: plugin_api.GoContext,
     b: *plugin_api.Builder,
     declaration: semantic.TypeDecl,
-    options: Options,
 ) !plugin_api.gobuild.Decl {
     const allocator = context.allocator;
     var body: std.ArrayList(plugin_api.gobuild.Stmt) = .empty;
     defer body.deinit(allocator);
     try body.append(allocator, b.declare("parts", try b.sliceOf(b.ident("string")), null));
     for (declaration.fields) |field| {
-        if (omits(options, field.name)) continue;
+        if (try omitted(context, field)) continue;
         const member = try context.identifierAlloc(allocator, field.name, .pascal);
         const read = try b.sel(b.ident("value"), member);
         if (field.type.? == .bool) {
@@ -156,7 +157,6 @@ fn renderFields(
     context: plugin_api.GoContext,
     b: *plugin_api.Builder,
     declaration: semantic.TypeDecl,
-    options: Options,
 ) !plugin_api.gobuild.Decl {
     const allocator = context.allocator;
     var format: std.Io.Writer.Allocating = .init(allocator);
@@ -166,7 +166,7 @@ fn renderFields(
 
     try format.writer.print("{s}{{", .{declaration.name});
     for (declaration.fields) |field| {
-        if (omits(options, field.name)) continue;
+        if (try omitted(context, field)) continue;
         const member = try context.identifierAlloc(allocator, field.name, .pascal);
         if (arguments.items.len != 0) try format.writer.writeAll(", ");
         // A codepoint is a `rune`, and a rune printed as a number is the one
@@ -188,11 +188,9 @@ fn renderFields(
     });
 }
 
-fn omits(options: Options, field_name: []const u8) bool {
-    for (options.omit) |entry| {
-        if (std.mem.eql(u8, entry, field_name)) return true;
-    }
-    return false;
+fn omitted(context: anytype, field: semantic.TypeField) !bool {
+    const options = try context.optionsOf(plugin, .field, field.ext) orelse return false;
+    return options.omit;
 }
 
 /// The rules exist because every one of them would otherwise reach the user as
@@ -207,26 +205,9 @@ fn validateDocument(context: plugin_api.ValidateContext) !void {
         // this plugin takes a value struct, so asking an enum or a handle for
         // a `String` is a Zig compile error on the line that asked.
         const options = try context.optionsOf(plugin, .type, declaration.ext) orelse continue;
-        // A name that matches nothing is how this method quietly stops naming
-        // a field: the binding renames it, the omission goes on matching
-        // nothing, and the field appears in the output without anyone asking.
-        for (options.omit) |omitted| {
-            if (fieldNamed(declaration, omitted) != null) continue;
-            try context.diagnose(.{
-                .severity = .@"error",
-                .code = name ++ "003",
-                .message = try std.fmt.allocPrint(
-                    allocator,
-                    "`{s}` omits `{s}`, which is not one of its fields",
-                    .{ declaration.name, omitted },
-                ),
-                .site = plugin_api.site.typeSite(declaration),
-                .hint = "`omit` names Zig fields, in the Zig spelling; check the field still exists under that name",
-            });
-        }
         if (options.style != .flags) continue;
         for (declaration.fields) |field| {
-            if (omits(options, field.name)) continue;
+            if (try omitted(context, field)) continue;
             if (flagRenderable(field.type.?)) continue;
             try context.diagnose(.{
                 .severity = .@"error",
@@ -241,13 +222,6 @@ fn validateDocument(context: plugin_api.ValidateContext) !void {
             });
         }
     }
-}
-
-fn fieldNamed(declaration: semantic.TypeDecl, field_name: []const u8) ?semantic.TypeField {
-    for (declaration.fields) |field| {
-        if (std.mem.eql(u8, field.name, field_name)) return field;
-    }
-    return null;
 }
 
 /// Whether `!= 0` (or, for a bool, the value itself) is the right test for a

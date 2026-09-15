@@ -15,7 +15,12 @@ pub const Stream = api.handle("Stream", .{ .fields = &.{
     \\terminal.
 }).context();
 
-const ClipboardRequest = api.handle("ClipboardRequest", .{}).use(p.convenience.plugin, .{ .feature = .clipboard_reply }).context();
+const ClipboardRequestDecl = api.handle("ClipboardRequest", .{});
+const ClipboardRequest = p.convenience.clipboardReply(
+    ClipboardRequestDecl,
+    api,
+    ClipboardRequestDecl.context(),
+).context();
 
 // Every payload the parser exposes is a field it filled during `end`, so the
 // accessors are paths rather than fifteen bodies that would each return one

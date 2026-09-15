@@ -42,7 +42,8 @@ pub fn functions(comptime scope: type, comptime items: anytype) []const zigo.Ent
 /// the `fmt.Stringer` assertion beside the method, in the value form `%v`
 /// actually uses.
 pub fn flags(comptime name: []const u8, comptime pad: []const u8) zigo.Entry {
-    return api.value(name, .{}).use(stringer.plugin, .{ .style = .flags, .omit = &.{pad} });
+    const padding = (zigo.ValueField{ .name = pad }).use(stringer.plugin, .{ .omit = true });
+    return api.value(name, .{ .fields = &.{padding} }).use(stringer.plugin, .{ .style = .flags });
 }
 
 /// A value struct that prints as all of its fields, `GridPoint{X:3, Y:4}`.

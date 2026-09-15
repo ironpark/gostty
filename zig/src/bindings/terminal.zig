@@ -9,7 +9,7 @@ const api = p.api;
 // what registers the type is the `members()` result below reaching
 // `.declarations` -- so the lifecycle and the methods are written in one place
 // per type without naming it twice.
-pub const Terminal = api.handle("Terminal", .{
+const TerminalDecl = api.handle("Terminal", .{
     .fields = &.{
         // Read straight off the terminal rather than through ghostty's `cols()`
         // and `rows()`, which is where these two sentences come from: the
@@ -44,11 +44,23 @@ pub const Terminal = api.handle("Terminal", .{
     \\references. Handle locks protect lifetime only; they do not serialize native
     \\operations. Callbacks may answer their supplied request but must not
     \\recursively feed, resize, reset or close the same terminal.
-}).use(p.convenience.plugin, .{ .feature = .terminal_config }).use(p.build_info.plugin, .{
-    .simd = p.gostty.build_features.simd,
-    .kitty_graphics = p.gostty.build_features.kitty_graphics,
-    .tmux_control_mode = p.gostty.build_features.tmux_control_mode,
-}).context();
+});
+
+pub const Terminal = configured: {
+    // zigo recursively maps the template's typed declaration references into
+    // plugin references while evaluating this entry.
+    @setEvalBranchQuota(10_000);
+    break :configured p.convenience.terminalConfig(
+        TerminalDecl,
+        api,
+        TerminalDecl.context(),
+        Stream,
+    ).use(p.build_info.plugin, .{
+        .simd = p.gostty.build_features.simd,
+        .kitty_graphics = p.gostty.build_features.kitty_graphics,
+        .tmux_control_mode = p.gostty.build_features.tmux_control_mode,
+    }).context();
+};
 
 const Screen = p.trimmed(api.handle("Screen", .{})).context();
 
