@@ -164,12 +164,19 @@ func (tab *terminal) readOutput() (bool, error) {
 // from the cells: search highlights, images, the hovered link, the scrollbar.
 func (tab *terminal) refreshSnapshot() error {
 	g := tab.grid()
-	if !tab.heldSince.IsZero() && time.Since(tab.heldSince) < renderHoldTimeout {
-		// Keep drawing the last complete frame until the program finishes
-		// the next one.
-		tab.frame.tickBlink(time.Now(), g)
-		return nil
+	now := time.Now()
+	// During a render hold, keep drawing the last complete frame until the
+	// program finishes the next one.
+	if tab.heldSince.IsZero() || now.Sub(tab.heldSince) >= renderHoldTimeout {
+		if err := tab.readSnapshot(g); err != nil {
+			return err
+		}
 	}
+	tab.frame.tickBlink(now, g)
+	return nil
+}
+
+func (tab *terminal) readSnapshot(g grid) error {
 	if err := tab.frame.read(tab.state, tab.vt, g, tab.currentTheme()); err != nil {
 		return err
 	}
@@ -180,7 +187,6 @@ func (tab *terminal) refreshSnapshot() error {
 			return err
 		}
 	}
-	tab.frame.tickBlink(time.Now(), g)
 	return nil
 }
 
@@ -197,12 +203,16 @@ func (tab *terminal) resize(cols, rows int) error {
 	if err := tab.stream.ResizeCells(uint16(cols), uint16(rows), uint32(g.cellW), uint32(g.cellH)); err != nil {
 		return err
 	}
-	tab.heldSince = time.Time{}
 	// The selection gesture measures the pointer in pixels, so it is told too.
 	if err := tab.syncGestureGeometry(); err != nil {
 		return err
 	}
 	if err := tab.shell.Pty.Resize(cols, rows); err != nil {
+		return err
+	}
+	// The resize ended any render hold and may have queued a mode 2048 size
+	// report; both are handled the way a feed's are.
+	if err := tab.drainEvents(); err != nil {
 		return err
 	}
 	return tab.stream.WriteReplies(tab.shell.Pty)

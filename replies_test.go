@@ -252,24 +252,20 @@ func TestColorScheme(t *testing.T) {
 func TestUnknownSequence(t *testing.T) {
 	_, stream := newStreamPair(t, 20, 3)
 
-	drain := func() []string {
+	unknown := func() []string {
 		t.Helper()
 		var out []string
-		for event, err := range stream.EventValues() {
-			if err != nil {
-				t.Fatalf("EventValues: %v", err)
+		for _, ev := range drain(t, stream) {
+			if ev.kind == StreamEventUnknownSequence {
+				out = append(out, ev.sequenceKind.String()+":"+ev.sequence)
 			}
-			if event.Kind != StreamEventUnknownSequence {
-				continue
-			}
-			out = append(out, event.SequenceKind.String()+":"+string(event.Sequence))
 		}
 		return out
 	}
 
 	// "Z" is not a protocol ghostty implements. Off by default.
 	feed(t, stream, "\x1b_Zhello\x1b\\")
-	if got := drain(); len(got) != 0 {
+	if got := unknown(); len(got) != 0 {
 		t.Errorf("captured %q with capture off, want nothing", got)
 	}
 
@@ -279,7 +275,7 @@ func TestUnknownSequence(t *testing.T) {
 	// OSC 7400 is not one ghostty implements either; the number stays in the
 	// content so the caller can tell which one it was.
 	feed(t, stream, "\x1b_Zhello\x1b\\\x1b]7400;status=busy\a")
-	got := drain()
+	got := unknown()
 	want := []string{"apc:Zhello", "osc:7400;status=busy"}
 	if !slices.Equal(got, want) {
 		t.Errorf("captured %q, want %q", got, want)
@@ -290,7 +286,7 @@ func TestUnknownSequence(t *testing.T) {
 		t.Fatalf("SetUnknownMaxBytes: %v", err)
 	}
 	feed(t, stream, "\x1b_Zhello\x1b\\")
-	if got := drain(); len(got) != 0 {
+	if got := unknown(); len(got) != 0 {
 		t.Errorf("captured %q after turning capture off, want nothing", got)
 	}
 }
@@ -329,12 +325,9 @@ func TestRenderHold(t *testing.T) {
 	holds := func() []bool {
 		t.Helper()
 		var out []bool
-		for event, err := range stream.EventValues() {
-			if err != nil {
-				t.Fatalf("EventValues: %v", err)
-			}
-			if event.Kind == StreamEventRenderHold {
-				out = append(out, event.Held)
+		for _, ev := range drain(t, stream) {
+			if ev.kind == StreamEventRenderHold {
+				out = append(out, ev.held)
 			}
 		}
 		return out
@@ -351,5 +344,25 @@ func TestRenderHold(t *testing.T) {
 	}
 	if got, want := holds(), []bool{false}; !slices.Equal(got, want) {
 		t.Errorf("holds after resize = %v, want %v", got, want)
+	}
+}
+
+// A session resizes through its stream, so the program hears about it.
+func TestSessionResizeReportsInBandSize(t *testing.T) {
+	sess, err := New(20, 3)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	defer sess.Close()
+	if _, err := sess.WriteString("\x1b[?2048h"); err != nil {
+		t.Fatalf("WriteString: %v", err)
+	}
+	replyString(t, sess.Stream())
+
+	if err := sess.ResizeCells(40, 6, 8, 16); err != nil {
+		t.Fatalf("ResizeCells: %v", err)
+	}
+	if got, want := replyString(t, sess.Stream()), "\x1b[48;6;40;96;320t"; got != want {
+		t.Errorf("reply = %q, want %q", got, want)
 	}
 }

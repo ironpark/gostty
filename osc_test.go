@@ -8,6 +8,9 @@ type event struct {
 	title, body   string
 	progressState ProgressState
 	progress      int // -1 when absent
+	sequence      string
+	sequenceKind  UnknownSequenceKind
+	held          bool
 }
 
 func drain(t *testing.T, s *Stream) []event {
@@ -23,6 +26,9 @@ func drain(t *testing.T, s *Stream) []event {
 			body:          value.Body,
 			progressState: value.ProgressState,
 			progress:      -1,
+			sequence:      string(value.Sequence),
+			sequenceKind:  value.SequenceKind,
+			held:          value.Held,
 		}
 		if value.HasProgress {
 			ev.progress = int(value.Progress)

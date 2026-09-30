@@ -621,11 +621,9 @@ pub const Stream = struct {
         cell_width: u32,
         cell_height: u32,
     ) !void {
-        try self.inner.handler.resize(.{
-            .cols = width,
-            .rows = height,
-            .cell_size_px = .{ .width = cell_width, .height = cell_height },
-        });
+        try self.inner.handler.resize(
+            @import("terminal.zig").cellResize(width, height, cell_width, cell_height),
+        );
     }
 
     /// Write the unfinished sequence suffix, when continuation tracking is on.

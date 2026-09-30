@@ -47,6 +47,19 @@ func feedTab(t *testing.T, tab *terminal, s string) {
 	}
 }
 
+// outputTab writes to a tab's terminal and acts on the events that produced,
+// which is what readOutput does, without reading the frame: a test of how
+// events change what is drawn looks with tabHasText afterwards.
+func outputTab(t *testing.T, tab *terminal, s string) {
+	t.Helper()
+	if _, err := tab.stream.Write([]byte(s)); err != nil {
+		t.Fatalf("feed: %v", err)
+	}
+	if err := tab.drainEvents(); err != nil {
+		t.Fatalf("events: %v", err)
+	}
+}
+
 // selected is what the tab's screen currently has selected.
 func selected(t *testing.T, tab *terminal) string {
 	t.Helper()

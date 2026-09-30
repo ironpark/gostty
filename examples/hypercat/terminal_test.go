@@ -189,28 +189,18 @@ func TestThemePalette(t *testing.T) {
 // until it finishes: the tab keeps its last frame for the length of the hold.
 func TestRenderHoldKeepsLastFrame(t *testing.T) {
 	tab := newTabTestApp(t).current()
-	// Output then its events, which is the order readOutput handles them in.
-	output := func(s string) {
-		t.Helper()
-		if _, err := tab.stream.Write([]byte(s)); err != nil {
-			t.Fatal(err)
-		}
-		if err := tab.drainEvents(); err != nil {
-			t.Fatal(err)
-		}
-	}
 
-	output("\x1b[?2026hhalf-drawn")
+	outputTab(t, tab, "\x1b[?2026hhalf-drawn")
 	if tabHasText(t, tab, "half-drawn") {
 		t.Error("frame read during a render hold")
 	}
-	output("\x1b[?2026l")
+	outputTab(t, tab, "\x1b[?2026l")
 	if !tabHasText(t, tab, "half-drawn") {
 		t.Error("frame not read after the hold ended")
 	}
 
 	// A hold that is never ended gives way after the timeout.
-	output("\x1b[?2026h stuck")
+	outputTab(t, tab, "\x1b[?2026h stuck")
 	if tabHasText(t, tab, "stuck") {
 		t.Error("frame read during a render hold")
 	}

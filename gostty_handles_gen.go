@@ -562,6 +562,18 @@ func (s *Session) WriteString(str string) (int, error) {
 	return stream.WriteString(str)
 }
 
+// ResizeCells resizes the session's terminal through its primary stream, so a
+// program that asked for in-band size reports (mode 2048) gets one and a render
+// hold ends. The report is queued with the stream's other replies; send it with
+// WriteReplies.
+func (s *Session) ResizeCells(width, height uint16, cellWidth, cellHeight uint32) error {
+	stream := s.Stream()
+	if stream == nil {
+		return &HandleError{Operation: "Session.ResizeCells"}
+	}
+	return stream.ResizeCells(width, height, cellWidth, cellHeight)
+}
+
 // FormatString formats the active screen area and returns the result as a string.
 func (s *Session) FormatString(opts FormatOptions) (string, error) {
 	return s.Terminal().FormatString(opts)

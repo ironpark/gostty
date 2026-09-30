@@ -2032,6 +2032,10 @@ func (te *Terminal) Resize(cols uint16, rows uint16) error {
 // which leaves every image sized zero. A renderer that draws images should
 // resize with this rather than `resize`: the terminal stores the pixel size of
 // the whole grid, so it goes stale as soon as the column count changes.
+//
+// A terminal a stream feeds should be resized through `Stream.resizeCells`
+// instead: this one never reaches the stream, so a program that asked for
+// in-band size reports (mode 2048) is not told and a render hold does not end.
 // It returns *HandleError if a required handle is nil or closed.
 // Native failures are returned as generated error values.
 func (te *Terminal) ResizeCells(width uint16, height uint16, cellWidth uint32, cellHeight uint32) error {

@@ -34,6 +34,10 @@ pub const TabClear = vt.TabClear;
 /// which leaves every image sized zero. A renderer that draws images should
 /// resize with this rather than `resize`: the terminal stores the pixel size of
 /// the whole grid, so it goes stale as soon as the column count changes.
+///
+/// A terminal a stream feeds should be resized through `Stream.resizeCells`
+/// instead: this one never reaches the stream, so a program that asked for
+/// in-band size reports (mode 2048) is not told and a render hold does not end.
 pub fn resizeCells(
     self: *Terminal,
     gpa: Allocator,
@@ -42,11 +46,16 @@ pub fn resizeCells(
     cell_width: u32,
     cell_height: u32,
 ) !void {
-    try self.resize(gpa, .{
+    try self.resize(gpa, cellResize(width, height, cell_width, cell_height));
+}
+
+/// The resize `resizeCells` and `Stream.resizeCells` both make.
+pub fn cellResize(width: u16, height: u16, cell_width: u32, cell_height: u32) Terminal.Resize {
+    return .{
         .cols = width,
         .rows = height,
         .cell_size_px = .{ .width = cell_width, .height = cell_height },
-    });
+    };
 }
 
 /// The scrollback contents, oldest row first, newline separated.
