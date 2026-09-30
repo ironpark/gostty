@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -245,8 +246,8 @@ func TestColorScheme(t *testing.T) {
 	}
 }
 
-// An APC this library does not implement is dropped silently until capture is
-// turned on, which is how you find out a program is speaking a protocol you
+// An APC or OSC this library does not implement is dropped silently until
+// capture is turned on, which is how you find out a program is speaking a protocol you
 // never wired up.
 func TestUnknownSequence(t *testing.T) {
 	_, stream := newStreamPair(t, 20, 3)
@@ -261,7 +262,7 @@ func TestUnknownSequence(t *testing.T) {
 			if event.Kind != StreamEventUnknownSequence {
 				continue
 			}
-			out = append(out, string(event.Sequence))
+			out = append(out, event.SequenceKind.String()+":"+string(event.Sequence))
 		}
 		return out
 	}
@@ -275,10 +276,13 @@ func TestUnknownSequence(t *testing.T) {
 	if err := stream.SetUnknownMaxBytes(64); err != nil {
 		t.Fatalf("SetUnknownMaxBytes: %v", err)
 	}
-	feed(t, stream, "\x1b_Zhello\x1b\\")
+	// OSC 7400 is not one ghostty implements either; the number stays in the
+	// content so the caller can tell which one it was.
+	feed(t, stream, "\x1b_Zhello\x1b\\\x1b]7400;status=busy\a")
 	got := drain()
-	if len(got) != 1 || got[0] != "Zhello" {
-		t.Errorf("captured %q, want [\"Zhello\"]", got)
+	want := []string{"apc:Zhello", "osc:7400;status=busy"}
+	if !slices.Equal(got, want) {
+		t.Errorf("captured %q, want %q", got, want)
 	}
 
 	// And it can be turned back off.
@@ -288,5 +292,64 @@ func TestUnknownSequence(t *testing.T) {
 	feed(t, stream, "\x1b_Zhello\x1b\\")
 	if got := drain(); len(got) != 0 {
 		t.Errorf("captured %q after turning capture off, want nothing", got)
+	}
+}
+
+// A program that turned on in-band size reports (mode 2048) is told about a
+// resize through the stream, and only through the stream: the terminal alone
+// has no way to reach the program.
+func TestStreamResizeReportsInBandSize(t *testing.T) {
+	term, stream := newStreamPair(t, 20, 3)
+	feed(t, stream, "\x1b[?2048h")
+	replyString(t, stream) // enabling the mode may report the current size
+
+	if err := term.ResizeCells(30, 5, 8, 16); err != nil {
+		t.Fatalf("Terminal.ResizeCells: %v", err)
+	}
+	if got := replyString(t, stream); got != "" {
+		t.Errorf("reply after Terminal.ResizeCells = %q, want none", got)
+	}
+
+	if err := stream.ResizeCells(40, 6, 8, 16); err != nil {
+		t.Fatalf("Stream.ResizeCells: %v", err)
+	}
+	if got, want := replyString(t, stream), "\x1b[48;6;40;96;320t"; got != want {
+		t.Errorf("reply after Stream.ResizeCells = %q, want %q", got, want)
+	}
+	if cols := term.Cols(); cols != 40 {
+		t.Errorf("Cols = %d, want 40", cols)
+	}
+}
+
+// Synchronized output (mode 2026) is reported as a render hold, begun and
+// ended in pairs, and a resize ends it.
+func TestRenderHold(t *testing.T) {
+	_, stream := newStreamPair(t, 20, 3)
+
+	holds := func() []bool {
+		t.Helper()
+		var out []bool
+		for event, err := range stream.EventValues() {
+			if err != nil {
+				t.Fatalf("EventValues: %v", err)
+			}
+			if event.Kind == StreamEventRenderHold {
+				out = append(out, event.Held)
+			}
+		}
+		return out
+	}
+
+	// Setting the mode twice begins one hold.
+	feed(t, stream, "\x1b[?2026h\x1b[?2026hframe\x1b[?2026l\x1b[?2026h")
+	if got, want := holds(), []bool{true, false, true}; !slices.Equal(got, want) {
+		t.Errorf("holds = %v, want %v", got, want)
+	}
+
+	if err := stream.ResizeCells(30, 5, 8, 16); err != nil {
+		t.Fatalf("ResizeCells: %v", err)
+	}
+	if got, want := holds(), []bool{false}; !slices.Equal(got, want) {
+		t.Errorf("holds after resize = %v, want %v", got, want)
 	}
 }

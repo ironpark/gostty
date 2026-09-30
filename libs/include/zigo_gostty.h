@@ -481,6 +481,7 @@ typedef uint8_t zg_stream_event;
 #define ZG_STREAM_EVENT_DESKTOP_NOTIFICATION 3
 #define ZG_STREAM_EVENT_PROGRESS_REPORT 4
 #define ZG_STREAM_EVENT_UNKNOWN_SEQUENCE 5
+#define ZG_STREAM_EVENT_RENDER_HOLD 6
 
 typedef uint8_t zg_progress_state;
 #define ZG_PROGRESS_STATE_REMOVE 0
@@ -516,6 +517,10 @@ typedef uint8_t zg_clipboard_denial;
 #define ZG_CLIPBOARD_DENIAL_BUSY 2
 #define ZG_CLIPBOARD_DENIAL_IO_ERROR 3
 
+typedef uint8_t zg_unknown_sequence_kind;
+#define ZG_UNKNOWN_SEQUENCE_KIND_APC 0
+#define ZG_UNKNOWN_SEQUENCE_KIND_OSC 1
+
 typedef uint8_t zg_osc_command;
 #define ZG_OSC_COMMAND_INVALID 0
 #define ZG_OSC_COMMAND_CHANGE_WINDOW_TITLE 1
@@ -544,6 +549,7 @@ typedef uint8_t zg_osc_command;
 #define ZG_OSC_COMMAND_KITTY_DND_PROTOCOL 24
 #define ZG_OSC_COMMAND_CONTEXT_SIGNAL 25
 #define ZG_OSC_COMMAND_KITTY_DESKTOP_NOTIFICATION 26
+#define ZG_OSC_COMMAND_UNKNOWN 27
 
 typedef uint8_t zg_osc_terminator;
 #define ZG_OSC_TERMINATOR_ST 0
@@ -1006,6 +1012,7 @@ ZIGO_EXPORT int32_t zg_stream_at_ground(zg_stream * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_stream_feed_until_ground(zg_stream * self, const uint8_t * data_ptr, size_t data_len, zg_feed_boundary * out_result);
 ZIGO_EXPORT int32_t zg_stream_feed(zg_stream * self, const uint8_t * bytes_ptr, size_t bytes_len);
 ZIGO_EXPORT int32_t zg_stream_next_event_value(zg_stream * self, uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_stream_resize_cells(zg_stream * self, uint16_t width, uint16_t height, uint32_t cell_width, uint32_t cell_height);
 ZIGO_EXPORT int32_t zg_stream_set_unknown_max_bytes(zg_stream * self, size_t max);
 ZIGO_EXPORT int32_t zg_stream_set_version_report(zg_stream * self, const uint8_t * name_ptr, size_t name_len, const uint8_t * version_ptr, size_t version_len);
 ZIGO_EXPORT int32_t zg_stream_set_enquiry_response(zg_stream * self, const uint8_t * reply_ptr, size_t reply_len);

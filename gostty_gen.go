@@ -3960,6 +3960,36 @@ func (s *Stream) EventValues() iter.Seq2[Event, error] {
 	}
 }
 
+// ResizeCells: Resize the terminal this stream feeds, as a window resize should.
+//
+// The same resize as `Terminal.resizeCells`, plus what a running program
+// is owed when its window changes size, which only the stream can give
+// it: an in-band size report (mode 2048) for a program that subscribed,
+// queued with the other replies, and the end of any render hold, since
+// a frame drawn for the old size is not worth waiting for. Resize
+// through the terminal and a program relying on mode 2048 never learns
+// the new size.
+// It returns *HandleError if a required handle is nil or closed.
+// Native failures are returned as generated error values.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
+func (s *Stream) ResizeCells(width uint16, height uint16, cellWidth uint32, cellHeight uint32) error {
+	ptr, err := zigoCheckedPointer("Stream.ResizeCells receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	code := raw.StreamResizeCells(ptr, width, height, cellWidth, cellHeight)
+	if zigoCallbackPanicPending() {
+		for slot := range 3 {
+			zigoRethrowCallbackPanic("Stream.ResizeCells", s.zigoCallbackHandle(slot))
+		}
+	}
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Stream.ResizeCells", code), s)
+	}
+	return nil
+}
+
 // SetUnknownMaxBytes: Capture up to `max` bytes of the sequences this library does not
 // implement, and report them as `unknown_sequence` events. Zero, the
 // default, turns capture off.
@@ -5454,5 +5484,5 @@ type BuildInfo struct {
 
 // GetBuildInfo identifies the bundled native build. Values are fixed at generation time.
 func GetBuildInfo() BuildInfo {
-	return BuildInfo{GhosttyRevision: "d4c88d8069912b653d707191388ca98e24751f12", ZigoVersion: "0.30.0", Optimize: "ReleaseSafe", SIMD: true, KittyGraphics: true, TmuxControlMode: false}
+	return BuildInfo{GhosttyRevision: "4da7523faba68ccb4042ea20585817098a51c015", ZigoVersion: "0.30.0", Optimize: "ReleaseSafe", SIMD: true, KittyGraphics: true, TmuxControlMode: false}
 }

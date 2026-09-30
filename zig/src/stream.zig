@@ -34,12 +34,29 @@ pub const StreamEvent = enum(u8) {
     /// OSC 9;4. The Event value carries the progress state and percentage.
     progress_report,
     /// A sequence this library does not implement, captured so it can be
-    /// looked at. Only APC today. The Event value carries the content.
+    /// looked at: an APC or an OSC. The Event value carries which one and
+    /// its content.
     ///
     /// Off until `setUnknownMaxBytes` turns it on: capturing costs a buffer
     /// per stream, and a program that never sends an unknown sequence would
     /// pay it for nothing.
     unknown_sequence,
+    /// The program asked the terminal to stop updating the screen (`held`
+    /// true), or allowed it again (`held` false). The time in between is a
+    /// render hold: a program draws its next frame inside one so the user
+    /// never sees it half-drawn. Always in pairs.
+    ///
+    /// Today the only source is synchronized output (mode 2026). A hold ends
+    /// when the program resets the mode, on a full reset, and on a resize
+    /// through `Stream.resizeCells` -- not on one through the terminal, which
+    /// the stream never sees.
+    ///
+    /// Reported after the feed, like every event, so the terminal is already
+    /// past the sequence that began the hold: skip reading it until the hold
+    /// ends, and keep drawing the last frame read. The terminal has no clock,
+    /// so a renderer has to give up on a hold that never ends -- a second is
+    /// the usual limit.
+    render_hold,
 };
 
 /// Which color scheme the desktop is in, reported to a program that asks
@@ -65,6 +82,15 @@ const max_version_bytes = 256;
 /// How long an ENQ reply may be. ghostty drops anything longer.
 const max_enquiry_bytes = 255;
 
+/// Which kind of escape sequence an `unknown_sequence` event captured.
+pub const UnknownSequenceKind = enum(u8) {
+    /// `ESC _`: the content after the introducer, identifier first.
+    apc,
+    /// `ESC ]`: the content after the introducer, number first, as in
+    /// "7400;status=busy".
+    osc,
+};
+
 /// How far along an OSC 9;4 progress report says the program is.
 /// Event is an owned copy in Go. Payloads remain valid after Feed, the next
 /// event, or Close. Only fields associated with Kind are populated.
@@ -76,6 +102,8 @@ pub const Event = struct {
     pwd: []const u8 = "",
     body: []const u8 = "",
     sequence: []const u8 = "",
+    sequence_kind: UnknownSequenceKind = .apc,
+    held: bool = false,
     progress_state: ProgressState = .remove,
     progress: u8 = 0,
     has_progress: bool = false,
@@ -338,6 +366,9 @@ pub const Stream = struct {
         /// each accessor means one thing: an accessor that changes meaning
         /// with the event tag is a trap for the caller.
         sequence: []const u8 = "",
+        sequence_kind: UnknownSequenceKind = .apc,
+        /// Whether a render hold began or ended.
+        held: bool = false,
         progress_state: ProgressState = .remove,
         /// 0..100, or 255 when the report carried no percentage.
         progress: u8 = 255,
@@ -394,6 +425,10 @@ pub const Stream = struct {
             .progress_state = report.state,
             .progress = report.progress orelse 255,
         });
+    }
+
+    fn onRenderHold(handler: *vt.TerminalStream.Handler, held: bool) void {
+        streamFromHandler(handler).push(.{ .kind = .render_hold, .held = held });
     }
 
     /// A query the terminal answered itself, such as a device status report or
@@ -465,11 +500,12 @@ pub const Stream = struct {
         value: vt.UnknownSequence,
     ) void {
         const self = streamFromHandler(handler);
-        const content = switch (value) {
-            .apc => |apc| apc.content,
+        const kind: UnknownSequenceKind, const content = switch (value) {
+            .apc => |apc| .{ .apc, apc.content },
+            .osc => |osc| .{ .osc, osc.content },
         };
         const copy = self.gpa.dupe(u8, content) catch return;
-        self.push(.{ .kind = .unknown_sequence, .sequence = copy });
+        self.push(.{ .kind = .unknown_sequence, .sequence = copy, .sequence_kind = kind });
     }
 
     /// What the terminal answers `CSI c`, `CSI > c` and `CSI = c` with.
@@ -515,6 +551,7 @@ pub const Stream = struct {
         result.progress_report = onProgressReport;
         result.write_pty = onWritePty;
         result.size = onSize;
+        result.render_hold = onRenderHold;
         result.clipboard_write = onClipboardWrite;
         result.clipboard_read = onClipboardRead;
         // Wired unconditionally. These answer queries a program blocks on --
@@ -566,6 +603,29 @@ pub const Stream = struct {
         try writer.writeAll(self.replies.items);
         try writer.flush();
         self.replies.clearRetainingCapacity();
+    }
+
+    /// Resize the terminal this stream feeds, as a window resize should.
+    ///
+    /// The same resize as `Terminal.resizeCells`, plus what a running program
+    /// is owed when its window changes size, which only the stream can give
+    /// it: an in-band size report (mode 2048) for a program that subscribed,
+    /// queued with the other replies, and the end of any render hold, since
+    /// a frame drawn for the old size is not worth waiting for. Resize
+    /// through the terminal and a program relying on mode 2048 never learns
+    /// the new size.
+    pub fn resizeCells(
+        self: *Stream,
+        width: u16,
+        height: u16,
+        cell_width: u32,
+        cell_height: u32,
+    ) !void {
+        try self.inner.handler.resize(.{
+            .cols = width,
+            .rows = height,
+            .cell_size_px = .{ .width = cell_width, .height = cell_height },
+        });
     }
 
     /// Write the unfinished sequence suffix, when continuation tracking is on.
@@ -621,7 +681,11 @@ pub const Stream = struct {
                 event.title = queued.title;
                 event.body = queued.body;
             },
-            .unknown_sequence => event.sequence = queued.sequence,
+            .unknown_sequence => {
+                event.sequence = queued.sequence;
+                event.sequence_kind = queued.sequence_kind;
+            },
+            .render_hold => event.held = queued.held,
             .progress_report => {
                 event.progress_state = queued.progress_state;
                 if (queued.progress <= 100) {
@@ -643,6 +707,7 @@ pub const Stream = struct {
     /// nothing. The buffer is per stream, which is why it is off by default.
     pub fn setUnknownMaxBytes(self: *Stream, max: usize) void {
         self.inner.handler.apc_handler.unknown_max_bytes = max;
+        self.inner.parser.osc_parser.unknown_max_bytes = max;
         self.inner.handler.unknown_sequence = if (max > 0) onUnknownSequence else null;
     }
 

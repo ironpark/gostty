@@ -99,6 +99,7 @@ const stream_ = @import("stream.zig");
 pub const Event = stream_.Event;
 pub const StreamEvent = stream_.StreamEvent;
 pub const ProgressState = stream_.ProgressState;
+pub const UnknownSequenceKind = stream_.UnknownSequenceKind;
 pub const ColorScheme = stream_.ColorScheme;
 pub const ClipboardLocation = stream_.ClipboardLocation;
 pub const ClipboardDenial = stream_.ClipboardDenial;

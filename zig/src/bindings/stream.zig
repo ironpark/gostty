@@ -64,6 +64,10 @@ const stream_group = Stream.members(p.functions(api, .{
         .use(zigo.features.implements, .{ .kinds = &.{ .writer, .string_writer } }),
     Stream.func("nextEventValue", .{ .returns = zigo.result.releasedBy(api.ref("freeBuffer")) })
         .use(zigo.features.iterator, .{ .name = "EventValues" }),
+    // A window resize goes through the stream rather than the terminal when
+    // there is one: only the stream can tell the program (mode 2048) and end
+    // a render hold.
+    Stream.func("resizeCells", .{}),
     Stream.func("setUnknownMaxBytes", .{}),
     Stream.func("setVersionReport", .{}),
     Stream.func("setEnquiryResponse", .{}),

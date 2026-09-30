@@ -18,6 +18,8 @@ type Event struct {
 	Pwd           string
 	Body          string
 	Sequence      []byte
+	SequenceKind  UnknownSequenceKind
+	Held          bool
 	ProgressState ProgressState
 	Progress      uint8
 	HasProgress   bool
@@ -73,9 +75,11 @@ func zigoDecodeEventInto(buffer []byte, offset uint64, result *Event) {
 	result.Pwd = string(zigoMaterializedBytes(buffer, zigoMaterializedU64(buffer, offset+24), zigoMaterializedU64(buffer, offset+24+8)))
 	result.Body = string(zigoMaterializedBytes(buffer, zigoMaterializedU64(buffer, offset+40), zigoMaterializedU64(buffer, offset+40+8)))
 	result.Sequence = append([]byte(nil), zigoMaterializedBytes(buffer, zigoMaterializedU64(buffer, offset+56), zigoMaterializedU64(buffer, offset+56+8))...)
-	result.ProgressState = ProgressState(zigoMaterializedWord(buffer, offset+72, 1))
-	result.Progress = uint8(zigoMaterializedWord(buffer, offset+73, 1))
-	result.HasProgress = zigoMaterializedWord(buffer, offset+74, 1) != 0
+	result.SequenceKind = UnknownSequenceKind(zigoMaterializedWord(buffer, offset+72, 1))
+	result.Held = zigoMaterializedWord(buffer, offset+73, 1) != 0
+	result.ProgressState = ProgressState(zigoMaterializedWord(buffer, offset+74, 1))
+	result.Progress = uint8(zigoMaterializedWord(buffer, offset+75, 1))
+	result.HasProgress = zigoMaterializedWord(buffer, offset+76, 1) != 0
 }
 
 // DragOperations mirrors the Zig packed struct of the same name.

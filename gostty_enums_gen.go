@@ -1895,26 +1895,44 @@ const (
 	// StreamEventProgressReport: OSC 9;4. The Event value carries the progress state and percentage.
 	StreamEventProgressReport StreamEvent = 4
 	// StreamEventUnknownSequence: A sequence this library does not implement, captured so it can be
-	// looked at. Only APC today. The Event value carries the content.
+	// looked at: an APC or an OSC. The Event value carries which one and
+	// its content.
 	//
 	// Off until `setUnknownMaxBytes` turns it on: capturing costs a buffer
 	// per stream, and a program that never sends an unknown sequence would
 	// pay it for nothing.
 	StreamEventUnknownSequence StreamEvent = 5
+	// StreamEventRenderHold: The program asked the terminal to stop updating the screen (`held`
+	// true), or allowed it again (`held` false). The time in between is a
+	// render hold: a program draws its next frame inside one so the user
+	// never sees it half-drawn. Always in pairs.
+	//
+	// Today the only source is synchronized output (mode 2026). A hold ends
+	// when the program resets the mode, on a full reset, and on a resize
+	// through `Stream.resizeCells` -- not on one through the terminal, which
+	// the stream never sees.
+	//
+	// Reported after the feed, like every event, so the terminal is already
+	// past the sequence that began the hold: skip reading it until the hold
+	// ends, and keep drawing the last frame read. The terminal has no clock,
+	// so a renderer has to give up on a hold that never ends -- a second is
+	// the usual limit.
+	StreamEventRenderHold StreamEvent = 6
 )
 
-var zigoStreamEventNames = [6]string{
+var zigoStreamEventNames = [7]string{
 	0: "bell",
 	1: "title_changed",
 	2: "pwd_changed",
 	3: "desktop_notification",
 	4: "progress_report",
 	5: "unknown_sequence",
+	6: "render_hold",
 }
 
 // String returns the Zig tag name.
 func (value StreamEvent) String() string {
-	if value >= 0 && value <= 5 {
+	if value >= 0 && value <= 6 {
 		return zigoStreamEventNames[uint64(value)]
 	}
 	return "StreamEvent(" + strconv.Itoa(int(value)) + ")"
@@ -1935,6 +1953,8 @@ func ParseStreamEvent(text string) (StreamEvent, error) {
 		return StreamEventProgressReport, nil
 	case "unknown_sequence":
 		return StreamEventUnknownSequence, nil
+	case "render_hold":
+		return StreamEventRenderHold, nil
 	}
 	return 0, &EnumParseError{Type: "StreamEvent", Text: text}
 }
@@ -2291,6 +2311,30 @@ func (value ClipboardDenial) String() string {
 	return "ClipboardDenial(" + strconv.Itoa(int(value)) + ")"
 }
 
+// UnknownSequenceKind represents the corresponding Zig enum.
+type UnknownSequenceKind uint8
+
+const (
+	// UnknownSequenceKindApc: `ESC _`: the content after the introducer, identifier first.
+	UnknownSequenceKindApc UnknownSequenceKind = 0
+	// UnknownSequenceKindOsc: `ESC ]`: the content after the introducer, number first, as in
+	// "7400;status=busy".
+	UnknownSequenceKindOsc UnknownSequenceKind = 1
+)
+
+var zigoUnknownSequenceKindNames = [2]string{
+	0: "apc",
+	1: "osc",
+}
+
+// String returns the Zig tag name.
+func (value UnknownSequenceKind) String() string {
+	if value >= 0 && value <= 1 {
+		return zigoUnknownSequenceKindNames[uint64(value)]
+	}
+	return "UnknownSequenceKind(" + strconv.Itoa(int(value)) + ")"
+}
+
 // OSCCommand represents the corresponding Zig enum.
 type OSCCommand uint8
 
@@ -2349,9 +2393,11 @@ const (
 	OSCCommandContextSignal OSCCommand = 25
 	// OSCCommandKittyDesktopNotification corresponds to the Zig tag kitty_desktop_notification.
 	OSCCommandKittyDesktopNotification OSCCommand = 26
+	// OSCCommandUnknown corresponds to the Zig tag unknown.
+	OSCCommandUnknown OSCCommand = 27
 )
 
-var zigoOSCCommandNames = [27]string{
+var zigoOSCCommandNames = [28]string{
 	0:  "invalid",
 	1:  "change_window_title",
 	2:  "change_window_icon",
@@ -2379,11 +2425,12 @@ var zigoOSCCommandNames = [27]string{
 	24: "kitty_dnd_protocol",
 	25: "context_signal",
 	26: "kitty_desktop_notification",
+	27: "unknown",
 }
 
 // String returns the Zig tag name.
 func (value OSCCommand) String() string {
-	if value >= 0 && value <= 26 {
+	if value >= 0 && value <= 27 {
 		return zigoOSCCommandNames[uint64(value)]
 	}
 	return "OSCCommand(" + strconv.Itoa(int(value)) + ")"
@@ -2446,6 +2493,8 @@ func ParseOSCCommand(text string) (OSCCommand, error) {
 		return OSCCommandContextSignal, nil
 	case "kitty_desktop_notification":
 		return OSCCommandKittyDesktopNotification, nil
+	case "unknown":
+		return OSCCommandUnknown, nil
 	}
 	return 0, &EnumParseError{Type: "OSCCommand", Text: text}
 }

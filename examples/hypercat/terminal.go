@@ -28,7 +28,10 @@ type terminal struct {
 	frame  frame
 	layers gridCanvas
 	bell   int // frames of visual bell left to draw
-	images *kittyCache
+	// When the program began a render hold (synchronized output), or zero.
+	// The frame is not re-read during one, so a redraw is never half done.
+	heldSince time.Time
+	images    *kittyCache
 
 	// Grid size in cells, and where the grid sits below the tab bar.
 	cols, rows int
@@ -54,6 +57,10 @@ const (
 	scrollbackMaxLines = 10_000
 	scrollbackMaxBytes = 16 << 20
 )
+
+// How long a render hold may freeze the screen. The terminal has no clock,
+// so a program that never ends its hold would otherwise freeze it for good.
+const renderHoldTimeout = time.Second
 
 // Lifecycle ------------------------------------------------------------------
 
@@ -157,6 +164,12 @@ func (tab *terminal) readOutput() (bool, error) {
 // from the cells: search highlights, images, the hovered link, the scrollbar.
 func (tab *terminal) refreshSnapshot() error {
 	g := tab.grid()
+	if !tab.heldSince.IsZero() && time.Since(tab.heldSince) < renderHoldTimeout {
+		// Keep drawing the last complete frame until the program finishes
+		// the next one.
+		tab.frame.tickBlink(time.Now(), g)
+		return nil
+	}
 	if err := tab.frame.read(tab.state, tab.vt, g, tab.currentTheme()); err != nil {
 		return err
 	}
@@ -178,15 +191,21 @@ func (tab *terminal) resize(cols, rows int) error {
 	g := tab.grid()
 	// ResizeCells rather than Resize: a Kitty image sized in cells is
 	// measured in pixels through the cell size, so the terminal has to know
-	// it.
-	if err := tab.vt.ResizeCells(uint16(cols), uint16(rows), uint32(g.cellW), uint32(g.cellH)); err != nil {
+	// it. Through the stream rather than the terminal, so a program that
+	// asked for in-band size reports (mode 2048) gets one and a render hold
+	// drawn for the old size ends.
+	if err := tab.stream.ResizeCells(uint16(cols), uint16(rows), uint32(g.cellW), uint32(g.cellH)); err != nil {
 		return err
 	}
+	tab.heldSince = time.Time{}
 	// The selection gesture measures the pointer in pixels, so it is told too.
 	if err := tab.syncGestureGeometry(); err != nil {
 		return err
 	}
-	return tab.shell.Pty.Resize(cols, rows)
+	if err := tab.shell.Pty.Resize(cols, rows); err != nil {
+		return err
+	}
+	return tab.stream.WriteReplies(tab.shell.Pty)
 }
 
 // layout fits the grid to a content area and resizes when the cell count or
@@ -273,8 +292,14 @@ func (tab *terminal) drainEvents() error {
 			}
 		case gostty.StreamEventDesktopNotification:
 			log.Printf("notification: %s %s", event.Title, event.Body)
+		case gostty.StreamEventRenderHold:
+			if event.Held {
+				tab.heldSince = time.Now()
+			} else {
+				tab.heldSince = time.Time{}
+			}
 		case gostty.StreamEventUnknownSequence:
-			log.Printf("unhandled APC: %q", event.Sequence)
+			log.Printf("unhandled %s: %q", event.SequenceKind, event.Sequence)
 		}
 	}
 	return nil

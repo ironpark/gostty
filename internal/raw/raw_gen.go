@@ -2169,6 +2169,12 @@ func StreamNextEventValue(self unsafe.Pointer) ([]byte, bool, int32) {
 	return result, true, code
 }
 
+// StreamResizeCells calls the generated C ABI wrapper for zg_stream_resize_cells.
+func StreamResizeCells(self unsafe.Pointer, width uint16, height uint16, cellWidth uint32, cellHeight uint32) int32 {
+	code := int32(C.zg_stream_resize_cells((*C.zg_stream)(self), C.uint16_t(width), C.uint16_t(height), C.uint32_t(cellWidth), C.uint32_t(cellHeight)))
+	return code
+}
+
 // StreamSetUnknownMaxBytes calls the generated C ABI wrapper for zg_stream_set_unknown_max_bytes.
 func StreamSetUnknownMaxBytes(self unsafe.Pointer, max uint) int32 {
 	code := int32(C.zg_stream_set_unknown_max_bytes((*C.zg_stream)(self), C.size_t(max)))
