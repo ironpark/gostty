@@ -200,13 +200,13 @@ with quotes, `%`, or `!`, whose meaning depends on expansion state. A rejected
 drop is logged without pasting a partial path list or closing the window.
 
 The example is its own Go module, so its UI, PTY, and clipboard dependencies
-stay out of the bindings' `go.mod`. The repository's `go.work` builds it against
-the checkout; its own `go.mod` pins a published gostty so that
+stay out of the bindings' `go.mod`. In the repository, `make go.work` creates a
+workspace (not committed) that builds it against the checkout; its own `go.mod`
+pins a published gostty so that
 
 ```sh
 go install github.com/ironpark/gostty/examples/hypercat@latest
 ```
 
 works outside the repository. After pushing bindings the example needs, run
-`make example-sync` and commit the updated pin in `go.mod`, `go.sum` and
-`go.work`.
+`make example-sync` and commit the updated pin in `go.mod` and `go.sum`.

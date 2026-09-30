@@ -64,8 +64,11 @@ jobs:
             libxi-dev libxxf86vm-dev libasound2-dev xvfb xauth \
             fonts-noto-color-emoji fonts-noto-cjk
 
-      # The example is its own module; go.work builds it against this checkout
-      # rather than the gostty version its go.mod pins.
+      # The example is its own module; a workspace builds it against this
+      # checkout rather than the gostty version its go.mod pins.
+      - name: Create workspace
+        run: go work init . ./examples/hypercat
+
       - name: Vet example
         run: go vet ./examples/hypercat/...
 
@@ -88,10 +91,9 @@ jobs:
         with:
           go-version-file: examples/hypercat/go.mod
 
-      # Match go run .../examples/hypercat@version: use the pinned module,
-      # not the local replacement in go.work, and link its native archives.
+      # Match go run .../examples/hypercat@version: use the pinned module and
+      # link its native archives. No workspace is created, so nothing points
+      # the example at this checkout.
       - name: Build with published gostty
         working-directory: examples/hypercat
-        env:
-          GOWORK: "off"
         run: go build -o hypercat .

@@ -21,8 +21,8 @@ LIB_DIR := libs
 #
 #   make build OPTIMIZE=ReleaseFast
 OPTIMIZE ?= ReleaseSafe
-# The example emulator is its own Go module (see go.work), so `./...` from the
-# root does not reach it; every Go target names both.
+# The example emulator is its own Go module, so `./...` from the root does not
+# reach it; every Go target names both, through the workspace below.
 GO_PKGS := ./... ./examples/hypercat/...
 # The install prefix is the repository root, so `libs/` lands beside the Go
 # package. The generated cgo directives point at it, so it has to match.
@@ -72,33 +72,39 @@ define run-zig-tool
 	cd $(ZIG_DIR) && $(ZIG) build $(1) $(ZIG_FLAGS)
 endef
 
-test: build test-plugins ## Run the Go and binding plugin tests
+# The example's go.mod pins a published gostty so `go install
+# .../examples/hypercat@latest` works outside this checkout. A workspace that
+# uses both modules builds it against the checkout instead: a workspace module
+# wins over any version required of it, so no replace is needed. Generated
+# rather than committed, so the pin is the only thing to keep current and a
+# developer's own go.work is left alone.
+go.work:
+	$(GO) work init . ./examples/hypercat
+
+test: build test-plugins go.work ## Run the Go and binding plugin tests
 	$(GO) test $(GO_PKGS)
 
 test-plugins: ## Test binding plugin policies
 	$(call run-zig-tool,test-plugins)
 
-race: build ## Run the Go tests under the race detector
+race: build go.work ## Run the Go tests under the race detector
 	$(GO) test -race -count=2 $(GO_PKGS)
 
-bench: build ## Run the benchmarks
+bench: build go.work ## Run the benchmarks
 	$(GO) test -bench . -benchmem -run '^$$' $(GO_PKGS)
 
-vet: build ## Run go vet
+vet: build go.work ## Run go vet
 	$(GO) vet $(GO_PKGS)
 
-example: build ## Run the HyperCat example terminal emulator
+example: build go.work ## Run the HyperCat example terminal emulator
 	$(GO) run ./examples/hypercat
 
-# The example's go.mod pins a published gostty so `go install .../examples/hypercat@latest`
-# works outside this checkout. go.work replaces exactly that pinned version with
-# the checkout, so the two move together: run this after pushing bindings the
-# example needs, then commit go.work and the example's go.mod and go.sum.
-example-sync: ## Re-pin the example to the pushed gostty main and update go.work
+# Run this after pushing bindings the example needs, then commit the example's
+# go.mod and go.sum: `go install .../hypercat@latest` builds against the pin,
+# not the checkout.
+example-sync: ## Re-pin the example to the pushed gostty main
 	cd examples/hypercat && GOWORK=off $(GO) get github.com/ironpark/gostty@main && GOWORK=off $(GO) mod tidy
-	@ver=$$(cd examples/hypercat && GOWORK=off $(GO) list -m -f '{{.Version}}' github.com/ironpark/gostty); \
-	sed -i.bak '/^replace github.com\/ironpark\/gostty /d' go.work && rm -f go.work.bak; \
-	$(GO) work edit -replace=github.com/ironpark/gostty@$$ver=./ && echo "example pinned to gostty $$ver"
+	@cd examples/hypercat && echo "example pinned to gostty $$(GOWORK=off $(GO) list -m -f '{{.Version}}' github.com/ironpark/gostty)"
 
 verify: ## Validate generated bindings, toolchain and native library
 	$(call run-zig-tool,go-verify)
