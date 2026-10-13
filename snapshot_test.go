@@ -150,9 +150,7 @@ func TestSnapshotDecoderIncremental(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer stream.Close()
-	if err := term.SetScrollbackMaxBytes(1 << 20); err != nil {
-		t.Fatal(err)
-	}
+	term.SetScrollbackMaxBytes(1 << 20)
 	// SCREEN carries the page the active area starts in; only whole pages
 	// before it become HISTORY sequences. So this has to be enough output to
 	// fill more than one page.

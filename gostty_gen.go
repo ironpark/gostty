@@ -5,6 +5,12 @@
 // Go binding entry point. Each domain owns its handles, members and values.
 // Shared policies live in bindings/policy.zig; ownership exceptions stay beside
 // the declarations they affect. Go package paths are independent of this layout.
+//
+// Zig errors are returned as *Error; classify them with errors.Is against the
+// Err sentinels.
+// A function that takes a handle returns *HandleError when it is nil or closed.
+// A panic in a Go callback is rethrown as *CallbackPanicError once the native
+// call that ran the callback returns.
 package gostty
 
 import (
@@ -30,9 +36,11 @@ func (te *Terminal) zigoCheckedCols() (uint16, error) {
 	return result, nil
 }
 
-// Cols panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (te *Terminal) Cols() uint16 { return gosttyMustValue(te.zigoCheckedCols()) }
+// Cols: The current column count, read without touching page memory.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) Cols() uint16 {
+	return zigoMust(te.zigoCheckedCols())
+}
 
 // zigoCheckedRows is the checked form of Rows, which a plugin replaced.
 func (te *Terminal) zigoCheckedRows() (uint16, error) {
@@ -48,9 +56,11 @@ func (te *Terminal) zigoCheckedRows() (uint16, error) {
 	return result, nil
 }
 
-// Rows panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (te *Terminal) Rows() uint16 { return gosttyMustValue(te.zigoCheckedRows()) }
+// Rows: The number of populated rows, read without touching page memory.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) Rows() uint16 {
+	return zigoMust(te.zigoCheckedRows())
+}
 
 // zigoCheckedCursorX is the checked form of CursorX, which a plugin replaced.
 func (te *Terminal) zigoCheckedCursorX() (uint16, error) {
@@ -66,9 +76,11 @@ func (te *Terminal) zigoCheckedCursorX() (uint16, error) {
 	return result, nil
 }
 
-// CursorX panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (te *Terminal) CursorX() uint16 { return gosttyMustValue(te.zigoCheckedCursorX()) }
+// CursorX calls the Zig function Terminal.cursorX.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) CursorX() uint16 {
+	return zigoMust(te.zigoCheckedCursorX())
+}
 
 // zigoCheckedCursorY is the checked form of CursorY, which a plugin replaced.
 func (te *Terminal) zigoCheckedCursorY() (uint16, error) {
@@ -84,9 +96,11 @@ func (te *Terminal) zigoCheckedCursorY() (uint16, error) {
 	return result, nil
 }
 
-// CursorY panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (te *Terminal) CursorY() uint16 { return gosttyMustValue(te.zigoCheckedCursorY()) }
+// CursorY calls the Zig function Terminal.cursorY.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) CursorY() uint16 {
+	return zigoMust(te.zigoCheckedCursorY())
+}
 
 // zigoCheckedCursorStyle is the checked form of CursorStyle, which a plugin replaced.
 func (te *Terminal) zigoCheckedCursorStyle() (CursorStyle, error) {
@@ -102,9 +116,11 @@ func (te *Terminal) zigoCheckedCursorStyle() (CursorStyle, error) {
 	return CursorStyle(result), nil
 }
 
-// CursorStyle panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (te *Terminal) CursorStyle() CursorStyle { return gosttyMustValue(te.zigoCheckedCursorStyle()) }
+// CursorStyle calls the Zig function Terminal.cursorStyle.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) CursorStyle() CursorStyle {
+	return zigoMust(te.zigoCheckedCursorStyle())
+}
 
 // zigoCheckedActiveScreenKey is the checked form of ActiveScreenKey, which a plugin replaced.
 func (te *Terminal) zigoCheckedActiveScreenKey() (ScreenKey, error) {
@@ -120,10 +136,10 @@ func (te *Terminal) zigoCheckedActiveScreenKey() (ScreenKey, error) {
 	return ScreenKey(result), nil
 }
 
-// ActiveScreenKey panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
+// ActiveScreenKey calls the Zig function Terminal.activeScreenKey.
+// It panics with the typed error it would otherwise return.
 func (te *Terminal) ActiveScreenKey() ScreenKey {
-	return gosttyMustValue(te.zigoCheckedActiveScreenKey())
+	return zigoMust(te.zigoCheckedActiveScreenKey())
 }
 
 // zigoCheckedCursorPendingWrap is the checked form of CursorPendingWrap, which a plugin replaced.
@@ -140,10 +156,10 @@ func (te *Terminal) zigoCheckedCursorPendingWrap() (bool, error) {
 	return result != 0, nil
 }
 
-// CursorPendingWrap panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
+// CursorPendingWrap calls the Zig function Terminal.cursorPendingWrap.
+// It panics with the typed error it would otherwise return.
 func (te *Terminal) CursorPendingWrap() bool {
-	return gosttyMustValue(te.zigoCheckedCursorPendingWrap())
+	return zigoMust(te.zigoCheckedCursorPendingWrap())
 }
 
 // zigoCheckedCursorProtected is the checked form of CursorProtected, which a plugin replaced.
@@ -160,9 +176,11 @@ func (te *Terminal) zigoCheckedCursorProtected() (bool, error) {
 	return result != 0, nil
 }
 
-// CursorProtected panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (te *Terminal) CursorProtected() bool { return gosttyMustValue(te.zigoCheckedCursorProtected()) }
+// CursorProtected calls the Zig function Terminal.cursorProtected.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) CursorProtected() bool {
+	return zigoMust(te.zigoCheckedCursorProtected())
+}
 
 // zigoCheckedWidthPx is the checked form of WidthPx, which a plugin replaced.
 func (te *Terminal) zigoCheckedWidthPx() (uint32, error) {
@@ -178,9 +196,11 @@ func (te *Terminal) zigoCheckedWidthPx() (uint32, error) {
 	return result, nil
 }
 
-// WidthPx panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (te *Terminal) WidthPx() uint32 { return gosttyMustValue(te.zigoCheckedWidthPx()) }
+// WidthPx calls the Zig function Terminal.widthPx.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) WidthPx() uint32 {
+	return zigoMust(te.zigoCheckedWidthPx())
+}
 
 // zigoCheckedHeightPx is the checked form of HeightPx, which a plugin replaced.
 func (te *Terminal) zigoCheckedHeightPx() (uint32, error) {
@@ -196,9 +216,11 @@ func (te *Terminal) zigoCheckedHeightPx() (uint32, error) {
 	return result, nil
 }
 
-// HeightPx panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (te *Terminal) HeightPx() uint32 { return gosttyMustValue(te.zigoCheckedHeightPx()) }
+// HeightPx calls the Zig function Terminal.heightPx.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) HeightPx() uint32 {
+	return zigoMust(te.zigoCheckedHeightPx())
+}
 
 // zigoCheckedFocused is the checked form of Focused, which a plugin replaced.
 func (te *Terminal) zigoCheckedFocused() (bool, error) {
@@ -214,9 +236,11 @@ func (te *Terminal) zigoCheckedFocused() (bool, error) {
 	return result != 0, nil
 }
 
-// Focused panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (te *Terminal) Focused() bool { return gosttyMustValue(te.zigoCheckedFocused()) }
+// Focused calls the Zig function Terminal.focused.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) Focused() bool {
+	return zigoMust(te.zigoCheckedFocused())
+}
 
 // zigoCheckedVisible is the checked form of Visible, which a plugin replaced.
 func (te *Terminal) zigoCheckedVisible() (bool, error) {
@@ -232,9 +256,11 @@ func (te *Terminal) zigoCheckedVisible() (bool, error) {
 	return result != 0, nil
 }
 
-// Visible panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (te *Terminal) Visible() bool { return gosttyMustValue(te.zigoCheckedVisible()) }
+// Visible calls the Zig function Terminal.visible.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) Visible() bool {
+	return zigoMust(te.zigoCheckedVisible())
+}
 
 // zigoCheckedPasswordInput is the checked form of PasswordInput, which a plugin replaced.
 func (te *Terminal) zigoCheckedPasswordInput() (bool, error) {
@@ -250,9 +276,11 @@ func (te *Terminal) zigoCheckedPasswordInput() (bool, error) {
 	return result != 0, nil
 }
 
-// PasswordInput panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (te *Terminal) PasswordInput() bool { return gosttyMustValue(te.zigoCheckedPasswordInput()) }
+// PasswordInput calls the Zig function Terminal.passwordInput.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) PasswordInput() bool {
+	return zigoMust(te.zigoCheckedPasswordInput())
+}
 
 // zigoCheckedCharsetGL is the checked form of CharsetGL, which a plugin replaced.
 func (te *Terminal) zigoCheckedCharsetGL() (CharsetSlot, error) {
@@ -268,9 +296,11 @@ func (te *Terminal) zigoCheckedCharsetGL() (CharsetSlot, error) {
 	return CharsetSlot(result), nil
 }
 
-// CharsetGL panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (te *Terminal) CharsetGL() CharsetSlot { return gosttyMustValue(te.zigoCheckedCharsetGL()) }
+// CharsetGL: The slot GL resolves to: the set used for codepoints up to 127.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) CharsetGL() CharsetSlot {
+	return zigoMust(te.zigoCheckedCharsetGL())
+}
 
 // zigoCheckedCharsetGR is the checked form of CharsetGR, which a plugin replaced.
 func (te *Terminal) zigoCheckedCharsetGR() (CharsetSlot, error) {
@@ -286,9 +316,11 @@ func (te *Terminal) zigoCheckedCharsetGR() (CharsetSlot, error) {
 	return CharsetSlot(result), nil
 }
 
-// CharsetGR panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (te *Terminal) CharsetGR() CharsetSlot { return gosttyMustValue(te.zigoCheckedCharsetGR()) }
+// CharsetGR: The slot GR resolves to: the set used for 8-bit printable codepoints.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) CharsetGR() CharsetSlot {
+	return zigoMust(te.zigoCheckedCharsetGR())
+}
 
 // zigoCheckedCharsetSingleShift is the checked form of CharsetSingleShift, which a plugin replaced.
 func (te *Terminal) zigoCheckedCharsetSingleShift() (CharsetSlot, bool, error) {
@@ -304,10 +336,10 @@ func (te *Terminal) zigoCheckedCharsetSingleShift() (CharsetSlot, bool, error) {
 	return CharsetSlot(result), zigoHas, nil
 }
 
-// CharsetSingleShift panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
+// CharsetSingleShift: The slot a pending single shift (SS2/SS3) will use for exactly one character, or absent if none is pending.
+// It panics with the typed error it would otherwise return.
 func (te *Terminal) CharsetSingleShift() (CharsetSlot, bool) {
-	return gosttyMustMatch(te.zigoCheckedCharsetSingleShift())
+	return zigoMustMatch(te.zigoCheckedCharsetSingleShift())
 }
 
 // zigoCheckedProtectedMode is the checked form of ProtectedMode, which a plugin replaced.
@@ -324,10 +356,10 @@ func (te *Terminal) zigoCheckedProtectedMode() (ProtectedMode, error) {
 	return ProtectedMode(result), nil
 }
 
-// ProtectedMode panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
+// ProtectedMode: The most recent protected mode (DECSCA or the older SPA/EPA) on the active screen. This never returns to off once set, until the screen is reset: ECH and friends key off the most recent mode, not the current pen.
+// It panics with the typed error it would otherwise return.
 func (te *Terminal) ProtectedMode() ProtectedMode {
-	return gosttyMustValue(te.zigoCheckedProtectedMode())
+	return zigoMust(te.zigoCheckedProtectedMode())
 }
 
 // zigoCheckedClickCount is the checked form of ClickCount, which a plugin replaced.
@@ -344,9 +376,11 @@ func (g *Gesture) zigoCheckedClickCount() (uint8, error) {
 	return result, nil
 }
 
-// ClickCount panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (g *Gesture) ClickCount() uint8 { return gosttyMustValue(g.zigoCheckedClickCount()) }
+// ClickCount: How many clicks the current sequence is at: 0 before any press, then 1, 2 or 3. What an emulator switches on to decide what a click means.
+// It panics with the typed error it would otherwise return.
+func (g *Gesture) ClickCount() uint8 {
+	return zigoMust(g.zigoCheckedClickCount())
+}
 
 // zigoCheckedDragged is the checked form of Dragged, which a plugin replaced.
 func (g *Gesture) zigoCheckedDragged() (bool, error) {
@@ -362,9 +396,11 @@ func (g *Gesture) zigoCheckedDragged() (bool, error) {
 	return result != 0, nil
 }
 
-// Dragged panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (g *Gesture) Dragged() bool { return gosttyMustValue(g.zigoCheckedDragged()) }
+// Dragged: Whether the pointer has left the pressed cell during this gesture. Read it on release: a click that never dragged is the one that should follow a hyperlink or move the shell cursor, rather than one that happened to end where it started after a round trip.
+// It panics with the typed error it would otherwise return.
+func (g *Gesture) Dragged() bool {
+	return zigoMust(g.zigoCheckedDragged())
+}
 
 // zigoCheckedFailed is the checked form of Failed, which a plugin replaced.
 func (s *Stream) zigoCheckedFailed() (bool, error) {
@@ -385,9 +421,11 @@ func (s *Stream) zigoCheckedFailed() (bool, error) {
 	return result != 0, nil
 }
 
-// Failed panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (s *Stream) Failed() bool { return gosttyMustValue(s.zigoCheckedFailed()) }
+// Failed: True once a sequence failed in a way the terminal could not absorb, such as an allocation failure. Streams are best-effort and keep going.
+// It panics with the typed error it would otherwise return.
+func (s *Stream) Failed() bool {
+	return zigoMust(s.zigoCheckedFailed())
+}
 
 // zigoCheckedCommand is the checked form of Command, which a plugin replaced.
 func (o *OSCParser) zigoCheckedCommand() (OSCCommand, error) {
@@ -403,9 +441,11 @@ func (o *OSCParser) zigoCheckedCommand() (OSCCommand, error) {
 	return OSCCommand(result), nil
 }
 
-// Command panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (o *OSCParser) Command() OSCCommand { return gosttyMustValue(o.zigoCheckedCommand()) }
+// Command: The last command parsed, or `invalid` if `end` has not said yes.
+// It panics with the typed error it would otherwise return.
+func (o *OSCParser) Command() OSCCommand {
+	return zigoMust(o.zigoCheckedCommand())
+}
 
 // zigoCheckedWindowTitle is the checked form of WindowTitle, which a plugin replaced.
 func (o *OSCParser) zigoCheckedWindowTitle() (string, error) {
@@ -421,9 +461,11 @@ func (o *OSCParser) zigoCheckedWindowTitle() (string, error) {
 	return result, nil
 }
 
-// WindowTitle panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (o *OSCParser) WindowTitle() string { return gosttyMustValue(o.zigoCheckedWindowTitle()) }
+// WindowTitle: OSC 0 and OSC 2: the window title. ghostty does not decode it. Under title mode 0 the bytes are hex, and otherwise they are UTF-8 or latin1 depending on how the terminal was set up, which only the embedder knows.
+// It panics with the typed error it would otherwise return.
+func (o *OSCParser) WindowTitle() string {
+	return zigoMust(o.zigoCheckedWindowTitle())
+}
 
 // zigoCheckedIcon is the checked form of Icon, which a plugin replaced.
 func (o *OSCParser) zigoCheckedIcon() (string, error) {
@@ -439,9 +481,11 @@ func (o *OSCParser) zigoCheckedIcon() (string, error) {
 	return result, nil
 }
 
-// Icon panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (o *OSCParser) Icon() string { return gosttyMustValue(o.zigoCheckedIcon()) }
+// Icon: OSC 1: the icon name. Not well defined by any specification, and ghostty itself ignores it.
+// It panics with the typed error it would otherwise return.
+func (o *OSCParser) Icon() string {
+	return zigoMust(o.zigoCheckedIcon())
+}
 
 // zigoCheckedPwd is the checked form of Pwd, which a plugin replaced.
 func (o *OSCParser) zigoCheckedPwd() (string, error) {
@@ -457,9 +501,11 @@ func (o *OSCParser) zigoCheckedPwd() (string, error) {
 	return result, nil
 }
 
-// Pwd panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (o *OSCParser) Pwd() string { return gosttyMustValue(o.zigoCheckedPwd()) }
+// Pwd: OSC 7: the shell's working directory, as a `file://` URL. ghostty does not check that it is one, and neither does this.
+// It panics with the typed error it would otherwise return.
+func (o *OSCParser) Pwd() string {
+	return zigoMust(o.zigoCheckedPwd())
+}
 
 // zigoCheckedHyperlinkURI is the checked form of HyperlinkURI, which a plugin replaced.
 func (o *OSCParser) zigoCheckedHyperlinkURI() (string, error) {
@@ -475,9 +521,11 @@ func (o *OSCParser) zigoCheckedHyperlinkURI() (string, error) {
 	return result, nil
 }
 
-// HyperlinkURI panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (o *OSCParser) HyperlinkURI() string { return gosttyMustValue(o.zigoCheckedHyperlinkURI()) }
+// HyperlinkURI: OSC 8: the link target.
+// It panics with the typed error it would otherwise return.
+func (o *OSCParser) HyperlinkURI() string {
+	return zigoMust(o.zigoCheckedHyperlinkURI())
+}
 
 // zigoCheckedHyperlinkID is the checked form of HyperlinkID, which a plugin replaced.
 func (o *OSCParser) zigoCheckedHyperlinkID() (string, error) {
@@ -493,9 +541,11 @@ func (o *OSCParser) zigoCheckedHyperlinkID() (string, error) {
 	return result, nil
 }
 
-// HyperlinkID panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (o *OSCParser) HyperlinkID() string { return gosttyMustValue(o.zigoCheckedHyperlinkID()) }
+// HyperlinkID: OSC 8: the link's `id=` parameter, empty when it carried none. Two runs sharing an id are one link even when they are not adjacent.
+// It panics with the typed error it would otherwise return.
+func (o *OSCParser) HyperlinkID() string {
+	return zigoMust(o.zigoCheckedHyperlinkID())
+}
 
 // zigoCheckedNotificationTitle is the checked form of NotificationTitle, which a plugin replaced.
 func (o *OSCParser) zigoCheckedNotificationTitle() (string, error) {
@@ -511,10 +561,10 @@ func (o *OSCParser) zigoCheckedNotificationTitle() (string, error) {
 	return result, nil
 }
 
-// NotificationTitle panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
+// NotificationTitle: OSC 9 and OSC 777: the notification title.
+// It panics with the typed error it would otherwise return.
 func (o *OSCParser) NotificationTitle() string {
-	return gosttyMustValue(o.zigoCheckedNotificationTitle())
+	return zigoMust(o.zigoCheckedNotificationTitle())
 }
 
 // zigoCheckedNotificationBody is the checked form of NotificationBody, which a plugin replaced.
@@ -531,10 +581,10 @@ func (o *OSCParser) zigoCheckedNotificationBody() (string, error) {
 	return result, nil
 }
 
-// NotificationBody panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
+// NotificationBody: OSC 9 and OSC 777: the notification body.
+// It panics with the typed error it would otherwise return.
 func (o *OSCParser) NotificationBody() string {
-	return gosttyMustValue(o.zigoCheckedNotificationBody())
+	return zigoMust(o.zigoCheckedNotificationBody())
 }
 
 // zigoCheckedClipboardData is the checked form of ClipboardData, which a plugin replaced.
@@ -551,9 +601,11 @@ func (o *OSCParser) zigoCheckedClipboardData() (string, error) {
 	return result, nil
 }
 
-// ClipboardData panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (o *OSCParser) ClipboardData() string { return gosttyMustValue(o.zigoCheckedClipboardData()) }
+// ClipboardData: OSC 52: the base64 payload to put on the clipboard, or a bare `?` when the program is asking to read the clipboard rather than to write it.
+// It panics with the typed error it would otherwise return.
+func (o *OSCParser) ClipboardData() string {
+	return zigoMust(o.zigoCheckedClipboardData())
+}
 
 // zigoCheckedClipboardSelection is the checked form of ClipboardSelection, which a plugin replaced.
 func (o *OSCParser) zigoCheckedClipboardSelection() (uint8, error) {
@@ -569,10 +621,10 @@ func (o *OSCParser) zigoCheckedClipboardSelection() (uint8, error) {
 	return result, nil
 }
 
-// ClipboardSelection panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
+// ClipboardSelection: OSC 52: which selection the request names, as the protocol's own character (`c` for clipboard, `p` for primary, `s` for the configured default), or zero for any other command.
+// It panics with the typed error it would otherwise return.
 func (o *OSCParser) ClipboardSelection() uint8 {
-	return gosttyMustValue(o.zigoCheckedClipboardSelection())
+	return zigoMust(o.zigoCheckedClipboardSelection())
 }
 
 // zigoCheckedMouseShape is the checked form of MouseShape, which a plugin replaced.
@@ -589,9 +641,11 @@ func (o *OSCParser) zigoCheckedMouseShape() (string, error) {
 	return result, nil
 }
 
-// MouseShape panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (o *OSCParser) MouseShape() string { return gosttyMustValue(o.zigoCheckedMouseShape()) }
+// MouseShape: OSC 22: the pointer shape, usually a W3C CSS cursor name. ghostty parses whatever string is given without validating it.
+// It panics with the typed error it would otherwise return.
+func (o *OSCParser) MouseShape() string {
+	return zigoMust(o.zigoCheckedMouseShape())
+}
 
 // zigoCheckedSemanticPromptAction is the checked form of SemanticPromptAction, which a plugin replaced.
 func (o *OSCParser) zigoCheckedSemanticPromptAction() (SemanticPromptAction, error) {
@@ -607,10 +661,10 @@ func (o *OSCParser) zigoCheckedSemanticPromptAction() (SemanticPromptAction, err
 	return SemanticPromptAction(result), nil
 }
 
-// SemanticPromptAction panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
+// SemanticPromptAction: OSC 133: which prompt boundary this sequence marks.
+// It panics with the typed error it would otherwise return.
 func (o *OSCParser) SemanticPromptAction() SemanticPromptAction {
-	return gosttyMustValue(o.zigoCheckedSemanticPromptAction())
+	return zigoMust(o.zigoCheckedSemanticPromptAction())
 }
 
 // zigoCheckedSemanticPromptOptions is the checked form of SemanticPromptOptions, which a plugin replaced.
@@ -627,10 +681,10 @@ func (o *OSCParser) zigoCheckedSemanticPromptOptions() (string, error) {
 	return result, nil
 }
 
-// SemanticPromptOptions panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
+// SemanticPromptOptions: OSC 133: the raw, unvalidated option string that followed the action.
+// It panics with the typed error it would otherwise return.
 func (o *OSCParser) SemanticPromptOptions() string {
-	return gosttyMustValue(o.zigoCheckedSemanticPromptOptions())
+	return zigoMust(o.zigoCheckedSemanticPromptOptions())
 }
 
 // zigoCheckedProgressState is the checked form of ProgressState, which a plugin replaced.
@@ -647,10 +701,10 @@ func (o *OSCParser) zigoCheckedProgressState() (ProgressState, error) {
 	return ProgressState(result), nil
 }
 
-// ProgressState panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
+// ProgressState: OSC 9;4: what the program says about its progress.
+// It panics with the typed error it would otherwise return.
 func (o *OSCParser) ProgressState() ProgressState {
-	return gosttyMustValue(o.zigoCheckedProgressState())
+	return zigoMust(o.zigoCheckedProgressState())
 }
 
 // zigoCheckedProgressValue is the checked form of ProgressValue, which a plugin replaced.
@@ -667,9 +721,11 @@ func (o *OSCParser) zigoCheckedProgressValue() (int16, error) {
 	return result, nil
 }
 
-// ProgressValue panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (o *OSCParser) ProgressValue() int16 { return gosttyMustValue(o.zigoCheckedProgressValue()) }
+// ProgressValue: OSC 9;4: percent complete, or -1 when the report carried no percentage.
+// It panics with the typed error it would otherwise return.
+func (o *OSCParser) ProgressValue() int16 {
+	return zigoMust(o.zigoCheckedProgressValue())
+}
 
 // zigoCheckedRows is the checked form of Rows, which a plugin replaced.
 func (r *RenderState) zigoCheckedRows() (uint16, error) {
@@ -685,9 +741,11 @@ func (r *RenderState) zigoCheckedRows() (uint16, error) {
 	return result, nil
 }
 
-// Rows panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (r *RenderState) Rows() uint16 { return gosttyMustValue(r.zigoCheckedRows()) }
+// Rows: The number of rows the last update covered.
+// It panics with the typed error it would otherwise return.
+func (r *RenderState) Rows() uint16 {
+	return zigoMust(r.zigoCheckedRows())
+}
 
 // zigoCheckedCols is the checked form of Cols, which a plugin replaced.
 func (r *RenderState) zigoCheckedCols() (uint16, error) {
@@ -703,9 +761,11 @@ func (r *RenderState) zigoCheckedCols() (uint16, error) {
 	return result, nil
 }
 
-// Cols panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (r *RenderState) Cols() uint16 { return gosttyMustValue(r.zigoCheckedCols()) }
+// Cols: The number of columns the last update covered.
+// It panics with the typed error it would otherwise return.
+func (r *RenderState) Cols() uint16 {
+	return zigoMust(r.zigoCheckedCols())
+}
 
 // zigoCheckedCursorVisible is the checked form of CursorVisible, which a plugin replaced.
 func (r *RenderState) zigoCheckedCursorVisible() (bool, error) {
@@ -721,9 +781,11 @@ func (r *RenderState) zigoCheckedCursorVisible() (bool, error) {
 	return result != 0, nil
 }
 
-// CursorVisible panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (r *RenderState) CursorVisible() bool { return gosttyMustValue(r.zigoCheckedCursorVisible()) }
+// CursorVisible calls the Zig function RenderState.cursorVisible.
+// It panics with the typed error it would otherwise return.
+func (r *RenderState) CursorVisible() bool {
+	return zigoMust(r.zigoCheckedCursorVisible())
+}
 
 // zigoCheckedCursorStyle is the checked form of CursorStyle, which a plugin replaced.
 func (r *RenderState) zigoCheckedCursorStyle() (CursorStyle, error) {
@@ -739,9 +801,11 @@ func (r *RenderState) zigoCheckedCursorStyle() (CursorStyle, error) {
 	return CursorStyle(result), nil
 }
 
-// CursorStyle panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (r *RenderState) CursorStyle() CursorStyle { return gosttyMustValue(r.zigoCheckedCursorStyle()) }
+// CursorStyle calls the Zig function RenderState.cursorStyle.
+// It panics with the typed error it would otherwise return.
+func (r *RenderState) CursorStyle() CursorStyle {
+	return zigoMust(r.zigoCheckedCursorStyle())
+}
 
 // zigoCheckedCursorBlinking is the checked form of CursorBlinking, which a plugin replaced.
 func (r *RenderState) zigoCheckedCursorBlinking() (bool, error) {
@@ -757,9 +821,11 @@ func (r *RenderState) zigoCheckedCursorBlinking() (bool, error) {
 	return result != 0, nil
 }
 
-// CursorBlinking panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (r *RenderState) CursorBlinking() bool { return gosttyMustValue(r.zigoCheckedCursorBlinking()) }
+// CursorBlinking calls the Zig function RenderState.cursorBlinking.
+// It panics with the typed error it would otherwise return.
+func (r *RenderState) CursorBlinking() bool {
+	return zigoMust(r.zigoCheckedCursorBlinking())
+}
 
 // zigoCheckedCursorPasswordInput is the checked form of CursorPasswordInput, which a plugin replaced.
 func (r *RenderState) zigoCheckedCursorPasswordInput() (bool, error) {
@@ -775,10 +841,10 @@ func (r *RenderState) zigoCheckedCursorPasswordInput() (bool, error) {
 	return result != 0, nil
 }
 
-// CursorPasswordInput panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
+// CursorPasswordInput calls the Zig function RenderState.cursorPasswordInput.
+// It panics with the typed error it would otherwise return.
 func (r *RenderState) CursorPasswordInput() bool {
-	return gosttyMustValue(r.zigoCheckedCursorPasswordInput())
+	return zigoMust(r.zigoCheckedCursorPasswordInput())
 }
 
 // zigoCheckedGeneration is the checked form of Generation, which a plugin replaced.
@@ -795,9 +861,11 @@ func (k *KittyImages) zigoCheckedGeneration() (uint64, error) {
 	return result, nil
 }
 
-// Generation panics with its typed error on failure. The error is a dead or
-// poisoned handle, which is a defect rather than a condition to branch on.
-func (k *KittyImages) Generation() uint64 { return gosttyMustValue(k.zigoCheckedGeneration()) }
+// Generation calls the Zig function KittyImages.generation.
+// It panics with the typed error it would otherwise return.
+func (k *KittyImages) Generation() uint64 {
+	return zigoMust(k.zigoCheckedGeneration())
+}
 
 // TerminalOption configures NewTerminal.
 type TerminalOption func(*terminalOptions)
@@ -839,7 +907,6 @@ func WithTerminalDefaultCursorBlink(defaultCursorBlink *bool) TerminalOption {
 
 // NewTerminal: Initialize a new terminal.
 // The caller must call Close on the returned handle.
-// Native failures are returned as generated error values.
 func NewTerminal(cols uint16, rows uint16, opts ...TerminalOption) (*Terminal, error) {
 	var zigoDefaultMaxScrollbackBytes uint = 10000
 	var zigoDefaultDefaultCursorBlink bool = false
@@ -869,8 +936,6 @@ func NewTerminal(cols uint16, rows uint16, opts ...TerminalOption) (*Terminal, e
 // `continuation_max_bytes` caps the unfinished-sequence suffix the stream
 // tracks across feeds; zero disables tracking.
 // The caller must call Close on the returned handle.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) NewStream(continuationMaxBytes uint) (*Stream, error) {
 	ptr, zigoChildParent, err := te.zigoAcquireChild("Terminal.NewStream receiver")
 	if err != nil {
@@ -897,8 +962,6 @@ func (te *Terminal) NewStream(continuationMaxBytes uint) (*Stream, error) {
 // returned and `tick` can make progress immediately. Returned by value, like
 // `Terminal.init`: zigo boxes the result and frees the box in `close`.
 // The caller must call Close on the returned handle.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) NewSearch(needle string) (*Search, error) {
 	ptr, zigoChildParent, err := te.zigoAcquireChild("Terminal.NewSearch receiver")
 	if err != nil {
@@ -919,15 +982,8 @@ func (te *Terminal) NewSearch(needle string) (*Search, error) {
 	return zigoNewSearch(result, zigoChildParent), nil
 }
 
-// NewGesture: Start a selection gesture over `t`, with ghostty's standard click behaviors:
-// single click clears, double selects a word, triple selects a line.
-//
-// Returned by value, like `Terminal.init`: zigo boxes it and frees the box in
-// `Close`.
-// The caller must call Close on the returned handle.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) NewGesture() (*Gesture, error) {
+// zigoCheckedNewGesture is the checked form of NewGesture, which a plugin replaced.
+func (te *Terminal) zigoCheckedNewGesture() (*Gesture, error) {
 	ptr, zigoChildParent, err := te.zigoAcquireChild("Terminal.NewGesture receiver")
 	if err != nil {
 		return nil, err
@@ -947,14 +1003,22 @@ func (te *Terminal) NewGesture() (*Gesture, error) {
 	return zigoNewGesture(result, zigoChildParent), nil
 }
 
+// NewGesture: Start a selection gesture over `t`, with ghostty's standard click behaviors:
+// single click clears, double selects a word, triple selects a line.
+//
+// Returned by value, like `Terminal.init`: zigo boxes it and frees the box in
+// `Close`.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) NewGesture() *Gesture {
+	return zigoMust(te.zigoCheckedNewGesture())
+}
+
 // NewGridRef: Start tracking the cell at `x`, `y` in the coordinate system `tag` names,
 // on the active screen. `error.OutOfBounds` if there is no such cell.
 //
 // Returned by value, like `Terminal.init`: zigo boxes the result and frees
 // the box in `close`.
 // The caller must call Close on the returned handle.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) NewGridRef(tag PointTag, x uint16, y uint32) (*GridRef, error) {
 	ptr, zigoChildParent, err := te.zigoAcquireChild("Terminal.NewGridRef receiver")
 	if err != nil {
@@ -976,8 +1040,6 @@ func (te *Terminal) NewGridRef(tag PointTag, x uint16, y uint32) (*GridRef, erro
 }
 
 // PrintString: Print UTF-8 encoded string to the terminal.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) PrintString(str string) error {
 	ptr, err := zigoCheckedPointer("Terminal.PrintString receiver", te)
 	if err != nil {
@@ -995,8 +1057,6 @@ func (te *Terminal) PrintString(str string) error {
 // encoded as "\n". This omits any formatting such as fg/bg.
 //
 // The caller must free the string.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) PlainString() (string, error) {
 	ptr, err := zigoCheckedPointer("Terminal.PlainString receiver", te)
 	if err != nil {
@@ -1010,9 +1070,21 @@ func (te *Terminal) PlainString() (string, error) {
 	return result, nil
 }
 
+// PlainStringUnwrapped: Same as plainString, but respects row wrap state when building the string.
+func (te *Terminal) PlainStringUnwrapped() (string, error) {
+	ptr, err := zigoCheckedPointer("Terminal.PlainStringUnwrapped receiver", te)
+	if err != nil {
+		return "", err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalPlainStringUnwrapped(ptr)
+	if code != 0 {
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PlainStringUnwrapped", code), te)
+	}
+	return result, nil
+}
+
 // Print calls the Zig function Terminal.print.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) Print(c rune) error {
 	if c < 0 || c > 1114111 {
 		return &RangeError{Operation: "Terminal.Print", Parameter: "c", Type: "codepoint"}
@@ -1030,8 +1102,6 @@ func (te *Terminal) Print(c rune) error {
 }
 
 // PrintRepeat: Print the previous printed character a repeated amount of times.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) PrintRepeat(count uint) error {
 	ptr, err := zigoCheckedPointer("Terminal.PrintRepeat receiver", te)
 	if err != nil {
@@ -1060,8 +1130,6 @@ func (te *Terminal) PrintRepeat(count uint) error {
 // grapheme clustering) are handled correctly but fall back to the
 // slower per-codepoint path. They're less common and this is optimized
 // for the aforementioned cases.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) PrintSlice(cps []rune) error {
 	for _, zigoValue := range cps {
 		if zigoValue < 0 || zigoValue > 1114111 {
@@ -1080,14 +1148,8 @@ func (te *Terminal) PrintSlice(cps []rune) error {
 	return nil
 }
 
-// SetCursorStyle: Change the cursor's current shape and blink behavior.
-//
-// The terminal parser uses this for DECSCUSR (`CSI Ps SP q`), but the behavior
-// is general: `.default` selects the configured defaults, while any other
-// value selects a concrete appearance until it is changed again or reset.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetCursorStyle(value CursorStyleReq) error {
+// zigoCheckedSetCursorStyle is the checked form of SetCursorStyle, which a plugin replaced.
+func (te *Terminal) zigoCheckedSetCursorStyle(value CursorStyleReq) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetCursorStyle receiver", te)
 	if err != nil {
 		return err
@@ -1100,15 +1162,20 @@ func (te *Terminal) SetCursorStyle(value CursorStyleReq) error {
 	return nil
 }
 
-// SetCursorPos: Set Cursor Position. Move cursor to the position indicated
-// by row and column (1-indexed). If column is 0, it is adjusted to 1.
-// If column is greater than the right-most column it is adjusted to
-// the right-most column. If row is 0, it is adjusted to 1. If row is
-// greater than the bottom-most row it is adjusted to the bottom-most
-// row.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetCursorPos(row uint, col uint) error {
+// SetCursorStyle: Change the cursor's current shape and blink behavior.
+//
+// The terminal parser uses this for DECSCUSR (`CSI Ps SP q`), but the behavior
+// is general: `.default` selects the configured defaults, while any other
+// value selects a concrete appearance until it is changed again or reset.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) SetCursorStyle(value CursorStyleReq) {
+	if err := te.zigoCheckedSetCursorStyle(value); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedSetCursorPos is the checked form of SetCursorPos, which a plugin replaced.
+func (te *Terminal) zigoCheckedSetCursorPos(row uint, col uint) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetCursorPos receiver", te)
 	if err != nil {
 		return err
@@ -1121,10 +1188,21 @@ func (te *Terminal) SetCursorPos(row uint, col uint) error {
 	return nil
 }
 
-// CarriageReturn: Carriage return moves the cursor to the first column.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) CarriageReturn() error {
+// SetCursorPos: Set Cursor Position. Move cursor to the position indicated
+// by row and column (1-indexed). If column is 0, it is adjusted to 1.
+// If column is greater than the right-most column it is adjusted to
+// the right-most column. If row is 0, it is adjusted to 1. If row is
+// greater than the bottom-most row it is adjusted to the bottom-most
+// row.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) SetCursorPos(row uint, col uint) {
+	if err := te.zigoCheckedSetCursorPos(row, col); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedCarriageReturn is the checked form of CarriageReturn, which a plugin replaced.
+func (te *Terminal) zigoCheckedCarriageReturn() error {
 	ptr, err := zigoCheckedPointer("Terminal.CarriageReturn receiver", te)
 	if err != nil {
 		return err
@@ -1137,12 +1215,15 @@ func (te *Terminal) CarriageReturn() error {
 	return nil
 }
 
-// MustCarriageReturn calls CarriageReturn and panics with its typed error on failure.
-func (te *Terminal) MustCarriageReturn() { gosttyMustSucceed(te.CarriageReturn()) }
+// CarriageReturn: Carriage return moves the cursor to the first column.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) CarriageReturn() {
+	if err := te.zigoCheckedCarriageReturn(); err != nil {
+		panic(err)
+	}
+}
 
 // Linefeed moves the cursor to the next line.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) Linefeed() error {
 	ptr, err := zigoCheckedPointer("Terminal.Linefeed receiver", te)
 	if err != nil {
@@ -1156,10 +1237,8 @@ func (te *Terminal) Linefeed() error {
 	return nil
 }
 
-// Backspace moves the cursor back a column (but not less than 0).
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) Backspace() error {
+// zigoCheckedBackspace is the checked form of Backspace, which a plugin replaced.
+func (te *Terminal) zigoCheckedBackspace() error {
 	ptr, err := zigoCheckedPointer("Terminal.Backspace receiver", te)
 	if err != nil {
 		return err
@@ -1172,17 +1251,16 @@ func (te *Terminal) Backspace() error {
 	return nil
 }
 
-// MustBackspace calls Backspace and panics with its typed error on failure.
-func (te *Terminal) MustBackspace() { gosttyMustSucceed(te.Backspace()) }
+// Backspace moves the cursor back a column (but not less than 0).
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) Backspace() {
+	if err := te.zigoCheckedBackspace(); err != nil {
+		panic(err)
+	}
+}
 
-// CursorIsAtPrompt: Returns true if the cursor is currently at a prompt. Another way to look
-// at this is it returns false if the shell is currently outputting something.
-// This requires shell integration (semantic prompt integration).
-//
-// If the shell integration doesn't exist, this will always return false.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) CursorIsAtPrompt() (bool, error) {
+// zigoCheckedCursorIsAtPrompt is the checked form of CursorIsAtPrompt, which a plugin replaced.
+func (te *Terminal) zigoCheckedCursorIsAtPrompt() (bool, error) {
 	ptr, err := zigoCheckedPointer("Terminal.CursorIsAtPrompt receiver", te)
 	if err != nil {
 		return false, err
@@ -1195,17 +1273,18 @@ func (te *Terminal) CursorIsAtPrompt() (bool, error) {
 	return result != 0, nil
 }
 
-// MustCursorIsAtPrompt calls CursorIsAtPrompt and panics with its typed error on failure.
-func (te *Terminal) MustCursorIsAtPrompt() bool { return gosttyMustValue(te.CursorIsAtPrompt()) }
-
-// FullReset: Full reset.
+// CursorIsAtPrompt: Returns true if the cursor is currently at a prompt. Another way to look
+// at this is it returns false if the shell is currently outputting something.
+// This requires shell integration (semantic prompt integration).
 //
-// This will attempt to free the existing screen memory but if that fails
-// this will reuse the existing memory. In the latter case, memory may
-// be wasted (since its unused) but it isn't leaked.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) FullReset() error {
+// If the shell integration doesn't exist, this will always return false.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) CursorIsAtPrompt() bool {
+	return zigoMust(te.zigoCheckedCursorIsAtPrompt())
+}
+
+// zigoCheckedFullReset is the checked form of FullReset, which a plugin replaced.
+func (te *Terminal) zigoCheckedFullReset() error {
 	ptr, err := zigoCheckedPointer("Terminal.FullReset receiver", te)
 	if err != nil {
 		return err
@@ -1218,15 +1297,46 @@ func (te *Terminal) FullReset() error {
 	return nil
 }
 
-// MustFullReset calls FullReset and panics with its typed error on failure.
-func (te *Terminal) MustFullReset() { gosttyMustSucceed(te.FullReset()) }
+// FullReset: Full reset.
+//
+// This will attempt to free the existing screen memory but if that fails
+// this will reuse the existing memory. In the latter case, memory may
+// be wasted (since its unused) but it isn't leaked.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) FullReset() {
+	if err := te.zigoCheckedFullReset(); err != nil {
+		panic(err)
+	}
+}
 
-// CursorUp: Move the cursor up amount lines. If amount is greater than the maximum
-// move distance then it is internally adjusted to the maximum. If amount is
-// 0, adjust it to 1.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) CursorUp(count uint) error {
+// zigoCheckedSoftReset is the checked form of SoftReset, which a plugin replaced.
+func (te *Terminal) zigoCheckedSoftReset() error {
+	ptr, err := zigoCheckedPointer("Terminal.SoftReset receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSoftReset(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SoftReset", code), te)
+	}
+	return nil
+}
+
+// SoftReset: DECSTR - Soft Terminal Reset. Resets the modes and state a program may
+// have left behind, without clearing the screen or moving the cursor.
+// Beyond what the VT510 manual lists, this also resets what xterm's soft
+// reset does: left and right margins, the cursor style, the color palette,
+// modifyOtherKeys, and the XTCHECKSUM variant.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) SoftReset() {
+	if err := te.zigoCheckedSoftReset(); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedCursorUp is the checked form of CursorUp, which a plugin replaced.
+func (te *Terminal) zigoCheckedCursorUp(count uint) error {
 	ptr, err := zigoCheckedPointer("Terminal.CursorUp receiver", te)
 	if err != nil {
 		return err
@@ -1239,15 +1349,18 @@ func (te *Terminal) CursorUp(count uint) error {
 	return nil
 }
 
-// MustCursorUp calls CursorUp and panics with its typed error on failure.
-func (te *Terminal) MustCursorUp(count uint) { gosttyMustSucceed(te.CursorUp(count)) }
+// CursorUp: Move the cursor up amount lines. If amount is greater than the maximum
+// move distance then it is internally adjusted to the maximum. If amount is
+// 0, adjust it to 1.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) CursorUp(count uint) {
+	if err := te.zigoCheckedCursorUp(count); err != nil {
+		panic(err)
+	}
+}
 
-// CursorDown: Move the cursor down amount lines. If amount is greater than the maximum
-// move distance then it is internally adjusted to the maximum. This sequence
-// will not scroll the screen or scroll region. If amount is 0, adjust it to 1.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) CursorDown(count uint) error {
+// zigoCheckedCursorDown is the checked form of CursorDown, which a plugin replaced.
+func (te *Terminal) zigoCheckedCursorDown(count uint) error {
 	ptr, err := zigoCheckedPointer("Terminal.CursorDown receiver", te)
 	if err != nil {
 		return err
@@ -1260,13 +1373,18 @@ func (te *Terminal) CursorDown(count uint) error {
 	return nil
 }
 
-// MustCursorDown calls CursorDown and panics with its typed error on failure.
-func (te *Terminal) MustCursorDown(count uint) { gosttyMustSucceed(te.CursorDown(count)) }
+// CursorDown: Move the cursor down amount lines. If amount is greater than the maximum
+// move distance then it is internally adjusted to the maximum. This sequence
+// will not scroll the screen or scroll region. If amount is 0, adjust it to 1.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) CursorDown(count uint) {
+	if err := te.zigoCheckedCursorDown(count); err != nil {
+		panic(err)
+	}
+}
 
-// CursorLeft: Move the cursor to the left amount cells. If amount is 0, adjust it to 1.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) CursorLeft(count uint) error {
+// zigoCheckedCursorLeft is the checked form of CursorLeft, which a plugin replaced.
+func (te *Terminal) zigoCheckedCursorLeft(count uint) error {
 	ptr, err := zigoCheckedPointer("Terminal.CursorLeft receiver", te)
 	if err != nil {
 		return err
@@ -1279,16 +1397,16 @@ func (te *Terminal) CursorLeft(count uint) error {
 	return nil
 }
 
-// MustCursorLeft calls CursorLeft and panics with its typed error on failure.
-func (te *Terminal) MustCursorLeft(count uint) { gosttyMustSucceed(te.CursorLeft(count)) }
+// CursorLeft: Move the cursor to the left amount cells. If amount is 0, adjust it to 1.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) CursorLeft(count uint) {
+	if err := te.zigoCheckedCursorLeft(count); err != nil {
+		panic(err)
+	}
+}
 
-// CursorRight: Move the cursor right amount columns. If amount is greater than the
-// maximum move distance then it is internally adjusted to the maximum.
-// This sequence will not scroll the screen or scroll region. If amount is
-// 0, adjust it to 1.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) CursorRight(count uint) error {
+// zigoCheckedCursorRight is the checked form of CursorRight, which a plugin replaced.
+func (te *Terminal) zigoCheckedCursorRight(count uint) error {
 	ptr, err := zigoCheckedPointer("Terminal.CursorRight receiver", te)
 	if err != nil {
 		return err
@@ -1301,17 +1419,19 @@ func (te *Terminal) CursorRight(count uint) error {
 	return nil
 }
 
-// MustCursorRight calls CursorRight and panics with its typed error on failure.
-func (te *Terminal) MustCursorRight(count uint) { gosttyMustSucceed(te.CursorRight(count)) }
+// CursorRight: Move the cursor right amount columns. If amount is greater than the
+// maximum move distance then it is internally adjusted to the maximum.
+// This sequence will not scroll the screen or scroll region. If amount is
+// 0, adjust it to 1.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) CursorRight(count uint) {
+	if err := te.zigoCheckedCursorRight(count); err != nil {
+		panic(err)
+	}
+}
 
-// SaveCursor: Save cursor position and further state.
-//
-// The primary and alternate screen have distinct save state. One saved state
-// is kept per screen (main / alternative). If for the current screen state
-// was already saved it is overwritten.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SaveCursor() error {
+// zigoCheckedSaveCursor is the checked form of SaveCursor, which a plugin replaced.
+func (te *Terminal) zigoCheckedSaveCursor() error {
 	ptr, err := zigoCheckedPointer("Terminal.SaveCursor receiver", te)
 	if err != nil {
 		return err
@@ -1324,13 +1444,20 @@ func (te *Terminal) SaveCursor() error {
 	return nil
 }
 
-// RestoreCursor: Restore cursor position and other state.
+// SaveCursor: Save cursor position and further state.
 //
-// The primary and alternate screen have distinct save state.
-// If no save was done before values are reset to their initial values.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) RestoreCursor() error {
+// The primary and alternate screen have distinct save state. One saved state
+// is kept per screen (main / alternative). If for the current screen state
+// was already saved it is overwritten.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) SaveCursor() {
+	if err := te.zigoCheckedSaveCursor(); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedRestoreCursor is the checked form of RestoreCursor, which a plugin replaced.
+func (te *Terminal) zigoCheckedRestoreCursor() error {
 	ptr, err := zigoCheckedPointer("Terminal.RestoreCursor receiver", te)
 	if err != nil {
 		return err
@@ -1341,6 +1468,17 @@ func (te *Terminal) RestoreCursor() error {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.RestoreCursor", code), te)
 	}
 	return nil
+}
+
+// RestoreCursor: Restore cursor position and other state.
+//
+// The primary and alternate screen have distinct save state.
+// If no save was done before values are reset to their initial values.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) RestoreCursor() {
+	if err := te.zigoCheckedRestoreCursor(); err != nil {
+		panic(err)
+	}
 }
 
 // Index: Move the cursor to the next line in the scrolling region, possibly scrolling.
@@ -1355,8 +1493,6 @@ func (te *Terminal) RestoreCursor() error {
 // move the cursor one line down
 //
 // This unsets the pending wrap state without wrapping.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) Index() error {
 	ptr, err := zigoCheckedPointer("Terminal.Index receiver", te)
 	if err != nil {
@@ -1366,6 +1502,20 @@ func (te *Terminal) Index() error {
 	code := raw.TerminalIndex(ptr)
 	if code != 0 {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Index", code), te)
+	}
+	return nil
+}
+
+// zigoCheckedReverseIndex is the checked form of ReverseIndex, which a plugin replaced.
+func (te *Terminal) zigoCheckedReverseIndex() error {
+	ptr, err := zigoCheckedPointer("Terminal.ReverseIndex receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalReverseIndex(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ReverseIndex", code), te)
 	}
 	return nil
 }
@@ -1382,19 +1532,11 @@ func (te *Terminal) Index() error {
 // invoke scroll down with amount=1
 // * If the cursor is not on the top-most line of the scrolling region:
 // move the cursor one line up
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ReverseIndex() error {
-	ptr, err := zigoCheckedPointer("Terminal.ReverseIndex receiver", te)
-	if err != nil {
-		return err
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) ReverseIndex() {
+	if err := te.zigoCheckedReverseIndex(); err != nil {
+		panic(err)
 	}
-	defer te.zigoRelease()
-	code := raw.TerminalReverseIndex(ptr)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ReverseIndex", code), te)
-	}
-	return nil
 }
 
 // SwitchScreen: Switch to the given screen type (alternate or primary).
@@ -1413,8 +1555,6 @@ func (te *Terminal) ReverseIndex() error {
 // currently a spec for this, but it is something I think might
 // be useful in the future.
 // The returned reference remains valid only while its parent handle remains open.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) SwitchScreen(key ScreenKey) (*Screen, bool, error) {
 	ptr, err := zigoCheckedPointer("Terminal.SwitchScreen receiver", te)
 	if err != nil {
@@ -1440,8 +1580,6 @@ func (te *Terminal) SwitchScreen(key ScreenKey) (*Screen, bool, error) {
 // This should be used for legacy compatibility with VT protocols,
 // but more modern usage should use `switchScreen` instead and handle
 // details like clearing the screen, cursor saving, etc. manually.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) SwitchScreenMode(mode SwitchScreenMode, enabled bool) error {
 	ptr, err := zigoCheckedPointer("Terminal.SwitchScreenMode receiver", te)
 	if err != nil {
@@ -1455,11 +1593,8 @@ func (te *Terminal) SwitchScreenMode(mode SwitchScreenMode, enabled bool) error 
 	return nil
 }
 
-// ActiveScreen: The screen the terminal is currently writing to.
-// The returned reference remains valid only while its parent handle remains open.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ActiveScreen() (*Screen, error) {
+// zigoCheckedActiveScreen is the checked form of ActiveScreen, which a plugin replaced.
+func (te *Terminal) zigoCheckedActiveScreen() (*Screen, error) {
 	ptr, err := zigoCheckedPointer("Terminal.ActiveScreen receiver", te)
 	if err != nil {
 		return nil, err
@@ -1472,12 +1607,14 @@ func (te *Terminal) ActiveScreen() (*Screen, error) {
 	return zigoNewBorrowedScreen(result, te), nil
 }
 
-// Screen: A specific screen, or absent if the terminal has not created it yet. The
-// alternate screen only exists once something has switched to it.
-// The returned reference remains valid only while its parent handle remains open.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) Screen(key ScreenKey) (*Screen, bool, error) {
+// ActiveScreen: The screen the terminal is currently writing to.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) ActiveScreen() *Screen {
+	return zigoMust(te.zigoCheckedActiveScreen())
+}
+
+// zigoCheckedScreen is the checked form of Screen, which a plugin replaced.
+func (te *Terminal) zigoCheckedScreen(key ScreenKey) (*Screen, bool, error) {
 	ptr, err := zigoCheckedPointer("Terminal.Screen receiver", te)
 	if err != nil {
 		return nil, false, err
@@ -1493,13 +1630,18 @@ func (te *Terminal) Screen(key ScreenKey) (*Screen, bool, error) {
 	return zigoNewBorrowedScreen(result, te), true, nil
 }
 
+// Screen: A specific screen, or absent if the terminal has not created it yet. The
+// alternate screen only exists once something has switched to it.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) Screen(key ScreenKey) (*Screen, bool) {
+	return zigoMustMatch(te.zigoCheckedScreen(key))
+}
+
 // PrintAttributesInto: Print the active attributes as a string. This is used to respond to DECRQSS
 // requests.
 //
 // Boolean attributes are printed first, followed by foreground color, then
 // background color. Each attribute is separated by a semicolon.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) PrintAttributesInto(buf []byte) (uint, error) {
 	ptr, err := zigoCheckedPointer("Terminal.PrintAttributesInto receiver", te)
 	if err != nil {
@@ -1522,8 +1664,6 @@ func (te *Terminal) PrintAttributesInto(buf []byte) (uint, error) {
 // `newGridRef`), and the other three origins are already reachable:
 // `plainString` is the active area and `Screen.format` is the screen with its
 // scrollback. What is left for this one to be is the scrollback, named.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) HistoryString() (string, error) {
 	ptr, err := zigoCheckedPointer("Terminal.HistoryString receiver", te)
 	if err != nil {
@@ -1537,11 +1677,8 @@ func (te *Terminal) HistoryString() (string, error) {
 	return result, nil
 }
 
-// HorizontalTab: Horizontal tab moves the cursor to the next tabstop, clearing
-// the screen to the left the tabstop.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) HorizontalTab() error {
+// zigoCheckedHorizontalTab is the checked form of HorizontalTab, which a plugin replaced.
+func (te *Terminal) zigoCheckedHorizontalTab() error {
 	ptr, err := zigoCheckedPointer("Terminal.HorizontalTab receiver", te)
 	if err != nil {
 		return err
@@ -1554,10 +1691,17 @@ func (te *Terminal) HorizontalTab() error {
 	return nil
 }
 
-// HorizontalTabBack: Same as horizontalTab but moves to the previous tabstop instead of the next.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) HorizontalTabBack() error {
+// HorizontalTab: Horizontal tab moves the cursor to the next tabstop, clearing
+// the screen to the left the tabstop.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) HorizontalTab() {
+	if err := te.zigoCheckedHorizontalTab(); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedHorizontalTabBack is the checked form of HorizontalTabBack, which a plugin replaced.
+func (te *Terminal) zigoCheckedHorizontalTabBack() error {
 	ptr, err := zigoCheckedPointer("Terminal.HorizontalTabBack receiver", te)
 	if err != nil {
 		return err
@@ -1570,11 +1714,16 @@ func (te *Terminal) HorizontalTabBack() error {
 	return nil
 }
 
-// TabSet: Set a tab stop on the current cursor.
-// TODO: test
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) TabSet() error {
+// HorizontalTabBack: Same as horizontalTab but moves to the previous tabstop instead of the next.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) HorizontalTabBack() {
+	if err := te.zigoCheckedHorizontalTabBack(); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedTabSet is the checked form of TabSet, which a plugin replaced.
+func (te *Terminal) zigoCheckedTabSet() error {
 	ptr, err := zigoCheckedPointer("Terminal.TabSet receiver", te)
 	if err != nil {
 		return err
@@ -1587,10 +1736,17 @@ func (te *Terminal) TabSet() error {
 	return nil
 }
 
-// TabReset: TODO: test
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) TabReset() error {
+// TabSet: Set a tab stop on the current cursor.
+// TODO: test
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) TabSet() {
+	if err := te.zigoCheckedTabSet(); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedTabReset is the checked form of TabReset, which a plugin replaced.
+func (te *Terminal) zigoCheckedTabReset() error {
 	ptr, err := zigoCheckedPointer("Terminal.TabReset receiver", te)
 	if err != nil {
 		return err
@@ -1603,10 +1759,16 @@ func (te *Terminal) TabReset() error {
 	return nil
 }
 
-// TabClear: Clear tab stops.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) TabClear(cmd TabClear) error {
+// TabReset: TODO: test
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) TabReset() {
+	if err := te.zigoCheckedTabReset(); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedTabClear is the checked form of TabClear, which a plugin replaced.
+func (te *Terminal) zigoCheckedTabClear(cmd TabClear) error {
 	ptr, err := zigoCheckedPointer("Terminal.TabClear receiver", te)
 	if err != nil {
 		return err
@@ -1619,13 +1781,16 @@ func (te *Terminal) TabClear(cmd TabClear) error {
 	return nil
 }
 
-// SetTabstop: Put a tabstop at an absolute column.
-//
-// Unlike `tabSet`, which is HTS and acts on the cursor's column, this does not
-// move or read the cursor.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetTabstop(col uint) error {
+// TabClear: Clear tab stops.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) TabClear(cmd TabClear) {
+	if err := te.zigoCheckedTabClear(cmd); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedSetTabstop is the checked form of SetTabstop, which a plugin replaced.
+func (te *Terminal) zigoCheckedSetTabstop(col uint) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetTabstop receiver", te)
 	if err != nil {
 		return err
@@ -1638,10 +1803,19 @@ func (te *Terminal) SetTabstop(col uint) error {
 	return nil
 }
 
-// UnsetTabstop: Remove the tabstop at an absolute column, if there is one.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) UnsetTabstop(col uint) error {
+// SetTabstop: Put a tabstop at an absolute column.
+//
+// Unlike `tabSet`, which is HTS and acts on the cursor's column, this does not
+// move or read the cursor.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) SetTabstop(col uint) {
+	if err := te.zigoCheckedSetTabstop(col); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedUnsetTabstop is the checked form of UnsetTabstop, which a plugin replaced.
+func (te *Terminal) zigoCheckedUnsetTabstop(col uint) error {
 	ptr, err := zigoCheckedPointer("Terminal.UnsetTabstop receiver", te)
 	if err != nil {
 		return err
@@ -1654,12 +1828,16 @@ func (te *Terminal) UnsetTabstop(col uint) error {
 	return nil
 }
 
-// ResetTabstops: Clear every tabstop and put one every `interval` columns.
-//
-// An interval of zero just clears them all. The terminal's own default is 8.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ResetTabstops(interval uint) error {
+// UnsetTabstop: Remove the tabstop at an absolute column, if there is one.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) UnsetTabstop(col uint) {
+	if err := te.zigoCheckedUnsetTabstop(col); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedResetTabstops is the checked form of ResetTabstops, which a plugin replaced.
+func (te *Terminal) zigoCheckedResetTabstops(interval uint) error {
 	ptr, err := zigoCheckedPointer("Terminal.ResetTabstops receiver", te)
 	if err != nil {
 		return err
@@ -1672,6 +1850,16 @@ func (te *Terminal) ResetTabstops(interval uint) error {
 	return nil
 }
 
+// ResetTabstops: Clear every tabstop and put one every `interval` columns.
+//
+// An interval of zero just clears them all. The terminal's own default is 8.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) ResetTabstops(interval uint) {
+	if err := te.zigoCheckedResetTabstops(interval); err != nil {
+		panic(err)
+	}
+}
+
 // ScrollUp: Removes amount lines from the top of the scroll region. The remaining lines
 // to the bottom margin are shifted up and space from the bottom margin up
 // is filled with empty lines.
@@ -1679,8 +1867,6 @@ func (te *Terminal) ResetTabstops(interval uint) error {
 // The new lines are created according to the current SGR state.
 //
 // Does not change the (absolute) cursor position.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) ScrollUp(count uint) error {
 	ptr, err := zigoCheckedPointer("Terminal.ScrollUp receiver", te)
 	if err != nil {
@@ -1694,10 +1880,8 @@ func (te *Terminal) ScrollUp(count uint) error {
 	return nil
 }
 
-// ScrollDown: Scroll the text down by one row.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ScrollDown(count uint) error {
+// zigoCheckedScrollDown is the checked form of ScrollDown, which a plugin replaced.
+func (te *Terminal) zigoCheckedScrollDown(count uint) error {
 	ptr, err := zigoCheckedPointer("Terminal.ScrollDown receiver", te)
 	if err != nil {
 		return err
@@ -1706,6 +1890,28 @@ func (te *Terminal) ScrollDown(count uint) error {
 	code := raw.TerminalScrollDown(ptr, count)
 	if code != 0 {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ScrollDown", code), te)
+	}
+	return nil
+}
+
+// ScrollDown: Scroll the text down by one row.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) ScrollDown(count uint) {
+	if err := te.zigoCheckedScrollDown(count); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedSetTopAndBottomMargin is the checked form of SetTopAndBottomMargin, which a plugin replaced.
+func (te *Terminal) zigoCheckedSetTopAndBottomMargin(top uint, bottom uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetTopAndBottomMargin receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetTopAndBottomMargin(ptr, top, bottom)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetTopAndBottomMargin", code), te)
 	}
 	return nil
 }
@@ -1722,25 +1928,15 @@ func (te *Terminal) ScrollDown(count uint) error {
 // and bottom-most line of the screen.
 //
 // Top and bottom are 1-indexed.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetTopAndBottomMargin(top uint, bottom uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetTopAndBottomMargin receiver", te)
-	if err != nil {
-		return err
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) SetTopAndBottomMargin(top uint, bottom uint) {
+	if err := te.zigoCheckedSetTopAndBottomMargin(top, bottom); err != nil {
+		panic(err)
 	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetTopAndBottomMargin(ptr, top, bottom)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetTopAndBottomMargin", code), te)
-	}
-	return nil
 }
 
-// SetLeftAndRightMargin: DECSLRM
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetLeftAndRightMargin(left uint, right uint) error {
+// zigoCheckedSetLeftAndRightMargin is the checked form of SetLeftAndRightMargin, which a plugin replaced.
+func (te *Terminal) zigoCheckedSetLeftAndRightMargin(left uint, right uint) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetLeftAndRightMargin receiver", te)
 	if err != nil {
 		return err
@@ -1753,27 +1949,38 @@ func (te *Terminal) SetLeftAndRightMargin(left uint, right uint) error {
 	return nil
 }
 
-// ScrollViewport: Scroll the viewport of the terminal grid.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ScrollViewport(behavior ScrollViewport) error {
+// SetLeftAndRightMargin: DECSLRM
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) SetLeftAndRightMargin(left uint, right uint) {
+	if err := te.zigoCheckedSetLeftAndRightMargin(left, right); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedScrollViewport is the checked form of ScrollViewport, which a plugin replaced.
+func (te *Terminal) zigoCheckedScrollViewport(behavior ScrollViewport) error {
 	ptr, err := zigoCheckedPointer("Terminal.ScrollViewport receiver", te)
 	if err != nil {
 		return err
 	}
 	defer te.zigoRelease()
-	code := raw.TerminalScrollViewport(ptr, uint8(behavior.tag), behavior.delta, behavior.row)
+	code := raw.TerminalScrollViewport(ptr, uint8(behavior.tag), behavior.delta, behavior.row, behavior.deltaPrompt)
 	if code != 0 {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ScrollViewport", code), te)
 	}
 	return nil
 }
 
-// SetScrollbackMaxBytes: Limit the primary screen's scrollback to `max` bytes. Zero disables
-// scrollback and erases retained history.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetScrollbackMaxBytes(max uint) error {
+// ScrollViewport: Scroll the viewport of the terminal grid.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) ScrollViewport(behavior ScrollViewport) {
+	if err := te.zigoCheckedScrollViewport(behavior); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedSetScrollbackMaxBytes is the checked form of SetScrollbackMaxBytes, which a plugin replaced.
+func (te *Terminal) zigoCheckedSetScrollbackMaxBytes(max uint) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetScrollbackMaxBytes receiver", te)
 	if err != nil {
 		return err
@@ -1786,10 +1993,17 @@ func (te *Terminal) SetScrollbackMaxBytes(max uint) error {
 	return nil
 }
 
-// ClearScrollbackMaxBytes: Remove the primary screen's scrollback byte limit.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ClearScrollbackMaxBytes() error {
+// SetScrollbackMaxBytes: Limit the primary screen's scrollback to `max` bytes. Zero disables
+// scrollback and erases retained history.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) SetScrollbackMaxBytes(max uint) {
+	if err := te.zigoCheckedSetScrollbackMaxBytes(max); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedClearScrollbackMaxBytes is the checked form of ClearScrollbackMaxBytes, which a plugin replaced.
+func (te *Terminal) zigoCheckedClearScrollbackMaxBytes() error {
 	ptr, err := zigoCheckedPointer("Terminal.ClearScrollbackMaxBytes receiver", te)
 	if err != nil {
 		return err
@@ -1802,10 +2016,16 @@ func (te *Terminal) ClearScrollbackMaxBytes() error {
 	return nil
 }
 
-// SetScrollbackMaxLines: Limit the primary screen's scrollback to `max` physical lines.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetScrollbackMaxLines(max uint) error {
+// ClearScrollbackMaxBytes: Remove the primary screen's scrollback byte limit.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) ClearScrollbackMaxBytes() {
+	if err := te.zigoCheckedClearScrollbackMaxBytes(); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedSetScrollbackMaxLines is the checked form of SetScrollbackMaxLines, which a plugin replaced.
+func (te *Terminal) zigoCheckedSetScrollbackMaxLines(max uint) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetScrollbackMaxLines receiver", te)
 	if err != nil {
 		return err
@@ -1818,10 +2038,16 @@ func (te *Terminal) SetScrollbackMaxLines(max uint) error {
 	return nil
 }
 
-// ClearScrollbackMaxLines: Remove the primary screen's scrollback line limit.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ClearScrollbackMaxLines() error {
+// SetScrollbackMaxLines: Limit the primary screen's scrollback to `max` physical lines.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) SetScrollbackMaxLines(max uint) {
+	if err := te.zigoCheckedSetScrollbackMaxLines(max); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedClearScrollbackMaxLines is the checked form of ClearScrollbackMaxLines, which a plugin replaced.
+func (te *Terminal) zigoCheckedClearScrollbackMaxLines() error {
 	ptr, err := zigoCheckedPointer("Terminal.ClearScrollbackMaxLines receiver", te)
 	if err != nil {
 		return err
@@ -1830,6 +2056,28 @@ func (te *Terminal) ClearScrollbackMaxLines() error {
 	code := raw.TerminalClearScrollbackMaxLines(ptr)
 	if code != 0 {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ClearScrollbackMaxLines", code), te)
+	}
+	return nil
+}
+
+// ClearScrollbackMaxLines: Remove the primary screen's scrollback line limit.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) ClearScrollbackMaxLines() {
+	if err := te.zigoCheckedClearScrollbackMaxLines(); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedInsertLines is the checked form of InsertLines, which a plugin replaced.
+func (te *Terminal) zigoCheckedInsertLines(count uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.InsertLines receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalInsertLines(ptr, count)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.InsertLines", code), te)
 	}
 	return nil
 }
@@ -1852,17 +2100,23 @@ func (te *Terminal) ClearScrollbackMaxLines() error {
 // All cleared space is colored according to the current SGR state.
 //
 // Moves the cursor to the left margin.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) InsertLines(count uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.InsertLines receiver", te)
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) InsertLines(count uint) {
+	if err := te.zigoCheckedInsertLines(count); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedDeleteLines is the checked form of DeleteLines, which a plugin replaced.
+func (te *Terminal) zigoCheckedDeleteLines(count uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.DeleteLines receiver", te)
 	if err != nil {
 		return err
 	}
 	defer te.zigoRelease()
-	code := raw.TerminalInsertLines(ptr, count)
+	code := raw.TerminalDeleteLines(ptr, count)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.InsertLines", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.DeleteLines", code), te)
 	}
 	return nil
 }
@@ -1883,31 +2137,15 @@ func (te *Terminal) InsertLines(count uint) error {
 // cleared space is colored according to the current SGR state.
 //
 // Moves the cursor to the left margin.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) DeleteLines(count uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.DeleteLines receiver", te)
-	if err != nil {
-		return err
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) DeleteLines(count uint) {
+	if err := te.zigoCheckedDeleteLines(count); err != nil {
+		panic(err)
 	}
-	defer te.zigoRelease()
-	code := raw.TerminalDeleteLines(ptr, count)
-	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.DeleteLines", code), te)
-	}
-	return nil
 }
 
-// InsertBlanks: Inserts spaces at current cursor position moving existing cell contents
-// to the right. The contents of the count right-most columns in the scroll
-// region are lost. The cursor position is not changed.
-//
-// This unsets the pending wrap state without wrapping.
-//
-// The inserted cells are colored according to the current SGR state.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) InsertBlanks(count uint) error {
+// zigoCheckedInsertBlanks is the checked form of InsertBlanks, which a plugin replaced.
+func (te *Terminal) zigoCheckedInsertBlanks(count uint) error {
 	ptr, err := zigoCheckedPointer("Terminal.InsertBlanks receiver", te)
 	if err != nil {
 		return err
@@ -1920,17 +2158,22 @@ func (te *Terminal) InsertBlanks(count uint) error {
 	return nil
 }
 
-// DeleteChars: Removes amount characters from the current cursor position to the right.
-// The remaining characters are shifted to the left and space from the right
-// margin is filled with spaces.
+// InsertBlanks: Inserts spaces at current cursor position moving existing cell contents
+// to the right. The contents of the count right-most columns in the scroll
+// region are lost. The cursor position is not changed.
 //
-// If amount is greater than the remaining number of characters in the
-// scrolling region, it is adjusted down.
+// This unsets the pending wrap state without wrapping.
 //
-// Does not change the cursor position.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) DeleteChars(count uint) error {
+// The inserted cells are colored according to the current SGR state.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) InsertBlanks(count uint) {
+	if err := te.zigoCheckedInsertBlanks(count); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedDeleteChars is the checked form of DeleteChars, which a plugin replaced.
+func (te *Terminal) zigoCheckedDeleteChars(count uint) error {
 	ptr, err := zigoCheckedPointer("Terminal.DeleteChars receiver", te)
 	if err != nil {
 		return err
@@ -1943,10 +2186,23 @@ func (te *Terminal) DeleteChars(count uint) error {
 	return nil
 }
 
-// EraseChars calls the Zig function Terminal.eraseChars.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) EraseChars(count uint) error {
+// DeleteChars: Removes amount characters from the current cursor position to the right.
+// The remaining characters are shifted to the left and space from the right
+// margin is filled with spaces.
+//
+// If amount is greater than the remaining number of characters in the
+// scrolling region, it is adjusted down.
+//
+// Does not change the cursor position.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) DeleteChars(count uint) {
+	if err := te.zigoCheckedDeleteChars(count); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedEraseChars is the checked form of EraseChars, which a plugin replaced.
+func (te *Terminal) zigoCheckedEraseChars(count uint) error {
 	ptr, err := zigoCheckedPointer("Terminal.EraseChars receiver", te)
 	if err != nil {
 		return err
@@ -1959,10 +2215,16 @@ func (te *Terminal) EraseChars(count uint) error {
 	return nil
 }
 
-// EraseLine: Erase the line.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) EraseLine(mode EraseLine, protected bool) error {
+// EraseChars calls the Zig function Terminal.eraseChars.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) EraseChars(count uint) {
+	if err := te.zigoCheckedEraseChars(count); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedEraseLine is the checked form of EraseLine, which a plugin replaced.
+func (te *Terminal) zigoCheckedEraseLine(mode EraseLine, protected bool) error {
 	ptr, err := zigoCheckedPointer("Terminal.EraseLine receiver", te)
 	if err != nil {
 		return err
@@ -1975,10 +2237,16 @@ func (te *Terminal) EraseLine(mode EraseLine, protected bool) error {
 	return nil
 }
 
-// EraseDisplay: Erase the display.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) EraseDisplay(mode EraseDisplay, protected bool) error {
+// EraseLine: Erase the line.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) EraseLine(mode EraseLine, protected bool) {
+	if err := te.zigoCheckedEraseLine(mode, protected); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedEraseDisplay is the checked form of EraseDisplay, which a plugin replaced.
+func (te *Terminal) zigoCheckedEraseDisplay(mode EraseDisplay, protected bool) error {
 	ptr, err := zigoCheckedPointer("Terminal.EraseDisplay receiver", te)
 	if err != nil {
 		return err
@@ -1991,11 +2259,17 @@ func (te *Terminal) EraseDisplay(mode EraseDisplay, protected bool) error {
 	return nil
 }
 
+// EraseDisplay: Erase the display.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) EraseDisplay(mode EraseDisplay, protected bool) {
+	if err := te.zigoCheckedEraseDisplay(mode, protected); err != nil {
+		panic(err)
+	}
+}
+
 // Decaln: Resets all margins and fills the whole screen with the character 'E'
 //
 // Sets the cursor to the top left corner.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) Decaln() error {
 	ptr, err := zigoCheckedPointer("Terminal.Decaln receiver", te)
 	if err != nil {
@@ -2010,8 +2284,6 @@ func (te *Terminal) Decaln() error {
 }
 
 // Resize: Change the viewport size, leaving the pixel geometry alone.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) Resize(cols uint16, rows uint16) error {
 	ptr, err := zigoCheckedPointer("Terminal.Resize receiver", te)
 	if err != nil {
@@ -2036,8 +2308,6 @@ func (te *Terminal) Resize(cols uint16, rows uint16) error {
 // A terminal a stream feeds should be resized through `Stream.resizeCells`
 // instead: this one never reaches the stream, so a program that asked for
 // in-band size reports (mode 2048) is not told and a render hold does not end.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) ResizeCells(width uint16, height uint16, cellWidth uint32, cellHeight uint32) error {
 	ptr, err := zigoCheckedPointer("Terminal.ResizeCells receiver", te)
 	if err != nil {
@@ -2058,9 +2328,6 @@ func (te *Terminal) ResizeCells(width uint16, height uint16, cellWidth uint32, c
 // list of the active screen, not just the rows on display. This differs from
 // `Screen.format` only in that it follows whichever screen is active rather
 // than staying with the one it was given.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
 func (te *Terminal) Format(opts FormatOptions, writer io.Writer) error {
 	if writer == nil {
 		return &StreamError{Operation: "Terminal.Format", Parameter: "writer", Err: ErrNilStream}
@@ -2088,9 +2355,6 @@ func (te *Terminal) Format(opts FormatOptions, writer io.Writer) error {
 // FormatSelection: Format the part of the active screen inside `sel`, using the terminal's
 // default colors and palette. Returns false, writing nothing, when `sel` is
 // outside the active screen.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
 func (te *Terminal) FormatSelection(opts FormatOptions, sel Selection, writer io.Writer) (bool, error) {
 	if writer == nil {
 		return false, &StreamError{Operation: "Terminal.FormatSelection", Parameter: "writer", Err: ErrNilStream}
@@ -2116,8 +2380,6 @@ func (te *Terminal) FormatSelection(opts FormatOptions, sel Selection, writer io
 }
 
 // SetPwd: Set the pwd for the terminal.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) SetPwd(pwd string) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetPwd receiver", te)
 	if err != nil {
@@ -2131,12 +2393,8 @@ func (te *Terminal) SetPwd(pwd string) error {
 	return nil
 }
 
-// GetPwd: Returns the pwd for the terminal, if any. The memory is owned by the
-// Terminal and is not copied. It is safe until a reset or setPwd.
-// The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) GetPwd() (string, bool, error) {
+// zigoCheckedGetPwd is the checked form of GetPwd, which a plugin replaced.
+func (te *Terminal) zigoCheckedGetPwd() (string, bool, error) {
 	ptr, err := zigoCheckedPointer("Terminal.GetPwd receiver", te)
 	if err != nil {
 		return "", false, err
@@ -2149,12 +2407,15 @@ func (te *Terminal) GetPwd() (string, bool, error) {
 	return result, zigoHas, nil
 }
 
-// GetTitle: Returns the title for the terminal, if any. The memory is owned by the
-// Terminal and is not copied. It is safe until a reset or setTitle.
-// The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) GetTitle() (string, bool, error) {
+// GetPwd: Returns the pwd for the terminal, if any. The memory is owned by the
+// Terminal and is not copied. It is safe until a reset or setPwd.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) GetPwd() (string, bool) {
+	return zigoMustMatch(te.zigoCheckedGetPwd())
+}
+
+// zigoCheckedGetTitle is the checked form of GetTitle, which a plugin replaced.
+func (te *Terminal) zigoCheckedGetTitle() (string, bool, error) {
 	ptr, err := zigoCheckedPointer("Terminal.GetTitle receiver", te)
 	if err != nil {
 		return "", false, err
@@ -2167,9 +2428,14 @@ func (te *Terminal) GetTitle() (string, bool, error) {
 	return result, zigoHas, nil
 }
 
+// GetTitle: Returns the title for the terminal, if any. The memory is owned by the
+// Terminal and is not copied. It is safe until a reset or setTitle.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) GetTitle() (string, bool) {
+	return zigoMustMatch(te.zigoCheckedGetTitle())
+}
+
 // SetTitle: Set the title for the terminal, as set by escape sequences (e.g. OSC 0/2).
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) SetTitle(t string) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetTitle receiver", te)
 	if err != nil {
@@ -2183,11 +2449,8 @@ func (te *Terminal) SetTitle(t string) error {
 	return nil
 }
 
-// BackgroundColor: The current background color: what OSC 11 set, else the default.
-// The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) BackgroundColor() (RGB, bool, error) {
+// zigoCheckedBackgroundColor is the checked form of BackgroundColor, which a plugin replaced.
+func (te *Terminal) zigoCheckedBackgroundColor() (RGB, bool, error) {
 	ptr, err := zigoCheckedPointer("Terminal.BackgroundColor receiver", te)
 	if err != nil {
 		return *new(RGB), false, err
@@ -2200,11 +2463,14 @@ func (te *Terminal) BackgroundColor() (RGB, bool, error) {
 	return zigoRGBFromRaw(result), zigoHas, nil
 }
 
-// ForegroundColor: The current foreground color: what OSC 10 set, else the default.
-// The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ForegroundColor() (RGB, bool, error) {
+// BackgroundColor: The current background color: what OSC 11 set, else the default.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) BackgroundColor() (RGB, bool) {
+	return zigoMustMatch(te.zigoCheckedBackgroundColor())
+}
+
+// zigoCheckedForegroundColor is the checked form of ForegroundColor, which a plugin replaced.
+func (te *Terminal) zigoCheckedForegroundColor() (RGB, bool, error) {
 	ptr, err := zigoCheckedPointer("Terminal.ForegroundColor receiver", te)
 	if err != nil {
 		return *new(RGB), false, err
@@ -2217,12 +2483,14 @@ func (te *Terminal) ForegroundColor() (RGB, bool, error) {
 	return zigoRGBFromRaw(result), zigoHas, nil
 }
 
-// CursorColor: The current cursor color, if one was set or configured. Null means the
-// cursor takes the foreground color.
-// The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) CursorColor() (RGB, bool, error) {
+// ForegroundColor: The current foreground color: what OSC 10 set, else the default.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) ForegroundColor() (RGB, bool) {
+	return zigoMustMatch(te.zigoCheckedForegroundColor())
+}
+
+// zigoCheckedCursorColor is the checked form of CursorColor, which a plugin replaced.
+func (te *Terminal) zigoCheckedCursorColor() (RGB, bool, error) {
 	ptr, err := zigoCheckedPointer("Terminal.CursorColor receiver", te)
 	if err != nil {
 		return *new(RGB), false, err
@@ -2235,11 +2503,15 @@ func (te *Terminal) CursorColor() (RGB, bool, error) {
 	return zigoRGBFromRaw(result), zigoHas, nil
 }
 
-// PaletteColors: Copy the current 256-color palette into `dst` and return how many entries
-// were written: 256, or `dst.len` if shorter.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) PaletteColors(dst []RGB) (uint, error) {
+// CursorColor: The current cursor color, if one was set or configured. Null means the
+// cursor takes the foreground color.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) CursorColor() (RGB, bool) {
+	return zigoMustMatch(te.zigoCheckedCursorColor())
+}
+
+// zigoCheckedPaletteColors is the checked form of PaletteColors, which a plugin replaced.
+func (te *Terminal) zigoCheckedPaletteColors(dst []RGB) (uint, error) {
 	ptr, err := zigoCheckedPointer("Terminal.PaletteColors receiver", te)
 	if err != nil {
 		return 0, err
@@ -2254,10 +2526,15 @@ func (te *Terminal) PaletteColors(dst []RGB) (uint, error) {
 	return result, nil
 }
 
-// ModeEnabled: Whether `mode` is currently on.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ModeEnabled(mode Mode) (bool, error) {
+// PaletteColors: Copy the current 256-color palette into `dst` and return how many entries
+// were written: 256, or `dst.len` if shorter.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) PaletteColors(dst []RGB) uint {
+	return zigoMust(te.zigoCheckedPaletteColors(dst))
+}
+
+// zigoCheckedModeEnabled is the checked form of ModeEnabled, which a plugin replaced.
+func (te *Terminal) zigoCheckedModeEnabled(mode Mode) (bool, error) {
 	ptr, err := zigoCheckedPointer("Terminal.ModeEnabled receiver", te)
 	if err != nil {
 		return false, err
@@ -2270,13 +2547,14 @@ func (te *Terminal) ModeEnabled(mode Mode) (bool, error) {
 	return result != 0, nil
 }
 
-// SetMode: Turn `mode` on or off. This flips the state only; the side effects the
-// parser performs when a program changes a mode -- switching screens for
-// 1049, resizing for 132-column -- do not run. Use `switchScreenMode` and
-// `deccolm` for those.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetMode(mode Mode, value bool) error {
+// ModeEnabled: Whether `mode` is currently on.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) ModeEnabled(mode Mode) bool {
+	return zigoMust(te.zigoCheckedModeEnabled(mode))
+}
+
+// zigoCheckedSetMode is the checked form of SetMode, which a plugin replaced.
+func (te *Terminal) zigoCheckedSetMode(mode Mode, value bool) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetMode receiver", te)
 	if err != nil {
 		return err
@@ -2289,10 +2567,19 @@ func (te *Terminal) SetMode(mode Mode, value bool) error {
 	return nil
 }
 
+// SetMode: Turn `mode` on or off. This flips the state only; the side effects the
+// parser performs when a program changes a mode -- switching screens for
+// 1049, resizing for 132-column -- do not run. Use `switchScreenMode` and
+// `deccolm` for those.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) SetMode(mode Mode, value bool) {
+	if err := te.zigoCheckedSetMode(mode, value); err != nil {
+		panic(err)
+	}
+}
+
 // SetAttribute: Apply an SGR attribute to the cursor's pen. Everything printed afterwards
 // carries it until it is reset.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) SetAttribute(attr Attribute) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetAttribute receiver", te)
 	if err != nil {
@@ -2306,10 +2593,8 @@ func (te *Terminal) SetAttribute(attr Attribute) error {
 	return nil
 }
 
-// SetProtectedMode: Set the character protection mode for the terminal.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetProtectedMode(mode ProtectedMode) error {
+// zigoCheckedSetProtectedMode is the checked form of SetProtectedMode, which a plugin replaced.
+func (te *Terminal) zigoCheckedSetProtectedMode(mode ProtectedMode) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetProtectedMode receiver", te)
 	if err != nil {
 		return err
@@ -2322,10 +2607,16 @@ func (te *Terminal) SetProtectedMode(mode ProtectedMode) error {
 	return nil
 }
 
-// ConfigureCharset: Set the charset into the given slot.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ConfigureCharset(slot CharsetSlot, set Charset) error {
+// SetProtectedMode: Set the character protection mode for the terminal.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) SetProtectedMode(mode ProtectedMode) {
+	if err := te.zigoCheckedSetProtectedMode(mode); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedConfigureCharset is the checked form of ConfigureCharset, which a plugin replaced.
+func (te *Terminal) zigoCheckedConfigureCharset(slot CharsetSlot, set Charset) error {
 	ptr, err := zigoCheckedPointer("Terminal.ConfigureCharset receiver", te)
 	if err != nil {
 		return err
@@ -2338,11 +2629,16 @@ func (te *Terminal) ConfigureCharset(slot CharsetSlot, set Charset) error {
 	return nil
 }
 
-// InvokeCharset: Invoke the charset in slot into the active slot. If single is true,
-// then this will only be invoked for a single character.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) InvokeCharset(active CharsetActiveSlot, slot CharsetSlot, single bool) error {
+// ConfigureCharset: Set the charset into the given slot.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) ConfigureCharset(slot CharsetSlot, set Charset) {
+	if err := te.zigoCheckedConfigureCharset(slot, set); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedInvokeCharset is the checked form of InvokeCharset, which a plugin replaced.
+func (te *Terminal) zigoCheckedInvokeCharset(active CharsetActiveSlot, slot CharsetSlot, single bool) error {
 	ptr, err := zigoCheckedPointer("Terminal.InvokeCharset receiver", te)
 	if err != nil {
 		return err
@@ -2355,6 +2651,15 @@ func (te *Terminal) InvokeCharset(active CharsetActiveSlot, slot CharsetSlot, si
 	return nil
 }
 
+// InvokeCharset: Invoke the charset in slot into the active slot. If single is true,
+// then this will only be invoked for a single character.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) InvokeCharset(active CharsetActiveSlot, slot CharsetSlot, single bool) {
+	if err := te.zigoCheckedInvokeCharset(active, slot, single); err != nil {
+		panic(err)
+	}
+}
+
 // Deccolm changes the terminal width between 80 and 132 columns. This
 // function call will do NOTHING unless `setDeccolmSupported` has been
 // called with "true".
@@ -2362,8 +2667,6 @@ func (te *Terminal) InvokeCharset(active CharsetActiveSlot, slot CharsetSlot, si
 // This breaks the expectation around modern terminals that they resize
 // with the window. This will fix the grid at either 80 or 132 columns.
 // The rows will continue to be variable.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) Deccolm(mode DeccolmMode) error {
 	ptr, err := zigoCheckedPointer("Terminal.Deccolm receiver", te)
 	if err != nil {
@@ -2375,6 +2678,53 @@ func (te *Terminal) Deccolm(mode DeccolmMode) error {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Deccolm", code), te)
 	}
 	return nil
+}
+
+// zigoCheckedCompress is the checked form of Compress, which a plugin replaced.
+func (te *Terminal) zigoCheckedCompress(mode CompressionMode) (CompressionResult, error) {
+	ptr, err := zigoCheckedPointer("Terminal.Compress receiver", te)
+	if err != nil {
+		return 0, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalCompress(ptr, uint8(mode))
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Compress", code), te)
+	}
+	return CompressionResult(result), nil
+}
+
+// Compress cold memory to save resident memory space.
+//
+// Full compression does a full pass compressing everything it can before
+// returning. This is not recommended for interactive terminals because
+// compression is relatively slow and with large scrollbacks this can cause
+// stalls.
+//
+// Incremental compression bounds itself on how much data it can look
+// up to compress and how much compression work it does before returning.
+// It is stateful (we maintain the state) and the return value tells callers
+// whether they should continue calling it in the future.
+//
+// Callers should schedule compression when it doesn't impact user
+// experience, for example during idle times.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) Compress(mode CompressionMode) CompressionResult {
+	return zigoMust(te.zigoCheckedCompress(mode))
+}
+
+// zigoCheckedCompressionActivity is the checked form of CompressionActivity, which a plugin replaced.
+func (te *Terminal) zigoCheckedCompressionActivity() (uint64, error) {
+	ptr, err := zigoCheckedPointer("Terminal.CompressionActivity receiver", te)
+	if err != nil {
+		return 0, err
+	}
+	defer te.zigoRelease()
+	result, code := raw.TerminalCompressionActivity(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CompressionActivity", code), te)
+	}
+	return result, nil
 }
 
 // CompressionActivity: Return the current compression activity value.
@@ -2391,26 +2741,13 @@ func (te *Terminal) Deccolm(mode DeccolmMode) error {
 // the ability to retain virtual memory allocations while discarding their
 // physical memory backings. Callers must still use `compress` to determine
 // whether compression is supported on the current target.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) CompressionActivity() (uint64, error) {
-	ptr, err := zigoCheckedPointer("Terminal.CompressionActivity receiver", te)
-	if err != nil {
-		return 0, err
-	}
-	defer te.zigoRelease()
-	result, code := raw.TerminalCompressionActivity(ptr)
-	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CompressionActivity", code), te)
-	}
-	return result, nil
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) CompressionActivity() uint64 {
+	return zigoMust(te.zigoCheckedCompressionActivity())
 }
 
-// SetDefaultBackgroundColor: Set the configured default background: the value in effect until OSC 11
-// overrides it and again after OSC 111 resets it.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetDefaultBackgroundColor(rgb RGB) error {
+// zigoCheckedSetDefaultBackgroundColor is the checked form of SetDefaultBackgroundColor, which a plugin replaced.
+func (te *Terminal) zigoCheckedSetDefaultBackgroundColor(rgb RGB) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetDefaultBackgroundColor receiver", te)
 	if err != nil {
 		return err
@@ -2423,10 +2760,17 @@ func (te *Terminal) SetDefaultBackgroundColor(rgb RGB) error {
 	return nil
 }
 
-// SetDefaultForegroundColor: Set the configured default foreground. See `setDefaultBackgroundColor`.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetDefaultForegroundColor(rgb RGB) error {
+// SetDefaultBackgroundColor: Set the configured default background: the value in effect until OSC 11
+// overrides it and again after OSC 111 resets it.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) SetDefaultBackgroundColor(rgb RGB) {
+	if err := te.zigoCheckedSetDefaultBackgroundColor(rgb); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedSetDefaultForegroundColor is the checked form of SetDefaultForegroundColor, which a plugin replaced.
+func (te *Terminal) zigoCheckedSetDefaultForegroundColor(rgb RGB) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetDefaultForegroundColor receiver", te)
 	if err != nil {
 		return err
@@ -2439,10 +2783,16 @@ func (te *Terminal) SetDefaultForegroundColor(rgb RGB) error {
 	return nil
 }
 
-// SetDefaultCursorColor: Set the configured default cursor color. See `setDefaultBackgroundColor`.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetDefaultCursorColor(rgb RGB) error {
+// SetDefaultForegroundColor: Set the configured default foreground. See `setDefaultBackgroundColor`.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) SetDefaultForegroundColor(rgb RGB) {
+	if err := te.zigoCheckedSetDefaultForegroundColor(rgb); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedSetDefaultCursorColor is the checked form of SetDefaultCursorColor, which a plugin replaced.
+func (te *Terminal) zigoCheckedSetDefaultCursorColor(rgb RGB) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetDefaultCursorColor receiver", te)
 	if err != nil {
 		return err
@@ -2455,14 +2805,16 @@ func (te *Terminal) SetDefaultCursorColor(rgb RGB) error {
 	return nil
 }
 
-// SetDefaultCursorStyle: Change the default cursor shape.
-//
-// If the cursor currently follows its defaults, the visible shape changes
-// immediately. Otherwise the new shape is saved for the next reset or default
-// selection, such as DECSCUSR `CSI 0 SP q`.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetDefaultCursorStyle(configuredStyle CursorStyle) error {
+// SetDefaultCursorColor: Set the configured default cursor color. See `setDefaultBackgroundColor`.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) SetDefaultCursorColor(rgb RGB) {
+	if err := te.zigoCheckedSetDefaultCursorColor(rgb); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedSetDefaultCursorStyle is the checked form of SetDefaultCursorStyle, which a plugin replaced.
+func (te *Terminal) zigoCheckedSetDefaultCursorStyle(configuredStyle CursorStyle) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetDefaultCursorStyle receiver", te)
 	if err != nil {
 		return err
@@ -2475,11 +2827,20 @@ func (te *Terminal) SetDefaultCursorStyle(configuredStyle CursorStyle) error {
 	return nil
 }
 
-// SetDefaultCursorBlink: Set the default cursor blink. Applied immediately only when the cursor
-// currently follows its defaults; otherwise saved for the next reset.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetDefaultCursorBlink(blink bool) error {
+// SetDefaultCursorStyle: Change the default cursor shape.
+//
+// If the cursor currently follows its defaults, the visible shape changes
+// immediately. Otherwise the new shape is saved for the next reset or default
+// selection, such as DECSCUSR `CSI 0 SP q`.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) SetDefaultCursorStyle(configuredStyle CursorStyle) {
+	if err := te.zigoCheckedSetDefaultCursorStyle(configuredStyle); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedSetDefaultCursorBlink is the checked form of SetDefaultCursorBlink, which a plugin replaced.
+func (te *Terminal) zigoCheckedSetDefaultCursorBlink(blink bool) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetDefaultCursorBlink receiver", te)
 	if err != nil {
 		return err
@@ -2492,10 +2853,17 @@ func (te *Terminal) SetDefaultCursorBlink(blink bool) error {
 	return nil
 }
 
-// ResetDefaultCursorBlink: Return the default cursor blink to the emulator default (blinking).
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ResetDefaultCursorBlink() error {
+// SetDefaultCursorBlink: Set the default cursor blink. Applied immediately only when the cursor
+// currently follows its defaults; otherwise saved for the next reset.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) SetDefaultCursorBlink(blink bool) {
+	if err := te.zigoCheckedSetDefaultCursorBlink(blink); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedResetDefaultCursorBlink is the checked form of ResetDefaultCursorBlink, which a plugin replaced.
+func (te *Terminal) zigoCheckedResetDefaultCursorBlink() error {
 	ptr, err := zigoCheckedPointer("Terminal.ResetDefaultCursorBlink receiver", te)
 	if err != nil {
 		return err
@@ -2508,10 +2876,16 @@ func (te *Terminal) ResetDefaultCursorBlink() error {
 	return nil
 }
 
-// PaletteColor: Read one entry of the 256 color palette.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) PaletteColor(idx uint8) (RGB, error) {
+// ResetDefaultCursorBlink: Return the default cursor blink to the emulator default (blinking).
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) ResetDefaultCursorBlink() {
+	if err := te.zigoCheckedResetDefaultCursorBlink(); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedPaletteColor is the checked form of PaletteColor, which a plugin replaced.
+func (te *Terminal) zigoCheckedPaletteColor(idx uint8) (RGB, error) {
 	ptr, err := zigoCheckedPointer("Terminal.PaletteColor receiver", te)
 	if err != nil {
 		return *new(RGB), err
@@ -2524,10 +2898,14 @@ func (te *Terminal) PaletteColor(idx uint8) (RGB, error) {
 	return zigoRGBFromRaw(result), nil
 }
 
-// SetPaletteColor: Override one palette entry, as OSC 4 does.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetPaletteColor(idx uint8, rgb RGB) error {
+// PaletteColor: Read one entry of the 256 color palette.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) PaletteColor(idx uint8) RGB {
+	return zigoMust(te.zigoCheckedPaletteColor(idx))
+}
+
+// zigoCheckedSetPaletteColor is the checked form of SetPaletteColor, which a plugin replaced.
+func (te *Terminal) zigoCheckedSetPaletteColor(idx uint8, rgb RGB) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetPaletteColor receiver", te)
 	if err != nil {
 		return err
@@ -2540,10 +2918,16 @@ func (te *Terminal) SetPaletteColor(idx uint8, rgb RGB) error {
 	return nil
 }
 
-// ResetPaletteColor: Drop the override on one palette entry, restoring its default.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ResetPaletteColor(idx uint8) error {
+// SetPaletteColor: Override one palette entry, as OSC 4 does.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) SetPaletteColor(idx uint8, rgb RGB) {
+	if err := te.zigoCheckedSetPaletteColor(idx, rgb); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedResetPaletteColor is the checked form of ResetPaletteColor, which a plugin replaced.
+func (te *Terminal) zigoCheckedResetPaletteColor(idx uint8) error {
 	ptr, err := zigoCheckedPointer("Terminal.ResetPaletteColor receiver", te)
 	if err != nil {
 		return err
@@ -2556,10 +2940,16 @@ func (te *Terminal) ResetPaletteColor(idx uint8) error {
 	return nil
 }
 
-// ResetPalette: Drop every palette override.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ResetPalette() error {
+// ResetPaletteColor: Drop the override on one palette entry, restoring its default.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) ResetPaletteColor(idx uint8) {
+	if err := te.zigoCheckedResetPaletteColor(idx); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedResetPalette is the checked form of ResetPalette, which a plugin replaced.
+func (te *Terminal) zigoCheckedResetPalette() error {
 	ptr, err := zigoCheckedPointer("Terminal.ResetPalette receiver", te)
 	if err != nil {
 		return err
@@ -2572,6 +2962,14 @@ func (te *Terminal) ResetPalette() error {
 	return nil
 }
 
+// ResetPalette: Drop every palette override.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) ResetPalette() {
+	if err := te.zigoCheckedResetPalette(); err != nil {
+		panic(err)
+	}
+}
+
 // SetDefaultPaletteColor: Change what one palette entry resets *to*, which is the embedder's
 // configured theme rather than anything a program asked for.
 //
@@ -2579,8 +2977,6 @@ func (te *Terminal) ResetPalette() error {
 // value `resetPaletteColor` will later restore that moves. ghostty only
 // offers this a whole palette at a time, so the single entry is edited into a
 // copy of the current defaults.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) SetDefaultPaletteColor(idx uint8, rgb RGB) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetDefaultPaletteColor receiver", te)
 	if err != nil {
@@ -2594,10 +2990,8 @@ func (te *Terminal) SetDefaultPaletteColor(idx uint8, rgb RGB) error {
 	return nil
 }
 
-// ResetDefaultPalette: Restore the built-in xterm palette as the default, preserving overrides.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ResetDefaultPalette() error {
+// zigoCheckedResetDefaultPalette is the checked form of ResetDefaultPalette, which a plugin replaced.
+func (te *Terminal) zigoCheckedResetDefaultPalette() error {
 	ptr, err := zigoCheckedPointer("Terminal.ResetDefaultPalette receiver", te)
 	if err != nil {
 		return err
@@ -2610,11 +3004,16 @@ func (te *Terminal) ResetDefaultPalette() error {
 	return nil
 }
 
-// SetDefaultMode: Set a mode and make that value the one `resetModes` and `fullReset` return
-// to.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetDefaultMode(mode Mode, value bool) error {
+// ResetDefaultPalette: Restore the built-in xterm palette as the default, preserving overrides.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) ResetDefaultPalette() {
+	if err := te.zigoCheckedResetDefaultPalette(); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedSetDefaultMode is the checked form of SetDefaultMode, which a plugin replaced.
+func (te *Terminal) zigoCheckedSetDefaultMode(mode Mode, value bool) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetDefaultMode receiver", te)
 	if err != nil {
 		return err
@@ -2627,10 +3026,17 @@ func (te *Terminal) SetDefaultMode(mode Mode, value bool) error {
 	return nil
 }
 
-// ResetModes: Return every mode to its default and discard the XTSAVE slots.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ResetModes() error {
+// SetDefaultMode: Set a mode and make that value the one `resetModes` and `fullReset` return
+// to.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) SetDefaultMode(mode Mode, value bool) {
+	if err := te.zigoCheckedSetDefaultMode(mode, value); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedResetModes is the checked form of ResetModes, which a plugin replaced.
+func (te *Terminal) zigoCheckedResetModes() error {
 	ptr, err := zigoCheckedPointer("Terminal.ResetModes receiver", te)
 	if err != nil {
 		return err
@@ -2643,13 +3049,16 @@ func (te *Terminal) ResetModes() error {
 	return nil
 }
 
-// SaveMode: Save a mode's current value, as XTSAVE (CSI ? Pm s) does.
-//
-// There is one slot per mode, so saving twice without restoring loses the
-// first value.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SaveMode(mode Mode) error {
+// ResetModes: Return every mode to its default and discard the XTSAVE slots.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) ResetModes() {
+	if err := te.zigoCheckedResetModes(); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedSaveMode is the checked form of SaveMode, which a plugin replaced.
+func (te *Terminal) zigoCheckedSaveMode(mode Mode) error {
 	ptr, err := zigoCheckedPointer("Terminal.SaveMode receiver", te)
 	if err != nil {
 		return err
@@ -2662,13 +3071,19 @@ func (te *Terminal) SaveMode(mode Mode) error {
 	return nil
 }
 
-// RestoreMode: Restore a mode from its XTSAVE slot and report the value restored.
+// SaveMode: Save a mode's current value, as XTSAVE (CSI ? Pm s) does.
 //
-// A mode that was never saved restores to false, which is the slot's initial
-// state rather than the mode's default.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) RestoreMode(mode Mode) (bool, error) {
+// There is one slot per mode, so saving twice without restoring loses the
+// first value.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) SaveMode(mode Mode) {
+	if err := te.zigoCheckedSaveMode(mode); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedRestoreMode is the checked form of RestoreMode, which a plugin replaced.
+func (te *Terminal) zigoCheckedRestoreMode(mode Mode) (bool, error) {
 	ptr, err := zigoCheckedPointer("Terminal.RestoreMode receiver", te)
 	if err != nil {
 		return false, err
@@ -2681,10 +3096,17 @@ func (te *Terminal) RestoreMode(mode Mode) (bool, error) {
 	return result != 0, nil
 }
 
-// SetKittyGraphicsSizeLimit: Set the storage size limit for Kitty graphics across all screens.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) SetKittyGraphicsSizeLimit(limit uint) error {
+// RestoreMode: Restore a mode from its XTSAVE slot and report the value restored.
+//
+// A mode that was never saved restores to false, which is the slot's initial
+// state rather than the mode's default.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) RestoreMode(mode Mode) bool {
+	return zigoMust(te.zigoCheckedRestoreMode(mode))
+}
+
+// zigoCheckedSetKittyGraphicsSizeLimit is the checked form of SetKittyGraphicsSizeLimit, which a plugin replaced.
+func (te *Terminal) zigoCheckedSetKittyGraphicsSizeLimit(limit uint) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetKittyGraphicsSizeLimit receiver", te)
 	if err != nil {
 		return err
@@ -2695,6 +3117,14 @@ func (te *Terminal) SetKittyGraphicsSizeLimit(limit uint) error {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetKittyGraphicsSizeLimit", code), te)
 	}
 	return nil
+}
+
+// SetKittyGraphicsSizeLimit: Set the storage size limit for Kitty graphics across all screens.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) SetKittyGraphicsSizeLimit(limit uint) {
+	if err := te.zigoCheckedSetKittyGraphicsSizeLimit(limit); err != nil {
+		panic(err)
+	}
 }
 
 // SetKittyGraphicsLoadingLimits: Choose which mediums a program may transmit a Kitty image over.
@@ -2710,8 +3140,6 @@ func (te *Terminal) SetKittyGraphicsSizeLimit(limit uint) error {
 // and the previous one released. The last copy is released by nothing: it
 // lives as long as the terminal, and ghostty's `deinit` does not know it is
 // owned.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) SetKittyGraphicsLoadingLimits(file bool, tempDir string, sharedMemory bool) error {
 	ptr, err := zigoCheckedPointer("Terminal.SetKittyGraphicsLoadingLimits receiver", te)
 	if err != nil {
@@ -2725,11 +3153,8 @@ func (te *Terminal) SetKittyGraphicsLoadingLimits(file bool, tempDir string, sha
 	return nil
 }
 
-// KittyImage: Look up an image on the active screen by id.
-// The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) KittyImage(imageID uint32) (KittyImage, bool, error) {
+// zigoCheckedKittyImage is the checked form of KittyImage, which a plugin replaced.
+func (te *Terminal) zigoCheckedKittyImage(imageID uint32) (KittyImage, bool, error) {
 	ptr, err := zigoCheckedPointer("Terminal.KittyImage receiver", te)
 	if err != nil {
 		return KittyImage{}, false, err
@@ -2742,6 +3167,12 @@ func (te *Terminal) KittyImage(imageID uint32) (KittyImage, bool, error) {
 	return zigoKittyImageFromRaw(result), zigoHas, nil
 }
 
+// KittyImage: Look up an image on the active screen by id.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) KittyImage(imageID uint32) (KittyImage, bool) {
+	return zigoMustMatch(te.zigoCheckedKittyImage(imageID))
+}
+
 // KittyImageData: Copy an image's pixels into `dst` and report how many bytes were written,
 // or zero if there is no such image.
 //
@@ -2749,8 +3180,6 @@ func (te *Terminal) KittyImage(imageID uint32) (KittyImage, bool, error) {
 // a PNG, and it is the renderer that decodes it. For an animated image these
 // are the current frame's, which is why the generation stamp moves when the
 // frame does.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) KittyImageData(imageID uint32, dst []byte) (uint, error) {
 	ptr, err := zigoCheckedPointer("Terminal.KittyImageData receiver", te)
 	if err != nil {
@@ -2764,10 +3193,8 @@ func (te *Terminal) KittyImageData(imageID uint32, dst []byte) (uint, error) {
 	return result, nil
 }
 
-// ScrollRegion: The current scrolling region.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ScrollRegion() (ScrollRegion, error) {
+// zigoCheckedScrollRegion is the checked form of ScrollRegion, which a plugin replaced.
+func (te *Terminal) zigoCheckedScrollRegion() (ScrollRegion, error) {
 	ptr, err := zigoCheckedPointer("Terminal.ScrollRegion receiver", te)
 	if err != nil {
 		return ScrollRegion{}, err
@@ -2780,10 +3207,14 @@ func (te *Terminal) ScrollRegion() (ScrollRegion, error) {
 	return zigoScrollRegionFromRaw(result), nil
 }
 
-// Charset: The character set configured in one slot, as SCS set it.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) Charset(slot CharsetSlot) (Charset, error) {
+// ScrollRegion: The current scrolling region.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) ScrollRegion() ScrollRegion {
+	return zigoMust(te.zigoCheckedScrollRegion())
+}
+
+// zigoCheckedCharset is the checked form of Charset, which a plugin replaced.
+func (te *Terminal) zigoCheckedCharset(slot CharsetSlot) (Charset, error) {
 	ptr, err := zigoCheckedPointer("Terminal.Charset receiver", te)
 	if err != nil {
 		return 0, err
@@ -2796,10 +3227,14 @@ func (te *Terminal) Charset(slot CharsetSlot) (Charset, error) {
 	return Charset(result), nil
 }
 
-// MouseTracking: The tracking mode currently in effect.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) MouseTracking() (MouseTracking, error) {
+// Charset: The character set configured in one slot, as SCS set it.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) Charset(slot CharsetSlot) Charset {
+	return zigoMust(te.zigoCheckedCharset(slot))
+}
+
+// zigoCheckedMouseTracking is the checked form of MouseTracking, which a plugin replaced.
+func (te *Terminal) zigoCheckedMouseTracking() (MouseTracking, error) {
 	ptr, err := zigoCheckedPointer("Terminal.MouseTracking receiver", te)
 	if err != nil {
 		return 0, err
@@ -2812,10 +3247,14 @@ func (te *Terminal) MouseTracking() (MouseTracking, error) {
 	return MouseTracking(result), nil
 }
 
-// MouseTrackingSendsMotion: Whether the current tracking mode reports motion as well as buttons.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) MouseTrackingSendsMotion() (bool, error) {
+// MouseTracking: The tracking mode currently in effect.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) MouseTracking() MouseTracking {
+	return zigoMust(te.zigoCheckedMouseTracking())
+}
+
+// zigoCheckedMouseTrackingSendsMotion is the checked form of MouseTrackingSendsMotion, which a plugin replaced.
+func (te *Terminal) zigoCheckedMouseTrackingSendsMotion() (bool, error) {
 	ptr, err := zigoCheckedPointer("Terminal.MouseTrackingSendsMotion receiver", te)
 	if err != nil {
 		return false, err
@@ -2828,10 +3267,14 @@ func (te *Terminal) MouseTrackingSendsMotion() (bool, error) {
 	return result != 0, nil
 }
 
-// MouseReportFormat: The report encoding currently in effect.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) MouseReportFormat() (MouseReportFormat, error) {
+// MouseTrackingSendsMotion: Whether the current tracking mode reports motion as well as buttons.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) MouseTrackingSendsMotion() bool {
+	return zigoMust(te.zigoCheckedMouseTrackingSendsMotion())
+}
+
+// zigoCheckedMouseReportFormat is the checked form of MouseReportFormat, which a plugin replaced.
+func (te *Terminal) zigoCheckedMouseReportFormat() (MouseReportFormat, error) {
 	ptr, err := zigoCheckedPointer("Terminal.MouseReportFormat receiver", te)
 	if err != nil {
 		return 0, err
@@ -2844,16 +3287,14 @@ func (te *Terminal) MouseReportFormat() (MouseReportFormat, error) {
 	return MouseReportFormat(result), nil
 }
 
-// ModeReport: The DECRPM state of a mode, by its number.
-//
-// `ansi` distinguishes the two namespaces: false is a DEC private mode
-// (`CSI ? Pd $ p`), true is an ANSI mode (`CSI Pd $ p`). Modes are taken as
-// numbers rather than as an enum on purpose -- the point of the query is to
-// learn whether a number is implemented at all, which an exhaustive enum
-// could never express.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) ModeReport(mode uint16, ansi bool) (ModeReport, error) {
+// MouseReportFormat: The report encoding currently in effect.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) MouseReportFormat() MouseReportFormat {
+	return zigoMust(te.zigoCheckedMouseReportFormat())
+}
+
+// zigoCheckedModeReport is the checked form of ModeReport, which a plugin replaced.
+func (te *Terminal) zigoCheckedModeReport(mode uint16, ansi bool) (ModeReport, error) {
 	ptr, err := zigoCheckedPointer("Terminal.ModeReport receiver", te)
 	if err != nil {
 		return 0, err
@@ -2866,14 +3307,20 @@ func (te *Terminal) ModeReport(mode uint16, ansi bool) (ModeReport, error) {
 	return ModeReport(result), nil
 }
 
-// CellAt: The cell at `x`, `y` of the active screen, in the coordinate system `tag`
-// names, without tracking it. Null if there is no such cell. For a read
-// that happens once, such as what is under a click; a cell that is read
-// again after the terminal changes wants a `GridRef`.
-// The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (te *Terminal) CellAt(tag PointTag, x uint16, y uint32) (RenderCell, bool, error) {
+// ModeReport: The DECRPM state of a mode, by its number.
+//
+// `ansi` distinguishes the two namespaces: false is a DEC private mode
+// (`CSI ? Pd $ p`), true is an ANSI mode (`CSI Pd $ p`). Modes are taken as
+// numbers rather than as an enum on purpose -- the point of the query is to
+// learn whether a number is implemented at all, which an exhaustive enum
+// could never express.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) ModeReport(mode uint16, ansi bool) ModeReport {
+	return zigoMust(te.zigoCheckedModeReport(mode, ansi))
+}
+
+// zigoCheckedCellAt is the checked form of CellAt, which a plugin replaced.
+func (te *Terminal) zigoCheckedCellAt(tag PointTag, x uint16, y uint32) (RenderCell, bool, error) {
 	ptr, err := zigoCheckedPointer("Terminal.CellAt receiver", te)
 	if err != nil {
 		return RenderCell{}, false, err
@@ -2886,11 +3333,18 @@ func (te *Terminal) CellAt(tag PointTag, x uint16, y uint32) (RenderCell, bool, 
 	return zigoRenderCellFromRaw(result), zigoHas, nil
 }
 
+// CellAt: The cell at `x`, `y` of the active screen, in the coordinate system `tag`
+// names, without tracking it. Null if there is no such cell. For a read
+// that happens once, such as what is under a click; a cell that is read
+// again after the terminal changes wants a `GridRef`.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) CellAt(tag PointTag, x uint16, y uint32) (RenderCell, bool) {
+	return zigoMustMatch(te.zigoCheckedCellAt(tag, x, y))
+}
+
 // HyperlinkAt: The hyperlink URI of the cell at `x`, `y` of the active screen, or null
 // when the cell is not a link or there is no such cell.
 // The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (te *Terminal) HyperlinkAt(tag PointTag, x uint16, y uint32) (string, bool, error) {
 	ptr, err := zigoCheckedPointer("Terminal.HyperlinkAt receiver", te)
 	if err != nil {
@@ -2904,10 +3358,8 @@ func (te *Terminal) HyperlinkAt(tag PointTag, x uint16, y uint32) (string, bool,
 	return result, zigoHas, nil
 }
 
-// ViewportIsBottom: Returns true if the viewport is scrolled to the bottom of the screen.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Screen) ViewportIsBottom() (bool, error) {
+// zigoCheckedViewportIsBottom is the checked form of ViewportIsBottom, which a plugin replaced.
+func (s *Screen) zigoCheckedViewportIsBottom() (bool, error) {
 	ptr, err := zigoCheckedPointer("Screen.ViewportIsBottom receiver", s)
 	if err != nil {
 		return false, err
@@ -2920,10 +3372,28 @@ func (s *Screen) ViewportIsBottom() (bool, error) {
 	return result != 0, nil
 }
 
-// ClearSelection: Same as select(null) but can't fail.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Screen) ClearSelection() error {
+// ViewportIsBottom: Returns true if the viewport is scrolled to the bottom of the screen.
+// It panics with the typed error it would otherwise return.
+func (s *Screen) ViewportIsBottom() bool {
+	return zigoMust(s.zigoCheckedViewportIsBottom())
+}
+
+// ScrollClear: Clear scrollback history and reset cursor to top.
+func (s *Screen) ScrollClear() error {
+	ptr, err := zigoCheckedPointer("Screen.ScrollClear receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	code := raw.ScreenScrollClear(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Screen.ScrollClear", code), s)
+	}
+	return nil
+}
+
+// zigoCheckedClearSelection is the checked form of ClearSelection, which a plugin replaced.
+func (s *Screen) zigoCheckedClearSelection() error {
 	ptr, err := zigoCheckedPointer("Screen.ClearSelection receiver", s)
 	if err != nil {
 		return err
@@ -2936,11 +3406,16 @@ func (s *Screen) ClearSelection() error {
 	return nil
 }
 
-// EndHyperlink: End the hyperlink state so that future cells aren't part of the
-// current hyperlink (if any). This is safe to call multiple times.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Screen) EndHyperlink() error {
+// ClearSelection: Same as select(null) but can't fail.
+// It panics with the typed error it would otherwise return.
+func (s *Screen) ClearSelection() {
+	if err := s.zigoCheckedClearSelection(); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedEndHyperlink is the checked form of EndHyperlink, which a plugin replaced.
+func (s *Screen) zigoCheckedEndHyperlink() error {
 	ptr, err := zigoCheckedPointer("Screen.EndHyperlink receiver", s)
 	if err != nil {
 		return err
@@ -2953,9 +3428,16 @@ func (s *Screen) EndHyperlink() error {
 	return nil
 }
 
+// EndHyperlink: End the hyperlink state so that future cells aren't part of the
+// current hyperlink (if any). This is safe to call multiple times.
+// It panics with the typed error it would otherwise return.
+func (s *Screen) EndHyperlink() {
+	if err := s.zigoCheckedEndHyperlink(); err != nil {
+		panic(err)
+	}
+}
+
 // SelectAll: Select the whole screen. Returns false when there is nothing to select.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (s *Screen) SelectAll() (bool, error) {
 	ptr, err := zigoCheckedPointer("Screen.SelectAll receiver", s)
 	if err != nil {
@@ -2969,10 +3451,8 @@ func (s *Screen) SelectAll() (bool, error) {
 	return result != 0, nil
 }
 
-// HasSelection: True when the screen has a selection.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Screen) HasSelection() (bool, error) {
+// zigoCheckedHasSelection is the checked form of HasSelection, which a plugin replaced.
+func (s *Screen) zigoCheckedHasSelection() (bool, error) {
 	ptr, err := zigoCheckedPointer("Screen.HasSelection receiver", s)
 	if err != nil {
 		return false, err
@@ -2985,13 +3465,17 @@ func (s *Screen) HasSelection() (bool, error) {
 	return result != 0, nil
 }
 
+// HasSelection: True when the screen has a selection.
+// It panics with the typed error it would otherwise return.
+func (s *Screen) HasSelection() bool {
+	return zigoMust(s.zigoCheckedHasSelection())
+}
+
 // SelectRange: Select the cells between two viewport positions, inclusive of both ends.
 //
 // `rectangle` selects the block between the two corners rather than the flow
 // of text from one to the other. Returns false when either end is outside the
 // viewport, which is what a drag that left the window looks like.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (s *Screen) SelectRange(x1 uint16, y1 uint16, x2 uint16, y2 uint16, rectangle bool) (bool, error) {
 	ptr, err := zigoCheckedPointer("Screen.SelectRange receiver", s)
 	if err != nil {
@@ -3014,8 +3498,6 @@ func (s *Screen) SelectRange(x1 uint16, y1 uint16, x2 uint16, y2 uint16, rectang
 // Wrapped because ghostty returns the `Selection` rather than applying it, and
 // a `Selection` holds page pins that cannot cross the C ABI. False when the
 // position is outside the viewport or there is no word under it.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (s *Screen) SelectWord(x uint16, y uint16, boundaries []rune) (bool, error) {
 	for _, zigoValue := range boundaries {
 		if zigoValue < 0 || zigoValue > 1114111 {
@@ -3038,8 +3520,6 @@ func (s *Screen) SelectWord(x uint16, y uint16, boundaries []rune) (bool, error)
 //
 // Soft-wrapped lines are followed as one line, leading and trailing whitespace
 // is trimmed, and a semantic prompt boundary ends the selection.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (s *Screen) SelectLine(x uint16, y uint16) (bool, error) {
 	ptr, err := zigoCheckedPointer("Screen.SelectLine receiver", s)
 	if err != nil {
@@ -3057,8 +3537,6 @@ func (s *Screen) SelectLine(x uint16, y uint16) (bool, error) {
 //
 // Needs the shell to mark its prompts with OSC 133; without those marks there
 // is no output block to find and this returns false.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (s *Screen) SelectOutput(x uint16, y uint16) (bool, error) {
 	ptr, err := zigoCheckedPointer("Screen.SelectOutput receiver", s)
 	if err != nil {
@@ -3074,8 +3552,6 @@ func (s *Screen) SelectOutput(x uint16, y uint16) (bool, error) {
 
 // SelectionString: The text of the current selection, absent when nothing is selected.
 // The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (s *Screen) SelectionString() (string, bool, error) {
 	ptr, err := zigoCheckedPointer("Screen.SelectionString receiver", s)
 	if err != nil {
@@ -3089,11 +3565,8 @@ func (s *Screen) SelectionString() (string, bool, error) {
 	return result, zigoHas, nil
 }
 
-// Selection: The screen's current selection, or null when there is none.
-// The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Screen) Selection() (Selection, bool, error) {
+// zigoCheckedSelection is the checked form of Selection, which a plugin replaced.
+func (s *Screen) zigoCheckedSelection() (Selection, bool, error) {
 	ptr, err := zigoCheckedPointer("Screen.Selection receiver", s)
 	if err != nil {
 		return Selection{}, false, err
@@ -3106,10 +3579,14 @@ func (s *Screen) Selection() (Selection, bool, error) {
 	return zigoSelectionFromRaw(result), zigoHas, nil
 }
 
+// Selection: The screen's current selection, or null when there is none.
+// It panics with the typed error it would otherwise return.
+func (s *Screen) Selection() (Selection, bool) {
+	return zigoMustMatch(s.zigoCheckedSelection())
+}
+
 // SetSelection: Replace the screen's selection. Returns false, leaving the selection as it
 // was, if either end is outside the screen.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (s *Screen) SetSelection(sel Selection) (bool, error) {
 	ptr, err := zigoCheckedPointer("Screen.SetSelection receiver", s)
 	if err != nil {
@@ -3123,11 +3600,8 @@ func (s *Screen) SetSelection(sel Selection) (bool, error) {
 	return result != 0, nil
 }
 
-// ViewportTop: The screen row shown at the top of the viewport: subtract it from a
-// `Selection` row to get the viewport row a renderer draws at.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Screen) ViewportTop() (uint32, error) {
+// zigoCheckedViewportTop is the checked form of ViewportTop, which a plugin replaced.
+func (s *Screen) zigoCheckedViewportTop() (uint32, error) {
 	ptr, err := zigoCheckedPointer("Screen.ViewportTop receiver", s)
 	if err != nil {
 		return 0, err
@@ -3140,10 +3614,15 @@ func (s *Screen) ViewportTop() (uint32, error) {
 	return result, nil
 }
 
-// Scrollbar: The screen's scrollbar state.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Screen) Scrollbar() (Scrollbar, error) {
+// ViewportTop: The screen row shown at the top of the viewport: subtract it from a
+// `Selection` row to get the viewport row a renderer draws at.
+// It panics with the typed error it would otherwise return.
+func (s *Screen) ViewportTop() uint32 {
+	return zigoMust(s.zigoCheckedViewportTop())
+}
+
+// zigoCheckedScrollbar is the checked form of Scrollbar, which a plugin replaced.
+func (s *Screen) zigoCheckedScrollbar() (Scrollbar, error) {
 	ptr, err := zigoCheckedPointer("Screen.Scrollbar receiver", s)
 	if err != nil {
 		return Scrollbar{}, err
@@ -3156,14 +3635,17 @@ func (s *Screen) Scrollbar() (Scrollbar, error) {
 	return zigoScrollbarFromRaw(result), nil
 }
 
+// Scrollbar: The screen's scrollbar state.
+// It panics with the typed error it would otherwise return.
+func (s *Screen) Scrollbar() Scrollbar {
+	return zigoMust(s.zigoCheckedScrollbar())
+}
+
 // Format a whole screen, scrollback included.
 //
 // Unlike `Terminal.format` this stays with the screen it is given rather than
 // following the active one. It also has no terminal to ask, so the default
 // colors and `resolve_palette` do not apply.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
 func (s *Screen) Format(opts FormatOptions, writer io.Writer) error {
 	if writer == nil {
 		return &StreamError{Operation: "Screen.Format", Parameter: "writer", Err: ErrNilStream}
@@ -3190,9 +3672,6 @@ func (s *Screen) Format(opts FormatOptions, writer io.Writer) error {
 
 // FormatSelection: Format the part of a screen inside `sel`. Returns false, writing
 // nothing, if `sel` is outside the screen.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
 func (s *Screen) FormatSelection(opts FormatOptions, sel Selection, writer io.Writer) (bool, error) {
 	if writer == nil {
 		return false, &StreamError{Operation: "Screen.FormatSelection", Parameter: "writer", Err: ErrNilStream}
@@ -3217,11 +3696,8 @@ func (s *Screen) FormatSelection(opts FormatOptions, sel Selection, writer io.Wr
 	return result != 0, nil
 }
 
-// SelectionContains: Whether the screen cell at `x`, `y` (screen coordinates) is inside `sel`.
-// False when either is outside the screen.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Screen) SelectionContains(sel Selection, x uint16, y uint32) (bool, error) {
+// zigoCheckedSelectionContains is the checked form of SelectionContains, which a plugin replaced.
+func (s *Screen) zigoCheckedSelectionContains(sel Selection, x uint16, y uint32) (bool, error) {
 	ptr, err := zigoCheckedPointer("Screen.SelectionContains receiver", s)
 	if err != nil {
 		return false, err
@@ -3234,12 +3710,15 @@ func (s *Screen) SelectionContains(sel Selection, x uint16, y uint32) (bool, err
 	return result != 0, nil
 }
 
-// SelectionAdjust: Move the end of `sel` by `adjustment` -- what shift+arrow does to a
-// selection -- and return the result. Null if `sel` is outside the screen.
-// The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Screen) SelectionAdjust(sel Selection, adjustment SelectionAdjustment) (Selection, bool, error) {
+// SelectionContains: Whether the screen cell at `x`, `y` (screen coordinates) is inside `sel`.
+// False when either is outside the screen.
+// It panics with the typed error it would otherwise return.
+func (s *Screen) SelectionContains(sel Selection, x uint16, y uint32) bool {
+	return zigoMust(s.zigoCheckedSelectionContains(sel, x, y))
+}
+
+// zigoCheckedSelectionAdjust is the checked form of SelectionAdjust, which a plugin replaced.
+func (s *Screen) zigoCheckedSelectionAdjust(sel Selection, adjustment SelectionAdjustment) (Selection, bool, error) {
 	ptr, err := zigoCheckedPointer("Screen.SelectionAdjust receiver", s)
 	if err != nil {
 		return Selection{}, false, err
@@ -3252,11 +3731,16 @@ func (s *Screen) SelectionAdjust(sel Selection, adjustment SelectionAdjustment) 
 	return zigoSelectionFromRaw(result), zigoHas, nil
 }
 
+// SelectionAdjust: Move the end of `sel` by `adjustment` -- what shift+arrow does to a
+// selection -- and return the result. Null if `sel` is outside the screen.
+// It panics with the typed error it would otherwise return.
+func (s *Screen) SelectionAdjust(sel Selection, adjustment SelectionAdjustment) (Selection, bool) {
+	return zigoMustMatch(s.zigoCheckedSelectionAdjust(sel, adjustment))
+}
+
 // StartHyperlink: Open a hyperlink on the screen; cells printed until `Screen.endHyperlink`
 // carry it. An empty `id` leaves the link without an explicit id, which is
 // what OSC 8 does when the parameter is absent.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (s *Screen) StartHyperlink(uri string, id string) error {
 	ptr, err := zigoCheckedPointer("Screen.StartHyperlink receiver", s)
 	if err != nil {
@@ -3270,10 +3754,8 @@ func (s *Screen) StartHyperlink(uri string, id string) error {
 	return nil
 }
 
-// Needle: The needle being searched for, borrowed.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Search) Needle() (string, error) {
+// zigoCheckedNeedle is the checked form of Needle, which a plugin replaced.
+func (s *Search) zigoCheckedNeedle() (string, error) {
 	ptr, err := zigoCheckedPointer("Search.Needle receiver", s)
 	if err != nil {
 		return "", err
@@ -3286,10 +3768,14 @@ func (s *Search) Needle() (string, error) {
 	return result, nil
 }
 
-// Status: How much of the terminal the search has covered so far.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Search) Status() (SearchState, error) {
+// Needle: The needle being searched for, borrowed.
+// It panics with the typed error it would otherwise return.
+func (s *Search) Needle() string {
+	return zigoMust(s.zigoCheckedNeedle())
+}
+
+// zigoCheckedStatus is the checked form of Status, which a plugin replaced.
+func (s *Search) zigoCheckedStatus() (SearchState, error) {
 	ptr, err := zigoCheckedPointer("Search.Status receiver", s)
 	if err != nil {
 		return 0, err
@@ -3302,15 +3788,14 @@ func (s *Search) Status() (SearchState, error) {
 	return SearchState(result), nil
 }
 
-// Tick: Push the search forward as far as it can go without reading the terminal,
-// and report what that achieved. Safe to run beside terminal IO, so a UI can
-// spend a slice of each frame here rather than blocking on `searchAll`.
-//
-// `blocked` means the searcher has consumed everything the last `searchFeed`
-// gave it and needs another one.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Search) Tick() (SearchProgress, error) {
+// Status: How much of the terminal the search has covered so far.
+// It panics with the typed error it would otherwise return.
+func (s *Search) Status() SearchState {
+	return zigoMust(s.zigoCheckedStatus())
+}
+
+// zigoCheckedTick is the checked form of Tick, which a plugin replaced.
+func (s *Search) zigoCheckedTick() (SearchProgress, error) {
 	ptr, err := zigoCheckedPointer("Search.Tick receiver", s)
 	if err != nil {
 		return 0, err
@@ -3323,17 +3808,19 @@ func (s *Search) Tick() (SearchProgress, error) {
 	return SearchProgress(result), nil
 }
 
-// Feed: Read the terminal into the search: reconcile its screens, hand the
-// searchers more scrollback, and notice whether the viewport moved.
+// Tick: Push the search forward as far as it can go without reading the terminal,
+// and report what that achieved. Safe to run beside terminal IO, so a UI can
+// spend a slice of each frame here rather than blocking on `searchAll`.
 //
-// This is also the only way the search learns that the terminal changed, so
-// keep feeding it while it is in use, even after it reports complete.
-//
-// Pass `active_dirty` false only if you know the active area has not changed
-// since the last feed; true is always correct and the rescan is cheap.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Search) Feed(activeDirty bool) error {
+// `blocked` means the searcher has consumed everything the last `searchFeed`
+// gave it and needs another one.
+// It panics with the typed error it would otherwise return.
+func (s *Search) Tick() SearchProgress {
+	return zigoMust(s.zigoCheckedTick())
+}
+
+// zigoCheckedFeed is the checked form of Feed, which a plugin replaced.
+func (s *Search) zigoCheckedFeed(activeDirty bool) error {
 	ptr, err := zigoCheckedPointer("Search.Feed receiver", s)
 	if err != nil {
 		return err
@@ -3346,14 +3833,23 @@ func (s *Search) Feed(activeDirty bool) error {
 	return nil
 }
 
-// All: Run the search to completion, feeding and ticking until nothing is left.
+// Feed: Read the terminal into the search: reconcile its screens, hand the
+// searchers more scrollback, and notice whether the viewport moved.
 //
-// The simple call, for a program that would rather block than drive the
-// search itself. A large scrollback can take a while; `searchTick` and
-// `searchFeed` are the way to spread that over frames instead.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Search) All() error {
+// This is also the only way the search learns that the terminal changed, so
+// keep feeding it while it is in use, even after it reports complete.
+//
+// Pass `active_dirty` false only if you know the active area has not changed
+// since the last feed; true is always correct and the rescan is cheap.
+// It panics with the typed error it would otherwise return.
+func (s *Search) Feed(activeDirty bool) {
+	if err := s.zigoCheckedFeed(activeDirty); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedAll is the checked form of All, which a plugin replaced.
+func (s *Search) zigoCheckedAll() error {
 	ptr, err := zigoCheckedPointer("Search.All receiver", s)
 	if err != nil {
 		return err
@@ -3366,12 +3862,22 @@ func (s *Search) All() error {
 	return nil
 }
 
+// All: Run the search to completion, feeding and ticking until nothing is left.
+//
+// The simple call, for a program that would rather block than drive the
+// search itself. A large scrollback can take a while; `searchTick` and
+// `searchFeed` are the way to spread that over frames instead.
+// It panics with the typed error it would otherwise return.
+func (s *Search) All() {
+	if err := s.zigoCheckedAll(); err != nil {
+		panic(err)
+	}
+}
+
 // Select: Move to the next or previous match on the active screen, wrapping at the
 // ends, and select it on the screen. False if there is nothing to select.
 //
 // Feeds first, so it always works against current terminal state.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (s *Search) Select(to SearchDirection, scroll SearchScroll) (bool, error) {
 	ptr, err := zigoCheckedPointer("Search.Select receiver", s)
 	if err != nil {
@@ -3385,11 +3891,8 @@ func (s *Search) Select(to SearchDirection, scroll SearchScroll) (bool, error) {
 	return result != 0, nil
 }
 
-// MatchCount: How many matches have been found on the active screen so far. Grows as the
-// search progresses, so it is only final once the status is `complete`.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Search) MatchCount() (uint, error) {
+// zigoCheckedMatchCount is the checked form of MatchCount, which a plugin replaced.
+func (s *Search) zigoCheckedMatchCount() (uint, error) {
 	ptr, err := zigoCheckedPointer("Search.MatchCount receiver", s)
 	if err != nil {
 		return 0, err
@@ -3402,12 +3905,15 @@ func (s *Search) MatchCount() (uint, error) {
 	return result, nil
 }
 
-// Matches: Copy the matches found on the active screen so far into `dst`, most recent
-// screen content first, and return how many were written. Matches are in
-// screen coordinates; size `dst` from `searchMatchCount`.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Search) Matches(dst []Selection) (uint, error) {
+// MatchCount: How many matches have been found on the active screen so far. Grows as the
+// search progresses, so it is only final once the status is `complete`.
+// It panics with the typed error it would otherwise return.
+func (s *Search) MatchCount() uint {
+	return zigoMust(s.zigoCheckedMatchCount())
+}
+
+// zigoCheckedMatches is the checked form of Matches, which a plugin replaced.
+func (s *Search) zigoCheckedMatches(dst []Selection) (uint, error) {
 	ptr, err := zigoCheckedPointer("Search.Matches receiver", s)
 	if err != nil {
 		return 0, err
@@ -3422,6 +3928,14 @@ func (s *Search) Matches(dst []Selection) (uint, error) {
 	return result, nil
 }
 
+// Matches: Copy the matches found on the active screen so far into `dst`, most recent
+// screen content first, and return how many were written. Matches are in
+// screen coordinates; size `dst` from `searchMatchCount`.
+// It panics with the typed error it would otherwise return.
+func (s *Search) Matches(dst []Selection) uint {
+	return zigoMust(s.zigoCheckedMatches(dst))
+}
+
 // ViewportMatches: The matches on the pages the viewport covers, in screen coordinates, for a
 // renderer highlighting what is on screen. Returns how many were written.
 //
@@ -3433,8 +3947,6 @@ func (s *Search) Matches(dst []Selection) (uint, error) {
 //
 // The count is not known in advance, so size `dst` generously and treat a
 // full `dst` as "there may be more".
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (s *Search) ViewportMatches(dst []Selection) (uint, error) {
 	ptr, err := zigoCheckedPointer("Search.ViewportMatches receiver", s)
 	if err != nil {
@@ -3450,11 +3962,8 @@ func (s *Search) ViewportMatches(dst []Selection) (uint, error) {
 	return result, nil
 }
 
-// SelectedMatch: The match `searchSelect` last moved to, or null before the first move.
-// The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Search) SelectedMatch() (Selection, bool, error) {
+// zigoCheckedSelectedMatch is the checked form of SelectedMatch, which a plugin replaced.
+func (s *Search) zigoCheckedSelectedMatch() (Selection, bool, error) {
 	ptr, err := zigoCheckedPointer("Search.SelectedMatch receiver", s)
 	if err != nil {
 		return Selection{}, false, err
@@ -3467,12 +3976,14 @@ func (s *Search) SelectedMatch() (Selection, bool, error) {
 	return zigoSelectionFromRaw(result), zigoHas, nil
 }
 
-// SelectedIndex: The index of the selected match in the list `searchMatches` writes, or null
-// before the first `searchSelect`. What a UI shows as "3 of 12".
-// The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (s *Search) SelectedIndex() (uint, bool, error) {
+// SelectedMatch: The match `searchSelect` last moved to, or null before the first move.
+// It panics with the typed error it would otherwise return.
+func (s *Search) SelectedMatch() (Selection, bool) {
+	return zigoMustMatch(s.zigoCheckedSelectedMatch())
+}
+
+// zigoCheckedSelectedIndex is the checked form of SelectedIndex, which a plugin replaced.
+func (s *Search) zigoCheckedSelectedIndex() (uint, bool, error) {
 	ptr, err := zigoCheckedPointer("Search.SelectedIndex receiver", s)
 	if err != nil {
 		return 0, false, err
@@ -3485,11 +3996,15 @@ func (s *Search) SelectedIndex() (uint, bool, error) {
 	return result, zigoHas, nil
 }
 
-// HasValue: Whether the reference still names a cell. False after a reset, or after
-// the scrollback limit pruned the page the cell was on.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (g *GridRef) HasValue() (bool, error) {
+// SelectedIndex: The index of the selected match in the list `searchMatches` writes, or null
+// before the first `searchSelect`. What a UI shows as "3 of 12".
+// It panics with the typed error it would otherwise return.
+func (s *Search) SelectedIndex() (uint, bool) {
+	return zigoMustMatch(s.zigoCheckedSelectedIndex())
+}
+
+// zigoCheckedHasValue is the checked form of HasValue, which a plugin replaced.
+func (g *GridRef) zigoCheckedHasValue() (bool, error) {
 	ptr, err := zigoCheckedPointer("GridRef.HasValue receiver", g)
 	if err != nil {
 		return false, err
@@ -3502,14 +4017,15 @@ func (g *GridRef) HasValue() (bool, error) {
 	return result != 0, nil
 }
 
-// Point: Where the cell is now, in the coordinate system `tag` names. Null when the
-// reference is empty, or when the cell is outside that system -- a cell in
-// the scrollback has no `active` position, and one scrolled off screen has
-// no `viewport` position.
-// The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (g *GridRef) Point(tag PointTag) (GridPoint, bool, error) {
+// HasValue: Whether the reference still names a cell. False after a reset, or after
+// the scrollback limit pruned the page the cell was on.
+// It panics with the typed error it would otherwise return.
+func (g *GridRef) HasValue() bool {
+	return zigoMust(g.zigoCheckedHasValue())
+}
+
+// zigoCheckedPoint is the checked form of Point, which a plugin replaced.
+func (g *GridRef) zigoCheckedPoint(tag PointTag) (GridPoint, bool, error) {
 	ptr, err := zigoCheckedPointer("GridRef.Point receiver", g)
 	if err != nil {
 		return GridPoint{}, false, err
@@ -3522,11 +4038,18 @@ func (g *GridRef) Point(tag PointTag) (GridPoint, bool, error) {
 	return zigoGridPointFromRaw(result), zigoHas, nil
 }
 
+// Point: Where the cell is now, in the coordinate system `tag` names. Null when the
+// reference is empty, or when the cell is outside that system -- a cell in
+// the scrollback has no `active` position, and one scrolled off screen has
+// no `viewport` position.
+// It panics with the typed error it would otherwise return.
+func (g *GridRef) Point(tag PointTag) (GridPoint, bool) {
+	return zigoMustMatch(g.zigoCheckedPoint(tag))
+}
+
 // Set: Point the reference at another cell of the active screen, clearing an
 // empty state. Returns false, leaving the reference as it was, if there is no
 // such cell.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (g *GridRef) Set(tag PointTag, x uint16, y uint32) (bool, error) {
 	ptr, err := zigoCheckedPointer("GridRef.Set receiver", g)
 	if err != nil {
@@ -3540,13 +4063,8 @@ func (g *GridRef) Set(tag PointTag, x uint16, y uint32) (bool, error) {
 	return result != 0, nil
 }
 
-// Cell: The cell, with its colors resolved the way `RenderState` resolves them.
-// Null when the reference is empty. `selected` is never set: the selection
-// is a property of a frame, not of a cell.
-// The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (g *GridRef) Cell() (RenderCell, bool, error) {
+// zigoCheckedCell is the checked form of Cell, which a plugin replaced.
+func (g *GridRef) zigoCheckedCell() (RenderCell, bool, error) {
 	ptr, err := zigoCheckedPointer("GridRef.Cell receiver", g)
 	if err != nil {
 		return RenderCell{}, false, err
@@ -3559,13 +4077,19 @@ func (g *GridRef) Cell() (RenderCell, bool, error) {
 	return zigoRenderCellFromRaw(result), zigoHas, nil
 }
 
+// Cell: The cell, with its colors resolved the way `RenderState` resolves them.
+// Null when the reference is empty. `selected` is never set: the selection
+// is a property of a frame, not of a cell.
+// It panics with the typed error it would otherwise return.
+func (g *GridRef) Cell() (RenderCell, bool) {
+	return zigoMustMatch(g.zigoCheckedCell())
+}
+
 // Graphemes: The codepoints of the cell: the base codepoint followed by any combining
 // marks or ZWJ sequence members, which `RenderCell.codepoint` alone drops.
 // Copies them into `dst` and returns how many were written; zero for an
 // empty cell or an empty reference. `error.NoSpaceLeft` if `dst` is shorter
 // than the cluster.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (g *GridRef) Graphemes(dst []rune) (uint, error) {
 	ptr, err := zigoCheckedPointer("GridRef.Graphemes receiver", g)
 	if err != nil {
@@ -3582,8 +4106,6 @@ func (g *GridRef) Graphemes(dst []rune) (uint, error) {
 // HyperlinkURI: The URI of the hyperlink (OSC 8) the cell is part of, or null when the
 // cell is not a link or the reference is empty.
 // The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (g *GridRef) HyperlinkURI() (string, bool, error) {
 	ptr, err := zigoCheckedPointer("GridRef.HyperlinkURI receiver", g)
 	if err != nil {
@@ -3597,15 +4119,8 @@ func (g *GridRef) HyperlinkURI() (string, bool, error) {
 	return result, zigoHas, nil
 }
 
-// SetBehaviors: What a single, double and triple click select.
-//
-// Defaults to ghostty's own mapping, so this is only for an emulator offering
-// something else -- selecting command output on triple click, say. Takes
-// effect on the next press; a gesture already in progress keeps the behavior
-// its press chose.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (g *Gesture) SetBehaviors(singleClick GestureBehavior, doubleClick GestureBehavior, tripleClick GestureBehavior) error {
+// zigoCheckedSetBehaviors is the checked form of SetBehaviors, which a plugin replaced.
+func (g *Gesture) zigoCheckedSetBehaviors(singleClick GestureBehavior, doubleClick GestureBehavior, tripleClick GestureBehavior) error {
 	ptr, err := zigoCheckedPointer("Gesture.SetBehaviors receiver", g)
 	if err != nil {
 		return err
@@ -3618,6 +4133,19 @@ func (g *Gesture) SetBehaviors(singleClick GestureBehavior, doubleClick GestureB
 	return nil
 }
 
+// SetBehaviors: What a single, double and triple click select.
+//
+// Defaults to ghostty's own mapping, so this is only for an emulator offering
+// something else -- selecting command output on triple click, say. Takes
+// effect on the next press; a gesture already in progress keeps the behavior
+// its press chose.
+// It panics with the typed error it would otherwise return.
+func (g *Gesture) SetBehaviors(singleClick GestureBehavior, doubleClick GestureBehavior, tripleClick GestureBehavior) {
+	if err := g.zigoCheckedSetBehaviors(singleClick, doubleClick, tripleClick); err != nil {
+		panic(err)
+	}
+}
+
 // SetWordBoundaries: The codepoints that end a word, for double-click and deep-press selection.
 //
 // ghostty has no default on purpose -- its own UI reads the set from
@@ -3625,8 +4153,6 @@ func (g *Gesture) SetBehaviors(singleClick GestureBehavior, doubleClick GestureB
 // the end of the line. A space is the minimum worth setting. Copied, so the
 // caller's slice does not have to outlive the call; set it again on a config
 // reload.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (g *Gesture) SetWordBoundaries(boundaries []rune) error {
 	for _, zigoValue := range boundaries {
 		if zigoValue < 0 || zigoValue > 1114111 {
@@ -3645,12 +4171,8 @@ func (g *Gesture) SetWordBoundaries(boundaries []rune) error {
 	return nil
 }
 
-// SetGeometry: The rendered geometry drags are measured against. Set it before the first
-// drag, and again on every resize; a zero `columns` or `cell_width` makes
-// cell-granular drags select nothing.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (g *Gesture) SetGeometry(geometry GestureGeometry) error {
+// zigoCheckedSetGeometry is the checked form of SetGeometry, which a plugin replaced.
+func (g *Gesture) zigoCheckedSetGeometry(geometry GestureGeometry) error {
 	ptr, err := zigoCheckedPointer("Gesture.SetGeometry receiver", g)
 	if err != nil {
 		return err
@@ -3661,6 +4183,16 @@ func (g *Gesture) SetGeometry(geometry GestureGeometry) error {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Gesture.SetGeometry", code), g)
 	}
 	return nil
+}
+
+// SetGeometry: The rendered geometry drags are measured against. Set it before the first
+// drag, and again on every resize; a zero `columns` or `cell_width` makes
+// cell-granular drags select nothing.
+// It panics with the typed error it would otherwise return.
+func (g *Gesture) SetGeometry(geometry GestureGeometry) {
+	if err := g.zigoCheckedSetGeometry(geometry); err != nil {
+		panic(err)
+	}
 }
 
 // Press: Record a press and return the selection it makes, if any.
@@ -3674,8 +4206,6 @@ func (g *Gesture) SetGeometry(geometry GestureGeometry) error {
 // Nothing is returned and no gesture starts if the cell is outside the
 // viewport.
 // The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (g *Gesture) Press(p GesturePressEvent) (Selection, bool, error) {
 	ptr, err := zigoCheckedPointer("Gesture.Press receiver", g)
 	if err != nil {
@@ -3685,6 +4215,20 @@ func (g *Gesture) Press(p GesturePressEvent) (Selection, bool, error) {
 	result, zigoHas, code := raw.GesturePress(ptr, zigoGesturePressEventToRaw(p))
 	if code != 0 {
 		return Selection{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Gesture.Press", code), g)
+	}
+	return zigoSelectionFromRaw(result), zigoHas, nil
+}
+
+// zigoCheckedDrag is the checked form of Drag, which a plugin replaced.
+func (g *Gesture) zigoCheckedDrag(d GestureDragEvent) (Selection, bool, error) {
+	ptr, err := zigoCheckedPointer("Gesture.Drag receiver", g)
+	if err != nil {
+		return Selection{}, false, err
+	}
+	defer g.zigoRelease()
+	result, zigoHas, code := raw.GestureDrag(ptr, zigoGestureDragEventToRaw(d))
+	if code != 0 {
+		return Selection{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Gesture.Drag", code), g)
 	}
 	return zigoSelectionFromRaw(result), zigoHas, nil
 }
@@ -3700,27 +4244,13 @@ func (g *Gesture) Press(p GesturePressEvent) (Selection, bool, error) {
 //
 // Check `Autoscroll` afterwards: a drag past the top or bottom edge asks for a
 // timer calling `AutoscrollTick`.
-// The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (g *Gesture) Drag(d GestureDragEvent) (Selection, bool, error) {
-	ptr, err := zigoCheckedPointer("Gesture.Drag receiver", g)
-	if err != nil {
-		return Selection{}, false, err
-	}
-	defer g.zigoRelease()
-	result, zigoHas, code := raw.GestureDrag(ptr, zigoGestureDragEventToRaw(d))
-	if code != 0 {
-		return Selection{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Gesture.Drag", code), g)
-	}
-	return zigoSelectionFromRaw(result), zigoHas, nil
+// It panics with the typed error it would otherwise return.
+func (g *Gesture) Drag(d GestureDragEvent) (Selection, bool) {
+	return zigoMustMatch(g.zigoCheckedDrag(d))
 }
 
-// Autoscroll: Which way an active drag wants the viewport scrolled, `none` when it does
-// not. Read it after every `Drag` to start or stop the autoscroll timer.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (g *Gesture) Autoscroll() (GestureAutoscrollDirection, error) {
+// zigoCheckedAutoscroll is the checked form of Autoscroll, which a plugin replaced.
+func (g *Gesture) zigoCheckedAutoscroll() (GestureAutoscrollDirection, error) {
 	ptr, err := zigoCheckedPointer("Gesture.Autoscroll receiver", g)
 	if err != nil {
 		return 0, err
@@ -3733,17 +4263,15 @@ func (g *Gesture) Autoscroll() (GestureAutoscrollDirection, error) {
 	return GestureAutoscrollDirection(result), nil
 }
 
-// AutoscrollTick: Scroll the viewport one row in the autoscroll direction and continue the
-// drag at the pointer's current position, which now names a different row.
-//
-// Call this from the timer `Autoscroll` asked for, passing the last position
-// the pointer was seen at. It scrolls exactly one row per call: tick faster to
-// scroll faster. A null result with `Autoscroll` back at `none` means the
-// gesture ended -- stop the timer and leave the selection alone.
-// The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (g *Gesture) AutoscrollTick(d GestureDragEvent) (Selection, bool, error) {
+// Autoscroll: Which way an active drag wants the viewport scrolled, `none` when it does
+// not. Read it after every `Drag` to start or stop the autoscroll timer.
+// It panics with the typed error it would otherwise return.
+func (g *Gesture) Autoscroll() GestureAutoscrollDirection {
+	return zigoMust(g.zigoCheckedAutoscroll())
+}
+
+// zigoCheckedAutoscrollTick is the checked form of AutoscrollTick, which a plugin replaced.
+func (g *Gesture) zigoCheckedAutoscrollTick(d GestureDragEvent) (Selection, bool, error) {
 	ptr, err := zigoCheckedPointer("Gesture.AutoscrollTick receiver", g)
 	if err != nil {
 		return Selection{}, false, err
@@ -3756,15 +4284,20 @@ func (g *Gesture) AutoscrollTick(d GestureDragEvent) (Selection, bool, error) {
 	return zigoSelectionFromRaw(result), zigoHas, nil
 }
 
-// DeepPress: Record a force click -- a pressure activation while the button is already
-// down, which is what macOS calls a deep click.
+// AutoscrollTick: Scroll the viewport one row in the autoscroll direction and continue the
+// drag at the pointer's current position, which now names a different row.
 //
-// Selects the word under the original press and ends the gesture, so further
-// movement does not drag it. Null when there is no valid gesture to deepen.
-// The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (g *Gesture) DeepPress() (Selection, bool, error) {
+// Call this from the timer `Autoscroll` asked for, passing the last position
+// the pointer was seen at. It scrolls exactly one row per call: tick faster to
+// scroll faster. A null result with `Autoscroll` back at `none` means the
+// gesture ended -- stop the timer and leave the selection alone.
+// It panics with the typed error it would otherwise return.
+func (g *Gesture) AutoscrollTick(d GestureDragEvent) (Selection, bool) {
+	return zigoMustMatch(g.zigoCheckedAutoscrollTick(d))
+}
+
+// zigoCheckedDeepPress is the checked form of DeepPress, which a plugin replaced.
+func (g *Gesture) zigoCheckedDeepPress() (Selection, bool, error) {
 	ptr, err := zigoCheckedPointer("Gesture.DeepPress receiver", g)
 	if err != nil {
 		return Selection{}, false, err
@@ -3777,15 +4310,18 @@ func (g *Gesture) DeepPress() (Selection, bool, error) {
 	return zigoSelectionFromRaw(result), zigoHas, nil
 }
 
-// Release: Record the release of the primary button at a viewport cell.
+// DeepPress: Record a force click -- a pressure activation while the button is already
+// down, which is what macOS calls a deep click.
 //
-// This ends the drag and stops autoscroll but deliberately keeps the click
-// count, which is what lets the next press become a double or triple click.
-// A cell outside the viewport is fine: the gesture then records that the
-// pointer moved away, which is the conservative answer for `Dragged`.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (g *Gesture) Release(x uint16, y uint16) error {
+// Selects the word under the original press and ends the gesture, so further
+// movement does not drag it. Null when there is no valid gesture to deepen.
+// It panics with the typed error it would otherwise return.
+func (g *Gesture) DeepPress() (Selection, bool) {
+	return zigoMustMatch(g.zigoCheckedDeepPress())
+}
+
+// zigoCheckedRelease is the checked form of Release, which a plugin replaced.
+func (g *Gesture) zigoCheckedRelease(x uint16, y uint16) error {
 	ptr, err := zigoCheckedPointer("Gesture.Release receiver", g)
 	if err != nil {
 		return err
@@ -3798,14 +4334,21 @@ func (g *Gesture) Release(x uint16, y uint16) error {
 	return nil
 }
 
-// Reset: Abandon the gesture, click sequence included.
+// Release: Record the release of the primary button at a viewport cell.
 //
-// For cancellation rather than the ordinary release: the program turned on
-// mouse reporting, the window lost the pointer, the surface is going away. The
-// next press is then a fresh single click.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (g *Gesture) Reset() error {
+// This ends the drag and stops autoscroll but deliberately keeps the click
+// count, which is what lets the next press become a double or triple click.
+// A cell outside the viewport is fine: the gesture then records that the
+// pointer moved away, which is the conservative answer for `Dragged`.
+// It panics with the typed error it would otherwise return.
+func (g *Gesture) Release(x uint16, y uint16) {
+	if err := g.zigoCheckedRelease(x, y); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedReset is the checked form of Reset, which a plugin replaced.
+func (g *Gesture) zigoCheckedReset() error {
 	ptr, err := zigoCheckedPointer("Gesture.Reset receiver", g)
 	if err != nil {
 		return err
@@ -3816,6 +4359,18 @@ func (g *Gesture) Reset() error {
 		return zigoPoisonAfterPanic(zigoErrorForCode("Gesture.Reset", code), g)
 	}
 	return nil
+}
+
+// Reset: Abandon the gesture, click sequence included.
+//
+// For cancellation rather than the ordinary release: the program turned on
+// mouse reporting, the window lost the pointer, the surface is going away. The
+// next press is then a fresh single click.
+// It panics with the typed error it would otherwise return.
+func (g *Gesture) Reset() {
+	if err := g.zigoCheckedReset(); err != nil {
+		panic(err)
+	}
 }
 
 // Default: The color's default value, or null when the name has none.
@@ -3833,11 +4388,8 @@ func (c ColorName) Default() (RGB, bool) {
 	return zigoRGBFromRaw(zigoResult), zigoHas
 }
 
-// AtGround: Whether the parser is between UTF-8 codepoints and VT sequences.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) AtGround() (bool, error) {
+// zigoCheckedAtGround is the checked form of AtGround, which a plugin replaced.
+func (s *Stream) zigoCheckedAtGround() (bool, error) {
 	ptr, err := zigoCheckedPointer("Stream.AtGround receiver", s)
 	if err != nil {
 		return false, err
@@ -3855,13 +4407,14 @@ func (s *Stream) AtGround() (bool, error) {
 	return result != 0, nil
 }
 
-// FeedUntilGround: Consume only through the next parser ground boundary. Already at ground
-// consumes zero bytes. If no boundary is reached, consumes the entire
-// input and returns reached=false. Only consumed bytes produce effects.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) FeedUntilGround(data []byte) (FeedBoundary, error) {
+// AtGround: Whether the parser is between UTF-8 codepoints and VT sequences.
+// It panics with the typed error it would otherwise return.
+func (s *Stream) AtGround() bool {
+	return zigoMust(s.zigoCheckedAtGround())
+}
+
+// zigoCheckedFeedUntilGround is the checked form of FeedUntilGround, which a plugin replaced.
+func (s *Stream) zigoCheckedFeedUntilGround(data []byte) (FeedBoundary, error) {
 	ptr, err := zigoCheckedPointer("Stream.FeedUntilGround receiver", s)
 	if err != nil {
 		return FeedBoundary{}, err
@@ -3877,6 +4430,14 @@ func (s *Stream) FeedUntilGround(data []byte) (FeedBoundary, error) {
 		return FeedBoundary{}, zigoPoisonAfterPanic(zigoErrorForCode("Stream.FeedUntilGround", code), s)
 	}
 	return zigoFeedBoundaryFromRaw(result), nil
+}
+
+// FeedUntilGround: Consume only through the next parser ground boundary. Already at ground
+// consumes zero bytes. If no boundary is reached, consumes the entire
+// input and returns reached=false. Only consumed bytes produce effects.
+// It panics with the typed error it would otherwise return.
+func (s *Stream) FeedUntilGround(data []byte) FeedBoundary {
+	return zigoMust(s.zigoCheckedFeedUntilGround(data))
 }
 
 // zigoCheckedFeed is the checked form of Feed, which a plugin replaced.
@@ -3921,9 +4482,7 @@ func (s *Stream) WriteString(str string) (int, error) {
 // NextEventValue: Consume one queued event and materialize its complete payload in one
 // binding call.
 // The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
 func (s *Stream) NextEventValue() (Event, bool, error) {
 	ptr, err := zigoCheckedPointer("Stream.NextEventValue receiver", s)
 	if err != nil {
@@ -3973,9 +4532,6 @@ func (s *Stream) EventValues() iter.Seq2[Event, error] {
 // a frame drawn for the old size is not worth waiting for. Resize
 // through the terminal and a program relying on mode 2048 never learns
 // the new size.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
 func (s *Stream) ResizeCells(width uint16, height uint16, cellWidth uint32, cellHeight uint32) error {
 	ptr, err := zigoCheckedPointer("Stream.ResizeCells receiver", s)
 	if err != nil {
@@ -3994,17 +4550,8 @@ func (s *Stream) ResizeCells(width uint16, height uint16, cellWidth uint32, cell
 	return nil
 }
 
-// SetUnknownMaxBytes: Capture up to `max` bytes of the sequences this library does not
-// implement, and report them as `unknown_sequence` events. Zero, the
-// default, turns capture off.
-//
-// A diagnostic: it is how you find out that a program is speaking a
-// graphics protocol you did not wire up, rather than watching it draw
-// nothing. The buffer is per stream, which is why it is off by default.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) SetUnknownMaxBytes(max uint) error {
+// zigoCheckedSetUnknownMaxBytes is the checked form of SetUnknownMaxBytes, which a plugin replaced.
+func (s *Stream) zigoCheckedSetUnknownMaxBytes(max uint) error {
 	ptr, err := zigoCheckedPointer("Stream.SetUnknownMaxBytes receiver", s)
 	if err != nil {
 		return err
@@ -4022,19 +4569,22 @@ func (s *Stream) SetUnknownMaxBytes(max uint) error {
 	return nil
 }
 
-// SetVersionReport: Report the embedder's name and version to programs that ask
-// (XTVERSION, `CSI > 0 q`).
+// SetUnknownMaxBytes: Capture up to `max` bytes of the sequences this library does not
+// implement, and report them as `unknown_sequence` events. Zero, the
+// default, turns capture off.
 //
-// Takes the two parts rather than one string because the reply is parsed
-// as `"name version"`, and a caller with one string to hand over has no
-// reason to know that. Without this the terminal answers `libghostty`,
-// which is true of the parser and useless as an application identity.
-//
-// Silently truncated past 256 bytes, which is ghostty's cap.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) SetVersionReport(name string, version string) error {
+// A diagnostic: it is how you find out that a program is speaking a
+// graphics protocol you did not wire up, rather than watching it draw
+// nothing. The buffer is per stream, which is why it is off by default.
+// It panics with the typed error it would otherwise return.
+func (s *Stream) SetUnknownMaxBytes(max uint) {
+	if err := s.zigoCheckedSetUnknownMaxBytes(max); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedSetVersionReport is the checked form of SetVersionReport, which a plugin replaced.
+func (s *Stream) zigoCheckedSetVersionReport(name string, version string) error {
 	ptr, err := zigoCheckedPointer("Stream.SetVersionReport receiver", s)
 	if err != nil {
 		return err
@@ -4052,17 +4602,24 @@ func (s *Stream) SetVersionReport(name string, version string) error {
 	return nil
 }
 
-// SetEnquiryResponse: Answer ENQ (0x05) with `reply`. Empty, the default, answers nothing.
+// SetVersionReport: Report the embedder's name and version to programs that ask
+// (XTVERSION, `CSI > 0 q`).
 //
-// An answerback string is echoed to anything that sends a single control
-// byte, so it leaks whatever it holds to any program that asks. Terminals
-// leave it empty for that reason and so does this.
+// Takes the two parts rather than one string because the reply is parsed
+// as `"name version"`, and a caller with one string to hand over has no
+// reason to know that. Without this the terminal answers `libghostty`,
+// which is true of the parser and useless as an application identity.
 //
-// Silently truncated past 255 bytes, which is ghostty's cap.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) SetEnquiryResponse(reply string) error {
+// Silently truncated past 256 bytes, which is ghostty's cap.
+// It panics with the typed error it would otherwise return.
+func (s *Stream) SetVersionReport(name string, version string) {
+	if err := s.zigoCheckedSetVersionReport(name, version); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedSetEnquiryResponse is the checked form of SetEnquiryResponse, which a plugin replaced.
+func (s *Stream) zigoCheckedSetEnquiryResponse(reply string) error {
 	ptr, err := zigoCheckedPointer("Stream.SetEnquiryResponse receiver", s)
 	if err != nil {
 		return err
@@ -4080,19 +4637,22 @@ func (s *Stream) SetEnquiryResponse(reply string) error {
 	return nil
 }
 
-// ColorSchemeChanged: Tell the terminal the desktop is in `scheme`.
+// SetEnquiryResponse: Answer ENQ (0x05) with `reply`. Empty, the default, answers nothing.
 //
-// Both halves of the protocol, because doing one without the other is a
-// silent bug: a program that asks (CSI ? 996 n) gets the answer, and a
-// program that subscribed (mode 2031) is told right now. The report goes
-// into the reply buffer, so it leaves with the next `writeReplies`.
+// An answerback string is echoed to anything that sends a single control
+// byte, so it leaks whatever it holds to any program that asks. Terminals
+// leave it empty for that reason and so does this.
 //
-// Named for the event rather than the field it sets: this writes to the
-// program, which `setColorScheme` would not have said.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) ColorSchemeChanged(scheme ColorScheme) error {
+// Silently truncated past 255 bytes, which is ghostty's cap.
+// It panics with the typed error it would otherwise return.
+func (s *Stream) SetEnquiryResponse(reply string) {
+	if err := s.zigoCheckedSetEnquiryResponse(reply); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedColorSchemeChanged is the checked form of ColorSchemeChanged, which a plugin replaced.
+func (s *Stream) zigoCheckedColorSchemeChanged(scheme ColorScheme) error {
 	ptr, err := zigoCheckedPointer("Stream.ColorSchemeChanged receiver", s)
 	if err != nil {
 		return err
@@ -4110,12 +4670,24 @@ func (s *Stream) ColorSchemeChanged(scheme ColorScheme) error {
 	return nil
 }
 
-// ClearColorScheme: Leave color scheme queries unanswered, which is ghostty's default. For
-// an embedder with no desktop to ask.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) ClearColorScheme() error {
+// ColorSchemeChanged: Tell the terminal the desktop is in `scheme`.
+//
+// Both halves of the protocol, because doing one without the other is a
+// silent bug: a program that asks (CSI ? 996 n) gets the answer, and a
+// program that subscribed (mode 2031) is told right now. The report goes
+// into the reply buffer, so it leaves with the next `writeReplies`.
+//
+// Named for the event rather than the field it sets: this writes to the
+// program, which `setColorScheme` would not have said.
+// It panics with the typed error it would otherwise return.
+func (s *Stream) ColorSchemeChanged(scheme ColorScheme) {
+	if err := s.zigoCheckedColorSchemeChanged(scheme); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedClearColorScheme is the checked form of ClearColorScheme, which a plugin replaced.
+func (s *Stream) zigoCheckedClearColorScheme() error {
 	ptr, err := zigoCheckedPointer("Stream.ClearColorScheme receiver", s)
 	if err != nil {
 		return err
@@ -4133,15 +4705,17 @@ func (s *Stream) ClearColorScheme() error {
 	return nil
 }
 
-// OnDrag: Handle drag and drop events from the running program. Without a handler
-// the protocol still works -- the terminal answers the program's queries --
-// but nothing connects it to the window system, so no native drag reaches it.
-// Callback callback reentrancy: allowed; it may re-enter the binding while it is running.
-// Callback callback thread: caller; it runs on the thread that initiated the native call.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) OnDrag(callback DragHandler) error {
+// ClearColorScheme: Leave color scheme queries unanswered, which is ghostty's default. For
+// an embedder with no desktop to ask.
+// It panics with the typed error it would otherwise return.
+func (s *Stream) ClearColorScheme() {
+	if err := s.zigoCheckedClearColorScheme(); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedOnDrag is the checked form of OnDrag, which a plugin replaced.
+func (s *Stream) zigoCheckedOnDrag(callback DragHandler) error {
 	ptr, err := zigoCheckedPointer("Stream.OnDrag receiver", s)
 	if err != nil {
 		return err
@@ -4173,14 +4747,18 @@ func (s *Stream) OnDrag(callback DragHandler) error {
 	return nil
 }
 
-// DragActive: Whether a program is currently registered to accept drops.
-//
-// False is the normal state, and the answer to "should I hand this drag to
-// the program or handle it myself".
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) DragActive() (bool, error) {
+// OnDrag: Handle drag and drop events from the running program. Without a handler
+// the protocol still works -- the terminal answers the program's queries --
+// but nothing connects it to the window system, so no native drag reaches it.
+// It panics with the typed error it would otherwise return.
+func (s *Stream) OnDrag(callback DragHandler) {
+	if err := s.zigoCheckedOnDrag(callback); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedDragActive is the checked form of DragActive, which a plugin replaced.
+func (s *Stream) zigoCheckedDragActive() (bool, error) {
 	ptr, err := zigoCheckedPointer("Stream.DragActive receiver", s)
 	if err != nil {
 		return false, err
@@ -4198,15 +4776,17 @@ func (s *Stream) DragActive() (bool, error) {
 	return result != 0, nil
 }
 
-// DragRegisteredMimes: The MIME types the registered program asked the window system to accept,
-// space separated, empty when it named none (the common case).
+// DragActive: Whether a program is currently registered to accept drops.
 //
-// Space separated because that is how the protocol carries it and how
-// `dragMove` takes it back; MIME types cannot contain a space.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) DragRegisteredMimes() (string, error) {
+// False is the normal state, and the answer to "should I hand this drag to
+// the program or handle it myself".
+// It panics with the typed error it would otherwise return.
+func (s *Stream) DragActive() bool {
+	return zigoMust(s.zigoCheckedDragActive())
+}
+
+// zigoCheckedDragRegisteredMimes is the checked form of DragRegisteredMimes, which a plugin replaced.
+func (s *Stream) zigoCheckedDragRegisteredMimes() (string, error) {
 	ptr, err := zigoCheckedPointer("Stream.DragRegisteredMimes receiver", s)
 	if err != nil {
 		return "", err
@@ -4224,14 +4804,18 @@ func (s *Stream) DragRegisteredMimes() (string, error) {
 	return result, nil
 }
 
-// DragClientAccepted: What the program answered about the drag currently over the terminal, or
-// null before it has answered. `none` is a refusal, which is not the same as
-// no answer: an embedder that has no answer yet should show its own default.
-// The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) DragClientAccepted() (DragOperation, bool, error) {
+// DragRegisteredMimes: The MIME types the registered program asked the window system to accept,
+// space separated, empty when it named none (the common case).
+//
+// Space separated because that is how the protocol carries it and how
+// `dragMove` takes it back; MIME types cannot contain a space.
+// It panics with the typed error it would otherwise return.
+func (s *Stream) DragRegisteredMimes() string {
+	return zigoMust(s.zigoCheckedDragRegisteredMimes())
+}
+
+// zigoCheckedDragClientAccepted is the checked form of DragClientAccepted, which a plugin replaced.
+func (s *Stream) zigoCheckedDragClientAccepted() (DragOperation, bool, error) {
 	ptr, err := zigoCheckedPointer("Stream.DragClientAccepted receiver", s)
 	if err != nil {
 		return 0, false, err
@@ -4249,15 +4833,20 @@ func (s *Stream) DragClientAccepted() (DragOperation, bool, error) {
 	return DragOperation(result), zigoHas, nil
 }
 
+// DragClientAccepted: What the program answered about the drag currently over the terminal, or
+// null before it has answered. `none` is a refusal, which is not the same as
+// no answer: an embedder that has no answer yet should show its own default.
+// It panics with the typed error it would otherwise return.
+func (s *Stream) DragClientAccepted() (DragOperation, bool) {
+	return zigoMustMatch(s.zigoCheckedDragClientAccepted())
+}
+
 // DragMove: Tell the program a native drag is over the terminal, offering `mimes`
 // (space separated) if it is dropped.
 //
 // The order matters: it is what the program's data requests index into, and
 // what `dragAddItem` has to match at drop time. A no-op when no program is
 // registered.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
 func (s *Stream) DragMove(ev DragMove, mimes string) error {
 	ptr, err := zigoCheckedPointer("Stream.DragMove receiver", s)
 	if err != nil {
@@ -4279,9 +4868,6 @@ func (s *Stream) DragMove(ev DragMove, mimes string) error {
 // DragLeave: Tell the program the drag left without dropping. A no-op after a drop:
 // some window systems report the drop itself as a leave, and the data has to
 // survive until the program is done with it.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
 func (s *Stream) DragLeave() error {
 	ptr, err := zigoCheckedPointer("Stream.DragLeave receiver", s)
 	if err != nil {
@@ -4306,9 +4892,6 @@ func (s *Stream) DragLeave() error {
 // (type, bytes) pairs and a slice of slices has no C representation. Call it
 // once per representation, in the order `dragMove` offered them, then
 // `dragDrop`. The bytes are copied.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
 func (s *Stream) DragAddItem(mime string, data []byte) error {
 	ptr, err := zigoCheckedPointer("Stream.DragAddItem receiver", s)
 	if err != nil {
@@ -4332,9 +4915,6 @@ func (s *Stream) DragAddItem(mime string, data []byte) error {
 // The terminal copies and holds them until the program has read what it
 // wants and concluded, which arrives as a `concluded_*` event. The staging
 // list is emptied either way, so a failed drop does not leak into the next.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
 func (s *Stream) DragDrop(ev DragMove) error {
 	ptr, err := zigoCheckedPointer("Stream.DragDrop receiver", s)
 	if err != nil {
@@ -4353,12 +4933,8 @@ func (s *Stream) DragDrop(ev DragMove) error {
 	return nil
 }
 
-// DragClearItems: Drop the staged representations without sending anything. For a drag the
-// window system cancelled after the embedder had already staged it.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) DragClearItems() error {
+// zigoCheckedDragClearItems is the checked form of DragClearItems, which a plugin replaced.
+func (s *Stream) zigoCheckedDragClearItems() error {
 	ptr, err := zigoCheckedPointer("Stream.DragClearItems receiver", s)
 	if err != nil {
 		return err
@@ -4376,13 +4952,17 @@ func (s *Stream) DragClearItems() error {
 	return nil
 }
 
-// OnClipboardWriteRequest: Registers a synchronous clipboard-write handler. A nil callback returns ErrNilCallback without replacing the existing handler.
-// Callback callback reentrancy: allowed; it may re-enter the binding while it is running.
-// Callback callback thread: caller; it runs on the thread that initiated the native call.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) OnClipboardWriteRequest(callback ClipboardHandler) error {
+// DragClearItems: Drop the staged representations without sending anything. For a drag the
+// window system cancelled after the embedder had already staged it.
+// It panics with the typed error it would otherwise return.
+func (s *Stream) DragClearItems() {
+	if err := s.zigoCheckedDragClearItems(); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedOnClipboardWriteRequest is the checked form of OnClipboardWriteRequest, which a plugin replaced.
+func (s *Stream) zigoCheckedOnClipboardWriteRequest(callback ClipboardHandler) error {
 	ptr, err := zigoCheckedPointer("Stream.OnClipboardWriteRequest receiver", s)
 	if err != nil {
 		return err
@@ -4414,13 +4994,16 @@ func (s *Stream) OnClipboardWriteRequest(callback ClipboardHandler) error {
 	return nil
 }
 
-// OnClipboardReadRequest: Registers a synchronous clipboard-read handler. A nil callback returns ErrNilCallback without replacing the existing handler.
-// Callback callback reentrancy: allowed; it may re-enter the binding while it is running.
-// Callback callback thread: caller; it runs on the thread that initiated the native call.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) OnClipboardReadRequest(callback ClipboardHandler) error {
+// OnClipboardWriteRequest: Registers a synchronous clipboard-write handler. A nil callback returns ErrNilCallback without replacing the existing handler.
+// It panics with the typed error it would otherwise return.
+func (s *Stream) OnClipboardWriteRequest(callback ClipboardHandler) {
+	if err := s.zigoCheckedOnClipboardWriteRequest(callback); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedOnClipboardReadRequest is the checked form of OnClipboardReadRequest, which a plugin replaced.
+func (s *Stream) zigoCheckedOnClipboardReadRequest(callback ClipboardHandler) error {
 	ptr, err := zigoCheckedPointer("Stream.OnClipboardReadRequest receiver", s)
 	if err != nil {
 		return err
@@ -4452,10 +5035,15 @@ func (s *Stream) OnClipboardReadRequest(callback ClipboardHandler) error {
 	return nil
 }
 
+// OnClipboardReadRequest: Registers a synchronous clipboard-read handler. A nil callback returns ErrNilCallback without replacing the existing handler.
+// It panics with the typed error it would otherwise return.
+func (s *Stream) OnClipboardReadRequest(callback ClipboardHandler) {
+	if err := s.zigoCheckedOnClipboardReadRequest(callback); err != nil {
+		panic(err)
+	}
+}
+
 // WriteContinuation: Write the unfinished sequence suffix, when continuation tracking is on.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
 func (s *Stream) WriteContinuation(writer io.Writer) error {
 	if writer == nil {
 		return &StreamError{Operation: "Stream.WriteContinuation", Parameter: "writer", Err: ErrNilStream}
@@ -4483,11 +5071,8 @@ func (s *Stream) WriteContinuation(writer io.Writer) error {
 	return nil
 }
 
-// HasReplies: Whether the terminal has answered a query since the last `writeReplies`.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
-func (s *Stream) HasReplies() (bool, error) {
+// zigoCheckedHasReplies is the checked form of HasReplies, which a plugin replaced.
+func (s *Stream) zigoCheckedHasReplies() (bool, error) {
 	ptr, err := zigoCheckedPointer("Stream.HasReplies receiver", s)
 	if err != nil {
 		return false, err
@@ -4505,12 +5090,15 @@ func (s *Stream) HasReplies() (bool, error) {
 	return result != 0, nil
 }
 
+// HasReplies: Whether the terminal has answered a query since the last `writeReplies`.
+// It panics with the typed error it would otherwise return.
+func (s *Stream) HasReplies() bool {
+	return zigoMust(s.zigoCheckedHasReplies())
+}
+
 // WriteSnapshot: Write a snapshot of the terminal this stream feeds, with the
 // stream's unfinished sequence so a restored stream can pick up
 // mid-sequence.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
 func (s *Stream) WriteSnapshot(writer io.Writer) error {
 	if writer == nil {
 		return &StreamError{Operation: "Stream.WriteSnapshot", Parameter: "writer", Err: ErrNilStream}
@@ -4547,9 +5135,6 @@ func (s *Stream) WriteSnapshot(writer io.Writer) error {
 // Replies are cleared only after the writer flushes successfully. On
 // failure the whole batch is kept; retrying a partially completed write
 // can repeat bytes the writer already accepted.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
 func (s *Stream) WriteReplies(writer io.Writer) error {
 	if writer == nil {
 		return &StreamError{Operation: "Stream.WriteReplies", Parameter: "writer", Err: ErrNilStream}
@@ -4578,7 +5163,6 @@ func (s *Stream) WriteReplies(writer io.Writer) error {
 }
 
 // Location: Which clipboard the request names.
-// It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (c *ClipboardRequest) Location() (ClipboardLocation, error) {
 	ptr, err := zigoCheckedPointer("ClipboardRequest.Location receiver", c)
@@ -4594,7 +5178,6 @@ func (c *ClipboardRequest) Location() (ClipboardLocation, error) {
 }
 
 // Name: The requesting program's name, empty when the protocol carries none.
-// It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (c *ClipboardRequest) Name() (string, error) {
 	ptr, err := zigoCheckedPointer("ClipboardRequest.Name receiver", c)
@@ -4611,7 +5194,6 @@ func (c *ClipboardRequest) Name() (string, error) {
 
 // Granted: True when the terminal already holds a session grant, so the embedder
 // should skip its permission prompt.
-// It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (c *ClipboardRequest) Granted() (bool, error) {
 	ptr, err := zigoCheckedPointer("ClipboardRequest.Granted receiver", c)
@@ -4628,7 +5210,6 @@ func (c *ClipboardRequest) Granted() (bool, error) {
 
 // CanRemember: True when the program supplied a session password, so a decision can be
 // remembered via the `remember` argument when answering.
-// It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (c *ClipboardRequest) CanRemember() (bool, error) {
 	ptr, err := zigoCheckedPointer("ClipboardRequest.CanRemember receiver", c)
@@ -4644,7 +5225,6 @@ func (c *ClipboardRequest) CanRemember() (bool, error) {
 }
 
 // ContentCount: How many representations a write carries. Zero clears the destination.
-// It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (c *ClipboardRequest) ContentCount() (uint, error) {
 	ptr, err := zigoCheckedPointer("ClipboardRequest.ContentCount receiver", c)
@@ -4660,7 +5240,6 @@ func (c *ClipboardRequest) ContentCount() (uint, error) {
 }
 
 // ContentMime: The MIME type of one representation of a write.
-// It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (c *ClipboardRequest) ContentMime(index uint) (string, error) {
 	ptr, err := zigoCheckedPointer("ClipboardRequest.ContentMime receiver", c)
@@ -4676,7 +5255,6 @@ func (c *ClipboardRequest) ContentMime(index uint) (string, error) {
 }
 
 // MimeCount: How many MIME types a read asks for, in order of preference.
-// It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (c *ClipboardRequest) MimeCount() (uint, error) {
 	ptr, err := zigoCheckedPointer("ClipboardRequest.MimeCount receiver", c)
@@ -4692,7 +5270,6 @@ func (c *ClipboardRequest) MimeCount() (uint, error) {
 }
 
 // Mime: One of the MIME types a read asks for.
-// It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (c *ClipboardRequest) Mime(index uint) (string, error) {
 	ptr, err := zigoCheckedPointer("ClipboardRequest.Mime receiver", c)
@@ -4708,7 +5285,6 @@ func (c *ClipboardRequest) Mime(index uint) (string, error) {
 }
 
 // Allow: Accept a write. Answering a read this way serves empty text.
-// It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (c *ClipboardRequest) Allow(remember bool) error {
 	ptr, err := zigoCheckedPointer("ClipboardRequest.Allow receiver", c)
@@ -4727,7 +5303,6 @@ func (c *ClipboardRequest) Allow(remember bool) error {
 //
 // `text` is borrowed for this call only; the terminal copies what it
 // needs before returning.
-// It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (c *ClipboardRequest) ReplyText(text string, remember bool) error {
 	ptr, err := zigoCheckedPointer("ClipboardRequest.ReplyText receiver", c)
@@ -4743,7 +5318,6 @@ func (c *ClipboardRequest) ReplyText(text string, remember bool) error {
 }
 
 // ClearReplyContents: Discard staged read representations without answering the request.
-// It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (c *ClipboardRequest) ClearReplyContents() error {
 	ptr, err := zigoCheckedPointer("ClipboardRequest.ClearReplyContents receiver", c)
@@ -4761,7 +5335,6 @@ func (c *ClipboardRequest) ClearReplyContents() error {
 // ReplyContents: Answer a read atomically with all staged representations. An empty
 // list is an explicit empty successful response. The callback must call
 // this before returning; staged contents alone do not approve a read.
-// It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (c *ClipboardRequest) ReplyContents(remember bool) error {
 	ptr, err := zigoCheckedPointer("ClipboardRequest.ReplyContents receiver", c)
@@ -4777,7 +5350,6 @@ func (c *ClipboardRequest) ReplyContents(remember bool) error {
 }
 
 // Deny: Refuse the request.
-// It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (c *ClipboardRequest) Deny(reason ClipboardDenial) error {
 	ptr, err := zigoCheckedPointer("ClipboardRequest.Deny receiver", c)
@@ -4795,8 +5367,6 @@ func (c *ClipboardRequest) Deny(reason ClipboardDenial) error {
 // AddContent: Stage a MIME representation for a read. Both arguments are copied.
 // Nothing is sent until ReplyContents. Outside an unanswered read this
 // is a no-op, like the other reply methods.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (c *ClipboardRequest) AddContent(mimeType string, data []byte) error {
 	ptr, err := zigoCheckedPointer("ClipboardRequest.AddContent receiver", c)
 	if err != nil {
@@ -4811,7 +5381,6 @@ func (c *ClipboardRequest) AddContent(mimeType string, data []byte) error {
 }
 
 // ContentData: The bytes of one representation of a write. Binary safe.
-// It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (c *ClipboardRequest) ContentData(index uint) ([]byte, error) {
 	ptr, err := zigoCheckedPointer("ClipboardRequest.ContentData receiver", c)
@@ -4832,7 +5401,6 @@ func (c *ClipboardRequest) ContentData(index uint) ([]byte, error) {
 // past ghostty's 2 KiB inline buffer -- OSC 52 clipboard writes, mainly -- are
 // parsed rather than dropped.
 // The caller must call Close on the returned handle.
-// Native failures are returned as generated error values.
 func NewOSCParser() (*OSCParser, error) {
 	result, code := raw.NewOscParser()
 	if code != 0 {
@@ -4841,11 +5409,8 @@ func NewOSCParser() (*OSCParser, error) {
 	return zigoNewOSCParser(result), nil
 }
 
-// Feed the parser the bytes of an OSC payload. May be called repeatedly;
-// a sequence can arrive split across reads.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (o *OSCParser) Feed(bytes []byte) error {
+// zigoCheckedFeed is the checked form of Feed, which a plugin replaced.
+func (o *OSCParser) zigoCheckedFeed(bytes []byte) error {
 	ptr, err := zigoCheckedPointer("OSCParser.Feed receiver", o)
 	if err != nil {
 		return err
@@ -4858,10 +5423,17 @@ func (o *OSCParser) Feed(bytes []byte) error {
 	return nil
 }
 
-// End: Finish the sequence and report whether it named a command.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (o *OSCParser) End(terminator OSCTerminator) (bool, error) {
+// Feed the parser the bytes of an OSC payload. May be called repeatedly;
+// a sequence can arrive split across reads.
+// It panics with the typed error it would otherwise return.
+func (o *OSCParser) Feed(bytes []byte) {
+	if err := o.zigoCheckedFeed(bytes); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedEnd is the checked form of End, which a plugin replaced.
+func (o *OSCParser) zigoCheckedEnd(terminator OSCTerminator) (bool, error) {
 	ptr, err := zigoCheckedPointer("OSCParser.End receiver", o)
 	if err != nil {
 		return false, err
@@ -4874,10 +5446,14 @@ func (o *OSCParser) End(terminator OSCTerminator) (bool, error) {
 	return result != 0, nil
 }
 
-// Reset: Discard the sequence in progress and the last command's payloads.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (o *OSCParser) Reset() error {
+// End: Finish the sequence and report whether it named a command.
+// It panics with the typed error it would otherwise return.
+func (o *OSCParser) End(terminator OSCTerminator) bool {
+	return zigoMust(o.zigoCheckedEnd(terminator))
+}
+
+// zigoCheckedReset is the checked form of Reset, which a plugin replaced.
+func (o *OSCParser) zigoCheckedReset() error {
 	ptr, err := zigoCheckedPointer("OSCParser.Reset receiver", o)
 	if err != nil {
 		return err
@@ -4890,10 +5466,16 @@ func (o *OSCParser) Reset() error {
 	return nil
 }
 
+// Reset: Discard the sequence in progress and the last command's payloads.
+// It panics with the typed error it would otherwise return.
+func (o *OSCParser) Reset() {
+	if err := o.zigoCheckedReset(); err != nil {
+		panic(err)
+	}
+}
+
 // DecodeSnapshot: Decode a snapshot from reader. max_continuation_bytes bounds the unfinished-sequence suffix the snapshot may carry.
 // The caller must call Close on the returned handle.
-// Native failures are returned as generated error values.
-// A panic in a Go callback is rethrown as *CallbackPanicError once the native call returns.
 func DecodeSnapshot(reader io.Reader, maxContinuationBytes uint) (*Snapshot, error) {
 	if reader == nil {
 		return nil, &StreamError{Operation: "DecodeSnapshot", Parameter: "reader", Err: ErrNilStream}
@@ -4924,8 +5506,6 @@ func DecodeSnapshot(reader io.Reader, maxContinuationBytes uint) (*Snapshot, err
 // the caller's handle identity, so anything already holding that `*Terminal`
 // goes on holding the right one. Take the new handle when there is nothing to
 // keep, restore into an existing one when there is.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (s *Snapshot) RestoreInto(term *Terminal) error {
 	ptr, err := zigoCheckedPointer("Snapshot.RestoreInto receiver", s)
 	if err != nil {
@@ -4951,8 +5531,6 @@ func (s *Snapshot) RestoreInto(term *Terminal) error {
 // The returned terminal has no streams. Open one and feed it `continuation`
 // before any new input, the same as after a restore.
 // The caller must call Close on the returned handle.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (s *Snapshot) NewTerminal() (*Terminal, error) {
 	ptr, err := zigoCheckedPointer("Snapshot.NewTerminal receiver", s)
 	if err != nil {
@@ -4969,7 +5547,6 @@ func (s *Snapshot) NewTerminal() (*Terminal, error) {
 // Continuation: The bytes of the unfinished sequence the snapshot was taken in, empty
 // when the stream was at ground. Feed them to the restored terminal's
 // stream before any new input.
-// It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *Snapshot) Continuation() ([]byte, error) {
 	ptr, err := zigoCheckedPointer("Snapshot.Continuation receiver", s)
@@ -4988,7 +5565,6 @@ func (s *Snapshot) Continuation() ([]byte, error) {
 //
 // Nothing is read until `snapshotDecoderReady`.
 // The caller must call Close on the returned handle.
-// Native failures are returned as generated error values.
 func NewSnapshotDecoder(data []byte) (*SnapshotDecoder, error) {
 	result, code := raw.NewSnapshotDecoder(data)
 	if code != 0 {
@@ -5002,8 +5578,6 @@ func NewSnapshotDecoder(data []byte) (*SnapshotDecoder, error) {
 // `max_continuation_bytes` bounds the unfinished-sequence suffix. After this
 // the terminal can be taken with `restoreInto` and drawn, and the history
 // arrives through `next` at whatever pace suits.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (s *SnapshotDecoder) Ready(maxContinuationBytes uint) error {
 	ptr, err := zigoCheckedPointer("SnapshotDecoder.Ready receiver", s)
 	if err != nil {
@@ -5019,8 +5593,6 @@ func (s *SnapshotDecoder) Ready(maxContinuationBytes uint) error {
 
 // RestoreInto: Replace `term` with the decoded terminal. See `snapshotRestoreInto`; the
 // same one-shot rule applies, and `next` wants the same terminal afterwards.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (s *SnapshotDecoder) RestoreInto(term *Terminal) error {
 	ptr, err := zigoCheckedPointer("SnapshotDecoder.RestoreInto receiver", s)
 	if err != nil {
@@ -5040,7 +5612,6 @@ func (s *SnapshotDecoder) RestoreInto(term *Terminal) error {
 }
 
 // Continuation: The unfinished sequence the snapshot was taken in, empty at ground.
-// It returns *HandleError if a required handle is nil or closed.
 // A native panic is returned as *NativePanicError.
 func (s *SnapshotDecoder) Continuation() ([]byte, error) {
 	ptr, err := zigoCheckedPointer("SnapshotDecoder.Continuation receiver", s)
@@ -5063,8 +5634,6 @@ func (s *SnapshotDecoder) Continuation() ([]byte, error) {
 // reported as zero rows rather than failing, because the terminal is live
 // and may have moved on since `ready`.
 // The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (s *SnapshotDecoder) Next(term *Terminal) (SnapshotProgress, bool, error) {
 	ptr, err := zigoCheckedPointer("SnapshotDecoder.Next receiver", s)
 	if err != nil {
@@ -5106,8 +5675,6 @@ func NewRenderState() (*RenderState, error) {
 //
 // This will reset the terminal dirty state since it is consumed
 // by this render state update.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (r *RenderState) Update(t *Terminal) error {
 	ptr, err := zigoCheckedPointer("RenderState.Update receiver", r)
 	if err != nil {
@@ -5126,14 +5693,8 @@ func (r *RenderState) Update(t *Terminal) error {
 	return nil
 }
 
-// Clean: Mark all render-state data as consumed by the renderer.
-//
-// This clears both the global dirty state and every per-row dirty flag.
-// Callers that only consume part of a frame should clear the two layers
-// individually instead.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (r *RenderState) Clean() error {
+// zigoCheckedClean is the checked form of Clean, which a plugin replaced.
+func (r *RenderState) zigoCheckedClean() error {
 	ptr, err := zigoCheckedPointer("RenderState.Clean receiver", r)
 	if err != nil {
 		return err
@@ -5146,11 +5707,20 @@ func (r *RenderState) Clean() error {
 	return nil
 }
 
-// Cursor: Copy all cursor metadata in one boundary crossing. Reading this value does
-// not touch the terminal; serialize reads with Update and Close on this state.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (r *RenderState) Cursor() (RenderCursor, error) {
+// Clean: Mark all render-state data as consumed by the renderer.
+//
+// This clears both the global dirty state and every per-row dirty flag.
+// Callers that only consume part of a frame should clear the two layers
+// individually instead.
+// It panics with the typed error it would otherwise return.
+func (r *RenderState) Clean() {
+	if err := r.zigoCheckedClean(); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedCursor is the checked form of Cursor, which a plugin replaced.
+func (r *RenderState) zigoCheckedCursor() (RenderCursor, error) {
 	ptr, err := zigoCheckedPointer("RenderState.Cursor receiver", r)
 	if err != nil {
 		return RenderCursor{}, err
@@ -5163,10 +5733,15 @@ func (r *RenderState) Cursor() (RenderCursor, error) {
 	return RenderCursorFromBacking(result), nil
 }
 
-// Colors: Copy the resolved colors of this frame in one boundary crossing.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (r *RenderState) Colors() (RenderColors, error) {
+// Cursor: Copy all cursor metadata in one boundary crossing. Reading this value does
+// not touch the terminal; serialize reads with Update and Close on this state.
+// It panics with the typed error it would otherwise return.
+func (r *RenderState) Cursor() RenderCursor {
+	return zigoMust(r.zigoCheckedCursor())
+}
+
+// zigoCheckedColors is the checked form of Colors, which a plugin replaced.
+func (r *RenderState) zigoCheckedColors() (RenderColors, error) {
 	ptr, err := zigoCheckedPointer("RenderState.Colors receiver", r)
 	if err != nil {
 		return RenderColors{}, err
@@ -5179,10 +5754,14 @@ func (r *RenderState) Colors() (RenderColors, error) {
 	return zigoRenderColorsFromRaw(result), nil
 }
 
-// CellCount: How many `RenderCell`s `renderCells` needs: `rows * cols`.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (r *RenderState) CellCount() (uint, error) {
+// Colors: Copy the resolved colors of this frame in one boundary crossing.
+// It panics with the typed error it would otherwise return.
+func (r *RenderState) Colors() RenderColors {
+	return zigoMust(r.zigoCheckedColors())
+}
+
+// zigoCheckedCellCount is the checked form of CellCount, which a plugin replaced.
+func (r *RenderState) zigoCheckedCellCount() (uint, error) {
 	ptr, err := zigoCheckedPointer("RenderState.CellCount receiver", r)
 	if err != nil {
 		return 0, err
@@ -5195,10 +5774,14 @@ func (r *RenderState) CellCount() (uint, error) {
 	return result, nil
 }
 
+// CellCount: How many `RenderCell`s `renderCells` needs: `rows * cols`.
+// It panics with the typed error it would otherwise return.
+func (r *RenderState) CellCount() uint {
+	return zigoMust(r.zigoCheckedCellCount())
+}
+
 // Cells: Flatten the viewport into `dst`, row-major from the top, and report how
 // many cells were written.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (r *RenderState) Cells(dst []RenderCell) (uint, error) {
 	ptr, err := zigoCheckedPointer("RenderState.Cells receiver", r)
 	if err != nil {
@@ -5214,11 +5797,8 @@ func (r *RenderState) Cells(dst []RenderCell) (uint, error) {
 	return result, nil
 }
 
-// Dirty: What changed since `RenderState.clean`. `RenderState.update` raises this;
-// nothing lowers it but `clean`.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (r *RenderState) Dirty() (RenderDirty, error) {
+// zigoCheckedDirty is the checked form of Dirty, which a plugin replaced.
+func (r *RenderState) zigoCheckedDirty() (RenderDirty, error) {
 	ptr, err := zigoCheckedPointer("RenderState.Dirty receiver", r)
 	if err != nil {
 		return 0, err
@@ -5231,11 +5811,16 @@ func (r *RenderState) Dirty() (RenderDirty, error) {
 	return RenderDirty(result), nil
 }
 
+// Dirty: What changed since `RenderState.clean`. `RenderState.update` raises this;
+// nothing lowers it but `clean`.
+// It panics with the typed error it would otherwise return.
+func (r *RenderState) Dirty() RenderDirty {
+	return zigoMust(r.zigoCheckedDirty())
+}
+
 // DirtyRows: Write the indexes of the dirty viewport rows into `dst`, top to bottom,
 // and report how many there are. `error.NoSpaceLeft` if `dst` is shorter
 // than that; size it to `rows`.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (r *RenderState) DirtyRows(dst []uint16) (uint, error) {
 	ptr, err := zigoCheckedPointer("RenderState.DirtyRows receiver", r)
 	if err != nil {
@@ -5252,8 +5837,6 @@ func (r *RenderState) DirtyRows(dst []uint16) (uint, error) {
 // RowCells: Flatten one viewport row into `dst` and report how many cells were
 // written: `cols`, or zero for a row off the grid. For a renderer that
 // redraws only the rows `renderDirtyRows` names.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (r *RenderState) RowCells(y uint16, dst []RenderCell) (uint, error) {
 	ptr, err := zigoCheckedPointer("RenderState.RowCells receiver", r)
 	if err != nil {
@@ -5274,8 +5857,6 @@ func (r *RenderState) RowCells(y uint16, dst []RenderCell) (uint, error) {
 // `RenderCell.codepoint` alone drops. Copies them into `dst` and returns
 // how many were written; zero for an empty cell or a position off the grid.
 // `error.NoSpaceLeft` if `dst` is shorter than the cluster.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (r *RenderState) Graphemes(x uint16, y uint16, dst []rune) (uint, error) {
 	ptr, err := zigoCheckedPointer("RenderState.Graphemes receiver", r)
 	if err != nil {
@@ -5294,8 +5875,6 @@ func (r *RenderState) Graphemes(x uint16, y uint16, dst []rune) (uint, error) {
 // `linkCells`, this reads page memory through the pins `RenderState.update`
 // captured, so call it right after an update.
 // The bool result reports whether a value was present; the value before it is zero when it was not.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (r *RenderState) HyperlinkAt(x uint16, y uint16) (string, bool, error) {
 	ptr, err := zigoCheckedPointer("RenderState.HyperlinkAt receiver", r)
 	if err != nil {
@@ -5311,7 +5890,6 @@ func (r *RenderState) HyperlinkAt(x uint16, y uint16) (string, bool, error) {
 
 // NewKittyImages creates a caller-owned KittyImages.
 // The caller must call Close on the returned handle.
-// Native failures are returned as generated error values.
 func NewKittyImages() (*KittyImages, error) {
 	result, code := raw.NewKittyImages()
 	if code != 0 {
@@ -5327,8 +5905,6 @@ func NewKittyImages() (*KittyImages, error) {
 // Virtual (unicode placeholder) placements are kept, flagged and positionless,
 // since the cells that reference them are what place them; so are the ones
 // positioned relative to a virtual placement, for the same reason.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (k *KittyImages) Update(term *Terminal) error {
 	ptr, err := zigoCheckedPointer("KittyImages.Update receiver", k)
 	if err != nil {
@@ -5347,10 +5923,8 @@ func (k *KittyImages) Update(term *Terminal) error {
 	return nil
 }
 
-// PlacementCount: How many placements `kittyPlacements` will write.
-// It returns *HandleError if a required handle is nil or closed.
-// A native panic is returned as *NativePanicError.
-func (k *KittyImages) PlacementCount() (uint, error) {
+// zigoCheckedPlacementCount is the checked form of PlacementCount, which a plugin replaced.
+func (k *KittyImages) zigoCheckedPlacementCount() (uint, error) {
 	ptr, err := zigoCheckedPointer("KittyImages.PlacementCount receiver", k)
 	if err != nil {
 		return 0, err
@@ -5363,9 +5937,13 @@ func (k *KittyImages) PlacementCount() (uint, error) {
 	return result, nil
 }
 
+// PlacementCount: How many placements `kittyPlacements` will write.
+// It panics with the typed error it would otherwise return.
+func (k *KittyImages) PlacementCount() uint {
+	return zigoMust(k.zigoCheckedPlacementCount())
+}
+
 // Placements: Copy the placements into `dst`, back to front, and report how many.
-// It returns *HandleError if a required handle is nil or closed.
-// Native failures are returned as generated error values.
 func (k *KittyImages) Placements(dst []KittyPlacement) (uint, error) {
 	ptr, err := zigoCheckedPointer("KittyImages.Placements receiver", k)
 	if err != nil {
@@ -5425,7 +6003,6 @@ func GraphemeWidth(cps []rune) (uint8, error) {
 // it yields one. Refuses a list longer than ghostty's CSI parser records.
 //
 // See `sgrAttributeAt` for what `colon_mask` means.
-// Native failures are returned as generated error values.
 func SgrAttributeCount(params []uint16, colonMask uint32) (uint, error) {
 	result, code := raw.SgrAttributeCount(params, colonMask)
 	if code != 0 {
@@ -5488,5 +6065,5 @@ type BuildInfo struct {
 
 // GetBuildInfo identifies the bundled native build. Values are fixed at generation time.
 func GetBuildInfo() BuildInfo {
-	return BuildInfo{GhosttyRevision: "4da7523faba68ccb4042ea20585817098a51c015", ZigoVersion: "0.30.0", Optimize: "ReleaseSafe", SIMD: true, KittyGraphics: true, TmuxControlMode: false}
+	return BuildInfo{GhosttyRevision: "05dcf887ef51ea27821f20979493306ec3a19149", ZigoVersion: "0.31.0", Optimize: "ReleaseSafe", SIMD: true, KittyGraphics: true, TmuxControlMode: false}
 }

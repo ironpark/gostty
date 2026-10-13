@@ -8,18 +8,13 @@ import (
 
 func newSearchOn(t *testing.T, term *Terminal, needle string) (*Screen, *Search) {
 	t.Helper()
-	sc, err := term.ActiveScreen()
-	if err != nil {
-		t.Fatalf("ActiveScreen: %v", err)
-	}
+	sc := term.ActiveScreen()
 	s, err := term.NewSearch(needle)
 	if err != nil {
 		t.Fatalf("NewSearch: %v", err)
 	}
 	t.Cleanup(func() { s.Close() })
-	if err := s.All(); err != nil {
-		t.Fatalf("All: %v", err)
-	}
+	s.All()
 	return sc, s
 }
 
@@ -32,9 +27,7 @@ func writeLines(t *testing.T, term *Terminal, lines ...string) {
 		if err := term.Index(); err != nil {
 			t.Fatalf("Index: %v", err)
 		}
-		if err := term.CarriageReturn(); err != nil {
-			t.Fatalf("CarriageReturn: %v", err)
-		}
+		term.CarriageReturn()
 	}
 }
 
@@ -43,10 +36,7 @@ func TestSearchMatchCount(t *testing.T) {
 	writeLines(t, term, "alpha", "beta", "alpha again", "gamma")
 
 	_, s := newSearchOn(t, term, "alpha")
-	n, err := s.MatchCount()
-	if err != nil {
-		t.Fatalf("MatchCount: %v", err)
-	}
+	n := s.MatchCount()
 	if n != 2 {
 		t.Errorf("MatchCount() = %d, want 2", n)
 	}
@@ -57,8 +47,8 @@ func TestSearchNoMatches(t *testing.T) {
 	writeLines(t, term, "alpha", "beta")
 
 	_, s := newSearchOn(t, term, "nothing here")
-	if n, err := s.MatchCount(); err != nil || n != 0 {
-		t.Errorf("MatchCount() = %d, %v; want 0, nil", n, err)
+	if n := s.MatchCount(); n != 0 {
+		t.Errorf("MatchCount() = %d; want 0", n)
 	}
 	if ok, err := s.Select(SearchDirectionNext, SearchScrollNone); err != nil || ok {
 		t.Errorf("Select() with no matches = %v, %v; want false, nil", ok, err)
@@ -72,8 +62,8 @@ func TestSearchSelect(t *testing.T) {
 	writeLines(t, term, "one needle", "two", "three needle")
 
 	sc, s := newSearchOn(t, term, "needle")
-	if n, err := s.MatchCount(); err != nil || n != 2 {
-		t.Fatalf("MatchCount() = %d, %v; want 2, nil", n, err)
+	if n := s.MatchCount(); n != 2 {
+		t.Fatalf("MatchCount() = %d; want 2", n)
 	}
 
 	ok, err := s.Select(SearchDirectionNext, SearchScrollNone)
@@ -83,12 +73,12 @@ func TestSearchSelect(t *testing.T) {
 	if !ok {
 		t.Fatal("Select() = false with matches present")
 	}
-	if has, err := sc.HasSelection(); err != nil || has {
-		t.Fatalf("HasSelection() after Select = %v, %v; want false: Select does not touch the screen", has, err)
+	if has := sc.HasSelection(); has {
+		t.Fatalf("HasSelection() after Select = %v; want false: Select does not touch the screen", has)
 	}
-	match, ok, err := s.SelectedMatch()
-	if err != nil || !ok {
-		t.Fatalf("SelectedMatch() = ok %v, %v", ok, err)
+	match, ok := s.SelectedMatch()
+	if !ok {
+		t.Fatal("SelectedMatch() produced no match")
 	}
 	if ok, err := sc.SetSelection(match); err != nil || !ok {
 		t.Fatalf("SetSelection(match) = %v, %v", ok, err)
@@ -186,13 +176,8 @@ func TestSearchScrollsToMatch(t *testing.T) {
 	for range 20 {
 		feed(t, stream, "filler\r\n")
 	}
-	screen, err := term.ActiveScreen()
-	if err != nil {
-		t.Fatalf("ActiveScreen: %v", err)
-	}
-	if bottom, err := screen.ViewportIsBottom(); err != nil {
-		t.Fatalf("ViewportIsBottom: %v", err)
-	} else if !bottom {
+	screen := term.ActiveScreen()
+	if bottom := screen.ViewportIsBottom(); !bottom {
 		t.Fatal("the viewport did not start at the bottom")
 	}
 
@@ -201,12 +186,8 @@ func TestSearchScrollsToMatch(t *testing.T) {
 		t.Fatalf("NewSearch: %v", err)
 	}
 	defer search.Close()
-	if err := search.All(); err != nil {
-		t.Fatalf("All: %v", err)
-	}
-	if n, err := search.MatchCount(); err != nil {
-		t.Fatalf("MatchCount: %v", err)
-	} else if n != 1 {
+	search.All()
+	if n := search.MatchCount(); n != 1 {
 		t.Fatalf("matches = %d, want 1", n)
 	}
 
@@ -217,20 +198,18 @@ func TestSearchScrollsToMatch(t *testing.T) {
 	}
 	// Select leaves the viewport where it was; showing the match is the
 	// caller's move, made from the match's screen row.
-	if bottom, err := screen.ViewportIsBottom(); err != nil || !bottom {
-		t.Fatalf("ViewportIsBottom() after Select = %v, %v; want true", bottom, err)
+	if bottom := screen.ViewportIsBottom(); !bottom {
+		t.Fatalf("ViewportIsBottom() after Select = %v; want true", bottom)
 	}
-	match, ok, err := search.SelectedMatch()
-	if err != nil || !ok {
-		t.Fatalf("SelectedMatch() = ok %v, %v", ok, err)
+	match, ok := search.SelectedMatch()
+	if !ok {
+		t.Fatal("SelectedMatch() produced no match")
 	}
-	if err := term.ScrollViewport(ScrollViewportRow(uint(match.StartY))); err != nil {
-		t.Fatalf("ScrollViewport: %v", err)
-	}
-	if bottom, _ := screen.ViewportIsBottom(); bottom {
+	term.ScrollViewport(ScrollViewportRow(uint(match.StartY)))
+	if bottom := screen.ViewportIsBottom(); bottom {
 		t.Error("the viewport is still at the bottom after scrolling to the match")
 	}
-	if top, _ := screen.ViewportTop(); top != match.StartY {
+	if top := screen.ViewportTop(); top != match.StartY {
 		t.Errorf("ViewportTop() = %d after ScrollViewportRow(%d); the row is a screen row", top, match.StartY)
 	}
 	if ok, err := screen.SetSelection(match); err != nil || !ok {
@@ -263,9 +242,7 @@ func TestSearchDirectionOrder(t *testing.T) {
 		t.Fatalf("NewSearch: %v", err)
 	}
 	defer search.Close()
-	if err := search.All(); err != nil {
-		t.Fatalf("All: %v", err)
-	}
+	search.All()
 
 	state, err := NewRenderState()
 	if err != nil {
@@ -279,10 +256,7 @@ func TestSearchDirectionOrder(t *testing.T) {
 		if err := state.Update(term); err != nil {
 			t.Fatalf("Update: %v", err)
 		}
-		n, err := state.CellCount()
-		if err != nil {
-			t.Fatalf("CellCount: %v", err)
-		}
+		n := state.CellCount()
 		cells := make([]RenderCell, n)
 		if _, err := state.Cells(cells); err != nil {
 			t.Fatalf("Cells:")
@@ -306,13 +280,11 @@ func TestSearchDirectionOrder(t *testing.T) {
 		if !ok {
 			t.Fatal("Select found nothing")
 		}
-		match, ok, err := search.SelectedMatch()
-		if err != nil || !ok {
-			t.Fatalf("SelectedMatch() = ok %v, %v", ok, err)
+		match, ok := search.SelectedMatch()
+		if !ok {
+			t.Fatalf("SelectedMatch() = ok false")
 		}
-		if err := term.ScrollViewport(ScrollViewportRow(uint(match.StartY))); err != nil {
-			t.Fatalf("ScrollViewport: %v", err)
-		}
+		term.ScrollViewport(ScrollViewportRow(uint(match.StartY)))
 		return at()
 	}
 
@@ -344,36 +316,24 @@ func TestSearchIncremental(t *testing.T) {
 
 	// A search that has never been driven reports feed_required, whatever the
 	// constructor's own feed already found.
-	if state, err := s.Status(); err != nil {
-		t.Fatalf("Status: %v", err)
-	} else if state == SearchStateComplete {
+	if state := s.Status(); state == SearchStateComplete {
 		t.Fatal("Status() = complete before any tick")
 	}
 
 	ticks := 0
 	for range 1000 {
-		state, err := s.Status()
-		if err != nil {
-			t.Fatalf("Status: %v", err)
-		}
+		state := s.Status()
 		if state == SearchStateComplete {
 			break
 		}
-		if _, err := s.Tick(); err != nil {
-			t.Fatalf("Tick: %v", err)
-		}
-		if err := s.Feed(true); err != nil {
-			t.Fatalf("Feed: %v", err)
-		}
+		s.Tick()
+		s.Feed(true)
 		ticks++
 	}
-	if state, err := s.Status(); err != nil || state != SearchStateComplete {
+	if state := s.Status(); state != SearchStateComplete {
 		t.Fatalf("Status() = %v after %d ticks; want complete", state, ticks)
 	}
-	n, err := s.MatchCount()
-	if err != nil {
-		t.Fatalf("MatchCount: %v", err)
-	}
+	n := s.MatchCount()
 	if n != 40 {
 		t.Errorf("MatchCount() = %d, want 40", n)
 	}
@@ -410,13 +370,8 @@ func TestSearchViewportMatches(t *testing.T) {
 			t.Errorf("match %+v does not span %q on one row", m, "needle")
 		}
 	}
-	if err := s.All(); err != nil {
-		t.Fatalf("All: %v", err)
-	}
-	total, err := s.MatchCount()
-	if err != nil {
-		t.Fatalf("MatchCount: %v", err)
-	}
+	s.All()
+	total := s.MatchCount()
 	if uint(n) > total {
 		t.Errorf("ViewportMatches() = %d, more than the %d total", n, total)
 	}
@@ -447,16 +402,16 @@ func TestSearchSelectedIndex(t *testing.T) {
 	writeLines(t, term, "one needle", "two needle", "three needle")
 	_, s := newSearchOn(t, term, "needle")
 
-	if _, ok, err := s.SelectedIndex(); err != nil || ok {
-		t.Fatalf("SelectedIndex() before Select = ok %v, %v; want false", ok, err)
+	if _, ok := s.SelectedIndex(); ok {
+		t.Fatalf("SelectedIndex() before Select = ok %v; want false", ok)
 	}
 	for want := range uint(3) {
 		if ok, err := s.Select(SearchDirectionNext, SearchScrollNone); err != nil || !ok {
 			t.Fatalf("Select: %v, %v", ok, err)
 		}
-		got, ok, err := s.SelectedIndex()
-		if err != nil || !ok {
-			t.Fatalf("SelectedIndex() = ok %v, %v", ok, err)
+		got, ok := s.SelectedIndex()
+		if !ok {
+			t.Fatalf("SelectedIndex() = ok false")
 		}
 		if got != want {
 			t.Errorf("SelectedIndex() = %d, want %d", got, want)
@@ -474,29 +429,23 @@ func TestSearchAcrossScreens(t *testing.T) {
 		t.Fatalf("NewSearch: %v", err)
 	}
 	defer s.Close()
-	if err := s.All(); err != nil {
-		t.Fatalf("All: %v", err)
-	}
-	if n, err := s.MatchCount(); err != nil || n != 1 {
-		t.Fatalf("MatchCount() on the primary screen = %d, %v; want 1", n, err)
+	s.All()
+	if n := s.MatchCount(); n != 1 {
+		t.Fatalf("MatchCount() on the primary screen = %d; want 1", n)
 	}
 
 	// Into the alternate screen, which has none of that text.
 	feed(t, stream, "\x1b[?1049h")
-	if err := s.All(); err != nil {
-		t.Fatalf("All on the alternate screen: %v", err)
-	}
-	if n, err := s.MatchCount(); err != nil || n != 0 {
-		t.Fatalf("MatchCount() on the alternate screen = %d, %v; want 0", n, err)
+	s.All()
+	if n := s.MatchCount(); n != 0 {
+		t.Fatalf("MatchCount() on the alternate screen = %d; want 0", n)
 	}
 
 	// And back. The primary screen's result is still there.
 	feed(t, stream, "\x1b[?1049l")
-	if err := s.All(); err != nil {
-		t.Fatalf("All back on the primary screen: %v", err)
-	}
-	if n, err := s.MatchCount(); err != nil || n != 1 {
-		t.Errorf("MatchCount() back on the primary screen = %d, %v; want 1", n, err)
+	s.All()
+	if n := s.MatchCount(); n != 1 {
+		t.Errorf("MatchCount() back on the primary screen = %d; want 1", n)
 	}
 }
 
@@ -508,22 +457,17 @@ func TestSearchSelectScrolls(t *testing.T) {
 	for range 20 {
 		feed(t, stream, "filler\r\n")
 	}
-	screen, err := term.ActiveScreen()
-	if err != nil {
-		t.Fatalf("ActiveScreen: %v", err)
-	}
+	screen := term.ActiveScreen()
 	s, err := term.NewSearch("needle")
 	if err != nil {
 		t.Fatalf("NewSearch: %v", err)
 	}
 	defer s.Close()
-	if err := s.All(); err != nil {
-		t.Fatalf("All: %v", err)
-	}
+	s.All()
 	if ok, err := s.Select(SearchDirectionNext, SearchScrollIfNeeded); err != nil || !ok {
 		t.Fatalf("Select = %v, %v", ok, err)
 	}
-	if bottom, err := screen.ViewportIsBottom(); err != nil || bottom {
-		t.Errorf("ViewportIsBottom() after Select(IfNeeded) = %v, %v; want false", bottom, err)
+	if bottom := screen.ViewportIsBottom(); bottom {
+		t.Errorf("ViewportIsBottom() after Select(IfNeeded) = %v; want false", bottom)
 	}
 }

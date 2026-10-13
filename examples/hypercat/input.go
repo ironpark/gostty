@@ -140,9 +140,7 @@ func (tab *terminal) handleKeys(m keys.Mods) error {
 		return nil
 	}
 	// Typing snaps the viewport back to the bottom, as every terminal does.
-	if err := tab.vt.ScrollViewport(gostty.ScrollViewportBottom()); err != nil {
-		return err
-	}
+	tab.vt.ScrollViewport(gostty.ScrollViewportBottom())
 	return tab.out.flush(tab.shell.Pty)
 }
 
@@ -341,7 +339,8 @@ func (tab *terminal) handleWheel(m keys.Mods) error {
 		return tab.wheelAsArrows(notches)
 	}
 	// Positive is up, and up the scrollback is a negative delta.
-	return tab.vt.ScrollViewport(gostty.ScrollViewportDelta(-notches * linesPerNotch))
+	tab.vt.ScrollViewport(gostty.ScrollViewportDelta(-notches * linesPerNotch))
+	return nil
 }
 
 // reportWheel offers the wheel to the program as the button presses the
@@ -392,11 +391,7 @@ func (tab *terminal) reportFocus(focused bool) error {
 			tab.reports.mouseGrabbed = false
 			tab.endGesture()
 		}
-		enabled, err := tab.vt.ModeEnabled(gostty.ModeFocusEvent)
-		if err != nil {
-			return err
-		}
-		if enabled {
+		if tab.vt.ModeEnabled(gostty.ModeFocusEvent) {
 			event := input.FocusEventLost
 			if focused {
 				event = input.FocusEventGained

@@ -91,12 +91,10 @@ func TestRGB(t *testing.T) {
 // Round-trip a colour through the terminal in the type the API now uses.
 func TestRGBThroughTerminal(t *testing.T) {
 	term, stream := newStreamPair(t, 20, 3)
-	if err := term.SetDefaultBackgroundColor(NewRGB(0x10, 0x20, 0x30)); err != nil {
-		t.Fatalf("SetDefaultBackgroundColor: %v", err)
-	}
-	bg, ok, err := term.BackgroundColor()
-	if err != nil || !ok {
-		t.Fatalf("BackgroundColor() = ok %v, %v", ok, err)
+	term.SetDefaultBackgroundColor(NewRGB(0x10, 0x20, 0x30))
+	bg, ok := term.BackgroundColor()
+	if !ok {
+		t.Fatalf("BackgroundColor() = ok %v", ok)
 	}
 	if bg != NewRGB(0x10, 0x20, 0x30) {
 		t.Errorf("BackgroundColor() = %v, want #102030", bg)
@@ -104,7 +102,7 @@ func TestRGBThroughTerminal(t *testing.T) {
 
 	// OSC 11 from the program, read back through the same type.
 	feed(t, stream, "\x1b]11;rgb:aa/bb/cc\x1b\\")
-	if bg, _, _ := term.BackgroundColor(); bg != NewRGB(0xaa, 0xbb, 0xcc) {
+	if bg, _ := term.BackgroundColor(); bg != NewRGB(0xaa, 0xbb, 0xcc) {
 		t.Errorf("BackgroundColor() after OSC 11 = %v, want #aabbcc", bg)
 	}
 }
@@ -172,17 +170,12 @@ func TestFormatter(t *testing.T) {
 // active one. Both reach scrollback.
 func TestFormatterTargets(t *testing.T) {
 	term, stream := newStreamPair(t, 10, 2)
-	if err := term.SetScrollbackMaxBytes(1 << 20); err != nil {
-		t.Fatalf("SetScrollbackMaxBytes: %v", err)
-	}
+	term.SetScrollbackMaxBytes(1 << 20)
 	for _, line := range []string{"one", "two", "three", "four"} {
 		feed(t, stream, line+"\r\n")
 	}
 
-	screen, err := term.ActiveScreen()
-	if err != nil {
-		t.Fatalf("ActiveScreen: %v", err)
-	}
+	screen := term.ActiveScreen()
 	whole, err := screen.Formatter(FormatOptions{Format: FormatterFormatPlain}).String()
 	if err != nil {
 		t.Fatalf("Screen formatter: %v", err)

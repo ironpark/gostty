@@ -87,9 +87,9 @@ func ExampleRGB() {
 	// OSC 11: the program sets the default background.
 	fmt.Fprint(term, "\x1b]11;rgb:1a/1b/26\x1b\\")
 
-	bg, ok, err := term.Terminal().BackgroundColor()
-	if err != nil || !ok {
-		log.Fatal(err)
+	bg, ok := term.Terminal().BackgroundColor()
+	if !ok {
+		log.Fatal("missing background color")
 	}
 	fmt.Println(bg)
 	fmt.Printf("R=%d G=%d B=%d packed=%#06x\n", bg.R(), bg.G(), bg.B(), bg.Uint32())
@@ -191,8 +191,8 @@ func ExampleStream_WriteReplies() {
 	fmt.Fprint(term, "\x1b[5;10H\x1b[6n")
 
 	stream := term.Stream()
-	if has, err := stream.HasReplies(); err != nil || !has {
-		log.Fatal("expected a reply", err)
+	if !stream.HasReplies() {
+		log.Fatal("expected a reply")
 	}
 	var toPty strings.Builder
 	if err := stream.WriteReplies(&toPty); err != nil {
@@ -222,10 +222,7 @@ func ExampleRenderState() {
 		log.Fatal(err)
 	}
 
-	count, err := state.CellCount()
-	if err != nil {
-		log.Fatal(err)
-	}
+	count := state.CellCount()
 	cells := make([]gostty.RenderCell, count)
 	if _, err := state.Cells(cells); err != nil {
 		log.Fatal(err)
@@ -235,7 +232,7 @@ func ExampleRenderState() {
 		fmt.Printf("%c fg=%v bold=%v\n", cell.Codepoint, cell.Fg, cell.Flags.Bold)
 	}
 
-	cursor, _ := state.Cursor()
+	cursor := state.Cursor()
 	fmt.Printf("cursor at %d,%d\n", cursor.X, cursor.Y)
 	// Output:
 	// h fg=#b5bd68 bold=true
@@ -248,9 +245,7 @@ func ExampleSearch() {
 	term := gostty.MustNew(20, 2)
 	defer term.Close()
 
-	if err := term.Terminal().SetScrollbackMaxBytes(1 << 20); err != nil {
-		log.Fatal(err)
-	}
+	term.Terminal().SetScrollbackMaxBytes(1 << 20)
 	for _, line := range []string{"alpha", "beta", "gamma needle", "delta"} {
 		fmt.Fprintf(term, "%s\r\n", line)
 	}
@@ -260,14 +255,9 @@ func ExampleSearch() {
 		log.Fatal(err)
 	}
 	defer search.Close()
-	if err := search.All(); err != nil {
-		log.Fatal(err)
-	}
+	search.All()
 
-	count, err := search.MatchCount()
-	if err != nil {
-		log.Fatal(err)
-	}
+	count := search.MatchCount()
 	fmt.Printf("%d match\n", count)
 	// Output:
 	// 1 match

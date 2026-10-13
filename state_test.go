@@ -5,10 +5,7 @@ import "testing"
 func TestScrollRegionReadsBack(t *testing.T) {
 	term, stream := newStreamPair(t, 20, 10)
 
-	got, err := term.ScrollRegion()
-	if err != nil {
-		t.Fatalf("ScrollRegion: %v", err)
-	}
+	got := term.ScrollRegion()
 	want := ScrollRegion{Top: 0, Bottom: 9, Left: 0, Right: 19}
 	if got != want {
 		t.Errorf("ScrollRegion() = %+v; want %+v", got, want)
@@ -17,10 +14,7 @@ func TestScrollRegionReadsBack(t *testing.T) {
 	// DECSTBM, then DECSLRM -- which only applies once left/right margin mode
 	// (DEC 69) is enabled.
 	feed(t, stream, "\x1b[3;8r\x1b[?69h\x1b[2;10s")
-	got, err = term.ScrollRegion()
-	if err != nil {
-		t.Fatalf("ScrollRegion: %v", err)
-	}
+	got = term.ScrollRegion()
 	want = ScrollRegion{Top: 2, Bottom: 7, Left: 1, Right: 9}
 	if got != want {
 		t.Errorf("ScrollRegion() after margins = %+v; want %+v", got, want)
@@ -30,8 +24,8 @@ func TestScrollRegionReadsBack(t *testing.T) {
 func TestCharsetState(t *testing.T) {
 	term, stream := newStreamPair(t, 20, 5)
 
-	if got, err := term.Charset(CharsetSlotG0); err != nil || got != CharsetUTF8 {
-		t.Errorf("Charset(G0) = %v, %v; want utf8, nil", got, err)
+	if got := term.Charset(CharsetSlotG0); got != CharsetUTF8 {
+		t.Errorf("Charset(G0) = %v; want utf8", got)
 	}
 	if got := term.CharsetGL(); got != CharsetSlotG0 {
 		t.Errorf("CharsetGL() = %v; want G0", got)
@@ -42,11 +36,11 @@ func TestCharsetState(t *testing.T) {
 
 	// SCS: G0 to DEC special graphics, G1 to British.
 	feed(t, stream, "\x1b(0\x1b)A")
-	if got, err := term.Charset(CharsetSlotG0); err != nil || got != CharsetDecSpecial {
-		t.Errorf("Charset(G0) = %v, %v; want dec_special, nil", got, err)
+	if got := term.Charset(CharsetSlotG0); got != CharsetDecSpecial {
+		t.Errorf("Charset(G0) = %v; want dec_special", got)
 	}
-	if got, err := term.Charset(CharsetSlotG1); err != nil || got != CharsetBritish {
-		t.Errorf("Charset(G1) = %v, %v; want british, nil", got, err)
+	if got := term.Charset(CharsetSlotG1); got != CharsetBritish {
+		t.Errorf("Charset(G1) = %v; want british", got)
 	}
 
 	// LS2 moves GL to G2; LS1R moves GR to G1.
@@ -137,36 +131,36 @@ func TestCursorPendingWrap(t *testing.T) {
 func TestMouseTrackingAndFormat(t *testing.T) {
 	term, stream := newStreamPair(t, 20, 5)
 
-	if got, err := term.MouseTracking(); err != nil || got != MouseTrackingNone {
-		t.Errorf("MouseTracking() = %v, %v; want none, nil", got, err)
+	if got := term.MouseTracking(); got != MouseTrackingNone {
+		t.Errorf("MouseTracking() = %v; want none", got)
 	}
-	if got, err := term.MouseReportFormat(); err != nil || got != MouseReportFormatX10 {
-		t.Errorf("MouseReportFormat() = %v, %v; want x10, nil", got, err)
+	if got := term.MouseReportFormat(); got != MouseReportFormatX10 {
+		t.Errorf("MouseReportFormat() = %v; want x10", got)
 	}
 
 	// Mode 1000 tracks buttons only; 1002 adds motion while a button is held.
 	feed(t, stream, "\x1b[?1000h")
-	if got, err := term.MouseTracking(); err != nil || got != MouseTrackingNormal {
-		t.Errorf("MouseTracking() = %v, %v; want normal, nil", got, err)
+	if got := term.MouseTracking(); got != MouseTrackingNormal {
+		t.Errorf("MouseTracking() = %v; want normal", got)
 	}
-	if got, err := term.MouseTrackingSendsMotion(); err != nil || got {
-		t.Errorf("MouseTrackingSendsMotion() = %v, %v; want false, nil", got, err)
+	if got := term.MouseTrackingSendsMotion(); got {
+		t.Errorf("MouseTrackingSendsMotion() = %v; want false", got)
 	}
 
 	feed(t, stream, "\x1b[?1002h\x1b[?1006h")
-	if got, err := term.MouseTracking(); err != nil || got != MouseTrackingButton {
-		t.Errorf("MouseTracking() = %v, %v; want button, nil", got, err)
+	if got := term.MouseTracking(); got != MouseTrackingButton {
+		t.Errorf("MouseTracking() = %v; want button", got)
 	}
-	if got, err := term.MouseTrackingSendsMotion(); err != nil || !got {
-		t.Errorf("MouseTrackingSendsMotion() = %v, %v; want true, nil", got, err)
+	if got := term.MouseTrackingSendsMotion(); !got {
+		t.Errorf("MouseTrackingSendsMotion() = %v; want true", got)
 	}
-	if got, err := term.MouseReportFormat(); err != nil || got != MouseReportFormatSgr {
-		t.Errorf("MouseReportFormat() = %v, %v; want sgr, nil", got, err)
+	if got := term.MouseReportFormat(); got != MouseReportFormatSgr {
+		t.Errorf("MouseReportFormat() = %v; want sgr", got)
 	}
 
 	feed(t, stream, "\x1b[?1002l\x1b[?1000l")
-	if got, err := term.MouseTracking(); err != nil || got != MouseTrackingNone {
-		t.Errorf("MouseTracking() after reset = %v, %v; want none, nil", got, err)
+	if got := term.MouseTracking(); got != MouseTrackingNone {
+		t.Errorf("MouseTracking() after reset = %v; want none", got)
 	}
 }
 
@@ -207,37 +201,37 @@ func TestModeReport(t *testing.T) {
 	term, stream := newStreamPair(t, 20, 5)
 
 	// DEC 25 (cursor visible) defaults to set.
-	if got, err := term.ModeReport(25, false); err != nil || got != ModeReportSet {
-		t.Errorf("ModeReport(25) = %v, %v; want set, nil", got, err)
+	if got := term.ModeReport(25, false); got != ModeReportSet {
+		t.Errorf("ModeReport(25) = %v; want set", got)
 	}
 	feed(t, stream, "\x1b[?25l")
-	if got, err := term.ModeReport(25, false); err != nil || got != ModeReportReset {
-		t.Errorf("ModeReport(25) after reset = %v, %v; want reset, nil", got, err)
+	if got := term.ModeReport(25, false); got != ModeReportReset {
+		t.Errorf("ModeReport(25) after reset = %v; want reset", got)
 	}
 
 	// ANSI 4 (IRM) lives in the other namespace: the same number as DEC 4.
-	if got, err := term.ModeReport(4, true); err != nil || got != ModeReportReset {
-		t.Errorf("ModeReport(4, ansi) = %v, %v; want reset, nil", got, err)
+	if got := term.ModeReport(4, true); got != ModeReportReset {
+		t.Errorf("ModeReport(4, ansi) = %v; want reset", got)
 	}
 	feed(t, stream, "\x1b[4h")
-	if got, err := term.ModeReport(4, true); err != nil || got != ModeReportSet {
-		t.Errorf("ModeReport(4, ansi) after set = %v, %v; want set, nil", got, err)
+	if got := term.ModeReport(4, true); got != ModeReportSet {
+		t.Errorf("ModeReport(4, ansi) after set = %v; want set", got)
 	}
 
 	// DECECM is fixed off in ghostty rather than unimplemented.
-	if got, err := term.ModeReport(117, false); err != nil || got != ModeReportPermanentlyReset {
-		t.Errorf("ModeReport(117) = %v, %v; want permanently_reset, nil", got, err)
+	if got := term.ModeReport(117, false); got != ModeReportPermanentlyReset {
+		t.Errorf("ModeReport(117) = %v; want permanently_reset", got)
 	}
-	if got, err := term.ModeReport(9999, false); err != nil || got != ModeReportNotRecognized {
-		t.Errorf("ModeReport(9999) = %v, %v; want not_recognized, nil", got, err)
+	if got := term.ModeReport(9999, false); got != ModeReportNotRecognized {
+		t.Errorf("ModeReport(9999) = %v; want not_recognized", got)
 	}
 	// Full-width queries must not alias insert, wraparound, or erase-color mode.
 	for _, query := range []struct {
 		mode uint16
 		ansi bool
 	}{{32772, true}, {32775, false}, {32885, false}, {65535, false}} {
-		if got, err := term.ModeReport(query.mode, query.ansi); err != nil || got != ModeReportNotRecognized {
-			t.Errorf("ModeReport(%d, %v) = %v, %v; want not_recognized, nil", query.mode, query.ansi, got, err)
+		if got := term.ModeReport(query.mode, query.ansi); got != ModeReportNotRecognized {
+			t.Errorf("ModeReport(%d, %v) = %v; want not_recognized", query.mode, query.ansi, got)
 		}
 	}
 }

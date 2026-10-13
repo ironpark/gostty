@@ -17,30 +17,18 @@ func screen(t *testing.T, term *Terminal) string {
 
 func TestCursorMovement(t *testing.T) {
 	term := newTerm(t, 20, 6)
-	if err := term.SetCursorPos(4, 10); err != nil {
-		t.Fatalf("SetCursorPos: %v", err)
-	}
-	if err := term.CursorUp(2); err != nil {
-		t.Fatalf("CursorUp: %v", err)
-	}
-	if err := term.CursorLeft(3); err != nil {
-		t.Fatalf("CursorLeft: %v", err)
-	}
+	term.SetCursorPos(4, 10)
+	term.CursorUp(2)
+	term.CursorLeft(3)
 	x := term.CursorX()
 	y := term.CursorY()
 	if x != 6 || y != 1 {
 		t.Errorf("cursor = (%d,%d), want (6,1)", x, y)
 	}
 
-	if err := term.SaveCursor(); err != nil {
-		t.Fatalf("SaveCursor: %v", err)
-	}
-	if err := term.SetCursorPos(1, 1); err != nil {
-		t.Fatalf("SetCursorPos: %v", err)
-	}
-	if err := term.RestoreCursor(); err != nil {
-		t.Fatalf("RestoreCursor: %v", err)
-	}
+	term.SaveCursor()
+	term.SetCursorPos(1, 1)
+	term.RestoreCursor()
 	x = term.CursorX()
 	y = term.CursorY()
 	if x != 6 || y != 1 {
@@ -53,12 +41,8 @@ func TestEraseLine(t *testing.T) {
 	if err := term.PrintString("abcdef"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
-	if err := term.SetCursorPos(1, 3); err != nil {
-		t.Fatalf("SetCursorPos: %v", err)
-	}
-	if err := term.EraseLine(EraseLineRight, false); err != nil {
-		t.Fatalf("EraseLine: %v", err)
-	}
+	term.SetCursorPos(1, 3)
+	term.EraseLine(EraseLineRight, false)
 	if got, want := screen(t, term), "ab"; got != want {
 		t.Errorf("screen = %q, want %q", got, want)
 	}
@@ -72,18 +56,12 @@ func TestEraseDisplay(t *testing.T) {
 	if err := term.Index(); err != nil {
 		t.Fatalf("Index: %v", err)
 	}
-	if err := term.CarriageReturn(); err != nil {
-		t.Fatalf("CarriageReturn: %v", err)
-	}
+	term.CarriageReturn()
 	if err := term.PrintString("drop"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
-	if err := term.SetCursorPos(2, 1); err != nil {
-		t.Fatalf("SetCursorPos: %v", err)
-	}
-	if err := term.EraseDisplay(EraseDisplayBelow, false); err != nil {
-		t.Fatalf("EraseDisplay: %v", err)
-	}
+	term.SetCursorPos(2, 1)
+	term.EraseDisplay(EraseDisplayBelow, false)
 	if got, want := screen(t, term), "keep"; got != want {
 		t.Errorf("screen = %q, want %q", got, want)
 	}
@@ -94,18 +72,12 @@ func TestInsertAndDeleteChars(t *testing.T) {
 	if err := term.PrintString("abcd"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
-	if err := term.SetCursorPos(1, 2); err != nil {
-		t.Fatalf("SetCursorPos: %v", err)
-	}
-	if err := term.InsertBlanks(2); err != nil {
-		t.Fatalf("InsertBlanks: %v", err)
-	}
+	term.SetCursorPos(1, 2)
+	term.InsertBlanks(2)
 	if got, want := screen(t, term), "a  bcd"; got != want {
 		t.Errorf("after InsertBlanks: screen = %q, want %q", got, want)
 	}
-	if err := term.DeleteChars(2); err != nil {
-		t.Fatalf("DeleteChars: %v", err)
-	}
+	term.DeleteChars(2)
 	if got, want := screen(t, term), "abcd"; got != want {
 		t.Errorf("after DeleteChars: screen = %q, want %q", got, want)
 	}
@@ -126,22 +98,14 @@ func TestPrintAndRepeat(t *testing.T) {
 
 func TestTabStops(t *testing.T) {
 	term := newTerm(t, 40, 2)
-	if err := term.HorizontalTab(); err != nil {
-		t.Fatalf("HorizontalTab: %v", err)
-	}
+	term.HorizontalTab()
 	x := term.CursorX()
 	if x != 8 {
 		t.Errorf("CursorX after tab = %d, want 8", x)
 	}
-	if err := term.TabClear(TabClearAll); err != nil {
-		t.Fatalf("TabClear: %v", err)
-	}
-	if err := term.SetCursorPos(1, 1); err != nil {
-		t.Fatalf("SetCursorPos: %v", err)
-	}
-	if err := term.HorizontalTab(); err != nil {
-		t.Fatalf("HorizontalTab: %v", err)
-	}
+	term.TabClear(TabClearAll)
+	term.SetCursorPos(1, 1)
+	term.HorizontalTab()
 	x = term.CursorX()
 	if x != 39 {
 		t.Errorf("CursorX after tab with no stops = %d, want 39", x)
@@ -151,13 +115,9 @@ func TestTabStops(t *testing.T) {
 // ClearScrollbackMaxBytes removes the limit; SetScrollbackMaxBytes sets one.
 func TestOptionalScalarParam(t *testing.T) {
 	term := newTerm(t, 10, 2)
-	if err := term.ClearScrollbackMaxBytes(); err != nil {
-		t.Fatalf("ClearScrollbackMaxBytes: %v", err)
-	}
+	term.ClearScrollbackMaxBytes()
 	limit := uint(4096)
-	if err := term.SetScrollbackMaxBytes(limit); err != nil {
-		t.Fatalf("SetScrollbackMaxBytes(4096): %v", err)
-	}
+	term.SetScrollbackMaxBytes(limit)
 }
 
 func TestFormatUnwrap(t *testing.T) {
@@ -187,8 +147,8 @@ func TestFormatUnwrap(t *testing.T) {
 func TestPwdAndTitleRoundTrip(t *testing.T) {
 	term := newTerm(t, 10, 2)
 
-	if _, ok, err := term.GetPwd(); err != nil || ok {
-		t.Errorf("GetPwd() on a fresh terminal = ok %v %v; want false, nil", ok, err)
+	if _, ok := term.GetPwd(); ok {
+		t.Errorf("GetPwd() on a fresh terminal = ok %v; want false", ok)
 	}
 
 	if err := term.SetPwd("/tmp"); err != nil {
@@ -198,13 +158,13 @@ func TestPwdAndTitleRoundTrip(t *testing.T) {
 		t.Fatalf("SetTitle: %v", err)
 	}
 
-	pwd, ok, err := term.GetPwd()
-	if err != nil || !ok || pwd != "/tmp" {
-		t.Errorf("GetPwd() = %q, %v, %v; want \"/tmp\", true, nil", pwd, ok, err)
+	pwd, ok := term.GetPwd()
+	if !ok || pwd != "/tmp" {
+		t.Errorf("GetPwd() = %q, %v; want \"/tmp\", true", pwd, ok)
 	}
-	title, ok, err := term.GetTitle()
-	if err != nil || !ok || title != "shell" {
-		t.Errorf("GetTitle() = %q, %v, %v; want \"shell\", true, nil", title, ok, err)
+	title, ok := term.GetTitle()
+	if !ok || title != "shell" {
+		t.Errorf("GetTitle() = %q, %v; want \"shell\", true", title, ok)
 	}
 }
 
@@ -228,9 +188,7 @@ func TestOpenEnums(t *testing.T) {
 	}
 	// An unnamed mode reaches the terminal, which ignores it rather than
 	// crossing an invalid enum value.
-	if err := term.EraseLine(EraseLine(7), false); err != nil {
-		t.Fatalf("EraseLine(7): %v", err)
-	}
+	term.EraseLine(EraseLine(7), false)
 	if got, want := screen(t, term), "abc"; got != want {
 		t.Errorf("screen = %q, want %q", got, want)
 	}
@@ -315,36 +273,26 @@ func TestScrollViewport(t *testing.T) {
 		if err := term.Index(); err != nil {
 			t.Fatalf("Index: %v", err)
 		}
-		if err := term.CarriageReturn(); err != nil {
-			t.Fatalf("CarriageReturn: %v", err)
-		}
+		term.CarriageReturn()
 	}
 
-	if err := term.ScrollViewport(ScrollViewportTop()); err != nil {
-		t.Fatalf("ScrollViewport(top): %v", err)
-	}
+	term.ScrollViewport(ScrollViewportTop())
 	top := screen(t, term)
 	if !strings.Contains(top, "a") {
 		t.Errorf("viewport at top = %q, want it to show the oldest row", top)
 	}
 
-	if err := term.ScrollViewport(ScrollViewportBottom()); err != nil {
-		t.Fatalf("ScrollViewport(bottom): %v", err)
-	}
+	term.ScrollViewport(ScrollViewportBottom())
 	bottom := screen(t, term)
 	if strings.Contains(bottom, "a") {
 		t.Errorf("viewport at bottom = %q, want the oldest row scrolled off", bottom)
 	}
 
-	if err := term.ScrollViewport(ScrollViewportDelta(-2)); err != nil {
-		t.Fatalf("ScrollViewport(delta): %v", err)
-	}
+	term.ScrollViewport(ScrollViewportDelta(-2))
 	if screen(t, term) == bottom {
 		t.Error("ScrollViewport(delta -2) did not move the viewport")
 	}
-	if err := term.ScrollViewport(ScrollViewportRow(0)); err != nil {
-		t.Fatalf("ScrollViewport(row): %v", err)
-	}
+	term.ScrollViewport(ScrollViewportRow(0))
 	if got := screen(t, term); got != top {
 		t.Errorf("ScrollViewport(row 0) = %q, want the same as top %q", got, top)
 	}
@@ -352,34 +300,24 @@ func TestScrollViewport(t *testing.T) {
 
 func TestSetDefaultCursor(t *testing.T) {
 	term := newTerm(t, 10, 2)
-	if err := term.SetDefaultCursorStyle(CursorStyleUnderline); err != nil {
-		t.Fatalf("SetDefaultCursorStyle")
-	}
+	term.SetDefaultCursorStyle(CursorStyleUnderline)
 	got := term.CursorStyle()
 	if got != CursorStyleUnderline {
 		t.Errorf("CursorStyle() = %v, want %v", got, CursorStyleUnderline)
 	}
 
 	// ?bool: nil selects the emulator default.
-	if err := term.ResetDefaultCursorBlink(); err != nil {
-		t.Fatalf("ResetDefaultCursorBlink: %v", err)
-	}
+	term.ResetDefaultCursorBlink()
 	blink := true
-	if err := term.SetDefaultCursorBlink(blink); err != nil {
-		t.Fatalf("SetDefaultCursorBlink(true): %v", err)
-	}
+	term.SetDefaultCursorBlink(blink)
 }
 
 // Charset, CharsetSlot and CursorStyle are all four-tag comptime enums whose
 // truncated @typeName is one string; each parameter must still get its own type.
 func TestCharsets(t *testing.T) {
 	term := newTerm(t, 10, 2)
-	if err := term.ConfigureCharset(CharsetSlotG1, CharsetDecSpecial); err != nil {
-		t.Fatalf("ConfigureCharset: %v", err)
-	}
-	if err := term.InvokeCharset(CharsetActiveSlotGl, CharsetSlotG1, false); err != nil {
-		t.Fatalf("InvokeCharset: %v", err)
-	}
+	term.ConfigureCharset(CharsetSlotG1, CharsetDecSpecial)
+	term.InvokeCharset(CharsetActiveSlotGl, CharsetSlotG1, false)
 	// DEC special graphics maps `q` to a horizontal line.
 	if err := term.PrintString("q"); err != nil {
 		t.Fatalf("PrintString: %v", err)
@@ -395,5 +333,14 @@ func TestScrollViewportTag(t *testing.T) {
 	}
 	if got := ScrollViewportTop().Tag().String(); got != "top" {
 		t.Errorf("Tag().String() = %q, want %q", got, "top")
+	}
+	if got := ScrollViewportDeltaPrompt(1).Tag(); got != ScrollViewportTagDeltaPrompt {
+		t.Errorf("Tag() = %v, want %v", got, ScrollViewportTagDeltaPrompt)
+	}
+	if val, ok := ScrollViewportDeltaPrompt(-2).AsDeltaPrompt(); !ok || val != -2 {
+		t.Errorf("AsDeltaPrompt() = (%v, %v), want (-2, true)", val, ok)
+	}
+	if got := ScrollViewportDeltaPrompt(1).Tag().String(); got != "delta_prompt" {
+		t.Errorf("Tag().String() = %q, want %q", got, "delta_prompt")
 	}
 }

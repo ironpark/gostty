@@ -42,10 +42,7 @@ var wordBoundaries = []rune{
 // startGesture opens the gesture and tells it what is this program's to
 // decide: what a word is, and what a click at each count selects.
 func (tab *terminal) startGesture() error {
-	gesture, err := tab.vt.NewGesture()
-	if err != nil {
-		return err
-	}
+	gesture := tab.vt.NewGesture()
 	tab.sel.gesture = gesture
 	tab.core.AddGesture(gesture)
 	if err := gesture.SetWordBoundaries(wordBoundaries); err != nil {
@@ -53,20 +50,19 @@ func (tab *terminal) startGesture() error {
 	}
 	// One click places the anchor, two select the word, three the command
 	// output around it -- which the semantic prompt marks are for.
-	if err := gesture.SetBehaviors(gostty.GestureBehaviorCell, gostty.GestureBehaviorWord, gostty.GestureBehaviorOutput); err != nil {
-		return err
-	}
-	return tab.syncGestureGeometry()
+	gesture.SetBehaviors(gostty.GestureBehaviorCell, gostty.GestureBehaviorWord, gostty.GestureBehaviorOutput)
+	tab.syncGestureGeometry()
+	return nil
 }
 
 // syncGestureGeometry tells the gesture the shape of the window, which is how
 // it turns pixels into cells and knows when the pointer is past the bottom.
-func (tab *terminal) syncGestureGeometry() error {
+func (tab *terminal) syncGestureGeometry() {
 	if tab.sel.gesture == nil {
-		return nil
+		return
 	}
 	g := tab.grid()
-	return tab.sel.gesture.SetGeometry(gostty.GestureGeometry{
+	tab.sel.gesture.SetGeometry(gostty.GestureGeometry{
 		Columns: uint32(g.cols), CellWidth: uint32(g.cellW), ScreenHeight: uint32(g.height()),
 	})
 }
@@ -90,7 +86,8 @@ func (tab *terminal) handleMouse(m keys.Mods) error {
 	case tab.sel.dragging && !tab.input.Left.Down:
 		tab.sel.dragging = false
 		col, row := tab.grid().cellAt(px, py)
-		return tab.sel.gesture.Release(uint16(col), uint16(row))
+		tab.sel.gesture.Release(uint16(col), uint16(row))
+		return nil
 	case tab.sel.dragging:
 		return tab.dragSelection(px, py, m.Alt)
 	}
@@ -124,10 +121,7 @@ func (tab *terminal) dragSelection(px, py int, rectangle bool) error {
 	tab.sel.last = gostty.GestureDragEvent{
 		X: uint16(col), Y: uint16(row), Xpos: float64(px), Ypos: float64(py), Rectangle: rectangle,
 	}
-	sel, ok, err := tab.sel.gesture.Drag(tab.sel.last)
-	if err != nil {
-		return err
-	}
+	sel, ok := tab.sel.gesture.Drag(tab.sel.last)
 	if err := tab.applySelection(sel, ok); err != nil {
 		return err
 	}
@@ -137,21 +131,16 @@ func (tab *terminal) dragSelection(px, py int, rectangle bool) error {
 // autoscroll moves the viewport one row a frame while a drag is held past the
 // top or bottom, and keeps the selection growing with it.
 func (tab *terminal) autoscroll() error {
-	direction, err := tab.sel.gesture.Autoscroll()
-	if err != nil || direction == gostty.GestureAutoscrollDirectionNone {
-		return err
+	direction := tab.sel.gesture.Autoscroll()
+	if direction == gostty.GestureAutoscrollDirectionNone {
+		return nil
 	}
 	delta := 1
 	if direction == gostty.GestureAutoscrollDirectionUp {
 		delta = -1
 	}
-	if err := tab.vt.ScrollViewport(gostty.ScrollViewportDelta(delta)); err != nil {
-		return err
-	}
-	sel, ok, err := tab.sel.gesture.AutoscrollTick(tab.sel.last)
-	if err != nil {
-		return err
-	}
+	tab.vt.ScrollViewport(gostty.ScrollViewportDelta(delta))
+	sel, ok := tab.sel.gesture.AutoscrollTick(tab.sel.last)
 	return tab.applySelection(sel, ok)
 }
 
@@ -160,7 +149,8 @@ func (tab *terminal) autoscroll() error {
 func (tab *terminal) applySelection(sel gostty.Selection, ok bool) error {
 	return tab.onScreen(func(screen *gostty.Screen) error {
 		if !ok {
-			return screen.ClearSelection()
+			screen.ClearSelection()
+			return nil
 		}
 		_, err := screen.SetSelection(sel)
 		return err
@@ -171,7 +161,7 @@ func (tab *terminal) applySelection(sel gostty.Selection, ok bool) error {
 func (tab *terminal) endGesture() {
 	tab.sel.dragging = false
 	if tab.sel.gesture != nil {
-		_ = tab.sel.gesture.Reset()
+		tab.sel.gesture.Reset()
 	}
 }
 
@@ -214,13 +204,13 @@ func (tab *terminal) adjustSelection(key input.Key) (bool, error) {
 		return false, nil
 	}
 	return true, tab.onScreen(func(screen *gostty.Screen) error {
-		current, ok, err := screen.Selection()
-		if err != nil || !ok {
-			return err
+		current, ok := screen.Selection()
+		if !ok {
+			return nil
 		}
-		moved, ok, err := screen.SelectionAdjust(current, adjustment)
-		if err != nil || !ok {
-			return err
+		moved, ok := screen.SelectionAdjust(current, adjustment)
+		if !ok {
+			return nil
 		}
 		if _, err := screen.SetSelection(moved); err != nil {
 			return err
@@ -235,8 +225,8 @@ func (tab *terminal) adjustSelection(key input.Key) (bool, error) {
 // position in the scrollback into a row on the grid.
 func (tab *terminal) viewportTop() (top uint32, err error) {
 	err = tab.onScreen(func(screen *gostty.Screen) error {
-		top, err = screen.ViewportTop()
-		return err
+		top = screen.ViewportTop()
+		return nil
 	})
 	return top, err
 }
@@ -247,7 +237,8 @@ func (tab *terminal) revealRow(row uint32) error {
 	if err != nil || (row >= top && row < top+uint32(tab.rows)) {
 		return err
 	}
-	return tab.vt.ScrollViewport(gostty.ScrollViewportRow(uint(row)))
+	tab.vt.ScrollViewport(gostty.ScrollViewportRow(uint(row)))
+	return nil
 }
 
 // The scrollbar is Screen.Scrollbar: the terminal counts the scrollback and
@@ -267,10 +258,7 @@ type scrollbarState struct {
 // way an overlay scrollbar does.
 func (tab *terminal) refreshScrollbar() error {
 	return tab.onScreen(func(screen *gostty.Screen) error {
-		bar, err := screen.Scrollbar()
-		if err != nil {
-			return err
-		}
+		bar := screen.Scrollbar()
 		tab.frame.updateScrollbar(bar)
 		return nil
 	})
@@ -316,9 +304,9 @@ func (tab *terminal) formatScrollback(out io.Writer) error {
 	options := gostty.FormatOptions{Format: gostty.FormatterFormatHtml, Unwrap: true, ResolvePalette: true}
 	var sel gostty.Selection
 	var ok bool
-	if err := tab.onScreen(func(screen *gostty.Screen) (err error) {
-		sel, ok, err = screen.Selection()
-		return err
+	if err := tab.onScreen(func(screen *gostty.Screen) error {
+		sel, ok = screen.Selection()
+		return nil
 	}); err != nil {
 		return err
 	}

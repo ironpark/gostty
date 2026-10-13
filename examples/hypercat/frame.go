@@ -103,10 +103,7 @@ func (f *frame) read(state *gostty.RenderState, term *gostty.Terminal, g grid, t
 	if err := state.Update(term); err != nil {
 		return fmt.Errorf("render update: %w", err)
 	}
-	n, err := state.CellCount()
-	if err != nil {
-		return err
-	}
+	n := state.CellCount()
 	f.cells = grow(f.cells, int(n))
 	if _, err := state.Cells(f.cells); err != nil {
 		return fmt.Errorf("render cells: %w", err)
@@ -115,24 +112,16 @@ func (f *frame) read(state *gostty.RenderState, term *gostty.Terminal, g grid, t
 	if err := f.redraw.pull(state); err != nil {
 		return err
 	}
-	colors, err := f.readColors(state, theme)
-	if err != nil {
-		return err
-	}
-	if err := f.readCursor(state, colors); err != nil {
-		return err
-	}
+	colors := f.readColors(state, theme)
+	f.readCursor(state, colors)
 	return f.readClusters(state, g)
 }
 
 // readColors resolves the terminal defaults through the theme and repaints
 // the grid when the displayed defaults change.
-func (f *frame) readColors(state *gostty.RenderState, theme ui.Theme) (gostty.RenderColors, error) {
+func (f *frame) readColors(state *gostty.RenderState, theme ui.Theme) gostty.RenderColors {
 	previous := f.colors
-	colors, err := state.Colors()
-	if err != nil {
-		return gostty.RenderColors{}, err
-	}
+	colors := state.Colors()
 	f.colors.terminalBg, f.colors.terminalFg = ui.FromColor(colors.Background), ui.FromColor(colors.Foreground)
 	if theme.Terminal {
 		f.colors.bg, f.colors.fg = f.colors.terminalBg, f.colors.terminalFg
@@ -142,14 +131,11 @@ func (f *frame) readColors(state *gostty.RenderState, theme ui.Theme) (gostty.Re
 	if f.colors.bg != previous.bg || f.colors.fg != previous.fg {
 		f.redraw.markAll()
 	}
-	return colors, nil
+	return colors
 }
 
-func (f *frame) readCursor(state *gostty.RenderState, colors gostty.RenderColors) error {
-	cursor, err := state.Cursor()
-	if err != nil {
-		return err
-	}
+func (f *frame) readCursor(state *gostty.RenderState, colors gostty.RenderColors) {
+	cursor := state.Cursor()
 	f.cursor = cursorState{
 		x: cursor.X, y: cursor.Y,
 		visible:  cursor.Visible && cursor.ViewportHasValue,
@@ -161,7 +147,6 @@ func (f *frame) readCursor(state *gostty.RenderState, colors gostty.RenderColors
 		// foreground, which is this window's decision rather than the terminal's.
 		color: ui.FromColor(colors.Cursor), hasColor: colors.CursorHasValue,
 	}
-	return nil
 }
 
 // The longest cluster a cell is read back as. A family of four with skin
@@ -300,10 +285,7 @@ func (r *redrawSet) resize(rows int) {
 // Update reports only what changes from here.
 func (r *redrawSet) pull(state *gostty.RenderState) error {
 	clear(r.changed)
-	dirty, err := state.Dirty()
-	if err != nil {
-		return err
-	}
+	dirty := state.Dirty()
 	r.changedAll = dirty == gostty.RenderDirtyFull // colours or size changed
 	if r.changedAll {
 		r.all = true
@@ -318,7 +300,8 @@ func (r *redrawSet) pull(state *gostty.RenderState) error {
 			r.changed[int(y)] = true
 		}
 	}
-	return state.Clean()
+	state.Clean()
+	return nil
 }
 
 // rewritten reports whether the terminal changed this row since the last

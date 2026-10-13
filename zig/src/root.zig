@@ -173,6 +173,7 @@ pub const screenSelectOutput = screen_.screenSelectOutput;
 pub const screenHasSelection = screen_.screenHasSelection;
 pub const screenSelectionString = screen_.screenSelectionString;
 pub const screenStartHyperlink = screen_.screenStartHyperlink;
+pub const screenScrollClear = screen_.screenScrollClear;
 
 // Terminal-wide state: size, colours, modes, attributes, limits.
 const terminal_ = @import("terminal.zig");
@@ -183,6 +184,8 @@ pub const CharsetSlot = terminal_.CharsetSlot;
 pub const CharsetActiveSlot = terminal_.CharsetActiveSlot;
 pub const DeccolmMode = terminal_.DeccolmMode;
 pub const ScrollViewport = terminal_.ScrollViewport;
+pub const CompressionMode = terminal_.CompressionMode;
+pub const CompressionResult = terminal_.CompressionResult;
 pub const EraseDisplay = terminal_.EraseDisplay;
 pub const EraseLine = terminal_.EraseLine;
 pub const TabClear = terminal_.TabClear;

@@ -831,6 +831,22 @@ func TerminalPlainString(self unsafe.Pointer) (string, int32) {
 	return result, code
 }
 
+// TerminalPlainStringUnwrapped calls the generated C ABI wrapper for zg_terminal_plain_string_unwrapped.
+func TerminalPlainStringUnwrapped(self unsafe.Pointer) (string, int32) {
+	var outResultPtr *C.uint8_t
+	var outResultLen C.size_t
+	code := int32(C.zg_terminal_plain_string_unwrapped((*C.zg_terminal)(self), &outResultPtr, &outResultLen))
+	if code != 0 {
+		return "", code
+	}
+	var result string
+	if outResultLen != 0 {
+		result = C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
+	}
+	C.zg_free_string(outResultPtr, outResultLen)
+	return result, code
+}
+
 // TerminalPrint calls the generated C ABI wrapper for zg_terminal_print.
 func TerminalPrint(self unsafe.Pointer, c uint32) int32 {
 	code := int32(C.zg_terminal_print((*C.zg_terminal)(self), C.uint32_t(c)))
@@ -890,6 +906,12 @@ func TerminalCursorIsAtPrompt(self unsafe.Pointer) (uint8, int32) {
 // TerminalFullReset calls the generated C ABI wrapper for zg_terminal_full_reset.
 func TerminalFullReset(self unsafe.Pointer) int32 {
 	code := int32(C.zg_terminal_full_reset((*C.zg_terminal)(self)))
+	return code
+}
+
+// TerminalSoftReset calls the generated C ABI wrapper for zg_terminal_soft_reset.
+func TerminalSoftReset(self unsafe.Pointer) int32 {
+	code := int32(C.zg_terminal_soft_reset((*C.zg_terminal)(self)))
 	return code
 }
 
@@ -1065,8 +1087,8 @@ func TerminalSetLeftAndRightMargin(self unsafe.Pointer, left uint, right uint) i
 }
 
 // TerminalScrollViewport calls the generated C ABI wrapper for zg_terminal_scroll_viewport.
-func TerminalScrollViewport(self unsafe.Pointer, behavior_tag uint8, behavior_delta int, behavior_row uint) int32 {
-	code := int32(C.zg_terminal_scroll_viewport((*C.zg_terminal)(self), C.uint8_t(behavior_tag), C.ptrdiff_t(behavior_delta), C.size_t(behavior_row)))
+func TerminalScrollViewport(self unsafe.Pointer, behavior_tag uint8, behavior_delta int, behavior_row uint, behavior_delta_prompt int) int32 {
+	code := int32(C.zg_terminal_scroll_viewport((*C.zg_terminal)(self), C.uint8_t(behavior_tag), C.ptrdiff_t(behavior_delta), C.size_t(behavior_row), C.ptrdiff_t(behavior_delta_prompt)))
 	return code
 }
 
@@ -1329,6 +1351,13 @@ func TerminalDeccolm(self unsafe.Pointer, mode uint8) int32 {
 	return code
 }
 
+// TerminalCompress calls the generated C ABI wrapper for zg_terminal_compress.
+func TerminalCompress(self unsafe.Pointer, mode uint8) (uint8, int32) {
+	var outResult C.uint8_t
+	code := int32(C.zg_terminal_compress((*C.zg_terminal)(self), C.uint8_t(mode), &outResult))
+	return uint8(outResult), code
+}
+
 // TerminalCompressionActivity calls the generated C ABI wrapper for zg_terminal_compression_activity.
 func TerminalCompressionActivity(self unsafe.Pointer) (uint64, int32) {
 	var outResult C.uint64_t
@@ -1587,6 +1616,12 @@ func ScreenViewportIsBottom(self unsafe.Pointer) (uint8, int32) {
 	var outResult C.uint8_t
 	code := int32(C.zg_screen_viewport_is_bottom((*C.zg_screen)(self), &outResult))
 	return uint8(outResult), code
+}
+
+// ScreenScrollClear calls the generated C ABI wrapper for zg_screen_scroll_clear.
+func ScreenScrollClear(self unsafe.Pointer) int32 {
+	code := int32(C.zg_screen_scroll_clear((*C.zg_screen)(self)))
+	return code
 }
 
 // ScreenClearSelection calls the generated C ABI wrapper for zg_screen_clear_selection.

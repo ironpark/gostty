@@ -40,6 +40,20 @@ func init() {
 	lifecycle.Register(lifecycle.Methods[*KittyImages]{Acquire: (*KittyImages).zigoAcquire, Release: (*KittyImages).zigoRelease, Poison: (*KittyImages).zigoPoison})
 }
 
+func zigoMust[T any](value T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return value
+}
+
+func zigoMustMatch[T any](value T, matched bool, err error) (T, bool) {
+	if err != nil {
+		panic(err)
+	}
+	return value, matched
+}
+
 // DragHandler is the Go callback signature accepted by the generated binding.
 // Reentrancy: allowed; the callback may re-enter the binding while it is running.
 // Thread: caller; the callback runs on the thread that initiated the native call.
@@ -145,29 +159,4 @@ func zigoReaderBytes(value io.Reader) []byte {
 		return []byte{}
 	}
 	return data
-}
-
-// gosttyMustSucceed panics with a typed error, for a Must variant of a
-// function whose only result is the error.
-func gosttyMustSucceed(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
-// gosttyMustValue panics with a typed error, for a Must variant with one result.
-func gosttyMustValue[T any](value T, err error) T {
-	if err != nil {
-		panic(err)
-	}
-	return value
-}
-
-// gosttyMustMatch panics with a typed error, for a Must variant whose result
-// carries a presence flag beside the value.
-func gosttyMustMatch[T any](value T, matched bool, err error) (T, bool) {
-	if err != nil {
-		panic(err)
-	}
-	return value, matched
 }

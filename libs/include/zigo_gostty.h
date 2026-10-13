@@ -433,11 +433,21 @@ typedef uint8_t zg_deccolm_mode;
 #define ZG_DECCOLM_MODE_80_COLS 0
 #define ZG_DECCOLM_MODE_132_COLS 1
 
+typedef uint8_t zg_compression_mode;
+#define ZG_COMPRESSION_MODE_INCREMENTAL 0
+#define ZG_COMPRESSION_MODE_FULL 1
+
+typedef uint8_t zg_compression_result;
+#define ZG_COMPRESSION_RESULT_UNSUPPORTED 0
+#define ZG_COMPRESSION_RESULT_PENDING 1
+#define ZG_COMPRESSION_RESULT_COMPLETE 2
+
 typedef uint8_t zg_scroll_viewport_tag;
 #define ZG_SCROLL_VIEWPORT_TAG_TOP 0
 #define ZG_SCROLL_VIEWPORT_TAG_BOTTOM 1
 #define ZG_SCROLL_VIEWPORT_TAG_DELTA 2
 #define ZG_SCROLL_VIEWPORT_TAG_ROW 3
+#define ZG_SCROLL_VIEWPORT_TAG_DELTA_PROMPT 4
 
 typedef uint8_t zg_mouse_tracking;
 #define ZG_MOUSE_TRACKING_NONE 0
@@ -550,6 +560,7 @@ typedef uint8_t zg_osc_command;
 #define ZG_OSC_COMMAND_CONTEXT_SIGNAL 25
 #define ZG_OSC_COMMAND_KITTY_DESKTOP_NOTIFICATION 26
 #define ZG_OSC_COMMAND_UNKNOWN 27
+#define ZG_OSC_COMMAND_PROGRAM_STATUS 28
 
 typedef uint8_t zg_osc_terminator;
 #define ZG_OSC_TERMINATOR_ST 0
@@ -860,6 +871,7 @@ ZIGO_EXPORT int32_t zg_terminal_new_gesture(zg_terminal * self, zg_gesture * * o
 ZIGO_EXPORT int32_t zg_terminal_new_grid_ref(zg_terminal * self, uint8_t tag, uint16_t x, uint32_t y, zg_grid_ref * * out_result);
 ZIGO_EXPORT int32_t zg_terminal_print_string(zg_terminal * self, const uint8_t * str_ptr, size_t str_len);
 ZIGO_EXPORT int32_t zg_terminal_plain_string(zg_terminal * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_terminal_plain_string_unwrapped(zg_terminal * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
 ZIGO_EXPORT int32_t zg_terminal_print(zg_terminal * self, uint32_t c);
 ZIGO_EXPORT int32_t zg_terminal_print_repeat(zg_terminal * self, size_t count);
 ZIGO_EXPORT int32_t zg_terminal_print_slice(zg_terminal * self, const uint32_t * cps_ptr, size_t cps_len);
@@ -870,6 +882,7 @@ ZIGO_EXPORT int32_t zg_terminal_linefeed(zg_terminal * self);
 ZIGO_EXPORT int32_t zg_terminal_backspace(zg_terminal * self);
 ZIGO_EXPORT int32_t zg_terminal_cursor_is_at_prompt(zg_terminal * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_full_reset(zg_terminal * self);
+ZIGO_EXPORT int32_t zg_terminal_soft_reset(zg_terminal * self);
 ZIGO_EXPORT int32_t zg_terminal_cursor_up(zg_terminal * self, size_t count);
 ZIGO_EXPORT int32_t zg_terminal_cursor_down(zg_terminal * self, size_t count);
 ZIGO_EXPORT int32_t zg_terminal_cursor_left(zg_terminal * self, size_t count);
@@ -896,7 +909,7 @@ ZIGO_EXPORT int32_t zg_terminal_scroll_up(zg_terminal * self, size_t count);
 ZIGO_EXPORT int32_t zg_terminal_scroll_down(zg_terminal * self, size_t count);
 ZIGO_EXPORT int32_t zg_terminal_set_top_and_bottom_margin(zg_terminal * self, size_t top, size_t bottom);
 ZIGO_EXPORT int32_t zg_terminal_set_left_and_right_margin(zg_terminal * self, size_t left, size_t right);
-ZIGO_EXPORT int32_t zg_terminal_scroll_viewport(zg_terminal * self, uint8_t behavior_tag, ptrdiff_t behavior_delta, size_t behavior_row);
+ZIGO_EXPORT int32_t zg_terminal_scroll_viewport(zg_terminal * self, uint8_t behavior_tag, ptrdiff_t behavior_delta, size_t behavior_row, ptrdiff_t behavior_delta_prompt);
 ZIGO_EXPORT int32_t zg_terminal_set_scrollback_max_bytes(zg_terminal * self, size_t max);
 ZIGO_EXPORT int32_t zg_terminal_clear_scrollback_max_bytes(zg_terminal * self);
 ZIGO_EXPORT int32_t zg_terminal_set_scrollback_max_lines(zg_terminal * self, size_t max);
@@ -928,6 +941,7 @@ ZIGO_EXPORT int32_t zg_terminal_set_protected_mode(zg_terminal * self, uint8_t m
 ZIGO_EXPORT int32_t zg_terminal_configure_charset(zg_terminal * self, uint8_t slot, uint8_t set);
 ZIGO_EXPORT int32_t zg_terminal_invoke_charset(zg_terminal * self, uint8_t active, uint8_t slot, uint8_t single);
 ZIGO_EXPORT int32_t zg_terminal_deccolm(zg_terminal * self, uint8_t mode);
+ZIGO_EXPORT int32_t zg_terminal_compress(zg_terminal * self, uint8_t mode, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_compression_activity(zg_terminal * self, uint64_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_set_default_background_color(zg_terminal * self, const zg_rgb * rgb);
 ZIGO_EXPORT int32_t zg_terminal_set_default_foreground_color(zg_terminal * self, const zg_rgb * rgb);
@@ -958,6 +972,7 @@ ZIGO_EXPORT int32_t zg_terminal_mode_report(zg_terminal * self, uint16_t mode, u
 ZIGO_EXPORT int32_t zg_terminal_cell_at(zg_terminal * self, uint8_t tag, uint16_t x, uint32_t y, uint8_t * out_result_has, zg_render_cell * out_result);
 ZIGO_EXPORT int32_t zg_terminal_hyperlink_at(zg_terminal * self, uint8_t tag, uint16_t x, uint32_t y, const uint8_t * * out_result_ptr, size_t * out_result_len);
 ZIGO_EXPORT int32_t zg_screen_viewport_is_bottom(const zg_screen * self, uint8_t * out_result);
+ZIGO_EXPORT int32_t zg_screen_scroll_clear(zg_screen * self);
 ZIGO_EXPORT int32_t zg_screen_clear_selection(zg_screen * self);
 ZIGO_EXPORT int32_t zg_screen_end_hyperlink(zg_screen * self);
 ZIGO_EXPORT int32_t zg_screen_select_all(zg_screen * self, uint8_t * out_result);

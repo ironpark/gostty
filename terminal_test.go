@@ -31,12 +31,8 @@ func TestPrintStringAndDump(t *testing.T) {
 	if err := term.PrintString("hello"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
-	if err := term.CarriageReturn(); err != nil {
-		t.Fatalf("CarriageReturn: %v", err)
-	}
-	if err := term.Linefeed(); err != nil {
-		t.Fatalf("Linefeed: %v", err)
-	}
+	term.CarriageReturn()
+	term.Linefeed()
 	if err := term.PrintString("world"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
@@ -87,9 +83,7 @@ func TestCursorStyleRoundTrip(t *testing.T) {
 		{CursorStyleReqBlinkingUnderline, CursorStyleUnderline},
 		{CursorStyleReqSteadyBlock, CursorStyleBlock},
 	} {
-		if err := term.SetCursorStyle(tc.req); err != nil {
-			t.Fatalf("SetCursorStyle(%v):", tc.req)
-		}
+		term.SetCursorStyle(tc.req)
 		got := term.CursorStyle()
 		if got != tc.want {
 			t.Errorf("after SetCursorStyle(%v), CursorStyle() = %v, want %v", tc.req, got, tc.want)
@@ -108,9 +102,7 @@ func TestFullReset(t *testing.T) {
 	if err := term.PrintString("dirty"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
-	if err := term.FullReset(); err != nil {
-		t.Fatalf("FullReset: %v", err)
-	}
+	term.FullReset()
 	got, err := term.PlainString()
 	if err != nil {
 		t.Fatalf("PlainString: %v", err)
@@ -157,9 +149,7 @@ func TestBackspace(t *testing.T) {
 	if err := term.PrintString("abc"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
-	if err := term.Backspace(); err != nil {
-		t.Fatalf("Backspace: %v", err)
-	}
+	term.Backspace()
 	if err := term.PrintString("X"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
@@ -170,4 +160,68 @@ func TestBackspace(t *testing.T) {
 	if want := "abX"; strings.TrimSpace(got) != want {
 		t.Errorf("PlainString() = %q, want %q", got, want)
 	}
+}
+
+func TestSoftReset(t *testing.T) {
+	term := newTerm(t, 20, 2)
+	if err := term.PrintString("hello"); err != nil {
+		t.Fatalf("PrintString: %v", err)
+	}
+	term.SetCursorStyle(CursorStyleReqBlinkingUnderline)
+
+	// SoftReset resets cursor style to default, but preserves screen text and cursor position.
+	term.SoftReset()
+	got, err := term.PlainString()
+	if err != nil {
+		t.Fatalf("PlainString: %v", err)
+	}
+	if want := "hello"; strings.TrimSpace(got) != want {
+		t.Errorf("PlainString() after SoftReset = %q, want %q", got, want)
+	}
+	if x := term.CursorX(); x != 5 {
+		t.Errorf("CursorX() after SoftReset = %d, want 5", x)
+	}
+	if style := term.CursorStyle(); style != CursorStyleBlock {
+		t.Errorf("CursorStyle() after SoftReset = %v, want default block", style)
+	}
+}
+
+func TestPlainStringUnwrapped(t *testing.T) {
+	term := newTerm(t, 5, 3)
+	// Printing "helloworld" wraps across 5-column boundary.
+	if err := term.PrintString("helloworld"); err != nil {
+		t.Fatalf("PrintString: %v", err)
+	}
+
+	wrapped, err := term.PlainString()
+	if err != nil {
+		t.Fatalf("PlainString: %v", err)
+	}
+	if !strings.Contains(wrapped, "hello\nworld") {
+		t.Errorf("PlainString() = %q, want it to contain newline between wrapped rows", wrapped)
+	}
+
+	unwrapped, err := term.PlainStringUnwrapped()
+	if err != nil {
+		t.Fatalf("PlainStringUnwrapped: %v", err)
+	}
+	if !strings.HasPrefix(strings.TrimSpace(unwrapped), "helloworld") {
+		t.Errorf("PlainStringUnwrapped() = %q, want prefix %q", unwrapped, "helloworld")
+	}
+}
+
+func TestTerminalCompress(t *testing.T) {
+	term := newTerm(t, 80, 24)
+	if err := term.PrintString("some text to compress"); err != nil {
+		t.Fatalf("PrintString: %v", err)
+	}
+
+	resInc := term.Compress(CompressionModeIncremental)
+	_ = resInc
+
+	resFull := term.Compress(CompressionModeFull)
+	_ = resFull
+
+	activity := term.CompressionActivity()
+	_ = activity
 }

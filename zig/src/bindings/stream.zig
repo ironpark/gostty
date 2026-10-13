@@ -7,7 +7,7 @@ const api = p.api;
 // what keeps it true.
 pub const Stream = api.handle("Stream", .{ .fields = &.{
     .{ .path = "inner.handler.semantic_failure", .name = "failed", .doc = "True once a sequence failed in a way the terminal could not absorb, such as an allocation failure. Streams are best-effort and keep going." },
-} }).use(p.satisfies.plugin, .{ .interfaces = &.{"io.WriteCloser"} }).with(.{ .doc =
+} }).use(zigo.features.panics, .{}).use(p.satisfies.plugin, .{ .interfaces = &.{"io.WriteCloser"} }).with(.{ .doc =
     \\Stream parses VT bytes into its parent terminal. Serialize complete calls,
     \\including event iteration, with all other calls touching the parent or its
     \\children. Callbacks run synchronously; only request-response operations may
@@ -47,7 +47,7 @@ const OSCParser = api.handle("OSCParser", .{
         .{ .path = "progress_state", .name = "progressState", .doc = "OSC 9;4: what the program says about its progress." },
         .{ .path = "progress", .name = "progressValue", .doc = "OSC 9;4: percent complete, or -1 when the report carried no percentage." },
     },
-}).context();
+}).use(zigo.features.panics, .{}).context();
 
 const stream_group = Stream.members(p.functions(api, .{
     api.func("freeStream", .{ .role = .{ .destructor = Stream.typeRef() } }),

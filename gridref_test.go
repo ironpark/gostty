@@ -25,21 +25,21 @@ func TestGridRefFollowsCellIntoScrollback(t *testing.T) {
 
 	feed(t, stream, "\r\nB\r\nC")
 
-	if ok, err := ref.HasValue(); err != nil || !ok {
-		t.Fatalf("HasValue = %v, %v; want true", ok, err)
+	if ok := ref.HasValue(); !ok {
+		t.Fatalf("HasValue = %v; want true", ok)
 	}
-	if pt, ok, err := ref.Point(PointTagScreen); err != nil || !ok || pt != (GridPoint{X: 0, Y: 0}) {
-		t.Errorf("Point(screen) = %+v, %v, %v; want {0 0}", pt, ok, err)
+	if pt, ok := ref.Point(PointTagScreen); !ok || pt != (GridPoint{X: 0, Y: 0}) {
+		t.Errorf("Point(screen) = %+v, %v; want {0 0}", pt, ok)
 	}
-	if _, ok, err := ref.Point(PointTagActive); err != nil || ok {
-		t.Errorf("Point(active) = ok %v, %v; want none, the row scrolled out", ok, err)
+	if _, ok := ref.Point(PointTagActive); ok {
+		t.Errorf("Point(active) = ok %v; want none, the row scrolled out", ok)
 	}
-	if pt, ok, err := ref.Point(PointTagHistory); err != nil || !ok || pt != (GridPoint{X: 0, Y: 0}) {
-		t.Errorf("Point(history) = %+v, %v, %v; want {0 0}", pt, ok, err)
+	if pt, ok := ref.Point(PointTagHistory); !ok || pt != (GridPoint{X: 0, Y: 0}) {
+		t.Errorf("Point(history) = %+v, %v; want {0 0}", pt, ok)
 	}
-	cell, ok, err := ref.Cell()
-	if err != nil || !ok || cell.Codepoint != 'A' {
-		t.Errorf("Cell = %+v, %v, %v; want codepoint 'A'", cell, ok, err)
+	cell, ok := ref.Cell()
+	if !ok || cell.Codepoint != 'A' {
+		t.Errorf("Cell = %+v, %v; want codepoint 'A'", cell, ok)
 	}
 	var buf [4]rune
 	if n, err := ref.Graphemes(buf[:]); err != nil || n != 1 || buf[0] != 'A' {
@@ -54,17 +54,15 @@ func TestGridRefEmptyAfterResetThenSet(t *testing.T) {
 	feed(t, stream, "A")
 	ref := newGridRef(t, term, PointTagActive, 0, 0)
 
-	if err := term.FullReset(); err != nil {
-		t.Fatal(err)
+	term.FullReset()
+	if ok := ref.HasValue(); ok {
+		t.Fatalf("HasValue after reset = %v; want false", ok)
 	}
-	if ok, err := ref.HasValue(); err != nil || ok {
-		t.Fatalf("HasValue after reset = %v, %v; want false", ok, err)
+	if _, ok := ref.Cell(); ok {
+		t.Errorf("Cell after reset = ok %v; want none", ok)
 	}
-	if _, ok, err := ref.Cell(); err != nil || ok {
-		t.Errorf("Cell after reset = ok %v, %v; want none", ok, err)
-	}
-	if _, ok, err := ref.Point(PointTagScreen); err != nil || ok {
-		t.Errorf("Point after reset = ok %v, %v; want none", ok, err)
+	if _, ok := ref.Point(PointTagScreen); ok {
+		t.Errorf("Point after reset = ok %v; want none", ok)
 	}
 	if n, err := ref.Graphemes(make([]rune, 4)); err != nil || n != 0 {
 		t.Errorf("Graphemes after reset = %d, %v; want 0", n, err)
@@ -74,24 +72,22 @@ func TestGridRefEmptyAfterResetThenSet(t *testing.T) {
 	if ok, err := ref.Set(PointTagActive, 0, 0); err != nil || !ok {
 		t.Fatalf("Set = %v, %v; want true", ok, err)
 	}
-	if cell, ok, err := ref.Cell(); err != nil || !ok || cell.Codepoint != 'Z' {
-		t.Errorf("Cell after Set = %+v, %v, %v; want 'Z'", cell, ok, err)
+	if cell, ok := ref.Cell(); !ok || cell.Codepoint != 'Z' {
+		t.Errorf("Cell after Set = %+v, %v; want 'Z'", cell, ok)
 	}
 	// A Set that misses leaves the reference where it was.
 	if ok, err := ref.Set(PointTagActive, 50, 50); err != nil || ok {
 		t.Errorf("Set off grid = %v, %v; want false", ok, err)
 	}
-	if ok, err := ref.HasValue(); err != nil || !ok {
-		t.Errorf("HasValue after failed Set = %v, %v; want true", ok, err)
+	if ok := ref.HasValue(); !ok {
+		t.Errorf("HasValue after failed Set = %v; want true", ok)
 	}
 }
 
 // Pruned scrollback empties the reference too.
 func TestGridRefEmptyAfterScrollbackPrune(t *testing.T) {
 	term, stream := newStreamPair(t, 5, 2)
-	if err := term.SetScrollbackMaxLines(1); err != nil {
-		t.Fatal(err)
-	}
+	term.SetScrollbackMaxLines(1)
 	feed(t, stream, "A")
 	ref := newGridRef(t, term, PointTagActive, 0, 0)
 	// A limit is enforced a page at a time, so write well past one page of
@@ -100,8 +96,8 @@ func TestGridRefEmptyAfterScrollbackPrune(t *testing.T) {
 	for range 30000 {
 		feed(t, stream, "\r\nx")
 	}
-	if ok, err := ref.HasValue(); err != nil || ok {
-		t.Errorf("HasValue after prune = %v, %v; want false", ok, err)
+	if ok := ref.HasValue(); ok {
+		t.Errorf("HasValue after prune = %v; want false", ok)
 	}
 }
 
@@ -112,12 +108,12 @@ func TestGridRefStaysWithItsScreen(t *testing.T) {
 	ref := newGridRef(t, term, PointTagActive, 0, 0)
 
 	feed(t, stream, "\x1b[?1049hB")
-	if cell, ok, err := ref.Cell(); err != nil || !ok || cell.Codepoint != 'A' {
-		t.Errorf("Cell on alternate = %+v, %v, %v; want the primary screen's 'A'", cell, ok, err)
+	if cell, ok := ref.Cell(); !ok || cell.Codepoint != 'A' {
+		t.Errorf("Cell on alternate = %+v, %v; want the primary screen's 'A'", cell, ok)
 	}
 	feed(t, stream, "\x1b[?1049l")
-	if cell, ok, err := ref.Cell(); err != nil || !ok || cell.Codepoint != 'A' {
-		t.Errorf("Cell back on primary = %+v, %v, %v; want 'A'", cell, ok, err)
+	if cell, ok := ref.Cell(); !ok || cell.Codepoint != 'A' {
+		t.Errorf("Cell back on primary = %+v, %v; want 'A'", cell, ok)
 	}
 }
 
@@ -148,9 +144,17 @@ func TestGridRefCloseOrder(t *testing.T) {
 	if err := term.Close(); err != nil {
 		t.Errorf("Close terminal: %v", err)
 	}
-	if _, err := ref.HasValue(); !errors.Is(err, ErrInvalidHandle) {
-		t.Errorf("HasValue after Close = %v; want ErrInvalidHandle", err)
-	}
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatal("expected panic on closed GridRef.HasValue")
+		}
+		var handleErr *HandleError
+		if err, ok := r.(error); !ok || !errors.As(err, &handleErr) {
+			t.Errorf("panic = %v, want *HandleError", r)
+		}
+	}()
+	ref.HasValue()
 }
 
 // Styled cells come out with their colors resolved, and a grapheme cluster
@@ -160,9 +164,9 @@ func TestGridRefCellStyleAndGraphemes(t *testing.T) {
 	feed(t, stream, "\x1b[1;38;2;255;136;0mé\x1b[m \x1b]8;;https://example.com\x1b\\L\x1b]8;;\x1b\\")
 
 	ref := newGridRef(t, term, PointTagActive, 0, 0)
-	cell, ok, err := ref.Cell()
-	if err != nil || !ok {
-		t.Fatalf("Cell = %v, %v", ok, err)
+	cell, ok := ref.Cell()
+	if !ok {
+		t.Fatalf("Cell = %v", ok)
 	}
 	if cell.Codepoint != 'e' || cell.Fg.Uint32() != 0xFF8800 || !cell.Flags.Bold {
 		t.Errorf("Cell = %+v; want 'e', fg 0xFF8800, bold", cell)
@@ -189,20 +193,20 @@ func TestTerminalCellAtAndHyperlinkAt(t *testing.T) {
 	term, stream := newStreamPair(t, 10, 2)
 	feed(t, stream, "\x1b]8;;https://example.com\x1b\\ab\x1b]8;;\x1b\\c")
 
-	if cell, ok, err := term.CellAt(PointTagViewport, 2, 0); err != nil || !ok || cell.Codepoint != 'c' {
-		t.Errorf("CellAt(2,0) = %+v, %v, %v; want 'c'", cell, ok, err)
+	if cell, ok := term.CellAt(PointTagViewport, 2, 0); !ok || cell.Codepoint != 'c' {
+		t.Errorf("CellAt(2,0) = %+v, %v; want 'c'", cell, ok)
 	}
-	if _, ok, err := term.CellAt(PointTagViewport, 50, 50); err != nil || ok {
-		t.Errorf("CellAt off grid = ok %v, %v; want none", ok, err)
+	if _, ok := term.CellAt(PointTagViewport, 50, 50); ok {
+		t.Errorf("CellAt off grid = ok %v; want none", ok)
 	}
 	if uri, ok, err := term.HyperlinkAt(PointTagScreen, 1, 0); err != nil || !ok || uri != "https://example.com" {
 		t.Errorf("HyperlinkAt(1,0) = %q, %v, %v", uri, ok, err)
 	}
 	if _, ok, err := term.HyperlinkAt(PointTagScreen, 2, 0); err != nil || ok {
-		t.Errorf("HyperlinkAt(2,0) = ok %v, %v; want none", ok, err)
+		t.Errorf("HyperlinkAt(2,0) = ok %v; want none", ok)
 	}
 	if _, ok, err := term.HyperlinkAt(PointTagScreen, 50, 50); err != nil || ok {
-		t.Errorf("HyperlinkAt off grid = ok %v, %v; want none", ok, err)
+		t.Errorf("HyperlinkAt off grid = ok %v; want none", ok)
 	}
 }
 

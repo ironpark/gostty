@@ -34,25 +34,18 @@ func TestSwitchScreenMode(t *testing.T) {
 // the text itself is unchanged.
 func TestHyperlink(t *testing.T) {
 	term, _ := newStreamPair(t, 20, 3)
-	screen, err := term.ActiveScreen()
-	if err != nil {
-		t.Fatal(err)
-	}
+	screen := term.ActiveScreen()
 	if err := screen.StartHyperlink("https://example.com", "x"); err != nil {
 		t.Fatal(err)
 	}
 	if err := term.PrintString("link"); err != nil {
 		t.Fatal(err)
 	}
-	if err := screen.EndHyperlink(); err != nil {
-		t.Fatal(err)
-	}
+	screen.EndHyperlink()
 	if err := screen.StartHyperlink("https://example.org", ""); err != nil {
 		t.Fatal(err)
 	}
-	if err := screen.EndHyperlink(); err != nil {
-		t.Fatal(err)
-	}
+	screen.EndHyperlink()
 	got, err := term.PlainString()
 	if err != nil || got != "link" {
 		t.Errorf("PlainString() = %q, %v; want %q", got, "link", err)
@@ -66,14 +59,12 @@ func TestSearchNeedle(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer search.Close()
-	if got, err := search.Needle(); err != nil || got != "needle" {
-		t.Errorf("Needle() = %q, %v; want %q", got, "needle", err)
+	if got := search.Needle(); got != "needle" {
+		t.Errorf("Needle() = %q; want %q", got, "needle")
 	}
 }
 
 func TestSetKittyGraphicsSizeLimit(t *testing.T) {
 	term, _ := newStreamPair(t, 20, 3)
-	if err := term.SetKittyGraphicsSizeLimit(1 << 20); err != nil {
-		t.Fatal(err)
-	}
+	term.SetKittyGraphicsSizeLimit(1 << 20)
 }

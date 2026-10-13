@@ -16,16 +16,9 @@ func newTestOSCParser(t *testing.T) *OSCParser {
 // terminator -- and reports what the parser made of it.
 func parseOSC(t *testing.T, p *OSCParser, payload string) OSCCommand {
 	t.Helper()
-	if err := p.Reset(); err != nil {
-		t.Fatalf("Reset: %v", err)
-	}
-	if err := p.Feed([]byte(payload)); err != nil {
-		t.Fatalf("Feed(%q): %v", payload, err)
-	}
-	ok, err := p.End(OSCTerminatorSt)
-	if err != nil {
-		t.Fatalf("End(%q): %v", payload, err)
-	}
+	p.Reset()
+	p.Feed([]byte(payload))
+	ok := p.End(OSCTerminatorSt)
 	if !ok {
 		t.Fatalf("End(%q) reported no command", payload)
 	}
@@ -170,20 +163,23 @@ func TestOSCParserMouseShape(t *testing.T) {
 	}
 }
 
+func TestOSCParserProgramStatus(t *testing.T) {
+	p := newTestOSCParser(t)
+	if kind := parseOSC(t, p, "7501;?"); kind != OSCCommandProgramStatus {
+		t.Fatalf("kind = %v, want ProgramStatus", kind)
+	}
+}
+
 // A sequence can arrive split across reads, and the parser has to stitch it
 // back together.
 func TestOSCParserSplitFeed(t *testing.T) {
 	p := newTestOSCParser(t)
-	if err := p.Reset(); err != nil {
-		t.Fatalf("Reset: %v", err)
-	}
+	p.Reset()
 	for _, chunk := range []string{"0;spl", "it ti", "tle"} {
-		if err := p.Feed([]byte(chunk)); err != nil {
-			t.Fatalf("Feed(%q): %v", chunk, err)
-		}
+		p.Feed([]byte(chunk))
 	}
-	if ok, err := p.End(OSCTerminatorBel); err != nil || !ok {
-		t.Fatalf("End = %v, %v; want true, nil", ok, err)
+	if ok := p.End(OSCTerminatorBel); !ok {
+		t.Fatalf("End = %v; want true", ok)
 	}
 	if title := p.WindowTitle(); title != "split title" {
 		t.Fatalf("WindowTitle = %q, want %q", title, "split title")
@@ -197,16 +193,9 @@ func TestOSCParserGarbage(t *testing.T) {
 	if kind := parseOSC(t, p, "0;stale"); kind != OSCCommandChangeWindowTitle {
 		t.Fatalf("kind = %v, want ChangeWindowTitle", kind)
 	}
-	if err := p.Reset(); err != nil {
-		t.Fatalf("Reset: %v", err)
-	}
-	if err := p.Feed([]byte("not-an-osc")); err != nil {
-		t.Fatalf("Feed: %v", err)
-	}
-	ok, err := p.End(OSCTerminatorSt)
-	if err != nil {
-		t.Fatalf("End: %v", err)
-	}
+	p.Reset()
+	p.Feed([]byte("not-an-osc"))
+	ok := p.End(OSCTerminatorSt)
 	if ok {
 		t.Fatal("End reported a command for garbage input")
 	}

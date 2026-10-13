@@ -38,7 +38,7 @@ const TerminalDecl = api.handle("Terminal", .{
         .{ .path = "screens.active.charset.single_shift", .name = "charsetSingleShift", .doc = "The slot a pending single shift (SS2/SS3) will use for exactly one character, or absent if none is pending." },
         .{ .path = "screens.active.protected_mode", .name = "protectedMode", .doc = "The most recent protected mode (DECSCA or the older SPA/EPA) on the active screen. This never returns to off once set, until the screen is reset: ECH and friends key off the most recent mode, not the current pen." },
     },
-}).with(.{ .doc =
+}).use(zigo.features.panics, .{}).with(.{ .doc =
     \\Terminal owns mutable terminal state. Serialize all calls, including
     \\getters, with calls on its streams, screens, searches, gestures and grid
     \\references. Handle locks protect lifetime only; they do not serialize native
@@ -62,16 +62,16 @@ pub const Terminal = configured: {
     }).context();
 };
 
-const Screen = p.trimmed(api.handle("Screen", .{})).context();
+const Screen = p.trimmed(api.handle("Screen", .{}).use(zigo.features.panics, .{})).context();
 
-const Search = p.trimmed(api.handle("Search", .{})).context();
+const Search = p.trimmed(api.handle("Search", .{}).use(zigo.features.panics, .{})).context();
 
-const GridRef = p.trimmed(api.handle("GridRef", .{})).context();
+const GridRef = p.trimmed(api.handle("GridRef", .{}).use(zigo.features.panics, .{})).context();
 
 const Gesture = p.trimmed(api.handle("Gesture", .{ .fields = &.{
     .{ .path = "inner.left_click_count", .name = "clickCount", .doc = "How many clicks the current sequence is at: 0 before any press, then 1, 2 or 3. What an emulator switches on to decide what a click means." },
     .{ .path = "inner.left_click_dragged", .name = "dragged", .doc = "Whether the pointer has left the pressed cell during this gesture. Read it on release: a click that never dragged is the one that should follow a hyperlink or move the shell cursor, rather than one that happened to end where it started after a round trip." },
-} })).context();
+} }).use(zigo.features.panics, .{})).context();
 
 const ColorName = p.trimmed(p.enumeration("ColorName", .{ .text = true, .open = true })).context();
 
@@ -116,20 +116,22 @@ const terminal_group = Terminal.members(p.functions(api, .{
     // Printing and the cursor.
     Terminal.func("printString", .{}),
     Terminal.func("plainString", .{ .returns = zigo.result.owned() }),
+    Terminal.func("plainStringUnwrapped", .{ .returns = zigo.result.owned() }),
     Terminal.func("print", .{ .params = &.{.{ .index = 1, .go_name = "c" }} }),
     Terminal.func("printRepeat", .{}),
     Terminal.func("printSlice", .{ .params = &.{.{ .index = 1, .semantic = .codepoint }} }),
     Terminal.func("setCursorStyle", .{}),
     Terminal.func("setCursorPos", .{}),
-    p.withMust(Terminal.func("carriageReturn", .{})),
+    Terminal.func("carriageReturn", .{}),
     Terminal.func("linefeed", .{}),
-    p.withMust(Terminal.func("backspace", .{})),
-    p.withMust(Terminal.func("cursorIsAtPrompt", .{})),
-    p.withMust(Terminal.func("fullReset", .{})),
-    p.withMust(Terminal.func("cursorUp", .{})),
-    p.withMust(Terminal.func("cursorDown", .{})),
-    p.withMust(Terminal.func("cursorLeft", .{})),
-    p.withMust(Terminal.func("cursorRight", .{})),
+    Terminal.func("backspace", .{}),
+    Terminal.func("cursorIsAtPrompt", .{}),
+    Terminal.func("fullReset", .{}),
+    Terminal.func("softReset", .{}),
+    Terminal.func("cursorUp", .{}),
+    Terminal.func("cursorDown", .{}),
+    Terminal.func("cursorLeft", .{}),
+    Terminal.func("cursorRight", .{}),
 }) ++ Terminal.funcs(.{ .names = &.{
     "saveCursor",
     "restoreCursor",
@@ -221,6 +223,7 @@ const terminal_group = Terminal.members(p.functions(api, .{
     Terminal.func("configureCharset", .{}),
     Terminal.func("invokeCharset", .{}),
     Terminal.func("deccolm", .{}),
+    Terminal.func("compress", .{}),
     Terminal.func("compressionActivity", .{}),
 
     // Terminal configuration: what the embedder sets underneath whatever a
@@ -268,6 +271,7 @@ const screen_group = Screen.members(p.functions(api, .{
     // ghostty takes the screen by value here; zigo passes the handle and the
     // shim copies, so no wrapper is needed.
     Screen.func("viewportIsBottom", .{}),
+    api.func("screenScrollClear", .{ .covers = &.{Screen.ref("scrollClear")} }),
     Screen.func("clearSelection", .{}),
     Screen.func("endHyperlink", .{}),
     // Wrappers whose receiver zigo infers from their first argument. The
@@ -418,6 +422,8 @@ pub const declarations = [_]zigo.Entry{
     p.enumeration("CharsetSlot", .{}),
     p.enumeration("CharsetActiveSlot", .{}),
     p.enumeration("DeccolmMode", .{}),
+    p.enumeration("CompressionMode", .{ .text = true }),
+    p.enumeration("CompressionResult", .{ .text = true }),
     api.taggedUnion("ScrollViewport", .{}),
     p.printed("ScrollRegion"),
     p.enumeration("MouseTracking", .{ .text = true }),

@@ -18,11 +18,7 @@ const (
 
 func paletteColor(t *testing.T, term *Terminal, idx uint8) uint32 {
 	t.Helper()
-	got, err := term.PaletteColor(idx)
-	if err != nil {
-		t.Fatalf("PaletteColor(%d): %v", idx, err)
-	}
-	return got.Uint32()
+	return term.PaletteColor(idx).Uint32()
 }
 
 func TestPaletteDefaults(t *testing.T) {
@@ -37,9 +33,7 @@ func TestPaletteDefaults(t *testing.T) {
 
 func TestSetAndResetPaletteColor(t *testing.T) {
 	term := newTerm(t, 20, 5)
-	if err := term.SetPaletteColor(1, RGBFromUint32(0x123456)); err != nil {
-		t.Fatalf("SetPaletteColor: %v", err)
-	}
+	term.SetPaletteColor(1, RGBFromUint32(0x123456))
 	if got := paletteColor(t, term, 1); got != 0x123456 {
 		t.Fatalf("after set, PaletteColor(1) = %#06x, want 0x123456", got)
 	}
@@ -47,9 +41,7 @@ func TestSetAndResetPaletteColor(t *testing.T) {
 	if got := paletteColor(t, term, 2); got != paletteColor(t, term, 2) || got == 0x123456 {
 		t.Errorf("PaletteColor(2) = %#06x, should be untouched", got)
 	}
-	if err := term.ResetPaletteColor(1); err != nil {
-		t.Fatalf("ResetPaletteColor: %v", err)
-	}
+	term.ResetPaletteColor(1)
 	if got := paletteColor(t, term, 1); got != defaultPalette1 {
 		t.Errorf("after reset, PaletteColor(1) = %#06x, want %#06x", got, defaultPalette1)
 	}
@@ -58,13 +50,9 @@ func TestSetAndResetPaletteColor(t *testing.T) {
 func TestResetPalette(t *testing.T) {
 	term := newTerm(t, 20, 5)
 	for idx := uint8(0); idx < 8; idx++ {
-		if err := term.SetPaletteColor(idx, RGBFromUint32(0x010203)); err != nil {
-			t.Fatalf("SetPaletteColor(%d): %v", idx, err)
-		}
+		term.SetPaletteColor(idx, RGBFromUint32(0x010203))
 	}
-	if err := term.ResetPalette(); err != nil {
-		t.Fatalf("ResetPalette: %v", err)
-	}
+	term.ResetPalette()
 	for idx := uint8(0); idx < 8; idx++ {
 		if got := paletteColor(t, term, idx); got == 0x010203 {
 			t.Errorf("PaletteColor(%d) still overridden", idx)
@@ -80,15 +68,9 @@ func TestResetPalette(t *testing.T) {
 // later reset lands on.
 func TestSetDefaultPaletteColor(t *testing.T) {
 	term := newTerm(t, 20, 5)
-	if err := term.SetPaletteColor(1, RGBFromUint32(0xAAAAAA)); err != nil {
-		t.Fatalf("SetPaletteColor: %v", err)
-	}
-	if err := term.SetDefaultPaletteColor(1, RGBFromUint32(0x00FF00)); err != nil {
-		t.Fatalf("SetDefaultPaletteColor: %v", err)
-	}
-	if err := term.SetDefaultPaletteColor(2, RGBFromUint32(0x0000FF)); err != nil {
-		t.Fatalf("SetDefaultPaletteColor: %v", err)
-	}
+	term.SetPaletteColor(1, RGBFromUint32(0xAAAAAA))
+	term.SetDefaultPaletteColor(1, RGBFromUint32(0x00FF00))
+	term.SetDefaultPaletteColor(2, RGBFromUint32(0x0000FF))
 	if got := paletteColor(t, term, 1); got != 0xAAAAAA {
 		t.Errorf("override lost: PaletteColor(1) = %#06x, want 0xaaaaaa", got)
 	}
@@ -96,9 +78,7 @@ func TestSetDefaultPaletteColor(t *testing.T) {
 	if got := paletteColor(t, term, 2); got != 0x0000FF {
 		t.Errorf("PaletteColor(2) = %#06x, want 0x0000ff", got)
 	}
-	if err := term.ResetPaletteColor(1); err != nil {
-		t.Fatalf("ResetPaletteColor: %v", err)
-	}
+	term.ResetPaletteColor(1)
 	if got := paletteColor(t, term, 1); got != 0x00FF00 {
 		t.Errorf("reset landed on %#06x, want the new default 0x00ff00", got)
 	}
@@ -106,15 +86,9 @@ func TestSetDefaultPaletteColor(t *testing.T) {
 
 func TestResetDefaultPalette(t *testing.T) {
 	term := newTerm(t, 20, 5)
-	if err := term.SetDefaultPaletteColor(1, RGBFromUint32(0x00FF00)); err != nil {
-		t.Fatalf("SetDefaultPaletteColor: %v", err)
-	}
-	if err := term.SetPaletteColor(2, RGBFromUint32(0xAAAAAA)); err != nil {
-		t.Fatalf("SetPaletteColor: %v", err)
-	}
-	if err := term.ResetDefaultPalette(); err != nil {
-		t.Fatalf("ResetDefaultPalette: %v", err)
-	}
+	term.SetDefaultPaletteColor(1, RGBFromUint32(0x00FF00))
+	term.SetPaletteColor(2, RGBFromUint32(0xAAAAAA))
+	term.ResetDefaultPalette()
 	if got := paletteColor(t, term, 1); got != defaultPalette1 {
 		t.Errorf("PaletteColor(1) = %#06x, want %#06x", got, defaultPalette1)
 	}
@@ -137,9 +111,7 @@ func wrapped(t *testing.T, term *Terminal) string {
 
 func TestSetDefaultModeSurvivesReset(t *testing.T) {
 	term, stream := newStreamPair(t, 4, 3)
-	if err := term.SetDefaultMode(ModeWraparound, false); err != nil {
-		t.Fatalf("SetDefaultMode: %v", err)
-	}
+	term.SetDefaultMode(ModeWraparound, false)
 	if err := term.PrintString("ABCDEF"); err != nil {
 		t.Fatalf("PrintString: %v", err)
 	}
@@ -157,9 +129,7 @@ func TestSetDefaultModeSurvivesReset(t *testing.T) {
 	}
 
 	// And a reset returns to the default the embedder chose, not to ghostty's.
-	if err := term.ResetModes(); err != nil {
-		t.Fatalf("ResetModes: %v", err)
-	}
+	term.ResetModes()
 	feed(t, stream, "\x1b[H\x1b[2J")
 	if err := term.PrintString("ABCDEF"); err != nil {
 		t.Fatalf("PrintString: %v", err)
@@ -174,9 +144,7 @@ func TestSaveAndRestoreMode(t *testing.T) {
 
 	// XTSAVE the mode while it is off, then let the program turn it on.
 	feed(t, stream, "\x1b[?7l")
-	if err := term.SaveMode(ModeWraparound); err != nil {
-		t.Fatalf("SaveMode: %v", err)
-	}
+	term.SaveMode(ModeWraparound)
 	feed(t, stream, "\x1b[?7h")
 	if err := term.PrintString("ABCDEF"); err != nil {
 		t.Fatalf("PrintString: %v", err)
@@ -185,10 +153,7 @@ func TestSaveAndRestoreMode(t *testing.T) {
 		t.Fatalf("before restore, got %q, want \"ABCD\\nEF\"", got)
 	}
 
-	restored, err := term.RestoreMode(ModeWraparound)
-	if err != nil {
-		t.Fatalf("RestoreMode: %v", err)
-	}
+	restored := term.RestoreMode(ModeWraparound)
 	if restored {
 		t.Errorf("RestoreMode returned true, want the saved value false")
 	}
@@ -207,23 +172,14 @@ func TestSaveAndRestoreMode(t *testing.T) {
 func TestResetModesClearsSavedModes(t *testing.T) {
 	term, stream := newStreamPair(t, 4, 3)
 	feed(t, stream, "\x1b[?6h")
-	if err := term.SaveMode(ModeOrigin); err != nil {
-		t.Fatalf("SaveMode: %v", err)
-	}
-	if restored, err := term.RestoreMode(ModeOrigin); err != nil || !restored {
-		t.Fatalf("RestoreMode() = %v, %v; want true, nil", restored, err)
+	term.SaveMode(ModeOrigin)
+	if restored := term.RestoreMode(ModeOrigin); !restored {
+		t.Fatalf("RestoreMode() = %v; want true", restored)
 	}
 
-	if err := term.SaveMode(ModeOrigin); err != nil {
-		t.Fatalf("SaveMode: %v", err)
-	}
-	if err := term.ResetModes(); err != nil {
-		t.Fatalf("ResetModes: %v", err)
-	}
-	restored, err := term.RestoreMode(ModeOrigin)
-	if err != nil {
-		t.Fatalf("RestoreMode: %v", err)
-	}
+	term.SaveMode(ModeOrigin)
+	term.ResetModes()
+	restored := term.RestoreMode(ModeOrigin)
 	if restored {
 		t.Errorf("RestoreMode returned true, want false after ResetModes")
 	}
@@ -238,9 +194,7 @@ func cursorX(t *testing.T, term *Terminal) uint16 {
 // Tabstops start every 8 columns, so a tab from column 0 lands on 8.
 func TestTabstopDefaults(t *testing.T) {
 	term := newTerm(t, 40, 3)
-	if err := term.HorizontalTab(); err != nil {
-		t.Fatalf("HorizontalTab: %v", err)
-	}
+	term.HorizontalTab()
 	if got := cursorX(t, term); got != 8 {
 		t.Errorf("cursor at %d after tab, want 8", got)
 	}
@@ -248,32 +202,20 @@ func TestTabstopDefaults(t *testing.T) {
 
 func TestSetAndUnsetTabstop(t *testing.T) {
 	term := newTerm(t, 40, 3)
-	if err := term.SetTabstop(3); err != nil {
-		t.Fatalf("SetTabstop: %v", err)
-	}
-	if err := term.HorizontalTab(); err != nil {
-		t.Fatalf("HorizontalTab: %v", err)
-	}
+	term.SetTabstop(3)
+	term.HorizontalTab()
 	if got := cursorX(t, term); got != 3 {
 		t.Fatalf("cursor at %d, want the new tabstop at 3", got)
 	}
-	if err := term.HorizontalTab(); err != nil {
-		t.Fatalf("HorizontalTab: %v", err)
-	}
+	term.HorizontalTab()
 	if got := cursorX(t, term); got != 8 {
 		t.Fatalf("cursor at %d, want the default tabstop at 8", got)
 	}
 
 	// Removing the column 8 stop makes the next tab from 3 run to 16.
-	if err := term.UnsetTabstop(8); err != nil {
-		t.Fatalf("UnsetTabstop: %v", err)
-	}
-	if err := term.SetCursorPos(1, 4); err != nil {
-		t.Fatalf("SetCursorPos: %v", err)
-	}
-	if err := term.HorizontalTab(); err != nil {
-		t.Fatalf("HorizontalTab: %v", err)
-	}
+	term.UnsetTabstop(8)
+	term.SetCursorPos(1, 4)
+	term.HorizontalTab()
 	if got := cursorX(t, term); got != 16 {
 		t.Errorf("cursor at %d after unsetting 8, want 16", got)
 	}
@@ -281,22 +223,14 @@ func TestSetAndUnsetTabstop(t *testing.T) {
 
 func TestResetTabstops(t *testing.T) {
 	term := newTerm(t, 40, 3)
-	if err := term.SetTabstop(3); err != nil {
-		t.Fatalf("SetTabstop: %v", err)
-	}
-	if err := term.ResetTabstops(4); err != nil {
-		t.Fatalf("ResetTabstops: %v", err)
-	}
+	term.SetTabstop(3)
+	term.ResetTabstops(4)
 	// The column 3 stop is gone and stops now sit every four columns.
-	if err := term.HorizontalTab(); err != nil {
-		t.Fatalf("HorizontalTab: %v", err)
-	}
+	term.HorizontalTab()
 	if got := cursorX(t, term); got != 4 {
 		t.Fatalf("cursor at %d, want 4", got)
 	}
-	if err := term.HorizontalTab(); err != nil {
-		t.Fatalf("HorizontalTab: %v", err)
-	}
+	term.HorizontalTab()
 	if got := cursorX(t, term); got != 8 {
 		t.Errorf("cursor at %d, want 8", got)
 	}
@@ -328,10 +262,7 @@ func transmitPath(t *testing.T, s *Stream, id int, medium, path string) {
 
 func hasImage(t *testing.T, term *Terminal, id uint32) bool {
 	t.Helper()
-	_, ok, err := term.KittyImage(id)
-	if err != nil {
-		t.Fatalf("KittyImage(%d): %v", id, err)
-	}
+	_, ok := term.KittyImage(id)
 	return ok
 }
 
@@ -347,18 +278,14 @@ func TestKittyGraphicsLoadingLimitsGateFileMedium(t *testing.T) {
 		t.Fatalf("file medium loaded with the default limits")
 	}
 
-	if err := term.SetKittyGraphicsLoadingLimits(true, "", false); err != nil {
-		t.Fatalf("SetKittyGraphicsLoadingLimits: %v", err)
-	}
+	term.SetKittyGraphicsLoadingLimits(true, "", false)
 	transmitPath(t, stream, 2, "f", path)
 	if !hasImage(t, term, 2) {
 		t.Fatalf("file medium still refused after being allowed")
 	}
 
 	// And the gate closes again.
-	if err := term.SetKittyGraphicsLoadingLimits(false, "", false); err != nil {
-		t.Fatalf("SetKittyGraphicsLoadingLimits: %v", err)
-	}
+	term.SetKittyGraphicsLoadingLimits(false, "", false)
 	transmitPath(t, stream, 3, "f", path)
 	if hasImage(t, term, 3) {
 		t.Errorf("file medium loaded after being disallowed again")
@@ -397,9 +324,7 @@ func TestKittyGraphicsLoadingLimitsTempDir(t *testing.T) {
 		t.Fatalf("temporary file medium loaded with the default limits")
 	}
 
-	if err := term.SetKittyGraphicsLoadingLimits(false, dir, false); err != nil {
-		t.Fatalf("SetKittyGraphicsLoadingLimits: %v", err)
-	}
+	term.SetKittyGraphicsLoadingLimits(false, dir, false)
 	transmitPath(t, stream, 2, "t", writeImageFile(t, dir, "tty-graphics-protocol-b.rgb"))
 	if !hasImage(t, term, 2) {
 		t.Fatalf("temporary file medium refused inside the allowed directory")
@@ -407,9 +332,7 @@ func TestKittyGraphicsLoadingLimitsTempDir(t *testing.T) {
 
 	// Setting the limits again frees the previous copy of the directory; the
 	// medium must still work through the replacement.
-	if err := term.SetKittyGraphicsLoadingLimits(false, dir, false); err != nil {
-		t.Fatalf("SetKittyGraphicsLoadingLimits: %v", err)
-	}
+	term.SetKittyGraphicsLoadingLimits(false, dir, false)
 	transmitPath(t, stream, 3, "t", writeImageFile(t, dir, "tty-graphics-protocol-c.rgb"))
 	if !hasImage(t, term, 3) {
 		t.Fatalf("temporary file medium refused after the limits were replaced")

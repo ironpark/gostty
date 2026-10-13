@@ -68,10 +68,7 @@ func (c *kittyCache) refresh() error {
 	if err := c.snapshot.Update(c.vt); err != nil {
 		return fmt.Errorf("kitty update: %w", err)
 	}
-	n, err := c.snapshot.PlacementCount()
-	if err != nil {
-		return err
-	}
+	n := c.snapshot.PlacementCount()
 	c.placements = grow(c.placements, int(n))
 	if n > 0 {
 		if _, err := c.snapshot.Placements(c.placements); err != nil {
@@ -85,10 +82,7 @@ func (c *kittyCache) refresh() error {
 		if p.Virtual {
 			continue
 		}
-		info, ok, err := c.vt.KittyImage(p.ImageID)
-		if err != nil {
-			return err
-		}
+		info, ok := c.vt.KittyImage(p.ImageID)
 		if !ok {
 			continue
 		}

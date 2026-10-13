@@ -229,11 +229,7 @@ func (tab *terminal) handleDrop() error {
 	if len(paths) == 0 {
 		return nil
 	}
-	active, err := tab.stream.DragActive()
-	if err != nil {
-		return err
-	}
-	if !active {
+	if !tab.stream.DragActive() {
 		// No program asked, so the paths are typed at the prompt, quoted for
 		// the shell. The trailing space leaves the cursor ready for more.
 		text, err := tab.shell.QuotePaths(paths)
@@ -246,10 +242,7 @@ func (tab *terminal) handleDrop() error {
 
 	// Only what the program registered for and this window can make is
 	// staged: anything else is noise or a promise that cannot be kept.
-	registered, err := tab.stream.DragRegisteredMimes()
-	if err != nil {
-		return err
-	}
+	registered := tab.stream.DragRegisteredMimes()
 	offered := offeredRepresentations(strings.Fields(registered))
 	if len(offered) == 0 {
 		log.Printf("drag: the program accepts %s, and this window has none of it", registered)
@@ -264,9 +257,7 @@ func (tab *terminal) handleDrop() error {
 	// The program does not receive the bytes: it is told a drop happened and
 	// asks for the representation it wants, which the terminal answers from
 	// what is staged here.
-	if err := tab.stream.DragClearItems(); err != nil {
-		return err
-	}
+	tab.stream.DragClearItems()
 	mimes := make([]string, 0, len(offered))
 	for _, r := range offered {
 		if err := tab.stream.DragAddItem(r.mime, r.body(paths)); err != nil {

@@ -51,10 +51,7 @@ func TestFormat(t *testing.T) {
 		t.Errorf("html = %q", got)
 	}
 
-	screen, err := term.ActiveScreen()
-	if err != nil {
-		t.Fatal(err)
-	}
+	screen := term.ActiveScreen()
 	buf.Reset()
 	if err := screen.Format(FormatOptions{}, &buf); err != nil {
 		t.Fatal(err)
@@ -83,9 +80,7 @@ func TestFormat(t *testing.T) {
 func TestTerminalFormatSelectionResolvesPalette(t *testing.T) {
 	term, stream := newStreamPair(t, 10, 2)
 	want := NewRGB(0x12, 0x34, 0x56)
-	if err := term.SetPaletteColor(1, want); err != nil {
-		t.Fatal(err)
-	}
+	term.SetPaletteColor(1, want)
 	feed(t, stream, "\x1b[31mselected omitted")
 
 	var buf bytes.Buffer

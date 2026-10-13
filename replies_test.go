@@ -30,8 +30,8 @@ func TestWriteRepliesRetainsOutputOnFailure(t *testing.T) {
 			if err := stream.WriteReplies(tc.writer); !errors.Is(err, tc.want) {
 				t.Fatalf("WriteReplies error = %v, want %v, %v", err, tc.want, err)
 			}
-			if has, err := stream.HasReplies(); err != nil || !has {
-				t.Fatalf("HasReplies after failed write = %v, %v; want true, nil", has, err)
+			if has := stream.HasReplies(); !has {
+				t.Fatalf("HasReplies after failed write = %v; want true", has)
 			}
 			var buf bytes.Buffer
 			if err := stream.WriteReplies(&buf); err != nil {
@@ -40,8 +40,8 @@ func TestWriteRepliesRetainsOutputOnFailure(t *testing.T) {
 			if got, want := buf.String(), "\x1b[0n"; got != want {
 				t.Fatalf("retried reply = %q, want %q", got, want)
 			}
-			if has, err := stream.HasReplies(); err != nil || has {
-				t.Fatalf("HasReplies after successful write = %v, %v; want false, nil", has, err)
+			if has := stream.HasReplies(); has {
+				t.Fatalf("HasReplies after successful write = %v; want false", has)
 			}
 		})
 	}
@@ -136,11 +136,9 @@ func TestDeviceAttributes(t *testing.T) {
 // the stream knows that from its own wiring rather than from a declaration.
 func TestDeviceAttributesClipboardDerived(t *testing.T) {
 	_, stream := newStreamPair(t, 20, 3)
-	if err := stream.OnClipboardReadRequest(func(req *ClipboardRequest) {
+	stream.OnClipboardReadRequest(func(req *ClipboardRequest) {
 		_ = req.Deny(ClipboardDenialDenied)
-	}); err != nil {
-		t.Fatalf("OnClipboardReadRequest: %v", err)
-	}
+	})
 	feed(t, stream, "\x1b[c")
 	if got, want := replyString(t, stream), "\x1b[?62;22;52c"; got != want {
 		t.Errorf("DA1 with a clipboard callback = %q, want %q", got, want)
@@ -157,9 +155,7 @@ func TestVersionReport(t *testing.T) {
 		t.Errorf("XTVERSION default = %q, want %q", got, want)
 	}
 
-	if err := stream.SetVersionReport("hypercat", "0.1.0"); err != nil {
-		t.Fatalf("SetVersionReport: %v", err)
-	}
+	stream.SetVersionReport("hypercat", "0.1.0")
 	feed(t, stream, "\x1b[>0q")
 	if got, want := replyString(t, stream), "\x1bP>|hypercat 0.1.0\x1b\\"; got != want {
 		t.Errorf("XTVERSION = %q, want %q", got, want)
@@ -167,9 +163,7 @@ func TestVersionReport(t *testing.T) {
 
 	// A name with no version is reported bare rather than with a trailing
 	// space.
-	if err := stream.SetVersionReport("hypercat", ""); err != nil {
-		t.Fatalf("SetVersionReport: %v", err)
-	}
+	stream.SetVersionReport("hypercat", "")
 	feed(t, stream, "\x1b[>0q")
 	if got, want := replyString(t, stream), "\x1bP>|hypercat\x1b\\"; got != want {
 		t.Errorf("XTVERSION with no version = %q, want %q", got, want)
@@ -186,9 +180,7 @@ func TestEnquiryResponse(t *testing.T) {
 		t.Errorf("ENQ with no answerback = %q, want empty", got)
 	}
 
-	if err := stream.SetEnquiryResponse("hypercat"); err != nil {
-		t.Fatalf("SetEnquiryResponse: %v", err)
-	}
+	stream.SetEnquiryResponse("hypercat")
 	feed(t, stream, "\x05")
 	if got, want := replyString(t, stream), "hypercat"; got != want {
 		t.Errorf("ENQ = %q, want %q", got, want)
@@ -206,9 +198,7 @@ func TestColorScheme(t *testing.T) {
 		t.Errorf("CSI ? 996 n before any scheme = %q, want empty", got)
 	}
 
-	if err := stream.ColorSchemeChanged(ColorSchemeDark); err != nil {
-		t.Fatalf("ColorSchemeChanged: %v", err)
-	}
+	stream.ColorSchemeChanged(ColorSchemeDark)
 	// Mode 2031 is off, so setting it wrote nothing on its own.
 	if got := replyString(t, stream); got != "" {
 		t.Errorf("ColorSchemeChanged with mode 2031 off wrote %q, want nothing", got)
@@ -221,25 +211,19 @@ func TestColorScheme(t *testing.T) {
 	// With mode 2031 on, a change tells the program without being asked.
 	feed(t, stream, "\x1b[?2031h")
 	_ = replyString(t, stream)
-	if err := stream.ColorSchemeChanged(ColorSchemeLight); err != nil {
-		t.Fatalf("ColorSchemeChanged: %v", err)
-	}
+	stream.ColorSchemeChanged(ColorSchemeLight)
 	if got, want := replyString(t, stream), "\x1b[?997;2n"; got != want {
 		t.Errorf("mode 2031 report = %q, want %q (light)", got, want)
 	}
 
 	// Setting the same scheme again is not a change and reports nothing.
-	if err := stream.ColorSchemeChanged(ColorSchemeLight); err != nil {
-		t.Fatalf("ColorSchemeChanged: %v", err)
-	}
+	stream.ColorSchemeChanged(ColorSchemeLight)
 	if got := replyString(t, stream); got != "" {
 		t.Errorf("re-reporting the same scheme wrote %q, want nothing", got)
 	}
 
 	// Clearing goes back to leaving the query alone.
-	if err := stream.ClearColorScheme(); err != nil {
-		t.Fatalf("ClearColorScheme: %v", err)
-	}
+	stream.ClearColorScheme()
 	feed(t, stream, "\x1b[?996n")
 	if got := replyString(t, stream); got != "" {
 		t.Errorf("CSI ? 996 n after ClearColorScheme = %q, want empty", got)
@@ -269,9 +253,7 @@ func TestUnknownSequence(t *testing.T) {
 		t.Errorf("captured %q with capture off, want nothing", got)
 	}
 
-	if err := stream.SetUnknownMaxBytes(64); err != nil {
-		t.Fatalf("SetUnknownMaxBytes: %v", err)
-	}
+	stream.SetUnknownMaxBytes(64)
 	// OSC 7400 is not one ghostty implements either; the number stays in the
 	// content so the caller can tell which one it was.
 	feed(t, stream, "\x1b_Zhello\x1b\\\x1b]7400;status=busy\a")
@@ -282,9 +264,7 @@ func TestUnknownSequence(t *testing.T) {
 	}
 
 	// And it can be turned back off.
-	if err := stream.SetUnknownMaxBytes(0); err != nil {
-		t.Fatalf("SetUnknownMaxBytes: %v", err)
-	}
+	stream.SetUnknownMaxBytes(0)
 	feed(t, stream, "\x1b_Zhello\x1b\\")
 	if got := unknown(); len(got) != 0 {
 		t.Errorf("captured %q after turning capture off, want nothing", got)

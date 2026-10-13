@@ -173,9 +173,7 @@ func TestTabFocusReportsOnlyWhenRequested(t *testing.T) {
 	if err := tab.reportFocus(false); err != nil {
 		t.Fatal(err)
 	}
-	if err := vt.SetMode(gostty.ModeFocusEvent, true); err != nil {
-		t.Fatal(err)
-	}
+	vt.SetMode(gostty.ModeFocusEvent, true)
 	if err := tab.reportFocus(true); err != nil {
 		t.Fatal(err)
 	}

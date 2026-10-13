@@ -25,10 +25,7 @@ func TestRenderCells(t *testing.T) {
 		t.Fatalf("viewport = %dx%d, want 10x3", cols, rows)
 	}
 
-	n, err := state.CellCount()
-	if err != nil {
-		t.Fatalf("CellCount: %v", err)
-	}
+	n := state.CellCount()
 	if n != uint(rows)*uint(cols) {
 		t.Fatalf("CellCount = %d, want %d", n, uint(rows)*uint(cols))
 	}
@@ -45,8 +42,6 @@ func TestRenderCells(t *testing.T) {
 	if cells[0].Codepoint != 'h' || cells[1].Codepoint != 'i' {
 		t.Errorf("row 0 = %q%q, want \"hi\"", cells[0].Codepoint, cells[1].Codepoint)
 	}
-	// The flags word decodes into named fields, so nothing here has to know
-	// which bit ghostty put bold in.
 	if !cells[0].Flags.Bold {
 		t.Errorf("flags = %+v, want bold set", cells[0].Flags)
 	}
@@ -56,10 +51,7 @@ func TestRenderCells(t *testing.T) {
 	}
 
 	// A cell past the text keeps the terminal's defaults.
-	colors, err := state.Colors()
-	if err != nil {
-		t.Fatalf("Colors: %v", err)
-	}
+	colors := state.Colors()
 	if cells[5].Codepoint != 0 || cells[5].Fg != colors.Foreground {
 		t.Errorf("blank cell = %+v, want empty with default fg %#06x", cells[5], colors.Foreground)
 	}
@@ -95,9 +87,9 @@ func TestRenderCursor(t *testing.T) {
 	if err := state.Update(term); err != nil {
 		t.Fatalf("Update: %v", err)
 	}
-	cursor, err := state.Cursor()
-	if err != nil || !cursor.ViewportHasValue || cursor.X != 3 || cursor.Y != 1 {
-		t.Errorf("Cursor() = %+v, %v; want viewport position 3,1", cursor, err)
+	cursor := state.Cursor()
+	if !cursor.ViewportHasValue || cursor.X != 3 || cursor.Y != 1 {
+		t.Errorf("Cursor() = %+v; want viewport position 3,1", cursor)
 	}
 	if visible := state.CursorVisible(); !visible {
 		t.Errorf("CursorVisible() = %v; want true", visible)
@@ -110,10 +102,7 @@ func TestRenderSelection(t *testing.T) {
 	term, stream := newStreamPair(t, 10, 3)
 	feed(t, stream, "abcdef")
 
-	screen, err := term.ActiveScreen()
-	if err != nil {
-		t.Fatalf("ActiveScreen: %v", err)
-	}
+	screen := term.ActiveScreen()
 	ok, err := screen.SelectRange(1, 0, 3, 0, false)
 	if err != nil || !ok {
 		t.Fatalf("SelectRange = %v, %v; want true, nil", ok, err)
@@ -206,10 +195,7 @@ func TestSelectWordAndLine(t *testing.T) {
 	term, stream := newStreamPair(t, 40, 3)
 	feed(t, stream, "  hello world  ")
 
-	screen, err := term.ActiveScreen()
-	if err != nil {
-		t.Fatalf("ActiveScreen: %v", err)
-	}
+	screen := term.ActiveScreen()
 
 	// Column 4 is inside "hello".
 	ok, err := screen.SelectWord(4, 0, wordBoundaries)
@@ -252,10 +238,7 @@ func TestSelectWordAndLine(t *testing.T) {
 func TestSelectOutput(t *testing.T) {
 	term, stream := newStreamPair(t, 40, 6)
 
-	screen, err := term.ActiveScreen()
-	if err != nil {
-		t.Fatalf("ActiveScreen: %v", err)
-	}
+	screen := term.ActiveScreen()
 	feed(t, stream, "plain text\r\n")
 	if ok, err := screen.SelectOutput(0, 0); err != nil || ok {
 		t.Errorf("SelectOutput without prompt marks = %v, %v; want false, nil", ok, err)
@@ -284,27 +267,20 @@ func TestSelectOutput(t *testing.T) {
 // through a wrapper.
 func TestViewportIsBottom(t *testing.T) {
 	term, stream := newStreamPair(t, 20, 3)
-	screen, err := term.ActiveScreen()
-	if err != nil {
-		t.Fatalf("ActiveScreen: %v", err)
-	}
-	if bottom, err := screen.ViewportIsBottom(); err != nil || !bottom {
-		t.Errorf("a fresh screen reports %v, %v; want true", bottom, err)
+	screen := term.ActiveScreen()
+	if bottom := screen.ViewportIsBottom(); !bottom {
+		t.Errorf("a fresh screen reports %v; want true", bottom)
 	}
 
 	// Push rows into the scrollback, then look at them.
 	feed(t, stream, "one\r\ntwo\r\nthree\r\nfour\r\nfive\r\n")
-	if err := term.ScrollViewport(ScrollViewportTop()); err != nil {
-		t.Fatalf("ScrollViewport: %v", err)
+	term.ScrollViewport(ScrollViewportTop())
+	if bottom := screen.ViewportIsBottom(); bottom {
+		t.Errorf("after scrolling up, reports %v; want false", bottom)
 	}
-	if bottom, err := screen.ViewportIsBottom(); err != nil || bottom {
-		t.Errorf("after scrolling up, reports %v, %v; want false", bottom, err)
-	}
-	if err := term.ScrollViewport(ScrollViewportBottom()); err != nil {
-		t.Fatalf("ScrollViewport: %v", err)
-	}
-	if bottom, err := screen.ViewportIsBottom(); err != nil || !bottom {
-		t.Errorf("after scrolling back, reports %v, %v; want true", bottom, err)
+	term.ScrollViewport(ScrollViewportBottom())
+	if bottom := screen.ViewportIsBottom(); !bottom {
+		t.Errorf("after scrolling back, reports %v; want true", bottom)
 	}
 }
 
@@ -327,10 +303,7 @@ func TestRenderStateFollowsViewport(t *testing.T) {
 		if err := state.Update(term); err != nil {
 			t.Fatalf("Update: %v", err)
 		}
-		n, err := state.CellCount()
-		if err != nil {
-			t.Fatalf("CellCount: %v", err)
-		}
+		n := state.CellCount()
 		cells := make([]RenderCell, n)
 		if _, err := state.Cells(cells); err != nil {
 			t.Fatalf("Cells")
@@ -350,15 +323,11 @@ func TestRenderStateFollowsViewport(t *testing.T) {
 	}
 	// A negative delta is up, which is the direction a wheel notch away from
 	// the user means.
-	if err := term.ScrollViewport(ScrollViewportDelta(-1)); err != nil {
-		t.Fatalf("ScrollViewport: %v", err)
-	}
+	term.ScrollViewport(ScrollViewportDelta(-1))
 	if got := topRow(); got != "three" {
 		t.Errorf("top row after scrolling up one = %q, want %q", got, "three")
 	}
-	if err := term.ScrollViewport(ScrollViewportBottom()); err != nil {
-		t.Fatalf("ScrollViewport: %v", err)
-	}
+	term.ScrollViewport(ScrollViewportBottom())
 	if got := topRow(); got != "four" {
 		t.Errorf("top row after scrolling back to the bottom = %q, want %q", got, "four")
 	}
@@ -377,13 +346,11 @@ func TestRenderDirtyRows(t *testing.T) {
 	if err := state.Update(term); err != nil {
 		t.Fatal(err)
 	}
-	if d, _ := state.Dirty(); d != RenderDirtyFull {
+	if d := state.Dirty(); d != RenderDirtyFull {
 		t.Errorf("first Update Dirty() = %v, want full", d)
 	}
-	if err := state.Clean(); err != nil {
-		t.Fatal(err)
-	}
-	if d, _ := state.Dirty(); d != RenderDirtyClean {
+	state.Clean()
+	if d := state.Dirty(); d != RenderDirtyClean {
 		t.Errorf("after Clean Dirty() = %v", d)
 	}
 
@@ -391,7 +358,7 @@ func TestRenderDirtyRows(t *testing.T) {
 	if err := state.Update(term); err != nil {
 		t.Fatal(err)
 	}
-	if d, _ := state.Dirty(); d != RenderDirtyPartial {
+	if d := state.Dirty(); d != RenderDirtyPartial {
 		t.Errorf("Dirty() after one row changed = %v, want partial", d)
 	}
 	// Row 1 changed, and row 2 lost the cursor, which ghostty also counts.
@@ -410,9 +377,7 @@ func TestRenderDirtyRows(t *testing.T) {
 	if _, err := state.RowCells(1, cells[:3]); err == nil {
 		t.Error("RowCells with a short buffer returned no error")
 	}
-	if err := state.Clean(); err != nil {
-		t.Fatal(err)
-	}
+	state.Clean()
 	if n, _ := state.DirtyRows(rows); n != 0 {
 		t.Errorf("DirtyRows after Clean = %d", n)
 	}
@@ -449,9 +414,9 @@ func TestRenderCursorState(t *testing.T) {
 	if pw := state.CursorPasswordInput(); pw {
 		t.Errorf("CursorPasswordInput() = %v; want false", pw)
 	}
-	cursor, err := state.Cursor()
-	if err != nil || !cursor.ViewportHasValue || cursor.WideTail {
-		t.Errorf("Cursor() = %+v, %v; want narrow cursor in viewport", cursor, err)
+	cursor := state.Cursor()
+	if !cursor.ViewportHasValue || cursor.WideTail {
+		t.Errorf("Cursor() = %+v; want narrow cursor in viewport", cursor)
 	}
 }
 
@@ -468,9 +433,9 @@ func TestRenderCursorColor(t *testing.T) {
 	if err := state.Update(term); err != nil {
 		t.Fatalf("Update: %v", err)
 	}
-	colors, err := state.Colors()
-	if err != nil || colors.CursorHasValue {
-		t.Fatalf("Colors() before cursor color is set = %+v, %v", colors, err)
+	colors := state.Colors()
+	if colors.CursorHasValue {
+		t.Fatalf("Colors() before cursor color is set = %+v", colors)
 	}
 
 	// OSC 12 sets the cursor color.
@@ -478,8 +443,8 @@ func TestRenderCursorColor(t *testing.T) {
 	if err := state.Update(term); err != nil {
 		t.Fatalf("Update: %v", err)
 	}
-	colors, err = state.Colors()
-	if err != nil || !colors.CursorHasValue || colors.Cursor.Uint32() != 0xff0000 {
-		t.Errorf("Colors() = %+v, %v; want cursor 0xff0000", colors, err)
+	colors = state.Colors()
+	if !colors.CursorHasValue || colors.Cursor.Uint32() != 0xff0000 {
+		t.Errorf("Colors() = %+v; want cursor 0xff0000", colors)
 	}
 }

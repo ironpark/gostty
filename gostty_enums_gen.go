@@ -1544,6 +1544,109 @@ func (value DeccolmMode) String() string {
 	return "DeccolmMode(" + strconv.Itoa(int(value)) + ")"
 }
 
+// CompressionMode represents the corresponding Zig enum.
+type CompressionMode uint8
+
+const (
+	// CompressionModeIncremental corresponds to the Zig tag incremental.
+	CompressionModeIncremental CompressionMode = 0
+	// CompressionModeFull corresponds to the Zig tag full.
+	CompressionModeFull CompressionMode = 1
+)
+
+var zigoCompressionModeNames = [2]string{
+	0: "incremental",
+	1: "full",
+}
+
+// String returns the Zig tag name.
+func (value CompressionMode) String() string {
+	if value >= 0 && value <= 1 {
+		return zigoCompressionModeNames[uint64(value)]
+	}
+	return "CompressionMode(" + strconv.Itoa(int(value)) + ")"
+}
+
+// ParseCompressionMode returns the CompressionMode named by text, which is a Zig tag name.
+func ParseCompressionMode(text string) (CompressionMode, error) {
+	switch text {
+	case "incremental":
+		return CompressionModeIncremental, nil
+	case "full":
+		return CompressionModeFull, nil
+	}
+	return 0, &EnumParseError{Type: "CompressionMode", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value CompressionMode) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseCompressionMode.
+func (value *CompressionMode) UnmarshalText(text []byte) error {
+	parsed, err := ParseCompressionMode(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// CompressionResult represents the corresponding Zig enum.
+type CompressionResult uint8
+
+const (
+	// CompressionResultUnsupported corresponds to the Zig tag unsupported.
+	CompressionResultUnsupported CompressionResult = 0
+	// CompressionResultPending corresponds to the Zig tag pending.
+	CompressionResultPending CompressionResult = 1
+	// CompressionResultComplete corresponds to the Zig tag complete.
+	CompressionResultComplete CompressionResult = 2
+)
+
+var zigoCompressionResultNames = [3]string{
+	0: "unsupported",
+	1: "pending",
+	2: "complete",
+}
+
+// String returns the Zig tag name.
+func (value CompressionResult) String() string {
+	if value >= 0 && value <= 2 {
+		return zigoCompressionResultNames[uint64(value)]
+	}
+	return "CompressionResult(" + strconv.Itoa(int(value)) + ")"
+}
+
+// ParseCompressionResult returns the CompressionResult named by text, which is a Zig tag name.
+func ParseCompressionResult(text string) (CompressionResult, error) {
+	switch text {
+	case "unsupported":
+		return CompressionResultUnsupported, nil
+	case "pending":
+		return CompressionResultPending, nil
+	case "complete":
+		return CompressionResultComplete, nil
+	}
+	return 0, &EnumParseError{Type: "CompressionResult", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value CompressionResult) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseCompressionResult.
+func (value *CompressionResult) UnmarshalText(text []byte) error {
+	parsed, err := ParseCompressionResult(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
 // ScrollViewportTag represents the corresponding Zig enum.
 type ScrollViewportTag uint8
 
@@ -1556,18 +1659,21 @@ const (
 	ScrollViewportTagDelta ScrollViewportTag = 2
 	// ScrollViewportTagRow corresponds to the Zig tag row.
 	ScrollViewportTagRow ScrollViewportTag = 3
+	// ScrollViewportTagDeltaPrompt corresponds to the Zig tag delta_prompt.
+	ScrollViewportTagDeltaPrompt ScrollViewportTag = 4
 )
 
-var zigoScrollViewportTagNames = [4]string{
+var zigoScrollViewportTagNames = [5]string{
 	0: "top",
 	1: "bottom",
 	2: "delta",
 	3: "row",
+	4: "delta_prompt",
 }
 
 // String returns the Zig tag name.
 func (value ScrollViewportTag) String() string {
-	if value >= 0 && value <= 3 {
+	if value >= 0 && value <= 4 {
 		return zigoScrollViewportTagNames[uint64(value)]
 	}
 	return "ScrollViewportTag(" + strconv.Itoa(int(value)) + ")"
@@ -2395,9 +2501,11 @@ const (
 	OSCCommandKittyDesktopNotification OSCCommand = 26
 	// OSCCommandUnknown corresponds to the Zig tag unknown.
 	OSCCommandUnknown OSCCommand = 27
+	// OSCCommandProgramStatus corresponds to the Zig tag program_status.
+	OSCCommandProgramStatus OSCCommand = 28
 )
 
-var zigoOSCCommandNames = [28]string{
+var zigoOSCCommandNames = [29]string{
 	0:  "invalid",
 	1:  "change_window_title",
 	2:  "change_window_icon",
@@ -2426,11 +2534,12 @@ var zigoOSCCommandNames = [28]string{
 	25: "context_signal",
 	26: "kitty_desktop_notification",
 	27: "unknown",
+	28: "program_status",
 }
 
 // String returns the Zig tag name.
 func (value OSCCommand) String() string {
-	if value >= 0 && value <= 27 {
+	if value >= 0 && value <= 28 {
 		return zigoOSCCommandNames[uint64(value)]
 	}
 	return "OSCCommand(" + strconv.Itoa(int(value)) + ")"
@@ -2495,6 +2604,8 @@ func ParseOSCCommand(text string) (OSCCommand, error) {
 		return OSCCommandKittyDesktopNotification, nil
 	case "unknown":
 		return OSCCommandUnknown, nil
+	case "program_status":
+		return OSCCommandProgramStatus, nil
 	}
 	return 0, &EnumParseError{Type: "OSCCommand", Text: text}
 }

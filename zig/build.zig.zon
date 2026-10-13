@@ -5,12 +5,12 @@
     .minimum_zig_version = "0.16.0",
     .dependencies = .{
         .ghostty = .{
-            .url = "git+https://github.com/ghostty-org/ghostty#4da7523faba68ccb4042ea20585817098a51c015",
-            .hash = "ghostty-1.3.2-dev-5UdBC-HgdgUFLxecsOMNdqe_Vsl-fsWasdd0CVozVBT-",
+            .url = "git+https://github.com/ghostty-org/ghostty#05dcf887ef51ea27821f20979493306ec3a19149",
+            .hash = "ghostty-1.3.2-dev-5UdBC_58egWpzp0fJABSewY3gzSsYRP-V70IZKAz5NQg",
         },
         .zigo = .{
-            .url = "https://github.com/ironpark/zigo/archive/refs/tags/0.30.0.tar.gz",
-            .hash = "zigo-0.30.0-iRIf5hkENAB5nGpd6_EBWdL4rgVBs3zZMRWOmfZaQiMo",
+            .url = "https://github.com/ironpark/zigo/archive/refs/tags/0.31.0.tar.gz",
+            .hash = "zigo-0.31.0-iRIf5hp4NAA6E0nnt4YsUb30mnmh6AnclwOZLiSW660U",
         },
     },
     .paths = .{

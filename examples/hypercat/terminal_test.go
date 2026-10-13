@@ -50,9 +50,14 @@ func TestStartFailureClosesTerminalResources(t *testing.T) {
 	if _, err := tab.stream.Write([]byte("closed")); err == nil {
 		t.Error("stream remained open after startup failure")
 	}
-	if _, err := tab.state.CellCount(); err == nil {
-		t.Error("render state remained open after startup failure")
-	}
+	func() {
+		defer func() {
+			if recover() == nil {
+				t.Error("render state remained open after startup failure")
+			}
+		}()
+		_ = tab.state.CellCount()
+	}()
 	if tab.sel.gesture != nil {
 		t.Error("selection gesture remained open after startup failure")
 	}
@@ -97,9 +102,7 @@ func TestScrollbarFollowsTheViewport(t *testing.T) {
 		t.Errorf("Scrollbar() = %+v, want the thumb at the bottom", bottom)
 	}
 
-	if err := tab.vt.ScrollViewport(gostty.ScrollViewportTop()); err != nil {
-		t.Fatalf("ScrollViewport: %v", err)
-	}
+	tab.vt.ScrollViewport(gostty.ScrollViewportTop())
 	if err := tab.refreshSnapshot(); err != nil {
 		t.Fatalf("refresh: %v", err)
 	}
@@ -117,9 +120,7 @@ func TestExportScrollbackWritesStyledHTML(t *testing.T) {
 	win := newTabTestApp(t)
 	tab := win.current()
 	wantColor := gostty.NewRGB(0x12, 0x34, 0x56)
-	if err := tab.vt.SetPaletteColor(1, wantColor); err != nil {
-		t.Fatal(err)
-	}
+	tab.vt.SetPaletteColor(1, wantColor)
 	feedTab(t, tab, "\x1b[31mred\x1b[0m plain")
 
 	var out bytes.Buffer

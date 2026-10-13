@@ -93,9 +93,7 @@ func TestHistoryStringAndFormat(t *testing.T) {
 		if err := term.Index(); err != nil {
 			t.Fatalf("Index: %v", err)
 		}
-		if err := term.CarriageReturn(); err != nil {
-			t.Fatalf("CarriageReturn: %v", err)
-		}
+		term.CarriageReturn()
 	}
 
 	history, err := term.HistoryString()
@@ -110,10 +108,7 @@ func TestHistoryStringAndFormat(t *testing.T) {
 	}
 
 	// The screen formatter covers scrollback and the active area together.
-	screen, err := term.ActiveScreen()
-	if err != nil {
-		t.Fatal(err)
-	}
+	screen := term.ActiveScreen()
 	var buf bytes.Buffer
 	if err := screen.Format(FormatOptions{}, &buf); err != nil {
 		t.Fatalf("Screen.Format: %v", err)
@@ -134,10 +129,7 @@ func TestBorrowedScreen(t *testing.T) {
 		t.Fatalf("PrintString: %v", err)
 	}
 
-	sc, err := term.ActiveScreen()
-	if err != nil {
-		t.Fatalf("ActiveScreen: %v", err)
-	}
+	sc := term.ActiveScreen()
 
 	ok, err := sc.SelectAll()
 	if err != nil {
@@ -146,8 +138,8 @@ func TestBorrowedScreen(t *testing.T) {
 	if !ok {
 		t.Fatal("SelectAll() = false on a screen with text")
 	}
-	if has, err := sc.HasSelection(); err != nil || !has {
-		t.Fatalf("HasSelection() = %v, %v; want true, nil", has, err)
+	if has := sc.HasSelection(); !has {
+		t.Fatalf("HasSelection() = %v; want true", has)
 	}
 	text, ok, err := sc.SelectionString()
 	if err != nil || !ok {
@@ -157,11 +149,9 @@ func TestBorrowedScreen(t *testing.T) {
 		t.Errorf("SelectionString() = %q, want %q", got, want)
 	}
 
-	if err := sc.ClearSelection(); err != nil {
-		t.Fatalf("ClearSelection: %v", err)
-	}
-	if has, err := sc.HasSelection(); err != nil || has {
-		t.Fatalf("HasSelection() after clear = %v, %v; want false, nil", has, err)
+	sc.ClearSelection()
+	if has := sc.HasSelection(); has {
+		t.Fatalf("HasSelection() after clear = %v; want false", has)
 	}
 	if text, ok, err := sc.SelectionString(); err != nil || ok {
 		t.Errorf("SelectionString() with no selection = %q, ok %v, %v; want absent, nil", text, ok, err)
@@ -171,28 +161,36 @@ func TestBorrowedScreen(t *testing.T) {
 	if err := term.Close(); err != nil {
 		t.Fatalf("Close with a screen handle out: %v", err)
 	}
-	if _, err := sc.HasSelection(); !errors.Is(err, ErrInvalidHandle) {
-		t.Errorf("screen call after the terminal closed = %v, want ErrInvalidHandle", err)
-	}
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatal("expected panic on closed Screen")
+		}
+		var handleErr *HandleError
+		if err, ok := r.(error); !ok || !errors.As(err, &handleErr) {
+			t.Errorf("panic = %v, want *HandleError", r)
+		}
+	}()
+	sc.HasSelection()
 }
 
 // The alternate screen does not exist until something switches to it.
 func TestOptionalScreen(t *testing.T) {
 	term := newTerm(t, 20, 3)
 
-	if _, ok, err := term.Screen(ScreenKeyAlternate); err != nil || ok {
-		t.Errorf("Screen(alternate) before use = ok %v, %v; want false, nil", ok, err)
+	if _, ok := term.Screen(ScreenKeyAlternate); ok {
+		t.Errorf("Screen(alternate) before use = ok %v; want false", ok)
 	}
-	if _, ok, err := term.Screen(ScreenKeyPrimary); err != nil || !ok {
-		t.Errorf("Screen(primary) = ok %v, %v; want true, nil", ok, err)
+	if _, ok := term.Screen(ScreenKeyPrimary); !ok {
+		t.Errorf("Screen(primary) = ok %v; want true", ok)
 	}
 
 	if _, _, err := term.SwitchScreen(ScreenKeyAlternate); err != nil {
 		t.Fatalf("SwitchScreen: %v", err)
 	}
-	alt, ok, err := term.Screen(ScreenKeyAlternate)
-	if err != nil || !ok {
-		t.Fatalf("Screen(alternate) after switching = ok %v, %v; want true, nil", ok, err)
+	alt, ok := term.Screen(ScreenKeyAlternate)
+	if !ok {
+		t.Fatalf("Screen(alternate) after switching = ok %v; want true", ok)
 	}
 
 	// The primary screen is still reachable while the alternate is active.
@@ -215,18 +213,13 @@ func TestOptionalScreen(t *testing.T) {
 // the viewport.
 func TestSelectAllIncludesScrollback(t *testing.T) {
 	term, stream := newStreamPair(t, 20, 3)
-	if err := term.SetScrollbackMaxBytes(1 << 20); err != nil {
-		t.Fatalf("SetScrollbackMaxBytes: %v", err)
-	}
+	term.SetScrollbackMaxBytes(1 << 20)
 	for range 10 {
 		feed(t, stream, "line\r\n")
 	}
 	feed(t, stream, "last")
 
-	screen, err := term.ActiveScreen()
-	if err != nil {
-		t.Fatalf("ActiveScreen: %v", err)
-	}
+	screen := term.ActiveScreen()
 	if _, err := screen.SelectAll(); err != nil {
 		t.Fatalf("SelectAll: %v", err)
 	}
@@ -243,19 +236,11 @@ func TestSelectAllIncludesScrollback(t *testing.T) {
 // incrementally and caches the offset, so this is cheap enough per frame.
 func TestScreenScrollbar(t *testing.T) {
 	term, stream := newStreamPair(t, 20, 4)
-	if err := term.SetScrollbackMaxBytes(1 << 20); err != nil {
-		t.Fatalf("SetScrollbackMaxBytes: %v", err)
-	}
-	screen, err := term.ActiveScreen()
-	if err != nil {
-		t.Fatalf("ActiveScreen: %v", err)
-	}
+	term.SetScrollbackMaxBytes(1 << 20)
+	screen := term.ActiveScreen()
 
 	// Nothing scrolled yet: the whole scrollable area is the viewport.
-	bar, err := screen.Scrollbar()
-	if err != nil {
-		t.Fatalf("Scrollbar: %v", err)
-	}
+	bar := screen.Scrollbar()
 	if bar.Len != 4 || bar.Offset != 0 {
 		t.Errorf("Scrollbar() on a fresh screen = %+v; want Len 4, Offset 0", bar)
 	}
@@ -263,10 +248,7 @@ func TestScreenScrollbar(t *testing.T) {
 	for range 20 {
 		feed(t, stream, "line\r\n")
 	}
-	bar, err = screen.Scrollbar()
-	if err != nil {
-		t.Fatalf("Scrollbar: %v", err)
-	}
+	bar = screen.Scrollbar()
 	if bar.Len != 4 {
 		t.Errorf("Scrollbar().Len = %d, want the viewport height 4", bar.Len)
 	}
@@ -279,14 +261,29 @@ func TestScreenScrollbar(t *testing.T) {
 	}
 
 	// Scrolling up moves the thumb and nothing else.
-	if err := term.ScrollViewport(ScrollViewportTop()); err != nil {
-		t.Fatalf("ScrollViewport: %v", err)
-	}
-	top, err := screen.Scrollbar()
-	if err != nil {
-		t.Fatalf("Scrollbar: %v", err)
-	}
+	term.ScrollViewport(ScrollViewportTop())
+	top := screen.Scrollbar()
 	if top.Offset != 0 || top.Total != bar.Total || top.Len != bar.Len {
 		t.Errorf("Scrollbar() at the top = %+v, want Offset 0 and the same Total/Len as %+v", top, bar)
+	}
+}
+
+func TestScreenScrollClear(t *testing.T) {
+	term := newTerm(t, 20, 4)
+	scr := term.ActiveScreen()
+	if err := term.PrintString("line1\nline2\nline3\n"); err != nil {
+		t.Fatalf("PrintString: %v", err)
+	}
+
+	if err := scr.ScrollClear(); err != nil {
+		t.Fatalf("ScrollClear: %v", err)
+	}
+
+	// ScrollClear resets the cursor to top.
+	if y := term.CursorY(); y != 0 {
+		t.Errorf("CursorY() after ScrollClear = %d, want 0", y)
+	}
+	if x := term.CursorX(); x != 0 {
+		t.Errorf("CursorX() after ScrollClear = %d, want 0", x)
 	}
 }

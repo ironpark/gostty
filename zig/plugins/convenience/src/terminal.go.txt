@@ -62,24 +62,16 @@ func NewTerminalWithConfig(cfg TerminalConfig, extra ...TerminalOption) (_ *Term
 		}
 	}()
 	if cfg.BackgroundColor != nil {
-		if err = term.SetDefaultBackgroundColor(*cfg.BackgroundColor); err != nil {
-			return nil, err
-		}
+		term.SetDefaultBackgroundColor(*cfg.BackgroundColor)
 	}
 	if cfg.ForegroundColor != nil {
-		if err = term.SetDefaultForegroundColor(*cfg.ForegroundColor); err != nil {
-			return nil, err
-		}
+		term.SetDefaultForegroundColor(*cfg.ForegroundColor)
 	}
 	if cfg.CursorColor != nil {
-		if err = term.SetDefaultCursorColor(*cfg.CursorColor); err != nil {
-			return nil, err
-		}
+		term.SetDefaultCursorColor(*cfg.CursorColor)
 	}
 	for _, mode := range cfg.ModeDefaults {
-		if err = term.SetDefaultMode(mode.Mode, mode.Enabled); err != nil {
-			return nil, err
-		}
+		term.SetDefaultMode(mode.Mode, mode.Enabled)
 	}
 	return term, nil
 }
@@ -113,34 +105,22 @@ func (t *Terminal) NewStreamWithConfig(cfg StreamConfig) (_ *Stream, err error) 
 			_ = s.Close()
 		}
 	}()
-	if err = s.SetUnknownMaxBytes(cfg.UnknownMaxBytes); err != nil {
-		return nil, err
-	}
+	s.SetUnknownMaxBytes(cfg.UnknownMaxBytes)
 	if cfg.Version != nil {
-		if err = s.SetVersionReport(cfg.Version.Name, cfg.Version.Version); err != nil {
-			return nil, err
-		}
+		s.SetVersionReport(cfg.Version.Name, cfg.Version.Version)
 	}
-	if err = s.SetEnquiryResponse(cfg.EnquiryResponse); err != nil {
-		return nil, err
-	}
+	s.SetEnquiryResponse(cfg.EnquiryResponse)
 	if cfg.ColorScheme != nil {
 		if *cfg.ColorScheme != ColorSchemeDark && *cfg.ColorScheme != ColorSchemeLight {
 			return nil, &RangeError{Operation: "Terminal.NewStreamWithConfig", Parameter: "ColorScheme", Type: "ColorScheme"}
 		}
-		if err = s.ColorSchemeChanged(*cfg.ColorScheme); err != nil {
-			return nil, err
-		}
+		s.ColorSchemeChanged(*cfg.ColorScheme)
 	}
 	if cfg.ClipboardRead != nil {
-		if err = s.OnClipboardReadRequest(cfg.ClipboardRead); err != nil {
-			return nil, err
-		}
+		s.OnClipboardReadRequest(cfg.ClipboardRead)
 	}
 	if cfg.ClipboardWrite != nil {
-		if err = s.OnClipboardWriteRequest(cfg.ClipboardWrite); err != nil {
-			return nil, err
-		}
+		s.OnClipboardWriteRequest(cfg.ClipboardWrite)
 	}
 	return s, nil
 }

@@ -19,16 +19,14 @@ func TestDragAndDrop(t *testing.T) {
 		hasAccepted bool
 	}
 	var events []seen
-	if err := stream.OnDrag(func(n DragNotice, mimes string) {
+	stream.OnDrag(func(n DragNotice, mimes string) {
 		events = append(events, seen{n.Event, mimes, n.Accepted, n.Answered})
-	}); err != nil {
-		t.Fatalf("OnDrag: %v", err)
-	}
+	})
 
 	// Nothing is registered yet, so a native drag is the embedder's own
 	// problem and every call here is a no-op.
-	if active, err := stream.DragActive(); err != nil || active {
-		t.Fatalf("DragActive() before registration = %v, %v; want false", active, err)
+	if active := stream.DragActive(); active {
+		t.Fatalf("DragActive() before registration = %v; want false", active)
 	}
 	if err := stream.DragMove(DragMove{Operations: DragOperations{Copy: true}}, "text/plain"); err != nil {
 		t.Fatalf("DragMove with no program registered: %v", err)
@@ -45,13 +43,10 @@ func TestDragAndDrop(t *testing.T) {
 	if events[0].mimes != "image/png text/plain" {
 		t.Errorf("registration carried mimes %q, want the registered list", events[0].mimes)
 	}
-	if active, err := stream.DragActive(); err != nil || !active {
-		t.Fatalf("DragActive() after registration = %v, %v; want true", active, err)
+	if active := stream.DragActive(); !active {
+		t.Fatalf("DragActive() after registration = %v; want true", active)
 	}
-	mimes, err := stream.DragRegisteredMimes()
-	if err != nil {
-		t.Fatalf("DragRegisteredMimes: %v", err)
-	}
+	mimes := stream.DragRegisteredMimes()
 	if got, want := strings.Fields(mimes), []string{"image/png", "text/plain"}; len(got) != 2 || got[0] != want[0] || got[1] != want[1] {
 		t.Errorf("DragRegisteredMimes() = %q, want %q", got, want)
 	}
@@ -68,8 +63,8 @@ func TestDragAndDrop(t *testing.T) {
 	if got := replyString(t, stream); !strings.Contains(got, "t=m") {
 		t.Errorf("DragMove wrote %q, want a t=m move event", got)
 	}
-	if _, ok, err := stream.DragClientAccepted(); err != nil || ok {
-		t.Errorf("DragClientAccepted() before the program answers = ok %v, %v; want false", ok, err)
+	if _, ok := stream.DragClientAccepted(); ok {
+		t.Errorf("DragClientAccepted() before the program answers = ok %v; want false", ok)
 	}
 
 	// The program answers: o=2 is move.
@@ -118,8 +113,8 @@ func TestDragAndDrop(t *testing.T) {
 	if events[0].mimes != "" {
 		t.Errorf("unregistration carried mimes %q, want none", events[0].mimes)
 	}
-	if active, err := stream.DragActive(); err != nil || active {
-		t.Errorf("DragActive() after unregistration = %v, %v; want false", active, err)
+	if active := stream.DragActive(); active {
+		t.Errorf("DragActive() after unregistration = %v; want false", active)
 	}
 }
 
@@ -132,8 +127,9 @@ func TestDragClearItems(t *testing.T) {
 	if err := stream.DragAddItem("text/plain", []byte("first")); err != nil {
 		t.Fatalf("DragAddItem: %v", err)
 	}
-	if err := stream.DragClearItems(); err != nil {
-		t.Fatalf("DragClearItems: %v", err)
+	stream.DragClearItems()
+	if err := stream.DragAddItem("text/plain", []byte("second")); err != nil {
+		t.Fatalf("DragAddItem: %v", err)
 	}
 	if err := stream.DragAddItem("text/plain", []byte("second")); err != nil {
 		t.Fatalf("DragAddItem: %v", err)

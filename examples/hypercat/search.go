@@ -59,21 +59,15 @@ func (tab *terminal) tickSearch() error {
 	if tab.search.handle == nil {
 		return nil
 	}
-	if err := tab.search.handle.Feed(true); err != nil {
-		return err
-	}
+	tab.search.handle.Feed(true)
 	for range searchTicksPerFrame {
-		progress, err := tab.search.handle.Tick()
-		if err != nil {
-			return err
-		}
+		progress := tab.search.handle.Tick()
 		if progress != gostty.SearchProgressProgress {
 			break
 		}
 	}
-	var err error
-	tab.panels.Search.Matches, err = tab.search.handle.MatchCount()
-	return err
+	tab.panels.Search.Matches = tab.search.handle.MatchCount()
+	return nil
 }
 
 // refreshMatches marks the viewport cells covered by a match. ViewportMatches
@@ -155,9 +149,9 @@ func (tab *terminal) moveMatch(dir gostty.SearchDirection) error {
 	if err != nil || !ok {
 		return err
 	}
-	match, ok, err := tab.search.handle.SelectedMatch()
-	if err != nil || !ok {
-		return err
+	match, ok := tab.search.handle.SelectedMatch()
+	if !ok {
+		return nil
 	}
 	if err := tab.applySelection(match, true); err != nil {
 		return err

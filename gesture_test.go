@@ -13,24 +13,19 @@ const (
 
 func newGesture(t *testing.T, term *Terminal, cols, rows uint32) *Gesture {
 	t.Helper()
-	g, err := term.NewGesture()
-	if err != nil {
-		t.Fatalf("NewGesture: %v", err)
-	}
+	g := term.NewGesture()
 	t.Cleanup(func() { g.Close() })
 	// ghostty has no default word boundary set, so word selection would run to
 	// the end of the line without one. A space is the minimum an emulator sets.
 	if err := g.SetWordBoundaries([]rune{' '}); err != nil {
 		t.Fatalf("SetWordBoundaries: %v", err)
 	}
-	if err := g.SetGeometry(GestureGeometry{
+	g.SetGeometry(GestureGeometry{
 		Columns:      cols,
 		CellWidth:    testCellWidth,
 		PaddingLeft:  0,
 		ScreenHeight: rows * testCellHeight,
-	}); err != nil {
-		t.Fatalf("SetGeometry: %v", err)
-	}
+	})
 	return g
 }
 
@@ -57,10 +52,7 @@ func pressAt(t *testing.T, g *Gesture, x, y uint16, now int64) (Selection, bool)
 // what an emulator does with every selection a gesture hands it.
 func selectionText(t *testing.T, term *Terminal, sel Selection) string {
 	t.Helper()
-	scr, err := term.ActiveScreen()
-	if err != nil {
-		t.Fatalf("ActiveScreen: %v", err)
-	}
+	scr := term.ActiveScreen()
 	ok, err := scr.SetSelection(sel)
 	if err != nil || !ok {
 		t.Fatalf("SetSelection(%+v) = %v, %v; want true, nil", sel, ok, err)
@@ -151,9 +143,9 @@ func TestGestureDragAndRelease(t *testing.T) {
 	}
 
 	// Past 60% of cell 4, so cell 4 is included: "hello".
-	sel, ok, err := g.Drag(GestureDragEvent{X: 4, Y: 0, Xpos: 4*testCellWidth + 9, Ypos: 5})
-	if err != nil || !ok {
-		t.Fatalf("Drag() = %v, %v, %v; want a selection", sel, ok, err)
+	sel, ok := g.Drag(GestureDragEvent{X: 4, Y: 0, Xpos: 4*testCellWidth + 9, Ypos: 5})
+	if !ok {
+		t.Fatalf("Drag() = %v, %v; want a selection", sel, ok)
 	}
 	if got, want := selectionText(t, term, sel), "hello"; got != want {
 		t.Errorf("drag to cell 4 selected %q, want %q", got, want)
@@ -163,22 +155,20 @@ func TestGestureDragAndRelease(t *testing.T) {
 	}
 
 	// Extending the drag extends the selection rather than starting a new one.
-	sel, ok, err = g.Drag(GestureDragEvent{X: 10, Y: 0, Xpos: 10*testCellWidth + 9, Ypos: 5})
-	if err != nil || !ok {
-		t.Fatalf("Drag() = %v, %v, %v; want a selection", sel, ok, err)
+	sel, ok = g.Drag(GestureDragEvent{X: 10, Y: 0, Xpos: 10*testCellWidth + 9, Ypos: 5})
+	if !ok {
+		t.Fatalf("Drag() = %v, %v; want a selection", sel, ok)
 	}
 	if got, want := selectionText(t, term, sel), "hello world"; got != want {
 		t.Errorf("drag to cell 10 selected %q, want %q", got, want)
 	}
 
 	// A drag inside the surface asks for no autoscroll.
-	if dir, err := g.Autoscroll(); err != nil || dir != GestureAutoscrollDirectionNone {
-		t.Errorf("Autoscroll() during an in-bounds drag = %v, %v; want none, nil", dir, err)
+	if dir := g.Autoscroll(); dir != GestureAutoscrollDirectionNone {
+		t.Errorf("Autoscroll() during an in-bounds drag = %v; want none", dir)
 	}
 
-	if err := g.Release(10, 0); err != nil {
-		t.Fatalf("Release: %v", err)
-	}
+	g.Release(10, 0)
 	if dragged := g.Dragged(); !dragged {
 		t.Errorf("Dragged() after release = %v; want true", dragged)
 	}
@@ -187,16 +177,14 @@ func TestGestureDragAndRelease(t *testing.T) {
 	if count := g.ClickCount(); count != 1 {
 		t.Errorf("ClickCount() after release = %d; want 1", count)
 	}
-	if err := g.Reset(); err != nil {
-		t.Fatalf("Reset: %v", err)
-	}
+	g.Reset()
 	if count := g.ClickCount(); count != 0 {
 		t.Errorf("ClickCount() after reset = %d; want 0", count)
 	}
 
 	// With no gesture in progress a drag selects nothing.
-	if _, ok, err := g.Drag(GestureDragEvent{X: 4, Y: 0, Xpos: 49, Ypos: 5}); err != nil || ok {
-		t.Errorf("Drag() after Reset = %v, %v; want no selection", ok, err)
+	if _, ok := g.Drag(GestureDragEvent{X: 4, Y: 0, Xpos: 49, Ypos: 5}); ok {
+		t.Errorf("Drag() after Reset = %v; want no selection", ok)
 	}
 }
 
@@ -214,9 +202,9 @@ func TestGestureWordDrag(t *testing.T) {
 		t.Fatal("double click produced no selection")
 	}
 	// Only one cell into "world", but the whole word comes along.
-	sel, ok, err := g.Drag(GestureDragEvent{X: 7, Y: 0, Xpos: 7*testCellWidth + 1, Ypos: 5})
-	if err != nil || !ok {
-		t.Fatalf("Drag() = %v, %v, %v; want a selection", sel, ok, err)
+	sel, ok := g.Drag(GestureDragEvent{X: 7, Y: 0, Xpos: 7*testCellWidth + 1, Ypos: 5})
+	if !ok {
+		t.Fatalf("Drag() = %v, %v; want a selection", sel, ok)
 	}
 	if got, want := selectionText(t, term, sel), "hello world"; got != want {
 		t.Errorf("word drag selected %q, want %q", got, want)
@@ -235,24 +223,17 @@ func TestGestureAutoscroll(t *testing.T) {
 	g := newGesture(t, term, 20, 3)
 
 	// Scroll back so there is somewhere to scroll down to.
-	if err := term.ScrollViewport(ScrollViewportTop()); err != nil {
-		t.Fatalf("ScrollViewport: %v", err)
-	}
+	term.ScrollViewport(ScrollViewportTop())
 
 	pressAt(t, g, 0, 0, 0)
 	bottom := GestureDragEvent{X: 0, Y: 2, Xpos: 9, Ypos: 3 * testCellHeight}
-	if _, _, err := g.Drag(bottom); err != nil {
-		t.Fatalf("Drag: %v", err)
-	}
-	dir, err := g.Autoscroll()
-	if err != nil || dir != GestureAutoscrollDirectionDown {
-		t.Fatalf("Autoscroll() at the bottom edge = %v, %v; want down, nil", dir, err)
+	g.Drag(bottom)
+	dir := g.Autoscroll()
+	if dir != GestureAutoscrollDirectionDown {
+		t.Fatalf("Autoscroll() at the bottom edge = %v; want down", dir)
 	}
 
-	sel, ok, err := g.AutoscrollTick(bottom)
-	if err != nil {
-		t.Fatalf("AutoscrollTick: %v", err)
-	}
+	sel, ok := g.AutoscrollTick(bottom)
 	if !ok {
 		t.Fatal("AutoscrollTick produced no selection")
 	}
@@ -263,11 +244,9 @@ func TestGestureAutoscroll(t *testing.T) {
 	}
 
 	// Dragging back inside stops the timer.
-	if _, _, err := g.Drag(GestureDragEvent{X: 0, Y: 1, Xpos: 9, Ypos: testCellHeight}); err != nil {
-		t.Fatalf("Drag: %v", err)
-	}
-	if dir, err := g.Autoscroll(); err != nil || dir != GestureAutoscrollDirectionNone {
-		t.Errorf("Autoscroll() back inside the surface = %v, %v; want none, nil", dir, err)
+	g.Drag(GestureDragEvent{X: 0, Y: 1, Xpos: 9, Ypos: testCellHeight})
+	if dir := g.Autoscroll(); dir != GestureAutoscrollDirectionNone {
+		t.Errorf("Autoscroll() back inside the surface = %v; want none", dir)
 	}
 }
 
@@ -292,9 +271,7 @@ func TestGestureWordBoundaries(t *testing.T) {
 	if err := g.SetWordBoundaries([]rune{' ', '.'}); err != nil {
 		t.Fatalf("SetWordBoundaries: %v", err)
 	}
-	if err := g.Reset(); err != nil {
-		t.Fatalf("Reset: %v", err)
-	}
+	g.Reset()
 	pressAt(t, g, 1, 0, 5000)
 	sel, ok = pressAt(t, g, 1, 0, 6000)
 	if !ok {
@@ -314,9 +291,7 @@ func TestGestureSetBehaviors(t *testing.T) {
 	}
 	g := newGesture(t, term, 20, 3)
 
-	if err := g.SetBehaviors(GestureBehaviorLine, GestureBehaviorWord, GestureBehaviorLine); err != nil {
-		t.Fatalf("SetBehaviors: %v", err)
-	}
+	g.SetBehaviors(GestureBehaviorLine, GestureBehaviorWord, GestureBehaviorLine)
 	sel, ok := pressAt(t, g, 1, 0, 0)
 	if !ok {
 		t.Fatal("single press with line behavior produced no selection")
@@ -335,14 +310,12 @@ func TestGestureDeepPress(t *testing.T) {
 	}
 	g := newGesture(t, term, 20, 3)
 
-	if _, _, err := g.DeepPress(); err != nil {
-		t.Fatalf("DeepPress: %v", err)
-	}
+	g.DeepPress()
 
 	pressAt(t, g, 1, 0, 0)
-	sel, ok, err := g.DeepPress()
-	if err != nil || !ok {
-		t.Fatalf("DeepPress() = %v, %v, %v; want the word under the press", sel, ok, err)
+	sel, ok := g.DeepPress()
+	if !ok {
+		t.Fatalf("DeepPress() = %v, %v; want the word under the press", sel, ok)
 	}
 	if got, want := selectionText(t, term, sel), "hello"; got != want {
 		t.Errorf("deep press selected %q, want %q", got, want)
@@ -350,8 +323,8 @@ func TestGestureDeepPress(t *testing.T) {
 	if count := g.ClickCount(); count != 0 {
 		t.Errorf("ClickCount() after a deep press = %d; want 0", count)
 	}
-	if _, ok, err := g.Drag(GestureDragEvent{X: 10, Y: 0, Xpos: 109, Ypos: 5}); err != nil || ok {
-		t.Errorf("Drag() after a deep press = %v, %v; want no selection", ok, err)
+	if _, ok := g.Drag(GestureDragEvent{X: 10, Y: 0, Xpos: 109, Ypos: 5}); ok {
+		t.Errorf("Drag() after a deep press = %v; want no selection", ok)
 	}
 }
 

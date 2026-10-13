@@ -14,9 +14,7 @@ import (
 
 func TestEventValuesCaptureAndRetainPayloads(t *testing.T) {
 	_, s := newStreamPair(t, 20, 3)
-	if err := s.SetUnknownMaxBytes(64); err != nil {
-		t.Fatal(err)
-	}
+	s.SetUnknownMaxBytes(64)
 	feed(t, s, "\x1b]2;first\x07\x1b]7;file:///first\x07\x1b]2;second\x07\x1b]7;file:///second\x07"+
 		"\x1b]777;notify;notice;body\x07\x1b]9;4;1;42\x07\x1b_unknown\x1b\\")
 	var got []Event
@@ -101,12 +99,12 @@ func TestFeedUntilGroundBoundaries(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			term, s := newStreamPair(t, 20, 2)
 			feed(t, s, tc.prefix)
-			result, err := s.FeedUntilGround([]byte(tc.suffix))
-			if err != nil || result.Consumed != tc.consumed || result.Reached != tc.reached {
-				t.Fatalf("result = %+v, %v", result, err)
+			result := s.FeedUntilGround([]byte(tc.suffix))
+			if result.Consumed != tc.consumed || result.Reached != tc.reached {
+				t.Fatalf("result = %+v", result)
 			}
-			if ground, err := s.AtGround(); err != nil || ground != tc.reached {
-				t.Fatalf("ground = %v, %v", ground, err)
+			if ground := s.AtGround(); ground != tc.reached {
+				t.Fatalf("ground = %v", ground)
 			}
 			text, err := term.PlainString()
 			if err != nil || strings.Contains(text, "X") || strings.Contains(text, "untouched") {
@@ -127,30 +125,24 @@ func TestRenderMetadataSnapshot(t *testing.T) {
 	if err := state.Update(term); err != nil {
 		t.Fatal(err)
 	}
-	cursor, err := state.Cursor()
-	if err != nil {
-		t.Fatal(err)
-	}
+	cursor := state.Cursor()
 	if cursor.X != 3 || cursor.Y != 1 || !cursor.ViewportHasValue || !cursor.Visible || !cursor.Blinking || cursor.Style != CursorStyleBar {
 		t.Fatalf("cursor = %+v", cursor)
 	}
-	colors, err := state.Colors()
-	if err != nil {
-		t.Fatal(err)
-	}
+	colors := state.Colors()
 	if colors.Foreground.Uint32() != 0x112233 || colors.Background.Uint32() != 0x445566 || colors.Cursor.Uint32() != 0x778899 || !colors.CursorHasValue {
 		t.Fatalf("colors = %+v", colors)
 	}
 	feed(t, s, "\x1b[1;1H\x1b[?25l\x1b]11;#000000\x07")
-	if beforeUpdate, err := state.Cursor(); err != nil || beforeUpdate != cursor {
-		t.Fatalf("snapshot changed without update: %+v, %v", beforeUpdate, err)
+	if beforeUpdate := state.Cursor(); beforeUpdate != cursor {
+		t.Fatalf("snapshot changed without update: %+v", beforeUpdate)
 	}
 	if err := state.Update(term); err != nil {
 		t.Fatal(err)
 	}
-	after, err := state.Cursor()
-	if err != nil || after.Visible {
-		t.Fatalf("updated cursor = %+v, %v", after, err)
+	after := state.Cursor()
+	if after.Visible {
+		t.Fatalf("updated cursor = %+v", after)
 	}
 	if colors.Background.Uint32() != 0x445566 || cursor.X != 3 {
 		t.Fatal("retained metadata changed")
@@ -180,13 +172,10 @@ func TestConfigurationConstructors(t *testing.T) {
 		t.Fatalf("identity = %q", replies.String())
 	}
 	feed(t, s, "1\r\n2\r\n3\r\n4")
-	screen, err := term.ActiveScreen()
-	if err != nil {
-		t.Fatal(err)
-	}
-	bar, err := screen.Scrollbar()
-	if err != nil || bar.Total != bar.Len || bar.Offset != 0 {
-		t.Fatalf("zero scrollback = %+v, %v", bar, err)
+	screen := term.ActiveScreen()
+	bar := screen.Scrollbar()
+	if bar.Total != bar.Len || bar.Offset != 0 {
+		t.Fatalf("zero scrollback = %+v", bar)
 	}
 	state, err := NewRenderState()
 	if err != nil {
@@ -196,13 +185,13 @@ func TestConfigurationConstructors(t *testing.T) {
 	if err := state.Update(term); err != nil {
 		t.Fatal(err)
 	}
-	cursor, err := state.Cursor()
-	if err != nil || cursor.Visible || cursor.Blinking {
-		t.Fatalf("explicit false = %+v, %v", cursor, err)
+	cursor := state.Cursor()
+	if cursor.Visible || cursor.Blinking {
+		t.Fatalf("explicit false = %+v", cursor)
 	}
-	colors, err := state.Colors()
-	if err != nil || colors.Background != (RGB{}) {
-		t.Fatalf("explicit black = %+v, %v", colors, err)
+	colors := state.Colors()
+	if colors.Background != (RGB{}) {
+		t.Fatalf("explicit black = %+v", colors)
 	}
 	for _, cfg := range []TerminalConfig{{}, {Cols: 1}, {Rows: 1}} {
 		if got, err := NewTerminalWithConfig(cfg); got != nil || !errors.Is(err, ErrOutOfRange) {
@@ -217,7 +206,7 @@ func TestConfigurationConstructors(t *testing.T) {
 func TestClipboardMIMEReply(t *testing.T) {
 	_, s := newStreamPair(t, 10, 2)
 	binary := []byte{0, 1, 255, 10}
-	if err := s.OnClipboardReadRequest(func(req *ClipboardRequest) {
+	s.OnClipboardReadRequest(func(req *ClipboardRequest) {
 		if err := req.Reply([]ClipboardContent{{MIME: "text/plain", Data: []byte("hello")}, {MIME: "application/octet-stream", Data: binary}}, false); err != nil {
 			t.Error(err)
 		}
@@ -225,9 +214,7 @@ func TestClipboardMIMEReply(t *testing.T) {
 		if err := req.ReplyText("duplicate", false); err != nil {
 			t.Error(err)
 		}
-	}); err != nil {
-		t.Fatal(err)
-	}
+	})
 	mimes := base64.StdEncoding.EncodeToString([]byte("text/plain application/octet-stream"))
 	feed(t, s, "\x1b]5522;type=read:id=multi;"+mimes+"\x1b\\")
 	var output bytes.Buffer
@@ -243,13 +230,11 @@ func TestClipboardMIMEReply(t *testing.T) {
 	if strings.Count(got, "status=DONE") != 1 {
 		t.Fatalf("duplicate reply: %q", got)
 	}
-	if err := s.OnClipboardReadRequest(func(req *ClipboardRequest) {
+	s.OnClipboardReadRequest(func(req *ClipboardRequest) {
 		if err := req.AddContent("text/plain", []byte("not authorized")); err != nil {
 			t.Error(err)
 		}
-	}); err != nil {
-		t.Fatal(err)
-	}
+	})
 	output.Reset()
 	feed(t, s, "\x1b]5522;type=read:id=denied;"+mimes+"\x1b\\")
 	if err := s.WriteReplies(&output); err != nil {
@@ -409,28 +394,31 @@ func TestNilClipboardRegistrationPreservesHandler(t *testing.T) {
 			before := zigoActiveCallbackHandleCount()
 			checkNil := func(wantHandles int64) {
 				t.Helper()
-				err := register(nil)
-				var callbackErr *CallbackError
-				if !errors.Is(err, ErrNilCallback) || !errors.As(err, &callbackErr) {
-					t.Fatalf("nil registration = %T: %v", err, err)
-				}
-				if got := zigoActiveCallbackHandleCount(); got != wantHandles {
-					t.Fatalf("callback handles = %d, want %d", got, wantHandles)
-				}
+				defer func() {
+					r := recover()
+					if r == nil {
+						t.Fatal("expected panic on nil registration")
+					}
+					err, ok := r.(error)
+					var callbackErr *CallbackError
+					if !ok || !errors.Is(err, ErrNilCallback) || !errors.As(err, &callbackErr) {
+						t.Fatalf("nil registration panic = %T: %v", r, r)
+					}
+					if got := zigoActiveCallbackHandleCount(); got != wantHandles {
+						t.Fatalf("callback handles = %d, want %d", got, wantHandles)
+					}
+				}()
+				register(nil)
 			}
 			checkNil(before)
 			calls := 0
-			if err := register(func(*ClipboardRequest) { calls++ }); err != nil {
-				t.Fatal(err)
-			}
+			register(func(*ClipboardRequest) { calls++ })
 			checkNil(before + 1)
 			feed(t, stream, sequence)
 			if calls != 1 {
 				t.Fatalf("existing handler calls = %d", calls)
 			}
-			if err := register(func(*ClipboardRequest) { calls += 10 }); err != nil {
-				t.Fatal(err)
-			}
+			register(func(*ClipboardRequest) { calls += 10 })
 			feed(t, stream, sequence)
 			if calls != 11 {
 				t.Fatalf("replacement handler calls = %d", calls)
@@ -491,10 +479,7 @@ func TestFunctionalOptionsAndConvenience(t *testing.T) {
 	}
 
 	// Test FormatString on Screen
-	screen, err := term.ActiveScreen()
-	if err != nil {
-		t.Fatal(err)
-	}
+	screen := term.ActiveScreen()
 	screenPlain, err := screen.PlainText()
 	if err != nil {
 		t.Fatal(err)
@@ -701,10 +686,7 @@ func TestSessionAdoptsEveryChildKind(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gesture, err := term.NewGesture()
-	if err != nil {
-		t.Fatal(err)
-	}
+	gesture := term.NewGesture()
 	ref, err := term.NewGridRef(PointTagViewport, 0, 0)
 	if err != nil {
 		t.Fatal(err)

@@ -4,6 +4,7 @@ package gostty
 
 import (
 	"io"
+	"os"
 	"runtime"
 	"strings"
 	"sync"
@@ -101,17 +102,19 @@ func (te *Terminal) zigoDropChild() {
 }
 
 type zigoTerminalCleanupState struct {
-	ptr unsafe.Pointer
+	ptr  unsafe.Pointer
+	site []byte
 }
 
 func zigoNewTerminal(ptr unsafe.Pointer) *Terminal {
 	value := &Terminal{ptr: ptr}
-	state := zigoTerminalCleanupState{ptr: ptr}
+	state := zigoTerminalCleanupState{ptr: ptr, site: zigoLeakSite()}
 	value.cleanup = runtime.AddCleanup(value, zigoCleanupTerminal, state)
 	return value
 }
 
 func zigoCleanupTerminal(state zigoTerminalCleanupState) {
+	zigoReportLeak("Terminal", state.site)
 	if state.ptr != nil {
 		raw.TerminalDeinit(state.ptr)
 	}
@@ -232,24 +235,16 @@ func NewTerminalWithConfig(cfg TerminalConfig, extra ...TerminalOption) (_ *Term
 		}
 	}()
 	if cfg.BackgroundColor != nil {
-		if err = term.SetDefaultBackgroundColor(*cfg.BackgroundColor); err != nil {
-			return nil, err
-		}
+		term.SetDefaultBackgroundColor(*cfg.BackgroundColor)
 	}
 	if cfg.ForegroundColor != nil {
-		if err = term.SetDefaultForegroundColor(*cfg.ForegroundColor); err != nil {
-			return nil, err
-		}
+		term.SetDefaultForegroundColor(*cfg.ForegroundColor)
 	}
 	if cfg.CursorColor != nil {
-		if err = term.SetDefaultCursorColor(*cfg.CursorColor); err != nil {
-			return nil, err
-		}
+		term.SetDefaultCursorColor(*cfg.CursorColor)
 	}
 	for _, mode := range cfg.ModeDefaults {
-		if err = term.SetDefaultMode(mode.Mode, mode.Enabled); err != nil {
-			return nil, err
-		}
+		term.SetDefaultMode(mode.Mode, mode.Enabled)
 	}
 	return term, nil
 }
@@ -283,34 +278,22 @@ func (t *Terminal) NewStreamWithConfig(cfg StreamConfig) (_ *Stream, err error) 
 			_ = s.Close()
 		}
 	}()
-	if err = s.SetUnknownMaxBytes(cfg.UnknownMaxBytes); err != nil {
-		return nil, err
-	}
+	s.SetUnknownMaxBytes(cfg.UnknownMaxBytes)
 	if cfg.Version != nil {
-		if err = s.SetVersionReport(cfg.Version.Name, cfg.Version.Version); err != nil {
-			return nil, err
-		}
+		s.SetVersionReport(cfg.Version.Name, cfg.Version.Version)
 	}
-	if err = s.SetEnquiryResponse(cfg.EnquiryResponse); err != nil {
-		return nil, err
-	}
+	s.SetEnquiryResponse(cfg.EnquiryResponse)
 	if cfg.ColorScheme != nil {
 		if *cfg.ColorScheme != ColorSchemeDark && *cfg.ColorScheme != ColorSchemeLight {
 			return nil, &RangeError{Operation: "Terminal.NewStreamWithConfig", Parameter: "ColorScheme", Type: "ColorScheme"}
 		}
-		if err = s.ColorSchemeChanged(*cfg.ColorScheme); err != nil {
-			return nil, err
-		}
+		s.ColorSchemeChanged(*cfg.ColorScheme)
 	}
 	if cfg.ClipboardRead != nil {
-		if err = s.OnClipboardReadRequest(cfg.ClipboardRead); err != nil {
-			return nil, err
-		}
+		s.OnClipboardReadRequest(cfg.ClipboardRead)
 	}
 	if cfg.ClipboardWrite != nil {
-		if err = s.OnClipboardWriteRequest(cfg.ClipboardWrite); err != nil {
-			return nil, err
-		}
+		s.OnClipboardWriteRequest(cfg.ClipboardWrite)
 	}
 	return s, nil
 }
@@ -994,16 +977,18 @@ func (s *Search) zigoPoison(cause *NativePanicError) {
 type zigoSearchCleanupState struct {
 	ptr    unsafe.Pointer
 	parent zigoChildHandle
+	site   []byte
 }
 
 func zigoNewSearch(ptr unsafe.Pointer, parent zigoChildHandle) *Search {
 	value := &Search{ptr: ptr, parent: parent}
-	state := zigoSearchCleanupState{ptr: ptr, parent: parent}
+	state := zigoSearchCleanupState{ptr: ptr, parent: parent, site: zigoLeakSite()}
 	value.cleanup = runtime.AddCleanup(value, zigoCleanupSearch, state)
 	return value
 }
 
 func zigoCleanupSearch(state zigoSearchCleanupState) {
+	zigoReportLeak("Search", state.site)
 	if state.ptr != nil {
 		raw.SearchSearchClose(state.ptr)
 	}
@@ -1137,16 +1122,18 @@ func (g *GridRef) zigoPoison(cause *NativePanicError) {
 type zigoGridRefCleanupState struct {
 	ptr    unsafe.Pointer
 	parent zigoChildHandle
+	site   []byte
 }
 
 func zigoNewGridRef(ptr unsafe.Pointer, parent zigoChildHandle) *GridRef {
 	value := &GridRef{ptr: ptr, parent: parent}
-	state := zigoGridRefCleanupState{ptr: ptr, parent: parent}
+	state := zigoGridRefCleanupState{ptr: ptr, parent: parent, site: zigoLeakSite()}
 	value.cleanup = runtime.AddCleanup(value, zigoCleanupGridRef, state)
 	return value
 }
 
 func zigoCleanupGridRef(state zigoGridRefCleanupState) {
+	zigoReportLeak("GridRef", state.site)
 	if state.ptr != nil {
 		raw.GridRefGridRefClose(state.ptr)
 	}
@@ -1280,16 +1267,18 @@ func (g *Gesture) zigoPoison(cause *NativePanicError) {
 type zigoGestureCleanupState struct {
 	ptr    unsafe.Pointer
 	parent zigoChildHandle
+	site   []byte
 }
 
 func zigoNewGesture(ptr unsafe.Pointer, parent zigoChildHandle) *Gesture {
 	value := &Gesture{ptr: ptr, parent: parent}
-	state := zigoGestureCleanupState{ptr: ptr, parent: parent}
+	state := zigoGestureCleanupState{ptr: ptr, parent: parent, site: zigoLeakSite()}
 	value.cleanup = runtime.AddCleanup(value, zigoCleanupGesture, state)
 	return value
 }
 
 func zigoCleanupGesture(state zigoGestureCleanupState) {
+	zigoReportLeak("Gesture", state.site)
 	if state.ptr != nil {
 		raw.GestureGestureClose(state.ptr)
 	}
@@ -1445,16 +1434,18 @@ type zigoStreamCleanupState struct {
 	ptr             unsafe.Pointer
 	parent          zigoChildHandle
 	callbackHandles []zigoCallbackHandle
+	site            []byte
 }
 
 func zigoNewStream(ptr unsafe.Pointer, parent zigoChildHandle, callbackHandles []zigoCallbackHandle) *Stream {
 	value := &Stream{ptr: ptr, parent: parent, callbackHandles: callbackHandles}
-	state := zigoStreamCleanupState{ptr: ptr, parent: parent, callbackHandles: callbackHandles}
+	state := zigoStreamCleanupState{ptr: ptr, parent: parent, callbackHandles: callbackHandles, site: zigoLeakSite()}
 	value.cleanup = runtime.AddCleanup(value, zigoCleanupStream, state)
 	return value
 }
 
 func zigoCleanupStream(state zigoStreamCleanupState) {
+	zigoReportLeak("Stream", state.site)
 	if state.ptr != nil {
 		raw.StreamFreeStream(state.ptr)
 	}
@@ -1698,17 +1689,19 @@ func (o *OSCParser) zigoPoison(cause *NativePanicError) {
 }
 
 type zigoOSCParserCleanupState struct {
-	ptr unsafe.Pointer
+	ptr  unsafe.Pointer
+	site []byte
 }
 
 func zigoNewOSCParser(ptr unsafe.Pointer) *OSCParser {
 	value := &OSCParser{ptr: ptr}
-	state := zigoOSCParserCleanupState{ptr: ptr}
+	state := zigoOSCParserCleanupState{ptr: ptr, site: zigoLeakSite()}
 	value.cleanup = runtime.AddCleanup(value, zigoCleanupOSCParser, state)
 	return value
 }
 
 func zigoCleanupOSCParser(state zigoOSCParserCleanupState) {
+	zigoReportLeak("OSCParser", state.site)
 	if state.ptr != nil {
 		raw.OscParserFreeOscParser(state.ptr)
 	}
@@ -1811,17 +1804,19 @@ func (s *Snapshot) zigoPoison(cause *NativePanicError) {
 }
 
 type zigoSnapshotCleanupState struct {
-	ptr unsafe.Pointer
+	ptr  unsafe.Pointer
+	site []byte
 }
 
 func zigoNewSnapshot(ptr unsafe.Pointer) *Snapshot {
 	value := &Snapshot{ptr: ptr}
-	state := zigoSnapshotCleanupState{ptr: ptr}
+	state := zigoSnapshotCleanupState{ptr: ptr, site: zigoLeakSite()}
 	value.cleanup = runtime.AddCleanup(value, zigoCleanupSnapshot, state)
 	return value
 }
 
 func zigoCleanupSnapshot(state zigoSnapshotCleanupState) {
+	zigoReportLeak("Snapshot", state.site)
 	if state.ptr != nil {
 		raw.SnapshotDeinit(state.ptr)
 	}
@@ -1924,17 +1919,19 @@ func (s *SnapshotDecoder) zigoPoison(cause *NativePanicError) {
 }
 
 type zigoSnapshotDecoderCleanupState struct {
-	ptr unsafe.Pointer
+	ptr  unsafe.Pointer
+	site []byte
 }
 
 func zigoNewSnapshotDecoder(ptr unsafe.Pointer) *SnapshotDecoder {
 	value := &SnapshotDecoder{ptr: ptr}
-	state := zigoSnapshotDecoderCleanupState{ptr: ptr}
+	state := zigoSnapshotDecoderCleanupState{ptr: ptr, site: zigoLeakSite()}
 	value.cleanup = runtime.AddCleanup(value, zigoCleanupSnapshotDecoder, state)
 	return value
 }
 
 func zigoCleanupSnapshotDecoder(state zigoSnapshotDecoderCleanupState) {
+	zigoReportLeak("SnapshotDecoder", state.site)
 	if state.ptr != nil {
 		raw.SnapshotDecoderFreeSnapshotDecoder(state.ptr)
 	}
@@ -2041,17 +2038,19 @@ func (r *RenderState) zigoPoison(cause *NativePanicError) {
 }
 
 type zigoRenderStateCleanupState struct {
-	ptr unsafe.Pointer
+	ptr  unsafe.Pointer
+	site []byte
 }
 
 func zigoNewRenderState(ptr unsafe.Pointer) *RenderState {
 	value := &RenderState{ptr: ptr}
-	state := zigoRenderStateCleanupState{ptr: ptr}
+	state := zigoRenderStateCleanupState{ptr: ptr, site: zigoLeakSite()}
 	value.cleanup = runtime.AddCleanup(value, zigoCleanupRenderState, state)
 	return value
 }
 
 func zigoCleanupRenderState(state zigoRenderStateCleanupState) {
+	zigoReportLeak("RenderState", state.site)
 	if state.ptr != nil {
 		raw.RenderStateDeinit(state.ptr)
 	}
@@ -2154,17 +2153,19 @@ func (k *KittyImages) zigoPoison(cause *NativePanicError) {
 }
 
 type zigoKittyImagesCleanupState struct {
-	ptr unsafe.Pointer
+	ptr  unsafe.Pointer
+	site []byte
 }
 
 func zigoNewKittyImages(ptr unsafe.Pointer) *KittyImages {
 	value := &KittyImages{ptr: ptr}
-	state := zigoKittyImagesCleanupState{ptr: ptr}
+	state := zigoKittyImagesCleanupState{ptr: ptr, site: zigoLeakSite()}
 	value.cleanup = runtime.AddCleanup(value, zigoCleanupKittyImages, state)
 	return value
 }
 
 func zigoCleanupKittyImages(state zigoKittyImagesCleanupState) {
+	zigoReportLeak("KittyImages", state.site)
 	if state.ptr != nil {
 		raw.KittyImagesFreeKittyImages(state.ptr)
 	}
@@ -2209,4 +2210,28 @@ func (k *KittyImages) zigoTakeLocked() (zigoKittyImagesCleanupState, bool) {
 		state.ptr = nil
 	}
 	return state, true
+}
+
+// zigoLeakTracking is set from ZIGO_DEBUG_LEAKS once, when the package is
+// initialised. While it is set, a handle the garbage collector reclaims
+// without Close reports on standard error where it was created.
+var zigoLeakTracking = os.Getenv("ZIGO_DEBUG_LEAKS") != ""
+
+// zigoLeakSite records the creating goroutine's stack, or nothing while leak
+// tracking is off.
+func zigoLeakSite() []byte {
+	if !zigoLeakTracking {
+		return nil
+	}
+	buffer := make([]byte, 4096)
+	return buffer[:runtime.Stack(buffer, false)]
+}
+
+// zigoReportLeak runs only from a garbage-collector cleanup; Close hands the
+// cleanup a state without a site, so a closed handle is never reported.
+func zigoReportLeak(typeName string, site []byte) {
+	if site == nil {
+		return
+	}
+	os.Stderr.WriteString("zigo: " + typeName + " was garbage-collected without Close; created at:\n" + string(site) + "\n")
 }

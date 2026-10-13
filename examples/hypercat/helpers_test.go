@@ -105,11 +105,7 @@ func (tab *terminal) dragToCell(t *testing.T, col, row int, rectangle bool) {
 // screenOf is the tab's active screen, for the tests that drive it directly.
 func screenOf(t *testing.T, tab *terminal) *gostty.Screen {
 	t.Helper()
-	screen, err := tab.vt.ActiveScreen()
-	if err != nil {
-		t.Fatalf("ActiveScreen: %v", err)
-	}
-	return screen
+	return tab.vt.ActiveScreen()
 }
 
 // The tab tests run this binary as their shell, so it has to be able to be one.

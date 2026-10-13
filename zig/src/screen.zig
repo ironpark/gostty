@@ -207,3 +207,8 @@ pub fn screenSelectionString(self: *Screen, gpa: Allocator) !?[]const u8 {
 pub fn screenStartHyperlink(self: *Screen, uri: []const u8, id: []const u8) !void {
     try self.startHyperlink(uri, if (id.len == 0) null else id);
 }
+
+/// Clear scrollback history and reset cursor to top.
+pub fn screenScrollClear(self: *Screen) Allocator.Error!void {
+    return self.scrollClear();
+}

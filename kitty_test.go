@@ -40,10 +40,7 @@ func placements(t *testing.T, images *KittyImages, term *Terminal) []KittyPlacem
 	if err := images.Update(term); err != nil {
 		t.Fatalf("KittyImages.Update: %v", err)
 	}
-	n, err := images.PlacementCount()
-	if err != nil {
-		t.Fatalf("PlacementCount: %v", err)
-	}
+	n := images.PlacementCount()
 	dst := make([]KittyPlacement, n)
 	if _, err := images.Placements(dst); err != nil {
 		t.Fatalf("Placements: %v", err)
@@ -94,10 +91,7 @@ func TestKittyTransmitAndPlace(t *testing.T) {
 		t.Error("generation is still 0 after a transmit")
 	}
 
-	image, ok, err := term.KittyImage(p.ImageID)
-	if err != nil {
-		t.Fatalf("KittyImage: %v", err)
-	}
+	image, ok := term.KittyImage(p.ImageID)
 	if !ok {
 		t.Fatal("KittyImage: no image for a placed id")
 	}
@@ -129,9 +123,7 @@ func TestKittyTransmitAndPlace(t *testing.T) {
 
 func TestKittyMissingImage(t *testing.T) {
 	term, _ := newStreamPair(t, 20, 5)
-	if _, ok, err := term.KittyImage(99); err != nil {
-		t.Fatalf("KittyImage: %v", err)
-	} else if ok {
+	if _, ok := term.KittyImage(99); ok {
 		t.Error("KittyImage reported an image that was never transmitted")
 	}
 	n, err := term.KittyImageData(99, make([]byte, 16))
@@ -226,9 +218,7 @@ func TestKittyDelete(t *testing.T) {
 	if after == before {
 		t.Error("the generation did not move for a delete")
 	}
-	if _, ok, err := term.KittyImage(1); err != nil {
-		t.Fatalf("KittyImage: %v", err)
-	} else if ok {
+	if _, ok := term.KittyImage(1); ok {
 		t.Error("the image is still there after a delete")
 	}
 }
@@ -243,10 +233,7 @@ func TestKittyQueryIsAnswered(t *testing.T) {
 	pixels := base64.StdEncoding.EncodeToString([]byte{1, 2, 3})
 	feed(t, stream, fmt.Sprintf("\x1b_Ga=q,f=24,s=1,v=1,t=d,i=31;%s\x1b\\", pixels))
 
-	has, err := stream.HasReplies()
-	if err != nil {
-		t.Fatalf("HasReplies: %v", err)
-	}
+	has := stream.HasReplies()
 	if !has {
 		t.Fatal("the query was not answered")
 	}
@@ -259,9 +246,7 @@ func TestKittyQueryIsAnswered(t *testing.T) {
 	}
 
 	// Drained.
-	if has, err := stream.HasReplies(); err != nil {
-		t.Fatalf("HasReplies: %v", err)
-	} else if has {
+	if has := stream.HasReplies(); has {
 		t.Error("the replies were not cleared")
 	}
 }

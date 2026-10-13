@@ -80,9 +80,7 @@ func (tab *terminal) start() (err error) {
 	}
 	tab.vt, tab.stream = tab.core.Terminal(), tab.core.Stream()
 	// OSC 72 registrations tell the host which dropped file types to offer.
-	if err := tab.stream.OnDrag(tab.onDrag); err != nil {
-		return err
-	}
+	tab.stream.OnDrag(tab.onDrag)
 	if tab.state, err = gostty.NewRenderState(); err != nil {
 		return err
 	}
@@ -204,9 +202,7 @@ func (tab *terminal) resize(cols, rows int) error {
 		return err
 	}
 	// The selection gesture measures the pointer in pixels, so it is told too.
-	if err := tab.syncGestureGeometry(); err != nil {
-		return err
-	}
+	tab.syncGestureGeometry()
 	if err := tab.shell.Pty.Resize(cols, rows); err != nil {
 		return err
 	}
@@ -257,11 +253,7 @@ func (tab *terminal) close() {
 // onScreen borrows the active screen for one operation. It is fetched each
 // time because programs switch between the primary and alternate screens.
 func (tab *terminal) onScreen(f func(*gostty.Screen) error) error {
-	screen, err := tab.vt.ActiveScreen()
-	if err != nil {
-		return err
-	}
-	return f(screen)
+	return f(tab.vt.ActiveScreen())
 }
 
 // Tab switches reset interaction state and repaint the whole grid.
@@ -358,7 +350,8 @@ func (tab *terminal) themeChanged() error {
 	}
 	// A program that subscribed with mode 2031 is told now. The scheme is
 	// resolved per tab, since the terminal theme takes that tab's colours.
-	return tab.stream.ColorSchemeChanged(tab.colorScheme())
+	tab.stream.ColorSchemeChanged(tab.colorScheme())
+	return nil
 }
 
 func (tab *terminal) fontsChanged() {
@@ -379,19 +372,16 @@ func (tab *terminal) applyPalette() error {
 	palette := tab.currentTheme().Palette
 	if palette == nil {
 		// The terminal theme: put back the terminal's own colours.
-		if err := tab.vt.ResetDefaultPalette(); err != nil {
-			return err
-		}
-		return tab.vt.ResetPalette()
+		tab.vt.ResetDefaultPalette()
+		tab.vt.ResetPalette()
+		return nil
 	}
 	for i, c := range palette {
 		if err := tab.vt.SetDefaultPaletteColor(uint8(i), gostty.RGBFromUint32(ui.Packed(c))); err != nil {
 			return err
 		}
 	}
-	if err := tab.vt.ResetPalette(); err != nil {
-		return err
-	}
+	tab.vt.ResetPalette()
 	// A cell keeps the palette index it was written with and the colour is
 	// resolved as the state is read, but nothing on screen changed, so an
 	// existing render state would report every row clean and hand back the

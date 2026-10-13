@@ -39,9 +39,14 @@ func TestSearchPanelActionsManageNativeSearch(t *testing.T) {
 	if tab.search.handle != nil || tab.panels.Mode != ui.None {
 		t.Fatal("closing panel retained native search")
 	}
-	if _, err := search.MatchCount(); err == nil {
-		t.Fatal("native search handle was not closed")
-	}
+	func() {
+		defer func() {
+			if recover() == nil {
+				t.Fatal("native search handle was not closed")
+			}
+		}()
+		_ = search.MatchCount()
+	}()
 }
 
 func TestSearchHighlightBuffersRefreshAndClear(t *testing.T) {

@@ -93,7 +93,7 @@ pub fn build(b: *std.Build) void {
         .{ .name = "convenience", .root_source_file = b.path("plugins/convenience/src/plugin.zig") },
         .{ .name = "stringer", .root_source_file = b.path("plugins/stringer/src/plugin.zig") },
         .{ .name = "trim", .root_source_file = b.path("plugins/trim/src/plugin.zig") },
-        .{ .name = "must", .root_source_file = b.path("plugins/must/src/plugin.zig"), .config = zigo.configJson(b, .{ .replace_field_getters = true }) },
+        .{ .name = "must", .root_source_file = b.path("plugins/must/src/plugin.zig"), .config = zigo.configJson(b, .{ .replace_field_getters = false }) },
         .{ .name = "satisfies", .root_source_file = zigo_dep.path("plugins/satisfies/src/plugin.zig") },
         .{ .name = "enumkit", .root_source_file = zigo_dep.path("plugins/enumkit/src/plugin.zig") },
     };

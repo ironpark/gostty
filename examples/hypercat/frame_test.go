@@ -39,8 +39,8 @@ func TestGraphemeClusteringPutsAnEmojiInOneCell(t *testing.T) {
 	win := newTabTestApp(t)
 	tab := win.current()
 
-	if enabled, err := tab.vt.ModeEnabled(gostty.ModeGraphemeCluster); err != nil || !enabled {
-		t.Fatalf("ModeEnabled(grapheme cluster) = %v, %v; want true", enabled, err)
+	if !tab.vt.ModeEnabled(gostty.ModeGraphemeCluster) {
+		t.Fatal("ModeEnabled(grapheme cluster) = false; want true")
 	}
 
 	feedTab(t, tab, "\U0001F1F0\U0001F1F7|")
@@ -64,8 +64,8 @@ func TestGraphemeClusteringSurvivesAReset(t *testing.T) {
 	tab := win.current()
 
 	feedTab(t, tab, "\x1bc")
-	if enabled, err := tab.vt.ModeEnabled(gostty.ModeGraphemeCluster); err != nil || !enabled {
-		t.Fatalf("ModeEnabled(grapheme cluster) after RIS = %v, %v; want true", enabled, err)
+	if !tab.vt.ModeEnabled(gostty.ModeGraphemeCluster) {
+		t.Fatal("ModeEnabled(grapheme cluster) after RIS = false; want true")
 	}
 }
 

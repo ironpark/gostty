@@ -6,7 +6,7 @@ const api = p.api;
 
 const Snapshot = p.trimmed(api.handle("Snapshot", .{})).context();
 
-const SnapshotDecoder = p.trimmed(api.handle("SnapshotDecoder", .{})).context();
+const SnapshotDecoder = p.trimmed(api.handle("SnapshotDecoder", .{}).use(zigo.features.panics, .{})).context();
 
 const RenderState = p.trimmedAs(api.handle("RenderState", .{ .fields = &.{
     .{ .path = "rows", .doc = "The number of rows the last update covered." },
@@ -15,7 +15,7 @@ const RenderState = p.trimmedAs(api.handle("RenderState", .{ .fields = &.{
     .{ .path = "cursor.visual_style", .name = "cursorStyle" },
     .{ .path = "cursor.blinking", .name = "cursorBlinking" },
     .{ .path = "cursor.password_input", .name = "cursorPasswordInput" },
-} }).with(.{ .doc =
+} }).use(zigo.features.panics, .{}).with(.{ .doc =
     \\RenderState owns a render snapshot. Update requires exclusive access to both
     \\the terminal and this state. After Update, reads do not touch the terminal,
     \\but must be serialized with Update, Clean and Close on this state. Copied
@@ -25,7 +25,7 @@ const RenderState = p.trimmedAs(api.handle("RenderState", .{ .fields = &.{
 
 const KittyImages = p.trimmedAs(api.handle("KittyImages", .{ .fields = &.{
     .{ .path = "generation" },
-} }), "kitty").context();
+} }).use(zigo.features.panics, .{}), "kitty").context();
 
 const snapshot_group = Snapshot.members(p.functions(api, .{
     // `decodeSnapshot` reads the serialized form off an `io.Reader`, so there

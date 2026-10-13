@@ -34,7 +34,7 @@ func BenchmarkFeedLine(b *testing.B) {
 	term, _ := NewTerminal(80, 24)
 	stream, _ := term.NewStream(0)
 	defer func() { stream.Close(); term.Close() }()
-	_ = term.SetScrollbackMaxBytes(0)
+	term.SetScrollbackMaxBytes(0)
 	data := []byte("hello \x1b[31mworld\x1b[0m\r\n")
 	b.SetBytes(int64(len(data)))
 	b.ResetTimer()
@@ -43,12 +43,12 @@ func BenchmarkFeedLine(b *testing.B) {
 	}
 }
 
-// CarriageReturn returns only an error: no out parameter, no value to marshal.
+// CarriageReturn returns nothing: no out parameter, no value to marshal.
 func BenchmarkCarriageReturn(b *testing.B) {
 	term, _ := NewTerminal(80, 24)
 	defer term.Close()
 	b.ResetTimer()
 	for b.Loop() {
-		_ = term.CarriageReturn()
+		term.CarriageReturn()
 	}
 }

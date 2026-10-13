@@ -1230,9 +1230,10 @@ func AttributeUnknown() Attribute {
 
 // ScrollViewport is a tagged-union value passed to native code by copy.
 type ScrollViewport struct {
-	tag   ScrollViewportTag
-	delta int
-	row   uint
+	tag         ScrollViewportTag
+	delta       int
+	row         uint
+	deltaPrompt int
 }
 
 // Tag returns the active ScrollViewport variant.
@@ -1246,6 +1247,11 @@ func (value ScrollViewport) AsDelta() (int, bool) {
 // AsRow returns the row payload and whether it is the active variant.
 func (value ScrollViewport) AsRow() (uint, bool) {
 	return value.row, value.tag == ScrollViewportTagRow
+}
+
+// AsDeltaPrompt returns the delta_prompt payload and whether it is the active variant.
+func (value ScrollViewport) AsDeltaPrompt() (int, bool) {
+	return value.deltaPrompt, value.tag == ScrollViewportTagDeltaPrompt
 }
 
 // ScrollViewportTop constructs the top variant.
@@ -1266,4 +1272,9 @@ func ScrollViewportDelta(n int) ScrollViewport {
 // ScrollViewportRow constructs the row variant.
 func ScrollViewportRow(n uint) ScrollViewport {
 	return ScrollViewport{tag: ScrollViewportTagRow, row: n}
+}
+
+// ScrollViewportDeltaPrompt constructs the delta_prompt variant.
+func ScrollViewportDeltaPrompt(n int) ScrollViewport {
+	return ScrollViewport{tag: ScrollViewportTagDeltaPrompt, deltaPrompt: n}
 }

@@ -65,8 +65,8 @@ func installPNGDecoder(t *testing.T) *int {
 func TestPngRefusedWithoutDecoder(t *testing.T) {
 	term, stream := newStreamPair(t, 20, 5)
 	transmitPNG(t, stream, 5, redPNG(t))
-	if _, ok, err := term.KittyImage(5); err != nil || ok {
-		t.Fatalf("KittyImage(5) without a decoder = ok %v, err %v; want false, nil", ok, err)
+	if _, ok := term.KittyImage(5); ok {
+		t.Fatalf("KittyImage(5) without a decoder = ok %v; want false", ok)
 	}
 }
 
@@ -80,9 +80,9 @@ func TestPngDecodedOnArrival(t *testing.T) {
 	if *calls != 1 {
 		t.Fatalf("decoder called %d times, want 1", *calls)
 	}
-	img, ok, err := term.KittyImage(6)
-	if err != nil || !ok {
-		t.Fatalf("KittyImage(6) = ok %v, err %v; want true, nil", ok, err)
+	img, ok := term.KittyImage(6)
+	if !ok {
+		t.Fatalf("KittyImage(6) = ok %v; want true", ok)
 	}
 	if img.Format != KittyFormatRgba {
 		t.Errorf("format = %v, want rgba", img.Format)
@@ -112,8 +112,8 @@ func TestPngDecoderMustReply(t *testing.T) {
 	if !errors.Is(sizeErr, sys.ErrSizeMismatch) {
 		t.Errorf("ReplyPNGImage with 4 bytes for 2x2 = %v, want ErrSizeMismatch", sizeErr)
 	}
-	if _, ok, err := term.KittyImage(7); err != nil || ok {
-		t.Errorf("KittyImage(7) after an unanswered decode = ok %v, err %v; want false, nil", ok, err)
+	if _, ok := term.KittyImage(7); ok {
+		t.Errorf("KittyImage(7) after an unanswered decode = ok %v; want false", ok)
 	}
 }
 
