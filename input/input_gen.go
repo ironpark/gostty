@@ -187,8 +187,13 @@ func EncodeFocus(writer io.Writer, event FocusEvent) error {
 // IsSafePaste: Returns true if the data looks safe to paste. Data is considered
 // unsafe if it contains any of the following:
 //
-// - `\n`: Newlines can be used to inject commands.
-// - `\x1b[201~`: This is the end of a bracketed paste. This cane be used
+// - `\n` or `\r`: Line terminators can be used to inject commands.
+// A carriage return is what the Enter key sends, and an unbracketed
+// paste converts newlines to carriage returns anyway, so the two are
+// equivalent on the input stream. Other terminals that warn on
+// multi-line pastes (iTerm2, Windows Terminal, kitty) treat both
+// bytes as line terminators as well.
+// - `\x1b[201~`: This is the end of a bracketed paste. This can be used
 // to exit a bracketed paste and inject commands.
 //
 // We consider any scenario unsafe regardless of current terminal state.

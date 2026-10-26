@@ -83,7 +83,7 @@ pub fn trimmedAs(comptime entry: zigo.Entry, comptime prefix: []const u8) zigo.E
 /// enum can live in a config file or a flag; it is on for the enums a consumer
 /// is likely to name in text. `.open` carries through an enum ghostty leaves
 /// non-exhaustive so that a number arriving from a pty never fails
-/// `@enumFromInt`. `.kit` adds `<Enum>Values()` and `IsKnown()`: on for the
+/// `@fromBackingInt`. `.kit` adds `<Enum>Values()` and `IsKnown()`: on for the
 /// two long enough to want listing, and for every open one, where `IsKnown` is
 /// the only way to tell a tag from a number the pty made up. A false there
 /// means "not a name this binding knows", not "not a value ghostty accepts".

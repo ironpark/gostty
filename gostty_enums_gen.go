@@ -2495,8 +2495,8 @@ const (
 	OSCCommandKittyClipboardProtocol OSCCommand = 23
 	// OSCCommandKittyDndProtocol corresponds to the Zig tag kitty_dnd_protocol.
 	OSCCommandKittyDndProtocol OSCCommand = 24
-	// OSCCommandContextSignal corresponds to the Zig tag context_signal.
-	OSCCommandContextSignal OSCCommand = 25
+	// OSCCommandHierarchicalContext corresponds to the Zig tag hierarchical_context.
+	OSCCommandHierarchicalContext OSCCommand = 25
 	// OSCCommandKittyDesktopNotification corresponds to the Zig tag kitty_desktop_notification.
 	OSCCommandKittyDesktopNotification OSCCommand = 26
 	// OSCCommandUnknown corresponds to the Zig tag unknown.
@@ -2531,7 +2531,7 @@ var zigoOSCCommandNames = [29]string{
 	22: "kitty_text_sizing",
 	23: "kitty_clipboard_protocol",
 	24: "kitty_dnd_protocol",
-	25: "context_signal",
+	25: "hierarchical_context",
 	26: "kitty_desktop_notification",
 	27: "unknown",
 	28: "program_status",
@@ -2598,8 +2598,8 @@ func ParseOSCCommand(text string) (OSCCommand, error) {
 		return OSCCommandKittyClipboardProtocol, nil
 	case "kitty_dnd_protocol":
 		return OSCCommandKittyDndProtocol, nil
-	case "context_signal":
-		return OSCCommandContextSignal, nil
+	case "hierarchical_context":
+		return OSCCommandHierarchicalContext, nil
 	case "kitty_desktop_notification":
 		return OSCCommandKittyDesktopNotification, nil
 	case "unknown":

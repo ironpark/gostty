@@ -59,6 +59,19 @@ pub fn build(b: *std.Build) void {
 
     const ghostty_vt = ghostty.module("ghostty-vt");
 
+    // Zig 0.17's clang 22 no longer knows the `evex512` target feature, and
+    // the Highway ghostty vendors still spells it into the target string of
+    // every AVX-512 and AVX10 target whenever clang is 18 or newer. The
+    // attribute is then ignored and ghostty's SIMD sources fail to compile
+    // for x86_64. Leave those targets out of Highway's dynamic dispatch, so
+    // x86_64 tops out at AVX2, until the vendored Highway catches up. The
+    // macro is set on the module that compiles the SIMD sources, so it
+    // survives zigo's clone for every platform; it means nothing off x86.
+    ghostty_vt.addCMacro(
+        "HWY_DISABLED_TARGETS",
+        "(HWY_AVX3|HWY_AVX3_DL|HWY_AVX3_ZEN4|HWY_AVX3_SPR|HWY_AVX10_2|HWY_AVX10_2_512)",
+    );
+
     const gostty = b.addModule("gostty", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
@@ -79,7 +92,15 @@ pub fn build(b: *std.Build) void {
     const build_info_config = zigo.configJson(b, .{
         .ghostty_revision = ghostty_url[std.mem.lastIndexOfScalar(u8, ghostty_url, '#').? + 1 ..],
         .zigo_version = zigo_version,
-        .optimize = @tagName(optimize),
+        // Spelled the way `-Doptimize` takes it. Zig 0.17 renamed the enum
+        // tags (`safe` for `ReleaseSafe`), but the published value should not
+        // move with the toolchain.
+        .optimize = switch (optimize) {
+            .debug => "Debug",
+            .safe => "ReleaseSafe",
+            .fast => "ReleaseFast",
+            .small => "ReleaseSmall",
+        },
     });
 
     // Compile declarations and generators against the same public plugin contract.
@@ -160,6 +181,6 @@ pub fn build(b: *std.Build) void {
     // lld, which accept them, so Windows is bundled like the rest.
     for (bindings.native_libraries) |native| {
         native.lib.bundle_compiler_rt = true;
-        native.lib.bundle_ubsan_rt = optimize == .Debug;
+        native.lib.bundle_ubsan_rt = optimize == .debug;
     }
 }

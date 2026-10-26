@@ -57,6 +57,7 @@
     "Overflow": 10,
     "PageCountOverflow": 31,
     "PageSizeOverflow": 76,
+    "PageTooLarge": 83,
     "PayloadNotExhausted": 41,
     "PayloadTooLarge": 21,
     "ReadFailed": 36,
@@ -84,7 +85,7 @@
     "ZeroRowCount": 47
   },
   "ir_version": 1,
-  "next_code": 83,
+  "next_code": 84,
   "reserved": {
     "-1": "Unknown",
     "-2": "PanicCaught",

@@ -27,6 +27,14 @@ GO_PKGS := ./... ./examples/hypercat/...
 # The install prefix is the repository root, so `libs/` lands beside the Go
 # package. The generated cgo directives point at it, so it has to match.
 ZIG_FLAGS := -Doptimize=$(OPTIMIZE) --prefix $(CURDIR)
+# Build against a zigo checkout instead of the release build.zig.zon pins,
+# for a zigo change that has not been tagged yet:
+#
+#   make generate ZIGO_FORK=../zigo
+ZIGO_FORK ?=
+ifneq ($(ZIGO_FORK),)
+ZIG_FLAGS += --fork=$(abspath $(ZIGO_FORK))
+endif
 
 .DEFAULT_GOAL := help
 .PHONY: help all build generate align-macos-archives test test-plugins race bench vet example example-sync verify check doctor coverage report fmt clean distclean

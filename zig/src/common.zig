@@ -30,7 +30,7 @@ pub const CursorStyle = vt.CursorStyle;
 /// `terminal.CursorStyleReq`, so the 7-tag request enum is unreachable by name
 /// from libghostty-vt's public API. Reported upstream; read it off the method
 /// signature until that is fixed.
-pub const CursorStyleReq = @typeInfo(@TypeOf(Terminal.setCursorStyle)).@"fn".params[1].type.?;
+pub const CursorStyleReq = @typeInfo(@TypeOf(Terminal.setCursorStyle)).@"fn".param_types[1].?;
 
 /// Which of a terminal's screens is active.
 pub const ScreenKey = vt.ScreenSet.Key;
