@@ -182,6 +182,94 @@ func (value DragNotice) String() string {
 // handed; a pointer receiver would stop this compiling.
 var _ fmt.Stringer = *new(DragNotice)
 
+// FeedBoundaries mirrors the Zig packed struct of the same name.
+type FeedBoundaries struct {
+	// Ground: The parser is not inside any escape sequence or partial UTF-8
+	// character.
+	Ground bool
+	// ApcStart: The byte that started an APC, SOS or PM string: `_`, `X` or `^` after
+	// ESC, or 0x9F, 0x98 or 0x9E.
+	ApcStart bool
+	// ApcEnd: The byte that ended an APC, SOS or PM string.
+	ApcEnd bool
+	// DcsStart: The byte that started a DCS string: `P` after ESC, or 0x90. The DCS
+	// header follows it.
+	DcsStart bool
+	// DcsEnd: The byte that ended a DCS string, in its header or its payload.
+	DcsEnd bool
+	// OscStart: The byte that started an OSC string: `]` after ESC, or 0x9D.
+	OscStart bool
+	// OscEnd: The byte that ended an OSC string, including one with a number the
+	// terminal does not know.
+	OscEnd bool
+	Pad    uint16
+}
+
+func zigoFeedBoundariesToBacking(value FeedBoundaries) uint16 {
+	var result uint64
+	result |= (uint64(zigoBoolToUint8(value.Ground)) & 0x1) << 0
+	result |= (uint64(zigoBoolToUint8(value.ApcStart)) & 0x1) << 1
+	result |= (uint64(zigoBoolToUint8(value.ApcEnd)) & 0x1) << 2
+	result |= (uint64(zigoBoolToUint8(value.DcsStart)) & 0x1) << 3
+	result |= (uint64(zigoBoolToUint8(value.DcsEnd)) & 0x1) << 4
+	result |= (uint64(zigoBoolToUint8(value.OscStart)) & 0x1) << 5
+	result |= (uint64(zigoBoolToUint8(value.OscEnd)) & 0x1) << 6
+	result |= (uint64(value.Pad) & 0x1ff) << 7
+	return uint16(result)
+}
+
+// Backing returns the integer representation used by Zig.
+func (value FeedBoundaries) Backing() uint16 { return zigoFeedBoundariesToBacking(value) }
+
+// FeedBoundariesFromBacking reconstructs a FeedBoundaries from its Zig integer representation.
+func FeedBoundariesFromBacking(value uint16) FeedBoundaries {
+	return FeedBoundaries{
+		Ground:   ((uint64(value) >> 0) & 0x1) != 0,
+		ApcStart: ((uint64(value) >> 1) & 0x1) != 0,
+		ApcEnd:   ((uint64(value) >> 2) & 0x1) != 0,
+		DcsStart: ((uint64(value) >> 3) & 0x1) != 0,
+		DcsEnd:   ((uint64(value) >> 4) & 0x1) != 0,
+		OscStart: ((uint64(value) >> 5) & 0x1) != 0,
+		OscEnd:   ((uint64(value) >> 6) & 0x1) != 0,
+		Pad:      uint16(((uint64(value) >> 7) & 0x1ff)),
+	}
+}
+
+// String names the set members of FeedBoundaries, joined by "|". A member left at
+// its zero value is not named, so the zero FeedBoundaries is "none".
+func (value FeedBoundaries) String() string {
+	var parts []string
+	if value.Ground {
+		parts = append(parts, "Ground")
+	}
+	if value.ApcStart {
+		parts = append(parts, "ApcStart")
+	}
+	if value.ApcEnd {
+		parts = append(parts, "ApcEnd")
+	}
+	if value.DcsStart {
+		parts = append(parts, "DcsStart")
+	}
+	if value.DcsEnd {
+		parts = append(parts, "DcsEnd")
+	}
+	if value.OscStart {
+		parts = append(parts, "OscStart")
+	}
+	if value.OscEnd {
+		parts = append(parts, "OscEnd")
+	}
+	if len(parts) == 0 {
+		return "none"
+	}
+	return strings.Join(parts, "|")
+}
+
+// FeedBoundaries satisfies fmt.Stringer as a value, which is the form `%v` is
+// handed; a pointer receiver would stop this compiling.
+var _ fmt.Stringer = *new(FeedBoundaries)
+
 // RenderCursor mirrors the Zig packed struct of the same name.
 type RenderCursor struct {
 	X                uint16
@@ -569,24 +657,77 @@ type FeedBoundary struct {
 	Reached bool
 }
 
+// FeedStop mirrors the Zig `extern struct` of the same name.
+type FeedStop struct {
+	// Consumed: Bytes taken from the input, including the one that reached the
+	// boundary. Zero when the parser was already at ground and `ground` was
+	// asked for.
+	Consumed uint
+	// Reached: Every asked-for boundary the stopping byte reached.
+	Reached FeedBoundaries
+	// StartKind: The kind of string that started.
+	StartKind ControlString
+	// StartIntroducer: How the string started.
+	StartIntroducer ControlStringStart
+	// StartByte: The byte that started the string, such as `_`, `P`, `]` or 0x9F.
+	StartByte uint8
+	// EndKind: The kind of string that ended.
+	EndKind ControlString
+	// EndReason: Why the string ended.
+	EndReason ControlStringEnd
+	// EndByte: The byte that ended the string, such as ESC, BEL or 0x9C.
+	EndByte uint8
+}
+
 // SnapshotProgress mirrors the Zig `extern struct` of the same name.
 type SnapshotProgress struct {
-	// Rows prepended above what that screen already had, or zero when the
-	// page was read and validated but dropped -- because the screen is gone,
-	// the terminal was resized, or the scrollback has no room.
+	// Rows a page prepended above what that screen already had, or zero when
+	// the page was read and validated but dropped -- because the screen is
+	// gone, the terminal was resized, or the scrollback has no room.
 	Rows uint64
+	// Bytes: The pixel bytes attached to an image, or zero when the pixels were
+	// read and validated but dropped.
+	Bytes uint64
 	// Remaining: Pages still to come for the same screen.
 	Remaining uint32
-	// Pad: Padding so the struct's layout matches across the C ABI. Not data.
-	Pad uint32
+	// ImageID: The ID of the image the pixels are for.
+	ImageID uint32
+	// Frame: The frame the pixels are for, as the Kitty graphics protocol counts
+	// frames: 1 is the image itself and 2 and up are its animation frames.
+	Frame uint32
+	// Kind: Which record this is, and so which of the fields above are set.
+	Kind SnapshotRecord
 }
 
 // SnapshotProgress is reinterpreted as raw.SnapshotProgressData instead of copied, so the two
 // layouts must stay identical.
 var _ = [1]struct{}{}[unsafe.Sizeof(SnapshotProgress{})-unsafe.Sizeof(raw.SnapshotProgressData{})]
 var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgress{}.Rows)-unsafe.Offsetof(raw.SnapshotProgressData{}.Rows)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgress{}.Bytes)-unsafe.Offsetof(raw.SnapshotProgressData{}.Bytes)]
 var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgress{}.Remaining)-unsafe.Offsetof(raw.SnapshotProgressData{}.Remaining)]
-var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgress{}.Pad)-unsafe.Offsetof(raw.SnapshotProgressData{}.Pad)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgress{}.ImageID)-unsafe.Offsetof(raw.SnapshotProgressData{}.ImageID)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgress{}.Frame)-unsafe.Offsetof(raw.SnapshotProgressData{}.Frame)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgress{}.Kind)-unsafe.Offsetof(raw.SnapshotProgressData{}.Kind)]
+
+// SnapshotKittyCounts mirrors the Zig `extern struct` of the same name.
+type SnapshotKittyCounts struct {
+	// PrimaryPendingBytes: Bytes of image and frame pixels still to come for the primary screen.
+	PrimaryPendingBytes uint64
+	// AlternatePendingBytes: The same for the alternate screen.
+	AlternatePendingBytes uint64
+	// PrimaryImages: Images restored on the primary screen.
+	PrimaryImages uint32
+	// AlternateImages: Images restored on the alternate screen.
+	AlternateImages uint32
+}
+
+// SnapshotKittyCounts is reinterpreted as raw.SnapshotKittyCountsData instead of copied, so the two
+// layouts must stay identical.
+var _ = [1]struct{}{}[unsafe.Sizeof(SnapshotKittyCounts{})-unsafe.Sizeof(raw.SnapshotKittyCountsData{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotKittyCounts{}.PrimaryPendingBytes)-unsafe.Offsetof(raw.SnapshotKittyCountsData{}.PrimaryPendingBytes)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotKittyCounts{}.AlternatePendingBytes)-unsafe.Offsetof(raw.SnapshotKittyCountsData{}.AlternatePendingBytes)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotKittyCounts{}.PrimaryImages)-unsafe.Offsetof(raw.SnapshotKittyCountsData{}.PrimaryImages)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotKittyCounts{}.AlternateImages)-unsafe.Offsetof(raw.SnapshotKittyCountsData{}.AlternateImages)]
 
 // RenderColors mirrors the Zig `extern struct` of the same name.
 type RenderColors struct {
@@ -675,6 +816,78 @@ type KittyPlacement struct {
 	// Pad: Padding so the struct's layout matches across the C ABI. Not data.
 	Pad uint16
 }
+
+// RenderImagePlacement mirrors the Zig `extern struct` of the same name.
+type RenderImagePlacement struct {
+	// ImageGeneration: The generation of the image's pixels when the placement was found. A
+	// texture cached for this image and generation is still current.
+	ImageGeneration uint64
+	// ImageID: The image to draw.
+	ImageID uint32
+	// PlacementID: The placement ID, or zero when there is none. For a virtual run it is
+	// the one the placeholder cells ask for.
+	PlacementID uint32
+	// X: The column of the top-left cell, 0 at the left of the viewport. Can be
+	// negative for a placement that starts off the left edge.
+	X int32
+	// Y: The row of the top-left cell, 0 at the top of the viewport. Negative
+	// above it, for overscan rows or a placement that starts above the
+	// captured rows.
+	Y int32
+	// Cols: How many columns of cells the placement covers.
+	Cols uint32
+	// Rows: How many rows of cells the placement covers.
+	Rows uint32
+	// OffsetX: Where the image starts within the top-left cell, in pixels. A virtual
+	// run centers an image that does not fill its cells, so this can be more
+	// than one cell.
+	OffsetX uint32
+	// OffsetY: The vertical half of `offset_x`.
+	OffsetY uint32
+	// Width: The width to draw the image at, in pixels.
+	Width uint32
+	// Height: The height to draw the image at, in pixels.
+	Height uint32
+	// SourceX: The left edge of the part of the image to draw, in image pixels.
+	SourceX uint32
+	// SourceY: The top edge of that part, in image pixels.
+	SourceY uint32
+	// SourceWidth: The width of that part, in image pixels.
+	SourceWidth uint32
+	// SourceHeight: The height of that part, in image pixels.
+	SourceHeight uint32
+	// Z: The z-index, which orders images within a layer, lowest first.
+	Z int32
+	// Layer: The band to draw the image in, relative to backgrounds and text.
+	Layer KittyLayer
+	// Kind: How the placement was placed.
+	Kind RenderImageKind
+	// Pad: Padding so the struct's layout matches across the C ABI. Not data.
+	Pad uint16
+}
+
+// RenderImagePlacement is reinterpreted as raw.RenderImagePlacementData instead of copied, so the two
+// layouts must stay identical.
+var _ = [1]struct{}{}[unsafe.Sizeof(RenderImagePlacement{})-unsafe.Sizeof(raw.RenderImagePlacementData{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacement{}.ImageGeneration)-unsafe.Offsetof(raw.RenderImagePlacementData{}.ImageGeneration)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacement{}.ImageID)-unsafe.Offsetof(raw.RenderImagePlacementData{}.ImageID)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacement{}.PlacementID)-unsafe.Offsetof(raw.RenderImagePlacementData{}.PlacementID)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacement{}.X)-unsafe.Offsetof(raw.RenderImagePlacementData{}.X)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacement{}.Y)-unsafe.Offsetof(raw.RenderImagePlacementData{}.Y)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacement{}.Cols)-unsafe.Offsetof(raw.RenderImagePlacementData{}.Cols)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacement{}.Rows)-unsafe.Offsetof(raw.RenderImagePlacementData{}.Rows)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacement{}.OffsetX)-unsafe.Offsetof(raw.RenderImagePlacementData{}.OffsetX)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacement{}.OffsetY)-unsafe.Offsetof(raw.RenderImagePlacementData{}.OffsetY)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacement{}.Width)-unsafe.Offsetof(raw.RenderImagePlacementData{}.Width)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacement{}.Height)-unsafe.Offsetof(raw.RenderImagePlacementData{}.Height)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacement{}.SourceX)-unsafe.Offsetof(raw.RenderImagePlacementData{}.SourceX)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacement{}.SourceY)-unsafe.Offsetof(raw.RenderImagePlacementData{}.SourceY)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacement{}.SourceWidth)-unsafe.Offsetof(raw.RenderImagePlacementData{}.SourceWidth)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacement{}.SourceHeight)-unsafe.Offsetof(raw.RenderImagePlacementData{}.SourceHeight)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacement{}.Z)-unsafe.Offsetof(raw.RenderImagePlacementData{}.Z)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacement{}.Layer)-unsafe.Offsetof(raw.RenderImagePlacementData{}.Layer)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacement{}.Kind)-unsafe.Offsetof(raw.RenderImagePlacementData{}.Kind)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacement{}.Pad)-unsafe.Offsetof(raw.RenderImagePlacementData{}.Pad)]
 
 // KittyImage mirrors the Zig `extern struct` of the same name.
 type KittyImage struct {
@@ -845,11 +1058,36 @@ func zigoFeedBoundaryFromRaw(value raw.FeedBoundaryData) FeedBoundary {
 	}
 }
 
+func zigoFeedStopFromRaw(value raw.FeedStopData) FeedStop {
+	return FeedStop{
+		Consumed:        value.Consumed,
+		Reached:         FeedBoundariesFromBacking(value.Reached),
+		StartKind:       ControlString(value.StartKind),
+		StartIntroducer: ControlStringStart(value.StartIntroducer),
+		StartByte:       value.StartByte,
+		EndKind:         ControlString(value.EndKind),
+		EndReason:       ControlStringEnd(value.EndReason),
+		EndByte:         value.EndByte,
+	}
+}
+
 func zigoSnapshotProgressFromRaw(value raw.SnapshotProgressData) SnapshotProgress {
 	return SnapshotProgress{
 		Rows:      value.Rows,
+		Bytes:     value.Bytes,
 		Remaining: value.Remaining,
-		Pad:       value.Pad,
+		ImageID:   value.ImageID,
+		Frame:     value.Frame,
+		Kind:      SnapshotRecord(value.Kind),
+	}
+}
+
+func zigoSnapshotKittyCountsFromRaw(value raw.SnapshotKittyCountsData) SnapshotKittyCounts {
+	return SnapshotKittyCounts{
+		PrimaryPendingBytes:   value.PrimaryPendingBytes,
+		AlternatePendingBytes: value.AlternatePendingBytes,
+		PrimaryImages:         value.PrimaryImages,
+		AlternateImages:       value.AlternateImages,
 	}
 }
 

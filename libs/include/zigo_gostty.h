@@ -527,6 +527,22 @@ typedef uint8_t zg_clipboard_denial;
 #define ZG_CLIPBOARD_DENIAL_BUSY 2
 #define ZG_CLIPBOARD_DENIAL_IO_ERROR 3
 
+typedef uint8_t zg_control_string;
+#define ZG_CONTROL_STRING_APC 0
+#define ZG_CONTROL_STRING_DCS 1
+#define ZG_CONTROL_STRING_OSC 2
+
+typedef uint8_t zg_control_string_start;
+#define ZG_CONTROL_STRING_START_ESC 0
+#define ZG_CONTROL_STRING_START_C1 1
+
+typedef uint8_t zg_control_string_end;
+#define ZG_CONTROL_STRING_END_ST_ESC 0
+#define ZG_CONTROL_STRING_END_ST_C1 1
+#define ZG_CONTROL_STRING_END_CANCELLED 2
+#define ZG_CONTROL_STRING_END_ABORTED 3
+#define ZG_CONTROL_STRING_END_BEL 4
+
 typedef uint8_t zg_unknown_sequence_kind;
 #define ZG_UNKNOWN_SEQUENCE_KIND_APC 0
 #define ZG_UNKNOWN_SEQUENCE_KIND_OSC 1
@@ -580,6 +596,10 @@ typedef struct zg_snapshot zg_snapshot;
 typedef struct zg_snapshot_decoder zg_snapshot_decoder;
 typedef struct zg_render_state zg_render_state;
 typedef struct zg_kitty_images zg_kitty_images;
+typedef uint32_t zg_snapshot_record;
+#define ZG_SNAPSHOT_RECORD_PAGE 0
+#define ZG_SNAPSHOT_RECORD_IMAGE 1
+
 typedef uint8_t zg_cell_width;
 #define ZG_CELL_WIDTH_NARROW 0
 #define ZG_CELL_WIDTH_WIDE 1
@@ -595,6 +615,11 @@ typedef uint8_t zg_kitty_layer;
 #define ZG_KITTY_LAYER_BELOW_BG 0
 #define ZG_KITTY_LAYER_BELOW_TEXT 1
 #define ZG_KITTY_LAYER_ABOVE_TEXT 2
+
+typedef uint8_t zg_render_image_kind;
+#define ZG_RENDER_IMAGE_KIND_VIRTUAL 0
+#define ZG_RENDER_IMAGE_KIND_RELATIVE 1
+#define ZG_RENDER_IMAGE_KIND_FIXED 2
 
 typedef uint8_t zg_kitty_format;
 #define ZG_KITTY_FORMAT_RGB 0
@@ -727,11 +752,32 @@ typedef struct zg_feed_boundary {
     uint8_t reached;
 } zg_feed_boundary;
 
+typedef struct zg_feed_stop {
+    size_t consumed;
+    uint16_t reached;
+    zg_control_string start_kind;
+    zg_control_string_start start_introducer;
+    uint8_t start_byte;
+    zg_control_string end_kind;
+    zg_control_string_end end_reason;
+    uint8_t end_byte;
+} zg_feed_stop;
+
 typedef struct zg_snapshot_progress {
     uint64_t rows;
+    uint64_t bytes;
     uint32_t remaining;
-    uint32_t _pad;
+    uint32_t image_id;
+    uint32_t frame;
+    zg_snapshot_record kind;
 } zg_snapshot_progress;
+
+typedef struct zg_snapshot_kitty_counts {
+    uint64_t primary_pending_bytes;
+    uint64_t alternate_pending_bytes;
+    uint32_t primary_images;
+    uint32_t alternate_images;
+} zg_snapshot_kitty_counts;
 
 typedef struct zg_render_colors {
     zg_rgb background;
@@ -767,6 +813,28 @@ typedef struct zg_kitty_placement {
     uint8_t virtual;
     uint16_t _pad;
 } zg_kitty_placement;
+
+typedef struct zg_render_image_placement {
+    uint64_t image_generation;
+    uint32_t image_id;
+    uint32_t placement_id;
+    int32_t x;
+    int32_t y;
+    uint32_t cols;
+    uint32_t rows;
+    uint32_t offset_x;
+    uint32_t offset_y;
+    uint32_t width;
+    uint32_t height;
+    uint32_t source_x;
+    uint32_t source_y;
+    uint32_t source_width;
+    uint32_t source_height;
+    int32_t z;
+    zg_kitty_layer layer;
+    zg_render_image_kind kind;
+    uint16_t _pad;
+} zg_render_image_placement;
 
 typedef struct zg_kitty_image {
     uint64_t generation;
@@ -887,6 +955,10 @@ ZIGO_EXPORT int32_t zg_terminal_cursor_up(zg_terminal * self, size_t count);
 ZIGO_EXPORT int32_t zg_terminal_cursor_down(zg_terminal * self, size_t count);
 ZIGO_EXPORT int32_t zg_terminal_cursor_left(zg_terminal * self, size_t count);
 ZIGO_EXPORT int32_t zg_terminal_cursor_right(zg_terminal * self, size_t count);
+ZIGO_EXPORT int32_t zg_terminal_set_cursor_row(zg_terminal * self, size_t row);
+ZIGO_EXPORT int32_t zg_terminal_set_cursor_col(zg_terminal * self, size_t col);
+ZIGO_EXPORT int32_t zg_terminal_cursor_row_relative(zg_terminal * self, size_t count);
+ZIGO_EXPORT int32_t zg_terminal_cursor_col_relative(zg_terminal * self, size_t count);
 ZIGO_EXPORT int32_t zg_terminal_save_cursor(zg_terminal * self);
 ZIGO_EXPORT int32_t zg_terminal_restore_cursor(zg_terminal * self);
 ZIGO_EXPORT int32_t zg_terminal_index(zg_terminal * self);
@@ -963,6 +1035,7 @@ ZIGO_EXPORT int32_t zg_terminal_set_kitty_graphics_size_limit(zg_terminal * self
 ZIGO_EXPORT int32_t zg_terminal_set_kitty_graphics_loading_limits(zg_terminal * self, uint8_t file, const uint8_t * temp_dir_ptr, size_t temp_dir_len, uint8_t shared_memory);
 ZIGO_EXPORT int32_t zg_terminal_kitty_image(zg_terminal * self, uint32_t image_id, uint8_t * out_result_has, zg_kitty_image * out_result);
 ZIGO_EXPORT int32_t zg_terminal_kitty_image_data(zg_terminal * self, uint32_t image_id, uint8_t * dst_ptr, size_t dst_len, size_t * out_result);
+ZIGO_EXPORT int32_t zg_terminal_kitty_animation_tick(zg_terminal * self, uint64_t now_ms, uint8_t * out_result_has, uint64_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_scroll_region(zg_terminal * self, zg_scroll_region * out_result);
 ZIGO_EXPORT int32_t zg_terminal_charset(zg_terminal * self, uint8_t slot, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_terminal_mouse_tracking(zg_terminal * self, uint8_t * out_result);
@@ -1025,6 +1098,7 @@ ZIGO_EXPORT uint8_t zg_color_name_default(uint8_t self, zg_rgb * out_result);
 ZIGO_EXPORT int32_t zg_stream_free_stream(zg_stream * self);
 ZIGO_EXPORT int32_t zg_stream_at_ground(zg_stream * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_stream_feed_until_ground(zg_stream * self, const uint8_t * data_ptr, size_t data_len, zg_feed_boundary * out_result);
+ZIGO_EXPORT int32_t zg_stream_feed_until(zg_stream * self, const uint8_t * data_ptr, size_t data_len, uint16_t boundaries, uint8_t * out_result_has, zg_feed_stop * out_result);
 ZIGO_EXPORT int32_t zg_stream_feed(zg_stream * self, const uint8_t * bytes_ptr, size_t bytes_len);
 ZIGO_EXPORT int32_t zg_stream_next_event_value(zg_stream * self, uint8_t * * out_result_ptr, size_t * out_result_len);
 ZIGO_EXPORT int32_t zg_stream_resize_cells(zg_stream * self, uint16_t width, uint16_t height, uint32_t cell_width, uint32_t cell_height);
@@ -1079,6 +1153,8 @@ ZIGO_EXPORT int32_t zg_snapshot_decoder_ready(zg_snapshot_decoder * self, size_t
 ZIGO_EXPORT int32_t zg_snapshot_decoder_restore_into(zg_snapshot_decoder * self, zg_terminal * term);
 ZIGO_EXPORT int32_t zg_snapshot_decoder_continuation(zg_snapshot_decoder * self, const uint8_t * * out_result_ptr, size_t * out_result_len);
 ZIGO_EXPORT int32_t zg_snapshot_decoder_next(zg_snapshot_decoder * self, zg_terminal * term, uint8_t * out_result_has, zg_snapshot_progress * out_result);
+ZIGO_EXPORT int32_t zg_snapshot_decoder_set_kitty_image_storage_limit(zg_snapshot_decoder * self, size_t bytes);
+ZIGO_EXPORT int32_t zg_snapshot_decoder_kitty_counts(zg_snapshot_decoder * self, zg_snapshot_kitty_counts * out_result);
 ZIGO_EXPORT int32_t zg_new_render_state(zg_render_state * * out_result);
 ZIGO_EXPORT int32_t zg_render_state_deinit(zg_render_state * self);
 ZIGO_EXPORT int32_t zg_render_state_update(zg_render_state * self, zg_terminal * t);
@@ -1092,6 +1168,9 @@ ZIGO_EXPORT int32_t zg_render_state_dirty_rows(zg_render_state * self, uint16_t 
 ZIGO_EXPORT int32_t zg_render_state_row_cells(zg_render_state * self, uint16_t y, zg_render_cell * dst_ptr, size_t dst_len, size_t * out_result);
 ZIGO_EXPORT int32_t zg_render_state_graphemes(zg_render_state * self, uint16_t x, uint16_t y, uint32_t * dst_ptr, size_t dst_len, size_t * out_result);
 ZIGO_EXPORT int32_t zg_render_state_hyperlink_at(zg_render_state * self, uint16_t x, uint16_t y, const uint8_t * * out_result_ptr, size_t * out_result_len);
+ZIGO_EXPORT int32_t zg_render_state_image_placement_count(zg_render_state * self, size_t * out_result);
+ZIGO_EXPORT int32_t zg_render_state_image_placements(zg_render_state * self, zg_render_image_placement * dst_ptr, size_t dst_len, size_t * out_result);
+ZIGO_EXPORT int32_t zg_render_state_image_placements_generation(zg_render_state * self, uint64_t * out_result);
 ZIGO_EXPORT int32_t zg_new_kitty_images(zg_kitty_images * * out_result);
 ZIGO_EXPORT int32_t zg_kitty_images_free_kitty_images(zg_kitty_images * self);
 ZIGO_EXPORT int32_t zg_kitty_images_update(zg_kitty_images * self, zg_terminal * term);

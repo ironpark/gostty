@@ -70,6 +70,7 @@
     "TerminalTaken": 77,
     "TooManyGraphemes": 30,
     "UnexpectedHistoryKey": 73,
+    "UnexpectedKittyKey": 84,
     "UnexpectedRecordTag": 42,
     "UnexpectedScreenKey": 69,
     "UnknownPoint": 5,
@@ -85,7 +86,7 @@
     "ZeroRowCount": 47
   },
   "ir_version": 1,
-  "next_code": 84,
+  "next_code": 85,
   "reserved": {
     "-1": "Unknown",
     "-2": "PanicCaught",

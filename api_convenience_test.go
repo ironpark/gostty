@@ -114,6 +114,47 @@ func TestFeedUntilGroundBoundaries(t *testing.T) {
 	}
 }
 
+// FeedUntil finds where each OSC starts and ends in the same parse that
+// applies it, so the content between the two stops is the OSC body.
+func TestFeedUntilStringBoundaries(t *testing.T) {
+	term, s := newStreamPair(t, 20, 2)
+	input := []byte("a\x1b]2;title\x07b\x1bPq\x1b\\")
+	set := FeedBoundaries{OscStart: true, OscEnd: true, DcsStart: true}
+
+	stop, ok := s.FeedUntil(input, set)
+	if !ok || stop.Consumed != 3 || !stop.Reached.OscStart || stop.StartKind != ControlStringOsc ||
+		stop.StartIntroducer != ControlStringStartEsc || stop.StartByte != ']' {
+		t.Fatalf("OSC start stop = %+v, %v", stop, ok)
+	}
+	rest := input[stop.Consumed:]
+
+	stop, ok = s.FeedUntil(rest, set)
+	if !ok || !stop.Reached.OscEnd || stop.EndKind != ControlStringOsc || stop.EndReason != ControlStringEndBel {
+		t.Fatalf("OSC end stop = %+v, %v", stop, ok)
+	}
+	if body := string(rest[:stop.Consumed-1]); body != "2;title" {
+		t.Fatalf("OSC body = %q", body)
+	}
+	rest = rest[stop.Consumed:]
+
+	stop, ok = s.FeedUntil(rest, set)
+	if !ok || !stop.Reached.DcsStart || stop.Reached.OscStart || stop.StartKind != ControlStringDcs {
+		t.Fatalf("DCS start stop = %+v, %v", stop, ok)
+	}
+	rest = rest[stop.Consumed:]
+
+	// Nothing asked for is left, so the rest goes in whole.
+	if stop, ok := s.FeedUntil(rest, set); ok {
+		t.Fatalf("stopped past the last boundary: %+v", stop)
+	}
+	if text, err := term.PlainString(); err != nil || text != "ab" {
+		t.Fatalf("text = %q, %v; want the bytes outside the strings applied", text, err)
+	}
+	if title, ok := term.GetTitle(); !ok || title != "title" {
+		t.Fatalf("title = %q, %v; want the OSC applied", title, ok)
+	}
+}
+
 func TestRenderMetadataSnapshot(t *testing.T) {
 	term, s := newStreamPair(t, 10, 3)
 	state, err := NewRenderState()

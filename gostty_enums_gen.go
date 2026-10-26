@@ -2417,6 +2417,178 @@ func (value ClipboardDenial) String() string {
 	return "ClipboardDenial(" + strconv.Itoa(int(value)) + ")"
 }
 
+// ControlString represents the corresponding Zig enum.
+type ControlString uint8
+
+const (
+	// ControlStringApc corresponds to the Zig tag apc.
+	ControlStringApc ControlString = 0
+	// ControlStringDcs corresponds to the Zig tag dcs.
+	ControlStringDcs ControlString = 1
+	// ControlStringOsc corresponds to the Zig tag osc.
+	ControlStringOsc ControlString = 2
+)
+
+var zigoControlStringNames = [3]string{
+	0: "apc",
+	1: "dcs",
+	2: "osc",
+}
+
+// String returns the Zig tag name.
+func (value ControlString) String() string {
+	if value >= 0 && value <= 2 {
+		return zigoControlStringNames[uint64(value)]
+	}
+	return "ControlString(" + strconv.Itoa(int(value)) + ")"
+}
+
+// ParseControlString returns the ControlString named by text, which is a Zig tag name.
+func ParseControlString(text string) (ControlString, error) {
+	switch text {
+	case "apc":
+		return ControlStringApc, nil
+	case "dcs":
+		return ControlStringDcs, nil
+	case "osc":
+		return ControlStringOsc, nil
+	}
+	return 0, &EnumParseError{Type: "ControlString", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value ControlString) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseControlString.
+func (value *ControlString) UnmarshalText(text []byte) error {
+	parsed, err := ParseControlString(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// ControlStringStart represents the corresponding Zig enum.
+type ControlStringStart uint8
+
+const (
+	// ControlStringStartEsc followed by the introducer byte. Only that byte is counted in the
+	// stop's `consumed`, because the ESC may have arrived in an earlier feed.
+	ControlStringStartEsc ControlStringStart = 0
+	// ControlStringStartC1: A single 8-bit introducer, 0x9F, 0x98, 0x9E, 0x90 or 0x9D. At ground
+	// these bytes decode as UTF-8, so they only start a string inside
+	// another escape sequence.
+	ControlStringStartC1 ControlStringStart = 1
+)
+
+var zigoControlStringStartNames = [2]string{
+	0: "esc",
+	1: "c1",
+}
+
+// String returns the Zig tag name.
+func (value ControlStringStart) String() string {
+	if value >= 0 && value <= 1 {
+		return zigoControlStringStartNames[uint64(value)]
+	}
+	return "ControlStringStart(" + strconv.Itoa(int(value)) + ")"
+}
+
+// ParseControlStringStart returns the ControlStringStart named by text, which is a Zig tag name.
+func ParseControlStringStart(text string) (ControlStringStart, error) {
+	switch text {
+	case "esc":
+		return ControlStringStartEsc, nil
+	case "c1":
+		return ControlStringStartC1, nil
+	}
+	return 0, &EnumParseError{Type: "ControlStringStart", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value ControlStringStart) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseControlStringStart.
+func (value *ControlStringStart) UnmarshalText(text []byte) error {
+	parsed, err := ParseControlStringStart(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// ControlStringEnd represents the corresponding Zig enum.
+type ControlStringEnd uint8
+
+const (
+	// ControlStringEndStEsc: ESC, the first byte of the terminator `ESC \`. The ESC is consumed and
+	// the byte after it is not.
+	ControlStringEndStEsc ControlStringEnd = 0
+	// ControlStringEndStC1: 0x9C, the 8-bit terminator.
+	ControlStringEndStC1 ControlStringEnd = 1
+	// ControlStringEndCancelled: CAN (0x18) or SUB (0x1A) cut the string short.
+	ControlStringEndCancelled ControlStringEnd = 2
+	// ControlStringEndAborted: Another 8-bit control byte cut the string short. It runs as a control
+	// or starts a sequence of its own; see the stop's `reached`.
+	ControlStringEndAborted ControlStringEnd = 3
+	// ControlStringEndBel (0x07). Only an OSC ends this way.
+	ControlStringEndBel ControlStringEnd = 4
+)
+
+var zigoControlStringEndNames = [5]string{
+	0: "st_esc",
+	1: "st_c1",
+	2: "cancelled",
+	3: "aborted",
+	4: "bel",
+}
+
+// String returns the Zig tag name.
+func (value ControlStringEnd) String() string {
+	if value >= 0 && value <= 4 {
+		return zigoControlStringEndNames[uint64(value)]
+	}
+	return "ControlStringEnd(" + strconv.Itoa(int(value)) + ")"
+}
+
+// ParseControlStringEnd returns the ControlStringEnd named by text, which is a Zig tag name.
+func ParseControlStringEnd(text string) (ControlStringEnd, error) {
+	switch text {
+	case "st_esc":
+		return ControlStringEndStEsc, nil
+	case "st_c1":
+		return ControlStringEndStC1, nil
+	case "cancelled":
+		return ControlStringEndCancelled, nil
+	case "aborted":
+		return ControlStringEndAborted, nil
+	case "bel":
+		return ControlStringEndBel, nil
+	}
+	return 0, &EnumParseError{Type: "ControlStringEnd", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value ControlStringEnd) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseControlStringEnd.
+func (value *ControlStringEnd) UnmarshalText(text []byte) error {
+	parsed, err := ParseControlStringEnd(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
 // UnknownSequenceKind represents the corresponding Zig enum.
 type UnknownSequenceKind uint8
 
@@ -2753,6 +2925,57 @@ func (value *SemanticPromptAction) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// SnapshotRecord represents the corresponding Zig enum.
+type SnapshotRecord uint32
+
+const (
+	// SnapshotRecordPage: A page of scrollback, with its Kitty graphics placements, described by
+	// the rows and remaining fields.
+	SnapshotRecordPage SnapshotRecord = 0
+	// SnapshotRecordImage: The pixels of a Kitty graphics image or animation frame, described by
+	// the image ID, frame and bytes fields.
+	SnapshotRecordImage SnapshotRecord = 1
+)
+
+var zigoSnapshotRecordNames = [2]string{
+	0: "page",
+	1: "image",
+}
+
+// String returns the Zig tag name.
+func (value SnapshotRecord) String() string {
+	if value >= 0 && value <= 1 {
+		return zigoSnapshotRecordNames[uint64(value)]
+	}
+	return "SnapshotRecord(" + strconv.Itoa(int(value)) + ")"
+}
+
+// ParseSnapshotRecord returns the SnapshotRecord named by text, which is a Zig tag name.
+func ParseSnapshotRecord(text string) (SnapshotRecord, error) {
+	switch text {
+	case "page":
+		return SnapshotRecordPage, nil
+	case "image":
+		return SnapshotRecordImage, nil
+	}
+	return 0, &EnumParseError{Type: "SnapshotRecord", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value SnapshotRecord) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseSnapshotRecord.
+func (value *SnapshotRecord) UnmarshalText(text []byte) error {
+	parsed, err := ParseSnapshotRecord(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
 // CellWidth represents the corresponding Zig enum.
 type CellWidth uint8
 
@@ -2856,6 +3079,63 @@ func (value KittyLayer) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler with ParseKittyLayer.
 func (value *KittyLayer) UnmarshalText(text []byte) error {
 	parsed, err := ParseKittyLayer(string(text))
+	if err != nil {
+		return err
+	}
+	*value = parsed
+	return nil
+}
+
+// RenderImageKind represents the corresponding Zig enum.
+type RenderImageKind uint8
+
+const (
+	// RenderImageKindVirtual: One run of neighboring unicode placeholder cells in a single row. Its
+	// `rows` is always 1 and its `z` always -1, in `below_text`.
+	RenderImageKindVirtual RenderImageKind = 0
+	// RenderImageKindRelative: Positioned relative to another placement, which is a virtual or fixed
+	// one, possibly through a chain of other relative ones.
+	RenderImageKindRelative RenderImageKind = 1
+	// RenderImageKindFixed: At a cell on the screen, scrolling with the text around it. Reported at
+	// full size when any part of it is captured, so it may need clipping.
+	RenderImageKindFixed RenderImageKind = 2
+)
+
+var zigoRenderImageKindNames = [3]string{
+	0: "virtual",
+	1: "relative",
+	2: "fixed",
+}
+
+// String returns the Zig tag name.
+func (value RenderImageKind) String() string {
+	if value >= 0 && value <= 2 {
+		return zigoRenderImageKindNames[uint64(value)]
+	}
+	return "RenderImageKind(" + strconv.Itoa(int(value)) + ")"
+}
+
+// ParseRenderImageKind returns the RenderImageKind named by text, which is a Zig tag name.
+func ParseRenderImageKind(text string) (RenderImageKind, error) {
+	switch text {
+	case "virtual":
+		return RenderImageKindVirtual, nil
+	case "relative":
+		return RenderImageKindRelative, nil
+	case "fixed":
+		return RenderImageKindFixed, nil
+	}
+	return 0, &EnumParseError{Type: "RenderImageKind", Text: text}
+}
+
+// MarshalText implements encoding.TextMarshaler with the String spelling.
+func (value RenderImageKind) MarshalText() ([]byte, error) {
+	return []byte(value.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler with ParseRenderImageKind.
+func (value *RenderImageKind) UnmarshalText(text []byte) error {
+	parsed, err := ParseRenderImageKind(string(text))
 	if err != nil {
 		return err
 	}

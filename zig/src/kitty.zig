@@ -387,3 +387,21 @@ pub fn kittyImageData(term: *Terminal, image_id: u32, dst: []u8) !usize {
     @memcpy(dst[0..bytes.len], bytes);
     return bytes.len;
 }
+
+/// Advance the Kitty animations on the active screen to `now_ms` and report
+/// when the next frame is due, on the same clock, or null when no running
+/// animation needs another tick.
+///
+/// `now_ms` is a monotonic timestamp on a clock of the caller's choosing, the
+/// same one on every call. A renderer ticks once per frame it builds and wakes
+/// itself at the returned time. Each tick shows at most one new frame per
+/// animation with no catch-up, as Kitty does, so a late tick slows the
+/// animation rather than skipping frames. An advanced frame moves its image's
+/// generation, which is what tells a texture cache to fetch the pixels again.
+///
+/// Animations only play here: without ticks, an image stays on whatever frame
+/// the program last selected.
+pub fn kittyAnimationTick(term: *Terminal, now_ms: u64) ?u64 {
+    const delay = term.screens.active.kitty_images.animationTick(common.io, now_ms) orelse return null;
+    return now_ms +| delay;
+}

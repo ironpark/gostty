@@ -92,6 +92,9 @@ pub const SnapshotDecoder = struct {
     inner: vt.snapshot.Decoder,
     /// What `ready` produced, until `restoreInto` takes the terminal.
     decoded: ?vt.snapshot.Decoded = null,
+    /// The Kitty graphics storage limit `ready` restores each screen with,
+    /// or null for the default of a new screen.
+    kitty_image_storage_limit: ?usize = null,
 
     /// zigo boxes the struct after this returns it by value, so the reader
     /// moves and the pointer the decoder holds goes stale. Every entry point
@@ -101,20 +104,47 @@ pub const SnapshotDecoder = struct {
     }
 };
 
-/// How much one `snapshotDecoderNext` applied.
+/// Which kind of record one `snapshotDecoderNext` consumed.
 ///
-/// ghostty also names the screen the page went to. It is not here: its enum is
-/// backed by the narrowest integer that fits the keys, which an extern struct
-/// cannot hold, and `next` routes the page itself so the key is informational.
+/// Backed by a u32 so it fills the last slot of `SnapshotProgress` exactly and
+/// the struct needs no padding fields.
+pub const SnapshotRecord = enum(u32) {
+    /// A page of scrollback, with its Kitty graphics placements, described by
+    /// the rows and remaining fields.
+    page,
+    /// The pixels of a Kitty graphics image or animation frame, described by
+    /// the image ID, frame and bytes fields.
+    image,
+};
+
+/// One record `snapshotDecoderNext` consumed: a page of scrollback, or the
+/// pixels of a Kitty graphics image.
+///
+/// ghostty spells this as a tagged union. It is flattened here because a
+/// tagged union cannot come back optional, and `next` reports the end of the
+/// snapshot with null; the fields of the record `kind` does not name are zero.
+///
+/// ghostty also names the screen each record went to. It is not here: its enum
+/// is backed by the narrowest integer that fits the keys, which an extern
+/// struct cannot hold, and `next` routes the record itself so the key is
+/// informational.
 pub const SnapshotProgress = extern struct {
-    /// Rows prepended above what that screen already had, or zero when the
-    /// page was read and validated but dropped -- because the screen is gone,
-    /// the terminal was resized, or the scrollback has no room.
+    /// Rows a page prepended above what that screen already had, or zero when
+    /// the page was read and validated but dropped -- because the screen is
+    /// gone, the terminal was resized, or the scrollback has no room.
     rows: u64,
+    /// The pixel bytes attached to an image, or zero when the pixels were
+    /// read and validated but dropped.
+    bytes: u64,
     /// Pages still to come for the same screen.
     remaining: u32,
-    /// Padding so the struct's layout matches across the C ABI. Not data.
-    _pad: u32 = 0,
+    /// The ID of the image the pixels are for.
+    image_id: u32,
+    /// The frame the pixels are for, as the Kitty graphics protocol counts
+    /// frames: 1 is the image itself and 2 and up are its animation frames.
+    frame: u32,
+    /// Which record this is, and so which of the fields above are set.
+    kind: SnapshotRecord,
 };
 
 /// Start decoding `data`, which is copied.
@@ -150,7 +180,50 @@ pub fn snapshotDecoderReady(self: *SnapshotDecoder, gpa: Allocator, max_continua
     self.rebind();
     self.decoded = try self.inner.ready(gpa, io, .{
         .max_continuation_bytes = max_continuation_bytes,
+        .kitty_image_storage_limit = self.kitty_image_storage_limit,
     });
+}
+
+/// Restore each screen with a Kitty graphics image storage limit of `bytes`
+/// rather than the default of a new screen. Call it before `ready`.
+///
+/// The snapshot does not carry the limit of the terminal that wrote it, so
+/// the decoder always applies one. Images are restored oldest first, and one
+/// that does not fit evicts older ones, as a live transmission would. Zero
+/// turns Kitty graphics off on the restored terminal.
+pub fn snapshotDecoderSetKittyImageStorageLimit(self: *SnapshotDecoder, bytes: usize) error{AlreadyReady}!void {
+    if (self.decoded != null) return error.AlreadyReady;
+    self.kitty_image_storage_limit = bytes;
+}
+
+/// How many Kitty graphics images `ready` restored on each screen, and how
+/// many bytes of their pixels are still to come through `next`.
+///
+/// For a progress bar while the pixels arrive: add up the `bytes` of each
+/// image record `next` returns. Pixels the decoder drops report zero bytes,
+/// so the sum can end below the total.
+pub const SnapshotKittyCounts = extern struct {
+    /// Bytes of image and frame pixels still to come for the primary screen.
+    primary_pending_bytes: u64,
+    /// The same for the alternate screen.
+    alternate_pending_bytes: u64,
+    /// Images restored on the primary screen.
+    primary_images: u32,
+    /// Images restored on the alternate screen.
+    alternate_images: u32,
+};
+
+/// The Kitty graphics counts `ready` found, all zero before it.
+pub fn snapshotDecoderKittyCounts(self: *SnapshotDecoder) SnapshotKittyCounts {
+    const decoded = if (self.decoded) |*d| d else return std.mem.zeroes(SnapshotKittyCounts);
+    const primary = decoded.kitty.get(.primary);
+    const alternate = decoded.kitty.get(.alternate);
+    return .{
+        .primary_pending_bytes = primary.pending_bytes,
+        .alternate_pending_bytes = alternate.pending_bytes,
+        .primary_images = primary.images,
+        .alternate_images = alternate.images,
+    };
 }
 
 /// Replace `term` with the decoded terminal. See `snapshotRestoreInto`; the
@@ -166,15 +239,33 @@ pub fn snapshotDecoderContinuation(self: *SnapshotDecoder) []const u8 {
     return snapshotContinuation(decoded);
 }
 
-/// Decode one page of history and prepend it to its screen in `term`, which
-/// must be the one `restoreInto` filled.
+/// Decode one record of history into `term`, which must be the one
+/// `restoreInto` filled: a page is prepended to its screen, and Kitty graphics
+/// pixels are attached to their image.
 ///
 /// Returns null once the snapshot is complete. Wire errors are fatal -- the
-/// position in the stream is lost -- but a page that cannot be applied is
-/// reported as zero rows rather than failing, because the terminal is live
-/// and may have moved on since `ready`.
+/// position in the stream is lost -- but a record that cannot be applied is
+/// reported as zero rows or bytes rather than failing, because the terminal
+/// is live and may have moved on since `ready`.
 pub fn snapshotDecoderNext(self: *SnapshotDecoder, gpa: Allocator, term: *Terminal) !?SnapshotProgress {
     self.rebind();
     const progress = try self.inner.next(gpa, term) orelse return null;
-    return .{ .rows = progress.rows, .remaining = progress.remaining };
+    return switch (progress) {
+        .page => |page| .{
+            .kind = .page,
+            .rows = page.rows,
+            .bytes = 0,
+            .remaining = page.remaining,
+            .image_id = 0,
+            .frame = 0,
+        },
+        .image => |image| .{
+            .kind = .image,
+            .rows = 0,
+            .bytes = image.bytes,
+            .remaining = 0,
+            .image_id = image.image_id,
+            .frame = image.frame,
+        },
+    };
 }

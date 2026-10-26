@@ -15,6 +15,26 @@ func screen(t *testing.T, term *Terminal) string {
 	return strings.TrimRight(got, "\n")
 }
 
+// The single-axis moves keep the other coordinate, and the relative ones stop
+// only at the edge of the screen.
+func TestCursorSingleAxis(t *testing.T) {
+	term := newTerm(t, 20, 6)
+	term.SetCursorPos(3, 4)
+	term.SetCursorCol(10)
+	if x, y := term.CursorX(), term.CursorY(); x != 9 || y != 2 {
+		t.Errorf("after SetCursorCol = (%d,%d), want (9,2)", x, y)
+	}
+	term.SetCursorRow(1)
+	if x, y := term.CursorX(), term.CursorY(); x != 9 || y != 0 {
+		t.Errorf("after SetCursorRow = (%d,%d), want (9,0)", x, y)
+	}
+	term.CursorRowRelative(2)
+	term.CursorColRelative(100)
+	if x, y := term.CursorX(), term.CursorY(); x != 19 || y != 2 {
+		t.Errorf("after relative moves = (%d,%d), want (19,2)", x, y)
+	}
+}
+
 func TestCursorMovement(t *testing.T) {
 	term := newTerm(t, 20, 6)
 	term.SetCursorPos(4, 10)

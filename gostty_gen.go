@@ -1430,6 +1430,100 @@ func (te *Terminal) CursorRight(count uint) {
 	}
 }
 
+// zigoCheckedSetCursorRow is the checked form of SetCursorRow, which a plugin replaced.
+func (te *Terminal) zigoCheckedSetCursorRow(row uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetCursorRow receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetCursorRow(ptr, row)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetCursorRow", code), te)
+	}
+	return nil
+}
+
+// SetCursorRow: Move the cursor to the given row (1-indexed), keeping its column (VPA).
+// In origin mode the row is relative to the top margin.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) SetCursorRow(row uint) {
+	if err := te.zigoCheckedSetCursorRow(row); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedSetCursorCol is the checked form of SetCursorCol, which a plugin replaced.
+func (te *Terminal) zigoCheckedSetCursorCol(col uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetCursorCol receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalSetCursorCol(ptr, col)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetCursorCol", code), te)
+	}
+	return nil
+}
+
+// SetCursorCol: Move the cursor to the given column (1-indexed), keeping its row (CHA
+// and HPA). In origin mode the column is relative to the left margin.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) SetCursorCol(col uint) {
+	if err := te.zigoCheckedSetCursorCol(col); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedCursorRowRelative is the checked form of CursorRowRelative, which a plugin replaced.
+func (te *Terminal) zigoCheckedCursorRowRelative(count uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.CursorRowRelative receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalCursorRowRelative(ptr, count)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorRowRelative", code), te)
+	}
+	return nil
+}
+
+// CursorRowRelative: Move the cursor down by count rows, keeping its column (VPR). Unlike
+// cursorDown, this stops only at the bottom of the screen, or of the
+// scrolling region in origin mode.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) CursorRowRelative(count uint) {
+	if err := te.zigoCheckedCursorRowRelative(count); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedCursorColRelative is the checked form of CursorColRelative, which a plugin replaced.
+func (te *Terminal) zigoCheckedCursorColRelative(count uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.CursorColRelative receiver", te)
+	if err != nil {
+		return err
+	}
+	defer te.zigoRelease()
+	code := raw.TerminalCursorColRelative(ptr, count)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorColRelative", code), te)
+	}
+	return nil
+}
+
+// CursorColRelative: Move the cursor right by count columns, keeping its row (HPR). Unlike
+// cursorRight, this stops only at the right edge of the screen, or of
+// the scrolling region in origin mode.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) CursorColRelative(count uint) {
+	if err := te.zigoCheckedCursorColRelative(count); err != nil {
+		panic(err)
+	}
+}
+
 // zigoCheckedSaveCursor is the checked form of SaveCursor, which a plugin replaced.
 func (te *Terminal) zigoCheckedSaveCursor() error {
 	ptr, err := zigoCheckedPointer("Terminal.SaveCursor receiver", te)
@@ -3193,6 +3287,38 @@ func (te *Terminal) KittyImageData(imageID uint32, dst []byte) (uint, error) {
 	return result, nil
 }
 
+// zigoCheckedKittyAnimationTick is the checked form of KittyAnimationTick, which a plugin replaced.
+func (te *Terminal) zigoCheckedKittyAnimationTick(nowMs uint64) (uint64, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.KittyAnimationTick receiver", te)
+	if err != nil {
+		return 0, false, err
+	}
+	defer te.zigoRelease()
+	result, zigoHas, code := raw.TerminalKittyAnimationTick(ptr, nowMs)
+	if code != 0 {
+		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.KittyAnimationTick", code), te)
+	}
+	return result, zigoHas, nil
+}
+
+// KittyAnimationTick: Advance the Kitty animations on the active screen to `now_ms` and report
+// when the next frame is due, on the same clock, or null when no running
+// animation needs another tick.
+//
+// `now_ms` is a monotonic timestamp on a clock of the caller's choosing, the
+// same one on every call. A renderer ticks once per frame it builds and wakes
+// itself at the returned time. Each tick shows at most one new frame per
+// animation with no catch-up, as Kitty does, so a late tick slows the
+// animation rather than skipping frames. An advanced frame moves its image's
+// generation, which is what tells a texture cache to fetch the pixels again.
+//
+// Animations only play here: without ticks, an image stays on whatever frame
+// the program last selected.
+// It panics with the typed error it would otherwise return.
+func (te *Terminal) KittyAnimationTick(nowMs uint64) (uint64, bool) {
+	return zigoMustMatch(te.zigoCheckedKittyAnimationTick(nowMs))
+}
+
 // zigoCheckedScrollRegion is the checked form of ScrollRegion, which a plugin replaced.
 func (te *Terminal) zigoCheckedScrollRegion() (ScrollRegion, error) {
 	ptr, err := zigoCheckedPointer("Terminal.ScrollRegion receiver", te)
@@ -4440,6 +4566,39 @@ func (s *Stream) FeedUntilGround(data []byte) FeedBoundary {
 	return zigoMust(s.zigoCheckedFeedUntilGround(data))
 }
 
+// zigoCheckedFeedUntil is the checked form of FeedUntil, which a plugin replaced.
+func (s *Stream) zigoCheckedFeedUntil(data []byte, boundaries FeedBoundaries) (FeedStop, bool, error) {
+	ptr, err := zigoCheckedPointer("Stream.FeedUntil receiver", s)
+	if err != nil {
+		return FeedStop{}, false, err
+	}
+	defer s.zigoRelease()
+	result, zigoHas, code := raw.StreamFeedUntil(ptr, data, boundaries.Backing())
+	if zigoCallbackPanicPending() {
+		for slot := range 3 {
+			zigoRethrowCallbackPanic("Stream.FeedUntil", s.zigoCallbackHandle(slot))
+		}
+	}
+	if code != 0 {
+		return FeedStop{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Stream.FeedUntil", code), s)
+	}
+	return zigoFeedStopFromRaw(result), zigoHas, nil
+}
+
+// FeedUntil: Consume through the first byte that reaches one of `boundaries` and
+// describe it: a return to ground, or the start or end of an APC, DCS or
+// OSC string. Null when no boundary is reached, in which case the whole
+// input was consumed. Only consumed bytes produce effects.
+//
+// Asking for `ground` while already at ground stops at once with zero
+// bytes consumed, so a loop that keeps asking for it with the same input
+// never moves; feed the next bytes without it. A string that ends with
+// `ESC \` stops on the ESC, and the backslash is the next byte to feed.
+// It panics with the typed error it would otherwise return.
+func (s *Stream) FeedUntil(data []byte, boundaries FeedBoundaries) (FeedStop, bool) {
+	return zigoMustMatch(s.zigoCheckedFeedUntil(data, boundaries))
+}
+
 // zigoCheckedFeed is the checked form of Feed, which a plugin replaced.
 func (s *Stream) zigoCheckedFeed(bytes []byte) error {
 	ptr, err := zigoCheckedPointer("Stream.Feed receiver", s)
@@ -5626,13 +5785,14 @@ func (s *SnapshotDecoder) Continuation() ([]byte, error) {
 	return result, nil
 }
 
-// Next: Decode one page of history and prepend it to its screen in `term`, which
-// must be the one `restoreInto` filled.
+// Next: Decode one record of history into `term`, which must be the one
+// `restoreInto` filled: a page is prepended to its screen, and Kitty graphics
+// pixels are attached to their image.
 //
 // Returns null once the snapshot is complete. Wire errors are fatal -- the
-// position in the stream is lost -- but a page that cannot be applied is
-// reported as zero rows rather than failing, because the terminal is live
-// and may have moved on since `ready`.
+// position in the stream is lost -- but a record that cannot be applied is
+// reported as zero rows or bytes rather than failing, because the terminal
+// is live and may have moved on since `ready`.
 // The bool result reports whether a value was present; the value before it is zero when it was not.
 func (s *SnapshotDecoder) Next(term *Terminal) (SnapshotProgress, bool, error) {
 	ptr, err := zigoCheckedPointer("SnapshotDecoder.Next receiver", s)
@@ -5650,6 +5810,46 @@ func (s *SnapshotDecoder) Next(term *Terminal) (SnapshotProgress, bool, error) {
 		return SnapshotProgress{}, false, zigoPoisonAfterPanic(zigoErrorForCode("SnapshotDecoder.Next", code), s, term)
 	}
 	return zigoSnapshotProgressFromRaw(result), zigoHas, nil
+}
+
+// SetKittyImageStorageLimit: Restore each screen with a Kitty graphics image storage limit of `bytes`
+// rather than the default of a new screen. Call it before `ready`.
+//
+// The snapshot does not carry the limit of the terminal that wrote it, so
+// the decoder always applies one. Images are restored oldest first, and one
+// that does not fit evicts older ones, as a live transmission would. Zero
+// turns Kitty graphics off on the restored terminal.
+func (s *SnapshotDecoder) SetKittyImageStorageLimit(bytes uint) error {
+	ptr, err := zigoCheckedPointer("SnapshotDecoder.SetKittyImageStorageLimit receiver", s)
+	if err != nil {
+		return err
+	}
+	defer s.zigoRelease()
+	code := raw.SnapshotDecoderSetKittyImageStorageLimit(ptr, bytes)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("SnapshotDecoder.SetKittyImageStorageLimit", code), s)
+	}
+	return nil
+}
+
+// zigoCheckedKittyCounts is the checked form of KittyCounts, which a plugin replaced.
+func (s *SnapshotDecoder) zigoCheckedKittyCounts() (SnapshotKittyCounts, error) {
+	ptr, err := zigoCheckedPointer("SnapshotDecoder.KittyCounts receiver", s)
+	if err != nil {
+		return SnapshotKittyCounts{}, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.SnapshotDecoderKittyCounts(ptr)
+	if code != 0 {
+		return SnapshotKittyCounts{}, zigoPoisonAfterPanic(zigoErrorForCode("SnapshotDecoder.KittyCounts", code), s)
+	}
+	return zigoSnapshotKittyCountsFromRaw(result), nil
+}
+
+// KittyCounts: The Kitty graphics counts `ready` found, all zero before it.
+// It panics with the typed error it would otherwise return.
+func (s *SnapshotDecoder) KittyCounts() SnapshotKittyCounts {
+	return zigoMust(s.zigoCheckedKittyCounts())
 }
 
 // NewRenderState: An empty render state, filled by the first `RenderState.update`. Returned
@@ -5888,6 +6088,74 @@ func (r *RenderState) HyperlinkAt(x uint16, y uint16) (string, bool, error) {
 	return result, zigoHas, nil
 }
 
+// zigoCheckedImagePlacementCount is the checked form of ImagePlacementCount, which a plugin replaced.
+func (r *RenderState) zigoCheckedImagePlacementCount() (uint, error) {
+	ptr, err := zigoCheckedPointer("RenderState.ImagePlacementCount receiver", r)
+	if err != nil {
+		return 0, err
+	}
+	defer r.zigoRelease()
+	result, code := raw.RenderStateImagePlacementCount(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.ImagePlacementCount", code), r)
+	}
+	return result, nil
+}
+
+// ImagePlacementCount: How many placements `renderImagePlacements` will write.
+// It panics with the typed error it would otherwise return.
+func (r *RenderState) ImagePlacementCount() uint {
+	return zigoMust(r.zigoCheckedImagePlacementCount())
+}
+
+// ImagePlacements: Copy the image placements the last `update` found into `dst`, in the order
+// to draw them -- by layer, then by z -- and report how many.
+//
+// Draw images in `below_background` before the cell backgrounds, those in
+// `below_text` before the text, and those in `above_text` after it. Do not
+// also draw the placements of a `KittyImages` snapshot, or images are drawn
+// twice.
+func (r *RenderState) ImagePlacements(dst []RenderImagePlacement) (uint, error) {
+	ptr, err := zigoCheckedPointer("RenderState.ImagePlacements receiver", r)
+	if err != nil {
+		return 0, err
+	}
+	defer r.zigoRelease()
+	var dstRaw []raw.RenderImagePlacementData
+	if len(dst) != 0 {
+		dstRaw = unsafe.Slice((*raw.RenderImagePlacementData)(unsafe.Pointer(&dst[0])), len(dst))
+	}
+	result, code := raw.RenderStateImagePlacements(ptr, dstRaw)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.ImagePlacements", code), r)
+	}
+	return result, nil
+}
+
+// zigoCheckedImagePlacementsGeneration is the checked form of ImagePlacementsGeneration, which a plugin replaced.
+func (r *RenderState) zigoCheckedImagePlacementsGeneration() (uint64, error) {
+	ptr, err := zigoCheckedPointer("RenderState.ImagePlacementsGeneration receiver", r)
+	if err != nil {
+		return 0, err
+	}
+	defer r.zigoRelease()
+	result, code := raw.RenderStateImagePlacementsGeneration(ptr)
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.ImagePlacementsGeneration", code), r)
+	}
+	return result, nil
+}
+
+// ImagePlacementsGeneration: A value that changes whenever an `update` changes the placements
+// `renderImagePlacements` would write. Equal to the value from the last read
+// means the list is unchanged and the draw list built from it still holds.
+// Compare for equality only: it wraps. Per-image pixel changes are
+// `image_generation` on each placement.
+// It panics with the typed error it would otherwise return.
+func (r *RenderState) ImagePlacementsGeneration() uint64 {
+	return zigoMust(r.zigoCheckedImagePlacementsGeneration())
+}
+
 // NewKittyImages creates a caller-owned KittyImages.
 // The caller must call Close on the returned handle.
 func NewKittyImages() (*KittyImages, error) {
@@ -6065,5 +6333,5 @@ type BuildInfo struct {
 
 // GetBuildInfo identifies the bundled native build. Values are fixed at generation time.
 func GetBuildInfo() BuildInfo {
-	return BuildInfo{GhosttyRevision: "3d07ef9e28c4af05065b9e2e546b8ac8f9b62df0", ZigoVersion: "0.31.0", Optimize: "ReleaseSafe", SIMD: true, KittyGraphics: true, TmuxControlMode: false}
+	return BuildInfo{GhosttyRevision: "0fe113a35370667d8c4d6970ee5c1704825dce6b", ZigoVersion: "0.32.0", Optimize: "ReleaseSafe", SIMD: true, KittyGraphics: true, TmuxControlMode: false}
 }

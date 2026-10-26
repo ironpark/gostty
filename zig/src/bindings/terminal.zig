@@ -132,6 +132,10 @@ const terminal_group = Terminal.members(p.functions(api, .{
     Terminal.func("cursorDown", .{}),
     Terminal.func("cursorLeft", .{}),
     Terminal.func("cursorRight", .{}),
+    Terminal.func("setCursorRow", .{}),
+    Terminal.func("setCursorCol", .{}),
+    Terminal.func("cursorRowRelative", .{}),
+    Terminal.func("cursorColRelative", .{}),
 }) ++ Terminal.funcs(.{ .names = &.{
     "saveCursor",
     "restoreCursor",
@@ -252,6 +256,7 @@ const terminal_group = Terminal.members(p.functions(api, .{
     }),
     "kittyImage",
     api.func("kittyImageData", .{ .params = &.{p.out(2)} }),
+    "kittyAnimationTick",
 
     // State reads: the gets for state the bindings could already set, plus the
     // resolved values no single mode flag reports.

@@ -7,6 +7,7 @@
 const std = @import("std");
 const vt = @import("ghostty_vt");
 const common = @import("common.zig");
+const kitty = @import("kitty.zig");
 
 const Allocator = std.mem.Allocator;
 const RGB = common.RGB;
@@ -325,4 +326,147 @@ pub fn renderColors(self: *RenderState) RenderColors {
         .cursor = if (self.colors.cursor) |color| packColor(color) else .{ .r = 0, .g = 0, .b = 0 },
         .cursor_has_value = self.colors.cursor != null,
     };
+}
+
+// -- Images ----------------------------------------------------------------
+//
+// `update` also finds every image to draw in the captured rows: placements at
+// a cell, placements relative to another one, and the runs of Kitty unicode
+// placeholder cells, which only the cells can place. Each comes out as one
+// rectangle to draw, the same shape whatever placed it.
+
+/// How a Kitty graphics placement in a `RenderImagePlacement` was placed.
+pub const RenderImageKind = enum(u8) {
+    /// One run of neighboring unicode placeholder cells in a single row. Its
+    /// `rows` is always 1 and its `z` always -1, in `below_text`.
+    virtual,
+    /// Positioned relative to another placement, which is a virtual or fixed
+    /// one, possibly through a chain of other relative ones.
+    relative,
+    /// At a cell on the screen, scrolling with the text around it. Reported at
+    /// full size when any part of it is captured, so it may need clipping.
+    fixed,
+};
+
+/// One rectangle of one image to draw.
+///
+/// Draw the `source_*` rectangle of the image `width` by `height` pixels in
+/// size, with its top-left corner at `x * cell_width + offset_x`,
+/// `y * cell_height + offset_y` from the top-left of the viewport. Every
+/// placement comes from the Kitty graphics protocol, so fetch the pixels with
+/// `kittyImage` and `kittyImageData` by `image_id`.
+pub const RenderImagePlacement = extern struct {
+    /// The generation of the image's pixels when the placement was found. A
+    /// texture cached for this image and generation is still current.
+    image_generation: u64,
+    /// The image to draw.
+    image_id: u32,
+    /// The placement ID, or zero when there is none. For a virtual run it is
+    /// the one the placeholder cells ask for.
+    placement_id: u32,
+    /// The column of the top-left cell, 0 at the left of the viewport. Can be
+    /// negative for a placement that starts off the left edge.
+    x: i32,
+    /// The row of the top-left cell, 0 at the top of the viewport. Negative
+    /// above it, for overscan rows or a placement that starts above the
+    /// captured rows.
+    y: i32,
+    /// How many columns of cells the placement covers.
+    cols: u32,
+    /// How many rows of cells the placement covers.
+    rows: u32,
+    /// Where the image starts within the top-left cell, in pixels. A virtual
+    /// run centers an image that does not fill its cells, so this can be more
+    /// than one cell.
+    offset_x: u32,
+    /// The vertical half of `offset_x`.
+    offset_y: u32,
+    /// The width to draw the image at, in pixels.
+    width: u32,
+    /// The height to draw the image at, in pixels.
+    height: u32,
+    /// The left edge of the part of the image to draw, in image pixels.
+    source_x: u32,
+    /// The top edge of that part, in image pixels.
+    source_y: u32,
+    /// The width of that part, in image pixels.
+    source_width: u32,
+    /// The height of that part, in image pixels.
+    source_height: u32,
+    /// The z-index, which orders images within a layer, lowest first.
+    z: i32,
+    /// The band to draw the image in, relative to backgrounds and text.
+    layer: kitty.KittyLayer,
+    /// How the placement was placed.
+    kind: RenderImageKind,
+    /// Padding so the struct's layout matches across the C ABI. Not data.
+    _pad: u16 = 0,
+};
+
+/// How many placements `renderImagePlacements` will write.
+pub fn renderImagePlacementCount(self: *RenderState) usize {
+    var it = self.imagePlacementIterator();
+    var count: usize = 0;
+    while (it.next()) |_| count += 1;
+    return count;
+}
+
+/// Copy the image placements the last `update` found into `dst`, in the order
+/// to draw them -- by layer, then by z -- and report how many.
+///
+/// Draw images in `below_background` before the cell backgrounds, those in
+/// `below_text` before the text, and those in `above_text` after it. Do not
+/// also draw the placements of a `KittyImages` snapshot, or images are drawn
+/// twice.
+pub fn renderImagePlacements(self: *RenderState, dst: []RenderImagePlacement) !usize {
+    var it = self.imagePlacementIterator();
+    var n: usize = 0;
+    while (it.next()) |placement| : (n += 1) {
+        if (n >= dst.len) return error.NoSpaceLeft;
+        const info = switch (placement.protocol) {
+            .kitty => |info| info,
+        };
+        dst[n] = .{
+            .image_generation = placement.image_generation,
+            .image_id = placement.image_id,
+            .placement_id = info.placement_id,
+            .x = placement.x,
+            .y = placement.y,
+            .cols = placement.cols,
+            .rows = placement.rows,
+            .offset_x = placement.offset_x,
+            .offset_y = placement.offset_y,
+            .width = placement.width,
+            .height = placement.height,
+            .source_x = placement.source_x,
+            .source_y = placement.source_y,
+            .source_width = placement.source_width,
+            .source_height = placement.source_height,
+            .z = placement.z,
+            .layer = switch (placement.layer) {
+                .below_background => .below_bg,
+                .below_text => .below_text,
+                .above_text => .above_text,
+            },
+            .kind = common.mirror(RenderImageKind, info.kind),
+        };
+    }
+    // ghostty hands placeholder runs over first and the rest after, which is
+    // not an order to draw in. The sort is stable, so equal z keeps that order.
+    std.mem.sort(RenderImagePlacement, dst[0..n], {}, struct {
+        fn lessThan(_: void, a: RenderImagePlacement, b: RenderImagePlacement) bool {
+            if (a.layer != b.layer) return @backingInt(a.layer) < @backingInt(b.layer);
+            return a.z < b.z;
+        }
+    }.lessThan);
+    return n;
+}
+
+/// A value that changes whenever an `update` changes the placements
+/// `renderImagePlacements` would write. Equal to the value from the last read
+/// means the list is unchanged and the draw list built from it still holds.
+/// Compare for equality only: it wraps. Per-image pixel changes are
+/// `image_generation` on each placement.
+pub fn renderImagePlacementsGeneration(self: *RenderState) u64 {
+    return self.imagePlacementsGeneration();
 }

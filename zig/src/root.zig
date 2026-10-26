@@ -234,12 +234,16 @@ pub const snapshotTerminal = snapshot_.snapshotTerminal;
 pub const snapshotContinuation = snapshot_.snapshotContinuation;
 pub const SnapshotDecoder = snapshot_.SnapshotDecoder;
 pub const SnapshotProgress = snapshot_.SnapshotProgress;
+pub const SnapshotRecord = snapshot_.SnapshotRecord;
 pub const newSnapshotDecoder = snapshot_.newSnapshotDecoder;
 pub const freeSnapshotDecoder = snapshot_.freeSnapshotDecoder;
 pub const snapshotDecoderReady = snapshot_.snapshotDecoderReady;
 pub const snapshotDecoderRestoreInto = snapshot_.snapshotDecoderRestoreInto;
 pub const snapshotDecoderContinuation = snapshot_.snapshotDecoderContinuation;
 pub const snapshotDecoderNext = snapshot_.snapshotDecoderNext;
+pub const snapshotDecoderSetKittyImageStorageLimit = snapshot_.snapshotDecoderSetKittyImageStorageLimit;
+pub const SnapshotKittyCounts = snapshot_.SnapshotKittyCounts;
+pub const snapshotDecoderKittyCounts = snapshot_.snapshotDecoderKittyCounts;
 
 // Key, mouse and paste events into pty bytes.
 const encode_ = @import("encode.zig");
@@ -273,6 +277,11 @@ pub const renderDirty = render_.renderDirty;
 pub const renderDirtyRows = render_.renderDirtyRows;
 pub const renderGraphemes = render_.renderGraphemes;
 pub const renderHyperlinkAt = render_.renderHyperlinkAt;
+pub const RenderImageKind = render_.RenderImageKind;
+pub const RenderImagePlacement = render_.RenderImagePlacement;
+pub const renderImagePlacementCount = render_.renderImagePlacementCount;
+pub const renderImagePlacements = render_.renderImagePlacements;
+pub const renderImagePlacementsGeneration = render_.renderImagePlacementsGeneration;
 
 // Kitty graphics, snapshotted per frame.
 const kitty_ = @import("kitty.zig");
@@ -290,6 +299,7 @@ pub const kittyPlacements = kitty_.kittyPlacements;
 pub const KittyImage = kitty_.KittyImage;
 pub const kittyImage = kitty_.kittyImage;
 pub const kittyImageData = kitty_.kittyImageData;
+pub const kittyAnimationTick = kitty_.kittyAnimationTick;
 
 // Click, drag and autoscroll: the state machine behind text selection.
 const gesture_ = @import("gesture.zig");
@@ -387,5 +397,10 @@ pub const RenderColors = render_.RenderColors;
 pub const renderCursor = render_.renderCursor;
 pub const renderColors = render_.renderColors;
 pub const FeedBoundary = stream_.FeedBoundary;
+pub const FeedBoundaries = stream_.FeedBoundaries;
+pub const FeedStop = stream_.FeedStop;
+pub const ControlString = stream_.ControlString;
+pub const ControlStringStart = stream_.ControlStringStart;
+pub const ControlStringEnd = stream_.ControlStringEnd;
 
 pub const build_features = @import("terminal_options");

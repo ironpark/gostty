@@ -65,6 +65,8 @@ const snapshot_decoder_group = SnapshotDecoder.members(p.functions(api, .{
     "snapshotDecoderRestoreInto",
     api.func("snapshotDecoderContinuation", .{ .returns = .{ .semantic = .opaque_bytes } }),
     "snapshotDecoderNext",
+    "snapshotDecoderSetKittyImageStorageLimit",
+    "snapshotDecoderKittyCounts",
 }));
 
 // `RenderState` is ghostty's own renderer-facing snapshot; a frame is one
@@ -94,6 +96,10 @@ const render_state_group = RenderState.members(p.functions(api, .{
         .returns = zigo.result.owned(),
         .covers = &.{RenderState.ref("linkCells")},
     }),
+    // The images to draw, found by the same `update`.
+    api.func("renderImagePlacementCount", .{ .covers = &.{RenderState.ref("imagePlacementIterator")} }),
+    api.func("renderImagePlacements", .{ .params = &.{p.out(1)} }),
+    api.func("renderImagePlacementsGeneration", .{ .covers = &.{RenderState.ref("imagePlacementsGeneration")} }),
 }));
 
 // The same kind of snapshot as `RenderState`, for the images rather than the
@@ -132,6 +138,8 @@ pub const declarations = [_]zigo.Entry{
     render_state_group,
     kitty_images_group,
     api.value("SnapshotProgress", .{}),
+    api.value("SnapshotKittyCounts", .{}),
+    p.enumeration("SnapshotRecord", .{ .text = true }),
     api.value("RenderCursor", .{}),
     api.value("RenderColors", .{}),
     api.value("RenderCell", .{ .fields = &.{.{ .name = "codepoint", .semantic = .codepoint }} }),
@@ -140,6 +148,8 @@ pub const declarations = [_]zigo.Entry{
     p.enumeration("RenderDirty", .{}),
     p.enumeration("KittyLayer", .{ .text = true }),
     api.value("KittyPlacement", .{}),
+    api.value("RenderImagePlacement", .{}),
+    p.enumeration("RenderImageKind", .{ .text = true }),
     api.value("KittyImage", .{}),
     p.enumeration("KittyFormat", .{}),
     p.enumeration("KittyCompression", .{}),

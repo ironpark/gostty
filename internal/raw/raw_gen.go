@@ -939,6 +939,30 @@ func TerminalCursorRight(self unsafe.Pointer, count uint) int32 {
 	return code
 }
 
+// TerminalSetCursorRow calls the generated C ABI wrapper for zg_terminal_set_cursor_row.
+func TerminalSetCursorRow(self unsafe.Pointer, row uint) int32 {
+	code := int32(C.zg_terminal_set_cursor_row((*C.zg_terminal)(self), C.size_t(row)))
+	return code
+}
+
+// TerminalSetCursorCol calls the generated C ABI wrapper for zg_terminal_set_cursor_col.
+func TerminalSetCursorCol(self unsafe.Pointer, col uint) int32 {
+	code := int32(C.zg_terminal_set_cursor_col((*C.zg_terminal)(self), C.size_t(col)))
+	return code
+}
+
+// TerminalCursorRowRelative calls the generated C ABI wrapper for zg_terminal_cursor_row_relative.
+func TerminalCursorRowRelative(self unsafe.Pointer, count uint) int32 {
+	code := int32(C.zg_terminal_cursor_row_relative((*C.zg_terminal)(self), C.size_t(count)))
+	return code
+}
+
+// TerminalCursorColRelative calls the generated C ABI wrapper for zg_terminal_cursor_col_relative.
+func TerminalCursorColRelative(self unsafe.Pointer, count uint) int32 {
+	code := int32(C.zg_terminal_cursor_col_relative((*C.zg_terminal)(self), C.size_t(count)))
+	return code
+}
+
 // TerminalSaveCursor calls the generated C ABI wrapper for zg_terminal_save_cursor.
 func TerminalSaveCursor(self unsafe.Pointer) int32 {
 	code := int32(C.zg_terminal_save_cursor((*C.zg_terminal)(self)))
@@ -1522,6 +1546,14 @@ func TerminalKittyImageData(self unsafe.Pointer, imageID uint32, dst []uint8) (u
 	var outResult C.size_t
 	code := int32(C.zg_terminal_kitty_image_data((*C.zg_terminal)(self), C.uint32_t(imageID), dstPtr, C.size_t(len(dst)), &outResult))
 	return uint(outResult), code
+}
+
+// TerminalKittyAnimationTick calls the generated C ABI wrapper for zg_terminal_kitty_animation_tick.
+func TerminalKittyAnimationTick(self unsafe.Pointer, nowMs uint64) (uint64, bool, int32) {
+	var outResultHas C.uint8_t
+	var outResult C.uint64_t
+	code := int32(C.zg_terminal_kitty_animation_tick((*C.zg_terminal)(self), C.uint64_t(nowMs), &outResultHas, &outResult))
+	return uint64(outResult), outResultHas != 0, code
 }
 
 // TerminalScrollRegion calls the generated C ABI wrapper for zg_terminal_scroll_region.
@@ -2179,6 +2211,24 @@ func StreamFeedUntilGround(self unsafe.Pointer, data []uint8) (FeedBoundaryData,
 	}, code
 }
 
+// StreamFeedUntil calls the generated C ABI wrapper for zg_stream_feed_until.
+func StreamFeedUntil(self unsafe.Pointer, data []uint8, boundaries uint16) (FeedStopData, bool, int32) {
+	dataPtr := (*C.uint8_t)(zigoSlicePtr(data))
+	var outResultHas C.uint8_t
+	var outResult C.zg_feed_stop
+	code := int32(C.zg_stream_feed_until((*C.zg_stream)(self), dataPtr, C.size_t(len(data)), C.uint16_t(boundaries), &outResultHas, &outResult))
+	return FeedStopData{
+		Consumed:        uint(outResult.consumed),
+		Reached:         uint16(outResult.reached),
+		StartKind:       uint8(outResult.start_kind),
+		StartIntroducer: uint8(outResult.start_introducer),
+		StartByte:       uint8(outResult.start_byte),
+		EndKind:         uint8(outResult.end_kind),
+		EndReason:       uint8(outResult.end_reason),
+		EndByte:         uint8(outResult.end_byte),
+	}, outResultHas != 0, code
+}
+
 // StreamFeed calls the generated C ABI wrapper for zg_stream_feed.
 func StreamFeed(self unsafe.Pointer, bytes []uint8) int32 {
 	bytesPtr := (*C.uint8_t)(zigoSlicePtr(bytes))
@@ -2597,9 +2647,30 @@ func SnapshotDecoderNext(self unsafe.Pointer, term unsafe.Pointer) (SnapshotProg
 	code := int32(C.zg_snapshot_decoder_next((*C.zg_snapshot_decoder)(self), (*C.zg_terminal)(term), &outResultHas, &outResult))
 	return SnapshotProgressData{
 		Rows:      uint64(outResult.rows),
+		Bytes:     uint64(outResult.bytes),
 		Remaining: uint32(outResult.remaining),
-		Pad:       uint32(outResult._pad),
+		ImageID:   uint32(outResult.image_id),
+		Frame:     uint32(outResult.frame),
+		Kind:      uint32(outResult.kind),
 	}, outResultHas != 0, code
+}
+
+// SnapshotDecoderSetKittyImageStorageLimit calls the generated C ABI wrapper for zg_snapshot_decoder_set_kitty_image_storage_limit.
+func SnapshotDecoderSetKittyImageStorageLimit(self unsafe.Pointer, bytes uint) int32 {
+	code := int32(C.zg_snapshot_decoder_set_kitty_image_storage_limit((*C.zg_snapshot_decoder)(self), C.size_t(bytes)))
+	return code
+}
+
+// SnapshotDecoderKittyCounts calls the generated C ABI wrapper for zg_snapshot_decoder_kitty_counts.
+func SnapshotDecoderKittyCounts(self unsafe.Pointer) (SnapshotKittyCountsData, int32) {
+	var outResult C.zg_snapshot_kitty_counts
+	code := int32(C.zg_snapshot_decoder_kitty_counts((*C.zg_snapshot_decoder)(self), &outResult))
+	return SnapshotKittyCountsData{
+		PrimaryPendingBytes:   uint64(outResult.primary_pending_bytes),
+		AlternatePendingBytes: uint64(outResult.alternate_pending_bytes),
+		PrimaryImages:         uint32(outResult.primary_images),
+		AlternateImages:       uint32(outResult.alternate_images),
+	}, code
 }
 
 // NewRenderState calls the generated C ABI wrapper for zg_new_render_state.
@@ -2761,6 +2832,28 @@ func RenderStateHyperlinkAt(self unsafe.Pointer, x uint16, y uint16) (string, bo
 	}
 	C.zg_free_string(outResultPtr, outResultLen)
 	return result, true, code
+}
+
+// RenderStateImagePlacementCount calls the generated C ABI wrapper for zg_render_state_image_placement_count.
+func RenderStateImagePlacementCount(self unsafe.Pointer) (uint, int32) {
+	var outResult C.size_t
+	code := int32(C.zg_render_state_image_placement_count((*C.zg_render_state)(self), &outResult))
+	return uint(outResult), code
+}
+
+// RenderStateImagePlacements calls the generated C ABI wrapper for zg_render_state_image_placements.
+func RenderStateImagePlacements(self unsafe.Pointer, dst []RenderImagePlacementData) (uint, int32) {
+	dstPtr := (*C.zg_render_image_placement)(zigoSlicePtr(dst))
+	var outResult C.size_t
+	code := int32(C.zg_render_state_image_placements((*C.zg_render_state)(self), dstPtr, C.size_t(len(dst)), &outResult))
+	return uint(outResult), code
+}
+
+// RenderStateImagePlacementsGeneration calls the generated C ABI wrapper for zg_render_state_image_placements_generation.
+func RenderStateImagePlacementsGeneration(self unsafe.Pointer) (uint64, int32) {
+	var outResult C.uint64_t
+	code := int32(C.zg_render_state_image_placements_generation((*C.zg_render_state)(self), &outResult))
+	return uint64(outResult), code
 }
 
 // NewKittyImages calls the generated C ABI wrapper for zg_new_kitty_images.
@@ -3018,11 +3111,34 @@ type FeedBoundaryData struct {
 	_        [7]byte
 }
 
+// FeedStopData mirrors the zg_feed_stop layout, padding included.
+type FeedStopData struct {
+	Consumed        uint
+	Reached         uint16
+	StartKind       uint8
+	StartIntroducer uint8
+	StartByte       uint8
+	EndKind         uint8
+	EndReason       uint8
+	EndByte         uint8
+}
+
 // SnapshotProgressData mirrors the zg_snapshot_progress layout, padding included.
 type SnapshotProgressData struct {
 	Rows      uint64
+	Bytes     uint64
 	Remaining uint32
-	Pad       uint32
+	ImageID   uint32
+	Frame     uint32
+	Kind      uint32
+}
+
+// SnapshotKittyCountsData mirrors the zg_snapshot_kitty_counts layout, padding included.
+type SnapshotKittyCountsData struct {
+	PrimaryPendingBytes   uint64
+	AlternatePendingBytes uint64
+	PrimaryImages         uint32
+	AlternateImages       uint32
 }
 
 // RenderColorsData mirrors the zg_render_colors layout, padding included.
@@ -3062,6 +3178,29 @@ type KittyPlacementData struct {
 	Layer        uint8
 	Virtual      uint8
 	Pad          uint16
+}
+
+// RenderImagePlacementData mirrors the zg_render_image_placement layout, padding included.
+type RenderImagePlacementData struct {
+	ImageGeneration uint64
+	ImageID         uint32
+	PlacementID     uint32
+	X               int32
+	Y               int32
+	Cols            uint32
+	Rows            uint32
+	OffsetX         uint32
+	OffsetY         uint32
+	Width           uint32
+	Height          uint32
+	SourceX         uint32
+	SourceY         uint32
+	SourceWidth     uint32
+	SourceHeight    uint32
+	Z               int32
+	Layer           uint8
+	Kind            uint8
+	Pad             uint16
 }
 
 // KittyImageData mirrors the zg_kitty_image layout, padding included.
@@ -3207,11 +3346,32 @@ var _ = [1]struct{}{}[unsafe.Sizeof(FeedBoundaryData{})-unsafe.Sizeof(C.zg_feed_
 var _ = [1]struct{}{}[unsafe.Offsetof(FeedBoundaryData{}.Consumed)-unsafe.Offsetof(C.zg_feed_boundary{}.consumed)]
 var _ = [1]struct{}{}[unsafe.Offsetof(FeedBoundaryData{}.Reached)-unsafe.Offsetof(C.zg_feed_boundary{}.reached)]
 
+// FeedStopData slices are copied from C memory as one run, so it must match zg_feed_stop byte for byte.
+var _ = [1]struct{}{}[unsafe.Sizeof(FeedStopData{})-unsafe.Sizeof(C.zg_feed_stop{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(FeedStopData{}.Consumed)-unsafe.Offsetof(C.zg_feed_stop{}.consumed)]
+var _ = [1]struct{}{}[unsafe.Offsetof(FeedStopData{}.Reached)-unsafe.Offsetof(C.zg_feed_stop{}.reached)]
+var _ = [1]struct{}{}[unsafe.Offsetof(FeedStopData{}.StartKind)-unsafe.Offsetof(C.zg_feed_stop{}.start_kind)]
+var _ = [1]struct{}{}[unsafe.Offsetof(FeedStopData{}.StartIntroducer)-unsafe.Offsetof(C.zg_feed_stop{}.start_introducer)]
+var _ = [1]struct{}{}[unsafe.Offsetof(FeedStopData{}.StartByte)-unsafe.Offsetof(C.zg_feed_stop{}.start_byte)]
+var _ = [1]struct{}{}[unsafe.Offsetof(FeedStopData{}.EndKind)-unsafe.Offsetof(C.zg_feed_stop{}.end_kind)]
+var _ = [1]struct{}{}[unsafe.Offsetof(FeedStopData{}.EndReason)-unsafe.Offsetof(C.zg_feed_stop{}.end_reason)]
+var _ = [1]struct{}{}[unsafe.Offsetof(FeedStopData{}.EndByte)-unsafe.Offsetof(C.zg_feed_stop{}.end_byte)]
+
 // SnapshotProgressData slices are copied from C memory as one run, so it must match zg_snapshot_progress byte for byte.
 var _ = [1]struct{}{}[unsafe.Sizeof(SnapshotProgressData{})-unsafe.Sizeof(C.zg_snapshot_progress{})]
 var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgressData{}.Rows)-unsafe.Offsetof(C.zg_snapshot_progress{}.rows)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgressData{}.Bytes)-unsafe.Offsetof(C.zg_snapshot_progress{}.bytes)]
 var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgressData{}.Remaining)-unsafe.Offsetof(C.zg_snapshot_progress{}.remaining)]
-var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgressData{}.Pad)-unsafe.Offsetof(C.zg_snapshot_progress{}._pad)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgressData{}.ImageID)-unsafe.Offsetof(C.zg_snapshot_progress{}.image_id)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgressData{}.Frame)-unsafe.Offsetof(C.zg_snapshot_progress{}.frame)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgressData{}.Kind)-unsafe.Offsetof(C.zg_snapshot_progress{}.kind)]
+
+// SnapshotKittyCountsData slices are copied from C memory as one run, so it must match zg_snapshot_kitty_counts byte for byte.
+var _ = [1]struct{}{}[unsafe.Sizeof(SnapshotKittyCountsData{})-unsafe.Sizeof(C.zg_snapshot_kitty_counts{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotKittyCountsData{}.PrimaryPendingBytes)-unsafe.Offsetof(C.zg_snapshot_kitty_counts{}.primary_pending_bytes)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotKittyCountsData{}.AlternatePendingBytes)-unsafe.Offsetof(C.zg_snapshot_kitty_counts{}.alternate_pending_bytes)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotKittyCountsData{}.PrimaryImages)-unsafe.Offsetof(C.zg_snapshot_kitty_counts{}.primary_images)]
+var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotKittyCountsData{}.AlternateImages)-unsafe.Offsetof(C.zg_snapshot_kitty_counts{}.alternate_images)]
 
 // RenderColorsData slices are copied from C memory as one run, so it must match zg_render_colors byte for byte.
 var _ = [1]struct{}{}[unsafe.Sizeof(RenderColorsData{})-unsafe.Sizeof(C.zg_render_colors{})]
@@ -3247,6 +3407,28 @@ var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.Z)-unsafe.Offsetof(C.
 var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.Layer)-unsafe.Offsetof(C.zg_kitty_placement{}.layer)]
 var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.Virtual)-unsafe.Offsetof(C.zg_kitty_placement{}.virtual)]
 var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.Pad)-unsafe.Offsetof(C.zg_kitty_placement{}._pad)]
+
+// RenderImagePlacementData slices are copied from C memory as one run, so it must match zg_render_image_placement byte for byte.
+var _ = [1]struct{}{}[unsafe.Sizeof(RenderImagePlacementData{})-unsafe.Sizeof(C.zg_render_image_placement{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.ImageGeneration)-unsafe.Offsetof(C.zg_render_image_placement{}.image_generation)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.ImageID)-unsafe.Offsetof(C.zg_render_image_placement{}.image_id)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.PlacementID)-unsafe.Offsetof(C.zg_render_image_placement{}.placement_id)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.X)-unsafe.Offsetof(C.zg_render_image_placement{}.x)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.Y)-unsafe.Offsetof(C.zg_render_image_placement{}.y)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.Cols)-unsafe.Offsetof(C.zg_render_image_placement{}.cols)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.Rows)-unsafe.Offsetof(C.zg_render_image_placement{}.rows)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.OffsetX)-unsafe.Offsetof(C.zg_render_image_placement{}.offset_x)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.OffsetY)-unsafe.Offsetof(C.zg_render_image_placement{}.offset_y)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.Width)-unsafe.Offsetof(C.zg_render_image_placement{}.width)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.Height)-unsafe.Offsetof(C.zg_render_image_placement{}.height)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.SourceX)-unsafe.Offsetof(C.zg_render_image_placement{}.source_x)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.SourceY)-unsafe.Offsetof(C.zg_render_image_placement{}.source_y)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.SourceWidth)-unsafe.Offsetof(C.zg_render_image_placement{}.source_width)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.SourceHeight)-unsafe.Offsetof(C.zg_render_image_placement{}.source_height)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.Z)-unsafe.Offsetof(C.zg_render_image_placement{}.z)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.Layer)-unsafe.Offsetof(C.zg_render_image_placement{}.layer)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.Kind)-unsafe.Offsetof(C.zg_render_image_placement{}.kind)]
+var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.Pad)-unsafe.Offsetof(C.zg_render_image_placement{}._pad)]
 
 // KittyImageData slices are copied from C memory as one run, so it must match zg_kitty_image byte for byte.
 var _ = [1]struct{}{}[unsafe.Sizeof(KittyImageData{})-unsafe.Sizeof(C.zg_kitty_image{})]

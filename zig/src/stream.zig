@@ -580,8 +580,23 @@ pub const Stream = struct {
     /// consumes zero bytes. If no boundary is reached, consumes the entire
     /// input and returns reached=false. Only consumed bytes produce effects.
     pub fn feedUntilGround(self: *Stream, data: []const u8) FeedBoundary {
-        const consumed = self.inner.nextSliceUntilGround(data);
-        return .{ .consumed = consumed orelse data.len, .reached = consumed != null };
+        const stop = self.inner.nextSliceUntil(data, .initOne(.ground)) orelse
+            return .{ .consumed = data.len, .reached = false };
+        return .{ .consumed = stop.consumed, .reached = true };
+    }
+
+    /// Consume through the first byte that reaches one of `boundaries` and
+    /// describe it: a return to ground, or the start or end of an APC, DCS or
+    /// OSC string. Null when no boundary is reached, in which case the whole
+    /// input was consumed. Only consumed bytes produce effects.
+    ///
+    /// Asking for `ground` while already at ground stops at once with zero
+    /// bytes consumed, so a loop that keeps asking for it with the same input
+    /// never moves; feed the next bytes without it. A string that ends with
+    /// `ESC \` stops on the ESC, and the backslash is the next byte to feed.
+    pub fn feedUntil(self: *Stream, data: []const u8, boundaries: FeedBoundaries) ?FeedStop {
+        const stop = self.inner.nextSliceUntil(data, boundaries.toGhostty()) orelse return null;
+        return .fromGhostty(stop);
     }
 
     /// Whether the terminal has answered a query since the last `writeReplies`.
@@ -840,4 +855,125 @@ pub const FeedBoundary = extern struct {
     /// Whether the parser came back to ground within the input. False means
     /// the input ended mid-sequence and the rest is still pending.
     reached: bool,
+};
+
+/// The points in the byte stream `Stream.feedUntil` can stop at, as a set.
+///
+/// Each boundary is reached by exactly one byte, and the feed stops right
+/// after it. `ground` is the exception: it is a state between sequences, a
+/// safe point to insert output of your own, rather than a byte inside one.
+/// SOS and PM strings report as APC, because the parser handles all three
+/// the same way.
+pub const FeedBoundaries = packed struct(u16) {
+    /// The parser is not inside any escape sequence or partial UTF-8
+    /// character.
+    ground: bool = false,
+    /// The byte that started an APC, SOS or PM string: `_`, `X` or `^` after
+    /// ESC, or 0x9F, 0x98 or 0x9E.
+    apc_start: bool = false,
+    /// The byte that ended an APC, SOS or PM string.
+    apc_end: bool = false,
+    /// The byte that started a DCS string: `P` after ESC, or 0x90. The DCS
+    /// header follows it.
+    dcs_start: bool = false,
+    /// The byte that ended a DCS string, in its header or its payload.
+    dcs_end: bool = false,
+    /// The byte that started an OSC string: `]` after ESC, or 0x9D.
+    osc_start: bool = false,
+    /// The byte that ended an OSC string, including one with a number the
+    /// terminal does not know.
+    osc_end: bool = false,
+    _pad: u9 = 0,
+
+    fn toGhostty(self: FeedBoundaries) vt.StreamBoundary.Set {
+        var set: vt.StreamBoundary.Set = .empty;
+        inline for (@typeInfo(vt.StreamBoundary).@"enum".field_names) |name| {
+            if (@field(self, name)) set.insert(@field(vt.StreamBoundary, name));
+        }
+        return set;
+    }
+
+    fn fromGhostty(set: vt.StreamBoundary.Set) FeedBoundaries {
+        var result: FeedBoundaries = .{};
+        inline for (@typeInfo(vt.StreamBoundary).@"enum".field_names) |name| {
+            @field(result, name) = set.contains(@field(vt.StreamBoundary, name));
+        }
+        return result;
+    }
+};
+
+/// The kind of control string a `FeedStop` started or ended. `apc` covers SOS
+/// and PM too.
+pub const ControlString = enum(u8) { apc, dcs, osc };
+
+/// How a control string started.
+pub const ControlStringStart = enum(u8) {
+    /// ESC followed by the introducer byte. Only that byte is counted in the
+    /// stop's `consumed`, because the ESC may have arrived in an earlier feed.
+    esc,
+    /// A single 8-bit introducer, 0x9F, 0x98, 0x9E, 0x90 or 0x9D. At ground
+    /// these bytes decode as UTF-8, so they only start a string inside
+    /// another escape sequence.
+    c1,
+};
+
+/// How a control string ended.
+pub const ControlStringEnd = enum(u8) {
+    /// ESC, the first byte of the terminator `ESC \`. The ESC is consumed and
+    /// the byte after it is not.
+    st_esc,
+    /// 0x9C, the 8-bit terminator.
+    st_c1,
+    /// CAN (0x18) or SUB (0x1A) cut the string short.
+    cancelled,
+    /// Another 8-bit control byte cut the string short. It runs as a control
+    /// or starts a sequence of its own; see the stop's `reached`.
+    aborted,
+    /// BEL (0x07). Only an OSC ends this way.
+    bel,
+};
+
+/// Where `Stream.feedUntil` stopped and why.
+///
+/// The start fields are set when `reached` holds a string start, and the end
+/// fields when it holds a string end; otherwise they are zero. One byte can
+/// reach two boundaries: it can end a string and return to ground, or, inside
+/// an APC or a DCS header, end one string with `aborted` and start another.
+pub const FeedStop = extern struct {
+    /// Bytes taken from the input, including the one that reached the
+    /// boundary. Zero when the parser was already at ground and `ground` was
+    /// asked for.
+    consumed: usize,
+    /// Every asked-for boundary the stopping byte reached.
+    reached: FeedBoundaries,
+    /// The kind of string that started.
+    start_kind: ControlString = .apc,
+    /// How the string started.
+    start_introducer: ControlStringStart = .esc,
+    /// The byte that started the string, such as `_`, `P`, `]` or 0x9F.
+    start_byte: u8 = 0,
+    /// The kind of string that ended.
+    end_kind: ControlString = .apc,
+    /// Why the string ended.
+    end_reason: ControlStringEnd = .st_esc,
+    /// The byte that ended the string, such as ESC, BEL or 0x9C.
+    end_byte: u8 = 0,
+
+    fn fromGhostty(stop: vt.StreamBoundary.Stop) FeedStop {
+        var result: FeedStop = .{
+            .consumed = stop.consumed,
+            .reached = .fromGhostty(stop.reached),
+        };
+        if (stop.start) |start| {
+            result.start_kind = common.mirror(ControlString, start.kind);
+            result.start_introducer = common.mirror(ControlStringStart, start.introducer);
+            result.start_byte = start.byte;
+        }
+        if (stop.end) |end| {
+            result.end_kind = common.mirror(ControlString, end.kind);
+            result.end_reason = common.mirror(ControlStringEnd, end.reason);
+            result.end_byte = end.byte;
+        }
+        return result;
+    }
 };

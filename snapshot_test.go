@@ -213,6 +213,10 @@ func TestSnapshotDecoderIncremental(t *testing.T) {
 		if !ok {
 			break
 		}
+		// No Kitty images were drawn, so every record is a page.
+		if progress.Kind != SnapshotRecordPage {
+			t.Fatalf("Next Kind = %v, want page", progress.Kind)
+		}
 		pages++
 		rows += progress.Rows
 		if pages > 1000 {
@@ -355,5 +359,71 @@ func TestSnapshotSource(t *testing.T) {
 				t.Errorf("Continuation() = %q, want the unfinished CSI", cont)
 			}
 		})
+	}
+}
+
+// Kitty images travel in a snapshot: Ready counts them and the pixels still to
+// come, and Next delivers those pixels as image records.
+func TestSnapshotDecoderKittyImages(t *testing.T) {
+	_, stream := newStreamPair(t, 20, 5)
+	transmit(t, stream, 7, 0, 0)
+
+	var snap bytes.Buffer
+	if err := stream.WriteSnapshot(&snap); err != nil {
+		t.Fatal(err)
+	}
+	dec, err := NewSnapshotDecoder(snap.Bytes())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dec.Close()
+	if counts := dec.KittyCounts(); counts != (SnapshotKittyCounts{}) {
+		t.Errorf("KittyCounts before Ready = %+v, want zeros", counts)
+	}
+	if err := dec.SetKittyImageStorageLimit(1 << 20); err != nil {
+		t.Fatalf("SetKittyImageStorageLimit: %v", err)
+	}
+	if err := dec.Ready(0); err != nil {
+		t.Fatalf("Ready: %v", err)
+	}
+	if err := dec.SetKittyImageStorageLimit(0); err == nil {
+		t.Error("SetKittyImageStorageLimit after Ready succeeded")
+	}
+	counts := dec.KittyCounts()
+	if counts.PrimaryImages != 1 || counts.AlternateImages != 0 {
+		t.Errorf("KittyCounts = %+v, want one primary image", counts)
+	}
+
+	restored, err := NewTerminal(20, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer restored.Close()
+	if err := dec.RestoreInto(restored); err != nil {
+		t.Fatalf("RestoreInto: %v", err)
+	}
+
+	var received uint64
+	for {
+		progress, ok, err := dec.Next(restored)
+		if err != nil {
+			t.Fatalf("Next: %v", err)
+		}
+		if !ok {
+			break
+		}
+		if progress.Kind == SnapshotRecordImage {
+			if progress.ImageID != 7 {
+				t.Errorf("image record for %d, want 7", progress.ImageID)
+			}
+			received += progress.Bytes
+		}
+	}
+	if received != counts.PrimaryPendingBytes {
+		t.Errorf("received %d pixel bytes, want the %d Ready counted", received, counts.PrimaryPendingBytes)
+	}
+	image, ok := restored.KittyImage(7)
+	if !ok || image.Width != 2 || image.Height != 2 || image.DataLen != 12 {
+		t.Errorf("restored image = %+v, %v; want the 2x2 RGB image", image, ok)
 	}
 }

@@ -53,6 +53,7 @@ const stream_group = Stream.members(p.functions(api, .{
     api.func("freeStream", .{ .role = .{ .destructor = Stream.typeRef() } }),
     Stream.func("atGround", .{}),
     Stream.func("feedUntilGround", .{ .params = &.{p.bytesArg(1)} }),
+    Stream.func("feedUntil", .{ .params = &.{p.bytesArg(1)} }),
     // The writer adapter makes fmt.Fprintf(stream, ...) feed VT bytes, and the
     // string_writer beside it keeps io.WriteString off the copy path. `feed`
     // takes bytes rather than text -- what arrives from a pty is not UTF-8 by
@@ -150,6 +151,11 @@ pub const declarations = [_]zigo.Entry{
     p.enumeration("ClipboardDenial", .{}),
     p.callback("ClipboardFn", "ClipboardHandler"),
     api.value("FeedBoundary", .{}),
+    p.flags("FeedBoundaries", "_pad"),
+    api.value("FeedStop", .{}),
+    p.enumeration("ControlString", .{ .text = true }),
+    p.enumeration("ControlStringStart", .{ .text = true }),
+    p.enumeration("ControlStringEnd", .{ .text = true }),
     api.materialized("Event", .{ .fields = &.{.{ .name = "sequence", .semantic = .opaque_bytes }} }),
     p.enumeration("OSCCommand", .{ .text = true }),
     p.enumeration("OSCTerminator", .{ .text = true }),
