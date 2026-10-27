@@ -10,6 +10,19 @@ package sys
 
 import "github.com/ironpark/gostty/internal/raw"
 
+// LibraryError reports a native shared-library loading failure.
+type LibraryError = raw.LibraryError
+
+// LoadLibrary atomically loads all generated native entry points.
+func LoadLibrary(path string) error { return raw.LoadLibrary(path) }
+
+// LibraryLoaded reports whether the native call surface is ready.
+func LibraryLoaded() bool { return raw.LibraryLoaded() }
+
+// DefaultLibraryName is the installed shared-library basename for the running platform.
+// LoadLibrary falls back to it when no explicit path and no ZIGO_LIBRARY_PATH are set.
+var DefaultLibraryName = raw.DefaultLibraryName
+
 // OnPNGDecodeRequest: Install the PNG decoder. Until one is installed ghostty refuses PNG
 // Kitty transmissions outright; with one, the image is decoded as it
 // arrives and reaches `kittyImage` as `rgba`. Process-global, and read
@@ -21,7 +34,7 @@ func OnPNGDecodeRequest(callback PNGDecodeHandler) {
 		panic(&CallbackError{Operation: "OnPNGDecodeRequest", Callback: "callback", Err: ErrNilCallback})
 	}
 	callbackHandle := zigoNewPNGDecodeHandlerHandle(callback)
-	raw.SysOnPngDecodeRequest(uintptr(callbackHandle))
+	raw.SysOnPngDecodeRequest(raw.CallbackPointer0(), uintptr(callbackHandle))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("OnPNGDecodeRequest", callbackHandle)
 	}
@@ -49,7 +62,7 @@ func OnSecureRandomRequest(callback SecureRandomHandler) {
 		panic(&CallbackError{Operation: "OnSecureRandomRequest", Callback: "callback", Err: ErrNilCallback})
 	}
 	callbackHandle := zigoNewSecureRandomHandlerHandle(callback)
-	raw.SysOnSecureRandomRequest(uintptr(callbackHandle))
+	raw.SysOnSecureRandomRequest(raw.CallbackPointer1(), uintptr(callbackHandle))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("OnSecureRandomRequest", callbackHandle)
 	}
@@ -75,7 +88,7 @@ func OnLog(callback LogHandler) {
 		panic(&CallbackError{Operation: "OnLog", Callback: "callback", Err: ErrNilCallback})
 	}
 	callbackHandle := zigoNewLogHandlerHandle(callback)
-	raw.SysOnLog(uintptr(callbackHandle))
+	raw.SysOnLog(raw.CallbackPointer2(), uintptr(callbackHandle))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("OnLog", callbackHandle)
 	}

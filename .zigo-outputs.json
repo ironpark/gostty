@@ -18,6 +18,14 @@
       "kind": "go"
     },
     {
+      "path": "internal/raw/raw_load_posix_gen.go",
+      "kind": "go"
+    },
+    {
+      "path": "internal/raw/raw_load_windows_gen.go",
+      "kind": "go"
+    },
+    {
       "path": "internal/lifecycle/lifecycle_gen.go",
       "kind": "go"
     },

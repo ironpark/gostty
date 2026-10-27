@@ -1,15 +1,15 @@
 const std = @import("std");
 const zigo = @import("zigo");
 
-// Where the native archives and the C header are installed. The install prefix
-// is the repository root (see the Makefile), so this is `libs/` beside the Go
-// package rather than a `zig-out` buried under the Zig tree: the archives are
-// what the Go build links, so they belong somewhere a Go developer would look.
+// Where the native libraries and the C header are installed. The install
+// prefix is the repository root (see the Makefile), so this is `libs/` beside
+// the Go package rather than a `zig-out` buried under the Zig tree: the
+// libraries are what the Go package embeds, so they belong somewhere a Go
+// developer would look.
 const libs_dir: std.Build.InstallDir = .{ .custom = "libs" };
 
-/// One platform the binding library ships for. The Go names are what zigo
-/// writes into the `#cgo <goos>,<goarch>` constraint and the `libs/`
-/// subdirectory the platform's archives install under.
+/// One platform the binding library ships for. The Go names are the `libs/`
+/// subdirectory the platform's library installs under.
 const Platform = struct {
     triple: []const u8,
     goos: []const u8,
@@ -17,10 +17,9 @@ const Platform = struct {
 };
 
 // The release matrix. Every platform is built from the same source tree in
-// one `zig build go`, so the generated link directives always describe all
-// of them and never depend on the host that ran the generator. The order is
-// the order of the `#cgo` lines in the generated file; keep it stable so the
-// committed file does not churn.
+// one `zig build go`, so the committed libraries always come from the same
+// run and never depend on the host that ran the generator. Keep the order
+// stable so the generated files do not churn.
 //
 // Linux comes first on purpose. zigo configures the ghostty dependency for
 // the first platform and clones its module graph for the rest, and ghostty
@@ -154,19 +153,23 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .targets = resolved[1..],
         .optimize = optimize,
-        // The archives are installed together under the repository's `libs`,
-        // one `<goos>_<goarch>` subdirectory per platform, which is where the
-        // generated cgo directives point.
+        // Called through purego, without cgo: the Go build needs no C
+        // toolchain, and the shared library is loaded at run time. The
+        // public package embeds it and loads it itself (embed_*.go), so the
+        // loader stays explicit.
+        .link = .{ .purego = .{} },
+        // The libraries are installed together under the repository's
+        // `libs`, one `<goos>_<goarch>` subdirectory per platform, which is
+        // where the embed directives point.
         .install = .{
             .library_dir = libs_dir,
             .header_dir = .{ .custom = "libs/include" },
         },
     });
 
-    // A static archive is linked later by cgo, so Zig does not get a final
-    // executable link at which to add its runtimes. Bundle them into the
-    // binding archive, as ghostty does for its own libghostty-vt
-    // (`src/build/GhosttyLibVt.zig`), so every platform is self-contained:
+    // Bundle Zig's runtimes into the binding library, as ghostty does for its
+    // own libghostty-vt (`src/build/GhosttyLibVt.zig`), so every platform's
+    // library is self-contained:
     //
     // - compiler_rt: some targets (notably x86_64) call helpers such as
     //   __zig_probe_stack from otherwise ordinary ReleaseSafe code.
@@ -174,11 +177,11 @@ pub fn build(b: *std.Build) void {
     //   UBSan, whose `__ubsan_handle_*` handlers live here. Only in Debug:
     //   the release modes reference none of them, and Zig bundles the whole
     //   runtime whether or not anything does, so it would be three megabytes
-    //   of dead weight in every release archive.
+    //   of dead weight in every release library.
     //
     // ghostty skips ubsan_rt on Windows because the MSVC linker rejects the
-    // directives it carries; cgo links these archives with mingw's ld or
-    // lld, which accept them, so Windows is bundled like the rest.
+    // directives it carries; Zig links the DLL with lld, which accepts them,
+    // so Windows is bundled like the rest.
     for (bindings.native_libraries) |native| {
         native.lib.bundle_compiler_rt = true;
         native.lib.bundle_ubsan_rt = optimize == .debug;

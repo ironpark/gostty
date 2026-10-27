@@ -57,6 +57,9 @@ type CallbackPanicError = lifecycle.CallbackPanicError
 // Error reports a named Zig error code.
 type Error = lifecycle.Error
 
+// ErrLibraryLoad identifies a native library loading failure.
+var ErrLibraryLoad = raw.ErrLibraryLoad
+
 // ErrOutOfMemory represents Zig error.OutOfMemory.
 var ErrOutOfMemory = &Error{Code: 1, Name: "OutOfMemory"}
 

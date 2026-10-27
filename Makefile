@@ -1,16 +1,16 @@
 # gostty
 #
-# The Go package is generated from Zig sources, and the Go build links a native
-# archive that Zig produces. Both live under zig/ and are driven from there.
+# The Go package is generated from Zig sources, and calls a native shared
+# library that Zig produces, through purego. Both live under zig/ and are
+# driven from there.
 
 ZIG     ?= zig
 GO      ?= go
 ZIG_DIR := zig
-# The native archives and the C header are installed here, beside the Go
-# package: they are what the Go build links, so they belong somewhere a Go
-# developer would look rather than under zig-out. One `<goos>_<goarch>`
-# subdirectory per platform, matching the `#cgo` constraints zigo writes into
-# internal/raw/zigo_link_inputs_gen.go.
+# The shared libraries and the C header are installed here, beside the Go
+# package, which embeds them (library_<goos>_<goarch>.go): they belong
+# somewhere a Go developer would look rather than under zig-out. One
+# `<goos>_<goarch>` subdirectory per platform.
 LIB_DIR := libs
 
 # The native library dominates run time and Zig's default is Debug, which costs
@@ -25,7 +25,7 @@ OPTIMIZE ?= ReleaseSafe
 # reach it; every Go target names both, through the workspace below.
 GO_PKGS := ./... ./examples/hypercat/...
 # The install prefix is the repository root, so `libs/` lands beside the Go
-# package. The generated cgo directives point at it, so it has to match.
+# package. The embed directives point at it, so it has to match.
 ZIG_FLAGS := -Doptimize=$(OPTIMIZE) --prefix $(CURDIR)
 # Build against a zigo checkout instead of the release build.zig.zon pins,
 # for a zigo change that has not been tagged yet:
@@ -37,7 +37,7 @@ ZIG_FLAGS += --fork=$(abspath $(ZIGO_FORK))
 endif
 
 .DEFAULT_GOAL := help
-.PHONY: help all build generate align-macos-archives test test-plugins race bench vet example example-sync verify check doctor coverage report fmt clean distclean
+.PHONY: help all build generate test test-plugins race bench vet example example-sync verify check doctor coverage report fmt clean distclean
 
 help: ## Show this help
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -46,35 +46,19 @@ help: ## Show this help
 all: build test ## Build the native libraries and run the tests
 
 # The platform matrix lives in zig/build.zig: one `zig build go` generates the
-# Go tree once and builds the native archives for every platform, so there is
+# Go tree once and builds the native libraries for every platform, so there is
 # no host-only build to offer. Zig caches per platform, so after the first run
 # only what changed is rebuilt.
-build: generate ## Regenerate bindings and build the native archives (alias of generate)
+build: generate ## Regenerate bindings and build the native libraries (alias of generate)
 
-# Through the generator rather than `go-lib` so the committed link file and
-# the archives always come from the same run. Generating is half a second once
+# Through the generator rather than `go-lib` so the committed bindings and
+# the libraries always come from the same run. Generating is half a second once
 # Zig's cache is warm, and it produces the same committed files every time.
-generate: ## Regenerate bindings and build native archives for every platform
+generate: ## Regenerate bindings and build native libraries for every platform
 	cd $(ZIG_DIR) && $(ZIG) build go $(ZIG_FLAGS)
-	@$(MAKE) --no-print-directory align-macos-archives
-
-# Zig's archiver packs members on a 4-byte boundary, which Apple's linker
-# rejects ("not 8-byte aligned") on some toolchain versions. Repack the macOS
-# archives with libtool so any consumer's ld accepts them. libtool is Apple's;
-# elsewhere the archives are left as Zig wrote them.
-align-macos-archives:
-	@command -v libtool >/dev/null 2>&1 && [ "$$(uname -s)" = Darwin ] || \
-		{ echo "skipping macOS archive alignment: Apple libtool not available" >&2; exit 0; }; \
-	set -eu; tmp=$$(mktemp -d); \
-	trap 'rm -rf "$$tmp"' EXIT; \
-	for archive in $(LIB_DIR)/darwin_*/lib*.a; do \
-		[ -e "$$archive" ] || continue; \
-		rm -rf "$$tmp"/members; mkdir -p "$$tmp"/members; \
-		(cd "$$tmp"/members && $(ZIG) ar x "$(CURDIR)/$$archive"); \
-		chmod u+rw "$$tmp"/members/*.o; \
-		(cd "$$tmp"/members && libtool -static -o "$(CURDIR)/$$archive.aligned" *.o); \
-		mv "$$archive.aligned" "$$archive"; \
-	done
+	@# Windows' import libraries and debug databases are for linking and
+	@# debugging against the DLL, which purego does neither of.
+	@rm -f $(LIB_DIR)/windows_*/*.lib $(LIB_DIR)/windows_*/*.pdb
 
 define run-zig-tool
 	cd $(ZIG_DIR) && $(ZIG) build $(1) $(ZIG_FLAGS)

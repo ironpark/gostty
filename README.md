@@ -24,8 +24,11 @@ with Kitty graphics and animated cats.
 
 ## Installation
 
-Requires **Go 1.25+**, **cgo enabled**, and a **C compiler**. Native archives are
-included for macOS, Linux, and Windows on amd64 and arm64.
+Requires **Go 1.25+**; no cgo and no C compiler. The native library for macOS,
+Linux, and Windows on amd64 and arm64 is embedded in your program and loaded
+when the package initializes, unpacked once into the user's cache directory.
+Set `ZIGO_GOSTTY_LIBRARY_PATH` to load another copy, or build with the
+`gostty_noembed` tag to leave it out and call `LoadLibrary` yourself.
 
 From your Go module:
 
@@ -120,7 +123,7 @@ go run ./examples/vtdump -format html < session.log > session.html
 Ebitengine: a shell running on a PTY, rendered in a window with tabs, search,
 clipboard integration, Kitty graphics, and animated cats.
 
-Run it from a checkout using the bundled native archives:
+Run it from a checkout using the bundled native libraries:
 
 ```sh
 git clone https://github.com/ironpark/gostty.git
@@ -164,10 +167,11 @@ HyperCat demonstrates this integration in [terminal.go](examples/hypercat/termin
 
 gostty uses Ghostty's Zig terminal core, **libghostty-vt**.
 [zigo](https://github.com/ironpark/zigo) generates the Go API and C ABI bridge
-from Zig binding declarations. Go calls the native core through cgo, so parsing
-and terminal state stay in Ghostty while applications work with Go types.
+from Zig binding declarations. Go calls the native core through
+[purego](https://github.com/ebitengine/purego), without cgo, so parsing and
+terminal state stay in Ghostty while applications work with Go types.
 
-The generated bindings and prebuilt static libraries are committed together.
+The generated bindings and prebuilt shared libraries are committed together.
 Native libraries are built with Zig's `ReleaseSafe` optimization for macOS,
 Linux, and Windows on amd64 and arm64.
 

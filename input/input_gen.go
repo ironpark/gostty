@@ -17,6 +17,19 @@ import (
 	"github.com/ironpark/gostty/internal/raw"
 )
 
+// LibraryError reports a native shared-library loading failure.
+type LibraryError = raw.LibraryError
+
+// LoadLibrary atomically loads all generated native entry points.
+func LoadLibrary(path string) error { return raw.LoadLibrary(path) }
+
+// LibraryLoaded reports whether the native call surface is ready.
+func LibraryLoaded() bool { return raw.LibraryLoaded() }
+
+// DefaultLibraryName is the installed shared-library basename for the running platform.
+// LoadLibrary falls back to it when no explicit path and no ZIGO_LIBRARY_PATH are set.
+var DefaultLibraryName = raw.DefaultLibraryName
+
 // Codepoint: Returns the codepoint representing this key, or null if the key is not
 // printable
 // The bool result reports whether a value was present; the value before it is zero when it was not.
@@ -97,7 +110,7 @@ func EncodeKey(writer io.Writer, terminal *zigo_default.Terminal, event KeyEvent
 	defer lifecycle.Release(terminal)
 	writerHandle := zigoNewWriterStreamHandle(writer)
 	defer zigoDeleteCallbackHandle(writerHandle)
-	code := raw.EncodeKey(uintptr(writerHandle), terminalPtr, zigoKeyEventToRaw(event), utf8)
+	code := raw.EncodeKey(raw.StreamWriterCallbackPointer(), uintptr(writerHandle), terminalPtr, zigoKeyEventToRaw(event), utf8)
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("EncodeKey", writerHandle)
 	}
@@ -125,7 +138,7 @@ func EncodeMouse(writer io.Writer, terminal *zigo_default.Terminal, event MouseE
 	defer lifecycle.Release(terminal)
 	writerHandle := zigoNewWriterStreamHandle(writer)
 	defer zigoDeleteCallbackHandle(writerHandle)
-	code := raw.EncodeMouse(uintptr(writerHandle), terminalPtr, zigoMouseEventToRaw(event), zigoRenderSizeToRaw(size), zigoBoolToUint8(anyButtonPressed))
+	code := raw.EncodeMouse(raw.StreamWriterCallbackPointer(), uintptr(writerHandle), terminalPtr, zigoMouseEventToRaw(event), zigoRenderSizeToRaw(size), zigoBoolToUint8(anyButtonPressed))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("EncodeMouse", writerHandle)
 	}
@@ -171,7 +184,7 @@ func EncodeFocus(writer io.Writer, event FocusEvent) error {
 	}
 	writerHandle := zigoNewWriterStreamHandle(writer)
 	defer zigoDeleteCallbackHandle(writerHandle)
-	code := raw.InputEncodeFocus(uintptr(writerHandle), uint8(event))
+	code := raw.InputEncodeFocus(raw.StreamWriterCallbackPointer(), uintptr(writerHandle), uint8(event))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("EncodeFocus", writerHandle)
 	}
@@ -217,7 +230,7 @@ func EncodePaste(writer io.Writer, terminal *zigo_default.Terminal, data []byte)
 	defer lifecycle.Release(terminal)
 	writerHandle := zigoNewWriterStreamHandle(writer)
 	defer zigoDeleteCallbackHandle(writerHandle)
-	code := raw.EncodePaste(uintptr(writerHandle), terminalPtr, data)
+	code := raw.EncodePaste(raw.StreamWriterCallbackPointer(), uintptr(writerHandle), terminalPtr, data)
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("EncodePaste", writerHandle)
 	}

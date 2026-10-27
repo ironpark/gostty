@@ -22,6 +22,19 @@ import (
 	"github.com/ironpark/gostty/internal/raw"
 )
 
+// LibraryError reports a native shared-library loading failure.
+type LibraryError = raw.LibraryError
+
+// LoadLibrary atomically loads all generated native entry points.
+func LoadLibrary(path string) error { return raw.LoadLibrary(path) }
+
+// LibraryLoaded reports whether the native call surface is ready.
+func LibraryLoaded() bool { return raw.LibraryLoaded() }
+
+// DefaultLibraryName is the installed shared-library basename for the running platform.
+// LoadLibrary falls back to it when no explicit path and no ZIGO_LIBRARY_PATH are set.
+var DefaultLibraryName = raw.DefaultLibraryName
+
 // zigoCheckedCols is the checked form of Cols, which a plugin replaced.
 func (te *Terminal) zigoCheckedCols() (uint16, error) {
 	ptr, err := zigoCheckedPointer("Terminal.Cols receiver", te)
@@ -2433,7 +2446,7 @@ func (te *Terminal) Format(opts FormatOptions, writer io.Writer) error {
 	defer te.zigoRelease()
 	writerHandle := zigoNewWriterStreamHandle(writer)
 	defer zigoDeleteCallbackHandle(writerHandle)
-	code := raw.TerminalFormat(ptr, zigoFormatOptionsToRaw(opts), uintptr(writerHandle))
+	code := raw.TerminalFormat(ptr, zigoFormatOptionsToRaw(opts), raw.StreamWriterCallbackPointer(), uintptr(writerHandle))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("Terminal.Format", writerHandle)
 	}
@@ -2460,7 +2473,7 @@ func (te *Terminal) FormatSelection(opts FormatOptions, sel Selection, writer io
 	defer te.zigoRelease()
 	writerHandle := zigoNewWriterStreamHandle(writer)
 	defer zigoDeleteCallbackHandle(writerHandle)
-	result, code := raw.TerminalFormatSelection(ptr, zigoFormatOptionsToRaw(opts), zigoSelectionToRaw(sel), uintptr(writerHandle))
+	result, code := raw.TerminalFormatSelection(ptr, zigoFormatOptionsToRaw(opts), zigoSelectionToRaw(sel), raw.StreamWriterCallbackPointer(), uintptr(writerHandle))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("Terminal.FormatSelection", writerHandle)
 	}
@@ -3783,7 +3796,7 @@ func (s *Screen) Format(opts FormatOptions, writer io.Writer) error {
 	defer s.zigoRelease()
 	writerHandle := zigoNewWriterStreamHandle(writer)
 	defer zigoDeleteCallbackHandle(writerHandle)
-	code := raw.ScreenFormat(ptr, zigoFormatOptionsToRaw(opts), uintptr(writerHandle))
+	code := raw.ScreenFormat(ptr, zigoFormatOptionsToRaw(opts), raw.StreamWriterCallbackPointer(), uintptr(writerHandle))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("Screen.Format", writerHandle)
 	}
@@ -3809,7 +3822,7 @@ func (s *Screen) FormatSelection(opts FormatOptions, sel Selection, writer io.Wr
 	defer s.zigoRelease()
 	writerHandle := zigoNewWriterStreamHandle(writer)
 	defer zigoDeleteCallbackHandle(writerHandle)
-	result, code := raw.ScreenFormatSelection(ptr, zigoFormatOptionsToRaw(opts), zigoSelectionToRaw(sel), uintptr(writerHandle))
+	result, code := raw.ScreenFormatSelection(ptr, zigoFormatOptionsToRaw(opts), zigoSelectionToRaw(sel), raw.StreamWriterCallbackPointer(), uintptr(writerHandle))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("Screen.FormatSelection", writerHandle)
 	}
@@ -4890,7 +4903,7 @@ func (s *Stream) zigoCheckedOnDrag(callback DragHandler) error {
 			zigoDeleteCallbackHandle(callbackHandle)
 		}
 	}()
-	code := raw.StreamOnDrag(ptr, uintptr(callbackHandle))
+	code := raw.StreamOnDrag(ptr, raw.CallbackPointer3(), uintptr(callbackHandle))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("Stream.OnDrag", callbackHandle)
 		for slot := range 3 {
@@ -5137,7 +5150,7 @@ func (s *Stream) zigoCheckedOnClipboardWriteRequest(callback ClipboardHandler) e
 			zigoDeleteCallbackHandle(callbackHandle)
 		}
 	}()
-	code := raw.StreamOnClipboardWriteRequest(ptr, uintptr(callbackHandle))
+	code := raw.StreamOnClipboardWriteRequest(ptr, raw.CallbackPointer4(), uintptr(callbackHandle))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("Stream.OnClipboardWriteRequest", callbackHandle)
 		for slot := range 3 {
@@ -5178,7 +5191,7 @@ func (s *Stream) zigoCheckedOnClipboardReadRequest(callback ClipboardHandler) er
 			zigoDeleteCallbackHandle(callbackHandle)
 		}
 	}()
-	code := raw.StreamOnClipboardReadRequest(ptr, uintptr(callbackHandle))
+	code := raw.StreamOnClipboardReadRequest(ptr, raw.CallbackPointer4(), uintptr(callbackHandle))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("Stream.OnClipboardReadRequest", callbackHandle)
 		for slot := range 3 {
@@ -5214,7 +5227,7 @@ func (s *Stream) WriteContinuation(writer io.Writer) error {
 	defer s.zigoRelease()
 	writerHandle := zigoNewWriterStreamHandle(writer)
 	defer zigoDeleteCallbackHandle(writerHandle)
-	code := raw.StreamWriteContinuation(ptr, uintptr(writerHandle))
+	code := raw.StreamWriteContinuation(ptr, raw.StreamWriterCallbackPointer(), uintptr(writerHandle))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("Stream.WriteContinuation", writerHandle)
 		for slot := range 3 {
@@ -5269,7 +5282,7 @@ func (s *Stream) WriteSnapshot(writer io.Writer) error {
 	defer s.zigoRelease()
 	writerHandle := zigoNewWriterStreamHandle(writer)
 	defer zigoDeleteCallbackHandle(writerHandle)
-	code := raw.StreamWriteSnapshot(ptr, uintptr(writerHandle))
+	code := raw.StreamWriteSnapshot(ptr, raw.StreamWriterCallbackPointer(), uintptr(writerHandle))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("Stream.WriteSnapshot", writerHandle)
 		for slot := range 3 {
@@ -5305,7 +5318,7 @@ func (s *Stream) WriteReplies(writer io.Writer) error {
 	defer s.zigoRelease()
 	writerHandle := zigoNewWriterStreamHandle(writer)
 	defer zigoDeleteCallbackHandle(writerHandle)
-	code := raw.StreamWriteReplies(ptr, uintptr(writerHandle))
+	code := raw.StreamWriteReplies(ptr, raw.StreamWriterCallbackPointer(), uintptr(writerHandle))
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("Stream.WriteReplies", writerHandle)
 		for slot := range 3 {
@@ -5642,7 +5655,7 @@ func DecodeSnapshot(reader io.Reader, maxContinuationBytes uint) (*Snapshot, err
 	readerHandle := zigoNewReaderStreamHandle(reader)
 	defer zigoDeleteCallbackHandle(readerHandle)
 	readerData := zigoReaderBytes(reader)
-	result, code := raw.DecodeSnapshot(uintptr(readerHandle), readerData, maxContinuationBytes)
+	result, code := raw.DecodeSnapshot(raw.StreamReaderCallbackPointer(), uintptr(readerHandle), readerData, maxContinuationBytes)
 	if zigoCallbackPanicPending() {
 		zigoRethrowCallbackPanic("DecodeSnapshot", readerHandle)
 	}
@@ -6333,5 +6346,5 @@ type BuildInfo struct {
 
 // GetBuildInfo identifies the bundled native build. Values are fixed at generation time.
 func GetBuildInfo() BuildInfo {
-	return BuildInfo{GhosttyRevision: "0fe113a35370667d8c4d6970ee5c1704825dce6b", ZigoVersion: "0.32.0", Optimize: "ReleaseSafe", SIMD: true, KittyGraphics: true, TmuxControlMode: false}
+	return BuildInfo{GhosttyRevision: "0fe113a35370667d8c4d6970ee5c1704825dce6b", ZigoVersion: "0.32.1", Optimize: "ReleaseSafe", SIMD: true, KittyGraphics: true, TmuxControlMode: false}
 }

@@ -3,8 +3,6 @@
 package sys
 
 import (
-	"runtime/cgo"
-	"sync/atomic"
 	"unsafe"
 
 	lifecycle "github.com/ironpark/gostty/internal/lifecycle"
@@ -40,42 +38,26 @@ type SecureRandomHandler func(uint)
 // Thread: caller; the callback runs on the thread that initiated the native call.
 type LogHandler func(LogLevel, string, string)
 
-var zigoActiveCallbackHandles atomic.Int64
-
-type zigoCallbackHandle = cgo.Handle
+type zigoCallbackHandle = uintptr
 
 func zigoNewPNGDecodeHandlerHandle(value PNGDecodeHandler) zigoCallbackHandle {
-	stored := (func([]byte))(value)
-	handle := cgo.NewHandle(&raw.CallbackState{Fn: stored})
-	zigoActiveCallbackHandles.Add(1)
-	return handle
+	return raw.NewCallbackHandle((func([]byte))(value))
 }
 
 func zigoNewSecureRandomHandlerHandle(value SecureRandomHandler) zigoCallbackHandle {
-	stored := (func(uint))(value)
-	handle := cgo.NewHandle(&raw.CallbackState{Fn: stored})
-	zigoActiveCallbackHandles.Add(1)
-	return handle
+	return raw.NewCallbackHandle((func(uint))(value))
 }
 
 func zigoNewLogHandlerHandle(value LogHandler) zigoCallbackHandle {
-	stored := func(p0 uint8, p1 string, p2 string) {
+	return raw.NewCallbackHandle(func(p0 uint8, p1 string, p2 string) {
 		value(LogLevel(p0), p1, p2)
-	}
-	handle := cgo.NewHandle(&raw.CallbackState{Fn: stored})
-	zigoActiveCallbackHandles.Add(1)
-	return handle
+	})
 }
 
-func zigoDeleteCallbackHandle(handle zigoCallbackHandle) {
-	if handle == 0 {
-		return
-	}
-	handle.Delete()
-	zigoActiveCallbackHandles.Add(-1)
-}
+func zigoDeleteCallbackHandle(handle zigoCallbackHandle) { raw.DeleteCallbackHandle(handle) }
 
-func zigoActiveCallbackHandleCount() int64 { return zigoActiveCallbackHandles.Load() }
+func zigoActiveCallbackHandleCount() int64 { return raw.ActiveCallbackHandleCount() }
+func zigoCallbackDispatcherCount() int     { return raw.CallbackDispatcherCount() }
 
 // zigoCallbackPanicPending is the fast-path check ahead of the per-slot sweep:
 // one atomic load says whether any callback recorded a panic nobody has taken.

@@ -4,67 +4,530 @@
 // the native library. It is not part of the supported API.
 package raw
 
-/*
-#cgo CFLAGS: -I${SRCDIR}/../../libs/include
-#include "zigo_gostty.h"
-*/
-import "C"
 import (
+	"errors"
+	"fmt"
 	"io"
-	"runtime/cgo"
+	"os"
+	"path/filepath"
+	"runtime"
 	"runtime/debug"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"unsafe"
+
+	"github.com/ebitengine/purego"
 )
 
-// LastErrorMessage returns the most recent native panic message for this binding.
-func LastErrorMessage() string { return C.GoString(C.zg_last_error_message()) }
+// DefaultLibraryName is the installed shared-library basename for the running platform.
+// It is empty on platforms this backend does not support.
+var DefaultLibraryName = map[string]string{"darwin": "libgostty_zigo.dylib", "linux": "libgostty_zigo.so", "windows": "gostty_zigo.dll"}[runtime.GOOS]
 
-// PanicMessage returns the message of the native panic a status code of -256 or below names.
-func PanicMessage(code int32) string { return C.GoString(C.zg_caught_panic_message(C.int32_t(code))) }
+// ErrLibraryLoad identifies a shared-library load or symbol resolution failure.
+var ErrLibraryLoad = errors.New("zigo: shared library unavailable")
 
-// zigoEmptyStreamData is what a present but empty byte-slice reader points
-// at. The shim tells the fast path from the trampoline path by the pointer
-// being non-NULL, so an empty stream still needs an address.
-var zigoEmptyStreamData byte
-
-// zigoZeroSlot is what an empty slice or string points at instead of NULL, so
-// the native side always receives a valid address beside a zero length.
-var zigoZeroSlot uint64
-
-// zigoSlicePtr is the address of a slice's first element, or of zigoZeroSlot
-// for an empty slice.
-func zigoSlicePtr[T any](values []T) unsafe.Pointer {
-	if len(values) == 0 {
-		return unsafe.Pointer(&zigoZeroSlot)
-	}
-	return unsafe.Pointer(&values[0])
+// LibraryError reports a native library loading or symbol resolution failure.
+type LibraryError struct {
+	Path      string
+	Symbol    string
+	Operation string
+	Cause     error
 }
 
-// zigoStringPtr is the address of a string's bytes, read in place, or of
-// zigoZeroSlot for an empty string.
-func zigoStringPtr(value string) unsafe.Pointer {
-	if len(value) == 0 {
-		return unsafe.Pointer(&zigoZeroSlot)
+// Error describes the failed loading operation.
+func (err *LibraryError) Error() string {
+	if err.Symbol != "" {
+		return fmt.Sprintf("zigo: %s %q from %q: %v", err.Operation, err.Symbol, err.Path, err.Cause)
 	}
-	return unsafe.Pointer(unsafe.StringData(value))
+	if err.Path == "" {
+		return fmt.Sprintf("zigo: %s: %v", err.Operation, err.Cause)
+	}
+	return fmt.Sprintf("zigo: %s %q: %v", err.Operation, err.Path, err.Cause)
 }
 
-// CallbackState carries one Go callback across the native boundary, and
-// the panic it raises there until the generated caller rethrows it. The
-// trampoline has to recover: a panic cannot unwind native frames.
-type CallbackState struct {
-	Fn           any
-	Writer       io.Writer
-	Reader       io.Reader
-	readTerminal error
+// Is reports ErrLibraryLoad so every generated error classifies the same way.
+func (err *LibraryError) Is(target error) bool { return target == ErrLibraryLoad }
+
+// Unwrap returns the platform loader error.
+func (err *LibraryError) Unwrap() error { return err.Cause }
+
+type nativeBindings struct {
+	lastError                                  func() unsafe.Pointer
+	panicMessage                               func(int32) unsafe.Pointer
+	fnTerminalCols                             func(unsafe.Pointer, *uint16) int32
+	fnTerminalRows                             func(unsafe.Pointer, *uint16) int32
+	fnTerminalCursorX                          func(unsafe.Pointer, *uint16) int32
+	fnTerminalCursorY                          func(unsafe.Pointer, *uint16) int32
+	fnTerminalCursorStyle                      func(unsafe.Pointer, *uint8) int32
+	fnTerminalActiveScreenKey                  func(unsafe.Pointer, *uint8) int32
+	fnTerminalCursorPendingWrap                func(unsafe.Pointer, *uint8) int32
+	fnTerminalCursorProtected                  func(unsafe.Pointer, *uint8) int32
+	fnTerminalWidthPx                          func(unsafe.Pointer, *uint32) int32
+	fnTerminalHeightPx                         func(unsafe.Pointer, *uint32) int32
+	fnTerminalFocused                          func(unsafe.Pointer, *uint8) int32
+	fnTerminalVisible                          func(unsafe.Pointer, *uint8) int32
+	fnTerminalPasswordInput                    func(unsafe.Pointer, *uint8) int32
+	fnTerminalCharsetGl                        func(unsafe.Pointer, *uint8) int32
+	fnTerminalCharsetGr                        func(unsafe.Pointer, *uint8) int32
+	fnTerminalCharsetSingleShift               func(unsafe.Pointer, *uint8, *uint8) int32
+	fnTerminalProtectedMode                    func(unsafe.Pointer, *uint8) int32
+	fnGestureClickCount                        func(unsafe.Pointer, *uint8) int32
+	fnGestureDragged                           func(unsafe.Pointer, *uint8) int32
+	fnStreamFailed                             func(unsafe.Pointer, *uint8) int32
+	fnOscParserCommand                         func(unsafe.Pointer, *uint8) int32
+	fnOscParserWindowTitle                     func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
+	fnOscParserIcon                            func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
+	fnOscParserPwd                             func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
+	fnOscParserHyperlinkUri                    func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
+	fnOscParserHyperlinkID                     func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
+	fnOscParserNotificationTitle               func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
+	fnOscParserNotificationBody                func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
+	fnOscParserClipboardData                   func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
+	fnOscParserClipboardSelection              func(unsafe.Pointer, *uint8) int32
+	fnOscParserMouseShape                      func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
+	fnOscParserSemanticPromptAction            func(unsafe.Pointer, *uint8) int32
+	fnOscParserSemanticPromptOptions           func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
+	fnOscParserProgressState                   func(unsafe.Pointer, *uint8) int32
+	fnOscParserProgressValue                   func(unsafe.Pointer, *int16) int32
+	fnRenderStateRows                          func(unsafe.Pointer, *uint16) int32
+	fnRenderStateCols                          func(unsafe.Pointer, *uint16) int32
+	fnRenderStateCursorVisible                 func(unsafe.Pointer, *uint8) int32
+	fnRenderStateCursorStyle                   func(unsafe.Pointer, *uint8) int32
+	fnRenderStateCursorBlinking                func(unsafe.Pointer, *uint8) int32
+	fnRenderStateCursorPasswordInput           func(unsafe.Pointer, *uint8) int32
+	fnKittyImagesGeneration                    func(unsafe.Pointer, *uint64) int32
+	fnSysOnPngDecodeRequest                    func(uintptr, uintptr)
+	fnSysReplyPngImage                         func(uint32, uint32, unsafe.Pointer, uintptr) int32
+	fnSysOnSecureRandomRequest                 func(uintptr, uintptr)
+	fnSysOnLog                                 func(uintptr, uintptr)
+	fnSysClear                                 func()
+	fnSysReplySecureRandom                     func(unsafe.Pointer, uintptr) int32
+	fnKeyCodepoint                             func(int32, *uint32) uint8
+	fnKeyPrintable                             func(int32) uint8
+	fnKeyModifier                              func(int32) uint8
+	fnKeyKeypad                                func(int32) uint8
+	fnKeyLeftOrRightShift                      func(int32) uint8
+	fnKeyLeftOrRightAlt                        func(int32) uint8
+	fnKeyCtrlOrSuper                           func(int32) uint8
+	fnKeyShouldBeRemappable                    func(int32) uint8
+	fnKeyW3C                                   func(int32, *unsafe.Pointer, *uintptr)
+	fnEncodeKey                                func(uintptr, uintptr, unsafe.Pointer, unsafe.Pointer, unsafe.Pointer, uintptr) int32
+	fnEncodeMouse                              func(uintptr, uintptr, unsafe.Pointer, unsafe.Pointer, unsafe.Pointer, uint8) int32
+	fnKeyKeyFromAscii                          func(uint8, *int32) uint8
+	fnKeyKeyFromW3C                            func(unsafe.Pointer, uintptr, *int32) uint8
+	fnInputEncodeFocus                         func(uintptr, uintptr, uint8) int32
+	fnInputIsSafePaste                         func(unsafe.Pointer, uintptr) uint8
+	fnEncodePaste                              func(uintptr, uintptr, unsafe.Pointer, unsafe.Pointer, uintptr) int32
+	fnTerminalNewTerminal                      func(uint16, uint16, *uintptr, *uintptr, uint8, *uint8, *unsafe.Pointer) int32
+	fnTerminalDeinit                           func(unsafe.Pointer) int32
+	fnTerminalNewStream                        func(unsafe.Pointer, uintptr, *unsafe.Pointer) int32
+	fnTerminalNewSearch                        func(unsafe.Pointer, unsafe.Pointer, uintptr, *unsafe.Pointer) int32
+	fnTerminalNewGesture                       func(unsafe.Pointer, *unsafe.Pointer) int32
+	fnTerminalNewGridRef                       func(unsafe.Pointer, uint8, uint16, uint32, *unsafe.Pointer) int32
+	fnTerminalPrintString                      func(unsafe.Pointer, unsafe.Pointer, uintptr) int32
+	fnTerminalPlainString                      func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
+	fnTerminalPlainStringUnwrapped             func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
+	fnTerminalPrint                            func(unsafe.Pointer, uint32) int32
+	fnTerminalPrintRepeat                      func(unsafe.Pointer, uintptr) int32
+	fnTerminalPrintSlice                       func(unsafe.Pointer, unsafe.Pointer, uintptr) int32
+	fnTerminalSetCursorStyle                   func(unsafe.Pointer, uint8) int32
+	fnTerminalSetCursorPos                     func(unsafe.Pointer, uintptr, uintptr) int32
+	fnTerminalCarriageReturn                   func(unsafe.Pointer) int32
+	fnTerminalLinefeed                         func(unsafe.Pointer) int32
+	fnTerminalBackspace                        func(unsafe.Pointer) int32
+	fnTerminalCursorIsAtPrompt                 func(unsafe.Pointer, *uint8) int32
+	fnTerminalFullReset                        func(unsafe.Pointer) int32
+	fnTerminalSoftReset                        func(unsafe.Pointer) int32
+	fnTerminalCursorUp                         func(unsafe.Pointer, uintptr) int32
+	fnTerminalCursorDown                       func(unsafe.Pointer, uintptr) int32
+	fnTerminalCursorLeft                       func(unsafe.Pointer, uintptr) int32
+	fnTerminalCursorRight                      func(unsafe.Pointer, uintptr) int32
+	fnTerminalSetCursorRow                     func(unsafe.Pointer, uintptr) int32
+	fnTerminalSetCursorCol                     func(unsafe.Pointer, uintptr) int32
+	fnTerminalCursorRowRelative                func(unsafe.Pointer, uintptr) int32
+	fnTerminalCursorColRelative                func(unsafe.Pointer, uintptr) int32
+	fnTerminalSaveCursor                       func(unsafe.Pointer) int32
+	fnTerminalRestoreCursor                    func(unsafe.Pointer) int32
+	fnTerminalIndex                            func(unsafe.Pointer) int32
+	fnTerminalReverseIndex                     func(unsafe.Pointer) int32
+	fnTerminalSwitchScreen                     func(unsafe.Pointer, uint8, *unsafe.Pointer) int32
+	fnTerminalSwitchScreenMode                 func(unsafe.Pointer, uint8, uint8) int32
+	fnTerminalActiveScreen                     func(unsafe.Pointer, *unsafe.Pointer) int32
+	fnTerminalScreen                           func(unsafe.Pointer, uint8, *unsafe.Pointer) int32
+	fnTerminalPrintAttributesInto              func(unsafe.Pointer, unsafe.Pointer, uintptr, *uintptr) int32
+	fnTerminalHistoryString                    func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
+	fnTerminalHorizontalTab                    func(unsafe.Pointer) int32
+	fnTerminalHorizontalTabBack                func(unsafe.Pointer) int32
+	fnTerminalTabSet                           func(unsafe.Pointer) int32
+	fnTerminalTabReset                         func(unsafe.Pointer) int32
+	fnTerminalTabClear                         func(unsafe.Pointer, uint8) int32
+	fnTerminalSetTabstop                       func(unsafe.Pointer, uintptr) int32
+	fnTerminalUnsetTabstop                     func(unsafe.Pointer, uintptr) int32
+	fnTerminalResetTabstops                    func(unsafe.Pointer, uintptr) int32
+	fnTerminalScrollUp                         func(unsafe.Pointer, uintptr) int32
+	fnTerminalScrollDown                       func(unsafe.Pointer, uintptr) int32
+	fnTerminalSetTopAndBottomMargin            func(unsafe.Pointer, uintptr, uintptr) int32
+	fnTerminalSetLeftAndRightMargin            func(unsafe.Pointer, uintptr, uintptr) int32
+	fnTerminalScrollViewport                   func(unsafe.Pointer, uint8, int, uintptr, int) int32
+	fnTerminalSetScrollbackMaxBytes            func(unsafe.Pointer, uintptr) int32
+	fnTerminalClearScrollbackMaxBytes          func(unsafe.Pointer) int32
+	fnTerminalSetScrollbackMaxLines            func(unsafe.Pointer, uintptr) int32
+	fnTerminalClearScrollbackMaxLines          func(unsafe.Pointer) int32
+	fnTerminalInsertLines                      func(unsafe.Pointer, uintptr) int32
+	fnTerminalDeleteLines                      func(unsafe.Pointer, uintptr) int32
+	fnTerminalInsertBlanks                     func(unsafe.Pointer, uintptr) int32
+	fnTerminalDeleteChars                      func(unsafe.Pointer, uintptr) int32
+	fnTerminalEraseChars                       func(unsafe.Pointer, uintptr) int32
+	fnTerminalEraseLine                        func(unsafe.Pointer, uint8, uint8) int32
+	fnTerminalEraseDisplay                     func(unsafe.Pointer, uint8, uint8) int32
+	fnTerminalDecaln                           func(unsafe.Pointer) int32
+	fnTerminalResize                           func(unsafe.Pointer, uint16, uint16) int32
+	fnTerminalResizeCells                      func(unsafe.Pointer, uint16, uint16, uint32, uint32) int32
+	fnTerminalFormat                           func(unsafe.Pointer, unsafe.Pointer, uintptr, uintptr) int32
+	fnTerminalFormatSelection                  func(unsafe.Pointer, unsafe.Pointer, unsafe.Pointer, uintptr, uintptr, *uint8) int32
+	fnTerminalSetPwd                           func(unsafe.Pointer, unsafe.Pointer, uintptr) int32
+	fnTerminalGetPwd                           func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
+	fnTerminalGetTitle                         func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
+	fnTerminalSetTitle                         func(unsafe.Pointer, unsafe.Pointer, uintptr) int32
+	fnTerminalBackgroundColor                  func(unsafe.Pointer, *uint8, unsafe.Pointer) int32
+	fnTerminalForegroundColor                  func(unsafe.Pointer, *uint8, unsafe.Pointer) int32
+	fnTerminalCursorColor                      func(unsafe.Pointer, *uint8, unsafe.Pointer) int32
+	fnTerminalPaletteColors                    func(unsafe.Pointer, unsafe.Pointer, uintptr, *uintptr) int32
+	fnTerminalModeEnabled                      func(unsafe.Pointer, uint16, *uint8) int32
+	fnTerminalSetMode                          func(unsafe.Pointer, uint16, uint8) int32
+	fnTerminalSetAttribute                     func(unsafe.Pointer, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8) int32
+	fnTerminalSetProtectedMode                 func(unsafe.Pointer, uint8) int32
+	fnTerminalConfigureCharset                 func(unsafe.Pointer, uint8, uint8) int32
+	fnTerminalInvokeCharset                    func(unsafe.Pointer, uint8, uint8, uint8) int32
+	fnTerminalDeccolm                          func(unsafe.Pointer, uint8) int32
+	fnTerminalCompress                         func(unsafe.Pointer, uint8, *uint8) int32
+	fnTerminalCompressionActivity              func(unsafe.Pointer, *uint64) int32
+	fnTerminalSetDefaultBackgroundColor        func(unsafe.Pointer, unsafe.Pointer) int32
+	fnTerminalSetDefaultForegroundColor        func(unsafe.Pointer, unsafe.Pointer) int32
+	fnTerminalSetDefaultCursorColor            func(unsafe.Pointer, unsafe.Pointer) int32
+	fnTerminalSetDefaultCursorStyle            func(unsafe.Pointer, uint8) int32
+	fnTerminalSetDefaultCursorBlink            func(unsafe.Pointer, uint8) int32
+	fnTerminalResetDefaultCursorBlink          func(unsafe.Pointer) int32
+	fnTerminalPaletteColor                     func(unsafe.Pointer, uint8, unsafe.Pointer) int32
+	fnTerminalSetPaletteColor                  func(unsafe.Pointer, uint8, unsafe.Pointer) int32
+	fnTerminalResetPaletteColor                func(unsafe.Pointer, uint8) int32
+	fnTerminalResetPalette                     func(unsafe.Pointer) int32
+	fnTerminalSetDefaultPaletteColor           func(unsafe.Pointer, uint8, unsafe.Pointer) int32
+	fnTerminalResetDefaultPalette              func(unsafe.Pointer) int32
+	fnTerminalSetDefaultMode                   func(unsafe.Pointer, uint16, uint8) int32
+	fnTerminalResetModes                       func(unsafe.Pointer) int32
+	fnTerminalSaveMode                         func(unsafe.Pointer, uint16) int32
+	fnTerminalRestoreMode                      func(unsafe.Pointer, uint16, *uint8) int32
+	fnTerminalSetKittyGraphicsSizeLimit        func(unsafe.Pointer, uintptr) int32
+	fnTerminalSetKittyGraphicsLoadingLimits    func(unsafe.Pointer, uint8, unsafe.Pointer, uintptr, uint8) int32
+	fnTerminalKittyImage                       func(unsafe.Pointer, uint32, *uint8, unsafe.Pointer) int32
+	fnTerminalKittyImageData                   func(unsafe.Pointer, uint32, unsafe.Pointer, uintptr, *uintptr) int32
+	fnTerminalKittyAnimationTick               func(unsafe.Pointer, uint64, *uint8, *uint64) int32
+	fnTerminalScrollRegion                     func(unsafe.Pointer, unsafe.Pointer) int32
+	fnTerminalCharset                          func(unsafe.Pointer, uint8, *uint8) int32
+	fnTerminalMouseTracking                    func(unsafe.Pointer, *uint8) int32
+	fnTerminalMouseTrackingSendsMotion         func(unsafe.Pointer, *uint8) int32
+	fnTerminalMouseReportFormat                func(unsafe.Pointer, *uint8) int32
+	fnTerminalModeReport                       func(unsafe.Pointer, uint16, uint8, *uint8) int32
+	fnTerminalCellAt                           func(unsafe.Pointer, uint8, uint16, uint32, *uint8, unsafe.Pointer) int32
+	fnTerminalHyperlinkAt                      func(unsafe.Pointer, uint8, uint16, uint32, *unsafe.Pointer, *uintptr) int32
+	fnScreenViewportIsBottom                   func(unsafe.Pointer, *uint8) int32
+	fnScreenScrollClear                        func(unsafe.Pointer) int32
+	fnScreenClearSelection                     func(unsafe.Pointer) int32
+	fnScreenEndHyperlink                       func(unsafe.Pointer) int32
+	fnScreenSelectAll                          func(unsafe.Pointer, *uint8) int32
+	fnScreenHasSelection                       func(unsafe.Pointer, *uint8) int32
+	fnScreenSelectRange                        func(unsafe.Pointer, uint16, uint16, uint16, uint16, uint8, *uint8) int32
+	fnScreenSelectWord                         func(unsafe.Pointer, uint16, uint16, unsafe.Pointer, uintptr, *uint8) int32
+	fnScreenSelectLine                         func(unsafe.Pointer, uint16, uint16, *uint8) int32
+	fnScreenSelectOutput                       func(unsafe.Pointer, uint16, uint16, *uint8) int32
+	fnScreenSelectionString                    func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
+	fnScreenSelection                          func(unsafe.Pointer, *uint8, unsafe.Pointer) int32
+	fnScreenSetSelection                       func(unsafe.Pointer, unsafe.Pointer, *uint8) int32
+	fnScreenViewportTop                        func(unsafe.Pointer, *uint32) int32
+	fnScreenScrollbar                          func(unsafe.Pointer, unsafe.Pointer) int32
+	fnScreenFormat                             func(unsafe.Pointer, unsafe.Pointer, uintptr, uintptr) int32
+	fnScreenFormatSelection                    func(unsafe.Pointer, unsafe.Pointer, unsafe.Pointer, uintptr, uintptr, *uint8) int32
+	fnScreenSelectionContains                  func(unsafe.Pointer, unsafe.Pointer, uint16, uint32, *uint8) int32
+	fnScreenSelectionAdjust                    func(unsafe.Pointer, unsafe.Pointer, uint8, *uint8, unsafe.Pointer) int32
+	fnScreenStartHyperlink                     func(unsafe.Pointer, unsafe.Pointer, uintptr, unsafe.Pointer, uintptr) int32
+	fnSearchSearchClose                        func(unsafe.Pointer) int32
+	fnSearchNeedle                             func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
+	fnSearchStatus                             func(unsafe.Pointer, *uint8) int32
+	fnSearchTick                               func(unsafe.Pointer, *uint8) int32
+	fnSearchFeed                               func(unsafe.Pointer, uint8) int32
+	fnSearchAll                                func(unsafe.Pointer) int32
+	fnSearchSelect                             func(unsafe.Pointer, uint8, uint8, *uint8) int32
+	fnSearchMatchCount                         func(unsafe.Pointer, *uintptr) int32
+	fnSearchMatches                            func(unsafe.Pointer, unsafe.Pointer, uintptr, *uintptr) int32
+	fnSearchViewportMatches                    func(unsafe.Pointer, unsafe.Pointer, uintptr, *uintptr) int32
+	fnSearchSelectedMatch                      func(unsafe.Pointer, *uint8, unsafe.Pointer) int32
+	fnSearchSelectedIndex                      func(unsafe.Pointer, *uint8, *uintptr) int32
+	fnGridRefGridRefClose                      func(unsafe.Pointer) int32
+	fnGridRefHasValue                          func(unsafe.Pointer, *uint8) int32
+	fnGridRefPoint                             func(unsafe.Pointer, uint8, *uint8, unsafe.Pointer) int32
+	fnGridRefSet                               func(unsafe.Pointer, uint8, uint16, uint32, *uint8) int32
+	fnGridRefCell                              func(unsafe.Pointer, *uint8, unsafe.Pointer) int32
+	fnGridRefGraphemes                         func(unsafe.Pointer, unsafe.Pointer, uintptr, *uintptr) int32
+	fnGridRefHyperlinkUri                      func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
+	fnGestureGestureClose                      func(unsafe.Pointer) int32
+	fnGestureSetBehaviors                      func(unsafe.Pointer, uint8, uint8, uint8) int32
+	fnGestureSetWordBoundaries                 func(unsafe.Pointer, unsafe.Pointer, uintptr) int32
+	fnGestureSetGeometry                       func(unsafe.Pointer, unsafe.Pointer) int32
+	fnGesturePress                             func(unsafe.Pointer, unsafe.Pointer, *uint8, unsafe.Pointer) int32
+	fnGestureDrag                              func(unsafe.Pointer, unsafe.Pointer, *uint8, unsafe.Pointer) int32
+	fnGestureAutoscroll                        func(unsafe.Pointer, *uint8) int32
+	fnGestureAutoscrollTick                    func(unsafe.Pointer, unsafe.Pointer, *uint8, unsafe.Pointer) int32
+	fnGestureDeepPress                         func(unsafe.Pointer, *uint8, unsafe.Pointer) int32
+	fnGestureRelease                           func(unsafe.Pointer, uint16, uint16) int32
+	fnGestureReset                             func(unsafe.Pointer) int32
+	fnColorNameDefault                         func(uint8, unsafe.Pointer) uint8
+	fnStreamFreeStream                         func(unsafe.Pointer) int32
+	fnStreamAtGround                           func(unsafe.Pointer, *uint8) int32
+	fnStreamFeedUntilGround                    func(unsafe.Pointer, unsafe.Pointer, uintptr, unsafe.Pointer) int32
+	fnStreamFeedUntil                          func(unsafe.Pointer, unsafe.Pointer, uintptr, uint16, *uint8, unsafe.Pointer) int32
+	fnStreamFeed                               func(unsafe.Pointer, unsafe.Pointer, uintptr) int32
+	fnStreamNextEventValue                     func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
+	fnStreamResizeCells                        func(unsafe.Pointer, uint16, uint16, uint32, uint32) int32
+	fnStreamSetUnknownMaxBytes                 func(unsafe.Pointer, uintptr) int32
+	fnStreamSetVersionReport                   func(unsafe.Pointer, unsafe.Pointer, uintptr, unsafe.Pointer, uintptr) int32
+	fnStreamSetEnquiryResponse                 func(unsafe.Pointer, unsafe.Pointer, uintptr) int32
+	fnStreamColorSchemeChanged                 func(unsafe.Pointer, uint8) int32
+	fnStreamClearColorScheme                   func(unsafe.Pointer) int32
+	fnStreamOnDrag                             func(unsafe.Pointer, uintptr, uintptr) int32
+	fnStreamDragActive                         func(unsafe.Pointer, *uint8) int32
+	fnStreamDragRegisteredMimes                func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
+	fnStreamDragClientAccepted                 func(unsafe.Pointer, *uint8, *uint8) int32
+	fnStreamDragMove                           func(unsafe.Pointer, unsafe.Pointer, unsafe.Pointer, uintptr) int32
+	fnStreamDragLeave                          func(unsafe.Pointer) int32
+	fnStreamDragAddItem                        func(unsafe.Pointer, unsafe.Pointer, uintptr, unsafe.Pointer, uintptr) int32
+	fnStreamDragDrop                           func(unsafe.Pointer, unsafe.Pointer) int32
+	fnStreamDragClearItems                     func(unsafe.Pointer) int32
+	fnStreamOnClipboardWriteRequest            func(unsafe.Pointer, uintptr, uintptr) int32
+	fnStreamOnClipboardReadRequest             func(unsafe.Pointer, uintptr, uintptr) int32
+	fnStreamWriteContinuation                  func(unsafe.Pointer, uintptr, uintptr) int32
+	fnStreamHasReplies                         func(unsafe.Pointer, *uint8) int32
+	fnStreamWriteSnapshot                      func(unsafe.Pointer, uintptr, uintptr) int32
+	fnStreamWriteReplies                       func(unsafe.Pointer, uintptr, uintptr) int32
+	fnClipboardRequestLocation                 func(unsafe.Pointer, *int32) int32
+	fnClipboardRequestName                     func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
+	fnClipboardRequestGranted                  func(unsafe.Pointer, *uint8) int32
+	fnClipboardRequestCanRemember              func(unsafe.Pointer, *uint8) int32
+	fnClipboardRequestContentCount             func(unsafe.Pointer, *uintptr) int32
+	fnClipboardRequestContentMime              func(unsafe.Pointer, uintptr, *unsafe.Pointer, *uintptr) int32
+	fnClipboardRequestMimeCount                func(unsafe.Pointer, *uintptr) int32
+	fnClipboardRequestMime                     func(unsafe.Pointer, uintptr, *unsafe.Pointer, *uintptr) int32
+	fnClipboardRequestAllow                    func(unsafe.Pointer, uint8) int32
+	fnClipboardRequestReplyText                func(unsafe.Pointer, unsafe.Pointer, uintptr, uint8) int32
+	fnClipboardRequestClearReplyContents       func(unsafe.Pointer) int32
+	fnClipboardRequestReplyContents            func(unsafe.Pointer, uint8) int32
+	fnClipboardRequestDeny                     func(unsafe.Pointer, uint8) int32
+	fnClipboardRequestAddContent               func(unsafe.Pointer, unsafe.Pointer, uintptr, unsafe.Pointer, uintptr) int32
+	fnClipboardRequestContentData              func(unsafe.Pointer, uintptr, *unsafe.Pointer, *uintptr) int32
+	fnNewOscParser                             func(*unsafe.Pointer) int32
+	fnOscParserFreeOscParser                   func(unsafe.Pointer) int32
+	fnOscParserFeed                            func(unsafe.Pointer, unsafe.Pointer, uintptr) int32
+	fnOscParserEnd                             func(unsafe.Pointer, uint8, *uint8) int32
+	fnOscParserReset                           func(unsafe.Pointer) int32
+	fnDecodeSnapshot                           func(uintptr, unsafe.Pointer, uintptr, uintptr, uintptr, *unsafe.Pointer) int32
+	fnSnapshotDeinit                           func(unsafe.Pointer) int32
+	fnSnapshotRestoreInto                      func(unsafe.Pointer, unsafe.Pointer) int32
+	fnSnapshotSnapshotTerminal                 func(unsafe.Pointer, *unsafe.Pointer) int32
+	fnSnapshotContinuation                     func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
+	fnNewSnapshotDecoder                       func(unsafe.Pointer, uintptr, *unsafe.Pointer) int32
+	fnSnapshotDecoderFreeSnapshotDecoder       func(unsafe.Pointer) int32
+	fnSnapshotDecoderReady                     func(unsafe.Pointer, uintptr) int32
+	fnSnapshotDecoderRestoreInto               func(unsafe.Pointer, unsafe.Pointer) int32
+	fnSnapshotDecoderContinuation              func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
+	fnSnapshotDecoderNext                      func(unsafe.Pointer, unsafe.Pointer, *uint8, unsafe.Pointer) int32
+	fnSnapshotDecoderSetKittyImageStorageLimit func(unsafe.Pointer, uintptr) int32
+	fnSnapshotDecoderKittyCounts               func(unsafe.Pointer, unsafe.Pointer) int32
+	fnNewRenderState                           func(*unsafe.Pointer) int32
+	fnRenderStateDeinit                        func(unsafe.Pointer) int32
+	fnRenderStateUpdate                        func(unsafe.Pointer, unsafe.Pointer) int32
+	fnRenderStateClean                         func(unsafe.Pointer) int32
+	fnRenderStateCursor                        func(unsafe.Pointer, *uint64) int32
+	fnRenderStateColors                        func(unsafe.Pointer, unsafe.Pointer) int32
+	fnRenderStateCellCount                     func(unsafe.Pointer, *uintptr) int32
+	fnRenderStateCells                         func(unsafe.Pointer, unsafe.Pointer, uintptr, *uintptr) int32
+	fnRenderStateDirty                         func(unsafe.Pointer, *uint8) int32
+	fnRenderStateDirtyRows                     func(unsafe.Pointer, unsafe.Pointer, uintptr, *uintptr) int32
+	fnRenderStateRowCells                      func(unsafe.Pointer, uint16, unsafe.Pointer, uintptr, *uintptr) int32
+	fnRenderStateGraphemes                     func(unsafe.Pointer, uint16, uint16, unsafe.Pointer, uintptr, *uintptr) int32
+	fnRenderStateHyperlinkAt                   func(unsafe.Pointer, uint16, uint16, *unsafe.Pointer, *uintptr) int32
+	fnRenderStateImagePlacementCount           func(unsafe.Pointer, *uintptr) int32
+	fnRenderStateImagePlacements               func(unsafe.Pointer, unsafe.Pointer, uintptr, *uintptr) int32
+	fnRenderStateImagePlacementsGeneration     func(unsafe.Pointer, *uint64) int32
+	fnNewKittyImages                           func(*unsafe.Pointer) int32
+	fnKittyImagesFreeKittyImages               func(unsafe.Pointer) int32
+	fnKittyImagesUpdate                        func(unsafe.Pointer, unsafe.Pointer) int32
+	fnKittyImagesPlacementCount                func(unsafe.Pointer, *uintptr) int32
+	fnKittyImagesPlacements                    func(unsafe.Pointer, unsafe.Pointer, uintptr, *uintptr) int32
+	fnUnicodeCodepointWidth                    func(uint32, *uint8) int32
+	fnGraphemeWidth                            func(unsafe.Pointer, uintptr) uint8
+	fnFreeBuffer                               func(unsafe.Pointer, uintptr)
+	fnFreeString                               func(unsafe.Pointer, uintptr)
+	fnSgrAttributeCount                        func(unsafe.Pointer, uintptr, uint32, *uintptr) int32
+	fnSgrAttributeAt                           func(unsafe.Pointer, uintptr, uint32, uintptr, unsafe.Pointer) int32
+}
+
+type callbackEntry struct {
 	mu           sync.Mutex
+	cond         *sync.Cond
 	value        any
-	stack        []byte
+	closing      bool
+	active       int
 	panicked     bool
-	err          error
+	panicValue   any
+	panicStack   []byte
+	goErr        error
+	readTerminal error
 }
+
+// callbackRegistry maps a userdata token to its entry without a global lock,
+// mirroring the sync.Map behind runtime/cgo.Handle on the cgo backend.
+// Delete races an in-flight acquire safely through the entry's closing flag:
+// an acquire either takes active++ before closing is set, in which case
+// DeleteCallbackHandle waits for it to drain, or it observes closing and
+// reports the token as gone.
+var callbackRegistry sync.Map // uintptr -> *callbackEntry
+var nextCallbackToken atomic.Uint64
+var activeCallbackHandles atomic.Int64
+
+// pendingCallbackPanics counts recorded panics no caller has taken yet, so the
+// generated caller can skip the per-slot sweep on the fast path.
+var pendingCallbackPanics atomic.Int64
+
+// NewCallbackHandle stores a callback value and returns its native userdata token.
+func NewCallbackHandle(value any) uintptr {
+	entry := &callbackEntry{value: value}
+	entry.cond = sync.NewCond(&entry.mu)
+	token := uintptr(nextCallbackToken.Add(1))
+	if token == 0 {
+		token = uintptr(nextCallbackToken.Add(1))
+	}
+	callbackRegistry.Store(token, entry)
+	activeCallbackHandles.Add(1)
+	return token
+}
+
+// DeleteCallbackHandle releases a callback token after in-flight calls finish.
+func DeleteCallbackHandle(token uintptr) {
+	if token == 0 {
+		return
+	}
+	stored, loaded := callbackRegistry.LoadAndDelete(token)
+	if !loaded {
+		return
+	}
+	entry := stored.(*callbackEntry)
+	entry.mu.Lock()
+	entry.closing = true
+	for entry.active != 0 {
+		entry.cond.Wait()
+	}
+	entry.value = nil
+	entry.mu.Unlock()
+	activeCallbackHandles.Add(-1)
+}
+
+// ActiveCallbackHandleCount reports the number of live callback tokens.
+func ActiveCallbackHandleCount() int64 { return activeCallbackHandles.Load() }
+
+// record keeps the first panic a callback raised until the generated caller takes it.
+func (entry *callbackEntry) record(value any) {
+	entry.mu.Lock()
+	defer entry.mu.Unlock()
+	if entry.panicked {
+		return
+	}
+	entry.panicked = true
+	entry.panicValue = value
+	entry.panicStack = debug.Stack()
+	pendingCallbackPanics.Add(1)
+}
+
+// recordErr keeps the first error the Go side reported -- a stream that failed
+// to write or read, or a callback that returned one -- until the generated
+// caller takes it. Later crossings are not asked: once a stream has failed the
+// adapter stops using it.
+func (entry *callbackEntry) recordErr(err error) {
+	entry.mu.Lock()
+	defer entry.mu.Unlock()
+	if entry.goErr == nil {
+		entry.goErr = err
+	}
+}
+
+// TakeStreamError returns and clears the error the Go stream behind token reported.
+func TakeStreamError(token uintptr) (error, bool) {
+	stored, loaded := callbackRegistry.Load(token)
+	if !loaded {
+		return nil, false
+	}
+	entry := stored.(*callbackEntry)
+	entry.mu.Lock()
+	defer entry.mu.Unlock()
+	if entry.goErr == nil {
+		return nil, false
+	}
+	err := entry.goErr
+	entry.goErr = nil
+	return err, true
+}
+
+// TakeCallbackPanic returns and clears the panic the callback behind token recorded.
+func TakeCallbackPanic(token uintptr) (any, []byte, bool) {
+	stored, loaded := callbackRegistry.Load(token)
+	if !loaded {
+		return nil, nil, false
+	}
+	entry := stored.(*callbackEntry)
+	entry.mu.Lock()
+	defer entry.mu.Unlock()
+	if !entry.panicked {
+		return nil, nil, false
+	}
+	value, stack := entry.panicValue, entry.panicStack
+	entry.panicValue, entry.panicStack, entry.panicked = nil, nil, false
+	pendingCallbackPanics.Add(-1)
+	return value, stack, true
+}
+
+// PendingCallbackPanics reports how many recorded callback panics no caller has taken yet.
+func PendingCallbackPanics() int64 { return pendingCallbackPanics.Load() }
+
+func acquireCallback(token uintptr) (*callbackEntry, any, bool) {
+	stored, loaded := callbackRegistry.Load(token)
+	if !loaded {
+		return nil, nil, false
+	}
+	entry := stored.(*callbackEntry)
+	entry.mu.Lock()
+	if entry.closing {
+		entry.mu.Unlock()
+		return nil, nil, false
+	}
+	entry.active++
+	value := entry.value
+	entry.mu.Unlock()
+	return entry, value, true
+}
+
+func releaseCallback(entry *callbackEntry) {
+	entry.mu.Lock()
+	entry.active--
+	if entry.closing && entry.active == 0 {
+		entry.cond.Broadcast()
+	}
+	entry.mu.Unlock()
+}
+
+// callbackResult widens a signed 32-bit callback result to the uintptr
+// every dispatcher must return. The native caller declares the callback as
+// returning int32_t and reads only the low word, so the value round-trips.
+func callbackResult(value int32) uintptr { return uintptr(uint32(value)) }
 
 // readStream preserves terminal errors and bounds retries for empty reads.
 func readStream(reader io.Reader, buffer []byte, terminal *error) (int, error) {
@@ -87,2893 +550,1888 @@ func readStream(reader io.Reader, buffer []byte, terminal *error) (int, error) {
 	return 0, *terminal
 }
 
-// pendingCallbackPanics counts recorded panics no caller has taken yet, so the
-// generated caller can skip the per-slot sweep on the fast path.
-var pendingCallbackPanics atomic.Int64
+var streamWriterPointer uintptr
+var streamReaderPointer uintptr
+var callbackPointers [5]uintptr
+var callbackDispatchersOnce sync.Once
 
-// PendingCallbackPanics reports how many recorded callback panics no caller has taken yet.
-func PendingCallbackPanics() int64 { return pendingCallbackPanics.Load() }
-
-func (state *CallbackState) record(value any) {
-	state.mu.Lock()
-	defer state.mu.Unlock()
-	if state.panicked {
-		return
-	}
-	state.panicked = true
-	state.value = value
-	state.stack = debug.Stack()
-	pendingCallbackPanics.Add(1)
+func ensureCallbackDispatchers() {
+	callbackDispatchersOnce.Do(func() {
+		callbackPointers[0] = purego.NewCallback(func(p0 unsafe.Pointer, p0_len uint, p1 uint) (result uintptr) {
+			entry, stored, ok := acquireCallback(uintptr(p1))
+			if !ok {
+				return 0
+			}
+			defer releaseCallback(entry)
+			defer func() {
+				if value := recover(); value != nil {
+					entry.record(value)
+					result = 0
+				}
+			}()
+			callback := stored.(func([]byte))
+			callback(append([]byte(nil), unsafe.Slice((*byte)(p0), p0_len)...))
+			return 0
+		})
+		callbackPointers[1] = purego.NewCallback(func(p0 uint, p1 uint) (result uintptr) {
+			entry, stored, ok := acquireCallback(uintptr(p1))
+			if !ok {
+				return 0
+			}
+			defer releaseCallback(entry)
+			defer func() {
+				if value := recover(); value != nil {
+					entry.record(value)
+					result = 0
+				}
+			}()
+			callback := stored.(func(uint))
+			callback(p0)
+			return 0
+		})
+		callbackPointers[2] = purego.NewCallback(func(p0 uint8, p1 unsafe.Pointer, p1_len uint, p2 unsafe.Pointer, p2_len uint, p3 uint) (result uintptr) {
+			entry, stored, ok := acquireCallback(uintptr(p3))
+			if !ok {
+				return 0
+			}
+			defer releaseCallback(entry)
+			defer func() {
+				if value := recover(); value != nil {
+					entry.record(value)
+					result = 0
+				}
+			}()
+			callback := stored.(func(uint8, string, string))
+			callback(p0, string(unsafe.Slice((*byte)(p1), p1_len)), string(unsafe.Slice((*byte)(p2), p2_len)))
+			return 0
+		})
+		callbackPointers[3] = purego.NewCallback(func(p0 uint32, p1 unsafe.Pointer, p1_len uint, p2 uint) (result uintptr) {
+			entry, stored, ok := acquireCallback(uintptr(p2))
+			if !ok {
+				return 0
+			}
+			defer releaseCallback(entry)
+			defer func() {
+				if value := recover(); value != nil {
+					entry.record(value)
+					result = 0
+				}
+			}()
+			callback := stored.(func(uint32, string))
+			callback(p0, string(unsafe.Slice((*byte)(p1), p1_len)))
+			return 0
+		})
+		callbackPointers[4] = purego.NewCallback(func(p0 unsafe.Pointer, p1 uint) (result uintptr) {
+			entry, stored, ok := acquireCallback(uintptr(p1))
+			if !ok {
+				return 0
+			}
+			defer releaseCallback(entry)
+			defer func() {
+				if value := recover(); value != nil {
+					entry.record(value)
+					result = 0
+				}
+			}()
+			callback := stored.(func(unsafe.Pointer))
+			callback(p0)
+			return 0
+		})
+		streamWriterPointer = purego.NewCallback(func(p0 unsafe.Pointer, p1 uintptr, p2 uintptr) (result uintptr) {
+			entry, stored, ok := acquireCallback(p2)
+			if !ok {
+				return callbackResult(-4)
+			}
+			defer releaseCallback(entry)
+			defer func() {
+				if value := recover(); value != nil {
+					entry.record(value)
+					result = callbackResult(-3)
+				}
+			}()
+			n, err := stored.(io.Writer).Write(unsafe.Slice((*byte)(p0), int(p1)))
+			if err == nil && n != int(p1) {
+				err = io.ErrShortWrite
+			}
+			if err != nil {
+				entry.recordErr(err)
+				return callbackResult(-1)
+			}
+			return callbackResult(0)
+		})
+		streamReaderPointer = purego.NewCallback(func(p0 unsafe.Pointer, p1 uintptr, p2 uintptr) (result uintptr) {
+			entry, stored, ok := acquireCallback(p2)
+			if !ok {
+				return callbackResult(-4)
+			}
+			defer releaseCallback(entry)
+			defer func() {
+				if value := recover(); value != nil {
+					entry.record(value)
+					result = callbackResult(-3)
+				}
+			}()
+			n, err := readStream(stored.(io.Reader), unsafe.Slice((*byte)(p0), int(p1)), &entry.readTerminal)
+			if err != nil && err != io.EOF {
+				entry.recordErr(err)
+			}
+			if n > 0 {
+				return callbackResult(int32(n))
+			}
+			if err == io.EOF {
+				return callbackResult(0)
+			}
+			return callbackResult(-1)
+		})
+	})
 }
 
-// TakeCallbackPanic returns and clears the panic the callback behind handle recorded.
-func TakeCallbackPanic(handle cgo.Handle) (any, []byte, bool) {
-	state := handle.Value().(*CallbackState)
-	state.mu.Lock()
-	defer state.mu.Unlock()
-	if !state.panicked {
-		return nil, nil, false
+// StreamWriterCallbackPointer returns the permanent dispatcher every io.Writer stream is called back through.
+func StreamWriterCallbackPointer() uintptr { ensureCallbackDispatchers(); return streamWriterPointer }
+
+// StreamReaderCallbackPointer returns the permanent dispatcher every io.Reader stream is called back through.
+func StreamReaderCallbackPointer() uintptr { ensureCallbackDispatchers(); return streamReaderPointer }
+
+// CallbackPointer0 returns the permanent dispatcher for callback ABI signature 0.
+func CallbackPointer0() uintptr { ensureCallbackDispatchers(); return callbackPointers[0] }
+
+// CallbackPointer1 returns the permanent dispatcher for callback ABI signature 1.
+func CallbackPointer1() uintptr { ensureCallbackDispatchers(); return callbackPointers[1] }
+
+// CallbackPointer2 returns the permanent dispatcher for callback ABI signature 2.
+func CallbackPointer2() uintptr { ensureCallbackDispatchers(); return callbackPointers[2] }
+
+// CallbackPointer3 returns the permanent dispatcher for callback ABI signature 3.
+func CallbackPointer3() uintptr { ensureCallbackDispatchers(); return callbackPointers[3] }
+
+// CallbackPointer4 returns the permanent dispatcher for callback ABI signature 4.
+func CallbackPointer4() uintptr { ensureCallbackDispatchers(); return callbackPointers[4] }
+
+// CallbackDispatcherCount reports the number of unique callback ABI dispatchers.
+func CallbackDispatcherCount() int { ensureCallbackDispatchers(); return len(callbackPointers) }
+
+var loadedBindings atomic.Pointer[nativeBindings]
+var loadMu sync.Mutex
+var successfulLibraryPath string
+
+// LibraryLoaded reports whether every required native symbol was published.
+func LibraryLoaded() bool { return loadedBindings.Load() != nil }
+
+// libraryEnvVars are consulted in order when no explicit path is given.
+var libraryEnvVars = []string{"ZIGO_GOSTTY_LIBRARY_PATH", "ZIGO_LIBRARY_PATH"}
+
+// librarySearchPaths are tried after the environment, in order.
+var librarySearchPaths = []string{"libs"}
+
+// libraryPlatformDir is the per-platform subdirectory the build installs
+// the library into under every search-path directory.
+var libraryPlatformDir = runtime.GOOS + "_" + runtime.GOARCH
+
+// resolveSearchPath joins a directory entry with the platform library
+// name. It returns "" when the entry cannot be formed.
+func resolveSearchPath(entry string) string {
+	if DefaultLibraryName == "" {
+		return ""
 	}
-	value, stack := state.value, state.stack
-	state.value, state.stack, state.panicked = nil, nil, false
-	pendingCallbackPanics.Add(-1)
-	return value, stack, true
+	if strings.HasSuffix(entry, filepath.Ext(DefaultLibraryName)) {
+		return entry
+	}
+	return filepath.Join(entry, libraryPlatformDir, DefaultLibraryName)
 }
 
-// recordErr keeps the first error the Go side reported -- a stream that
-// failed to write or read, or a callback that returned one -- until the
-// generated caller takes it. Later crossings are not asked: once a stream
-// has failed the adapter stops using it.
-func (state *CallbackState) recordErr(err error) {
-	state.mu.Lock()
-	defer state.mu.Unlock()
-	if state.err == nil {
-		state.err = err
+// libraryCandidates lists the paths a load attempt tries, in order.
+func libraryCandidates(explicit string) []string {
+	if explicit != "" {
+		return []string{explicit}
 	}
-}
-
-// TakeStreamError returns and clears the error the Go stream behind handle reported.
-func TakeStreamError(handle cgo.Handle) (error, bool) {
-	state := handle.Value().(*CallbackState)
-	state.mu.Lock()
-	defer state.mu.Unlock()
-	if state.err == nil {
-		return nil, false
-	}
-	err := state.err
-	state.err = nil
-	return err, true
-}
-
-//export zg_zigo_stream_write
-func zg_zigo_stream_write(p0 *C.uint8_t, p1 C.size_t, p2 C.size_t) (result C.int32_t) {
-	state := cgo.Handle(p2).Value().(*CallbackState)
-	defer func() {
-		if value := recover(); value != nil {
-			state.record(value)
-			result = C.int32_t(-3)
+	candidates := make([]string, 0, 3)
+	for _, name := range libraryEnvVars {
+		if value := os.Getenv(name); value != "" {
+			candidates = append(candidates, value)
 		}
-	}()
-	n, err := state.Writer.Write(unsafe.Slice((*byte)(unsafe.Pointer(p0)), int(p1)))
-	if err == nil && n != int(p1) {
-		err = io.ErrShortWrite
 	}
+	for _, entry := range librarySearchPaths {
+		if resolved := resolveSearchPath(entry); resolved != "" {
+			candidates = append(candidates, resolved)
+		}
+	}
+	if DefaultLibraryName != "" {
+		candidates = append(candidates, DefaultLibraryName)
+	}
+	return candidates
+}
+
+// LoadLibrary atomically loads and registers every required native symbol.
+// An empty path uses the configured candidates. A failed load leaves the
+// binding retryable; a successful handle is never unloaded.
+func LoadLibrary(path string) error {
+	loadMu.Lock()
+	defer loadMu.Unlock()
+	return loadLibraryLocked(path)
+}
+
+func loadLibraryLocked(explicit string) error {
+	candidates := libraryCandidates(explicit)
+	if len(candidates) == 0 {
+		return &LibraryError{Operation: "load", Cause: errors.New("no shared-library candidate is configured for this platform; pass an explicit path")}
+	}
+	if loadedBindings.Load() != nil {
+		for _, candidate := range candidates {
+			if candidate == successfulLibraryPath {
+				return nil
+			}
+		}
+		return &LibraryError{Path: candidates[0], Operation: "load", Cause: errors.New("a different library is already loaded")}
+	}
+	ensureCallbackDispatchers()
+	attempts := make([]error, 0, len(candidates))
+	for _, candidate := range candidates {
+		if err := loadCandidate(candidate); err != nil {
+			attempts = append(attempts, err)
+			continue
+		}
+		successfulLibraryPath = candidate
+		return nil
+	}
+	// One candidate keeps the precise path and symbol of its own failure.
+	if len(attempts) == 1 {
+		return attempts[0]
+	}
+	return &LibraryError{Operation: "load", Cause: errors.Join(attempts...)}
+}
+
+// loadCandidate publishes the call surface only after every symbol resolves.
+func loadCandidate(path string) error {
+	handle, err := openLibrary(path)
 	if err != nil {
-		state.recordErr(err)
-		return C.int32_t(-1)
+		return &LibraryError{Path: path, Operation: "open", Cause: err}
 	}
-	return C.int32_t(0)
-}
-
-//export zg_zigo_stream_read
-func zg_zigo_stream_read(p0 *C.uint8_t, p1 C.size_t, p2 C.size_t) (result C.int32_t) {
-	state := cgo.Handle(p2).Value().(*CallbackState)
-	defer func() {
-		if value := recover(); value != nil {
-			state.record(value)
-			result = C.int32_t(-3)
-		}
-	}()
-	n, err := readStream(state.Reader, unsafe.Slice((*byte)(unsafe.Pointer(p0)), int(p1)), &state.readTerminal)
-	if err != nil && err != io.EOF {
-		state.recordErr(err)
+	fail := func(symbol string, cause error) error {
+		closeLibrary(handle)
+		return &LibraryError{Path: path, Symbol: symbol, Operation: "resolve", Cause: cause}
 	}
-	if n > 0 {
-		return C.int32_t(n)
+	addrLastError, err := resolveSymbol(handle, "zg_last_error_message")
+	if err != nil {
+		return fail("zg_last_error_message", err)
 	}
-	if err == io.EOF {
-		return C.int32_t(0)
+	addrPanicMessage, err := resolveSymbol(handle, "zg_caught_panic_message")
+	if err != nil {
+		return fail("zg_caught_panic_message", err)
 	}
-	return C.int32_t(-1)
-}
-
-//export zg_sys_on_png_decode_request_go_callback_callback
-func zg_sys_on_png_decode_request_go_callback_callback(p0 *C.uint8_t, p0_len C.size_t, p1 C.size_t) {
-	state := cgo.Handle(p1).Value().(*CallbackState)
-	defer func() {
-		if value := recover(); value != nil {
-			state.record(value)
-		}
-	}()
-	callback := state.Fn.(func([]byte))
-	callback(append([]byte(nil), unsafe.Slice((*byte)(unsafe.Pointer(p0)), int(p0_len))...))
-}
-
-//export zg_sys_on_secure_random_request_go_callback_callback
-func zg_sys_on_secure_random_request_go_callback_callback(p0 C.size_t, p1 C.size_t) {
-	state := cgo.Handle(p1).Value().(*CallbackState)
-	defer func() {
-		if value := recover(); value != nil {
-			state.record(value)
-		}
-	}()
-	callback := state.Fn.(func(uint))
-	callback(uint(p0))
-}
-
-//export zg_sys_on_log_go_callback_callback
-func zg_sys_on_log_go_callback_callback(p0 C.uint8_t, p1 *C.uint8_t, p1_len C.size_t, p2 *C.uint8_t, p2_len C.size_t, p3 C.size_t) {
-	state := cgo.Handle(p3).Value().(*CallbackState)
-	defer func() {
-		if value := recover(); value != nil {
-			state.record(value)
-		}
-	}()
-	callback := state.Fn.(func(uint8, string, string))
-	callback(uint8(p0), string(unsafe.Slice((*byte)(unsafe.Pointer(p1)), int(p1_len))), string(unsafe.Slice((*byte)(unsafe.Pointer(p2)), int(p2_len))))
-}
-
-//export zg_stream_on_drag_go_callback_callback
-func zg_stream_on_drag_go_callback_callback(p0 C.uint32_t, p1 *C.uint8_t, p1_len C.size_t, p2 C.size_t) {
-	state := cgo.Handle(p2).Value().(*CallbackState)
-	defer func() {
-		if value := recover(); value != nil {
-			state.record(value)
-		}
-	}()
-	callback := state.Fn.(func(uint32, string))
-	callback(uint32(p0), string(unsafe.Slice((*byte)(unsafe.Pointer(p1)), int(p1_len))))
-}
-
-//export zg_stream_on_clipboard_write_request_go_callback_callback
-func zg_stream_on_clipboard_write_request_go_callback_callback(p0 unsafe.Pointer, p1 C.size_t) {
-	state := cgo.Handle(p1).Value().(*CallbackState)
-	defer func() {
-		if value := recover(); value != nil {
-			state.record(value)
-		}
-	}()
-	callback := state.Fn.(func(unsafe.Pointer))
-	callback(unsafe.Pointer(p0))
-}
-
-//export zg_stream_on_clipboard_read_request_go_callback_callback
-func zg_stream_on_clipboard_read_request_go_callback_callback(p0 unsafe.Pointer, p1 C.size_t) {
-	state := cgo.Handle(p1).Value().(*CallbackState)
-	defer func() {
-		if value := recover(); value != nil {
-			state.record(value)
-		}
-	}()
-	callback := state.Fn.(func(unsafe.Pointer))
-	callback(unsafe.Pointer(p0))
-}
-
-// TerminalCols calls the generated C ABI wrapper for zg_terminal_cols.
-func TerminalCols(self unsafe.Pointer) (uint16, int32) {
-	var outResult C.uint16_t
-	code := int32(C.zg_terminal_cols((*C.zg_terminal)(self), &outResult))
-	return uint16(outResult), code
-}
-
-// TerminalRows calls the generated C ABI wrapper for zg_terminal_rows.
-func TerminalRows(self unsafe.Pointer) (uint16, int32) {
-	var outResult C.uint16_t
-	code := int32(C.zg_terminal_rows((*C.zg_terminal)(self), &outResult))
-	return uint16(outResult), code
-}
-
-// TerminalCursorX calls the generated C ABI wrapper for zg_terminal_cursor_x.
-func TerminalCursorX(self unsafe.Pointer) (uint16, int32) {
-	var outResult C.uint16_t
-	code := int32(C.zg_terminal_cursor_x((*C.zg_terminal)(self), &outResult))
-	return uint16(outResult), code
-}
-
-// TerminalCursorY calls the generated C ABI wrapper for zg_terminal_cursor_y.
-func TerminalCursorY(self unsafe.Pointer) (uint16, int32) {
-	var outResult C.uint16_t
-	code := int32(C.zg_terminal_cursor_y((*C.zg_terminal)(self), &outResult))
-	return uint16(outResult), code
-}
-
-// TerminalCursorStyle calls the generated C ABI wrapper for zg_terminal_cursor_style.
-func TerminalCursorStyle(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_terminal_cursor_style((*C.zg_terminal)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// TerminalActiveScreenKey calls the generated C ABI wrapper for zg_terminal_active_screen_key.
-func TerminalActiveScreenKey(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_terminal_active_screen_key((*C.zg_terminal)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// TerminalCursorPendingWrap calls the generated C ABI wrapper for zg_terminal_cursor_pending_wrap.
-func TerminalCursorPendingWrap(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_terminal_cursor_pending_wrap((*C.zg_terminal)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// TerminalCursorProtected calls the generated C ABI wrapper for zg_terminal_cursor_protected.
-func TerminalCursorProtected(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_terminal_cursor_protected((*C.zg_terminal)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// TerminalWidthPx calls the generated C ABI wrapper for zg_terminal_width_px.
-func TerminalWidthPx(self unsafe.Pointer) (uint32, int32) {
-	var outResult C.uint32_t
-	code := int32(C.zg_terminal_width_px((*C.zg_terminal)(self), &outResult))
-	return uint32(outResult), code
-}
-
-// TerminalHeightPx calls the generated C ABI wrapper for zg_terminal_height_px.
-func TerminalHeightPx(self unsafe.Pointer) (uint32, int32) {
-	var outResult C.uint32_t
-	code := int32(C.zg_terminal_height_px((*C.zg_terminal)(self), &outResult))
-	return uint32(outResult), code
-}
-
-// TerminalFocused calls the generated C ABI wrapper for zg_terminal_focused.
-func TerminalFocused(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_terminal_focused((*C.zg_terminal)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// TerminalVisible calls the generated C ABI wrapper for zg_terminal_visible.
-func TerminalVisible(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_terminal_visible((*C.zg_terminal)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// TerminalPasswordInput calls the generated C ABI wrapper for zg_terminal_password_input.
-func TerminalPasswordInput(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_terminal_password_input((*C.zg_terminal)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// TerminalCharsetGl calls the generated C ABI wrapper for zg_terminal_charset_gl.
-func TerminalCharsetGl(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_terminal_charset_gl((*C.zg_terminal)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// TerminalCharsetGr calls the generated C ABI wrapper for zg_terminal_charset_gr.
-func TerminalCharsetGr(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_terminal_charset_gr((*C.zg_terminal)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// TerminalCharsetSingleShift calls the generated C ABI wrapper for zg_terminal_charset_single_shift.
-func TerminalCharsetSingleShift(self unsafe.Pointer) (uint8, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.uint8_t
-	code := int32(C.zg_terminal_charset_single_shift((*C.zg_terminal)(self), &outResultHas, &outResult))
-	return uint8(outResult), outResultHas != 0, code
-}
-
-// TerminalProtectedMode calls the generated C ABI wrapper for zg_terminal_protected_mode.
-func TerminalProtectedMode(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_terminal_protected_mode((*C.zg_terminal)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// GestureClickCount calls the generated C ABI wrapper for zg_gesture_click_count.
-func GestureClickCount(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_gesture_click_count((*C.zg_gesture)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// GestureDragged calls the generated C ABI wrapper for zg_gesture_dragged.
-func GestureDragged(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_gesture_dragged((*C.zg_gesture)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// StreamFailed calls the generated C ABI wrapper for zg_stream_failed.
-func StreamFailed(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_stream_failed((*C.zg_stream)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// OscParserCommand calls the generated C ABI wrapper for zg_osc_parser_command.
-func OscParserCommand(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_osc_parser_command((*C.zg_osc_parser)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// OscParserWindowTitle calls the generated C ABI wrapper for zg_osc_parser_window_title.
-func OscParserWindowTitle(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_osc_parser_window_title((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
+	addrTerminalCols, err := resolveSymbol(handle, "zg_terminal_cols")
+	if err != nil {
+		return fail("zg_terminal_cols", err)
 	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// OscParserIcon calls the generated C ABI wrapper for zg_osc_parser_icon.
-func OscParserIcon(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_osc_parser_icon((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
+	addrTerminalRows, err := resolveSymbol(handle, "zg_terminal_rows")
+	if err != nil {
+		return fail("zg_terminal_rows", err)
 	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// OscParserPwd calls the generated C ABI wrapper for zg_osc_parser_pwd.
-func OscParserPwd(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_osc_parser_pwd((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
+	addrTerminalCursorX, err := resolveSymbol(handle, "zg_terminal_cursor_x")
+	if err != nil {
+		return fail("zg_terminal_cursor_x", err)
 	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// OscParserHyperlinkUri calls the generated C ABI wrapper for zg_osc_parser_hyperlink_uri.
-func OscParserHyperlinkUri(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_osc_parser_hyperlink_uri((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
+	addrTerminalCursorY, err := resolveSymbol(handle, "zg_terminal_cursor_y")
+	if err != nil {
+		return fail("zg_terminal_cursor_y", err)
 	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// OscParserHyperlinkID calls the generated C ABI wrapper for zg_osc_parser_hyperlink_id.
-func OscParserHyperlinkID(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_osc_parser_hyperlink_id((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
+	addrTerminalCursorStyle, err := resolveSymbol(handle, "zg_terminal_cursor_style")
+	if err != nil {
+		return fail("zg_terminal_cursor_style", err)
 	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// OscParserNotificationTitle calls the generated C ABI wrapper for zg_osc_parser_notification_title.
-func OscParserNotificationTitle(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_osc_parser_notification_title((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
+	addrTerminalActiveScreenKey, err := resolveSymbol(handle, "zg_terminal_active_screen_key")
+	if err != nil {
+		return fail("zg_terminal_active_screen_key", err)
 	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// OscParserNotificationBody calls the generated C ABI wrapper for zg_osc_parser_notification_body.
-func OscParserNotificationBody(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_osc_parser_notification_body((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
+	addrTerminalCursorPendingWrap, err := resolveSymbol(handle, "zg_terminal_cursor_pending_wrap")
+	if err != nil {
+		return fail("zg_terminal_cursor_pending_wrap", err)
 	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// OscParserClipboardData calls the generated C ABI wrapper for zg_osc_parser_clipboard_data.
-func OscParserClipboardData(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_osc_parser_clipboard_data((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
+	addrTerminalCursorProtected, err := resolveSymbol(handle, "zg_terminal_cursor_protected")
+	if err != nil {
+		return fail("zg_terminal_cursor_protected", err)
 	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// OscParserClipboardSelection calls the generated C ABI wrapper for zg_osc_parser_clipboard_selection.
-func OscParserClipboardSelection(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_osc_parser_clipboard_selection((*C.zg_osc_parser)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// OscParserMouseShape calls the generated C ABI wrapper for zg_osc_parser_mouse_shape.
-func OscParserMouseShape(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_osc_parser_mouse_shape((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
+	addrTerminalWidthPx, err := resolveSymbol(handle, "zg_terminal_width_px")
+	if err != nil {
+		return fail("zg_terminal_width_px", err)
 	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// OscParserSemanticPromptAction calls the generated C ABI wrapper for zg_osc_parser_semantic_prompt_action.
-func OscParserSemanticPromptAction(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_osc_parser_semantic_prompt_action((*C.zg_osc_parser)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// OscParserSemanticPromptOptions calls the generated C ABI wrapper for zg_osc_parser_semantic_prompt_options.
-func OscParserSemanticPromptOptions(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_osc_parser_semantic_prompt_options((*C.zg_osc_parser)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
+	addrTerminalHeightPx, err := resolveSymbol(handle, "zg_terminal_height_px")
+	if err != nil {
+		return fail("zg_terminal_height_px", err)
 	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// OscParserProgressState calls the generated C ABI wrapper for zg_osc_parser_progress_state.
-func OscParserProgressState(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_osc_parser_progress_state((*C.zg_osc_parser)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// OscParserProgressValue calls the generated C ABI wrapper for zg_osc_parser_progress_value.
-func OscParserProgressValue(self unsafe.Pointer) (int16, int32) {
-	var outResult C.int16_t
-	code := int32(C.zg_osc_parser_progress_value((*C.zg_osc_parser)(self), &outResult))
-	return int16(outResult), code
-}
-
-// RenderStateRows calls the generated C ABI wrapper for zg_render_state_rows.
-func RenderStateRows(self unsafe.Pointer) (uint16, int32) {
-	var outResult C.uint16_t
-	code := int32(C.zg_render_state_rows((*C.zg_render_state)(self), &outResult))
-	return uint16(outResult), code
-}
-
-// RenderStateCols calls the generated C ABI wrapper for zg_render_state_cols.
-func RenderStateCols(self unsafe.Pointer) (uint16, int32) {
-	var outResult C.uint16_t
-	code := int32(C.zg_render_state_cols((*C.zg_render_state)(self), &outResult))
-	return uint16(outResult), code
-}
-
-// RenderStateCursorVisible calls the generated C ABI wrapper for zg_render_state_cursor_visible.
-func RenderStateCursorVisible(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_render_state_cursor_visible((*C.zg_render_state)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// RenderStateCursorStyle calls the generated C ABI wrapper for zg_render_state_cursor_style.
-func RenderStateCursorStyle(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_render_state_cursor_style((*C.zg_render_state)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// RenderStateCursorBlinking calls the generated C ABI wrapper for zg_render_state_cursor_blinking.
-func RenderStateCursorBlinking(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_render_state_cursor_blinking((*C.zg_render_state)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// RenderStateCursorPasswordInput calls the generated C ABI wrapper for zg_render_state_cursor_password_input.
-func RenderStateCursorPasswordInput(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_render_state_cursor_password_input((*C.zg_render_state)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// KittyImagesGeneration calls the generated C ABI wrapper for zg_kitty_images_generation.
-func KittyImagesGeneration(self unsafe.Pointer) (uint64, int32) {
-	var outResult C.uint64_t
-	code := int32(C.zg_kitty_images_generation((*C.zg_kitty_images)(self), &outResult))
-	return uint64(outResult), code
-}
-
-// SysOnPngDecodeRequest calls the generated C ABI wrapper for zg_sys_on_png_decode_request.
-func SysOnPngDecodeRequest(callbackHandle uintptr) {
-	C.zg_sys_on_png_decode_request(C.size_t(callbackHandle))
-}
-
-// SysReplyPngImage calls the generated C ABI wrapper for zg_sys_reply_png_image.
-func SysReplyPngImage(width uint32, height uint32, rgba []uint8) int32 {
-	rgbaPtr := (*C.uint8_t)(zigoSlicePtr(rgba))
-	code := int32(C.zg_sys_reply_png_image(C.uint32_t(width), C.uint32_t(height), rgbaPtr, C.size_t(len(rgba))))
-	return code
-}
-
-// SysOnSecureRandomRequest calls the generated C ABI wrapper for zg_sys_on_secure_random_request.
-func SysOnSecureRandomRequest(callbackHandle uintptr) {
-	C.zg_sys_on_secure_random_request(C.size_t(callbackHandle))
-}
-
-// SysOnLog calls the generated C ABI wrapper for zg_sys_on_log.
-func SysOnLog(callbackHandle uintptr) {
-	C.zg_sys_on_log(C.size_t(callbackHandle))
-}
-
-// SysClear calls the generated C ABI wrapper for zg_sys_clear.
-func SysClear() {
-	C.zg_sys_clear()
-}
-
-// SysReplySecureRandom calls the generated C ABI wrapper for zg_sys_reply_secure_random.
-func SysReplySecureRandom(bytes []uint8) int32 {
-	bytesPtr := (*C.uint8_t)(zigoSlicePtr(bytes))
-	code := int32(C.zg_sys_reply_secure_random(bytesPtr, C.size_t(len(bytes))))
-	return code
-}
-
-// KeyCodepoint calls the generated C ABI wrapper for zg_key_codepoint.
-func KeyCodepoint(self int32) (uint32, bool) {
-	var outResult C.uint32_t
-	outResultHas := C.zg_key_codepoint(C.int32_t(self), &outResult) != 0
-	return uint32(outResult), outResultHas
-}
-
-// KeyPrintable calls the generated C ABI wrapper for zg_key_printable.
-func KeyPrintable(self int32) uint8 {
-	return uint8(C.zg_key_printable(C.int32_t(self)))
-}
-
-// KeyModifier calls the generated C ABI wrapper for zg_key_modifier.
-func KeyModifier(self int32) uint8 {
-	return uint8(C.zg_key_modifier(C.int32_t(self)))
-}
-
-// KeyKeypad calls the generated C ABI wrapper for zg_key_keypad.
-func KeyKeypad(self int32) uint8 {
-	return uint8(C.zg_key_keypad(C.int32_t(self)))
-}
-
-// KeyLeftOrRightShift calls the generated C ABI wrapper for zg_key_left_or_right_shift.
-func KeyLeftOrRightShift(self int32) uint8 {
-	return uint8(C.zg_key_left_or_right_shift(C.int32_t(self)))
-}
-
-// KeyLeftOrRightAlt calls the generated C ABI wrapper for zg_key_left_or_right_alt.
-func KeyLeftOrRightAlt(self int32) uint8 {
-	return uint8(C.zg_key_left_or_right_alt(C.int32_t(self)))
-}
-
-// KeyCtrlOrSuper calls the generated C ABI wrapper for zg_key_ctrl_or_super.
-func KeyCtrlOrSuper(self int32) uint8 {
-	return uint8(C.zg_key_ctrl_or_super(C.int32_t(self)))
-}
-
-// KeyShouldBeRemappable calls the generated C ABI wrapper for zg_key_should_be_remappable.
-func KeyShouldBeRemappable(self int32) uint8 {
-	return uint8(C.zg_key_should_be_remappable(C.int32_t(self)))
-}
-
-// KeyW3C calls the generated C ABI wrapper for zg_key_w3_c.
-func KeyW3C(self int32) string {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	C.zg_key_w3_c(C.int32_t(self), &outResultPtr, &outResultLen)
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
-}
-
-// EncodeKey calls the generated C ABI wrapper for zg_encode_key.
-func EncodeKey(writerHandle uintptr, terminal unsafe.Pointer, event KeyEventData, utf8 string) int32 {
-	var cevent C.zg_key_event
-	cevent.action = C.uint8_t(event.Action)
-	cevent.key = C.int32_t(event.Key)
-	cevent.mods = C.uint8_t(event.Mods)
-	cevent.consumed_mods = C.uint8_t(event.ConsumedMods)
-	cevent.composing = C.uint8_t(event.Composing)
-	cevent.unshifted_codepoint = C.uint32_t(event.UnshiftedCodepoint)
-	utf8Ptr := (*C.uint8_t)(zigoStringPtr(utf8))
-	code := int32(C.zg_encode_key(C.size_t(writerHandle), (*C.zg_terminal)(terminal), &cevent, utf8Ptr, C.size_t(len(utf8))))
-	return code
-}
-
-// EncodeMouse calls the generated C ABI wrapper for zg_encode_mouse.
-func EncodeMouse(writerHandle uintptr, terminal unsafe.Pointer, event MouseEventData, size RenderSizeData, anyButtonPressed uint8) int32 {
-	var cevent C.zg_mouse_event
-	cevent.action = C.int32_t(event.Action)
-	cevent.button = C.int32_t(event.Button)
-	cevent.has_button = C.uint8_t(event.HasButton)
-	cevent.mods = C.uint8_t(event.Mods)
-	cevent.x = C.float(event.X)
-	cevent.y = C.float(event.Y)
-	var csize C.zg_render_size
-	csize.screen_width = C.uint32_t(size.ScreenWidth)
-	csize.screen_height = C.uint32_t(size.ScreenHeight)
-	csize.cell_width = C.uint32_t(size.CellWidth)
-	csize.cell_height = C.uint32_t(size.CellHeight)
-	csize.padding_top = C.uint32_t(size.PaddingTop)
-	csize.padding_bottom = C.uint32_t(size.PaddingBottom)
-	csize.padding_right = C.uint32_t(size.PaddingRight)
-	csize.padding_left = C.uint32_t(size.PaddingLeft)
-	code := int32(C.zg_encode_mouse(C.size_t(writerHandle), (*C.zg_terminal)(terminal), &cevent, &csize, C.uint8_t(anyButtonPressed)))
-	return code
-}
-
-// KeyKeyFromAscii calls the generated C ABI wrapper for zg_key_from_ascii.
-func KeyKeyFromAscii(ch uint8) (int32, bool) {
-	var outResult C.int32_t
-	outResultHas := C.zg_key_from_ascii(C.uint8_t(ch), &outResult) != 0
-	return int32(outResult), outResultHas
-}
-
-// KeyKeyFromW3C calls the generated C ABI wrapper for zg_key_from_w3c.
-func KeyKeyFromW3C(w3cCode string) (int32, bool) {
-	w3cCodePtr := (*C.uint8_t)(zigoStringPtr(w3cCode))
-	var outResult C.int32_t
-	outResultHas := C.zg_key_from_w3c(w3cCodePtr, C.size_t(len(w3cCode)), &outResult) != 0
-	return int32(outResult), outResultHas
-}
-
-// InputEncodeFocus calls the generated C ABI wrapper for zg_input_encode_focus.
-func InputEncodeFocus(writerHandle uintptr, event uint8) int32 {
-	code := int32(C.zg_input_encode_focus(C.size_t(writerHandle), C.uint8_t(event)))
-	return code
-}
-
-// InputIsSafePaste calls the generated C ABI wrapper for zg_input_is_safe_paste.
-func InputIsSafePaste(data []uint8) uint8 {
-	dataPtr := (*C.uint8_t)(zigoSlicePtr(data))
-	return uint8(C.zg_input_is_safe_paste(dataPtr, C.size_t(len(data))))
-}
-
-// EncodePaste calls the generated C ABI wrapper for zg_encode_paste.
-func EncodePaste(writerHandle uintptr, terminal unsafe.Pointer, data []uint8) int32 {
-	dataPtr := (*C.uint8_t)(zigoSlicePtr(data))
-	code := int32(C.zg_encode_paste(C.size_t(writerHandle), (*C.zg_terminal)(terminal), dataPtr, C.size_t(len(data))))
-	return code
-}
-
-// TerminalNewTerminal calls the generated C ABI wrapper for zg_terminal_new_terminal.
-func TerminalNewTerminal(cols uint16, rows uint16, maxScrollbackBytes *uint, maxScrollbackLines *uint, defaultCursorStyle uint8, defaultCursorBlink *uint8) (unsafe.Pointer, int32) {
-	var maxScrollbackBytesValue C.size_t
-	var maxScrollbackBytesPtr *C.size_t
-	if maxScrollbackBytes != nil {
-		maxScrollbackBytesValue = C.size_t(*maxScrollbackBytes)
-		maxScrollbackBytesPtr = &maxScrollbackBytesValue
+	addrTerminalFocused, err := resolveSymbol(handle, "zg_terminal_focused")
+	if err != nil {
+		return fail("zg_terminal_focused", err)
 	}
-	var maxScrollbackLinesValue C.size_t
-	var maxScrollbackLinesPtr *C.size_t
-	if maxScrollbackLines != nil {
-		maxScrollbackLinesValue = C.size_t(*maxScrollbackLines)
-		maxScrollbackLinesPtr = &maxScrollbackLinesValue
+	addrTerminalVisible, err := resolveSymbol(handle, "zg_terminal_visible")
+	if err != nil {
+		return fail("zg_terminal_visible", err)
 	}
-	var defaultCursorBlinkValue C.uint8_t
-	var defaultCursorBlinkPtr *C.uint8_t
-	if defaultCursorBlink != nil {
-		defaultCursorBlinkValue = C.uint8_t(*defaultCursorBlink)
-		defaultCursorBlinkPtr = &defaultCursorBlinkValue
+	addrTerminalPasswordInput, err := resolveSymbol(handle, "zg_terminal_password_input")
+	if err != nil {
+		return fail("zg_terminal_password_input", err)
 	}
-	var outResult *C.zg_terminal
-	code := int32(C.zg_terminal_new_terminal(C.uint16_t(cols), C.uint16_t(rows), maxScrollbackBytesPtr, maxScrollbackLinesPtr, C.uint8_t(defaultCursorStyle), defaultCursorBlinkPtr, &outResult))
-	return unsafe.Pointer(outResult), code
-}
-
-// TerminalDeinit calls the generated C ABI wrapper for zg_terminal_deinit.
-func TerminalDeinit(self unsafe.Pointer) int32 {
-	code := int32(C.zg_terminal_deinit((*C.zg_terminal)(self)))
-	return code
-}
-
-// TerminalNewStream calls the generated C ABI wrapper for zg_terminal_new_stream.
-func TerminalNewStream(self unsafe.Pointer, continuationMaxBytes uint) (unsafe.Pointer, int32) {
-	var outResult *C.zg_stream
-	code := int32(C.zg_terminal_new_stream((*C.zg_terminal)(self), C.size_t(continuationMaxBytes), &outResult))
-	return unsafe.Pointer(outResult), code
-}
-
-// TerminalNewSearch calls the generated C ABI wrapper for zg_terminal_new_search.
-func TerminalNewSearch(self unsafe.Pointer, needle string) (unsafe.Pointer, int32) {
-	needlePtr := (*C.uint8_t)(zigoStringPtr(needle))
-	var outResult *C.zg_search
-	code := int32(C.zg_terminal_new_search((*C.zg_terminal)(self), needlePtr, C.size_t(len(needle)), &outResult))
-	return unsafe.Pointer(outResult), code
-}
-
-// TerminalNewGesture calls the generated C ABI wrapper for zg_terminal_new_gesture.
-func TerminalNewGesture(self unsafe.Pointer) (unsafe.Pointer, int32) {
-	var outResult *C.zg_gesture
-	code := int32(C.zg_terminal_new_gesture((*C.zg_terminal)(self), &outResult))
-	return unsafe.Pointer(outResult), code
-}
-
-// TerminalNewGridRef calls the generated C ABI wrapper for zg_terminal_new_grid_ref.
-func TerminalNewGridRef(self unsafe.Pointer, tag uint8, x uint16, y uint32) (unsafe.Pointer, int32) {
-	var outResult *C.zg_grid_ref
-	code := int32(C.zg_terminal_new_grid_ref((*C.zg_terminal)(self), C.uint8_t(tag), C.uint16_t(x), C.uint32_t(y), &outResult))
-	return unsafe.Pointer(outResult), code
-}
-
-// TerminalPrintString calls the generated C ABI wrapper for zg_terminal_print_string.
-func TerminalPrintString(self unsafe.Pointer, str string) int32 {
-	strPtr := (*C.uint8_t)(zigoStringPtr(str))
-	code := int32(C.zg_terminal_print_string((*C.zg_terminal)(self), strPtr, C.size_t(len(str))))
-	return code
-}
-
-// TerminalPlainString calls the generated C ABI wrapper for zg_terminal_plain_string.
-func TerminalPlainString(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_terminal_plain_string((*C.zg_terminal)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
+	addrTerminalCharsetGl, err := resolveSymbol(handle, "zg_terminal_charset_gl")
+	if err != nil {
+		return fail("zg_terminal_charset_gl", err)
 	}
-	var result string
-	if outResultLen != 0 {
-		result = C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
+	addrTerminalCharsetGr, err := resolveSymbol(handle, "zg_terminal_charset_gr")
+	if err != nil {
+		return fail("zg_terminal_charset_gr", err)
 	}
-	C.zg_free_string(outResultPtr, outResultLen)
-	return result, code
-}
-
-// TerminalPlainStringUnwrapped calls the generated C ABI wrapper for zg_terminal_plain_string_unwrapped.
-func TerminalPlainStringUnwrapped(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_terminal_plain_string_unwrapped((*C.zg_terminal)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
+	addrTerminalCharsetSingleShift, err := resolveSymbol(handle, "zg_terminal_charset_single_shift")
+	if err != nil {
+		return fail("zg_terminal_charset_single_shift", err)
 	}
-	var result string
-	if outResultLen != 0 {
-		result = C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
+	addrTerminalProtectedMode, err := resolveSymbol(handle, "zg_terminal_protected_mode")
+	if err != nil {
+		return fail("zg_terminal_protected_mode", err)
 	}
-	C.zg_free_string(outResultPtr, outResultLen)
-	return result, code
-}
-
-// TerminalPrint calls the generated C ABI wrapper for zg_terminal_print.
-func TerminalPrint(self unsafe.Pointer, c uint32) int32 {
-	code := int32(C.zg_terminal_print((*C.zg_terminal)(self), C.uint32_t(c)))
-	return code
-}
-
-// TerminalPrintRepeat calls the generated C ABI wrapper for zg_terminal_print_repeat.
-func TerminalPrintRepeat(self unsafe.Pointer, count uint) int32 {
-	code := int32(C.zg_terminal_print_repeat((*C.zg_terminal)(self), C.size_t(count)))
-	return code
-}
-
-// TerminalPrintSlice calls the generated C ABI wrapper for zg_terminal_print_slice.
-func TerminalPrintSlice(self unsafe.Pointer, cps []uint32) int32 {
-	cpsPtr := (*C.uint32_t)(zigoSlicePtr(cps))
-	code := int32(C.zg_terminal_print_slice((*C.zg_terminal)(self), cpsPtr, C.size_t(len(cps))))
-	return code
-}
-
-// TerminalSetCursorStyle calls the generated C ABI wrapper for zg_terminal_set_cursor_style.
-func TerminalSetCursorStyle(self unsafe.Pointer, value uint8) int32 {
-	code := int32(C.zg_terminal_set_cursor_style((*C.zg_terminal)(self), C.uint8_t(value)))
-	return code
-}
-
-// TerminalSetCursorPos calls the generated C ABI wrapper for zg_terminal_set_cursor_pos.
-func TerminalSetCursorPos(self unsafe.Pointer, row uint, col uint) int32 {
-	code := int32(C.zg_terminal_set_cursor_pos((*C.zg_terminal)(self), C.size_t(row), C.size_t(col)))
-	return code
-}
-
-// TerminalCarriageReturn calls the generated C ABI wrapper for zg_terminal_carriage_return.
-func TerminalCarriageReturn(self unsafe.Pointer) int32 {
-	code := int32(C.zg_terminal_carriage_return((*C.zg_terminal)(self)))
-	return code
-}
-
-// TerminalLinefeed calls the generated C ABI wrapper for zg_terminal_linefeed.
-func TerminalLinefeed(self unsafe.Pointer) int32 {
-	code := int32(C.zg_terminal_linefeed((*C.zg_terminal)(self)))
-	return code
-}
-
-// TerminalBackspace calls the generated C ABI wrapper for zg_terminal_backspace.
-func TerminalBackspace(self unsafe.Pointer) int32 {
-	code := int32(C.zg_terminal_backspace((*C.zg_terminal)(self)))
-	return code
-}
-
-// TerminalCursorIsAtPrompt calls the generated C ABI wrapper for zg_terminal_cursor_is_at_prompt.
-func TerminalCursorIsAtPrompt(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_terminal_cursor_is_at_prompt((*C.zg_terminal)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// TerminalFullReset calls the generated C ABI wrapper for zg_terminal_full_reset.
-func TerminalFullReset(self unsafe.Pointer) int32 {
-	code := int32(C.zg_terminal_full_reset((*C.zg_terminal)(self)))
-	return code
-}
-
-// TerminalSoftReset calls the generated C ABI wrapper for zg_terminal_soft_reset.
-func TerminalSoftReset(self unsafe.Pointer) int32 {
-	code := int32(C.zg_terminal_soft_reset((*C.zg_terminal)(self)))
-	return code
-}
-
-// TerminalCursorUp calls the generated C ABI wrapper for zg_terminal_cursor_up.
-func TerminalCursorUp(self unsafe.Pointer, count uint) int32 {
-	code := int32(C.zg_terminal_cursor_up((*C.zg_terminal)(self), C.size_t(count)))
-	return code
-}
-
-// TerminalCursorDown calls the generated C ABI wrapper for zg_terminal_cursor_down.
-func TerminalCursorDown(self unsafe.Pointer, count uint) int32 {
-	code := int32(C.zg_terminal_cursor_down((*C.zg_terminal)(self), C.size_t(count)))
-	return code
-}
-
-// TerminalCursorLeft calls the generated C ABI wrapper for zg_terminal_cursor_left.
-func TerminalCursorLeft(self unsafe.Pointer, count uint) int32 {
-	code := int32(C.zg_terminal_cursor_left((*C.zg_terminal)(self), C.size_t(count)))
-	return code
-}
-
-// TerminalCursorRight calls the generated C ABI wrapper for zg_terminal_cursor_right.
-func TerminalCursorRight(self unsafe.Pointer, count uint) int32 {
-	code := int32(C.zg_terminal_cursor_right((*C.zg_terminal)(self), C.size_t(count)))
-	return code
-}
-
-// TerminalSetCursorRow calls the generated C ABI wrapper for zg_terminal_set_cursor_row.
-func TerminalSetCursorRow(self unsafe.Pointer, row uint) int32 {
-	code := int32(C.zg_terminal_set_cursor_row((*C.zg_terminal)(self), C.size_t(row)))
-	return code
-}
-
-// TerminalSetCursorCol calls the generated C ABI wrapper for zg_terminal_set_cursor_col.
-func TerminalSetCursorCol(self unsafe.Pointer, col uint) int32 {
-	code := int32(C.zg_terminal_set_cursor_col((*C.zg_terminal)(self), C.size_t(col)))
-	return code
-}
-
-// TerminalCursorRowRelative calls the generated C ABI wrapper for zg_terminal_cursor_row_relative.
-func TerminalCursorRowRelative(self unsafe.Pointer, count uint) int32 {
-	code := int32(C.zg_terminal_cursor_row_relative((*C.zg_terminal)(self), C.size_t(count)))
-	return code
-}
-
-// TerminalCursorColRelative calls the generated C ABI wrapper for zg_terminal_cursor_col_relative.
-func TerminalCursorColRelative(self unsafe.Pointer, count uint) int32 {
-	code := int32(C.zg_terminal_cursor_col_relative((*C.zg_terminal)(self), C.size_t(count)))
-	return code
-}
-
-// TerminalSaveCursor calls the generated C ABI wrapper for zg_terminal_save_cursor.
-func TerminalSaveCursor(self unsafe.Pointer) int32 {
-	code := int32(C.zg_terminal_save_cursor((*C.zg_terminal)(self)))
-	return code
-}
-
-// TerminalRestoreCursor calls the generated C ABI wrapper for zg_terminal_restore_cursor.
-func TerminalRestoreCursor(self unsafe.Pointer) int32 {
-	code := int32(C.zg_terminal_restore_cursor((*C.zg_terminal)(self)))
-	return code
-}
-
-// TerminalIndex calls the generated C ABI wrapper for zg_terminal_index.
-func TerminalIndex(self unsafe.Pointer) int32 {
-	code := int32(C.zg_terminal_index((*C.zg_terminal)(self)))
-	return code
-}
-
-// TerminalReverseIndex calls the generated C ABI wrapper for zg_terminal_reverse_index.
-func TerminalReverseIndex(self unsafe.Pointer) int32 {
-	code := int32(C.zg_terminal_reverse_index((*C.zg_terminal)(self)))
-	return code
-}
-
-// TerminalSwitchScreen calls the generated C ABI wrapper for zg_terminal_switch_screen.
-func TerminalSwitchScreen(self unsafe.Pointer, key uint8) (unsafe.Pointer, int32) {
-	var outResult *C.zg_screen
-	code := int32(C.zg_terminal_switch_screen((*C.zg_terminal)(self), C.uint8_t(key), &outResult))
-	return unsafe.Pointer(outResult), code
-}
-
-// TerminalSwitchScreenMode calls the generated C ABI wrapper for zg_terminal_switch_screen_mode.
-func TerminalSwitchScreenMode(self unsafe.Pointer, mode uint8, enabled uint8) int32 {
-	code := int32(C.zg_terminal_switch_screen_mode((*C.zg_terminal)(self), C.uint8_t(mode), C.uint8_t(enabled)))
-	return code
-}
-
-// TerminalActiveScreen calls the generated C ABI wrapper for zg_terminal_active_screen.
-func TerminalActiveScreen(self unsafe.Pointer) (unsafe.Pointer, int32) {
-	var outResult *C.zg_screen
-	code := int32(C.zg_terminal_active_screen((*C.zg_terminal)(self), &outResult))
-	return unsafe.Pointer(outResult), code
-}
-
-// TerminalScreen calls the generated C ABI wrapper for zg_terminal_screen.
-func TerminalScreen(self unsafe.Pointer, key uint8) (unsafe.Pointer, int32) {
-	var outResult *C.zg_screen
-	code := int32(C.zg_terminal_screen((*C.zg_terminal)(self), C.uint8_t(key), &outResult))
-	return unsafe.Pointer(outResult), code
-}
-
-// TerminalPrintAttributesInto calls the generated C ABI wrapper for zg_terminal_print_attributes_into.
-func TerminalPrintAttributesInto(self unsafe.Pointer, buf []uint8) (uint, int32) {
-	bufPtr := (*C.uint8_t)(zigoSlicePtr(buf))
-	var outResult C.size_t
-	code := int32(C.zg_terminal_print_attributes_into((*C.zg_terminal)(self), bufPtr, C.size_t(len(buf)), &outResult))
-	return uint(outResult), code
-}
-
-// TerminalHistoryString calls the generated C ABI wrapper for zg_terminal_history_string.
-func TerminalHistoryString(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_terminal_history_string((*C.zg_terminal)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
+	addrGestureClickCount, err := resolveSymbol(handle, "zg_gesture_click_count")
+	if err != nil {
+		return fail("zg_gesture_click_count", err)
 	}
-	var result string
-	if outResultLen != 0 {
-		result = C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
+	addrGestureDragged, err := resolveSymbol(handle, "zg_gesture_dragged")
+	if err != nil {
+		return fail("zg_gesture_dragged", err)
 	}
-	C.zg_free_string(outResultPtr, outResultLen)
-	return result, code
-}
-
-// TerminalHorizontalTab calls the generated C ABI wrapper for zg_terminal_horizontal_tab.
-func TerminalHorizontalTab(self unsafe.Pointer) int32 {
-	code := int32(C.zg_terminal_horizontal_tab((*C.zg_terminal)(self)))
-	return code
-}
-
-// TerminalHorizontalTabBack calls the generated C ABI wrapper for zg_terminal_horizontal_tab_back.
-func TerminalHorizontalTabBack(self unsafe.Pointer) int32 {
-	code := int32(C.zg_terminal_horizontal_tab_back((*C.zg_terminal)(self)))
-	return code
-}
-
-// TerminalTabSet calls the generated C ABI wrapper for zg_terminal_tab_set.
-func TerminalTabSet(self unsafe.Pointer) int32 {
-	code := int32(C.zg_terminal_tab_set((*C.zg_terminal)(self)))
-	return code
-}
-
-// TerminalTabReset calls the generated C ABI wrapper for zg_terminal_tab_reset.
-func TerminalTabReset(self unsafe.Pointer) int32 {
-	code := int32(C.zg_terminal_tab_reset((*C.zg_terminal)(self)))
-	return code
-}
-
-// TerminalTabClear calls the generated C ABI wrapper for zg_terminal_tab_clear.
-func TerminalTabClear(self unsafe.Pointer, cmd uint8) int32 {
-	code := int32(C.zg_terminal_tab_clear((*C.zg_terminal)(self), C.uint8_t(cmd)))
-	return code
-}
-
-// TerminalSetTabstop calls the generated C ABI wrapper for zg_terminal_set_tabstop.
-func TerminalSetTabstop(self unsafe.Pointer, col uint) int32 {
-	code := int32(C.zg_terminal_set_tabstop((*C.zg_terminal)(self), C.size_t(col)))
-	return code
-}
-
-// TerminalUnsetTabstop calls the generated C ABI wrapper for zg_terminal_unset_tabstop.
-func TerminalUnsetTabstop(self unsafe.Pointer, col uint) int32 {
-	code := int32(C.zg_terminal_unset_tabstop((*C.zg_terminal)(self), C.size_t(col)))
-	return code
-}
-
-// TerminalResetTabstops calls the generated C ABI wrapper for zg_terminal_reset_tabstops.
-func TerminalResetTabstops(self unsafe.Pointer, interval uint) int32 {
-	code := int32(C.zg_terminal_reset_tabstops((*C.zg_terminal)(self), C.size_t(interval)))
-	return code
-}
-
-// TerminalScrollUp calls the generated C ABI wrapper for zg_terminal_scroll_up.
-func TerminalScrollUp(self unsafe.Pointer, count uint) int32 {
-	code := int32(C.zg_terminal_scroll_up((*C.zg_terminal)(self), C.size_t(count)))
-	return code
-}
-
-// TerminalScrollDown calls the generated C ABI wrapper for zg_terminal_scroll_down.
-func TerminalScrollDown(self unsafe.Pointer, count uint) int32 {
-	code := int32(C.zg_terminal_scroll_down((*C.zg_terminal)(self), C.size_t(count)))
-	return code
-}
-
-// TerminalSetTopAndBottomMargin calls the generated C ABI wrapper for zg_terminal_set_top_and_bottom_margin.
-func TerminalSetTopAndBottomMargin(self unsafe.Pointer, top uint, bottom uint) int32 {
-	code := int32(C.zg_terminal_set_top_and_bottom_margin((*C.zg_terminal)(self), C.size_t(top), C.size_t(bottom)))
-	return code
-}
-
-// TerminalSetLeftAndRightMargin calls the generated C ABI wrapper for zg_terminal_set_left_and_right_margin.
-func TerminalSetLeftAndRightMargin(self unsafe.Pointer, left uint, right uint) int32 {
-	code := int32(C.zg_terminal_set_left_and_right_margin((*C.zg_terminal)(self), C.size_t(left), C.size_t(right)))
-	return code
-}
-
-// TerminalScrollViewport calls the generated C ABI wrapper for zg_terminal_scroll_viewport.
-func TerminalScrollViewport(self unsafe.Pointer, behavior_tag uint8, behavior_delta int, behavior_row uint, behavior_delta_prompt int) int32 {
-	code := int32(C.zg_terminal_scroll_viewport((*C.zg_terminal)(self), C.uint8_t(behavior_tag), C.ptrdiff_t(behavior_delta), C.size_t(behavior_row), C.ptrdiff_t(behavior_delta_prompt)))
-	return code
-}
-
-// TerminalSetScrollbackMaxBytes calls the generated C ABI wrapper for zg_terminal_set_scrollback_max_bytes.
-func TerminalSetScrollbackMaxBytes(self unsafe.Pointer, max uint) int32 {
-	code := int32(C.zg_terminal_set_scrollback_max_bytes((*C.zg_terminal)(self), C.size_t(max)))
-	return code
-}
-
-// TerminalClearScrollbackMaxBytes calls the generated C ABI wrapper for zg_terminal_clear_scrollback_max_bytes.
-func TerminalClearScrollbackMaxBytes(self unsafe.Pointer) int32 {
-	code := int32(C.zg_terminal_clear_scrollback_max_bytes((*C.zg_terminal)(self)))
-	return code
-}
-
-// TerminalSetScrollbackMaxLines calls the generated C ABI wrapper for zg_terminal_set_scrollback_max_lines.
-func TerminalSetScrollbackMaxLines(self unsafe.Pointer, max uint) int32 {
-	code := int32(C.zg_terminal_set_scrollback_max_lines((*C.zg_terminal)(self), C.size_t(max)))
-	return code
-}
-
-// TerminalClearScrollbackMaxLines calls the generated C ABI wrapper for zg_terminal_clear_scrollback_max_lines.
-func TerminalClearScrollbackMaxLines(self unsafe.Pointer) int32 {
-	code := int32(C.zg_terminal_clear_scrollback_max_lines((*C.zg_terminal)(self)))
-	return code
-}
-
-// TerminalInsertLines calls the generated C ABI wrapper for zg_terminal_insert_lines.
-func TerminalInsertLines(self unsafe.Pointer, count uint) int32 {
-	code := int32(C.zg_terminal_insert_lines((*C.zg_terminal)(self), C.size_t(count)))
-	return code
-}
-
-// TerminalDeleteLines calls the generated C ABI wrapper for zg_terminal_delete_lines.
-func TerminalDeleteLines(self unsafe.Pointer, count uint) int32 {
-	code := int32(C.zg_terminal_delete_lines((*C.zg_terminal)(self), C.size_t(count)))
-	return code
-}
-
-// TerminalInsertBlanks calls the generated C ABI wrapper for zg_terminal_insert_blanks.
-func TerminalInsertBlanks(self unsafe.Pointer, count uint) int32 {
-	code := int32(C.zg_terminal_insert_blanks((*C.zg_terminal)(self), C.size_t(count)))
-	return code
-}
-
-// TerminalDeleteChars calls the generated C ABI wrapper for zg_terminal_delete_chars.
-func TerminalDeleteChars(self unsafe.Pointer, count uint) int32 {
-	code := int32(C.zg_terminal_delete_chars((*C.zg_terminal)(self), C.size_t(count)))
-	return code
-}
-
-// TerminalEraseChars calls the generated C ABI wrapper for zg_terminal_erase_chars.
-func TerminalEraseChars(self unsafe.Pointer, count uint) int32 {
-	code := int32(C.zg_terminal_erase_chars((*C.zg_terminal)(self), C.size_t(count)))
-	return code
-}
-
-// TerminalEraseLine calls the generated C ABI wrapper for zg_terminal_erase_line.
-func TerminalEraseLine(self unsafe.Pointer, mode uint8, protected uint8) int32 {
-	code := int32(C.zg_terminal_erase_line((*C.zg_terminal)(self), C.uint8_t(mode), C.uint8_t(protected)))
-	return code
-}
-
-// TerminalEraseDisplay calls the generated C ABI wrapper for zg_terminal_erase_display.
-func TerminalEraseDisplay(self unsafe.Pointer, mode uint8, protected uint8) int32 {
-	code := int32(C.zg_terminal_erase_display((*C.zg_terminal)(self), C.uint8_t(mode), C.uint8_t(protected)))
-	return code
-}
-
-// TerminalDecaln calls the generated C ABI wrapper for zg_terminal_decaln.
-func TerminalDecaln(self unsafe.Pointer) int32 {
-	code := int32(C.zg_terminal_decaln((*C.zg_terminal)(self)))
-	return code
-}
-
-// TerminalResize calls the generated C ABI wrapper for zg_terminal_resize.
-func TerminalResize(self unsafe.Pointer, cols uint16, rows uint16) int32 {
-	code := int32(C.zg_terminal_resize((*C.zg_terminal)(self), C.uint16_t(cols), C.uint16_t(rows)))
-	return code
-}
-
-// TerminalResizeCells calls the generated C ABI wrapper for zg_terminal_resize_cells.
-func TerminalResizeCells(self unsafe.Pointer, width uint16, height uint16, cellWidth uint32, cellHeight uint32) int32 {
-	code := int32(C.zg_terminal_resize_cells((*C.zg_terminal)(self), C.uint16_t(width), C.uint16_t(height), C.uint32_t(cellWidth), C.uint32_t(cellHeight)))
-	return code
-}
-
-// TerminalFormat calls the generated C ABI wrapper for zg_terminal_format.
-func TerminalFormat(self unsafe.Pointer, opts FormatOptionsData, writerHandle uintptr) int32 {
-	var copts C.zg_format_options
-	copts.format = C.uint8_t(opts.Format)
-	copts.unwrap = C.uint8_t(opts.Unwrap)
-	copts.keep_trailing_whitespace = C.uint8_t(opts.KeepTrailingWhitespace)
-	copts.cursor = C.uint8_t(opts.Cursor)
-	copts.no_styles = C.uint8_t(opts.NoStyles)
-	copts.no_hyperlinks = C.uint8_t(opts.NoHyperlinks)
-	copts.resolve_palette = C.uint8_t(opts.ResolvePalette)
-	code := int32(C.zg_terminal_format((*C.zg_terminal)(self), &copts, C.size_t(writerHandle)))
-	return code
-}
-
-// TerminalFormatSelection calls the generated C ABI wrapper for zg_terminal_format_selection.
-func TerminalFormatSelection(self unsafe.Pointer, opts FormatOptionsData, sel SelectionData, writerHandle uintptr) (uint8, int32) {
-	var copts C.zg_format_options
-	copts.format = C.uint8_t(opts.Format)
-	copts.unwrap = C.uint8_t(opts.Unwrap)
-	copts.keep_trailing_whitespace = C.uint8_t(opts.KeepTrailingWhitespace)
-	copts.cursor = C.uint8_t(opts.Cursor)
-	copts.no_styles = C.uint8_t(opts.NoStyles)
-	copts.no_hyperlinks = C.uint8_t(opts.NoHyperlinks)
-	copts.resolve_palette = C.uint8_t(opts.ResolvePalette)
-	var csel C.zg_selection
-	csel.start_x = C.uint16_t(sel.StartX)
-	csel.start_y = C.uint32_t(sel.StartY)
-	csel.end_x = C.uint16_t(sel.EndX)
-	csel.end_y = C.uint32_t(sel.EndY)
-	csel.rectangle = C.uint8_t(sel.Rectangle)
-	var outResult C.uint8_t
-	code := int32(C.zg_terminal_format_selection((*C.zg_terminal)(self), &copts, &csel, C.size_t(writerHandle), &outResult))
-	return uint8(outResult), code
-}
-
-// TerminalSetPwd calls the generated C ABI wrapper for zg_terminal_set_pwd.
-func TerminalSetPwd(self unsafe.Pointer, pwd string) int32 {
-	pwdPtr := (*C.uint8_t)(zigoStringPtr(pwd))
-	code := int32(C.zg_terminal_set_pwd((*C.zg_terminal)(self), pwdPtr, C.size_t(len(pwd))))
-	return code
-}
-
-// TerminalGetPwd calls the generated C ABI wrapper for zg_terminal_get_pwd.
-func TerminalGetPwd(self unsafe.Pointer) (string, bool, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_terminal_get_pwd((*C.zg_terminal)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", false, code
+	addrStreamFailed, err := resolveSymbol(handle, "zg_stream_failed")
+	if err != nil {
+		return fail("zg_stream_failed", err)
 	}
-	if outResultPtr == nil {
-		return "", false, code
+	addrOscParserCommand, err := resolveSymbol(handle, "zg_osc_parser_command")
+	if err != nil {
+		return fail("zg_osc_parser_command", err)
 	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), true, code
-}
-
-// TerminalGetTitle calls the generated C ABI wrapper for zg_terminal_get_title.
-func TerminalGetTitle(self unsafe.Pointer) (string, bool, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_terminal_get_title((*C.zg_terminal)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", false, code
+	addrOscParserWindowTitle, err := resolveSymbol(handle, "zg_osc_parser_window_title")
+	if err != nil {
+		return fail("zg_osc_parser_window_title", err)
 	}
-	if outResultPtr == nil {
-		return "", false, code
+	addrOscParserIcon, err := resolveSymbol(handle, "zg_osc_parser_icon")
+	if err != nil {
+		return fail("zg_osc_parser_icon", err)
 	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), true, code
-}
-
-// TerminalSetTitle calls the generated C ABI wrapper for zg_terminal_set_title.
-func TerminalSetTitle(self unsafe.Pointer, t string) int32 {
-	tPtr := (*C.uint8_t)(zigoStringPtr(t))
-	code := int32(C.zg_terminal_set_title((*C.zg_terminal)(self), tPtr, C.size_t(len(t))))
-	return code
-}
-
-// TerminalBackgroundColor calls the generated C ABI wrapper for zg_terminal_background_color.
-func TerminalBackgroundColor(self unsafe.Pointer) (RGBData, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.zg_rgb
-	code := int32(C.zg_terminal_background_color((*C.zg_terminal)(self), &outResultHas, &outResult))
-	return RGBData{
-		R: uint8(outResult.r),
-		G: uint8(outResult.g),
-		B: uint8(outResult.b),
-	}, outResultHas != 0, code
-}
-
-// TerminalForegroundColor calls the generated C ABI wrapper for zg_terminal_foreground_color.
-func TerminalForegroundColor(self unsafe.Pointer) (RGBData, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.zg_rgb
-	code := int32(C.zg_terminal_foreground_color((*C.zg_terminal)(self), &outResultHas, &outResult))
-	return RGBData{
-		R: uint8(outResult.r),
-		G: uint8(outResult.g),
-		B: uint8(outResult.b),
-	}, outResultHas != 0, code
-}
-
-// TerminalCursorColor calls the generated C ABI wrapper for zg_terminal_cursor_color.
-func TerminalCursorColor(self unsafe.Pointer) (RGBData, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.zg_rgb
-	code := int32(C.zg_terminal_cursor_color((*C.zg_terminal)(self), &outResultHas, &outResult))
-	return RGBData{
-		R: uint8(outResult.r),
-		G: uint8(outResult.g),
-		B: uint8(outResult.b),
-	}, outResultHas != 0, code
-}
-
-// TerminalPaletteColors calls the generated C ABI wrapper for zg_terminal_palette_colors.
-func TerminalPaletteColors(self unsafe.Pointer, dst []RGBData) (uint, int32) {
-	var dstValues []C.zg_rgb
-	if len(dst) != 0 {
-		dstValues = make([]C.zg_rgb, len(dst))
+	addrOscParserPwd, err := resolveSymbol(handle, "zg_osc_parser_pwd")
+	if err != nil {
+		return fail("zg_osc_parser_pwd", err)
 	}
-	dstPtr := (*C.zg_rgb)(zigoSlicePtr(dstValues))
-	var outResult C.size_t
-	code := int32(C.zg_terminal_palette_colors((*C.zg_terminal)(self), dstPtr, C.size_t(len(dst)), &outResult))
-	for i := 0; i < int(outResult) && i < len(dst); i++ {
-		dst[i] = RGBData{
-			R: uint8(dstValues[i].r),
-			G: uint8(dstValues[i].g),
-			B: uint8(dstValues[i].b),
-		}
+	addrOscParserHyperlinkUri, err := resolveSymbol(handle, "zg_osc_parser_hyperlink_uri")
+	if err != nil {
+		return fail("zg_osc_parser_hyperlink_uri", err)
 	}
-	return uint(outResult), code
-}
-
-// TerminalModeEnabled calls the generated C ABI wrapper for zg_terminal_mode_enabled.
-func TerminalModeEnabled(self unsafe.Pointer, mode uint16) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_terminal_mode_enabled((*C.zg_terminal)(self), C.uint16_t(mode), &outResult))
-	return uint8(outResult), code
-}
-
-// TerminalSetMode calls the generated C ABI wrapper for zg_terminal_set_mode.
-func TerminalSetMode(self unsafe.Pointer, mode uint16, value uint8) int32 {
-	code := int32(C.zg_terminal_set_mode((*C.zg_terminal)(self), C.uint16_t(mode), C.uint8_t(value)))
-	return code
-}
-
-// TerminalSetAttribute calls the generated C ABI wrapper for zg_terminal_set_attribute.
-func TerminalSetAttribute(self unsafe.Pointer, attr_tag uint8, attr_underline uint8, attr_underline_color_rgb_r uint8, attr_underline_color_rgb_g uint8, attr_underline_color_rgb_b uint8, attr_underline_color_256 uint8, attr_direct_color_fg_r uint8, attr_direct_color_fg_g uint8, attr_direct_color_fg_b uint8, attr_direct_color_bg_r uint8, attr_direct_color_bg_g uint8, attr_direct_color_bg_b uint8, attr_color_256_fg uint8, attr_color_256_bg uint8, attr_named_fg uint8, attr_named_bg uint8, attr_bright_named_fg uint8, attr_bright_named_bg uint8) int32 {
-	code := int32(C.zg_terminal_set_attribute((*C.zg_terminal)(self), C.uint8_t(attr_tag), C.uint8_t(attr_underline), C.uint8_t(attr_underline_color_rgb_r), C.uint8_t(attr_underline_color_rgb_g), C.uint8_t(attr_underline_color_rgb_b), C.uint8_t(attr_underline_color_256), C.uint8_t(attr_direct_color_fg_r), C.uint8_t(attr_direct_color_fg_g), C.uint8_t(attr_direct_color_fg_b), C.uint8_t(attr_direct_color_bg_r), C.uint8_t(attr_direct_color_bg_g), C.uint8_t(attr_direct_color_bg_b), C.uint8_t(attr_color_256_fg), C.uint8_t(attr_color_256_bg), C.uint8_t(attr_named_fg), C.uint8_t(attr_named_bg), C.uint8_t(attr_bright_named_fg), C.uint8_t(attr_bright_named_bg)))
-	return code
-}
-
-// TerminalSetProtectedMode calls the generated C ABI wrapper for zg_terminal_set_protected_mode.
-func TerminalSetProtectedMode(self unsafe.Pointer, mode uint8) int32 {
-	code := int32(C.zg_terminal_set_protected_mode((*C.zg_terminal)(self), C.uint8_t(mode)))
-	return code
-}
-
-// TerminalConfigureCharset calls the generated C ABI wrapper for zg_terminal_configure_charset.
-func TerminalConfigureCharset(self unsafe.Pointer, slot uint8, set uint8) int32 {
-	code := int32(C.zg_terminal_configure_charset((*C.zg_terminal)(self), C.uint8_t(slot), C.uint8_t(set)))
-	return code
-}
-
-// TerminalInvokeCharset calls the generated C ABI wrapper for zg_terminal_invoke_charset.
-func TerminalInvokeCharset(self unsafe.Pointer, active uint8, slot uint8, single uint8) int32 {
-	code := int32(C.zg_terminal_invoke_charset((*C.zg_terminal)(self), C.uint8_t(active), C.uint8_t(slot), C.uint8_t(single)))
-	return code
-}
-
-// TerminalDeccolm calls the generated C ABI wrapper for zg_terminal_deccolm.
-func TerminalDeccolm(self unsafe.Pointer, mode uint8) int32 {
-	code := int32(C.zg_terminal_deccolm((*C.zg_terminal)(self), C.uint8_t(mode)))
-	return code
-}
-
-// TerminalCompress calls the generated C ABI wrapper for zg_terminal_compress.
-func TerminalCompress(self unsafe.Pointer, mode uint8) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_terminal_compress((*C.zg_terminal)(self), C.uint8_t(mode), &outResult))
-	return uint8(outResult), code
-}
-
-// TerminalCompressionActivity calls the generated C ABI wrapper for zg_terminal_compression_activity.
-func TerminalCompressionActivity(self unsafe.Pointer) (uint64, int32) {
-	var outResult C.uint64_t
-	code := int32(C.zg_terminal_compression_activity((*C.zg_terminal)(self), &outResult))
-	return uint64(outResult), code
-}
-
-// TerminalSetDefaultBackgroundColor calls the generated C ABI wrapper for zg_terminal_set_default_background_color.
-func TerminalSetDefaultBackgroundColor(self unsafe.Pointer, rgb RGBData) int32 {
-	var crgb C.zg_rgb
-	crgb.r = C.uint8_t(rgb.R)
-	crgb.g = C.uint8_t(rgb.G)
-	crgb.b = C.uint8_t(rgb.B)
-	code := int32(C.zg_terminal_set_default_background_color((*C.zg_terminal)(self), &crgb))
-	return code
-}
-
-// TerminalSetDefaultForegroundColor calls the generated C ABI wrapper for zg_terminal_set_default_foreground_color.
-func TerminalSetDefaultForegroundColor(self unsafe.Pointer, rgb RGBData) int32 {
-	var crgb C.zg_rgb
-	crgb.r = C.uint8_t(rgb.R)
-	crgb.g = C.uint8_t(rgb.G)
-	crgb.b = C.uint8_t(rgb.B)
-	code := int32(C.zg_terminal_set_default_foreground_color((*C.zg_terminal)(self), &crgb))
-	return code
-}
-
-// TerminalSetDefaultCursorColor calls the generated C ABI wrapper for zg_terminal_set_default_cursor_color.
-func TerminalSetDefaultCursorColor(self unsafe.Pointer, rgb RGBData) int32 {
-	var crgb C.zg_rgb
-	crgb.r = C.uint8_t(rgb.R)
-	crgb.g = C.uint8_t(rgb.G)
-	crgb.b = C.uint8_t(rgb.B)
-	code := int32(C.zg_terminal_set_default_cursor_color((*C.zg_terminal)(self), &crgb))
-	return code
-}
-
-// TerminalSetDefaultCursorStyle calls the generated C ABI wrapper for zg_terminal_set_default_cursor_style.
-func TerminalSetDefaultCursorStyle(self unsafe.Pointer, configuredStyle uint8) int32 {
-	code := int32(C.zg_terminal_set_default_cursor_style((*C.zg_terminal)(self), C.uint8_t(configuredStyle)))
-	return code
-}
-
-// TerminalSetDefaultCursorBlink calls the generated C ABI wrapper for zg_terminal_set_default_cursor_blink.
-func TerminalSetDefaultCursorBlink(self unsafe.Pointer, blink uint8) int32 {
-	code := int32(C.zg_terminal_set_default_cursor_blink((*C.zg_terminal)(self), C.uint8_t(blink)))
-	return code
-}
-
-// TerminalResetDefaultCursorBlink calls the generated C ABI wrapper for zg_terminal_reset_default_cursor_blink.
-func TerminalResetDefaultCursorBlink(self unsafe.Pointer) int32 {
-	code := int32(C.zg_terminal_reset_default_cursor_blink((*C.zg_terminal)(self)))
-	return code
-}
-
-// TerminalPaletteColor calls the generated C ABI wrapper for zg_terminal_palette_color.
-func TerminalPaletteColor(self unsafe.Pointer, idx uint8) (RGBData, int32) {
-	var outResult C.zg_rgb
-	code := int32(C.zg_terminal_palette_color((*C.zg_terminal)(self), C.uint8_t(idx), &outResult))
-	return RGBData{
-		R: uint8(outResult.r),
-		G: uint8(outResult.g),
-		B: uint8(outResult.b),
-	}, code
-}
-
-// TerminalSetPaletteColor calls the generated C ABI wrapper for zg_terminal_set_palette_color.
-func TerminalSetPaletteColor(self unsafe.Pointer, idx uint8, rgb RGBData) int32 {
-	var crgb C.zg_rgb
-	crgb.r = C.uint8_t(rgb.R)
-	crgb.g = C.uint8_t(rgb.G)
-	crgb.b = C.uint8_t(rgb.B)
-	code := int32(C.zg_terminal_set_palette_color((*C.zg_terminal)(self), C.uint8_t(idx), &crgb))
-	return code
-}
-
-// TerminalResetPaletteColor calls the generated C ABI wrapper for zg_terminal_reset_palette_color.
-func TerminalResetPaletteColor(self unsafe.Pointer, idx uint8) int32 {
-	code := int32(C.zg_terminal_reset_palette_color((*C.zg_terminal)(self), C.uint8_t(idx)))
-	return code
-}
-
-// TerminalResetPalette calls the generated C ABI wrapper for zg_terminal_reset_palette.
-func TerminalResetPalette(self unsafe.Pointer) int32 {
-	code := int32(C.zg_terminal_reset_palette((*C.zg_terminal)(self)))
-	return code
-}
-
-// TerminalSetDefaultPaletteColor calls the generated C ABI wrapper for zg_terminal_set_default_palette_color.
-func TerminalSetDefaultPaletteColor(self unsafe.Pointer, idx uint8, rgb RGBData) int32 {
-	var crgb C.zg_rgb
-	crgb.r = C.uint8_t(rgb.R)
-	crgb.g = C.uint8_t(rgb.G)
-	crgb.b = C.uint8_t(rgb.B)
-	code := int32(C.zg_terminal_set_default_palette_color((*C.zg_terminal)(self), C.uint8_t(idx), &crgb))
-	return code
-}
-
-// TerminalResetDefaultPalette calls the generated C ABI wrapper for zg_terminal_reset_default_palette.
-func TerminalResetDefaultPalette(self unsafe.Pointer) int32 {
-	code := int32(C.zg_terminal_reset_default_palette((*C.zg_terminal)(self)))
-	return code
-}
-
-// TerminalSetDefaultMode calls the generated C ABI wrapper for zg_terminal_set_default_mode.
-func TerminalSetDefaultMode(self unsafe.Pointer, mode uint16, value uint8) int32 {
-	code := int32(C.zg_terminal_set_default_mode((*C.zg_terminal)(self), C.uint16_t(mode), C.uint8_t(value)))
-	return code
-}
-
-// TerminalResetModes calls the generated C ABI wrapper for zg_terminal_reset_modes.
-func TerminalResetModes(self unsafe.Pointer) int32 {
-	code := int32(C.zg_terminal_reset_modes((*C.zg_terminal)(self)))
-	return code
-}
-
-// TerminalSaveMode calls the generated C ABI wrapper for zg_terminal_save_mode.
-func TerminalSaveMode(self unsafe.Pointer, mode uint16) int32 {
-	code := int32(C.zg_terminal_save_mode((*C.zg_terminal)(self), C.uint16_t(mode)))
-	return code
-}
-
-// TerminalRestoreMode calls the generated C ABI wrapper for zg_terminal_restore_mode.
-func TerminalRestoreMode(self unsafe.Pointer, mode uint16) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_terminal_restore_mode((*C.zg_terminal)(self), C.uint16_t(mode), &outResult))
-	return uint8(outResult), code
-}
-
-// TerminalSetKittyGraphicsSizeLimit calls the generated C ABI wrapper for zg_terminal_set_kitty_graphics_size_limit.
-func TerminalSetKittyGraphicsSizeLimit(self unsafe.Pointer, limit uint) int32 {
-	code := int32(C.zg_terminal_set_kitty_graphics_size_limit((*C.zg_terminal)(self), C.size_t(limit)))
-	return code
-}
-
-// TerminalSetKittyGraphicsLoadingLimits calls the generated C ABI wrapper for zg_terminal_set_kitty_graphics_loading_limits.
-func TerminalSetKittyGraphicsLoadingLimits(self unsafe.Pointer, file uint8, tempDir string, sharedMemory uint8) int32 {
-	tempDirPtr := (*C.uint8_t)(zigoStringPtr(tempDir))
-	code := int32(C.zg_terminal_set_kitty_graphics_loading_limits((*C.zg_terminal)(self), C.uint8_t(file), tempDirPtr, C.size_t(len(tempDir)), C.uint8_t(sharedMemory)))
-	return code
-}
-
-// TerminalKittyImage calls the generated C ABI wrapper for zg_terminal_kitty_image.
-func TerminalKittyImage(self unsafe.Pointer, imageID uint32) (KittyImageData, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.zg_kitty_image
-	code := int32(C.zg_terminal_kitty_image((*C.zg_terminal)(self), C.uint32_t(imageID), &outResultHas, &outResult))
-	return KittyImageData{
-		Generation:  uint64(outResult.generation),
-		DataLen:     uint64(outResult.data_len),
-		Width:       uint32(outResult.width),
-		Height:      uint32(outResult.height),
-		Format:      uint8(outResult.format),
-		Compression: uint8(outResult.compression),
-		Pad:         uint16(outResult._pad),
-	}, outResultHas != 0, code
-}
-
-// TerminalKittyImageData calls the generated C ABI wrapper for zg_terminal_kitty_image_data.
-func TerminalKittyImageData(self unsafe.Pointer, imageID uint32, dst []uint8) (uint, int32) {
-	dstPtr := (*C.uint8_t)(zigoSlicePtr(dst))
-	var outResult C.size_t
-	code := int32(C.zg_terminal_kitty_image_data((*C.zg_terminal)(self), C.uint32_t(imageID), dstPtr, C.size_t(len(dst)), &outResult))
-	return uint(outResult), code
-}
-
-// TerminalKittyAnimationTick calls the generated C ABI wrapper for zg_terminal_kitty_animation_tick.
-func TerminalKittyAnimationTick(self unsafe.Pointer, nowMs uint64) (uint64, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.uint64_t
-	code := int32(C.zg_terminal_kitty_animation_tick((*C.zg_terminal)(self), C.uint64_t(nowMs), &outResultHas, &outResult))
-	return uint64(outResult), outResultHas != 0, code
-}
-
-// TerminalScrollRegion calls the generated C ABI wrapper for zg_terminal_scroll_region.
-func TerminalScrollRegion(self unsafe.Pointer) (ScrollRegionData, int32) {
-	var outResult C.zg_scroll_region
-	code := int32(C.zg_terminal_scroll_region((*C.zg_terminal)(self), &outResult))
-	return ScrollRegionData{
-		Top:    uint16(outResult.top),
-		Bottom: uint16(outResult.bottom),
-		Left:   uint16(outResult.left),
-		Right:  uint16(outResult.right),
-	}, code
-}
-
-// TerminalCharset calls the generated C ABI wrapper for zg_terminal_charset.
-func TerminalCharset(self unsafe.Pointer, slot uint8) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_terminal_charset((*C.zg_terminal)(self), C.uint8_t(slot), &outResult))
-	return uint8(outResult), code
-}
-
-// TerminalMouseTracking calls the generated C ABI wrapper for zg_terminal_mouse_tracking.
-func TerminalMouseTracking(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_terminal_mouse_tracking((*C.zg_terminal)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// TerminalMouseTrackingSendsMotion calls the generated C ABI wrapper for zg_terminal_mouse_tracking_sends_motion.
-func TerminalMouseTrackingSendsMotion(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_terminal_mouse_tracking_sends_motion((*C.zg_terminal)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// TerminalMouseReportFormat calls the generated C ABI wrapper for zg_terminal_mouse_report_format.
-func TerminalMouseReportFormat(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_terminal_mouse_report_format((*C.zg_terminal)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// TerminalModeReport calls the generated C ABI wrapper for zg_terminal_mode_report.
-func TerminalModeReport(self unsafe.Pointer, mode uint16, ansi uint8) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_terminal_mode_report((*C.zg_terminal)(self), C.uint16_t(mode), C.uint8_t(ansi), &outResult))
-	return uint8(outResult), code
-}
-
-// TerminalCellAt calls the generated C ABI wrapper for zg_terminal_cell_at.
-func TerminalCellAt(self unsafe.Pointer, tag uint8, x uint16, y uint32) (RenderCellData, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.zg_render_cell
-	code := int32(C.zg_terminal_cell_at((*C.zg_terminal)(self), C.uint8_t(tag), C.uint16_t(x), C.uint32_t(y), &outResultHas, &outResult))
-	return RenderCellData{
-		Codepoint: uint32(outResult.codepoint),
-		Fg: RGBData{
-			R: uint8(outResult.fg.r),
-			G: uint8(outResult.fg.g),
-			B: uint8(outResult.fg.b),
-		},
-		Bg: RGBData{
-			R: uint8(outResult.bg.r),
-			G: uint8(outResult.bg.g),
-			B: uint8(outResult.bg.b),
-		},
-		Flags: uint32(outResult.flags),
-	}, outResultHas != 0, code
-}
-
-// TerminalHyperlinkAt calls the generated C ABI wrapper for zg_terminal_hyperlink_at.
-func TerminalHyperlinkAt(self unsafe.Pointer, tag uint8, x uint16, y uint32) (string, bool, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_terminal_hyperlink_at((*C.zg_terminal)(self), C.uint8_t(tag), C.uint16_t(x), C.uint32_t(y), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", false, code
+	addrOscParserHyperlinkID, err := resolveSymbol(handle, "zg_osc_parser_hyperlink_id")
+	if err != nil {
+		return fail("zg_osc_parser_hyperlink_id", err)
 	}
-	if outResultPtr == nil {
-		return "", false, code
+	addrOscParserNotificationTitle, err := resolveSymbol(handle, "zg_osc_parser_notification_title")
+	if err != nil {
+		return fail("zg_osc_parser_notification_title", err)
 	}
-	var result string
-	if outResultLen != 0 {
-		result = C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
+	addrOscParserNotificationBody, err := resolveSymbol(handle, "zg_osc_parser_notification_body")
+	if err != nil {
+		return fail("zg_osc_parser_notification_body", err)
 	}
-	C.zg_free_string(outResultPtr, outResultLen)
-	return result, true, code
-}
-
-// ScreenViewportIsBottom calls the generated C ABI wrapper for zg_screen_viewport_is_bottom.
-func ScreenViewportIsBottom(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_screen_viewport_is_bottom((*C.zg_screen)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// ScreenScrollClear calls the generated C ABI wrapper for zg_screen_scroll_clear.
-func ScreenScrollClear(self unsafe.Pointer) int32 {
-	code := int32(C.zg_screen_scroll_clear((*C.zg_screen)(self)))
-	return code
-}
-
-// ScreenClearSelection calls the generated C ABI wrapper for zg_screen_clear_selection.
-func ScreenClearSelection(self unsafe.Pointer) int32 {
-	code := int32(C.zg_screen_clear_selection((*C.zg_screen)(self)))
-	return code
-}
-
-// ScreenEndHyperlink calls the generated C ABI wrapper for zg_screen_end_hyperlink.
-func ScreenEndHyperlink(self unsafe.Pointer) int32 {
-	code := int32(C.zg_screen_end_hyperlink((*C.zg_screen)(self)))
-	return code
-}
-
-// ScreenSelectAll calls the generated C ABI wrapper for zg_screen_select_all.
-func ScreenSelectAll(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_screen_select_all((*C.zg_screen)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// ScreenHasSelection calls the generated C ABI wrapper for zg_screen_has_selection.
-func ScreenHasSelection(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_screen_has_selection((*C.zg_screen)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// ScreenSelectRange calls the generated C ABI wrapper for zg_screen_select_range.
-func ScreenSelectRange(self unsafe.Pointer, x1 uint16, y1 uint16, x2 uint16, y2 uint16, rectangle uint8) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_screen_select_range((*C.zg_screen)(self), C.uint16_t(x1), C.uint16_t(y1), C.uint16_t(x2), C.uint16_t(y2), C.uint8_t(rectangle), &outResult))
-	return uint8(outResult), code
-}
-
-// ScreenSelectWord calls the generated C ABI wrapper for zg_screen_select_word.
-func ScreenSelectWord(self unsafe.Pointer, x uint16, y uint16, boundaries []uint32) (uint8, int32) {
-	boundariesPtr := (*C.uint32_t)(zigoSlicePtr(boundaries))
-	var outResult C.uint8_t
-	code := int32(C.zg_screen_select_word((*C.zg_screen)(self), C.uint16_t(x), C.uint16_t(y), boundariesPtr, C.size_t(len(boundaries)), &outResult))
-	return uint8(outResult), code
-}
-
-// ScreenSelectLine calls the generated C ABI wrapper for zg_screen_select_line.
-func ScreenSelectLine(self unsafe.Pointer, x uint16, y uint16) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_screen_select_line((*C.zg_screen)(self), C.uint16_t(x), C.uint16_t(y), &outResult))
-	return uint8(outResult), code
-}
-
-// ScreenSelectOutput calls the generated C ABI wrapper for zg_screen_select_output.
-func ScreenSelectOutput(self unsafe.Pointer, x uint16, y uint16) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_screen_select_output((*C.zg_screen)(self), C.uint16_t(x), C.uint16_t(y), &outResult))
-	return uint8(outResult), code
-}
-
-// ScreenSelectionString calls the generated C ABI wrapper for zg_screen_selection_string.
-func ScreenSelectionString(self unsafe.Pointer) (string, bool, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_screen_selection_string((*C.zg_screen)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", false, code
+	addrOscParserClipboardData, err := resolveSymbol(handle, "zg_osc_parser_clipboard_data")
+	if err != nil {
+		return fail("zg_osc_parser_clipboard_data", err)
 	}
-	if outResultPtr == nil {
-		return "", false, code
+	addrOscParserClipboardSelection, err := resolveSymbol(handle, "zg_osc_parser_clipboard_selection")
+	if err != nil {
+		return fail("zg_osc_parser_clipboard_selection", err)
 	}
-	var result string
-	if outResultLen != 0 {
-		result = C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
+	addrOscParserMouseShape, err := resolveSymbol(handle, "zg_osc_parser_mouse_shape")
+	if err != nil {
+		return fail("zg_osc_parser_mouse_shape", err)
 	}
-	C.zg_free_string(outResultPtr, outResultLen)
-	return result, true, code
-}
-
-// ScreenSelection calls the generated C ABI wrapper for zg_screen_selection.
-func ScreenSelection(self unsafe.Pointer) (SelectionData, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.zg_selection
-	code := int32(C.zg_screen_selection((*C.zg_screen)(self), &outResultHas, &outResult))
-	return SelectionData{
-		StartX:    uint16(outResult.start_x),
-		StartY:    uint32(outResult.start_y),
-		EndX:      uint16(outResult.end_x),
-		EndY:      uint32(outResult.end_y),
-		Rectangle: uint8(outResult.rectangle),
-	}, outResultHas != 0, code
-}
-
-// ScreenSetSelection calls the generated C ABI wrapper for zg_screen_set_selection.
-func ScreenSetSelection(self unsafe.Pointer, sel SelectionData) (uint8, int32) {
-	var csel C.zg_selection
-	csel.start_x = C.uint16_t(sel.StartX)
-	csel.start_y = C.uint32_t(sel.StartY)
-	csel.end_x = C.uint16_t(sel.EndX)
-	csel.end_y = C.uint32_t(sel.EndY)
-	csel.rectangle = C.uint8_t(sel.Rectangle)
-	var outResult C.uint8_t
-	code := int32(C.zg_screen_set_selection((*C.zg_screen)(self), &csel, &outResult))
-	return uint8(outResult), code
-}
-
-// ScreenViewportTop calls the generated C ABI wrapper for zg_screen_viewport_top.
-func ScreenViewportTop(self unsafe.Pointer) (uint32, int32) {
-	var outResult C.uint32_t
-	code := int32(C.zg_screen_viewport_top((*C.zg_screen)(self), &outResult))
-	return uint32(outResult), code
-}
-
-// ScreenScrollbar calls the generated C ABI wrapper for zg_screen_scrollbar.
-func ScreenScrollbar(self unsafe.Pointer) (ScrollbarData, int32) {
-	var outResult C.zg_scrollbar
-	code := int32(C.zg_screen_scrollbar((*C.zg_screen)(self), &outResult))
-	return ScrollbarData{
-		Total:  uint64(outResult.total),
-		Offset: uint64(outResult.offset),
-		Len:    uint64(outResult.len),
-	}, code
-}
-
-// ScreenFormat calls the generated C ABI wrapper for zg_screen_format.
-func ScreenFormat(self unsafe.Pointer, opts FormatOptionsData, writerHandle uintptr) int32 {
-	var copts C.zg_format_options
-	copts.format = C.uint8_t(opts.Format)
-	copts.unwrap = C.uint8_t(opts.Unwrap)
-	copts.keep_trailing_whitespace = C.uint8_t(opts.KeepTrailingWhitespace)
-	copts.cursor = C.uint8_t(opts.Cursor)
-	copts.no_styles = C.uint8_t(opts.NoStyles)
-	copts.no_hyperlinks = C.uint8_t(opts.NoHyperlinks)
-	copts.resolve_palette = C.uint8_t(opts.ResolvePalette)
-	code := int32(C.zg_screen_format((*C.zg_screen)(self), &copts, C.size_t(writerHandle)))
-	return code
-}
-
-// ScreenFormatSelection calls the generated C ABI wrapper for zg_screen_format_selection.
-func ScreenFormatSelection(self unsafe.Pointer, opts FormatOptionsData, sel SelectionData, writerHandle uintptr) (uint8, int32) {
-	var copts C.zg_format_options
-	copts.format = C.uint8_t(opts.Format)
-	copts.unwrap = C.uint8_t(opts.Unwrap)
-	copts.keep_trailing_whitespace = C.uint8_t(opts.KeepTrailingWhitespace)
-	copts.cursor = C.uint8_t(opts.Cursor)
-	copts.no_styles = C.uint8_t(opts.NoStyles)
-	copts.no_hyperlinks = C.uint8_t(opts.NoHyperlinks)
-	copts.resolve_palette = C.uint8_t(opts.ResolvePalette)
-	var csel C.zg_selection
-	csel.start_x = C.uint16_t(sel.StartX)
-	csel.start_y = C.uint32_t(sel.StartY)
-	csel.end_x = C.uint16_t(sel.EndX)
-	csel.end_y = C.uint32_t(sel.EndY)
-	csel.rectangle = C.uint8_t(sel.Rectangle)
-	var outResult C.uint8_t
-	code := int32(C.zg_screen_format_selection((*C.zg_screen)(self), &copts, &csel, C.size_t(writerHandle), &outResult))
-	return uint8(outResult), code
-}
-
-// ScreenSelectionContains calls the generated C ABI wrapper for zg_screen_selection_contains.
-func ScreenSelectionContains(self unsafe.Pointer, sel SelectionData, x uint16, y uint32) (uint8, int32) {
-	var csel C.zg_selection
-	csel.start_x = C.uint16_t(sel.StartX)
-	csel.start_y = C.uint32_t(sel.StartY)
-	csel.end_x = C.uint16_t(sel.EndX)
-	csel.end_y = C.uint32_t(sel.EndY)
-	csel.rectangle = C.uint8_t(sel.Rectangle)
-	var outResult C.uint8_t
-	code := int32(C.zg_screen_selection_contains((*C.zg_screen)(self), &csel, C.uint16_t(x), C.uint32_t(y), &outResult))
-	return uint8(outResult), code
-}
-
-// ScreenSelectionAdjust calls the generated C ABI wrapper for zg_screen_selection_adjust.
-func ScreenSelectionAdjust(self unsafe.Pointer, sel SelectionData, adjustment uint8) (SelectionData, bool, int32) {
-	var csel C.zg_selection
-	csel.start_x = C.uint16_t(sel.StartX)
-	csel.start_y = C.uint32_t(sel.StartY)
-	csel.end_x = C.uint16_t(sel.EndX)
-	csel.end_y = C.uint32_t(sel.EndY)
-	csel.rectangle = C.uint8_t(sel.Rectangle)
-	var outResultHas C.uint8_t
-	var outResult C.zg_selection
-	code := int32(C.zg_screen_selection_adjust((*C.zg_screen)(self), &csel, C.uint8_t(adjustment), &outResultHas, &outResult))
-	return SelectionData{
-		StartX:    uint16(outResult.start_x),
-		StartY:    uint32(outResult.start_y),
-		EndX:      uint16(outResult.end_x),
-		EndY:      uint32(outResult.end_y),
-		Rectangle: uint8(outResult.rectangle),
-	}, outResultHas != 0, code
-}
-
-// ScreenStartHyperlink calls the generated C ABI wrapper for zg_screen_start_hyperlink.
-func ScreenStartHyperlink(self unsafe.Pointer, uri string, id string) int32 {
-	uriPtr := (*C.uint8_t)(zigoStringPtr(uri))
-	idPtr := (*C.uint8_t)(zigoStringPtr(id))
-	code := int32(C.zg_screen_start_hyperlink((*C.zg_screen)(self), uriPtr, C.size_t(len(uri)), idPtr, C.size_t(len(id))))
-	return code
-}
-
-// SearchSearchClose calls the generated C ABI wrapper for zg_search_search_close.
-func SearchSearchClose(self unsafe.Pointer) int32 {
-	code := int32(C.zg_search_search_close((*C.zg_search)(self)))
-	return code
-}
-
-// SearchNeedle calls the generated C ABI wrapper for zg_search_needle.
-func SearchNeedle(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_search_needle((*C.zg_search)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
+	addrOscParserSemanticPromptAction, err := resolveSymbol(handle, "zg_osc_parser_semantic_prompt_action")
+	if err != nil {
+		return fail("zg_osc_parser_semantic_prompt_action", err)
 	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// SearchStatus calls the generated C ABI wrapper for zg_search_status.
-func SearchStatus(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_search_status((*C.zg_search)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// SearchTick calls the generated C ABI wrapper for zg_search_tick.
-func SearchTick(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_search_tick((*C.zg_search)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// SearchFeed calls the generated C ABI wrapper for zg_search_feed.
-func SearchFeed(self unsafe.Pointer, activeDirty uint8) int32 {
-	code := int32(C.zg_search_feed((*C.zg_search)(self), C.uint8_t(activeDirty)))
-	return code
-}
-
-// SearchAll calls the generated C ABI wrapper for zg_search_all.
-func SearchAll(self unsafe.Pointer) int32 {
-	code := int32(C.zg_search_all((*C.zg_search)(self)))
-	return code
-}
-
-// SearchSelect calls the generated C ABI wrapper for zg_search_select.
-func SearchSelect(self unsafe.Pointer, to uint8, scroll uint8) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_search_select((*C.zg_search)(self), C.uint8_t(to), C.uint8_t(scroll), &outResult))
-	return uint8(outResult), code
-}
-
-// SearchMatchCount calls the generated C ABI wrapper for zg_search_match_count.
-func SearchMatchCount(self unsafe.Pointer) (uint, int32) {
-	var outResult C.size_t
-	code := int32(C.zg_search_match_count((*C.zg_search)(self), &outResult))
-	return uint(outResult), code
-}
-
-// SearchMatches calls the generated C ABI wrapper for zg_search_matches.
-func SearchMatches(self unsafe.Pointer, dst []SelectionData) (uint, int32) {
-	var dstValues []C.zg_selection
-	if len(dst) != 0 {
-		dstValues = make([]C.zg_selection, len(dst))
+	addrOscParserSemanticPromptOptions, err := resolveSymbol(handle, "zg_osc_parser_semantic_prompt_options")
+	if err != nil {
+		return fail("zg_osc_parser_semantic_prompt_options", err)
 	}
-	dstPtr := (*C.zg_selection)(zigoSlicePtr(dstValues))
-	var outResult C.size_t
-	code := int32(C.zg_search_matches((*C.zg_search)(self), dstPtr, C.size_t(len(dst)), &outResult))
-	for i := 0; i < int(outResult) && i < len(dst); i++ {
-		dst[i] = SelectionData{
-			StartX:    uint16(dstValues[i].start_x),
-			StartY:    uint32(dstValues[i].start_y),
-			EndX:      uint16(dstValues[i].end_x),
-			EndY:      uint32(dstValues[i].end_y),
-			Rectangle: uint8(dstValues[i].rectangle),
-		}
+	addrOscParserProgressState, err := resolveSymbol(handle, "zg_osc_parser_progress_state")
+	if err != nil {
+		return fail("zg_osc_parser_progress_state", err)
 	}
-	return uint(outResult), code
-}
-
-// SearchViewportMatches calls the generated C ABI wrapper for zg_search_viewport_matches.
-func SearchViewportMatches(self unsafe.Pointer, dst []SelectionData) (uint, int32) {
-	var dstValues []C.zg_selection
-	if len(dst) != 0 {
-		dstValues = make([]C.zg_selection, len(dst))
+	addrOscParserProgressValue, err := resolveSymbol(handle, "zg_osc_parser_progress_value")
+	if err != nil {
+		return fail("zg_osc_parser_progress_value", err)
 	}
-	dstPtr := (*C.zg_selection)(zigoSlicePtr(dstValues))
-	var outResult C.size_t
-	code := int32(C.zg_search_viewport_matches((*C.zg_search)(self), dstPtr, C.size_t(len(dst)), &outResult))
-	for i := 0; i < int(outResult) && i < len(dst); i++ {
-		dst[i] = SelectionData{
-			StartX:    uint16(dstValues[i].start_x),
-			StartY:    uint32(dstValues[i].start_y),
-			EndX:      uint16(dstValues[i].end_x),
-			EndY:      uint32(dstValues[i].end_y),
-			Rectangle: uint8(dstValues[i].rectangle),
-		}
+	addrRenderStateRows, err := resolveSymbol(handle, "zg_render_state_rows")
+	if err != nil {
+		return fail("zg_render_state_rows", err)
 	}
-	return uint(outResult), code
-}
-
-// SearchSelectedMatch calls the generated C ABI wrapper for zg_search_selected_match.
-func SearchSelectedMatch(self unsafe.Pointer) (SelectionData, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.zg_selection
-	code := int32(C.zg_search_selected_match((*C.zg_search)(self), &outResultHas, &outResult))
-	return SelectionData{
-		StartX:    uint16(outResult.start_x),
-		StartY:    uint32(outResult.start_y),
-		EndX:      uint16(outResult.end_x),
-		EndY:      uint32(outResult.end_y),
-		Rectangle: uint8(outResult.rectangle),
-	}, outResultHas != 0, code
-}
-
-// SearchSelectedIndex calls the generated C ABI wrapper for zg_search_selected_index.
-func SearchSelectedIndex(self unsafe.Pointer) (uint, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.size_t
-	code := int32(C.zg_search_selected_index((*C.zg_search)(self), &outResultHas, &outResult))
-	return uint(outResult), outResultHas != 0, code
-}
-
-// GridRefGridRefClose calls the generated C ABI wrapper for zg_grid_ref_grid_ref_close.
-func GridRefGridRefClose(self unsafe.Pointer) int32 {
-	code := int32(C.zg_grid_ref_grid_ref_close((*C.zg_grid_ref)(self)))
-	return code
-}
-
-// GridRefHasValue calls the generated C ABI wrapper for zg_grid_ref_has_value.
-func GridRefHasValue(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_grid_ref_has_value((*C.zg_grid_ref)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// GridRefPoint calls the generated C ABI wrapper for zg_grid_ref_point.
-func GridRefPoint(self unsafe.Pointer, tag uint8) (GridPointData, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.zg_grid_point
-	code := int32(C.zg_grid_ref_point((*C.zg_grid_ref)(self), C.uint8_t(tag), &outResultHas, &outResult))
-	return GridPointData{
-		X: uint16(outResult.x),
-		Y: uint32(outResult.y),
-	}, outResultHas != 0, code
-}
-
-// GridRefSet calls the generated C ABI wrapper for zg_grid_ref_set.
-func GridRefSet(self unsafe.Pointer, tag uint8, x uint16, y uint32) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_grid_ref_set((*C.zg_grid_ref)(self), C.uint8_t(tag), C.uint16_t(x), C.uint32_t(y), &outResult))
-	return uint8(outResult), code
-}
-
-// GridRefCell calls the generated C ABI wrapper for zg_grid_ref_cell.
-func GridRefCell(self unsafe.Pointer) (RenderCellData, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.zg_render_cell
-	code := int32(C.zg_grid_ref_cell((*C.zg_grid_ref)(self), &outResultHas, &outResult))
-	return RenderCellData{
-		Codepoint: uint32(outResult.codepoint),
-		Fg: RGBData{
-			R: uint8(outResult.fg.r),
-			G: uint8(outResult.fg.g),
-			B: uint8(outResult.fg.b),
-		},
-		Bg: RGBData{
-			R: uint8(outResult.bg.r),
-			G: uint8(outResult.bg.g),
-			B: uint8(outResult.bg.b),
-		},
-		Flags: uint32(outResult.flags),
-	}, outResultHas != 0, code
-}
-
-// GridRefGraphemes calls the generated C ABI wrapper for zg_grid_ref_graphemes.
-func GridRefGraphemes(self unsafe.Pointer, dst []uint32) (uint, int32) {
-	dstPtr := (*C.uint32_t)(zigoSlicePtr(dst))
-	var outResult C.size_t
-	code := int32(C.zg_grid_ref_graphemes((*C.zg_grid_ref)(self), dstPtr, C.size_t(len(dst)), &outResult))
-	return uint(outResult), code
-}
-
-// GridRefHyperlinkUri calls the generated C ABI wrapper for zg_grid_ref_hyperlink_uri.
-func GridRefHyperlinkUri(self unsafe.Pointer) (string, bool, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_grid_ref_hyperlink_uri((*C.zg_grid_ref)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", false, code
+	addrRenderStateCols, err := resolveSymbol(handle, "zg_render_state_cols")
+	if err != nil {
+		return fail("zg_render_state_cols", err)
 	}
-	if outResultPtr == nil {
-		return "", false, code
+	addrRenderStateCursorVisible, err := resolveSymbol(handle, "zg_render_state_cursor_visible")
+	if err != nil {
+		return fail("zg_render_state_cursor_visible", err)
 	}
-	var result string
-	if outResultLen != 0 {
-		result = C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
+	addrRenderStateCursorStyle, err := resolveSymbol(handle, "zg_render_state_cursor_style")
+	if err != nil {
+		return fail("zg_render_state_cursor_style", err)
 	}
-	C.zg_free_string(outResultPtr, outResultLen)
-	return result, true, code
-}
-
-// GestureGestureClose calls the generated C ABI wrapper for zg_gesture_gesture_close.
-func GestureGestureClose(self unsafe.Pointer) int32 {
-	code := int32(C.zg_gesture_gesture_close((*C.zg_gesture)(self)))
-	return code
-}
-
-// GestureSetBehaviors calls the generated C ABI wrapper for zg_gesture_set_behaviors.
-func GestureSetBehaviors(self unsafe.Pointer, singleClick uint8, doubleClick uint8, tripleClick uint8) int32 {
-	code := int32(C.zg_gesture_set_behaviors((*C.zg_gesture)(self), C.uint8_t(singleClick), C.uint8_t(doubleClick), C.uint8_t(tripleClick)))
-	return code
-}
-
-// GestureSetWordBoundaries calls the generated C ABI wrapper for zg_gesture_set_word_boundaries.
-func GestureSetWordBoundaries(self unsafe.Pointer, boundaries []uint32) int32 {
-	boundariesPtr := (*C.uint32_t)(zigoSlicePtr(boundaries))
-	code := int32(C.zg_gesture_set_word_boundaries((*C.zg_gesture)(self), boundariesPtr, C.size_t(len(boundaries))))
-	return code
-}
-
-// GestureSetGeometry calls the generated C ABI wrapper for zg_gesture_set_geometry.
-func GestureSetGeometry(self unsafe.Pointer, geometry GestureGeometryData) int32 {
-	var cgeometry C.zg_gesture_geometry
-	cgeometry.columns = C.uint32_t(geometry.Columns)
-	cgeometry.cell_width = C.uint32_t(geometry.CellWidth)
-	cgeometry.padding_left = C.uint32_t(geometry.PaddingLeft)
-	cgeometry.screen_height = C.uint32_t(geometry.ScreenHeight)
-	code := int32(C.zg_gesture_set_geometry((*C.zg_gesture)(self), &cgeometry))
-	return code
-}
-
-// GesturePress calls the generated C ABI wrapper for zg_gesture_press.
-func GesturePress(self unsafe.Pointer, p GesturePressEventData) (SelectionData, bool, int32) {
-	var cp C.zg_gesture_press_event
-	cp.x = C.uint16_t(p.X)
-	cp.y = C.uint16_t(p.Y)
-	cp.xpos = C.double(p.Xpos)
-	cp.ypos = C.double(p.Ypos)
-	cp.max_distance = C.double(p.MaxDistance)
-	cp.repeat_interval_ns = C.uint64_t(p.RepeatIntervalNs)
-	cp.time_ns = C.int64_t(p.TimeNs)
-	var outResultHas C.uint8_t
-	var outResult C.zg_selection
-	code := int32(C.zg_gesture_press((*C.zg_gesture)(self), &cp, &outResultHas, &outResult))
-	return SelectionData{
-		StartX:    uint16(outResult.start_x),
-		StartY:    uint32(outResult.start_y),
-		EndX:      uint16(outResult.end_x),
-		EndY:      uint32(outResult.end_y),
-		Rectangle: uint8(outResult.rectangle),
-	}, outResultHas != 0, code
-}
-
-// GestureDrag calls the generated C ABI wrapper for zg_gesture_drag.
-func GestureDrag(self unsafe.Pointer, d GestureDragEventData) (SelectionData, bool, int32) {
-	var cd C.zg_gesture_drag_event
-	cd.x = C.uint16_t(d.X)
-	cd.y = C.uint16_t(d.Y)
-	cd.xpos = C.double(d.Xpos)
-	cd.ypos = C.double(d.Ypos)
-	cd.rectangle = C.uint8_t(d.Rectangle)
-	var outResultHas C.uint8_t
-	var outResult C.zg_selection
-	code := int32(C.zg_gesture_drag((*C.zg_gesture)(self), &cd, &outResultHas, &outResult))
-	return SelectionData{
-		StartX:    uint16(outResult.start_x),
-		StartY:    uint32(outResult.start_y),
-		EndX:      uint16(outResult.end_x),
-		EndY:      uint32(outResult.end_y),
-		Rectangle: uint8(outResult.rectangle),
-	}, outResultHas != 0, code
-}
-
-// GestureAutoscroll calls the generated C ABI wrapper for zg_gesture_autoscroll.
-func GestureAutoscroll(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_gesture_autoscroll((*C.zg_gesture)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// GestureAutoscrollTick calls the generated C ABI wrapper for zg_gesture_autoscroll_tick.
-func GestureAutoscrollTick(self unsafe.Pointer, d GestureDragEventData) (SelectionData, bool, int32) {
-	var cd C.zg_gesture_drag_event
-	cd.x = C.uint16_t(d.X)
-	cd.y = C.uint16_t(d.Y)
-	cd.xpos = C.double(d.Xpos)
-	cd.ypos = C.double(d.Ypos)
-	cd.rectangle = C.uint8_t(d.Rectangle)
-	var outResultHas C.uint8_t
-	var outResult C.zg_selection
-	code := int32(C.zg_gesture_autoscroll_tick((*C.zg_gesture)(self), &cd, &outResultHas, &outResult))
-	return SelectionData{
-		StartX:    uint16(outResult.start_x),
-		StartY:    uint32(outResult.start_y),
-		EndX:      uint16(outResult.end_x),
-		EndY:      uint32(outResult.end_y),
-		Rectangle: uint8(outResult.rectangle),
-	}, outResultHas != 0, code
-}
-
-// GestureDeepPress calls the generated C ABI wrapper for zg_gesture_deep_press.
-func GestureDeepPress(self unsafe.Pointer) (SelectionData, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.zg_selection
-	code := int32(C.zg_gesture_deep_press((*C.zg_gesture)(self), &outResultHas, &outResult))
-	return SelectionData{
-		StartX:    uint16(outResult.start_x),
-		StartY:    uint32(outResult.start_y),
-		EndX:      uint16(outResult.end_x),
-		EndY:      uint32(outResult.end_y),
-		Rectangle: uint8(outResult.rectangle),
-	}, outResultHas != 0, code
-}
-
-// GestureRelease calls the generated C ABI wrapper for zg_gesture_release.
-func GestureRelease(self unsafe.Pointer, x uint16, y uint16) int32 {
-	code := int32(C.zg_gesture_release((*C.zg_gesture)(self), C.uint16_t(x), C.uint16_t(y)))
-	return code
-}
-
-// GestureReset calls the generated C ABI wrapper for zg_gesture_reset.
-func GestureReset(self unsafe.Pointer) int32 {
-	code := int32(C.zg_gesture_reset((*C.zg_gesture)(self)))
-	return code
-}
-
-// ColorNameDefault calls the generated C ABI wrapper for zg_color_name_default.
-func ColorNameDefault(self uint8) (RGBData, bool) {
-	var outResult C.zg_rgb
-	outResultHas := C.zg_color_name_default(C.uint8_t(self), &outResult) != 0
-	return RGBData{
-		R: uint8(outResult.r),
-		G: uint8(outResult.g),
-		B: uint8(outResult.b),
-	}, outResultHas
-}
-
-// StreamFreeStream calls the generated C ABI wrapper for zg_stream_free_stream.
-func StreamFreeStream(self unsafe.Pointer) int32 {
-	code := int32(C.zg_stream_free_stream((*C.zg_stream)(self)))
-	return code
-}
-
-// StreamAtGround calls the generated C ABI wrapper for zg_stream_at_ground.
-func StreamAtGround(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_stream_at_ground((*C.zg_stream)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// StreamFeedUntilGround calls the generated C ABI wrapper for zg_stream_feed_until_ground.
-func StreamFeedUntilGround(self unsafe.Pointer, data []uint8) (FeedBoundaryData, int32) {
-	dataPtr := (*C.uint8_t)(zigoSlicePtr(data))
-	var outResult C.zg_feed_boundary
-	code := int32(C.zg_stream_feed_until_ground((*C.zg_stream)(self), dataPtr, C.size_t(len(data)), &outResult))
-	return FeedBoundaryData{
-		Consumed: uint(outResult.consumed),
-		Reached:  uint8(outResult.reached),
-	}, code
-}
-
-// StreamFeedUntil calls the generated C ABI wrapper for zg_stream_feed_until.
-func StreamFeedUntil(self unsafe.Pointer, data []uint8, boundaries uint16) (FeedStopData, bool, int32) {
-	dataPtr := (*C.uint8_t)(zigoSlicePtr(data))
-	var outResultHas C.uint8_t
-	var outResult C.zg_feed_stop
-	code := int32(C.zg_stream_feed_until((*C.zg_stream)(self), dataPtr, C.size_t(len(data)), C.uint16_t(boundaries), &outResultHas, &outResult))
-	return FeedStopData{
-		Consumed:        uint(outResult.consumed),
-		Reached:         uint16(outResult.reached),
-		StartKind:       uint8(outResult.start_kind),
-		StartIntroducer: uint8(outResult.start_introducer),
-		StartByte:       uint8(outResult.start_byte),
-		EndKind:         uint8(outResult.end_kind),
-		EndReason:       uint8(outResult.end_reason),
-		EndByte:         uint8(outResult.end_byte),
-	}, outResultHas != 0, code
-}
-
-// StreamFeed calls the generated C ABI wrapper for zg_stream_feed.
-func StreamFeed(self unsafe.Pointer, bytes []uint8) int32 {
-	bytesPtr := (*C.uint8_t)(zigoSlicePtr(bytes))
-	code := int32(C.zg_stream_feed((*C.zg_stream)(self), bytesPtr, C.size_t(len(bytes))))
-	return code
-}
-
-// StreamNextEventValue calls the generated C ABI wrapper for zg_stream_next_event_value.
-func StreamNextEventValue(self unsafe.Pointer) ([]byte, bool, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_stream_next_event_value((*C.zg_stream)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return nil, false, code
+	addrRenderStateCursorBlinking, err := resolveSymbol(handle, "zg_render_state_cursor_blinking")
+	if err != nil {
+		return fail("zg_render_state_cursor_blinking", err)
 	}
-	if outResultPtr == nil {
-		return nil, false, code
+	addrRenderStateCursorPasswordInput, err := resolveSymbol(handle, "zg_render_state_cursor_password_input")
+	if err != nil {
+		return fail("zg_render_state_cursor_password_input", err)
 	}
-	var result []uint8
-	if outResultLen != 0 {
-		result = unsafe.Slice((*uint8)(unsafe.Pointer(outResultPtr)), int(outResultLen))
+	addrKittyImagesGeneration, err := resolveSymbol(handle, "zg_kitty_images_generation")
+	if err != nil {
+		return fail("zg_kitty_images_generation", err)
 	}
-	return result, true, code
-}
-
-// StreamResizeCells calls the generated C ABI wrapper for zg_stream_resize_cells.
-func StreamResizeCells(self unsafe.Pointer, width uint16, height uint16, cellWidth uint32, cellHeight uint32) int32 {
-	code := int32(C.zg_stream_resize_cells((*C.zg_stream)(self), C.uint16_t(width), C.uint16_t(height), C.uint32_t(cellWidth), C.uint32_t(cellHeight)))
-	return code
-}
-
-// StreamSetUnknownMaxBytes calls the generated C ABI wrapper for zg_stream_set_unknown_max_bytes.
-func StreamSetUnknownMaxBytes(self unsafe.Pointer, max uint) int32 {
-	code := int32(C.zg_stream_set_unknown_max_bytes((*C.zg_stream)(self), C.size_t(max)))
-	return code
-}
-
-// StreamSetVersionReport calls the generated C ABI wrapper for zg_stream_set_version_report.
-func StreamSetVersionReport(self unsafe.Pointer, name string, version string) int32 {
-	namePtr := (*C.uint8_t)(zigoStringPtr(name))
-	versionPtr := (*C.uint8_t)(zigoStringPtr(version))
-	code := int32(C.zg_stream_set_version_report((*C.zg_stream)(self), namePtr, C.size_t(len(name)), versionPtr, C.size_t(len(version))))
-	return code
-}
-
-// StreamSetEnquiryResponse calls the generated C ABI wrapper for zg_stream_set_enquiry_response.
-func StreamSetEnquiryResponse(self unsafe.Pointer, reply string) int32 {
-	replyPtr := (*C.uint8_t)(zigoStringPtr(reply))
-	code := int32(C.zg_stream_set_enquiry_response((*C.zg_stream)(self), replyPtr, C.size_t(len(reply))))
-	return code
-}
-
-// StreamColorSchemeChanged calls the generated C ABI wrapper for zg_stream_color_scheme_changed.
-func StreamColorSchemeChanged(self unsafe.Pointer, scheme uint8) int32 {
-	code := int32(C.zg_stream_color_scheme_changed((*C.zg_stream)(self), C.uint8_t(scheme)))
-	return code
-}
-
-// StreamClearColorScheme calls the generated C ABI wrapper for zg_stream_clear_color_scheme.
-func StreamClearColorScheme(self unsafe.Pointer) int32 {
-	code := int32(C.zg_stream_clear_color_scheme((*C.zg_stream)(self)))
-	return code
-}
-
-// StreamOnDrag calls the generated C ABI wrapper for zg_stream_on_drag.
-func StreamOnDrag(self unsafe.Pointer, callbackHandle uintptr) int32 {
-	code := int32(C.zg_stream_on_drag((*C.zg_stream)(self), C.size_t(callbackHandle)))
-	return code
-}
-
-// StreamDragActive calls the generated C ABI wrapper for zg_stream_drag_active.
-func StreamDragActive(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_stream_drag_active((*C.zg_stream)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// StreamDragRegisteredMimes calls the generated C ABI wrapper for zg_stream_drag_registered_mimes.
-func StreamDragRegisteredMimes(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_stream_drag_registered_mimes((*C.zg_stream)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
+	addrSysOnPngDecodeRequest, err := resolveSymbol(handle, "zg_sys_on_png_decode_request_purego_v2")
+	if err != nil {
+		return fail("zg_sys_on_png_decode_request_purego_v2", err)
 	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// StreamDragClientAccepted calls the generated C ABI wrapper for zg_stream_drag_client_accepted.
-func StreamDragClientAccepted(self unsafe.Pointer) (uint8, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.uint8_t
-	code := int32(C.zg_stream_drag_client_accepted((*C.zg_stream)(self), &outResultHas, &outResult))
-	return uint8(outResult), outResultHas != 0, code
-}
-
-// StreamDragMove calls the generated C ABI wrapper for zg_stream_drag_move.
-func StreamDragMove(self unsafe.Pointer, ev DragMoveData, mimes string) int32 {
-	var cev C.zg_drag_move
-	cev.cell_x = C.uint32_t(ev.CellX)
-	cev.cell_y = C.uint32_t(ev.CellY)
-	cev.pixel_x = C.int32_t(ev.PixelX)
-	cev.pixel_y = C.int32_t(ev.PixelY)
-	cev.operations = C.uint8_t(ev.Operations)
-	mimesPtr := (*C.uint8_t)(zigoStringPtr(mimes))
-	code := int32(C.zg_stream_drag_move((*C.zg_stream)(self), &cev, mimesPtr, C.size_t(len(mimes))))
-	return code
-}
-
-// StreamDragLeave calls the generated C ABI wrapper for zg_stream_drag_leave.
-func StreamDragLeave(self unsafe.Pointer) int32 {
-	code := int32(C.zg_stream_drag_leave((*C.zg_stream)(self)))
-	return code
-}
-
-// StreamDragAddItem calls the generated C ABI wrapper for zg_stream_drag_add_item.
-func StreamDragAddItem(self unsafe.Pointer, mime string, data []uint8) int32 {
-	mimePtr := (*C.uint8_t)(zigoStringPtr(mime))
-	dataPtr := (*C.uint8_t)(zigoSlicePtr(data))
-	code := int32(C.zg_stream_drag_add_item((*C.zg_stream)(self), mimePtr, C.size_t(len(mime)), dataPtr, C.size_t(len(data))))
-	return code
-}
-
-// StreamDragDrop calls the generated C ABI wrapper for zg_stream_drag_drop.
-func StreamDragDrop(self unsafe.Pointer, ev DragMoveData) int32 {
-	var cev C.zg_drag_move
-	cev.cell_x = C.uint32_t(ev.CellX)
-	cev.cell_y = C.uint32_t(ev.CellY)
-	cev.pixel_x = C.int32_t(ev.PixelX)
-	cev.pixel_y = C.int32_t(ev.PixelY)
-	cev.operations = C.uint8_t(ev.Operations)
-	code := int32(C.zg_stream_drag_drop((*C.zg_stream)(self), &cev))
-	return code
-}
-
-// StreamDragClearItems calls the generated C ABI wrapper for zg_stream_drag_clear_items.
-func StreamDragClearItems(self unsafe.Pointer) int32 {
-	code := int32(C.zg_stream_drag_clear_items((*C.zg_stream)(self)))
-	return code
-}
-
-// StreamOnClipboardWriteRequest calls the generated C ABI wrapper for zg_stream_on_clipboard_write_request.
-func StreamOnClipboardWriteRequest(self unsafe.Pointer, callbackHandle uintptr) int32 {
-	code := int32(C.zg_stream_on_clipboard_write_request((*C.zg_stream)(self), C.size_t(callbackHandle)))
-	return code
-}
-
-// StreamOnClipboardReadRequest calls the generated C ABI wrapper for zg_stream_on_clipboard_read_request.
-func StreamOnClipboardReadRequest(self unsafe.Pointer, callbackHandle uintptr) int32 {
-	code := int32(C.zg_stream_on_clipboard_read_request((*C.zg_stream)(self), C.size_t(callbackHandle)))
-	return code
-}
-
-// StreamWriteContinuation calls the generated C ABI wrapper for zg_stream_write_continuation.
-func StreamWriteContinuation(self unsafe.Pointer, writerHandle uintptr) int32 {
-	code := int32(C.zg_stream_write_continuation((*C.zg_stream)(self), C.size_t(writerHandle)))
-	return code
-}
-
-// StreamHasReplies calls the generated C ABI wrapper for zg_stream_has_replies.
-func StreamHasReplies(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_stream_has_replies((*C.zg_stream)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// StreamWriteSnapshot calls the generated C ABI wrapper for zg_stream_write_snapshot.
-func StreamWriteSnapshot(self unsafe.Pointer, writerHandle uintptr) int32 {
-	code := int32(C.zg_stream_write_snapshot((*C.zg_stream)(self), C.size_t(writerHandle)))
-	return code
-}
-
-// StreamWriteReplies calls the generated C ABI wrapper for zg_stream_write_replies.
-func StreamWriteReplies(self unsafe.Pointer, writerHandle uintptr) int32 {
-	code := int32(C.zg_stream_write_replies((*C.zg_stream)(self), C.size_t(writerHandle)))
-	return code
-}
-
-// ClipboardRequestLocation calls the generated C ABI wrapper for zg_clipboard_request_location.
-func ClipboardRequestLocation(self unsafe.Pointer) (int32, int32) {
-	var outResult C.int32_t
-	code := int32(C.zg_clipboard_request_location((*C.zg_clipboard_request)(self), &outResult))
-	return int32(outResult), code
-}
-
-// ClipboardRequestName calls the generated C ABI wrapper for zg_clipboard_request_name.
-func ClipboardRequestName(self unsafe.Pointer) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_clipboard_request_name((*C.zg_clipboard_request)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
+	addrSysReplyPngImage, err := resolveSymbol(handle, "zg_sys_reply_png_image")
+	if err != nil {
+		return fail("zg_sys_reply_png_image", err)
 	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// ClipboardRequestGranted calls the generated C ABI wrapper for zg_clipboard_request_granted.
-func ClipboardRequestGranted(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_clipboard_request_granted((*C.zg_clipboard_request)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// ClipboardRequestCanRemember calls the generated C ABI wrapper for zg_clipboard_request_can_remember.
-func ClipboardRequestCanRemember(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_clipboard_request_can_remember((*C.zg_clipboard_request)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// ClipboardRequestContentCount calls the generated C ABI wrapper for zg_clipboard_request_content_count.
-func ClipboardRequestContentCount(self unsafe.Pointer) (uint, int32) {
-	var outResult C.size_t
-	code := int32(C.zg_clipboard_request_content_count((*C.zg_clipboard_request)(self), &outResult))
-	return uint(outResult), code
-}
-
-// ClipboardRequestContentMime calls the generated C ABI wrapper for zg_clipboard_request_content_mime.
-func ClipboardRequestContentMime(self unsafe.Pointer, index uint) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_clipboard_request_content_mime((*C.zg_clipboard_request)(self), C.size_t(index), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
+	addrSysOnSecureRandomRequest, err := resolveSymbol(handle, "zg_sys_on_secure_random_request_purego_v2")
+	if err != nil {
+		return fail("zg_sys_on_secure_random_request_purego_v2", err)
 	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// ClipboardRequestMimeCount calls the generated C ABI wrapper for zg_clipboard_request_mime_count.
-func ClipboardRequestMimeCount(self unsafe.Pointer) (uint, int32) {
-	var outResult C.size_t
-	code := int32(C.zg_clipboard_request_mime_count((*C.zg_clipboard_request)(self), &outResult))
-	return uint(outResult), code
-}
-
-// ClipboardRequestMime calls the generated C ABI wrapper for zg_clipboard_request_mime.
-func ClipboardRequestMime(self unsafe.Pointer, index uint) (string, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_clipboard_request_mime((*C.zg_clipboard_request)(self), C.size_t(index), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", code
+	addrSysOnLog, err := resolveSymbol(handle, "zg_sys_on_log_purego_v2")
+	if err != nil {
+		return fail("zg_sys_on_log_purego_v2", err)
 	}
-	return C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen)), code
-}
-
-// ClipboardRequestAllow calls the generated C ABI wrapper for zg_clipboard_request_allow.
-func ClipboardRequestAllow(self unsafe.Pointer, remember uint8) int32 {
-	code := int32(C.zg_clipboard_request_allow((*C.zg_clipboard_request)(self), C.uint8_t(remember)))
-	return code
-}
-
-// ClipboardRequestReplyText calls the generated C ABI wrapper for zg_clipboard_request_reply_text.
-func ClipboardRequestReplyText(self unsafe.Pointer, text string, remember uint8) int32 {
-	textPtr := (*C.uint8_t)(zigoStringPtr(text))
-	code := int32(C.zg_clipboard_request_reply_text((*C.zg_clipboard_request)(self), textPtr, C.size_t(len(text)), C.uint8_t(remember)))
-	return code
-}
-
-// ClipboardRequestClearReplyContents calls the generated C ABI wrapper for zg_clipboard_request_clear_reply_contents.
-func ClipboardRequestClearReplyContents(self unsafe.Pointer) int32 {
-	code := int32(C.zg_clipboard_request_clear_reply_contents((*C.zg_clipboard_request)(self)))
-	return code
-}
-
-// ClipboardRequestReplyContents calls the generated C ABI wrapper for zg_clipboard_request_reply_contents.
-func ClipboardRequestReplyContents(self unsafe.Pointer, remember uint8) int32 {
-	code := int32(C.zg_clipboard_request_reply_contents((*C.zg_clipboard_request)(self), C.uint8_t(remember)))
-	return code
-}
-
-// ClipboardRequestDeny calls the generated C ABI wrapper for zg_clipboard_request_deny.
-func ClipboardRequestDeny(self unsafe.Pointer, reason uint8) int32 {
-	code := int32(C.zg_clipboard_request_deny((*C.zg_clipboard_request)(self), C.uint8_t(reason)))
-	return code
-}
-
-// ClipboardRequestAddContent calls the generated C ABI wrapper for zg_clipboard_request_add_content.
-func ClipboardRequestAddContent(self unsafe.Pointer, mimeType string, data []uint8) int32 {
-	mimeTypePtr := (*C.uint8_t)(zigoStringPtr(mimeType))
-	dataPtr := (*C.uint8_t)(zigoSlicePtr(data))
-	code := int32(C.zg_clipboard_request_add_content((*C.zg_clipboard_request)(self), mimeTypePtr, C.size_t(len(mimeType)), dataPtr, C.size_t(len(data))))
-	return code
-}
-
-// ClipboardRequestContentData calls the generated C ABI wrapper for zg_clipboard_request_content_data.
-func ClipboardRequestContentData(self unsafe.Pointer, index uint) ([]uint8, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_clipboard_request_content_data((*C.zg_clipboard_request)(self), C.size_t(index), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return nil, code
+	addrSysClear, err := resolveSymbol(handle, "zg_sys_clear")
+	if err != nil {
+		return fail("zg_sys_clear", err)
 	}
-	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
-}
-
-// NewOscParser calls the generated C ABI wrapper for zg_new_osc_parser.
-func NewOscParser() (unsafe.Pointer, int32) {
-	var outResult *C.zg_osc_parser
-	code := int32(C.zg_new_osc_parser(&outResult))
-	return unsafe.Pointer(outResult), code
-}
-
-// OscParserFreeOscParser calls the generated C ABI wrapper for zg_osc_parser_free_osc_parser.
-func OscParserFreeOscParser(self unsafe.Pointer) int32 {
-	code := int32(C.zg_osc_parser_free_osc_parser((*C.zg_osc_parser)(self)))
-	return code
-}
-
-// OscParserFeed calls the generated C ABI wrapper for zg_osc_parser_feed.
-func OscParserFeed(self unsafe.Pointer, bytes []uint8) int32 {
-	bytesPtr := (*C.uint8_t)(zigoSlicePtr(bytes))
-	code := int32(C.zg_osc_parser_feed((*C.zg_osc_parser)(self), bytesPtr, C.size_t(len(bytes))))
-	return code
-}
-
-// OscParserEnd calls the generated C ABI wrapper for zg_osc_parser_end.
-func OscParserEnd(self unsafe.Pointer, terminator uint8) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_osc_parser_end((*C.zg_osc_parser)(self), C.uint8_t(terminator), &outResult))
-	return uint8(outResult), code
-}
-
-// OscParserReset calls the generated C ABI wrapper for zg_osc_parser_reset.
-func OscParserReset(self unsafe.Pointer) int32 {
-	code := int32(C.zg_osc_parser_reset((*C.zg_osc_parser)(self)))
-	return code
-}
-
-// DecodeSnapshot calls the generated C ABI wrapper for zg_decode_snapshot.
-func DecodeSnapshot(readerHandle uintptr, readerData []byte, maxContinuationBytes uint) (unsafe.Pointer, int32) {
-	var readerDataPtr *C.uint8_t
-	if readerData != nil {
-		if len(readerData) != 0 {
-			readerDataPtr = (*C.uint8_t)(unsafe.Pointer(&readerData[0]))
-		} else {
-			readerDataPtr = (*C.uint8_t)(unsafe.Pointer(&zigoEmptyStreamData))
-		}
+	addrSysReplySecureRandom, err := resolveSymbol(handle, "zg_sys_reply_secure_random")
+	if err != nil {
+		return fail("zg_sys_reply_secure_random", err)
 	}
-	var outResult *C.zg_snapshot
-	code := int32(C.zg_decode_snapshot(readerDataPtr, C.size_t(len(readerData)), C.size_t(readerHandle), C.size_t(maxContinuationBytes), &outResult))
-	return unsafe.Pointer(outResult), code
-}
-
-// SnapshotDeinit calls the generated C ABI wrapper for zg_snapshot_deinit.
-func SnapshotDeinit(self unsafe.Pointer) int32 {
-	code := int32(C.zg_snapshot_deinit((*C.zg_snapshot)(self)))
-	return code
-}
-
-// SnapshotRestoreInto calls the generated C ABI wrapper for zg_snapshot_restore_into.
-func SnapshotRestoreInto(self unsafe.Pointer, term unsafe.Pointer) int32 {
-	code := int32(C.zg_snapshot_restore_into((*C.zg_snapshot)(self), (*C.zg_terminal)(term)))
-	return code
-}
-
-// SnapshotSnapshotTerminal calls the generated C ABI wrapper for zg_snapshot_snapshot_terminal.
-func SnapshotSnapshotTerminal(self unsafe.Pointer) (unsafe.Pointer, int32) {
-	var outResult *C.zg_terminal
-	code := int32(C.zg_snapshot_snapshot_terminal((*C.zg_snapshot)(self), &outResult))
-	return unsafe.Pointer(outResult), code
-}
-
-// SnapshotContinuation calls the generated C ABI wrapper for zg_snapshot_continuation.
-func SnapshotContinuation(self unsafe.Pointer) ([]uint8, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_snapshot_continuation((*C.zg_snapshot)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return nil, code
+	addrKeyCodepoint, err := resolveSymbol(handle, "zg_key_codepoint")
+	if err != nil {
+		return fail("zg_key_codepoint", err)
 	}
-	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
-}
-
-// NewSnapshotDecoder calls the generated C ABI wrapper for zg_new_snapshot_decoder.
-func NewSnapshotDecoder(data []uint8) (unsafe.Pointer, int32) {
-	dataPtr := (*C.uint8_t)(zigoSlicePtr(data))
-	var outResult *C.zg_snapshot_decoder
-	code := int32(C.zg_new_snapshot_decoder(dataPtr, C.size_t(len(data)), &outResult))
-	return unsafe.Pointer(outResult), code
-}
-
-// SnapshotDecoderFreeSnapshotDecoder calls the generated C ABI wrapper for zg_snapshot_decoder_free_snapshot_decoder.
-func SnapshotDecoderFreeSnapshotDecoder(self unsafe.Pointer) int32 {
-	code := int32(C.zg_snapshot_decoder_free_snapshot_decoder((*C.zg_snapshot_decoder)(self)))
-	return code
-}
-
-// SnapshotDecoderReady calls the generated C ABI wrapper for zg_snapshot_decoder_ready.
-func SnapshotDecoderReady(self unsafe.Pointer, maxContinuationBytes uint) int32 {
-	code := int32(C.zg_snapshot_decoder_ready((*C.zg_snapshot_decoder)(self), C.size_t(maxContinuationBytes)))
-	return code
-}
-
-// SnapshotDecoderRestoreInto calls the generated C ABI wrapper for zg_snapshot_decoder_restore_into.
-func SnapshotDecoderRestoreInto(self unsafe.Pointer, term unsafe.Pointer) int32 {
-	code := int32(C.zg_snapshot_decoder_restore_into((*C.zg_snapshot_decoder)(self), (*C.zg_terminal)(term)))
-	return code
-}
-
-// SnapshotDecoderContinuation calls the generated C ABI wrapper for zg_snapshot_decoder_continuation.
-func SnapshotDecoderContinuation(self unsafe.Pointer) ([]uint8, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_snapshot_decoder_continuation((*C.zg_snapshot_decoder)(self), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return nil, code
+	addrKeyPrintable, err := resolveSymbol(handle, "zg_key_printable")
+	if err != nil {
+		return fail("zg_key_printable", err)
 	}
-	return C.GoBytes(unsafe.Pointer(outResultPtr), C.int(outResultLen)), code
-}
-
-// SnapshotDecoderNext calls the generated C ABI wrapper for zg_snapshot_decoder_next.
-func SnapshotDecoderNext(self unsafe.Pointer, term unsafe.Pointer) (SnapshotProgressData, bool, int32) {
-	var outResultHas C.uint8_t
-	var outResult C.zg_snapshot_progress
-	code := int32(C.zg_snapshot_decoder_next((*C.zg_snapshot_decoder)(self), (*C.zg_terminal)(term), &outResultHas, &outResult))
-	return SnapshotProgressData{
-		Rows:      uint64(outResult.rows),
-		Bytes:     uint64(outResult.bytes),
-		Remaining: uint32(outResult.remaining),
-		ImageID:   uint32(outResult.image_id),
-		Frame:     uint32(outResult.frame),
-		Kind:      uint32(outResult.kind),
-	}, outResultHas != 0, code
-}
-
-// SnapshotDecoderSetKittyImageStorageLimit calls the generated C ABI wrapper for zg_snapshot_decoder_set_kitty_image_storage_limit.
-func SnapshotDecoderSetKittyImageStorageLimit(self unsafe.Pointer, bytes uint) int32 {
-	code := int32(C.zg_snapshot_decoder_set_kitty_image_storage_limit((*C.zg_snapshot_decoder)(self), C.size_t(bytes)))
-	return code
-}
-
-// SnapshotDecoderKittyCounts calls the generated C ABI wrapper for zg_snapshot_decoder_kitty_counts.
-func SnapshotDecoderKittyCounts(self unsafe.Pointer) (SnapshotKittyCountsData, int32) {
-	var outResult C.zg_snapshot_kitty_counts
-	code := int32(C.zg_snapshot_decoder_kitty_counts((*C.zg_snapshot_decoder)(self), &outResult))
-	return SnapshotKittyCountsData{
-		PrimaryPendingBytes:   uint64(outResult.primary_pending_bytes),
-		AlternatePendingBytes: uint64(outResult.alternate_pending_bytes),
-		PrimaryImages:         uint32(outResult.primary_images),
-		AlternateImages:       uint32(outResult.alternate_images),
-	}, code
-}
-
-// NewRenderState calls the generated C ABI wrapper for zg_new_render_state.
-func NewRenderState() (unsafe.Pointer, int32) {
-	var outResult *C.zg_render_state
-	code := int32(C.zg_new_render_state(&outResult))
-	return unsafe.Pointer(outResult), code
-}
-
-// RenderStateDeinit calls the generated C ABI wrapper for zg_render_state_deinit.
-func RenderStateDeinit(self unsafe.Pointer) int32 {
-	code := int32(C.zg_render_state_deinit((*C.zg_render_state)(self)))
-	return code
-}
-
-// RenderStateUpdate calls the generated C ABI wrapper for zg_render_state_update.
-func RenderStateUpdate(self unsafe.Pointer, t unsafe.Pointer) int32 {
-	code := int32(C.zg_render_state_update((*C.zg_render_state)(self), (*C.zg_terminal)(t)))
-	return code
-}
-
-// RenderStateClean calls the generated C ABI wrapper for zg_render_state_clean.
-func RenderStateClean(self unsafe.Pointer) int32 {
-	code := int32(C.zg_render_state_clean((*C.zg_render_state)(self)))
-	return code
-}
-
-// RenderStateCursor calls the generated C ABI wrapper for zg_render_state_cursor.
-func RenderStateCursor(self unsafe.Pointer) (uint64, int32) {
-	var outResult C.uint64_t
-	code := int32(C.zg_render_state_cursor((*C.zg_render_state)(self), &outResult))
-	return uint64(outResult), code
-}
-
-// RenderStateColors calls the generated C ABI wrapper for zg_render_state_colors.
-func RenderStateColors(self unsafe.Pointer) (RenderColorsData, int32) {
-	var outResult C.zg_render_colors
-	code := int32(C.zg_render_state_colors((*C.zg_render_state)(self), &outResult))
-	return RenderColorsData{
-		Background: RGBData{
-			R: uint8(outResult.background.r),
-			G: uint8(outResult.background.g),
-			B: uint8(outResult.background.b),
-		},
-		Foreground: RGBData{
-			R: uint8(outResult.foreground.r),
-			G: uint8(outResult.foreground.g),
-			B: uint8(outResult.foreground.b),
-		},
-		Cursor: RGBData{
-			R: uint8(outResult.cursor.r),
-			G: uint8(outResult.cursor.g),
-			B: uint8(outResult.cursor.b),
-		},
-		CursorHasValue: uint8(outResult.cursor_has_value),
-	}, code
-}
-
-// RenderStateCellCount calls the generated C ABI wrapper for zg_render_state_cell_count.
-func RenderStateCellCount(self unsafe.Pointer) (uint, int32) {
-	var outResult C.size_t
-	code := int32(C.zg_render_state_cell_count((*C.zg_render_state)(self), &outResult))
-	return uint(outResult), code
-}
-
-// RenderStateCells calls the generated C ABI wrapper for zg_render_state_cells.
-func RenderStateCells(self unsafe.Pointer, dst []RenderCellData) (uint, int32) {
-	var dstValues []C.zg_render_cell
-	if len(dst) != 0 {
-		dstValues = make([]C.zg_render_cell, len(dst))
+	addrKeyModifier, err := resolveSymbol(handle, "zg_key_modifier")
+	if err != nil {
+		return fail("zg_key_modifier", err)
 	}
-	dstPtr := (*C.zg_render_cell)(zigoSlicePtr(dstValues))
-	var outResult C.size_t
-	code := int32(C.zg_render_state_cells((*C.zg_render_state)(self), dstPtr, C.size_t(len(dst)), &outResult))
-	for i := 0; i < int(outResult) && i < len(dst); i++ {
-		dst[i] = RenderCellData{
-			Codepoint: uint32(dstValues[i].codepoint),
-			Fg: RGBData{
-				R: uint8(dstValues[i].fg.r),
-				G: uint8(dstValues[i].fg.g),
-				B: uint8(dstValues[i].fg.b),
-			},
-			Bg: RGBData{
-				R: uint8(dstValues[i].bg.r),
-				G: uint8(dstValues[i].bg.g),
-				B: uint8(dstValues[i].bg.b),
-			},
-			Flags: uint32(dstValues[i].flags),
-		}
+	addrKeyKeypad, err := resolveSymbol(handle, "zg_key_keypad")
+	if err != nil {
+		return fail("zg_key_keypad", err)
 	}
-	return uint(outResult), code
-}
-
-// RenderStateDirty calls the generated C ABI wrapper for zg_render_state_dirty.
-func RenderStateDirty(self unsafe.Pointer) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_render_state_dirty((*C.zg_render_state)(self), &outResult))
-	return uint8(outResult), code
-}
-
-// RenderStateDirtyRows calls the generated C ABI wrapper for zg_render_state_dirty_rows.
-func RenderStateDirtyRows(self unsafe.Pointer, dst []uint16) (uint, int32) {
-	dstPtr := (*C.uint16_t)(zigoSlicePtr(dst))
-	var outResult C.size_t
-	code := int32(C.zg_render_state_dirty_rows((*C.zg_render_state)(self), dstPtr, C.size_t(len(dst)), &outResult))
-	return uint(outResult), code
-}
-
-// RenderStateRowCells calls the generated C ABI wrapper for zg_render_state_row_cells.
-func RenderStateRowCells(self unsafe.Pointer, y uint16, dst []RenderCellData) (uint, int32) {
-	var dstValues []C.zg_render_cell
-	if len(dst) != 0 {
-		dstValues = make([]C.zg_render_cell, len(dst))
+	addrKeyLeftOrRightShift, err := resolveSymbol(handle, "zg_key_left_or_right_shift")
+	if err != nil {
+		return fail("zg_key_left_or_right_shift", err)
 	}
-	dstPtr := (*C.zg_render_cell)(zigoSlicePtr(dstValues))
-	var outResult C.size_t
-	code := int32(C.zg_render_state_row_cells((*C.zg_render_state)(self), C.uint16_t(y), dstPtr, C.size_t(len(dst)), &outResult))
-	for i := 0; i < int(outResult) && i < len(dst); i++ {
-		dst[i] = RenderCellData{
-			Codepoint: uint32(dstValues[i].codepoint),
-			Fg: RGBData{
-				R: uint8(dstValues[i].fg.r),
-				G: uint8(dstValues[i].fg.g),
-				B: uint8(dstValues[i].fg.b),
-			},
-			Bg: RGBData{
-				R: uint8(dstValues[i].bg.r),
-				G: uint8(dstValues[i].bg.g),
-				B: uint8(dstValues[i].bg.b),
-			},
-			Flags: uint32(dstValues[i].flags),
-		}
+	addrKeyLeftOrRightAlt, err := resolveSymbol(handle, "zg_key_left_or_right_alt")
+	if err != nil {
+		return fail("zg_key_left_or_right_alt", err)
 	}
-	return uint(outResult), code
-}
-
-// RenderStateGraphemes calls the generated C ABI wrapper for zg_render_state_graphemes.
-func RenderStateGraphemes(self unsafe.Pointer, x uint16, y uint16, dst []uint32) (uint, int32) {
-	dstPtr := (*C.uint32_t)(zigoSlicePtr(dst))
-	var outResult C.size_t
-	code := int32(C.zg_render_state_graphemes((*C.zg_render_state)(self), C.uint16_t(x), C.uint16_t(y), dstPtr, C.size_t(len(dst)), &outResult))
-	return uint(outResult), code
-}
-
-// RenderStateHyperlinkAt calls the generated C ABI wrapper for zg_render_state_hyperlink_at.
-func RenderStateHyperlinkAt(self unsafe.Pointer, x uint16, y uint16) (string, bool, int32) {
-	var outResultPtr *C.uint8_t
-	var outResultLen C.size_t
-	code := int32(C.zg_render_state_hyperlink_at((*C.zg_render_state)(self), C.uint16_t(x), C.uint16_t(y), &outResultPtr, &outResultLen))
-	if code != 0 {
-		return "", false, code
+	addrKeyCtrlOrSuper, err := resolveSymbol(handle, "zg_key_ctrl_or_super")
+	if err != nil {
+		return fail("zg_key_ctrl_or_super", err)
 	}
-	if outResultPtr == nil {
-		return "", false, code
+	addrKeyShouldBeRemappable, err := resolveSymbol(handle, "zg_key_should_be_remappable")
+	if err != nil {
+		return fail("zg_key_should_be_remappable", err)
 	}
-	var result string
-	if outResultLen != 0 {
-		result = C.GoStringN((*C.char)(unsafe.Pointer(outResultPtr)), C.int(outResultLen))
+	addrKeyW3C, err := resolveSymbol(handle, "zg_key_w3_c")
+	if err != nil {
+		return fail("zg_key_w3_c", err)
 	}
-	C.zg_free_string(outResultPtr, outResultLen)
-	return result, true, code
-}
-
-// RenderStateImagePlacementCount calls the generated C ABI wrapper for zg_render_state_image_placement_count.
-func RenderStateImagePlacementCount(self unsafe.Pointer) (uint, int32) {
-	var outResult C.size_t
-	code := int32(C.zg_render_state_image_placement_count((*C.zg_render_state)(self), &outResult))
-	return uint(outResult), code
-}
-
-// RenderStateImagePlacements calls the generated C ABI wrapper for zg_render_state_image_placements.
-func RenderStateImagePlacements(self unsafe.Pointer, dst []RenderImagePlacementData) (uint, int32) {
-	dstPtr := (*C.zg_render_image_placement)(zigoSlicePtr(dst))
-	var outResult C.size_t
-	code := int32(C.zg_render_state_image_placements((*C.zg_render_state)(self), dstPtr, C.size_t(len(dst)), &outResult))
-	return uint(outResult), code
-}
-
-// RenderStateImagePlacementsGeneration calls the generated C ABI wrapper for zg_render_state_image_placements_generation.
-func RenderStateImagePlacementsGeneration(self unsafe.Pointer) (uint64, int32) {
-	var outResult C.uint64_t
-	code := int32(C.zg_render_state_image_placements_generation((*C.zg_render_state)(self), &outResult))
-	return uint64(outResult), code
-}
-
-// NewKittyImages calls the generated C ABI wrapper for zg_new_kitty_images.
-func NewKittyImages() (unsafe.Pointer, int32) {
-	var outResult *C.zg_kitty_images
-	code := int32(C.zg_new_kitty_images(&outResult))
-	return unsafe.Pointer(outResult), code
-}
-
-// KittyImagesFreeKittyImages calls the generated C ABI wrapper for zg_kitty_images_free_kitty_images.
-func KittyImagesFreeKittyImages(self unsafe.Pointer) int32 {
-	code := int32(C.zg_kitty_images_free_kitty_images((*C.zg_kitty_images)(self)))
-	return code
-}
-
-// KittyImagesUpdate calls the generated C ABI wrapper for zg_kitty_images_update.
-func KittyImagesUpdate(self unsafe.Pointer, term unsafe.Pointer) int32 {
-	code := int32(C.zg_kitty_images_update((*C.zg_kitty_images)(self), (*C.zg_terminal)(term)))
-	return code
-}
-
-// KittyImagesPlacementCount calls the generated C ABI wrapper for zg_kitty_images_placement_count.
-func KittyImagesPlacementCount(self unsafe.Pointer) (uint, int32) {
-	var outResult C.size_t
-	code := int32(C.zg_kitty_images_placement_count((*C.zg_kitty_images)(self), &outResult))
-	return uint(outResult), code
-}
-
-// KittyImagesPlacements calls the generated C ABI wrapper for zg_kitty_images_placements.
-func KittyImagesPlacements(self unsafe.Pointer, dst []KittyPlacementData) (uint, int32) {
-	var dstValues []C.zg_kitty_placement
-	if len(dst) != 0 {
-		dstValues = make([]C.zg_kitty_placement, len(dst))
+	addrEncodeKey, err := resolveSymbol(handle, "zg_encode_key_purego_v2")
+	if err != nil {
+		return fail("zg_encode_key_purego_v2", err)
 	}
-	dstPtr := (*C.zg_kitty_placement)(zigoSlicePtr(dstValues))
-	var outResult C.size_t
-	code := int32(C.zg_kitty_images_placements((*C.zg_kitty_images)(self), dstPtr, C.size_t(len(dst)), &outResult))
-	for i := 0; i < int(outResult) && i < len(dst); i++ {
-		dst[i] = KittyPlacementData{
-			ImageID:      uint32(dstValues[i].image_id),
-			PlacementID:  uint32(dstValues[i].placement_id),
-			ViewportCol:  int32(dstValues[i].viewport_col),
-			ViewportRow:  int32(dstValues[i].viewport_row),
-			XOffset:      uint32(dstValues[i].x_offset),
-			YOffset:      uint32(dstValues[i].y_offset),
-			PixelWidth:   uint32(dstValues[i].pixel_width),
-			PixelHeight:  uint32(dstValues[i].pixel_height),
-			GridCols:     uint32(dstValues[i].grid_cols),
-			GridRows:     uint32(dstValues[i].grid_rows),
-			SourceX:      uint32(dstValues[i].source_x),
-			SourceY:      uint32(dstValues[i].source_y),
-			SourceWidth:  uint32(dstValues[i].source_width),
-			SourceHeight: uint32(dstValues[i].source_height),
-			Z:            int32(dstValues[i].z),
-			Layer:        uint8(dstValues[i].layer),
-			Virtual:      uint8(dstValues[i].virtual),
-			Pad:          uint16(dstValues[i]._pad),
-		}
+	addrEncodeMouse, err := resolveSymbol(handle, "zg_encode_mouse_purego_v2")
+	if err != nil {
+		return fail("zg_encode_mouse_purego_v2", err)
 	}
-	return uint(outResult), code
+	addrKeyKeyFromAscii, err := resolveSymbol(handle, "zg_key_from_ascii")
+	if err != nil {
+		return fail("zg_key_from_ascii", err)
+	}
+	addrKeyKeyFromW3C, err := resolveSymbol(handle, "zg_key_from_w3c")
+	if err != nil {
+		return fail("zg_key_from_w3c", err)
+	}
+	addrInputEncodeFocus, err := resolveSymbol(handle, "zg_input_encode_focus_purego_v2")
+	if err != nil {
+		return fail("zg_input_encode_focus_purego_v2", err)
+	}
+	addrInputIsSafePaste, err := resolveSymbol(handle, "zg_input_is_safe_paste")
+	if err != nil {
+		return fail("zg_input_is_safe_paste", err)
+	}
+	addrEncodePaste, err := resolveSymbol(handle, "zg_encode_paste_purego_v2")
+	if err != nil {
+		return fail("zg_encode_paste_purego_v2", err)
+	}
+	addrTerminalNewTerminal, err := resolveSymbol(handle, "zg_terminal_new_terminal")
+	if err != nil {
+		return fail("zg_terminal_new_terminal", err)
+	}
+	addrTerminalDeinit, err := resolveSymbol(handle, "zg_terminal_deinit")
+	if err != nil {
+		return fail("zg_terminal_deinit", err)
+	}
+	addrTerminalNewStream, err := resolveSymbol(handle, "zg_terminal_new_stream")
+	if err != nil {
+		return fail("zg_terminal_new_stream", err)
+	}
+	addrTerminalNewSearch, err := resolveSymbol(handle, "zg_terminal_new_search")
+	if err != nil {
+		return fail("zg_terminal_new_search", err)
+	}
+	addrTerminalNewGesture, err := resolveSymbol(handle, "zg_terminal_new_gesture")
+	if err != nil {
+		return fail("zg_terminal_new_gesture", err)
+	}
+	addrTerminalNewGridRef, err := resolveSymbol(handle, "zg_terminal_new_grid_ref")
+	if err != nil {
+		return fail("zg_terminal_new_grid_ref", err)
+	}
+	addrTerminalPrintString, err := resolveSymbol(handle, "zg_terminal_print_string")
+	if err != nil {
+		return fail("zg_terminal_print_string", err)
+	}
+	addrTerminalPlainString, err := resolveSymbol(handle, "zg_terminal_plain_string")
+	if err != nil {
+		return fail("zg_terminal_plain_string", err)
+	}
+	addrTerminalPlainStringUnwrapped, err := resolveSymbol(handle, "zg_terminal_plain_string_unwrapped")
+	if err != nil {
+		return fail("zg_terminal_plain_string_unwrapped", err)
+	}
+	addrTerminalPrint, err := resolveSymbol(handle, "zg_terminal_print")
+	if err != nil {
+		return fail("zg_terminal_print", err)
+	}
+	addrTerminalPrintRepeat, err := resolveSymbol(handle, "zg_terminal_print_repeat")
+	if err != nil {
+		return fail("zg_terminal_print_repeat", err)
+	}
+	addrTerminalPrintSlice, err := resolveSymbol(handle, "zg_terminal_print_slice")
+	if err != nil {
+		return fail("zg_terminal_print_slice", err)
+	}
+	addrTerminalSetCursorStyle, err := resolveSymbol(handle, "zg_terminal_set_cursor_style")
+	if err != nil {
+		return fail("zg_terminal_set_cursor_style", err)
+	}
+	addrTerminalSetCursorPos, err := resolveSymbol(handle, "zg_terminal_set_cursor_pos")
+	if err != nil {
+		return fail("zg_terminal_set_cursor_pos", err)
+	}
+	addrTerminalCarriageReturn, err := resolveSymbol(handle, "zg_terminal_carriage_return")
+	if err != nil {
+		return fail("zg_terminal_carriage_return", err)
+	}
+	addrTerminalLinefeed, err := resolveSymbol(handle, "zg_terminal_linefeed")
+	if err != nil {
+		return fail("zg_terminal_linefeed", err)
+	}
+	addrTerminalBackspace, err := resolveSymbol(handle, "zg_terminal_backspace")
+	if err != nil {
+		return fail("zg_terminal_backspace", err)
+	}
+	addrTerminalCursorIsAtPrompt, err := resolveSymbol(handle, "zg_terminal_cursor_is_at_prompt")
+	if err != nil {
+		return fail("zg_terminal_cursor_is_at_prompt", err)
+	}
+	addrTerminalFullReset, err := resolveSymbol(handle, "zg_terminal_full_reset")
+	if err != nil {
+		return fail("zg_terminal_full_reset", err)
+	}
+	addrTerminalSoftReset, err := resolveSymbol(handle, "zg_terminal_soft_reset")
+	if err != nil {
+		return fail("zg_terminal_soft_reset", err)
+	}
+	addrTerminalCursorUp, err := resolveSymbol(handle, "zg_terminal_cursor_up")
+	if err != nil {
+		return fail("zg_terminal_cursor_up", err)
+	}
+	addrTerminalCursorDown, err := resolveSymbol(handle, "zg_terminal_cursor_down")
+	if err != nil {
+		return fail("zg_terminal_cursor_down", err)
+	}
+	addrTerminalCursorLeft, err := resolveSymbol(handle, "zg_terminal_cursor_left")
+	if err != nil {
+		return fail("zg_terminal_cursor_left", err)
+	}
+	addrTerminalCursorRight, err := resolveSymbol(handle, "zg_terminal_cursor_right")
+	if err != nil {
+		return fail("zg_terminal_cursor_right", err)
+	}
+	addrTerminalSetCursorRow, err := resolveSymbol(handle, "zg_terminal_set_cursor_row")
+	if err != nil {
+		return fail("zg_terminal_set_cursor_row", err)
+	}
+	addrTerminalSetCursorCol, err := resolveSymbol(handle, "zg_terminal_set_cursor_col")
+	if err != nil {
+		return fail("zg_terminal_set_cursor_col", err)
+	}
+	addrTerminalCursorRowRelative, err := resolveSymbol(handle, "zg_terminal_cursor_row_relative")
+	if err != nil {
+		return fail("zg_terminal_cursor_row_relative", err)
+	}
+	addrTerminalCursorColRelative, err := resolveSymbol(handle, "zg_terminal_cursor_col_relative")
+	if err != nil {
+		return fail("zg_terminal_cursor_col_relative", err)
+	}
+	addrTerminalSaveCursor, err := resolveSymbol(handle, "zg_terminal_save_cursor")
+	if err != nil {
+		return fail("zg_terminal_save_cursor", err)
+	}
+	addrTerminalRestoreCursor, err := resolveSymbol(handle, "zg_terminal_restore_cursor")
+	if err != nil {
+		return fail("zg_terminal_restore_cursor", err)
+	}
+	addrTerminalIndex, err := resolveSymbol(handle, "zg_terminal_index")
+	if err != nil {
+		return fail("zg_terminal_index", err)
+	}
+	addrTerminalReverseIndex, err := resolveSymbol(handle, "zg_terminal_reverse_index")
+	if err != nil {
+		return fail("zg_terminal_reverse_index", err)
+	}
+	addrTerminalSwitchScreen, err := resolveSymbol(handle, "zg_terminal_switch_screen")
+	if err != nil {
+		return fail("zg_terminal_switch_screen", err)
+	}
+	addrTerminalSwitchScreenMode, err := resolveSymbol(handle, "zg_terminal_switch_screen_mode")
+	if err != nil {
+		return fail("zg_terminal_switch_screen_mode", err)
+	}
+	addrTerminalActiveScreen, err := resolveSymbol(handle, "zg_terminal_active_screen")
+	if err != nil {
+		return fail("zg_terminal_active_screen", err)
+	}
+	addrTerminalScreen, err := resolveSymbol(handle, "zg_terminal_screen")
+	if err != nil {
+		return fail("zg_terminal_screen", err)
+	}
+	addrTerminalPrintAttributesInto, err := resolveSymbol(handle, "zg_terminal_print_attributes_into")
+	if err != nil {
+		return fail("zg_terminal_print_attributes_into", err)
+	}
+	addrTerminalHistoryString, err := resolveSymbol(handle, "zg_terminal_history_string")
+	if err != nil {
+		return fail("zg_terminal_history_string", err)
+	}
+	addrTerminalHorizontalTab, err := resolveSymbol(handle, "zg_terminal_horizontal_tab")
+	if err != nil {
+		return fail("zg_terminal_horizontal_tab", err)
+	}
+	addrTerminalHorizontalTabBack, err := resolveSymbol(handle, "zg_terminal_horizontal_tab_back")
+	if err != nil {
+		return fail("zg_terminal_horizontal_tab_back", err)
+	}
+	addrTerminalTabSet, err := resolveSymbol(handle, "zg_terminal_tab_set")
+	if err != nil {
+		return fail("zg_terminal_tab_set", err)
+	}
+	addrTerminalTabReset, err := resolveSymbol(handle, "zg_terminal_tab_reset")
+	if err != nil {
+		return fail("zg_terminal_tab_reset", err)
+	}
+	addrTerminalTabClear, err := resolveSymbol(handle, "zg_terminal_tab_clear")
+	if err != nil {
+		return fail("zg_terminal_tab_clear", err)
+	}
+	addrTerminalSetTabstop, err := resolveSymbol(handle, "zg_terminal_set_tabstop")
+	if err != nil {
+		return fail("zg_terminal_set_tabstop", err)
+	}
+	addrTerminalUnsetTabstop, err := resolveSymbol(handle, "zg_terminal_unset_tabstop")
+	if err != nil {
+		return fail("zg_terminal_unset_tabstop", err)
+	}
+	addrTerminalResetTabstops, err := resolveSymbol(handle, "zg_terminal_reset_tabstops")
+	if err != nil {
+		return fail("zg_terminal_reset_tabstops", err)
+	}
+	addrTerminalScrollUp, err := resolveSymbol(handle, "zg_terminal_scroll_up")
+	if err != nil {
+		return fail("zg_terminal_scroll_up", err)
+	}
+	addrTerminalScrollDown, err := resolveSymbol(handle, "zg_terminal_scroll_down")
+	if err != nil {
+		return fail("zg_terminal_scroll_down", err)
+	}
+	addrTerminalSetTopAndBottomMargin, err := resolveSymbol(handle, "zg_terminal_set_top_and_bottom_margin")
+	if err != nil {
+		return fail("zg_terminal_set_top_and_bottom_margin", err)
+	}
+	addrTerminalSetLeftAndRightMargin, err := resolveSymbol(handle, "zg_terminal_set_left_and_right_margin")
+	if err != nil {
+		return fail("zg_terminal_set_left_and_right_margin", err)
+	}
+	addrTerminalScrollViewport, err := resolveSymbol(handle, "zg_terminal_scroll_viewport")
+	if err != nil {
+		return fail("zg_terminal_scroll_viewport", err)
+	}
+	addrTerminalSetScrollbackMaxBytes, err := resolveSymbol(handle, "zg_terminal_set_scrollback_max_bytes")
+	if err != nil {
+		return fail("zg_terminal_set_scrollback_max_bytes", err)
+	}
+	addrTerminalClearScrollbackMaxBytes, err := resolveSymbol(handle, "zg_terminal_clear_scrollback_max_bytes")
+	if err != nil {
+		return fail("zg_terminal_clear_scrollback_max_bytes", err)
+	}
+	addrTerminalSetScrollbackMaxLines, err := resolveSymbol(handle, "zg_terminal_set_scrollback_max_lines")
+	if err != nil {
+		return fail("zg_terminal_set_scrollback_max_lines", err)
+	}
+	addrTerminalClearScrollbackMaxLines, err := resolveSymbol(handle, "zg_terminal_clear_scrollback_max_lines")
+	if err != nil {
+		return fail("zg_terminal_clear_scrollback_max_lines", err)
+	}
+	addrTerminalInsertLines, err := resolveSymbol(handle, "zg_terminal_insert_lines")
+	if err != nil {
+		return fail("zg_terminal_insert_lines", err)
+	}
+	addrTerminalDeleteLines, err := resolveSymbol(handle, "zg_terminal_delete_lines")
+	if err != nil {
+		return fail("zg_terminal_delete_lines", err)
+	}
+	addrTerminalInsertBlanks, err := resolveSymbol(handle, "zg_terminal_insert_blanks")
+	if err != nil {
+		return fail("zg_terminal_insert_blanks", err)
+	}
+	addrTerminalDeleteChars, err := resolveSymbol(handle, "zg_terminal_delete_chars")
+	if err != nil {
+		return fail("zg_terminal_delete_chars", err)
+	}
+	addrTerminalEraseChars, err := resolveSymbol(handle, "zg_terminal_erase_chars")
+	if err != nil {
+		return fail("zg_terminal_erase_chars", err)
+	}
+	addrTerminalEraseLine, err := resolveSymbol(handle, "zg_terminal_erase_line")
+	if err != nil {
+		return fail("zg_terminal_erase_line", err)
+	}
+	addrTerminalEraseDisplay, err := resolveSymbol(handle, "zg_terminal_erase_display")
+	if err != nil {
+		return fail("zg_terminal_erase_display", err)
+	}
+	addrTerminalDecaln, err := resolveSymbol(handle, "zg_terminal_decaln")
+	if err != nil {
+		return fail("zg_terminal_decaln", err)
+	}
+	addrTerminalResize, err := resolveSymbol(handle, "zg_terminal_resize")
+	if err != nil {
+		return fail("zg_terminal_resize", err)
+	}
+	addrTerminalResizeCells, err := resolveSymbol(handle, "zg_terminal_resize_cells")
+	if err != nil {
+		return fail("zg_terminal_resize_cells", err)
+	}
+	addrTerminalFormat, err := resolveSymbol(handle, "zg_terminal_format_purego_v2")
+	if err != nil {
+		return fail("zg_terminal_format_purego_v2", err)
+	}
+	addrTerminalFormatSelection, err := resolveSymbol(handle, "zg_terminal_format_selection_purego_v2")
+	if err != nil {
+		return fail("zg_terminal_format_selection_purego_v2", err)
+	}
+	addrTerminalSetPwd, err := resolveSymbol(handle, "zg_terminal_set_pwd")
+	if err != nil {
+		return fail("zg_terminal_set_pwd", err)
+	}
+	addrTerminalGetPwd, err := resolveSymbol(handle, "zg_terminal_get_pwd")
+	if err != nil {
+		return fail("zg_terminal_get_pwd", err)
+	}
+	addrTerminalGetTitle, err := resolveSymbol(handle, "zg_terminal_get_title")
+	if err != nil {
+		return fail("zg_terminal_get_title", err)
+	}
+	addrTerminalSetTitle, err := resolveSymbol(handle, "zg_terminal_set_title")
+	if err != nil {
+		return fail("zg_terminal_set_title", err)
+	}
+	addrTerminalBackgroundColor, err := resolveSymbol(handle, "zg_terminal_background_color")
+	if err != nil {
+		return fail("zg_terminal_background_color", err)
+	}
+	addrTerminalForegroundColor, err := resolveSymbol(handle, "zg_terminal_foreground_color")
+	if err != nil {
+		return fail("zg_terminal_foreground_color", err)
+	}
+	addrTerminalCursorColor, err := resolveSymbol(handle, "zg_terminal_cursor_color")
+	if err != nil {
+		return fail("zg_terminal_cursor_color", err)
+	}
+	addrTerminalPaletteColors, err := resolveSymbol(handle, "zg_terminal_palette_colors")
+	if err != nil {
+		return fail("zg_terminal_palette_colors", err)
+	}
+	addrTerminalModeEnabled, err := resolveSymbol(handle, "zg_terminal_mode_enabled")
+	if err != nil {
+		return fail("zg_terminal_mode_enabled", err)
+	}
+	addrTerminalSetMode, err := resolveSymbol(handle, "zg_terminal_set_mode")
+	if err != nil {
+		return fail("zg_terminal_set_mode", err)
+	}
+	addrTerminalSetAttribute, err := resolveSymbol(handle, "zg_terminal_set_attribute")
+	if err != nil {
+		return fail("zg_terminal_set_attribute", err)
+	}
+	addrTerminalSetProtectedMode, err := resolveSymbol(handle, "zg_terminal_set_protected_mode")
+	if err != nil {
+		return fail("zg_terminal_set_protected_mode", err)
+	}
+	addrTerminalConfigureCharset, err := resolveSymbol(handle, "zg_terminal_configure_charset")
+	if err != nil {
+		return fail("zg_terminal_configure_charset", err)
+	}
+	addrTerminalInvokeCharset, err := resolveSymbol(handle, "zg_terminal_invoke_charset")
+	if err != nil {
+		return fail("zg_terminal_invoke_charset", err)
+	}
+	addrTerminalDeccolm, err := resolveSymbol(handle, "zg_terminal_deccolm")
+	if err != nil {
+		return fail("zg_terminal_deccolm", err)
+	}
+	addrTerminalCompress, err := resolveSymbol(handle, "zg_terminal_compress")
+	if err != nil {
+		return fail("zg_terminal_compress", err)
+	}
+	addrTerminalCompressionActivity, err := resolveSymbol(handle, "zg_terminal_compression_activity")
+	if err != nil {
+		return fail("zg_terminal_compression_activity", err)
+	}
+	addrTerminalSetDefaultBackgroundColor, err := resolveSymbol(handle, "zg_terminal_set_default_background_color")
+	if err != nil {
+		return fail("zg_terminal_set_default_background_color", err)
+	}
+	addrTerminalSetDefaultForegroundColor, err := resolveSymbol(handle, "zg_terminal_set_default_foreground_color")
+	if err != nil {
+		return fail("zg_terminal_set_default_foreground_color", err)
+	}
+	addrTerminalSetDefaultCursorColor, err := resolveSymbol(handle, "zg_terminal_set_default_cursor_color")
+	if err != nil {
+		return fail("zg_terminal_set_default_cursor_color", err)
+	}
+	addrTerminalSetDefaultCursorStyle, err := resolveSymbol(handle, "zg_terminal_set_default_cursor_style")
+	if err != nil {
+		return fail("zg_terminal_set_default_cursor_style", err)
+	}
+	addrTerminalSetDefaultCursorBlink, err := resolveSymbol(handle, "zg_terminal_set_default_cursor_blink")
+	if err != nil {
+		return fail("zg_terminal_set_default_cursor_blink", err)
+	}
+	addrTerminalResetDefaultCursorBlink, err := resolveSymbol(handle, "zg_terminal_reset_default_cursor_blink")
+	if err != nil {
+		return fail("zg_terminal_reset_default_cursor_blink", err)
+	}
+	addrTerminalPaletteColor, err := resolveSymbol(handle, "zg_terminal_palette_color")
+	if err != nil {
+		return fail("zg_terminal_palette_color", err)
+	}
+	addrTerminalSetPaletteColor, err := resolveSymbol(handle, "zg_terminal_set_palette_color")
+	if err != nil {
+		return fail("zg_terminal_set_palette_color", err)
+	}
+	addrTerminalResetPaletteColor, err := resolveSymbol(handle, "zg_terminal_reset_palette_color")
+	if err != nil {
+		return fail("zg_terminal_reset_palette_color", err)
+	}
+	addrTerminalResetPalette, err := resolveSymbol(handle, "zg_terminal_reset_palette")
+	if err != nil {
+		return fail("zg_terminal_reset_palette", err)
+	}
+	addrTerminalSetDefaultPaletteColor, err := resolveSymbol(handle, "zg_terminal_set_default_palette_color")
+	if err != nil {
+		return fail("zg_terminal_set_default_palette_color", err)
+	}
+	addrTerminalResetDefaultPalette, err := resolveSymbol(handle, "zg_terminal_reset_default_palette")
+	if err != nil {
+		return fail("zg_terminal_reset_default_palette", err)
+	}
+	addrTerminalSetDefaultMode, err := resolveSymbol(handle, "zg_terminal_set_default_mode")
+	if err != nil {
+		return fail("zg_terminal_set_default_mode", err)
+	}
+	addrTerminalResetModes, err := resolveSymbol(handle, "zg_terminal_reset_modes")
+	if err != nil {
+		return fail("zg_terminal_reset_modes", err)
+	}
+	addrTerminalSaveMode, err := resolveSymbol(handle, "zg_terminal_save_mode")
+	if err != nil {
+		return fail("zg_terminal_save_mode", err)
+	}
+	addrTerminalRestoreMode, err := resolveSymbol(handle, "zg_terminal_restore_mode")
+	if err != nil {
+		return fail("zg_terminal_restore_mode", err)
+	}
+	addrTerminalSetKittyGraphicsSizeLimit, err := resolveSymbol(handle, "zg_terminal_set_kitty_graphics_size_limit")
+	if err != nil {
+		return fail("zg_terminal_set_kitty_graphics_size_limit", err)
+	}
+	addrTerminalSetKittyGraphicsLoadingLimits, err := resolveSymbol(handle, "zg_terminal_set_kitty_graphics_loading_limits")
+	if err != nil {
+		return fail("zg_terminal_set_kitty_graphics_loading_limits", err)
+	}
+	addrTerminalKittyImage, err := resolveSymbol(handle, "zg_terminal_kitty_image")
+	if err != nil {
+		return fail("zg_terminal_kitty_image", err)
+	}
+	addrTerminalKittyImageData, err := resolveSymbol(handle, "zg_terminal_kitty_image_data")
+	if err != nil {
+		return fail("zg_terminal_kitty_image_data", err)
+	}
+	addrTerminalKittyAnimationTick, err := resolveSymbol(handle, "zg_terminal_kitty_animation_tick")
+	if err != nil {
+		return fail("zg_terminal_kitty_animation_tick", err)
+	}
+	addrTerminalScrollRegion, err := resolveSymbol(handle, "zg_terminal_scroll_region")
+	if err != nil {
+		return fail("zg_terminal_scroll_region", err)
+	}
+	addrTerminalCharset, err := resolveSymbol(handle, "zg_terminal_charset")
+	if err != nil {
+		return fail("zg_terminal_charset", err)
+	}
+	addrTerminalMouseTracking, err := resolveSymbol(handle, "zg_terminal_mouse_tracking")
+	if err != nil {
+		return fail("zg_terminal_mouse_tracking", err)
+	}
+	addrTerminalMouseTrackingSendsMotion, err := resolveSymbol(handle, "zg_terminal_mouse_tracking_sends_motion")
+	if err != nil {
+		return fail("zg_terminal_mouse_tracking_sends_motion", err)
+	}
+	addrTerminalMouseReportFormat, err := resolveSymbol(handle, "zg_terminal_mouse_report_format")
+	if err != nil {
+		return fail("zg_terminal_mouse_report_format", err)
+	}
+	addrTerminalModeReport, err := resolveSymbol(handle, "zg_terminal_mode_report")
+	if err != nil {
+		return fail("zg_terminal_mode_report", err)
+	}
+	addrTerminalCellAt, err := resolveSymbol(handle, "zg_terminal_cell_at")
+	if err != nil {
+		return fail("zg_terminal_cell_at", err)
+	}
+	addrTerminalHyperlinkAt, err := resolveSymbol(handle, "zg_terminal_hyperlink_at")
+	if err != nil {
+		return fail("zg_terminal_hyperlink_at", err)
+	}
+	addrScreenViewportIsBottom, err := resolveSymbol(handle, "zg_screen_viewport_is_bottom")
+	if err != nil {
+		return fail("zg_screen_viewport_is_bottom", err)
+	}
+	addrScreenScrollClear, err := resolveSymbol(handle, "zg_screen_scroll_clear")
+	if err != nil {
+		return fail("zg_screen_scroll_clear", err)
+	}
+	addrScreenClearSelection, err := resolveSymbol(handle, "zg_screen_clear_selection")
+	if err != nil {
+		return fail("zg_screen_clear_selection", err)
+	}
+	addrScreenEndHyperlink, err := resolveSymbol(handle, "zg_screen_end_hyperlink")
+	if err != nil {
+		return fail("zg_screen_end_hyperlink", err)
+	}
+	addrScreenSelectAll, err := resolveSymbol(handle, "zg_screen_select_all")
+	if err != nil {
+		return fail("zg_screen_select_all", err)
+	}
+	addrScreenHasSelection, err := resolveSymbol(handle, "zg_screen_has_selection")
+	if err != nil {
+		return fail("zg_screen_has_selection", err)
+	}
+	addrScreenSelectRange, err := resolveSymbol(handle, "zg_screen_select_range")
+	if err != nil {
+		return fail("zg_screen_select_range", err)
+	}
+	addrScreenSelectWord, err := resolveSymbol(handle, "zg_screen_select_word")
+	if err != nil {
+		return fail("zg_screen_select_word", err)
+	}
+	addrScreenSelectLine, err := resolveSymbol(handle, "zg_screen_select_line")
+	if err != nil {
+		return fail("zg_screen_select_line", err)
+	}
+	addrScreenSelectOutput, err := resolveSymbol(handle, "zg_screen_select_output")
+	if err != nil {
+		return fail("zg_screen_select_output", err)
+	}
+	addrScreenSelectionString, err := resolveSymbol(handle, "zg_screen_selection_string")
+	if err != nil {
+		return fail("zg_screen_selection_string", err)
+	}
+	addrScreenSelection, err := resolveSymbol(handle, "zg_screen_selection")
+	if err != nil {
+		return fail("zg_screen_selection", err)
+	}
+	addrScreenSetSelection, err := resolveSymbol(handle, "zg_screen_set_selection")
+	if err != nil {
+		return fail("zg_screen_set_selection", err)
+	}
+	addrScreenViewportTop, err := resolveSymbol(handle, "zg_screen_viewport_top")
+	if err != nil {
+		return fail("zg_screen_viewport_top", err)
+	}
+	addrScreenScrollbar, err := resolveSymbol(handle, "zg_screen_scrollbar")
+	if err != nil {
+		return fail("zg_screen_scrollbar", err)
+	}
+	addrScreenFormat, err := resolveSymbol(handle, "zg_screen_format_purego_v2")
+	if err != nil {
+		return fail("zg_screen_format_purego_v2", err)
+	}
+	addrScreenFormatSelection, err := resolveSymbol(handle, "zg_screen_format_selection_purego_v2")
+	if err != nil {
+		return fail("zg_screen_format_selection_purego_v2", err)
+	}
+	addrScreenSelectionContains, err := resolveSymbol(handle, "zg_screen_selection_contains")
+	if err != nil {
+		return fail("zg_screen_selection_contains", err)
+	}
+	addrScreenSelectionAdjust, err := resolveSymbol(handle, "zg_screen_selection_adjust")
+	if err != nil {
+		return fail("zg_screen_selection_adjust", err)
+	}
+	addrScreenStartHyperlink, err := resolveSymbol(handle, "zg_screen_start_hyperlink")
+	if err != nil {
+		return fail("zg_screen_start_hyperlink", err)
+	}
+	addrSearchSearchClose, err := resolveSymbol(handle, "zg_search_search_close")
+	if err != nil {
+		return fail("zg_search_search_close", err)
+	}
+	addrSearchNeedle, err := resolveSymbol(handle, "zg_search_needle")
+	if err != nil {
+		return fail("zg_search_needle", err)
+	}
+	addrSearchStatus, err := resolveSymbol(handle, "zg_search_status")
+	if err != nil {
+		return fail("zg_search_status", err)
+	}
+	addrSearchTick, err := resolveSymbol(handle, "zg_search_tick")
+	if err != nil {
+		return fail("zg_search_tick", err)
+	}
+	addrSearchFeed, err := resolveSymbol(handle, "zg_search_feed")
+	if err != nil {
+		return fail("zg_search_feed", err)
+	}
+	addrSearchAll, err := resolveSymbol(handle, "zg_search_all")
+	if err != nil {
+		return fail("zg_search_all", err)
+	}
+	addrSearchSelect, err := resolveSymbol(handle, "zg_search_select")
+	if err != nil {
+		return fail("zg_search_select", err)
+	}
+	addrSearchMatchCount, err := resolveSymbol(handle, "zg_search_match_count")
+	if err != nil {
+		return fail("zg_search_match_count", err)
+	}
+	addrSearchMatches, err := resolveSymbol(handle, "zg_search_matches")
+	if err != nil {
+		return fail("zg_search_matches", err)
+	}
+	addrSearchViewportMatches, err := resolveSymbol(handle, "zg_search_viewport_matches")
+	if err != nil {
+		return fail("zg_search_viewport_matches", err)
+	}
+	addrSearchSelectedMatch, err := resolveSymbol(handle, "zg_search_selected_match")
+	if err != nil {
+		return fail("zg_search_selected_match", err)
+	}
+	addrSearchSelectedIndex, err := resolveSymbol(handle, "zg_search_selected_index")
+	if err != nil {
+		return fail("zg_search_selected_index", err)
+	}
+	addrGridRefGridRefClose, err := resolveSymbol(handle, "zg_grid_ref_grid_ref_close")
+	if err != nil {
+		return fail("zg_grid_ref_grid_ref_close", err)
+	}
+	addrGridRefHasValue, err := resolveSymbol(handle, "zg_grid_ref_has_value")
+	if err != nil {
+		return fail("zg_grid_ref_has_value", err)
+	}
+	addrGridRefPoint, err := resolveSymbol(handle, "zg_grid_ref_point")
+	if err != nil {
+		return fail("zg_grid_ref_point", err)
+	}
+	addrGridRefSet, err := resolveSymbol(handle, "zg_grid_ref_set")
+	if err != nil {
+		return fail("zg_grid_ref_set", err)
+	}
+	addrGridRefCell, err := resolveSymbol(handle, "zg_grid_ref_cell")
+	if err != nil {
+		return fail("zg_grid_ref_cell", err)
+	}
+	addrGridRefGraphemes, err := resolveSymbol(handle, "zg_grid_ref_graphemes")
+	if err != nil {
+		return fail("zg_grid_ref_graphemes", err)
+	}
+	addrGridRefHyperlinkUri, err := resolveSymbol(handle, "zg_grid_ref_hyperlink_uri")
+	if err != nil {
+		return fail("zg_grid_ref_hyperlink_uri", err)
+	}
+	addrGestureGestureClose, err := resolveSymbol(handle, "zg_gesture_gesture_close")
+	if err != nil {
+		return fail("zg_gesture_gesture_close", err)
+	}
+	addrGestureSetBehaviors, err := resolveSymbol(handle, "zg_gesture_set_behaviors")
+	if err != nil {
+		return fail("zg_gesture_set_behaviors", err)
+	}
+	addrGestureSetWordBoundaries, err := resolveSymbol(handle, "zg_gesture_set_word_boundaries")
+	if err != nil {
+		return fail("zg_gesture_set_word_boundaries", err)
+	}
+	addrGestureSetGeometry, err := resolveSymbol(handle, "zg_gesture_set_geometry")
+	if err != nil {
+		return fail("zg_gesture_set_geometry", err)
+	}
+	addrGesturePress, err := resolveSymbol(handle, "zg_gesture_press")
+	if err != nil {
+		return fail("zg_gesture_press", err)
+	}
+	addrGestureDrag, err := resolveSymbol(handle, "zg_gesture_drag")
+	if err != nil {
+		return fail("zg_gesture_drag", err)
+	}
+	addrGestureAutoscroll, err := resolveSymbol(handle, "zg_gesture_autoscroll")
+	if err != nil {
+		return fail("zg_gesture_autoscroll", err)
+	}
+	addrGestureAutoscrollTick, err := resolveSymbol(handle, "zg_gesture_autoscroll_tick")
+	if err != nil {
+		return fail("zg_gesture_autoscroll_tick", err)
+	}
+	addrGestureDeepPress, err := resolveSymbol(handle, "zg_gesture_deep_press")
+	if err != nil {
+		return fail("zg_gesture_deep_press", err)
+	}
+	addrGestureRelease, err := resolveSymbol(handle, "zg_gesture_release")
+	if err != nil {
+		return fail("zg_gesture_release", err)
+	}
+	addrGestureReset, err := resolveSymbol(handle, "zg_gesture_reset")
+	if err != nil {
+		return fail("zg_gesture_reset", err)
+	}
+	addrColorNameDefault, err := resolveSymbol(handle, "zg_color_name_default")
+	if err != nil {
+		return fail("zg_color_name_default", err)
+	}
+	addrStreamFreeStream, err := resolveSymbol(handle, "zg_stream_free_stream")
+	if err != nil {
+		return fail("zg_stream_free_stream", err)
+	}
+	addrStreamAtGround, err := resolveSymbol(handle, "zg_stream_at_ground")
+	if err != nil {
+		return fail("zg_stream_at_ground", err)
+	}
+	addrStreamFeedUntilGround, err := resolveSymbol(handle, "zg_stream_feed_until_ground")
+	if err != nil {
+		return fail("zg_stream_feed_until_ground", err)
+	}
+	addrStreamFeedUntil, err := resolveSymbol(handle, "zg_stream_feed_until")
+	if err != nil {
+		return fail("zg_stream_feed_until", err)
+	}
+	addrStreamFeed, err := resolveSymbol(handle, "zg_stream_feed")
+	if err != nil {
+		return fail("zg_stream_feed", err)
+	}
+	addrStreamNextEventValue, err := resolveSymbol(handle, "zg_stream_next_event_value")
+	if err != nil {
+		return fail("zg_stream_next_event_value", err)
+	}
+	addrStreamResizeCells, err := resolveSymbol(handle, "zg_stream_resize_cells")
+	if err != nil {
+		return fail("zg_stream_resize_cells", err)
+	}
+	addrStreamSetUnknownMaxBytes, err := resolveSymbol(handle, "zg_stream_set_unknown_max_bytes")
+	if err != nil {
+		return fail("zg_stream_set_unknown_max_bytes", err)
+	}
+	addrStreamSetVersionReport, err := resolveSymbol(handle, "zg_stream_set_version_report")
+	if err != nil {
+		return fail("zg_stream_set_version_report", err)
+	}
+	addrStreamSetEnquiryResponse, err := resolveSymbol(handle, "zg_stream_set_enquiry_response")
+	if err != nil {
+		return fail("zg_stream_set_enquiry_response", err)
+	}
+	addrStreamColorSchemeChanged, err := resolveSymbol(handle, "zg_stream_color_scheme_changed")
+	if err != nil {
+		return fail("zg_stream_color_scheme_changed", err)
+	}
+	addrStreamClearColorScheme, err := resolveSymbol(handle, "zg_stream_clear_color_scheme")
+	if err != nil {
+		return fail("zg_stream_clear_color_scheme", err)
+	}
+	addrStreamOnDrag, err := resolveSymbol(handle, "zg_stream_on_drag_purego_v2")
+	if err != nil {
+		return fail("zg_stream_on_drag_purego_v2", err)
+	}
+	addrStreamDragActive, err := resolveSymbol(handle, "zg_stream_drag_active")
+	if err != nil {
+		return fail("zg_stream_drag_active", err)
+	}
+	addrStreamDragRegisteredMimes, err := resolveSymbol(handle, "zg_stream_drag_registered_mimes")
+	if err != nil {
+		return fail("zg_stream_drag_registered_mimes", err)
+	}
+	addrStreamDragClientAccepted, err := resolveSymbol(handle, "zg_stream_drag_client_accepted")
+	if err != nil {
+		return fail("zg_stream_drag_client_accepted", err)
+	}
+	addrStreamDragMove, err := resolveSymbol(handle, "zg_stream_drag_move")
+	if err != nil {
+		return fail("zg_stream_drag_move", err)
+	}
+	addrStreamDragLeave, err := resolveSymbol(handle, "zg_stream_drag_leave")
+	if err != nil {
+		return fail("zg_stream_drag_leave", err)
+	}
+	addrStreamDragAddItem, err := resolveSymbol(handle, "zg_stream_drag_add_item")
+	if err != nil {
+		return fail("zg_stream_drag_add_item", err)
+	}
+	addrStreamDragDrop, err := resolveSymbol(handle, "zg_stream_drag_drop")
+	if err != nil {
+		return fail("zg_stream_drag_drop", err)
+	}
+	addrStreamDragClearItems, err := resolveSymbol(handle, "zg_stream_drag_clear_items")
+	if err != nil {
+		return fail("zg_stream_drag_clear_items", err)
+	}
+	addrStreamOnClipboardWriteRequest, err := resolveSymbol(handle, "zg_stream_on_clipboard_write_request_purego_v2")
+	if err != nil {
+		return fail("zg_stream_on_clipboard_write_request_purego_v2", err)
+	}
+	addrStreamOnClipboardReadRequest, err := resolveSymbol(handle, "zg_stream_on_clipboard_read_request_purego_v2")
+	if err != nil {
+		return fail("zg_stream_on_clipboard_read_request_purego_v2", err)
+	}
+	addrStreamWriteContinuation, err := resolveSymbol(handle, "zg_stream_write_continuation_purego_v2")
+	if err != nil {
+		return fail("zg_stream_write_continuation_purego_v2", err)
+	}
+	addrStreamHasReplies, err := resolveSymbol(handle, "zg_stream_has_replies")
+	if err != nil {
+		return fail("zg_stream_has_replies", err)
+	}
+	addrStreamWriteSnapshot, err := resolveSymbol(handle, "zg_stream_write_snapshot_purego_v2")
+	if err != nil {
+		return fail("zg_stream_write_snapshot_purego_v2", err)
+	}
+	addrStreamWriteReplies, err := resolveSymbol(handle, "zg_stream_write_replies_purego_v2")
+	if err != nil {
+		return fail("zg_stream_write_replies_purego_v2", err)
+	}
+	addrClipboardRequestLocation, err := resolveSymbol(handle, "zg_clipboard_request_location")
+	if err != nil {
+		return fail("zg_clipboard_request_location", err)
+	}
+	addrClipboardRequestName, err := resolveSymbol(handle, "zg_clipboard_request_name")
+	if err != nil {
+		return fail("zg_clipboard_request_name", err)
+	}
+	addrClipboardRequestGranted, err := resolveSymbol(handle, "zg_clipboard_request_granted")
+	if err != nil {
+		return fail("zg_clipboard_request_granted", err)
+	}
+	addrClipboardRequestCanRemember, err := resolveSymbol(handle, "zg_clipboard_request_can_remember")
+	if err != nil {
+		return fail("zg_clipboard_request_can_remember", err)
+	}
+	addrClipboardRequestContentCount, err := resolveSymbol(handle, "zg_clipboard_request_content_count")
+	if err != nil {
+		return fail("zg_clipboard_request_content_count", err)
+	}
+	addrClipboardRequestContentMime, err := resolveSymbol(handle, "zg_clipboard_request_content_mime")
+	if err != nil {
+		return fail("zg_clipboard_request_content_mime", err)
+	}
+	addrClipboardRequestMimeCount, err := resolveSymbol(handle, "zg_clipboard_request_mime_count")
+	if err != nil {
+		return fail("zg_clipboard_request_mime_count", err)
+	}
+	addrClipboardRequestMime, err := resolveSymbol(handle, "zg_clipboard_request_mime")
+	if err != nil {
+		return fail("zg_clipboard_request_mime", err)
+	}
+	addrClipboardRequestAllow, err := resolveSymbol(handle, "zg_clipboard_request_allow")
+	if err != nil {
+		return fail("zg_clipboard_request_allow", err)
+	}
+	addrClipboardRequestReplyText, err := resolveSymbol(handle, "zg_clipboard_request_reply_text")
+	if err != nil {
+		return fail("zg_clipboard_request_reply_text", err)
+	}
+	addrClipboardRequestClearReplyContents, err := resolveSymbol(handle, "zg_clipboard_request_clear_reply_contents")
+	if err != nil {
+		return fail("zg_clipboard_request_clear_reply_contents", err)
+	}
+	addrClipboardRequestReplyContents, err := resolveSymbol(handle, "zg_clipboard_request_reply_contents")
+	if err != nil {
+		return fail("zg_clipboard_request_reply_contents", err)
+	}
+	addrClipboardRequestDeny, err := resolveSymbol(handle, "zg_clipboard_request_deny")
+	if err != nil {
+		return fail("zg_clipboard_request_deny", err)
+	}
+	addrClipboardRequestAddContent, err := resolveSymbol(handle, "zg_clipboard_request_add_content")
+	if err != nil {
+		return fail("zg_clipboard_request_add_content", err)
+	}
+	addrClipboardRequestContentData, err := resolveSymbol(handle, "zg_clipboard_request_content_data")
+	if err != nil {
+		return fail("zg_clipboard_request_content_data", err)
+	}
+	addrNewOscParser, err := resolveSymbol(handle, "zg_new_osc_parser")
+	if err != nil {
+		return fail("zg_new_osc_parser", err)
+	}
+	addrOscParserFreeOscParser, err := resolveSymbol(handle, "zg_osc_parser_free_osc_parser")
+	if err != nil {
+		return fail("zg_osc_parser_free_osc_parser", err)
+	}
+	addrOscParserFeed, err := resolveSymbol(handle, "zg_osc_parser_feed")
+	if err != nil {
+		return fail("zg_osc_parser_feed", err)
+	}
+	addrOscParserEnd, err := resolveSymbol(handle, "zg_osc_parser_end")
+	if err != nil {
+		return fail("zg_osc_parser_end", err)
+	}
+	addrOscParserReset, err := resolveSymbol(handle, "zg_osc_parser_reset")
+	if err != nil {
+		return fail("zg_osc_parser_reset", err)
+	}
+	addrDecodeSnapshot, err := resolveSymbol(handle, "zg_decode_snapshot_purego_v2")
+	if err != nil {
+		return fail("zg_decode_snapshot_purego_v2", err)
+	}
+	addrSnapshotDeinit, err := resolveSymbol(handle, "zg_snapshot_deinit")
+	if err != nil {
+		return fail("zg_snapshot_deinit", err)
+	}
+	addrSnapshotRestoreInto, err := resolveSymbol(handle, "zg_snapshot_restore_into")
+	if err != nil {
+		return fail("zg_snapshot_restore_into", err)
+	}
+	addrSnapshotSnapshotTerminal, err := resolveSymbol(handle, "zg_snapshot_snapshot_terminal")
+	if err != nil {
+		return fail("zg_snapshot_snapshot_terminal", err)
+	}
+	addrSnapshotContinuation, err := resolveSymbol(handle, "zg_snapshot_continuation")
+	if err != nil {
+		return fail("zg_snapshot_continuation", err)
+	}
+	addrNewSnapshotDecoder, err := resolveSymbol(handle, "zg_new_snapshot_decoder")
+	if err != nil {
+		return fail("zg_new_snapshot_decoder", err)
+	}
+	addrSnapshotDecoderFreeSnapshotDecoder, err := resolveSymbol(handle, "zg_snapshot_decoder_free_snapshot_decoder")
+	if err != nil {
+		return fail("zg_snapshot_decoder_free_snapshot_decoder", err)
+	}
+	addrSnapshotDecoderReady, err := resolveSymbol(handle, "zg_snapshot_decoder_ready")
+	if err != nil {
+		return fail("zg_snapshot_decoder_ready", err)
+	}
+	addrSnapshotDecoderRestoreInto, err := resolveSymbol(handle, "zg_snapshot_decoder_restore_into")
+	if err != nil {
+		return fail("zg_snapshot_decoder_restore_into", err)
+	}
+	addrSnapshotDecoderContinuation, err := resolveSymbol(handle, "zg_snapshot_decoder_continuation")
+	if err != nil {
+		return fail("zg_snapshot_decoder_continuation", err)
+	}
+	addrSnapshotDecoderNext, err := resolveSymbol(handle, "zg_snapshot_decoder_next")
+	if err != nil {
+		return fail("zg_snapshot_decoder_next", err)
+	}
+	addrSnapshotDecoderSetKittyImageStorageLimit, err := resolveSymbol(handle, "zg_snapshot_decoder_set_kitty_image_storage_limit")
+	if err != nil {
+		return fail("zg_snapshot_decoder_set_kitty_image_storage_limit", err)
+	}
+	addrSnapshotDecoderKittyCounts, err := resolveSymbol(handle, "zg_snapshot_decoder_kitty_counts")
+	if err != nil {
+		return fail("zg_snapshot_decoder_kitty_counts", err)
+	}
+	addrNewRenderState, err := resolveSymbol(handle, "zg_new_render_state")
+	if err != nil {
+		return fail("zg_new_render_state", err)
+	}
+	addrRenderStateDeinit, err := resolveSymbol(handle, "zg_render_state_deinit")
+	if err != nil {
+		return fail("zg_render_state_deinit", err)
+	}
+	addrRenderStateUpdate, err := resolveSymbol(handle, "zg_render_state_update")
+	if err != nil {
+		return fail("zg_render_state_update", err)
+	}
+	addrRenderStateClean, err := resolveSymbol(handle, "zg_render_state_clean")
+	if err != nil {
+		return fail("zg_render_state_clean", err)
+	}
+	addrRenderStateCursor, err := resolveSymbol(handle, "zg_render_state_cursor")
+	if err != nil {
+		return fail("zg_render_state_cursor", err)
+	}
+	addrRenderStateColors, err := resolveSymbol(handle, "zg_render_state_colors")
+	if err != nil {
+		return fail("zg_render_state_colors", err)
+	}
+	addrRenderStateCellCount, err := resolveSymbol(handle, "zg_render_state_cell_count")
+	if err != nil {
+		return fail("zg_render_state_cell_count", err)
+	}
+	addrRenderStateCells, err := resolveSymbol(handle, "zg_render_state_cells")
+	if err != nil {
+		return fail("zg_render_state_cells", err)
+	}
+	addrRenderStateDirty, err := resolveSymbol(handle, "zg_render_state_dirty")
+	if err != nil {
+		return fail("zg_render_state_dirty", err)
+	}
+	addrRenderStateDirtyRows, err := resolveSymbol(handle, "zg_render_state_dirty_rows")
+	if err != nil {
+		return fail("zg_render_state_dirty_rows", err)
+	}
+	addrRenderStateRowCells, err := resolveSymbol(handle, "zg_render_state_row_cells")
+	if err != nil {
+		return fail("zg_render_state_row_cells", err)
+	}
+	addrRenderStateGraphemes, err := resolveSymbol(handle, "zg_render_state_graphemes")
+	if err != nil {
+		return fail("zg_render_state_graphemes", err)
+	}
+	addrRenderStateHyperlinkAt, err := resolveSymbol(handle, "zg_render_state_hyperlink_at")
+	if err != nil {
+		return fail("zg_render_state_hyperlink_at", err)
+	}
+	addrRenderStateImagePlacementCount, err := resolveSymbol(handle, "zg_render_state_image_placement_count")
+	if err != nil {
+		return fail("zg_render_state_image_placement_count", err)
+	}
+	addrRenderStateImagePlacements, err := resolveSymbol(handle, "zg_render_state_image_placements")
+	if err != nil {
+		return fail("zg_render_state_image_placements", err)
+	}
+	addrRenderStateImagePlacementsGeneration, err := resolveSymbol(handle, "zg_render_state_image_placements_generation")
+	if err != nil {
+		return fail("zg_render_state_image_placements_generation", err)
+	}
+	addrNewKittyImages, err := resolveSymbol(handle, "zg_new_kitty_images")
+	if err != nil {
+		return fail("zg_new_kitty_images", err)
+	}
+	addrKittyImagesFreeKittyImages, err := resolveSymbol(handle, "zg_kitty_images_free_kitty_images")
+	if err != nil {
+		return fail("zg_kitty_images_free_kitty_images", err)
+	}
+	addrKittyImagesUpdate, err := resolveSymbol(handle, "zg_kitty_images_update")
+	if err != nil {
+		return fail("zg_kitty_images_update", err)
+	}
+	addrKittyImagesPlacementCount, err := resolveSymbol(handle, "zg_kitty_images_placement_count")
+	if err != nil {
+		return fail("zg_kitty_images_placement_count", err)
+	}
+	addrKittyImagesPlacements, err := resolveSymbol(handle, "zg_kitty_images_placements")
+	if err != nil {
+		return fail("zg_kitty_images_placements", err)
+	}
+	addrUnicodeCodepointWidth, err := resolveSymbol(handle, "zg_unicode_codepoint_width")
+	if err != nil {
+		return fail("zg_unicode_codepoint_width", err)
+	}
+	addrGraphemeWidth, err := resolveSymbol(handle, "zg_grapheme_width")
+	if err != nil {
+		return fail("zg_grapheme_width", err)
+	}
+	addrFreeBuffer, err := resolveSymbol(handle, "zg_free_buffer")
+	if err != nil {
+		return fail("zg_free_buffer", err)
+	}
+	addrFreeString, err := resolveSymbol(handle, "zg_free_string")
+	if err != nil {
+		return fail("zg_free_string", err)
+	}
+	addrSgrAttributeCount, err := resolveSymbol(handle, "zg_sgr_attribute_count")
+	if err != nil {
+		return fail("zg_sgr_attribute_count", err)
+	}
+	addrSgrAttributeAt, err := resolveSymbol(handle, "zg_sgr_attribute_at")
+	if err != nil {
+		return fail("zg_sgr_attribute_at", err)
+	}
+	var next nativeBindings
+	purego.RegisterFunc(&next.lastError, addrLastError)
+	purego.RegisterFunc(&next.panicMessage, addrPanicMessage)
+	purego.RegisterFunc(&next.fnTerminalCols, addrTerminalCols)
+	purego.RegisterFunc(&next.fnTerminalRows, addrTerminalRows)
+	purego.RegisterFunc(&next.fnTerminalCursorX, addrTerminalCursorX)
+	purego.RegisterFunc(&next.fnTerminalCursorY, addrTerminalCursorY)
+	purego.RegisterFunc(&next.fnTerminalCursorStyle, addrTerminalCursorStyle)
+	purego.RegisterFunc(&next.fnTerminalActiveScreenKey, addrTerminalActiveScreenKey)
+	purego.RegisterFunc(&next.fnTerminalCursorPendingWrap, addrTerminalCursorPendingWrap)
+	purego.RegisterFunc(&next.fnTerminalCursorProtected, addrTerminalCursorProtected)
+	purego.RegisterFunc(&next.fnTerminalWidthPx, addrTerminalWidthPx)
+	purego.RegisterFunc(&next.fnTerminalHeightPx, addrTerminalHeightPx)
+	purego.RegisterFunc(&next.fnTerminalFocused, addrTerminalFocused)
+	purego.RegisterFunc(&next.fnTerminalVisible, addrTerminalVisible)
+	purego.RegisterFunc(&next.fnTerminalPasswordInput, addrTerminalPasswordInput)
+	purego.RegisterFunc(&next.fnTerminalCharsetGl, addrTerminalCharsetGl)
+	purego.RegisterFunc(&next.fnTerminalCharsetGr, addrTerminalCharsetGr)
+	purego.RegisterFunc(&next.fnTerminalCharsetSingleShift, addrTerminalCharsetSingleShift)
+	purego.RegisterFunc(&next.fnTerminalProtectedMode, addrTerminalProtectedMode)
+	purego.RegisterFunc(&next.fnGestureClickCount, addrGestureClickCount)
+	purego.RegisterFunc(&next.fnGestureDragged, addrGestureDragged)
+	purego.RegisterFunc(&next.fnStreamFailed, addrStreamFailed)
+	purego.RegisterFunc(&next.fnOscParserCommand, addrOscParserCommand)
+	purego.RegisterFunc(&next.fnOscParserWindowTitle, addrOscParserWindowTitle)
+	purego.RegisterFunc(&next.fnOscParserIcon, addrOscParserIcon)
+	purego.RegisterFunc(&next.fnOscParserPwd, addrOscParserPwd)
+	purego.RegisterFunc(&next.fnOscParserHyperlinkUri, addrOscParserHyperlinkUri)
+	purego.RegisterFunc(&next.fnOscParserHyperlinkID, addrOscParserHyperlinkID)
+	purego.RegisterFunc(&next.fnOscParserNotificationTitle, addrOscParserNotificationTitle)
+	purego.RegisterFunc(&next.fnOscParserNotificationBody, addrOscParserNotificationBody)
+	purego.RegisterFunc(&next.fnOscParserClipboardData, addrOscParserClipboardData)
+	purego.RegisterFunc(&next.fnOscParserClipboardSelection, addrOscParserClipboardSelection)
+	purego.RegisterFunc(&next.fnOscParserMouseShape, addrOscParserMouseShape)
+	purego.RegisterFunc(&next.fnOscParserSemanticPromptAction, addrOscParserSemanticPromptAction)
+	purego.RegisterFunc(&next.fnOscParserSemanticPromptOptions, addrOscParserSemanticPromptOptions)
+	purego.RegisterFunc(&next.fnOscParserProgressState, addrOscParserProgressState)
+	purego.RegisterFunc(&next.fnOscParserProgressValue, addrOscParserProgressValue)
+	purego.RegisterFunc(&next.fnRenderStateRows, addrRenderStateRows)
+	purego.RegisterFunc(&next.fnRenderStateCols, addrRenderStateCols)
+	purego.RegisterFunc(&next.fnRenderStateCursorVisible, addrRenderStateCursorVisible)
+	purego.RegisterFunc(&next.fnRenderStateCursorStyle, addrRenderStateCursorStyle)
+	purego.RegisterFunc(&next.fnRenderStateCursorBlinking, addrRenderStateCursorBlinking)
+	purego.RegisterFunc(&next.fnRenderStateCursorPasswordInput, addrRenderStateCursorPasswordInput)
+	purego.RegisterFunc(&next.fnKittyImagesGeneration, addrKittyImagesGeneration)
+	purego.RegisterFunc(&next.fnSysOnPngDecodeRequest, addrSysOnPngDecodeRequest)
+	purego.RegisterFunc(&next.fnSysReplyPngImage, addrSysReplyPngImage)
+	purego.RegisterFunc(&next.fnSysOnSecureRandomRequest, addrSysOnSecureRandomRequest)
+	purego.RegisterFunc(&next.fnSysOnLog, addrSysOnLog)
+	purego.RegisterFunc(&next.fnSysClear, addrSysClear)
+	purego.RegisterFunc(&next.fnSysReplySecureRandom, addrSysReplySecureRandom)
+	purego.RegisterFunc(&next.fnKeyCodepoint, addrKeyCodepoint)
+	purego.RegisterFunc(&next.fnKeyPrintable, addrKeyPrintable)
+	purego.RegisterFunc(&next.fnKeyModifier, addrKeyModifier)
+	purego.RegisterFunc(&next.fnKeyKeypad, addrKeyKeypad)
+	purego.RegisterFunc(&next.fnKeyLeftOrRightShift, addrKeyLeftOrRightShift)
+	purego.RegisterFunc(&next.fnKeyLeftOrRightAlt, addrKeyLeftOrRightAlt)
+	purego.RegisterFunc(&next.fnKeyCtrlOrSuper, addrKeyCtrlOrSuper)
+	purego.RegisterFunc(&next.fnKeyShouldBeRemappable, addrKeyShouldBeRemappable)
+	purego.RegisterFunc(&next.fnKeyW3C, addrKeyW3C)
+	purego.RegisterFunc(&next.fnEncodeKey, addrEncodeKey)
+	purego.RegisterFunc(&next.fnEncodeMouse, addrEncodeMouse)
+	purego.RegisterFunc(&next.fnKeyKeyFromAscii, addrKeyKeyFromAscii)
+	purego.RegisterFunc(&next.fnKeyKeyFromW3C, addrKeyKeyFromW3C)
+	purego.RegisterFunc(&next.fnInputEncodeFocus, addrInputEncodeFocus)
+	purego.RegisterFunc(&next.fnInputIsSafePaste, addrInputIsSafePaste)
+	purego.RegisterFunc(&next.fnEncodePaste, addrEncodePaste)
+	purego.RegisterFunc(&next.fnTerminalNewTerminal, addrTerminalNewTerminal)
+	purego.RegisterFunc(&next.fnTerminalDeinit, addrTerminalDeinit)
+	purego.RegisterFunc(&next.fnTerminalNewStream, addrTerminalNewStream)
+	purego.RegisterFunc(&next.fnTerminalNewSearch, addrTerminalNewSearch)
+	purego.RegisterFunc(&next.fnTerminalNewGesture, addrTerminalNewGesture)
+	purego.RegisterFunc(&next.fnTerminalNewGridRef, addrTerminalNewGridRef)
+	purego.RegisterFunc(&next.fnTerminalPrintString, addrTerminalPrintString)
+	purego.RegisterFunc(&next.fnTerminalPlainString, addrTerminalPlainString)
+	purego.RegisterFunc(&next.fnTerminalPlainStringUnwrapped, addrTerminalPlainStringUnwrapped)
+	purego.RegisterFunc(&next.fnTerminalPrint, addrTerminalPrint)
+	purego.RegisterFunc(&next.fnTerminalPrintRepeat, addrTerminalPrintRepeat)
+	purego.RegisterFunc(&next.fnTerminalPrintSlice, addrTerminalPrintSlice)
+	purego.RegisterFunc(&next.fnTerminalSetCursorStyle, addrTerminalSetCursorStyle)
+	purego.RegisterFunc(&next.fnTerminalSetCursorPos, addrTerminalSetCursorPos)
+	purego.RegisterFunc(&next.fnTerminalCarriageReturn, addrTerminalCarriageReturn)
+	purego.RegisterFunc(&next.fnTerminalLinefeed, addrTerminalLinefeed)
+	purego.RegisterFunc(&next.fnTerminalBackspace, addrTerminalBackspace)
+	purego.RegisterFunc(&next.fnTerminalCursorIsAtPrompt, addrTerminalCursorIsAtPrompt)
+	purego.RegisterFunc(&next.fnTerminalFullReset, addrTerminalFullReset)
+	purego.RegisterFunc(&next.fnTerminalSoftReset, addrTerminalSoftReset)
+	purego.RegisterFunc(&next.fnTerminalCursorUp, addrTerminalCursorUp)
+	purego.RegisterFunc(&next.fnTerminalCursorDown, addrTerminalCursorDown)
+	purego.RegisterFunc(&next.fnTerminalCursorLeft, addrTerminalCursorLeft)
+	purego.RegisterFunc(&next.fnTerminalCursorRight, addrTerminalCursorRight)
+	purego.RegisterFunc(&next.fnTerminalSetCursorRow, addrTerminalSetCursorRow)
+	purego.RegisterFunc(&next.fnTerminalSetCursorCol, addrTerminalSetCursorCol)
+	purego.RegisterFunc(&next.fnTerminalCursorRowRelative, addrTerminalCursorRowRelative)
+	purego.RegisterFunc(&next.fnTerminalCursorColRelative, addrTerminalCursorColRelative)
+	purego.RegisterFunc(&next.fnTerminalSaveCursor, addrTerminalSaveCursor)
+	purego.RegisterFunc(&next.fnTerminalRestoreCursor, addrTerminalRestoreCursor)
+	purego.RegisterFunc(&next.fnTerminalIndex, addrTerminalIndex)
+	purego.RegisterFunc(&next.fnTerminalReverseIndex, addrTerminalReverseIndex)
+	purego.RegisterFunc(&next.fnTerminalSwitchScreen, addrTerminalSwitchScreen)
+	purego.RegisterFunc(&next.fnTerminalSwitchScreenMode, addrTerminalSwitchScreenMode)
+	purego.RegisterFunc(&next.fnTerminalActiveScreen, addrTerminalActiveScreen)
+	purego.RegisterFunc(&next.fnTerminalScreen, addrTerminalScreen)
+	purego.RegisterFunc(&next.fnTerminalPrintAttributesInto, addrTerminalPrintAttributesInto)
+	purego.RegisterFunc(&next.fnTerminalHistoryString, addrTerminalHistoryString)
+	purego.RegisterFunc(&next.fnTerminalHorizontalTab, addrTerminalHorizontalTab)
+	purego.RegisterFunc(&next.fnTerminalHorizontalTabBack, addrTerminalHorizontalTabBack)
+	purego.RegisterFunc(&next.fnTerminalTabSet, addrTerminalTabSet)
+	purego.RegisterFunc(&next.fnTerminalTabReset, addrTerminalTabReset)
+	purego.RegisterFunc(&next.fnTerminalTabClear, addrTerminalTabClear)
+	purego.RegisterFunc(&next.fnTerminalSetTabstop, addrTerminalSetTabstop)
+	purego.RegisterFunc(&next.fnTerminalUnsetTabstop, addrTerminalUnsetTabstop)
+	purego.RegisterFunc(&next.fnTerminalResetTabstops, addrTerminalResetTabstops)
+	purego.RegisterFunc(&next.fnTerminalScrollUp, addrTerminalScrollUp)
+	purego.RegisterFunc(&next.fnTerminalScrollDown, addrTerminalScrollDown)
+	purego.RegisterFunc(&next.fnTerminalSetTopAndBottomMargin, addrTerminalSetTopAndBottomMargin)
+	purego.RegisterFunc(&next.fnTerminalSetLeftAndRightMargin, addrTerminalSetLeftAndRightMargin)
+	purego.RegisterFunc(&next.fnTerminalScrollViewport, addrTerminalScrollViewport)
+	purego.RegisterFunc(&next.fnTerminalSetScrollbackMaxBytes, addrTerminalSetScrollbackMaxBytes)
+	purego.RegisterFunc(&next.fnTerminalClearScrollbackMaxBytes, addrTerminalClearScrollbackMaxBytes)
+	purego.RegisterFunc(&next.fnTerminalSetScrollbackMaxLines, addrTerminalSetScrollbackMaxLines)
+	purego.RegisterFunc(&next.fnTerminalClearScrollbackMaxLines, addrTerminalClearScrollbackMaxLines)
+	purego.RegisterFunc(&next.fnTerminalInsertLines, addrTerminalInsertLines)
+	purego.RegisterFunc(&next.fnTerminalDeleteLines, addrTerminalDeleteLines)
+	purego.RegisterFunc(&next.fnTerminalInsertBlanks, addrTerminalInsertBlanks)
+	purego.RegisterFunc(&next.fnTerminalDeleteChars, addrTerminalDeleteChars)
+	purego.RegisterFunc(&next.fnTerminalEraseChars, addrTerminalEraseChars)
+	purego.RegisterFunc(&next.fnTerminalEraseLine, addrTerminalEraseLine)
+	purego.RegisterFunc(&next.fnTerminalEraseDisplay, addrTerminalEraseDisplay)
+	purego.RegisterFunc(&next.fnTerminalDecaln, addrTerminalDecaln)
+	purego.RegisterFunc(&next.fnTerminalResize, addrTerminalResize)
+	purego.RegisterFunc(&next.fnTerminalResizeCells, addrTerminalResizeCells)
+	purego.RegisterFunc(&next.fnTerminalFormat, addrTerminalFormat)
+	purego.RegisterFunc(&next.fnTerminalFormatSelection, addrTerminalFormatSelection)
+	purego.RegisterFunc(&next.fnTerminalSetPwd, addrTerminalSetPwd)
+	purego.RegisterFunc(&next.fnTerminalGetPwd, addrTerminalGetPwd)
+	purego.RegisterFunc(&next.fnTerminalGetTitle, addrTerminalGetTitle)
+	purego.RegisterFunc(&next.fnTerminalSetTitle, addrTerminalSetTitle)
+	purego.RegisterFunc(&next.fnTerminalBackgroundColor, addrTerminalBackgroundColor)
+	purego.RegisterFunc(&next.fnTerminalForegroundColor, addrTerminalForegroundColor)
+	purego.RegisterFunc(&next.fnTerminalCursorColor, addrTerminalCursorColor)
+	purego.RegisterFunc(&next.fnTerminalPaletteColors, addrTerminalPaletteColors)
+	purego.RegisterFunc(&next.fnTerminalModeEnabled, addrTerminalModeEnabled)
+	purego.RegisterFunc(&next.fnTerminalSetMode, addrTerminalSetMode)
+	purego.RegisterFunc(&next.fnTerminalSetAttribute, addrTerminalSetAttribute)
+	purego.RegisterFunc(&next.fnTerminalSetProtectedMode, addrTerminalSetProtectedMode)
+	purego.RegisterFunc(&next.fnTerminalConfigureCharset, addrTerminalConfigureCharset)
+	purego.RegisterFunc(&next.fnTerminalInvokeCharset, addrTerminalInvokeCharset)
+	purego.RegisterFunc(&next.fnTerminalDeccolm, addrTerminalDeccolm)
+	purego.RegisterFunc(&next.fnTerminalCompress, addrTerminalCompress)
+	purego.RegisterFunc(&next.fnTerminalCompressionActivity, addrTerminalCompressionActivity)
+	purego.RegisterFunc(&next.fnTerminalSetDefaultBackgroundColor, addrTerminalSetDefaultBackgroundColor)
+	purego.RegisterFunc(&next.fnTerminalSetDefaultForegroundColor, addrTerminalSetDefaultForegroundColor)
+	purego.RegisterFunc(&next.fnTerminalSetDefaultCursorColor, addrTerminalSetDefaultCursorColor)
+	purego.RegisterFunc(&next.fnTerminalSetDefaultCursorStyle, addrTerminalSetDefaultCursorStyle)
+	purego.RegisterFunc(&next.fnTerminalSetDefaultCursorBlink, addrTerminalSetDefaultCursorBlink)
+	purego.RegisterFunc(&next.fnTerminalResetDefaultCursorBlink, addrTerminalResetDefaultCursorBlink)
+	purego.RegisterFunc(&next.fnTerminalPaletteColor, addrTerminalPaletteColor)
+	purego.RegisterFunc(&next.fnTerminalSetPaletteColor, addrTerminalSetPaletteColor)
+	purego.RegisterFunc(&next.fnTerminalResetPaletteColor, addrTerminalResetPaletteColor)
+	purego.RegisterFunc(&next.fnTerminalResetPalette, addrTerminalResetPalette)
+	purego.RegisterFunc(&next.fnTerminalSetDefaultPaletteColor, addrTerminalSetDefaultPaletteColor)
+	purego.RegisterFunc(&next.fnTerminalResetDefaultPalette, addrTerminalResetDefaultPalette)
+	purego.RegisterFunc(&next.fnTerminalSetDefaultMode, addrTerminalSetDefaultMode)
+	purego.RegisterFunc(&next.fnTerminalResetModes, addrTerminalResetModes)
+	purego.RegisterFunc(&next.fnTerminalSaveMode, addrTerminalSaveMode)
+	purego.RegisterFunc(&next.fnTerminalRestoreMode, addrTerminalRestoreMode)
+	purego.RegisterFunc(&next.fnTerminalSetKittyGraphicsSizeLimit, addrTerminalSetKittyGraphicsSizeLimit)
+	purego.RegisterFunc(&next.fnTerminalSetKittyGraphicsLoadingLimits, addrTerminalSetKittyGraphicsLoadingLimits)
+	purego.RegisterFunc(&next.fnTerminalKittyImage, addrTerminalKittyImage)
+	purego.RegisterFunc(&next.fnTerminalKittyImageData, addrTerminalKittyImageData)
+	purego.RegisterFunc(&next.fnTerminalKittyAnimationTick, addrTerminalKittyAnimationTick)
+	purego.RegisterFunc(&next.fnTerminalScrollRegion, addrTerminalScrollRegion)
+	purego.RegisterFunc(&next.fnTerminalCharset, addrTerminalCharset)
+	purego.RegisterFunc(&next.fnTerminalMouseTracking, addrTerminalMouseTracking)
+	purego.RegisterFunc(&next.fnTerminalMouseTrackingSendsMotion, addrTerminalMouseTrackingSendsMotion)
+	purego.RegisterFunc(&next.fnTerminalMouseReportFormat, addrTerminalMouseReportFormat)
+	purego.RegisterFunc(&next.fnTerminalModeReport, addrTerminalModeReport)
+	purego.RegisterFunc(&next.fnTerminalCellAt, addrTerminalCellAt)
+	purego.RegisterFunc(&next.fnTerminalHyperlinkAt, addrTerminalHyperlinkAt)
+	purego.RegisterFunc(&next.fnScreenViewportIsBottom, addrScreenViewportIsBottom)
+	purego.RegisterFunc(&next.fnScreenScrollClear, addrScreenScrollClear)
+	purego.RegisterFunc(&next.fnScreenClearSelection, addrScreenClearSelection)
+	purego.RegisterFunc(&next.fnScreenEndHyperlink, addrScreenEndHyperlink)
+	purego.RegisterFunc(&next.fnScreenSelectAll, addrScreenSelectAll)
+	purego.RegisterFunc(&next.fnScreenHasSelection, addrScreenHasSelection)
+	purego.RegisterFunc(&next.fnScreenSelectRange, addrScreenSelectRange)
+	purego.RegisterFunc(&next.fnScreenSelectWord, addrScreenSelectWord)
+	purego.RegisterFunc(&next.fnScreenSelectLine, addrScreenSelectLine)
+	purego.RegisterFunc(&next.fnScreenSelectOutput, addrScreenSelectOutput)
+	purego.RegisterFunc(&next.fnScreenSelectionString, addrScreenSelectionString)
+	purego.RegisterFunc(&next.fnScreenSelection, addrScreenSelection)
+	purego.RegisterFunc(&next.fnScreenSetSelection, addrScreenSetSelection)
+	purego.RegisterFunc(&next.fnScreenViewportTop, addrScreenViewportTop)
+	purego.RegisterFunc(&next.fnScreenScrollbar, addrScreenScrollbar)
+	purego.RegisterFunc(&next.fnScreenFormat, addrScreenFormat)
+	purego.RegisterFunc(&next.fnScreenFormatSelection, addrScreenFormatSelection)
+	purego.RegisterFunc(&next.fnScreenSelectionContains, addrScreenSelectionContains)
+	purego.RegisterFunc(&next.fnScreenSelectionAdjust, addrScreenSelectionAdjust)
+	purego.RegisterFunc(&next.fnScreenStartHyperlink, addrScreenStartHyperlink)
+	purego.RegisterFunc(&next.fnSearchSearchClose, addrSearchSearchClose)
+	purego.RegisterFunc(&next.fnSearchNeedle, addrSearchNeedle)
+	purego.RegisterFunc(&next.fnSearchStatus, addrSearchStatus)
+	purego.RegisterFunc(&next.fnSearchTick, addrSearchTick)
+	purego.RegisterFunc(&next.fnSearchFeed, addrSearchFeed)
+	purego.RegisterFunc(&next.fnSearchAll, addrSearchAll)
+	purego.RegisterFunc(&next.fnSearchSelect, addrSearchSelect)
+	purego.RegisterFunc(&next.fnSearchMatchCount, addrSearchMatchCount)
+	purego.RegisterFunc(&next.fnSearchMatches, addrSearchMatches)
+	purego.RegisterFunc(&next.fnSearchViewportMatches, addrSearchViewportMatches)
+	purego.RegisterFunc(&next.fnSearchSelectedMatch, addrSearchSelectedMatch)
+	purego.RegisterFunc(&next.fnSearchSelectedIndex, addrSearchSelectedIndex)
+	purego.RegisterFunc(&next.fnGridRefGridRefClose, addrGridRefGridRefClose)
+	purego.RegisterFunc(&next.fnGridRefHasValue, addrGridRefHasValue)
+	purego.RegisterFunc(&next.fnGridRefPoint, addrGridRefPoint)
+	purego.RegisterFunc(&next.fnGridRefSet, addrGridRefSet)
+	purego.RegisterFunc(&next.fnGridRefCell, addrGridRefCell)
+	purego.RegisterFunc(&next.fnGridRefGraphemes, addrGridRefGraphemes)
+	purego.RegisterFunc(&next.fnGridRefHyperlinkUri, addrGridRefHyperlinkUri)
+	purego.RegisterFunc(&next.fnGestureGestureClose, addrGestureGestureClose)
+	purego.RegisterFunc(&next.fnGestureSetBehaviors, addrGestureSetBehaviors)
+	purego.RegisterFunc(&next.fnGestureSetWordBoundaries, addrGestureSetWordBoundaries)
+	purego.RegisterFunc(&next.fnGestureSetGeometry, addrGestureSetGeometry)
+	purego.RegisterFunc(&next.fnGesturePress, addrGesturePress)
+	purego.RegisterFunc(&next.fnGestureDrag, addrGestureDrag)
+	purego.RegisterFunc(&next.fnGestureAutoscroll, addrGestureAutoscroll)
+	purego.RegisterFunc(&next.fnGestureAutoscrollTick, addrGestureAutoscrollTick)
+	purego.RegisterFunc(&next.fnGestureDeepPress, addrGestureDeepPress)
+	purego.RegisterFunc(&next.fnGestureRelease, addrGestureRelease)
+	purego.RegisterFunc(&next.fnGestureReset, addrGestureReset)
+	purego.RegisterFunc(&next.fnColorNameDefault, addrColorNameDefault)
+	purego.RegisterFunc(&next.fnStreamFreeStream, addrStreamFreeStream)
+	purego.RegisterFunc(&next.fnStreamAtGround, addrStreamAtGround)
+	purego.RegisterFunc(&next.fnStreamFeedUntilGround, addrStreamFeedUntilGround)
+	purego.RegisterFunc(&next.fnStreamFeedUntil, addrStreamFeedUntil)
+	purego.RegisterFunc(&next.fnStreamFeed, addrStreamFeed)
+	purego.RegisterFunc(&next.fnStreamNextEventValue, addrStreamNextEventValue)
+	purego.RegisterFunc(&next.fnStreamResizeCells, addrStreamResizeCells)
+	purego.RegisterFunc(&next.fnStreamSetUnknownMaxBytes, addrStreamSetUnknownMaxBytes)
+	purego.RegisterFunc(&next.fnStreamSetVersionReport, addrStreamSetVersionReport)
+	purego.RegisterFunc(&next.fnStreamSetEnquiryResponse, addrStreamSetEnquiryResponse)
+	purego.RegisterFunc(&next.fnStreamColorSchemeChanged, addrStreamColorSchemeChanged)
+	purego.RegisterFunc(&next.fnStreamClearColorScheme, addrStreamClearColorScheme)
+	purego.RegisterFunc(&next.fnStreamOnDrag, addrStreamOnDrag)
+	purego.RegisterFunc(&next.fnStreamDragActive, addrStreamDragActive)
+	purego.RegisterFunc(&next.fnStreamDragRegisteredMimes, addrStreamDragRegisteredMimes)
+	purego.RegisterFunc(&next.fnStreamDragClientAccepted, addrStreamDragClientAccepted)
+	purego.RegisterFunc(&next.fnStreamDragMove, addrStreamDragMove)
+	purego.RegisterFunc(&next.fnStreamDragLeave, addrStreamDragLeave)
+	purego.RegisterFunc(&next.fnStreamDragAddItem, addrStreamDragAddItem)
+	purego.RegisterFunc(&next.fnStreamDragDrop, addrStreamDragDrop)
+	purego.RegisterFunc(&next.fnStreamDragClearItems, addrStreamDragClearItems)
+	purego.RegisterFunc(&next.fnStreamOnClipboardWriteRequest, addrStreamOnClipboardWriteRequest)
+	purego.RegisterFunc(&next.fnStreamOnClipboardReadRequest, addrStreamOnClipboardReadRequest)
+	purego.RegisterFunc(&next.fnStreamWriteContinuation, addrStreamWriteContinuation)
+	purego.RegisterFunc(&next.fnStreamHasReplies, addrStreamHasReplies)
+	purego.RegisterFunc(&next.fnStreamWriteSnapshot, addrStreamWriteSnapshot)
+	purego.RegisterFunc(&next.fnStreamWriteReplies, addrStreamWriteReplies)
+	purego.RegisterFunc(&next.fnClipboardRequestLocation, addrClipboardRequestLocation)
+	purego.RegisterFunc(&next.fnClipboardRequestName, addrClipboardRequestName)
+	purego.RegisterFunc(&next.fnClipboardRequestGranted, addrClipboardRequestGranted)
+	purego.RegisterFunc(&next.fnClipboardRequestCanRemember, addrClipboardRequestCanRemember)
+	purego.RegisterFunc(&next.fnClipboardRequestContentCount, addrClipboardRequestContentCount)
+	purego.RegisterFunc(&next.fnClipboardRequestContentMime, addrClipboardRequestContentMime)
+	purego.RegisterFunc(&next.fnClipboardRequestMimeCount, addrClipboardRequestMimeCount)
+	purego.RegisterFunc(&next.fnClipboardRequestMime, addrClipboardRequestMime)
+	purego.RegisterFunc(&next.fnClipboardRequestAllow, addrClipboardRequestAllow)
+	purego.RegisterFunc(&next.fnClipboardRequestReplyText, addrClipboardRequestReplyText)
+	purego.RegisterFunc(&next.fnClipboardRequestClearReplyContents, addrClipboardRequestClearReplyContents)
+	purego.RegisterFunc(&next.fnClipboardRequestReplyContents, addrClipboardRequestReplyContents)
+	purego.RegisterFunc(&next.fnClipboardRequestDeny, addrClipboardRequestDeny)
+	purego.RegisterFunc(&next.fnClipboardRequestAddContent, addrClipboardRequestAddContent)
+	purego.RegisterFunc(&next.fnClipboardRequestContentData, addrClipboardRequestContentData)
+	purego.RegisterFunc(&next.fnNewOscParser, addrNewOscParser)
+	purego.RegisterFunc(&next.fnOscParserFreeOscParser, addrOscParserFreeOscParser)
+	purego.RegisterFunc(&next.fnOscParserFeed, addrOscParserFeed)
+	purego.RegisterFunc(&next.fnOscParserEnd, addrOscParserEnd)
+	purego.RegisterFunc(&next.fnOscParserReset, addrOscParserReset)
+	purego.RegisterFunc(&next.fnDecodeSnapshot, addrDecodeSnapshot)
+	purego.RegisterFunc(&next.fnSnapshotDeinit, addrSnapshotDeinit)
+	purego.RegisterFunc(&next.fnSnapshotRestoreInto, addrSnapshotRestoreInto)
+	purego.RegisterFunc(&next.fnSnapshotSnapshotTerminal, addrSnapshotSnapshotTerminal)
+	purego.RegisterFunc(&next.fnSnapshotContinuation, addrSnapshotContinuation)
+	purego.RegisterFunc(&next.fnNewSnapshotDecoder, addrNewSnapshotDecoder)
+	purego.RegisterFunc(&next.fnSnapshotDecoderFreeSnapshotDecoder, addrSnapshotDecoderFreeSnapshotDecoder)
+	purego.RegisterFunc(&next.fnSnapshotDecoderReady, addrSnapshotDecoderReady)
+	purego.RegisterFunc(&next.fnSnapshotDecoderRestoreInto, addrSnapshotDecoderRestoreInto)
+	purego.RegisterFunc(&next.fnSnapshotDecoderContinuation, addrSnapshotDecoderContinuation)
+	purego.RegisterFunc(&next.fnSnapshotDecoderNext, addrSnapshotDecoderNext)
+	purego.RegisterFunc(&next.fnSnapshotDecoderSetKittyImageStorageLimit, addrSnapshotDecoderSetKittyImageStorageLimit)
+	purego.RegisterFunc(&next.fnSnapshotDecoderKittyCounts, addrSnapshotDecoderKittyCounts)
+	purego.RegisterFunc(&next.fnNewRenderState, addrNewRenderState)
+	purego.RegisterFunc(&next.fnRenderStateDeinit, addrRenderStateDeinit)
+	purego.RegisterFunc(&next.fnRenderStateUpdate, addrRenderStateUpdate)
+	purego.RegisterFunc(&next.fnRenderStateClean, addrRenderStateClean)
+	purego.RegisterFunc(&next.fnRenderStateCursor, addrRenderStateCursor)
+	purego.RegisterFunc(&next.fnRenderStateColors, addrRenderStateColors)
+	purego.RegisterFunc(&next.fnRenderStateCellCount, addrRenderStateCellCount)
+	purego.RegisterFunc(&next.fnRenderStateCells, addrRenderStateCells)
+	purego.RegisterFunc(&next.fnRenderStateDirty, addrRenderStateDirty)
+	purego.RegisterFunc(&next.fnRenderStateDirtyRows, addrRenderStateDirtyRows)
+	purego.RegisterFunc(&next.fnRenderStateRowCells, addrRenderStateRowCells)
+	purego.RegisterFunc(&next.fnRenderStateGraphemes, addrRenderStateGraphemes)
+	purego.RegisterFunc(&next.fnRenderStateHyperlinkAt, addrRenderStateHyperlinkAt)
+	purego.RegisterFunc(&next.fnRenderStateImagePlacementCount, addrRenderStateImagePlacementCount)
+	purego.RegisterFunc(&next.fnRenderStateImagePlacements, addrRenderStateImagePlacements)
+	purego.RegisterFunc(&next.fnRenderStateImagePlacementsGeneration, addrRenderStateImagePlacementsGeneration)
+	purego.RegisterFunc(&next.fnNewKittyImages, addrNewKittyImages)
+	purego.RegisterFunc(&next.fnKittyImagesFreeKittyImages, addrKittyImagesFreeKittyImages)
+	purego.RegisterFunc(&next.fnKittyImagesUpdate, addrKittyImagesUpdate)
+	purego.RegisterFunc(&next.fnKittyImagesPlacementCount, addrKittyImagesPlacementCount)
+	purego.RegisterFunc(&next.fnKittyImagesPlacements, addrKittyImagesPlacements)
+	purego.RegisterFunc(&next.fnUnicodeCodepointWidth, addrUnicodeCodepointWidth)
+	purego.RegisterFunc(&next.fnGraphemeWidth, addrGraphemeWidth)
+	purego.RegisterFunc(&next.fnFreeBuffer, addrFreeBuffer)
+	purego.RegisterFunc(&next.fnFreeString, addrFreeString)
+	purego.RegisterFunc(&next.fnSgrAttributeCount, addrSgrAttributeCount)
+	purego.RegisterFunc(&next.fnSgrAttributeAt, addrSgrAttributeAt)
+	loadedBindings.Store(&next)
+	return nil
 }
 
-// UnicodeCodepointWidth calls the generated C ABI wrapper for zg_unicode_codepoint_width.
-func UnicodeCodepointWidth(cp uint32) (uint8, int32) {
-	var outResult C.uint8_t
-	code := int32(C.zg_unicode_codepoint_width(C.uint32_t(cp), &outResult))
-	return uint8(outResult), code
+func bindings() *nativeBindings {
+	value := loadedBindings.Load()
+	if value == nil {
+		panic("zigo: native library is not loaded; call LoadLibrary first")
+	}
+	return value
 }
 
-// GraphemeWidth calls the generated C ABI wrapper for zg_grapheme_width.
-func GraphemeWidth(cps []uint32) uint8 {
-	cpsPtr := (*C.uint32_t)(zigoSlicePtr(cps))
-	return uint8(C.zg_grapheme_width(cpsPtr, C.size_t(len(cps))))
+// LastErrorMessage returns the most recent native panic message for this binding.
+func LastErrorMessage() string {
+	p := bindings().lastError()
+	if p == nil {
+		return ""
+	}
+	length := 0
+	for *(*byte)(unsafe.Add(p, length)) != 0 {
+		length++
+	}
+	return string(unsafe.Slice((*byte)(p), length))
 }
 
-// FreeBuffer calls the generated C ABI wrapper for zg_free_buffer.
-func FreeBuffer(buffer []uint8) {
-	bufferPtr := (*C.uint8_t)(zigoSlicePtr(buffer))
-	C.zg_free_buffer(bufferPtr, C.size_t(len(buffer)))
-}
-
-// FreeString calls the generated C ABI wrapper for zg_free_string.
-func FreeString(str string) {
-	strPtr := (*C.uint8_t)(zigoStringPtr(str))
-	C.zg_free_string(strPtr, C.size_t(len(str)))
-}
-
-// SgrAttributeCount calls the generated C ABI wrapper for zg_sgr_attribute_count.
-func SgrAttributeCount(params []uint16, colonMask uint32) (uint, int32) {
-	paramsPtr := (*C.uint16_t)(zigoSlicePtr(params))
-	var outResult C.size_t
-	code := int32(C.zg_sgr_attribute_count(paramsPtr, C.size_t(len(params)), C.uint32_t(colonMask), &outResult))
-	return uint(outResult), code
-}
-
-// SgrAttributeAt calls the generated C ABI wrapper for zg_sgr_attribute_at.
-func SgrAttributeAt(params []uint16, colonMask uint32, index uint) (AttributeData, int32) {
-	paramsPtr := (*C.uint16_t)(zigoSlicePtr(params))
-	var outResult C.zg_attribute_snapshot_t
-	code := int32(C.zg_sgr_attribute_at(paramsPtr, C.size_t(len(params)), C.uint32_t(colonMask), C.size_t(index), &outResult))
-	return AttributeData{
-		Tag:                uint8(outResult.tag),
-		Underline:          uint8(outResult.underline),
-		UnderlineColorRgbR: uint8(outResult.underline_color_rgb_r),
-		UnderlineColorRgbG: uint8(outResult.underline_color_rgb_g),
-		UnderlineColorRgbB: uint8(outResult.underline_color_rgb_b),
-		UnderlineColor256:  uint8(outResult.underline_color_256),
-		DirectColorFgR:     uint8(outResult.direct_color_fg_r),
-		DirectColorFgG:     uint8(outResult.direct_color_fg_g),
-		DirectColorFgB:     uint8(outResult.direct_color_fg_b),
-		DirectColorBgR:     uint8(outResult.direct_color_bg_r),
-		DirectColorBgG:     uint8(outResult.direct_color_bg_g),
-		DirectColorBgB:     uint8(outResult.direct_color_bg_b),
-		Color256Fg:         uint8(outResult.color_256_fg),
-		Color256Bg:         uint8(outResult.color_256_bg),
-		NamedFg:            uint8(outResult.named_fg),
-		NamedBg:            uint8(outResult.named_bg),
-		BrightNamedFg:      uint8(outResult.bright_named_fg),
-		BrightNamedBg:      uint8(outResult.bright_named_bg),
-	}, code
+// PanicMessage returns the message of the native panic a status code of -256 or below names.
+func PanicMessage(code int32) string {
+	p := bindings().panicMessage(code)
+	if p == nil {
+		return ""
+	}
+	length := 0
+	for *(*byte)(unsafe.Add(p, length)) != 0 {
+		length++
+	}
+	return string(unsafe.Slice((*byte)(p), length))
 }
 
 // KeyEventData mirrors the zg_key_event layout, padding included.
@@ -3237,226 +2695,2513 @@ type AttributeData struct {
 	BrightNamedBg      uint8
 }
 
-// KeyEventData slices are copied from C memory as one run, so it must match zg_key_event byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(KeyEventData{})-unsafe.Sizeof(C.zg_key_event{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(KeyEventData{}.Action)-unsafe.Offsetof(C.zg_key_event{}.action)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KeyEventData{}.Key)-unsafe.Offsetof(C.zg_key_event{}.key)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KeyEventData{}.Mods)-unsafe.Offsetof(C.zg_key_event{}.mods)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KeyEventData{}.ConsumedMods)-unsafe.Offsetof(C.zg_key_event{}.consumed_mods)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KeyEventData{}.Composing)-unsafe.Offsetof(C.zg_key_event{}.composing)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KeyEventData{}.UnshiftedCodepoint)-unsafe.Offsetof(C.zg_key_event{}.unshifted_codepoint)]
+// zigoEmptyStreamData is what a present but empty byte-slice reader points
+// at. The shim tells the fast path from the dispatcher path by the pointer
+// being non-NULL, so an empty stream still needs an address.
+var zigoEmptyStreamData byte
 
-// MouseEventData slices are copied from C memory as one run, so it must match zg_mouse_event byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(MouseEventData{})-unsafe.Sizeof(C.zg_mouse_event{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(MouseEventData{}.Action)-unsafe.Offsetof(C.zg_mouse_event{}.action)]
-var _ = [1]struct{}{}[unsafe.Offsetof(MouseEventData{}.Button)-unsafe.Offsetof(C.zg_mouse_event{}.button)]
-var _ = [1]struct{}{}[unsafe.Offsetof(MouseEventData{}.HasButton)-unsafe.Offsetof(C.zg_mouse_event{}.has_button)]
-var _ = [1]struct{}{}[unsafe.Offsetof(MouseEventData{}.Mods)-unsafe.Offsetof(C.zg_mouse_event{}.mods)]
-var _ = [1]struct{}{}[unsafe.Offsetof(MouseEventData{}.X)-unsafe.Offsetof(C.zg_mouse_event{}.x)]
-var _ = [1]struct{}{}[unsafe.Offsetof(MouseEventData{}.Y)-unsafe.Offsetof(C.zg_mouse_event{}.y)]
+// TerminalCols calls the generated purego ABI wrapper for zg_terminal_cols.
+func TerminalCols(self unsafe.Pointer) (uint16, int32) {
+	var outResult uint16
+	code := bindings().fnTerminalCols(self, &outResult)
+	return outResult, code
+}
 
-// RenderSizeData slices are copied from C memory as one run, so it must match zg_render_size byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(RenderSizeData{})-unsafe.Sizeof(C.zg_render_size{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.ScreenWidth)-unsafe.Offsetof(C.zg_render_size{}.screen_width)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.ScreenHeight)-unsafe.Offsetof(C.zg_render_size{}.screen_height)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.CellWidth)-unsafe.Offsetof(C.zg_render_size{}.cell_width)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.CellHeight)-unsafe.Offsetof(C.zg_render_size{}.cell_height)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.PaddingTop)-unsafe.Offsetof(C.zg_render_size{}.padding_top)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.PaddingBottom)-unsafe.Offsetof(C.zg_render_size{}.padding_bottom)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.PaddingRight)-unsafe.Offsetof(C.zg_render_size{}.padding_right)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderSizeData{}.PaddingLeft)-unsafe.Offsetof(C.zg_render_size{}.padding_left)]
+// TerminalRows calls the generated purego ABI wrapper for zg_terminal_rows.
+func TerminalRows(self unsafe.Pointer) (uint16, int32) {
+	var outResult uint16
+	code := bindings().fnTerminalRows(self, &outResult)
+	return outResult, code
+}
 
-// GridPointData slices are copied from C memory as one run, so it must match zg_grid_point byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(GridPointData{})-unsafe.Sizeof(C.zg_grid_point{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(GridPointData{}.X)-unsafe.Offsetof(C.zg_grid_point{}.x)]
-var _ = [1]struct{}{}[unsafe.Offsetof(GridPointData{}.Y)-unsafe.Offsetof(C.zg_grid_point{}.y)]
+// TerminalCursorX calls the generated purego ABI wrapper for zg_terminal_cursor_x.
+func TerminalCursorX(self unsafe.Pointer) (uint16, int32) {
+	var outResult uint16
+	code := bindings().fnTerminalCursorX(self, &outResult)
+	return outResult, code
+}
 
-// SelectionData slices are copied from C memory as one run, so it must match zg_selection byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(SelectionData{})-unsafe.Sizeof(C.zg_selection{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(SelectionData{}.StartX)-unsafe.Offsetof(C.zg_selection{}.start_x)]
-var _ = [1]struct{}{}[unsafe.Offsetof(SelectionData{}.StartY)-unsafe.Offsetof(C.zg_selection{}.start_y)]
-var _ = [1]struct{}{}[unsafe.Offsetof(SelectionData{}.EndX)-unsafe.Offsetof(C.zg_selection{}.end_x)]
-var _ = [1]struct{}{}[unsafe.Offsetof(SelectionData{}.EndY)-unsafe.Offsetof(C.zg_selection{}.end_y)]
-var _ = [1]struct{}{}[unsafe.Offsetof(SelectionData{}.Rectangle)-unsafe.Offsetof(C.zg_selection{}.rectangle)]
+// TerminalCursorY calls the generated purego ABI wrapper for zg_terminal_cursor_y.
+func TerminalCursorY(self unsafe.Pointer) (uint16, int32) {
+	var outResult uint16
+	code := bindings().fnTerminalCursorY(self, &outResult)
+	return outResult, code
+}
 
-// FormatOptionsData slices are copied from C memory as one run, so it must match zg_format_options byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(FormatOptionsData{})-unsafe.Sizeof(C.zg_format_options{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.Format)-unsafe.Offsetof(C.zg_format_options{}.format)]
-var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.Unwrap)-unsafe.Offsetof(C.zg_format_options{}.unwrap)]
-var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.KeepTrailingWhitespace)-unsafe.Offsetof(C.zg_format_options{}.keep_trailing_whitespace)]
-var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.Cursor)-unsafe.Offsetof(C.zg_format_options{}.cursor)]
-var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.NoStyles)-unsafe.Offsetof(C.zg_format_options{}.no_styles)]
-var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.NoHyperlinks)-unsafe.Offsetof(C.zg_format_options{}.no_hyperlinks)]
-var _ = [1]struct{}{}[unsafe.Offsetof(FormatOptionsData{}.ResolvePalette)-unsafe.Offsetof(C.zg_format_options{}.resolve_palette)]
+// TerminalCursorStyle calls the generated purego ABI wrapper for zg_terminal_cursor_style.
+func TerminalCursorStyle(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnTerminalCursorStyle(self, &outResult)
+	return outResult, code
+}
 
-// RGBData slices are copied from C memory as one run, so it must match zg_rgb byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(RGBData{})-unsafe.Sizeof(C.zg_rgb{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(RGBData{}.R)-unsafe.Offsetof(C.zg_rgb{}.r)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RGBData{}.G)-unsafe.Offsetof(C.zg_rgb{}.g)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RGBData{}.B)-unsafe.Offsetof(C.zg_rgb{}.b)]
+// TerminalActiveScreenKey calls the generated purego ABI wrapper for zg_terminal_active_screen_key.
+func TerminalActiveScreenKey(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnTerminalActiveScreenKey(self, &outResult)
+	return outResult, code
+}
 
-// ScrollbarData slices are copied from C memory as one run, so it must match zg_scrollbar byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(ScrollbarData{})-unsafe.Sizeof(C.zg_scrollbar{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(ScrollbarData{}.Total)-unsafe.Offsetof(C.zg_scrollbar{}.total)]
-var _ = [1]struct{}{}[unsafe.Offsetof(ScrollbarData{}.Offset)-unsafe.Offsetof(C.zg_scrollbar{}.offset)]
-var _ = [1]struct{}{}[unsafe.Offsetof(ScrollbarData{}.Len)-unsafe.Offsetof(C.zg_scrollbar{}.len)]
+// TerminalCursorPendingWrap calls the generated purego ABI wrapper for zg_terminal_cursor_pending_wrap.
+func TerminalCursorPendingWrap(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnTerminalCursorPendingWrap(self, &outResult)
+	return outResult, code
+}
 
-// ScrollRegionData slices are copied from C memory as one run, so it must match zg_scroll_region byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(ScrollRegionData{})-unsafe.Sizeof(C.zg_scroll_region{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(ScrollRegionData{}.Top)-unsafe.Offsetof(C.zg_scroll_region{}.top)]
-var _ = [1]struct{}{}[unsafe.Offsetof(ScrollRegionData{}.Bottom)-unsafe.Offsetof(C.zg_scroll_region{}.bottom)]
-var _ = [1]struct{}{}[unsafe.Offsetof(ScrollRegionData{}.Left)-unsafe.Offsetof(C.zg_scroll_region{}.left)]
-var _ = [1]struct{}{}[unsafe.Offsetof(ScrollRegionData{}.Right)-unsafe.Offsetof(C.zg_scroll_region{}.right)]
+// TerminalCursorProtected calls the generated purego ABI wrapper for zg_terminal_cursor_protected.
+func TerminalCursorProtected(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnTerminalCursorProtected(self, &outResult)
+	return outResult, code
+}
 
-// GestureGeometryData slices are copied from C memory as one run, so it must match zg_gesture_geometry byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(GestureGeometryData{})-unsafe.Sizeof(C.zg_gesture_geometry{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(GestureGeometryData{}.Columns)-unsafe.Offsetof(C.zg_gesture_geometry{}.columns)]
-var _ = [1]struct{}{}[unsafe.Offsetof(GestureGeometryData{}.CellWidth)-unsafe.Offsetof(C.zg_gesture_geometry{}.cell_width)]
-var _ = [1]struct{}{}[unsafe.Offsetof(GestureGeometryData{}.PaddingLeft)-unsafe.Offsetof(C.zg_gesture_geometry{}.padding_left)]
-var _ = [1]struct{}{}[unsafe.Offsetof(GestureGeometryData{}.ScreenHeight)-unsafe.Offsetof(C.zg_gesture_geometry{}.screen_height)]
+// TerminalWidthPx calls the generated purego ABI wrapper for zg_terminal_width_px.
+func TerminalWidthPx(self unsafe.Pointer) (uint32, int32) {
+	var outResult uint32
+	code := bindings().fnTerminalWidthPx(self, &outResult)
+	return outResult, code
+}
 
-// GesturePressEventData slices are copied from C memory as one run, so it must match zg_gesture_press_event byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(GesturePressEventData{})-unsafe.Sizeof(C.zg_gesture_press_event{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(GesturePressEventData{}.X)-unsafe.Offsetof(C.zg_gesture_press_event{}.x)]
-var _ = [1]struct{}{}[unsafe.Offsetof(GesturePressEventData{}.Y)-unsafe.Offsetof(C.zg_gesture_press_event{}.y)]
-var _ = [1]struct{}{}[unsafe.Offsetof(GesturePressEventData{}.Xpos)-unsafe.Offsetof(C.zg_gesture_press_event{}.xpos)]
-var _ = [1]struct{}{}[unsafe.Offsetof(GesturePressEventData{}.Ypos)-unsafe.Offsetof(C.zg_gesture_press_event{}.ypos)]
-var _ = [1]struct{}{}[unsafe.Offsetof(GesturePressEventData{}.MaxDistance)-unsafe.Offsetof(C.zg_gesture_press_event{}.max_distance)]
-var _ = [1]struct{}{}[unsafe.Offsetof(GesturePressEventData{}.RepeatIntervalNs)-unsafe.Offsetof(C.zg_gesture_press_event{}.repeat_interval_ns)]
-var _ = [1]struct{}{}[unsafe.Offsetof(GesturePressEventData{}.TimeNs)-unsafe.Offsetof(C.zg_gesture_press_event{}.time_ns)]
+// TerminalHeightPx calls the generated purego ABI wrapper for zg_terminal_height_px.
+func TerminalHeightPx(self unsafe.Pointer) (uint32, int32) {
+	var outResult uint32
+	code := bindings().fnTerminalHeightPx(self, &outResult)
+	return outResult, code
+}
 
-// GestureDragEventData slices are copied from C memory as one run, so it must match zg_gesture_drag_event byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(GestureDragEventData{})-unsafe.Sizeof(C.zg_gesture_drag_event{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(GestureDragEventData{}.X)-unsafe.Offsetof(C.zg_gesture_drag_event{}.x)]
-var _ = [1]struct{}{}[unsafe.Offsetof(GestureDragEventData{}.Y)-unsafe.Offsetof(C.zg_gesture_drag_event{}.y)]
-var _ = [1]struct{}{}[unsafe.Offsetof(GestureDragEventData{}.Xpos)-unsafe.Offsetof(C.zg_gesture_drag_event{}.xpos)]
-var _ = [1]struct{}{}[unsafe.Offsetof(GestureDragEventData{}.Ypos)-unsafe.Offsetof(C.zg_gesture_drag_event{}.ypos)]
-var _ = [1]struct{}{}[unsafe.Offsetof(GestureDragEventData{}.Rectangle)-unsafe.Offsetof(C.zg_gesture_drag_event{}.rectangle)]
+// TerminalFocused calls the generated purego ABI wrapper for zg_terminal_focused.
+func TerminalFocused(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnTerminalFocused(self, &outResult)
+	return outResult, code
+}
 
-// DragMoveData slices are copied from C memory as one run, so it must match zg_drag_move byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(DragMoveData{})-unsafe.Sizeof(C.zg_drag_move{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(DragMoveData{}.CellX)-unsafe.Offsetof(C.zg_drag_move{}.cell_x)]
-var _ = [1]struct{}{}[unsafe.Offsetof(DragMoveData{}.CellY)-unsafe.Offsetof(C.zg_drag_move{}.cell_y)]
-var _ = [1]struct{}{}[unsafe.Offsetof(DragMoveData{}.PixelX)-unsafe.Offsetof(C.zg_drag_move{}.pixel_x)]
-var _ = [1]struct{}{}[unsafe.Offsetof(DragMoveData{}.PixelY)-unsafe.Offsetof(C.zg_drag_move{}.pixel_y)]
-var _ = [1]struct{}{}[unsafe.Offsetof(DragMoveData{}.Operations)-unsafe.Offsetof(C.zg_drag_move{}.operations)]
+// TerminalVisible calls the generated purego ABI wrapper for zg_terminal_visible.
+func TerminalVisible(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnTerminalVisible(self, &outResult)
+	return outResult, code
+}
 
-// FeedBoundaryData slices are copied from C memory as one run, so it must match zg_feed_boundary byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(FeedBoundaryData{})-unsafe.Sizeof(C.zg_feed_boundary{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(FeedBoundaryData{}.Consumed)-unsafe.Offsetof(C.zg_feed_boundary{}.consumed)]
-var _ = [1]struct{}{}[unsafe.Offsetof(FeedBoundaryData{}.Reached)-unsafe.Offsetof(C.zg_feed_boundary{}.reached)]
+// TerminalPasswordInput calls the generated purego ABI wrapper for zg_terminal_password_input.
+func TerminalPasswordInput(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnTerminalPasswordInput(self, &outResult)
+	return outResult, code
+}
 
-// FeedStopData slices are copied from C memory as one run, so it must match zg_feed_stop byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(FeedStopData{})-unsafe.Sizeof(C.zg_feed_stop{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(FeedStopData{}.Consumed)-unsafe.Offsetof(C.zg_feed_stop{}.consumed)]
-var _ = [1]struct{}{}[unsafe.Offsetof(FeedStopData{}.Reached)-unsafe.Offsetof(C.zg_feed_stop{}.reached)]
-var _ = [1]struct{}{}[unsafe.Offsetof(FeedStopData{}.StartKind)-unsafe.Offsetof(C.zg_feed_stop{}.start_kind)]
-var _ = [1]struct{}{}[unsafe.Offsetof(FeedStopData{}.StartIntroducer)-unsafe.Offsetof(C.zg_feed_stop{}.start_introducer)]
-var _ = [1]struct{}{}[unsafe.Offsetof(FeedStopData{}.StartByte)-unsafe.Offsetof(C.zg_feed_stop{}.start_byte)]
-var _ = [1]struct{}{}[unsafe.Offsetof(FeedStopData{}.EndKind)-unsafe.Offsetof(C.zg_feed_stop{}.end_kind)]
-var _ = [1]struct{}{}[unsafe.Offsetof(FeedStopData{}.EndReason)-unsafe.Offsetof(C.zg_feed_stop{}.end_reason)]
-var _ = [1]struct{}{}[unsafe.Offsetof(FeedStopData{}.EndByte)-unsafe.Offsetof(C.zg_feed_stop{}.end_byte)]
+// TerminalCharsetGl calls the generated purego ABI wrapper for zg_terminal_charset_gl.
+func TerminalCharsetGl(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnTerminalCharsetGl(self, &outResult)
+	return outResult, code
+}
 
-// SnapshotProgressData slices are copied from C memory as one run, so it must match zg_snapshot_progress byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(SnapshotProgressData{})-unsafe.Sizeof(C.zg_snapshot_progress{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgressData{}.Rows)-unsafe.Offsetof(C.zg_snapshot_progress{}.rows)]
-var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgressData{}.Bytes)-unsafe.Offsetof(C.zg_snapshot_progress{}.bytes)]
-var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgressData{}.Remaining)-unsafe.Offsetof(C.zg_snapshot_progress{}.remaining)]
-var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgressData{}.ImageID)-unsafe.Offsetof(C.zg_snapshot_progress{}.image_id)]
-var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgressData{}.Frame)-unsafe.Offsetof(C.zg_snapshot_progress{}.frame)]
-var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotProgressData{}.Kind)-unsafe.Offsetof(C.zg_snapshot_progress{}.kind)]
+// TerminalCharsetGr calls the generated purego ABI wrapper for zg_terminal_charset_gr.
+func TerminalCharsetGr(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnTerminalCharsetGr(self, &outResult)
+	return outResult, code
+}
 
-// SnapshotKittyCountsData slices are copied from C memory as one run, so it must match zg_snapshot_kitty_counts byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(SnapshotKittyCountsData{})-unsafe.Sizeof(C.zg_snapshot_kitty_counts{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotKittyCountsData{}.PrimaryPendingBytes)-unsafe.Offsetof(C.zg_snapshot_kitty_counts{}.primary_pending_bytes)]
-var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotKittyCountsData{}.AlternatePendingBytes)-unsafe.Offsetof(C.zg_snapshot_kitty_counts{}.alternate_pending_bytes)]
-var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotKittyCountsData{}.PrimaryImages)-unsafe.Offsetof(C.zg_snapshot_kitty_counts{}.primary_images)]
-var _ = [1]struct{}{}[unsafe.Offsetof(SnapshotKittyCountsData{}.AlternateImages)-unsafe.Offsetof(C.zg_snapshot_kitty_counts{}.alternate_images)]
+// TerminalCharsetSingleShift calls the generated purego ABI wrapper for zg_terminal_charset_single_shift.
+func TerminalCharsetSingleShift(self unsafe.Pointer) (uint8, bool, int32) {
+	var outResultHas uint8
+	var outResult uint8
+	code := bindings().fnTerminalCharsetSingleShift(self, &outResultHas, &outResult)
+	return outResult, outResultHas != 0, code
+}
 
-// RenderColorsData slices are copied from C memory as one run, so it must match zg_render_colors byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(RenderColorsData{})-unsafe.Sizeof(C.zg_render_colors{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderColorsData{}.Background)-unsafe.Offsetof(C.zg_render_colors{}.background)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderColorsData{}.Foreground)-unsafe.Offsetof(C.zg_render_colors{}.foreground)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderColorsData{}.Cursor)-unsafe.Offsetof(C.zg_render_colors{}.cursor)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderColorsData{}.CursorHasValue)-unsafe.Offsetof(C.zg_render_colors{}.cursor_has_value)]
+// TerminalProtectedMode calls the generated purego ABI wrapper for zg_terminal_protected_mode.
+func TerminalProtectedMode(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnTerminalProtectedMode(self, &outResult)
+	return outResult, code
+}
 
-// RenderCellData slices are copied from C memory as one run, so it must match zg_render_cell byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(RenderCellData{})-unsafe.Sizeof(C.zg_render_cell{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Codepoint)-unsafe.Offsetof(C.zg_render_cell{}.codepoint)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Fg)-unsafe.Offsetof(C.zg_render_cell{}.fg)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Bg)-unsafe.Offsetof(C.zg_render_cell{}.bg)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderCellData{}.Flags)-unsafe.Offsetof(C.zg_render_cell{}.flags)]
+// GestureClickCount calls the generated purego ABI wrapper for zg_gesture_click_count.
+func GestureClickCount(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnGestureClickCount(self, &outResult)
+	return outResult, code
+}
 
-// KittyPlacementData slices are copied from C memory as one run, so it must match zg_kitty_placement byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(KittyPlacementData{})-unsafe.Sizeof(C.zg_kitty_placement{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.ImageID)-unsafe.Offsetof(C.zg_kitty_placement{}.image_id)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.PlacementID)-unsafe.Offsetof(C.zg_kitty_placement{}.placement_id)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.ViewportCol)-unsafe.Offsetof(C.zg_kitty_placement{}.viewport_col)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.ViewportRow)-unsafe.Offsetof(C.zg_kitty_placement{}.viewport_row)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.XOffset)-unsafe.Offsetof(C.zg_kitty_placement{}.x_offset)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.YOffset)-unsafe.Offsetof(C.zg_kitty_placement{}.y_offset)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.PixelWidth)-unsafe.Offsetof(C.zg_kitty_placement{}.pixel_width)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.PixelHeight)-unsafe.Offsetof(C.zg_kitty_placement{}.pixel_height)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.GridCols)-unsafe.Offsetof(C.zg_kitty_placement{}.grid_cols)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.GridRows)-unsafe.Offsetof(C.zg_kitty_placement{}.grid_rows)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.SourceX)-unsafe.Offsetof(C.zg_kitty_placement{}.source_x)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.SourceY)-unsafe.Offsetof(C.zg_kitty_placement{}.source_y)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.SourceWidth)-unsafe.Offsetof(C.zg_kitty_placement{}.source_width)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.SourceHeight)-unsafe.Offsetof(C.zg_kitty_placement{}.source_height)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.Z)-unsafe.Offsetof(C.zg_kitty_placement{}.z)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.Layer)-unsafe.Offsetof(C.zg_kitty_placement{}.layer)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.Virtual)-unsafe.Offsetof(C.zg_kitty_placement{}.virtual)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyPlacementData{}.Pad)-unsafe.Offsetof(C.zg_kitty_placement{}._pad)]
+// GestureDragged calls the generated purego ABI wrapper for zg_gesture_dragged.
+func GestureDragged(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnGestureDragged(self, &outResult)
+	return outResult, code
+}
 
-// RenderImagePlacementData slices are copied from C memory as one run, so it must match zg_render_image_placement byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(RenderImagePlacementData{})-unsafe.Sizeof(C.zg_render_image_placement{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.ImageGeneration)-unsafe.Offsetof(C.zg_render_image_placement{}.image_generation)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.ImageID)-unsafe.Offsetof(C.zg_render_image_placement{}.image_id)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.PlacementID)-unsafe.Offsetof(C.zg_render_image_placement{}.placement_id)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.X)-unsafe.Offsetof(C.zg_render_image_placement{}.x)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.Y)-unsafe.Offsetof(C.zg_render_image_placement{}.y)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.Cols)-unsafe.Offsetof(C.zg_render_image_placement{}.cols)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.Rows)-unsafe.Offsetof(C.zg_render_image_placement{}.rows)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.OffsetX)-unsafe.Offsetof(C.zg_render_image_placement{}.offset_x)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.OffsetY)-unsafe.Offsetof(C.zg_render_image_placement{}.offset_y)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.Width)-unsafe.Offsetof(C.zg_render_image_placement{}.width)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.Height)-unsafe.Offsetof(C.zg_render_image_placement{}.height)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.SourceX)-unsafe.Offsetof(C.zg_render_image_placement{}.source_x)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.SourceY)-unsafe.Offsetof(C.zg_render_image_placement{}.source_y)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.SourceWidth)-unsafe.Offsetof(C.zg_render_image_placement{}.source_width)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.SourceHeight)-unsafe.Offsetof(C.zg_render_image_placement{}.source_height)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.Z)-unsafe.Offsetof(C.zg_render_image_placement{}.z)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.Layer)-unsafe.Offsetof(C.zg_render_image_placement{}.layer)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.Kind)-unsafe.Offsetof(C.zg_render_image_placement{}.kind)]
-var _ = [1]struct{}{}[unsafe.Offsetof(RenderImagePlacementData{}.Pad)-unsafe.Offsetof(C.zg_render_image_placement{}._pad)]
+// StreamFailed calls the generated purego ABI wrapper for zg_stream_failed.
+func StreamFailed(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnStreamFailed(self, &outResult)
+	return outResult, code
+}
 
-// KittyImageData slices are copied from C memory as one run, so it must match zg_kitty_image byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(KittyImageData{})-unsafe.Sizeof(C.zg_kitty_image{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyImageData{}.Generation)-unsafe.Offsetof(C.zg_kitty_image{}.generation)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyImageData{}.DataLen)-unsafe.Offsetof(C.zg_kitty_image{}.data_len)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyImageData{}.Width)-unsafe.Offsetof(C.zg_kitty_image{}.width)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyImageData{}.Height)-unsafe.Offsetof(C.zg_kitty_image{}.height)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyImageData{}.Format)-unsafe.Offsetof(C.zg_kitty_image{}.format)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyImageData{}.Compression)-unsafe.Offsetof(C.zg_kitty_image{}.compression)]
-var _ = [1]struct{}{}[unsafe.Offsetof(KittyImageData{}.Pad)-unsafe.Offsetof(C.zg_kitty_image{}._pad)]
+// OscParserCommand calls the generated purego ABI wrapper for zg_osc_parser_command.
+func OscParserCommand(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnOscParserCommand(self, &outResult)
+	return outResult, code
+}
 
-// AttributeData slices are copied from C memory as one run, so it must match zg_attribute_snapshot_t byte for byte.
-var _ = [1]struct{}{}[unsafe.Sizeof(AttributeData{})-unsafe.Sizeof(C.zg_attribute_snapshot_t{})]
-var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.Tag)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.tag)]
-var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.Underline)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.underline)]
-var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.UnderlineColorRgbR)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.underline_color_rgb_r)]
-var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.UnderlineColorRgbG)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.underline_color_rgb_g)]
-var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.UnderlineColorRgbB)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.underline_color_rgb_b)]
-var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.UnderlineColor256)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.underline_color_256)]
-var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.DirectColorFgR)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.direct_color_fg_r)]
-var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.DirectColorFgG)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.direct_color_fg_g)]
-var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.DirectColorFgB)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.direct_color_fg_b)]
-var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.DirectColorBgR)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.direct_color_bg_r)]
-var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.DirectColorBgG)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.direct_color_bg_g)]
-var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.DirectColorBgB)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.direct_color_bg_b)]
-var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.Color256Fg)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.color_256_fg)]
-var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.Color256Bg)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.color_256_bg)]
-var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.NamedFg)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.named_fg)]
-var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.NamedBg)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.named_bg)]
-var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.BrightNamedFg)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.bright_named_fg)]
-var _ = [1]struct{}{}[unsafe.Offsetof(AttributeData{}.BrightNamedBg)-unsafe.Offsetof(C.zg_attribute_snapshot_t{}.bright_named_bg)]
+// OscParserWindowTitle calls the generated purego ABI wrapper for zg_osc_parser_window_title.
+func OscParserWindowTitle(self unsafe.Pointer) (string, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnOscParserWindowTitle(self, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", code
+	}
+	if outResultLen == 0 {
+		return "", code
+	}
+	return string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen))), code
+}
+
+// OscParserIcon calls the generated purego ABI wrapper for zg_osc_parser_icon.
+func OscParserIcon(self unsafe.Pointer) (string, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnOscParserIcon(self, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", code
+	}
+	if outResultLen == 0 {
+		return "", code
+	}
+	return string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen))), code
+}
+
+// OscParserPwd calls the generated purego ABI wrapper for zg_osc_parser_pwd.
+func OscParserPwd(self unsafe.Pointer) (string, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnOscParserPwd(self, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", code
+	}
+	if outResultLen == 0 {
+		return "", code
+	}
+	return string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen))), code
+}
+
+// OscParserHyperlinkUri calls the generated purego ABI wrapper for zg_osc_parser_hyperlink_uri.
+func OscParserHyperlinkUri(self unsafe.Pointer) (string, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnOscParserHyperlinkUri(self, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", code
+	}
+	if outResultLen == 0 {
+		return "", code
+	}
+	return string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen))), code
+}
+
+// OscParserHyperlinkID calls the generated purego ABI wrapper for zg_osc_parser_hyperlink_id.
+func OscParserHyperlinkID(self unsafe.Pointer) (string, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnOscParserHyperlinkID(self, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", code
+	}
+	if outResultLen == 0 {
+		return "", code
+	}
+	return string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen))), code
+}
+
+// OscParserNotificationTitle calls the generated purego ABI wrapper for zg_osc_parser_notification_title.
+func OscParserNotificationTitle(self unsafe.Pointer) (string, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnOscParserNotificationTitle(self, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", code
+	}
+	if outResultLen == 0 {
+		return "", code
+	}
+	return string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen))), code
+}
+
+// OscParserNotificationBody calls the generated purego ABI wrapper for zg_osc_parser_notification_body.
+func OscParserNotificationBody(self unsafe.Pointer) (string, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnOscParserNotificationBody(self, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", code
+	}
+	if outResultLen == 0 {
+		return "", code
+	}
+	return string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen))), code
+}
+
+// OscParserClipboardData calls the generated purego ABI wrapper for zg_osc_parser_clipboard_data.
+func OscParserClipboardData(self unsafe.Pointer) (string, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnOscParserClipboardData(self, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", code
+	}
+	if outResultLen == 0 {
+		return "", code
+	}
+	return string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen))), code
+}
+
+// OscParserClipboardSelection calls the generated purego ABI wrapper for zg_osc_parser_clipboard_selection.
+func OscParserClipboardSelection(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnOscParserClipboardSelection(self, &outResult)
+	return outResult, code
+}
+
+// OscParserMouseShape calls the generated purego ABI wrapper for zg_osc_parser_mouse_shape.
+func OscParserMouseShape(self unsafe.Pointer) (string, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnOscParserMouseShape(self, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", code
+	}
+	if outResultLen == 0 {
+		return "", code
+	}
+	return string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen))), code
+}
+
+// OscParserSemanticPromptAction calls the generated purego ABI wrapper for zg_osc_parser_semantic_prompt_action.
+func OscParserSemanticPromptAction(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnOscParserSemanticPromptAction(self, &outResult)
+	return outResult, code
+}
+
+// OscParserSemanticPromptOptions calls the generated purego ABI wrapper for zg_osc_parser_semantic_prompt_options.
+func OscParserSemanticPromptOptions(self unsafe.Pointer) (string, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnOscParserSemanticPromptOptions(self, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", code
+	}
+	if outResultLen == 0 {
+		return "", code
+	}
+	return string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen))), code
+}
+
+// OscParserProgressState calls the generated purego ABI wrapper for zg_osc_parser_progress_state.
+func OscParserProgressState(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnOscParserProgressState(self, &outResult)
+	return outResult, code
+}
+
+// OscParserProgressValue calls the generated purego ABI wrapper for zg_osc_parser_progress_value.
+func OscParserProgressValue(self unsafe.Pointer) (int16, int32) {
+	var outResult int16
+	code := bindings().fnOscParserProgressValue(self, &outResult)
+	return outResult, code
+}
+
+// RenderStateRows calls the generated purego ABI wrapper for zg_render_state_rows.
+func RenderStateRows(self unsafe.Pointer) (uint16, int32) {
+	var outResult uint16
+	code := bindings().fnRenderStateRows(self, &outResult)
+	return outResult, code
+}
+
+// RenderStateCols calls the generated purego ABI wrapper for zg_render_state_cols.
+func RenderStateCols(self unsafe.Pointer) (uint16, int32) {
+	var outResult uint16
+	code := bindings().fnRenderStateCols(self, &outResult)
+	return outResult, code
+}
+
+// RenderStateCursorVisible calls the generated purego ABI wrapper for zg_render_state_cursor_visible.
+func RenderStateCursorVisible(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnRenderStateCursorVisible(self, &outResult)
+	return outResult, code
+}
+
+// RenderStateCursorStyle calls the generated purego ABI wrapper for zg_render_state_cursor_style.
+func RenderStateCursorStyle(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnRenderStateCursorStyle(self, &outResult)
+	return outResult, code
+}
+
+// RenderStateCursorBlinking calls the generated purego ABI wrapper for zg_render_state_cursor_blinking.
+func RenderStateCursorBlinking(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnRenderStateCursorBlinking(self, &outResult)
+	return outResult, code
+}
+
+// RenderStateCursorPasswordInput calls the generated purego ABI wrapper for zg_render_state_cursor_password_input.
+func RenderStateCursorPasswordInput(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnRenderStateCursorPasswordInput(self, &outResult)
+	return outResult, code
+}
+
+// KittyImagesGeneration calls the generated purego ABI wrapper for zg_kitty_images_generation.
+func KittyImagesGeneration(self unsafe.Pointer) (uint64, int32) {
+	var outResult uint64
+	code := bindings().fnKittyImagesGeneration(self, &outResult)
+	return outResult, code
+}
+
+// SysOnPngDecodeRequest calls the generated purego ABI wrapper for zg_sys_on_png_decode_request_purego_v2.
+func SysOnPngDecodeRequest(callbackCallback, callbackToken uintptr) {
+	bindings().fnSysOnPngDecodeRequest(callbackCallback, callbackToken)
+}
+
+// SysReplyPngImage calls the generated purego ABI wrapper for zg_sys_reply_png_image.
+func SysReplyPngImage(width uint32, height uint32, rgba []uint8) int32 {
+	var rgbaPtr unsafe.Pointer
+	if len(rgba) != 0 {
+		rgbaPtr = unsafe.Pointer(&rgba[0])
+	}
+	code := bindings().fnSysReplyPngImage(width, height, rgbaPtr, uintptr(len(rgba)))
+	return code
+}
+
+// SysOnSecureRandomRequest calls the generated purego ABI wrapper for zg_sys_on_secure_random_request_purego_v2.
+func SysOnSecureRandomRequest(callbackCallback, callbackToken uintptr) {
+	bindings().fnSysOnSecureRandomRequest(callbackCallback, callbackToken)
+}
+
+// SysOnLog calls the generated purego ABI wrapper for zg_sys_on_log_purego_v2.
+func SysOnLog(callbackCallback, callbackToken uintptr) {
+	bindings().fnSysOnLog(callbackCallback, callbackToken)
+}
+
+// SysClear calls the generated purego ABI wrapper for zg_sys_clear.
+func SysClear() {
+	bindings().fnSysClear()
+}
+
+// SysReplySecureRandom calls the generated purego ABI wrapper for zg_sys_reply_secure_random.
+func SysReplySecureRandom(bytes []uint8) int32 {
+	var bytesPtr unsafe.Pointer
+	if len(bytes) != 0 {
+		bytesPtr = unsafe.Pointer(&bytes[0])
+	}
+	code := bindings().fnSysReplySecureRandom(bytesPtr, uintptr(len(bytes)))
+	return code
+}
+
+// KeyCodepoint calls the generated purego ABI wrapper for zg_key_codepoint.
+func KeyCodepoint(self int32) (uint32, bool) {
+	var outResult uint32
+	result := bindings().fnKeyCodepoint(self, &outResult)
+	return outResult, result != 0
+}
+
+// KeyPrintable calls the generated purego ABI wrapper for zg_key_printable.
+func KeyPrintable(self int32) uint8 {
+	result := bindings().fnKeyPrintable(self)
+	return uint8(result)
+}
+
+// KeyModifier calls the generated purego ABI wrapper for zg_key_modifier.
+func KeyModifier(self int32) uint8 {
+	result := bindings().fnKeyModifier(self)
+	return uint8(result)
+}
+
+// KeyKeypad calls the generated purego ABI wrapper for zg_key_keypad.
+func KeyKeypad(self int32) uint8 {
+	result := bindings().fnKeyKeypad(self)
+	return uint8(result)
+}
+
+// KeyLeftOrRightShift calls the generated purego ABI wrapper for zg_key_left_or_right_shift.
+func KeyLeftOrRightShift(self int32) uint8 {
+	result := bindings().fnKeyLeftOrRightShift(self)
+	return uint8(result)
+}
+
+// KeyLeftOrRightAlt calls the generated purego ABI wrapper for zg_key_left_or_right_alt.
+func KeyLeftOrRightAlt(self int32) uint8 {
+	result := bindings().fnKeyLeftOrRightAlt(self)
+	return uint8(result)
+}
+
+// KeyCtrlOrSuper calls the generated purego ABI wrapper for zg_key_ctrl_or_super.
+func KeyCtrlOrSuper(self int32) uint8 {
+	result := bindings().fnKeyCtrlOrSuper(self)
+	return uint8(result)
+}
+
+// KeyShouldBeRemappable calls the generated purego ABI wrapper for zg_key_should_be_remappable.
+func KeyShouldBeRemappable(self int32) uint8 {
+	result := bindings().fnKeyShouldBeRemappable(self)
+	return uint8(result)
+}
+
+// KeyW3C calls the generated purego ABI wrapper for zg_key_w3_c.
+func KeyW3C(self int32) string {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	bindings().fnKeyW3C(self, &outResultPtr, &outResultLen)
+	if outResultLen == 0 {
+		return ""
+	}
+	return string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen)))
+}
+
+// EncodeKey calls the generated purego ABI wrapper for zg_encode_key_purego_v2.
+func EncodeKey(writerCallback, writerHandle uintptr, terminal unsafe.Pointer, event KeyEventData, utf8 string) int32 {
+	var utf8Ptr unsafe.Pointer
+	if len(utf8) != 0 {
+		utf8Ptr = unsafe.Pointer(unsafe.StringData(utf8))
+	}
+	code := bindings().fnEncodeKey(writerCallback, writerHandle, terminal, unsafe.Pointer(&event), utf8Ptr, uintptr(len(utf8)))
+	return code
+}
+
+// EncodeMouse calls the generated purego ABI wrapper for zg_encode_mouse_purego_v2.
+func EncodeMouse(writerCallback, writerHandle uintptr, terminal unsafe.Pointer, event MouseEventData, size RenderSizeData, anyButtonPressed uint8) int32 {
+	code := bindings().fnEncodeMouse(writerCallback, writerHandle, terminal, unsafe.Pointer(&event), unsafe.Pointer(&size), anyButtonPressed)
+	return code
+}
+
+// KeyKeyFromAscii calls the generated purego ABI wrapper for zg_key_from_ascii.
+func KeyKeyFromAscii(ch uint8) (int32, bool) {
+	var outResult int32
+	result := bindings().fnKeyKeyFromAscii(ch, &outResult)
+	return outResult, result != 0
+}
+
+// KeyKeyFromW3C calls the generated purego ABI wrapper for zg_key_from_w3c.
+func KeyKeyFromW3C(w3cCode string) (int32, bool) {
+	var w3cCodePtr unsafe.Pointer
+	if len(w3cCode) != 0 {
+		w3cCodePtr = unsafe.Pointer(unsafe.StringData(w3cCode))
+	}
+	var outResult int32
+	result := bindings().fnKeyKeyFromW3C(w3cCodePtr, uintptr(len(w3cCode)), &outResult)
+	return outResult, result != 0
+}
+
+// InputEncodeFocus calls the generated purego ABI wrapper for zg_input_encode_focus_purego_v2.
+func InputEncodeFocus(writerCallback, writerHandle uintptr, event uint8) int32 {
+	code := bindings().fnInputEncodeFocus(writerCallback, writerHandle, event)
+	return code
+}
+
+// InputIsSafePaste calls the generated purego ABI wrapper for zg_input_is_safe_paste.
+func InputIsSafePaste(data []uint8) uint8 {
+	var dataPtr unsafe.Pointer
+	if len(data) != 0 {
+		dataPtr = unsafe.Pointer(&data[0])
+	}
+	result := bindings().fnInputIsSafePaste(dataPtr, uintptr(len(data)))
+	return uint8(result)
+}
+
+// EncodePaste calls the generated purego ABI wrapper for zg_encode_paste_purego_v2.
+func EncodePaste(writerCallback, writerHandle uintptr, terminal unsafe.Pointer, data []uint8) int32 {
+	var dataPtr unsafe.Pointer
+	if len(data) != 0 {
+		dataPtr = unsafe.Pointer(&data[0])
+	}
+	code := bindings().fnEncodePaste(writerCallback, writerHandle, terminal, dataPtr, uintptr(len(data)))
+	return code
+}
+
+// TerminalNewTerminal calls the generated purego ABI wrapper for zg_terminal_new_terminal.
+func TerminalNewTerminal(cols uint16, rows uint16, maxScrollbackBytes *uint, maxScrollbackLines *uint, defaultCursorStyle uint8, defaultCursorBlink *uint8) (unsafe.Pointer, int32) {
+	var outResult unsafe.Pointer
+	code := bindings().fnTerminalNewTerminal(cols, rows, (*uintptr)(unsafe.Pointer(maxScrollbackBytes)), (*uintptr)(unsafe.Pointer(maxScrollbackLines)), defaultCursorStyle, defaultCursorBlink, &outResult)
+	return outResult, code
+}
+
+// TerminalDeinit calls the generated purego ABI wrapper for zg_terminal_deinit.
+func TerminalDeinit(self unsafe.Pointer) int32 {
+	code := bindings().fnTerminalDeinit(self)
+	return code
+}
+
+// TerminalNewStream calls the generated purego ABI wrapper for zg_terminal_new_stream.
+func TerminalNewStream(self unsafe.Pointer, continuationMaxBytes uint) (unsafe.Pointer, int32) {
+	var outResult unsafe.Pointer
+	code := bindings().fnTerminalNewStream(self, uintptr(continuationMaxBytes), &outResult)
+	return outResult, code
+}
+
+// TerminalNewSearch calls the generated purego ABI wrapper for zg_terminal_new_search.
+func TerminalNewSearch(self unsafe.Pointer, needle string) (unsafe.Pointer, int32) {
+	var needlePtr unsafe.Pointer
+	if len(needle) != 0 {
+		needlePtr = unsafe.Pointer(unsafe.StringData(needle))
+	}
+	var outResult unsafe.Pointer
+	code := bindings().fnTerminalNewSearch(self, needlePtr, uintptr(len(needle)), &outResult)
+	return outResult, code
+}
+
+// TerminalNewGesture calls the generated purego ABI wrapper for zg_terminal_new_gesture.
+func TerminalNewGesture(self unsafe.Pointer) (unsafe.Pointer, int32) {
+	var outResult unsafe.Pointer
+	code := bindings().fnTerminalNewGesture(self, &outResult)
+	return outResult, code
+}
+
+// TerminalNewGridRef calls the generated purego ABI wrapper for zg_terminal_new_grid_ref.
+func TerminalNewGridRef(self unsafe.Pointer, tag uint8, x uint16, y uint32) (unsafe.Pointer, int32) {
+	var outResult unsafe.Pointer
+	code := bindings().fnTerminalNewGridRef(self, tag, x, y, &outResult)
+	return outResult, code
+}
+
+// TerminalPrintString calls the generated purego ABI wrapper for zg_terminal_print_string.
+func TerminalPrintString(self unsafe.Pointer, str string) int32 {
+	var strPtr unsafe.Pointer
+	if len(str) != 0 {
+		strPtr = unsafe.Pointer(unsafe.StringData(str))
+	}
+	code := bindings().fnTerminalPrintString(self, strPtr, uintptr(len(str)))
+	return code
+}
+
+// TerminalPlainString calls the generated purego ABI wrapper for zg_terminal_plain_string.
+func TerminalPlainString(self unsafe.Pointer) (string, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnTerminalPlainString(self, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", code
+	}
+	var result string
+	if outResultLen != 0 {
+		result = string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen)))
+	}
+	bindings().fnFreeString(outResultPtr, outResultLen)
+	return result, code
+}
+
+// TerminalPlainStringUnwrapped calls the generated purego ABI wrapper for zg_terminal_plain_string_unwrapped.
+func TerminalPlainStringUnwrapped(self unsafe.Pointer) (string, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnTerminalPlainStringUnwrapped(self, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", code
+	}
+	var result string
+	if outResultLen != 0 {
+		result = string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen)))
+	}
+	bindings().fnFreeString(outResultPtr, outResultLen)
+	return result, code
+}
+
+// TerminalPrint calls the generated purego ABI wrapper for zg_terminal_print.
+func TerminalPrint(self unsafe.Pointer, c uint32) int32 {
+	code := bindings().fnTerminalPrint(self, c)
+	return code
+}
+
+// TerminalPrintRepeat calls the generated purego ABI wrapper for zg_terminal_print_repeat.
+func TerminalPrintRepeat(self unsafe.Pointer, count uint) int32 {
+	code := bindings().fnTerminalPrintRepeat(self, uintptr(count))
+	return code
+}
+
+// TerminalPrintSlice calls the generated purego ABI wrapper for zg_terminal_print_slice.
+func TerminalPrintSlice(self unsafe.Pointer, cps []uint32) int32 {
+	var cpsPtr unsafe.Pointer
+	if len(cps) != 0 {
+		cpsPtr = unsafe.Pointer(&cps[0])
+	}
+	code := bindings().fnTerminalPrintSlice(self, cpsPtr, uintptr(len(cps)))
+	return code
+}
+
+// TerminalSetCursorStyle calls the generated purego ABI wrapper for zg_terminal_set_cursor_style.
+func TerminalSetCursorStyle(self unsafe.Pointer, value uint8) int32 {
+	code := bindings().fnTerminalSetCursorStyle(self, value)
+	return code
+}
+
+// TerminalSetCursorPos calls the generated purego ABI wrapper for zg_terminal_set_cursor_pos.
+func TerminalSetCursorPos(self unsafe.Pointer, row uint, col uint) int32 {
+	code := bindings().fnTerminalSetCursorPos(self, uintptr(row), uintptr(col))
+	return code
+}
+
+// TerminalCarriageReturn calls the generated purego ABI wrapper for zg_terminal_carriage_return.
+func TerminalCarriageReturn(self unsafe.Pointer) int32 {
+	code := bindings().fnTerminalCarriageReturn(self)
+	return code
+}
+
+// TerminalLinefeed calls the generated purego ABI wrapper for zg_terminal_linefeed.
+func TerminalLinefeed(self unsafe.Pointer) int32 {
+	code := bindings().fnTerminalLinefeed(self)
+	return code
+}
+
+// TerminalBackspace calls the generated purego ABI wrapper for zg_terminal_backspace.
+func TerminalBackspace(self unsafe.Pointer) int32 {
+	code := bindings().fnTerminalBackspace(self)
+	return code
+}
+
+// TerminalCursorIsAtPrompt calls the generated purego ABI wrapper for zg_terminal_cursor_is_at_prompt.
+func TerminalCursorIsAtPrompt(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnTerminalCursorIsAtPrompt(self, &outResult)
+	return outResult, code
+}
+
+// TerminalFullReset calls the generated purego ABI wrapper for zg_terminal_full_reset.
+func TerminalFullReset(self unsafe.Pointer) int32 {
+	code := bindings().fnTerminalFullReset(self)
+	return code
+}
+
+// TerminalSoftReset calls the generated purego ABI wrapper for zg_terminal_soft_reset.
+func TerminalSoftReset(self unsafe.Pointer) int32 {
+	code := bindings().fnTerminalSoftReset(self)
+	return code
+}
+
+// TerminalCursorUp calls the generated purego ABI wrapper for zg_terminal_cursor_up.
+func TerminalCursorUp(self unsafe.Pointer, count uint) int32 {
+	code := bindings().fnTerminalCursorUp(self, uintptr(count))
+	return code
+}
+
+// TerminalCursorDown calls the generated purego ABI wrapper for zg_terminal_cursor_down.
+func TerminalCursorDown(self unsafe.Pointer, count uint) int32 {
+	code := bindings().fnTerminalCursorDown(self, uintptr(count))
+	return code
+}
+
+// TerminalCursorLeft calls the generated purego ABI wrapper for zg_terminal_cursor_left.
+func TerminalCursorLeft(self unsafe.Pointer, count uint) int32 {
+	code := bindings().fnTerminalCursorLeft(self, uintptr(count))
+	return code
+}
+
+// TerminalCursorRight calls the generated purego ABI wrapper for zg_terminal_cursor_right.
+func TerminalCursorRight(self unsafe.Pointer, count uint) int32 {
+	code := bindings().fnTerminalCursorRight(self, uintptr(count))
+	return code
+}
+
+// TerminalSetCursorRow calls the generated purego ABI wrapper for zg_terminal_set_cursor_row.
+func TerminalSetCursorRow(self unsafe.Pointer, row uint) int32 {
+	code := bindings().fnTerminalSetCursorRow(self, uintptr(row))
+	return code
+}
+
+// TerminalSetCursorCol calls the generated purego ABI wrapper for zg_terminal_set_cursor_col.
+func TerminalSetCursorCol(self unsafe.Pointer, col uint) int32 {
+	code := bindings().fnTerminalSetCursorCol(self, uintptr(col))
+	return code
+}
+
+// TerminalCursorRowRelative calls the generated purego ABI wrapper for zg_terminal_cursor_row_relative.
+func TerminalCursorRowRelative(self unsafe.Pointer, count uint) int32 {
+	code := bindings().fnTerminalCursorRowRelative(self, uintptr(count))
+	return code
+}
+
+// TerminalCursorColRelative calls the generated purego ABI wrapper for zg_terminal_cursor_col_relative.
+func TerminalCursorColRelative(self unsafe.Pointer, count uint) int32 {
+	code := bindings().fnTerminalCursorColRelative(self, uintptr(count))
+	return code
+}
+
+// TerminalSaveCursor calls the generated purego ABI wrapper for zg_terminal_save_cursor.
+func TerminalSaveCursor(self unsafe.Pointer) int32 {
+	code := bindings().fnTerminalSaveCursor(self)
+	return code
+}
+
+// TerminalRestoreCursor calls the generated purego ABI wrapper for zg_terminal_restore_cursor.
+func TerminalRestoreCursor(self unsafe.Pointer) int32 {
+	code := bindings().fnTerminalRestoreCursor(self)
+	return code
+}
+
+// TerminalIndex calls the generated purego ABI wrapper for zg_terminal_index.
+func TerminalIndex(self unsafe.Pointer) int32 {
+	code := bindings().fnTerminalIndex(self)
+	return code
+}
+
+// TerminalReverseIndex calls the generated purego ABI wrapper for zg_terminal_reverse_index.
+func TerminalReverseIndex(self unsafe.Pointer) int32 {
+	code := bindings().fnTerminalReverseIndex(self)
+	return code
+}
+
+// TerminalSwitchScreen calls the generated purego ABI wrapper for zg_terminal_switch_screen.
+func TerminalSwitchScreen(self unsafe.Pointer, key uint8) (unsafe.Pointer, int32) {
+	var outResult unsafe.Pointer
+	code := bindings().fnTerminalSwitchScreen(self, key, &outResult)
+	return outResult, code
+}
+
+// TerminalSwitchScreenMode calls the generated purego ABI wrapper for zg_terminal_switch_screen_mode.
+func TerminalSwitchScreenMode(self unsafe.Pointer, mode uint8, enabled uint8) int32 {
+	code := bindings().fnTerminalSwitchScreenMode(self, mode, enabled)
+	return code
+}
+
+// TerminalActiveScreen calls the generated purego ABI wrapper for zg_terminal_active_screen.
+func TerminalActiveScreen(self unsafe.Pointer) (unsafe.Pointer, int32) {
+	var outResult unsafe.Pointer
+	code := bindings().fnTerminalActiveScreen(self, &outResult)
+	return outResult, code
+}
+
+// TerminalScreen calls the generated purego ABI wrapper for zg_terminal_screen.
+func TerminalScreen(self unsafe.Pointer, key uint8) (unsafe.Pointer, int32) {
+	var outResult unsafe.Pointer
+	code := bindings().fnTerminalScreen(self, key, &outResult)
+	return outResult, code
+}
+
+// TerminalPrintAttributesInto calls the generated purego ABI wrapper for zg_terminal_print_attributes_into.
+func TerminalPrintAttributesInto(self unsafe.Pointer, buf []uint8) (uint, int32) {
+	var bufPtr unsafe.Pointer
+	if len(buf) != 0 {
+		bufPtr = unsafe.Pointer(&buf[0])
+	}
+	var outResult uintptr
+	code := bindings().fnTerminalPrintAttributesInto(self, bufPtr, uintptr(len(buf)), &outResult)
+	return uint(outResult), code
+}
+
+// TerminalHistoryString calls the generated purego ABI wrapper for zg_terminal_history_string.
+func TerminalHistoryString(self unsafe.Pointer) (string, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnTerminalHistoryString(self, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", code
+	}
+	var result string
+	if outResultLen != 0 {
+		result = string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen)))
+	}
+	bindings().fnFreeString(outResultPtr, outResultLen)
+	return result, code
+}
+
+// TerminalHorizontalTab calls the generated purego ABI wrapper for zg_terminal_horizontal_tab.
+func TerminalHorizontalTab(self unsafe.Pointer) int32 {
+	code := bindings().fnTerminalHorizontalTab(self)
+	return code
+}
+
+// TerminalHorizontalTabBack calls the generated purego ABI wrapper for zg_terminal_horizontal_tab_back.
+func TerminalHorizontalTabBack(self unsafe.Pointer) int32 {
+	code := bindings().fnTerminalHorizontalTabBack(self)
+	return code
+}
+
+// TerminalTabSet calls the generated purego ABI wrapper for zg_terminal_tab_set.
+func TerminalTabSet(self unsafe.Pointer) int32 {
+	code := bindings().fnTerminalTabSet(self)
+	return code
+}
+
+// TerminalTabReset calls the generated purego ABI wrapper for zg_terminal_tab_reset.
+func TerminalTabReset(self unsafe.Pointer) int32 {
+	code := bindings().fnTerminalTabReset(self)
+	return code
+}
+
+// TerminalTabClear calls the generated purego ABI wrapper for zg_terminal_tab_clear.
+func TerminalTabClear(self unsafe.Pointer, cmd uint8) int32 {
+	code := bindings().fnTerminalTabClear(self, cmd)
+	return code
+}
+
+// TerminalSetTabstop calls the generated purego ABI wrapper for zg_terminal_set_tabstop.
+func TerminalSetTabstop(self unsafe.Pointer, col uint) int32 {
+	code := bindings().fnTerminalSetTabstop(self, uintptr(col))
+	return code
+}
+
+// TerminalUnsetTabstop calls the generated purego ABI wrapper for zg_terminal_unset_tabstop.
+func TerminalUnsetTabstop(self unsafe.Pointer, col uint) int32 {
+	code := bindings().fnTerminalUnsetTabstop(self, uintptr(col))
+	return code
+}
+
+// TerminalResetTabstops calls the generated purego ABI wrapper for zg_terminal_reset_tabstops.
+func TerminalResetTabstops(self unsafe.Pointer, interval uint) int32 {
+	code := bindings().fnTerminalResetTabstops(self, uintptr(interval))
+	return code
+}
+
+// TerminalScrollUp calls the generated purego ABI wrapper for zg_terminal_scroll_up.
+func TerminalScrollUp(self unsafe.Pointer, count uint) int32 {
+	code := bindings().fnTerminalScrollUp(self, uintptr(count))
+	return code
+}
+
+// TerminalScrollDown calls the generated purego ABI wrapper for zg_terminal_scroll_down.
+func TerminalScrollDown(self unsafe.Pointer, count uint) int32 {
+	code := bindings().fnTerminalScrollDown(self, uintptr(count))
+	return code
+}
+
+// TerminalSetTopAndBottomMargin calls the generated purego ABI wrapper for zg_terminal_set_top_and_bottom_margin.
+func TerminalSetTopAndBottomMargin(self unsafe.Pointer, top uint, bottom uint) int32 {
+	code := bindings().fnTerminalSetTopAndBottomMargin(self, uintptr(top), uintptr(bottom))
+	return code
+}
+
+// TerminalSetLeftAndRightMargin calls the generated purego ABI wrapper for zg_terminal_set_left_and_right_margin.
+func TerminalSetLeftAndRightMargin(self unsafe.Pointer, left uint, right uint) int32 {
+	code := bindings().fnTerminalSetLeftAndRightMargin(self, uintptr(left), uintptr(right))
+	return code
+}
+
+// TerminalScrollViewport calls the generated purego ABI wrapper for zg_terminal_scroll_viewport.
+func TerminalScrollViewport(self unsafe.Pointer, behavior_tag uint8, behavior_delta int, behavior_row uint, behavior_delta_prompt int) int32 {
+	code := bindings().fnTerminalScrollViewport(self, behavior_tag, behavior_delta, uintptr(behavior_row), behavior_delta_prompt)
+	return code
+}
+
+// TerminalSetScrollbackMaxBytes calls the generated purego ABI wrapper for zg_terminal_set_scrollback_max_bytes.
+func TerminalSetScrollbackMaxBytes(self unsafe.Pointer, max uint) int32 {
+	code := bindings().fnTerminalSetScrollbackMaxBytes(self, uintptr(max))
+	return code
+}
+
+// TerminalClearScrollbackMaxBytes calls the generated purego ABI wrapper for zg_terminal_clear_scrollback_max_bytes.
+func TerminalClearScrollbackMaxBytes(self unsafe.Pointer) int32 {
+	code := bindings().fnTerminalClearScrollbackMaxBytes(self)
+	return code
+}
+
+// TerminalSetScrollbackMaxLines calls the generated purego ABI wrapper for zg_terminal_set_scrollback_max_lines.
+func TerminalSetScrollbackMaxLines(self unsafe.Pointer, max uint) int32 {
+	code := bindings().fnTerminalSetScrollbackMaxLines(self, uintptr(max))
+	return code
+}
+
+// TerminalClearScrollbackMaxLines calls the generated purego ABI wrapper for zg_terminal_clear_scrollback_max_lines.
+func TerminalClearScrollbackMaxLines(self unsafe.Pointer) int32 {
+	code := bindings().fnTerminalClearScrollbackMaxLines(self)
+	return code
+}
+
+// TerminalInsertLines calls the generated purego ABI wrapper for zg_terminal_insert_lines.
+func TerminalInsertLines(self unsafe.Pointer, count uint) int32 {
+	code := bindings().fnTerminalInsertLines(self, uintptr(count))
+	return code
+}
+
+// TerminalDeleteLines calls the generated purego ABI wrapper for zg_terminal_delete_lines.
+func TerminalDeleteLines(self unsafe.Pointer, count uint) int32 {
+	code := bindings().fnTerminalDeleteLines(self, uintptr(count))
+	return code
+}
+
+// TerminalInsertBlanks calls the generated purego ABI wrapper for zg_terminal_insert_blanks.
+func TerminalInsertBlanks(self unsafe.Pointer, count uint) int32 {
+	code := bindings().fnTerminalInsertBlanks(self, uintptr(count))
+	return code
+}
+
+// TerminalDeleteChars calls the generated purego ABI wrapper for zg_terminal_delete_chars.
+func TerminalDeleteChars(self unsafe.Pointer, count uint) int32 {
+	code := bindings().fnTerminalDeleteChars(self, uintptr(count))
+	return code
+}
+
+// TerminalEraseChars calls the generated purego ABI wrapper for zg_terminal_erase_chars.
+func TerminalEraseChars(self unsafe.Pointer, count uint) int32 {
+	code := bindings().fnTerminalEraseChars(self, uintptr(count))
+	return code
+}
+
+// TerminalEraseLine calls the generated purego ABI wrapper for zg_terminal_erase_line.
+func TerminalEraseLine(self unsafe.Pointer, mode uint8, protected uint8) int32 {
+	code := bindings().fnTerminalEraseLine(self, mode, protected)
+	return code
+}
+
+// TerminalEraseDisplay calls the generated purego ABI wrapper for zg_terminal_erase_display.
+func TerminalEraseDisplay(self unsafe.Pointer, mode uint8, protected uint8) int32 {
+	code := bindings().fnTerminalEraseDisplay(self, mode, protected)
+	return code
+}
+
+// TerminalDecaln calls the generated purego ABI wrapper for zg_terminal_decaln.
+func TerminalDecaln(self unsafe.Pointer) int32 {
+	code := bindings().fnTerminalDecaln(self)
+	return code
+}
+
+// TerminalResize calls the generated purego ABI wrapper for zg_terminal_resize.
+func TerminalResize(self unsafe.Pointer, cols uint16, rows uint16) int32 {
+	code := bindings().fnTerminalResize(self, cols, rows)
+	return code
+}
+
+// TerminalResizeCells calls the generated purego ABI wrapper for zg_terminal_resize_cells.
+func TerminalResizeCells(self unsafe.Pointer, width uint16, height uint16, cellWidth uint32, cellHeight uint32) int32 {
+	code := bindings().fnTerminalResizeCells(self, width, height, cellWidth, cellHeight)
+	return code
+}
+
+// TerminalFormat calls the generated purego ABI wrapper for zg_terminal_format_purego_v2.
+func TerminalFormat(self unsafe.Pointer, opts FormatOptionsData, writerCallback, writerHandle uintptr) int32 {
+	code := bindings().fnTerminalFormat(self, unsafe.Pointer(&opts), writerCallback, writerHandle)
+	return code
+}
+
+// TerminalFormatSelection calls the generated purego ABI wrapper for zg_terminal_format_selection_purego_v2.
+func TerminalFormatSelection(self unsafe.Pointer, opts FormatOptionsData, sel SelectionData, writerCallback, writerHandle uintptr) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnTerminalFormatSelection(self, unsafe.Pointer(&opts), unsafe.Pointer(&sel), writerCallback, writerHandle, &outResult)
+	return outResult, code
+}
+
+// TerminalSetPwd calls the generated purego ABI wrapper for zg_terminal_set_pwd.
+func TerminalSetPwd(self unsafe.Pointer, pwd string) int32 {
+	var pwdPtr unsafe.Pointer
+	if len(pwd) != 0 {
+		pwdPtr = unsafe.Pointer(unsafe.StringData(pwd))
+	}
+	code := bindings().fnTerminalSetPwd(self, pwdPtr, uintptr(len(pwd)))
+	return code
+}
+
+// TerminalGetPwd calls the generated purego ABI wrapper for zg_terminal_get_pwd.
+func TerminalGetPwd(self unsafe.Pointer) (string, bool, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnTerminalGetPwd(self, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", false, code
+	}
+	if outResultPtr == nil {
+		return "", false, code
+	}
+	if outResultLen == 0 {
+		return "", true, code
+	}
+	return string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen))), true, code
+}
+
+// TerminalGetTitle calls the generated purego ABI wrapper for zg_terminal_get_title.
+func TerminalGetTitle(self unsafe.Pointer) (string, bool, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnTerminalGetTitle(self, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", false, code
+	}
+	if outResultPtr == nil {
+		return "", false, code
+	}
+	if outResultLen == 0 {
+		return "", true, code
+	}
+	return string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen))), true, code
+}
+
+// TerminalSetTitle calls the generated purego ABI wrapper for zg_terminal_set_title.
+func TerminalSetTitle(self unsafe.Pointer, t string) int32 {
+	var tPtr unsafe.Pointer
+	if len(t) != 0 {
+		tPtr = unsafe.Pointer(unsafe.StringData(t))
+	}
+	code := bindings().fnTerminalSetTitle(self, tPtr, uintptr(len(t)))
+	return code
+}
+
+// TerminalBackgroundColor calls the generated purego ABI wrapper for zg_terminal_background_color.
+func TerminalBackgroundColor(self unsafe.Pointer) (RGBData, bool, int32) {
+	var outResultHas uint8
+	var outResult RGBData
+	code := bindings().fnTerminalBackgroundColor(self, &outResultHas, unsafe.Pointer(&outResult))
+	return outResult, outResultHas != 0, code
+}
+
+// TerminalForegroundColor calls the generated purego ABI wrapper for zg_terminal_foreground_color.
+func TerminalForegroundColor(self unsafe.Pointer) (RGBData, bool, int32) {
+	var outResultHas uint8
+	var outResult RGBData
+	code := bindings().fnTerminalForegroundColor(self, &outResultHas, unsafe.Pointer(&outResult))
+	return outResult, outResultHas != 0, code
+}
+
+// TerminalCursorColor calls the generated purego ABI wrapper for zg_terminal_cursor_color.
+func TerminalCursorColor(self unsafe.Pointer) (RGBData, bool, int32) {
+	var outResultHas uint8
+	var outResult RGBData
+	code := bindings().fnTerminalCursorColor(self, &outResultHas, unsafe.Pointer(&outResult))
+	return outResult, outResultHas != 0, code
+}
+
+// TerminalPaletteColors calls the generated purego ABI wrapper for zg_terminal_palette_colors.
+func TerminalPaletteColors(self unsafe.Pointer, dst []RGBData) (uint, int32) {
+	var dstPtr unsafe.Pointer
+	if len(dst) != 0 {
+		dstPtr = unsafe.Pointer(&dst[0])
+	}
+	var outResult uintptr
+	code := bindings().fnTerminalPaletteColors(self, dstPtr, uintptr(len(dst)), &outResult)
+	return uint(outResult), code
+}
+
+// TerminalModeEnabled calls the generated purego ABI wrapper for zg_terminal_mode_enabled.
+func TerminalModeEnabled(self unsafe.Pointer, mode uint16) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnTerminalModeEnabled(self, mode, &outResult)
+	return outResult, code
+}
+
+// TerminalSetMode calls the generated purego ABI wrapper for zg_terminal_set_mode.
+func TerminalSetMode(self unsafe.Pointer, mode uint16, value uint8) int32 {
+	code := bindings().fnTerminalSetMode(self, mode, value)
+	return code
+}
+
+// TerminalSetAttribute calls the generated purego ABI wrapper for zg_terminal_set_attribute.
+func TerminalSetAttribute(self unsafe.Pointer, attr_tag uint8, attr_underline uint8, attr_underline_color_rgb_r uint8, attr_underline_color_rgb_g uint8, attr_underline_color_rgb_b uint8, attr_underline_color_256 uint8, attr_direct_color_fg_r uint8, attr_direct_color_fg_g uint8, attr_direct_color_fg_b uint8, attr_direct_color_bg_r uint8, attr_direct_color_bg_g uint8, attr_direct_color_bg_b uint8, attr_color_256_fg uint8, attr_color_256_bg uint8, attr_named_fg uint8, attr_named_bg uint8, attr_bright_named_fg uint8, attr_bright_named_bg uint8) int32 {
+	code := bindings().fnTerminalSetAttribute(self, attr_tag, attr_underline, attr_underline_color_rgb_r, attr_underline_color_rgb_g, attr_underline_color_rgb_b, attr_underline_color_256, attr_direct_color_fg_r, attr_direct_color_fg_g, attr_direct_color_fg_b, attr_direct_color_bg_r, attr_direct_color_bg_g, attr_direct_color_bg_b, attr_color_256_fg, attr_color_256_bg, attr_named_fg, attr_named_bg, attr_bright_named_fg, attr_bright_named_bg)
+	return code
+}
+
+// TerminalSetProtectedMode calls the generated purego ABI wrapper for zg_terminal_set_protected_mode.
+func TerminalSetProtectedMode(self unsafe.Pointer, mode uint8) int32 {
+	code := bindings().fnTerminalSetProtectedMode(self, mode)
+	return code
+}
+
+// TerminalConfigureCharset calls the generated purego ABI wrapper for zg_terminal_configure_charset.
+func TerminalConfigureCharset(self unsafe.Pointer, slot uint8, set uint8) int32 {
+	code := bindings().fnTerminalConfigureCharset(self, slot, set)
+	return code
+}
+
+// TerminalInvokeCharset calls the generated purego ABI wrapper for zg_terminal_invoke_charset.
+func TerminalInvokeCharset(self unsafe.Pointer, active uint8, slot uint8, single uint8) int32 {
+	code := bindings().fnTerminalInvokeCharset(self, active, slot, single)
+	return code
+}
+
+// TerminalDeccolm calls the generated purego ABI wrapper for zg_terminal_deccolm.
+func TerminalDeccolm(self unsafe.Pointer, mode uint8) int32 {
+	code := bindings().fnTerminalDeccolm(self, mode)
+	return code
+}
+
+// TerminalCompress calls the generated purego ABI wrapper for zg_terminal_compress.
+func TerminalCompress(self unsafe.Pointer, mode uint8) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnTerminalCompress(self, mode, &outResult)
+	return outResult, code
+}
+
+// TerminalCompressionActivity calls the generated purego ABI wrapper for zg_terminal_compression_activity.
+func TerminalCompressionActivity(self unsafe.Pointer) (uint64, int32) {
+	var outResult uint64
+	code := bindings().fnTerminalCompressionActivity(self, &outResult)
+	return outResult, code
+}
+
+// TerminalSetDefaultBackgroundColor calls the generated purego ABI wrapper for zg_terminal_set_default_background_color.
+func TerminalSetDefaultBackgroundColor(self unsafe.Pointer, rgb RGBData) int32 {
+	code := bindings().fnTerminalSetDefaultBackgroundColor(self, unsafe.Pointer(&rgb))
+	return code
+}
+
+// TerminalSetDefaultForegroundColor calls the generated purego ABI wrapper for zg_terminal_set_default_foreground_color.
+func TerminalSetDefaultForegroundColor(self unsafe.Pointer, rgb RGBData) int32 {
+	code := bindings().fnTerminalSetDefaultForegroundColor(self, unsafe.Pointer(&rgb))
+	return code
+}
+
+// TerminalSetDefaultCursorColor calls the generated purego ABI wrapper for zg_terminal_set_default_cursor_color.
+func TerminalSetDefaultCursorColor(self unsafe.Pointer, rgb RGBData) int32 {
+	code := bindings().fnTerminalSetDefaultCursorColor(self, unsafe.Pointer(&rgb))
+	return code
+}
+
+// TerminalSetDefaultCursorStyle calls the generated purego ABI wrapper for zg_terminal_set_default_cursor_style.
+func TerminalSetDefaultCursorStyle(self unsafe.Pointer, configuredStyle uint8) int32 {
+	code := bindings().fnTerminalSetDefaultCursorStyle(self, configuredStyle)
+	return code
+}
+
+// TerminalSetDefaultCursorBlink calls the generated purego ABI wrapper for zg_terminal_set_default_cursor_blink.
+func TerminalSetDefaultCursorBlink(self unsafe.Pointer, blink uint8) int32 {
+	code := bindings().fnTerminalSetDefaultCursorBlink(self, blink)
+	return code
+}
+
+// TerminalResetDefaultCursorBlink calls the generated purego ABI wrapper for zg_terminal_reset_default_cursor_blink.
+func TerminalResetDefaultCursorBlink(self unsafe.Pointer) int32 {
+	code := bindings().fnTerminalResetDefaultCursorBlink(self)
+	return code
+}
+
+// TerminalPaletteColor calls the generated purego ABI wrapper for zg_terminal_palette_color.
+func TerminalPaletteColor(self unsafe.Pointer, idx uint8) (RGBData, int32) {
+	var outResult RGBData
+	code := bindings().fnTerminalPaletteColor(self, idx, unsafe.Pointer(&outResult))
+	return outResult, code
+}
+
+// TerminalSetPaletteColor calls the generated purego ABI wrapper for zg_terminal_set_palette_color.
+func TerminalSetPaletteColor(self unsafe.Pointer, idx uint8, rgb RGBData) int32 {
+	code := bindings().fnTerminalSetPaletteColor(self, idx, unsafe.Pointer(&rgb))
+	return code
+}
+
+// TerminalResetPaletteColor calls the generated purego ABI wrapper for zg_terminal_reset_palette_color.
+func TerminalResetPaletteColor(self unsafe.Pointer, idx uint8) int32 {
+	code := bindings().fnTerminalResetPaletteColor(self, idx)
+	return code
+}
+
+// TerminalResetPalette calls the generated purego ABI wrapper for zg_terminal_reset_palette.
+func TerminalResetPalette(self unsafe.Pointer) int32 {
+	code := bindings().fnTerminalResetPalette(self)
+	return code
+}
+
+// TerminalSetDefaultPaletteColor calls the generated purego ABI wrapper for zg_terminal_set_default_palette_color.
+func TerminalSetDefaultPaletteColor(self unsafe.Pointer, idx uint8, rgb RGBData) int32 {
+	code := bindings().fnTerminalSetDefaultPaletteColor(self, idx, unsafe.Pointer(&rgb))
+	return code
+}
+
+// TerminalResetDefaultPalette calls the generated purego ABI wrapper for zg_terminal_reset_default_palette.
+func TerminalResetDefaultPalette(self unsafe.Pointer) int32 {
+	code := bindings().fnTerminalResetDefaultPalette(self)
+	return code
+}
+
+// TerminalSetDefaultMode calls the generated purego ABI wrapper for zg_terminal_set_default_mode.
+func TerminalSetDefaultMode(self unsafe.Pointer, mode uint16, value uint8) int32 {
+	code := bindings().fnTerminalSetDefaultMode(self, mode, value)
+	return code
+}
+
+// TerminalResetModes calls the generated purego ABI wrapper for zg_terminal_reset_modes.
+func TerminalResetModes(self unsafe.Pointer) int32 {
+	code := bindings().fnTerminalResetModes(self)
+	return code
+}
+
+// TerminalSaveMode calls the generated purego ABI wrapper for zg_terminal_save_mode.
+func TerminalSaveMode(self unsafe.Pointer, mode uint16) int32 {
+	code := bindings().fnTerminalSaveMode(self, mode)
+	return code
+}
+
+// TerminalRestoreMode calls the generated purego ABI wrapper for zg_terminal_restore_mode.
+func TerminalRestoreMode(self unsafe.Pointer, mode uint16) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnTerminalRestoreMode(self, mode, &outResult)
+	return outResult, code
+}
+
+// TerminalSetKittyGraphicsSizeLimit calls the generated purego ABI wrapper for zg_terminal_set_kitty_graphics_size_limit.
+func TerminalSetKittyGraphicsSizeLimit(self unsafe.Pointer, limit uint) int32 {
+	code := bindings().fnTerminalSetKittyGraphicsSizeLimit(self, uintptr(limit))
+	return code
+}
+
+// TerminalSetKittyGraphicsLoadingLimits calls the generated purego ABI wrapper for zg_terminal_set_kitty_graphics_loading_limits.
+func TerminalSetKittyGraphicsLoadingLimits(self unsafe.Pointer, file uint8, tempDir string, sharedMemory uint8) int32 {
+	var tempDirPtr unsafe.Pointer
+	if len(tempDir) != 0 {
+		tempDirPtr = unsafe.Pointer(unsafe.StringData(tempDir))
+	}
+	code := bindings().fnTerminalSetKittyGraphicsLoadingLimits(self, file, tempDirPtr, uintptr(len(tempDir)), sharedMemory)
+	return code
+}
+
+// TerminalKittyImage calls the generated purego ABI wrapper for zg_terminal_kitty_image.
+func TerminalKittyImage(self unsafe.Pointer, imageID uint32) (KittyImageData, bool, int32) {
+	var outResultHas uint8
+	var outResult KittyImageData
+	code := bindings().fnTerminalKittyImage(self, imageID, &outResultHas, unsafe.Pointer(&outResult))
+	return outResult, outResultHas != 0, code
+}
+
+// TerminalKittyImageData calls the generated purego ABI wrapper for zg_terminal_kitty_image_data.
+func TerminalKittyImageData(self unsafe.Pointer, imageID uint32, dst []uint8) (uint, int32) {
+	var dstPtr unsafe.Pointer
+	if len(dst) != 0 {
+		dstPtr = unsafe.Pointer(&dst[0])
+	}
+	var outResult uintptr
+	code := bindings().fnTerminalKittyImageData(self, imageID, dstPtr, uintptr(len(dst)), &outResult)
+	return uint(outResult), code
+}
+
+// TerminalKittyAnimationTick calls the generated purego ABI wrapper for zg_terminal_kitty_animation_tick.
+func TerminalKittyAnimationTick(self unsafe.Pointer, nowMs uint64) (uint64, bool, int32) {
+	var outResultHas uint8
+	var outResult uint64
+	code := bindings().fnTerminalKittyAnimationTick(self, nowMs, &outResultHas, &outResult)
+	return outResult, outResultHas != 0, code
+}
+
+// TerminalScrollRegion calls the generated purego ABI wrapper for zg_terminal_scroll_region.
+func TerminalScrollRegion(self unsafe.Pointer) (ScrollRegionData, int32) {
+	var outResult ScrollRegionData
+	code := bindings().fnTerminalScrollRegion(self, unsafe.Pointer(&outResult))
+	return outResult, code
+}
+
+// TerminalCharset calls the generated purego ABI wrapper for zg_terminal_charset.
+func TerminalCharset(self unsafe.Pointer, slot uint8) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnTerminalCharset(self, slot, &outResult)
+	return outResult, code
+}
+
+// TerminalMouseTracking calls the generated purego ABI wrapper for zg_terminal_mouse_tracking.
+func TerminalMouseTracking(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnTerminalMouseTracking(self, &outResult)
+	return outResult, code
+}
+
+// TerminalMouseTrackingSendsMotion calls the generated purego ABI wrapper for zg_terminal_mouse_tracking_sends_motion.
+func TerminalMouseTrackingSendsMotion(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnTerminalMouseTrackingSendsMotion(self, &outResult)
+	return outResult, code
+}
+
+// TerminalMouseReportFormat calls the generated purego ABI wrapper for zg_terminal_mouse_report_format.
+func TerminalMouseReportFormat(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnTerminalMouseReportFormat(self, &outResult)
+	return outResult, code
+}
+
+// TerminalModeReport calls the generated purego ABI wrapper for zg_terminal_mode_report.
+func TerminalModeReport(self unsafe.Pointer, mode uint16, ansi uint8) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnTerminalModeReport(self, mode, ansi, &outResult)
+	return outResult, code
+}
+
+// TerminalCellAt calls the generated purego ABI wrapper for zg_terminal_cell_at.
+func TerminalCellAt(self unsafe.Pointer, tag uint8, x uint16, y uint32) (RenderCellData, bool, int32) {
+	var outResultHas uint8
+	var outResult RenderCellData
+	code := bindings().fnTerminalCellAt(self, tag, x, y, &outResultHas, unsafe.Pointer(&outResult))
+	return outResult, outResultHas != 0, code
+}
+
+// TerminalHyperlinkAt calls the generated purego ABI wrapper for zg_terminal_hyperlink_at.
+func TerminalHyperlinkAt(self unsafe.Pointer, tag uint8, x uint16, y uint32) (string, bool, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnTerminalHyperlinkAt(self, tag, x, y, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", false, code
+	}
+	if outResultPtr == nil {
+		return "", false, code
+	}
+	var result string
+	if outResultLen != 0 {
+		result = string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen)))
+	}
+	bindings().fnFreeString(outResultPtr, outResultLen)
+	return result, true, code
+}
+
+// ScreenViewportIsBottom calls the generated purego ABI wrapper for zg_screen_viewport_is_bottom.
+func ScreenViewportIsBottom(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnScreenViewportIsBottom(self, &outResult)
+	return outResult, code
+}
+
+// ScreenScrollClear calls the generated purego ABI wrapper for zg_screen_scroll_clear.
+func ScreenScrollClear(self unsafe.Pointer) int32 {
+	code := bindings().fnScreenScrollClear(self)
+	return code
+}
+
+// ScreenClearSelection calls the generated purego ABI wrapper for zg_screen_clear_selection.
+func ScreenClearSelection(self unsafe.Pointer) int32 {
+	code := bindings().fnScreenClearSelection(self)
+	return code
+}
+
+// ScreenEndHyperlink calls the generated purego ABI wrapper for zg_screen_end_hyperlink.
+func ScreenEndHyperlink(self unsafe.Pointer) int32 {
+	code := bindings().fnScreenEndHyperlink(self)
+	return code
+}
+
+// ScreenSelectAll calls the generated purego ABI wrapper for zg_screen_select_all.
+func ScreenSelectAll(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnScreenSelectAll(self, &outResult)
+	return outResult, code
+}
+
+// ScreenHasSelection calls the generated purego ABI wrapper for zg_screen_has_selection.
+func ScreenHasSelection(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnScreenHasSelection(self, &outResult)
+	return outResult, code
+}
+
+// ScreenSelectRange calls the generated purego ABI wrapper for zg_screen_select_range.
+func ScreenSelectRange(self unsafe.Pointer, x1 uint16, y1 uint16, x2 uint16, y2 uint16, rectangle uint8) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnScreenSelectRange(self, x1, y1, x2, y2, rectangle, &outResult)
+	return outResult, code
+}
+
+// ScreenSelectWord calls the generated purego ABI wrapper for zg_screen_select_word.
+func ScreenSelectWord(self unsafe.Pointer, x uint16, y uint16, boundaries []uint32) (uint8, int32) {
+	var boundariesPtr unsafe.Pointer
+	if len(boundaries) != 0 {
+		boundariesPtr = unsafe.Pointer(&boundaries[0])
+	}
+	var outResult uint8
+	code := bindings().fnScreenSelectWord(self, x, y, boundariesPtr, uintptr(len(boundaries)), &outResult)
+	return outResult, code
+}
+
+// ScreenSelectLine calls the generated purego ABI wrapper for zg_screen_select_line.
+func ScreenSelectLine(self unsafe.Pointer, x uint16, y uint16) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnScreenSelectLine(self, x, y, &outResult)
+	return outResult, code
+}
+
+// ScreenSelectOutput calls the generated purego ABI wrapper for zg_screen_select_output.
+func ScreenSelectOutput(self unsafe.Pointer, x uint16, y uint16) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnScreenSelectOutput(self, x, y, &outResult)
+	return outResult, code
+}
+
+// ScreenSelectionString calls the generated purego ABI wrapper for zg_screen_selection_string.
+func ScreenSelectionString(self unsafe.Pointer) (string, bool, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnScreenSelectionString(self, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", false, code
+	}
+	if outResultPtr == nil {
+		return "", false, code
+	}
+	var result string
+	if outResultLen != 0 {
+		result = string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen)))
+	}
+	bindings().fnFreeString(outResultPtr, outResultLen)
+	return result, true, code
+}
+
+// ScreenSelection calls the generated purego ABI wrapper for zg_screen_selection.
+func ScreenSelection(self unsafe.Pointer) (SelectionData, bool, int32) {
+	var outResultHas uint8
+	var outResult SelectionData
+	code := bindings().fnScreenSelection(self, &outResultHas, unsafe.Pointer(&outResult))
+	return outResult, outResultHas != 0, code
+}
+
+// ScreenSetSelection calls the generated purego ABI wrapper for zg_screen_set_selection.
+func ScreenSetSelection(self unsafe.Pointer, sel SelectionData) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnScreenSetSelection(self, unsafe.Pointer(&sel), &outResult)
+	return outResult, code
+}
+
+// ScreenViewportTop calls the generated purego ABI wrapper for zg_screen_viewport_top.
+func ScreenViewportTop(self unsafe.Pointer) (uint32, int32) {
+	var outResult uint32
+	code := bindings().fnScreenViewportTop(self, &outResult)
+	return outResult, code
+}
+
+// ScreenScrollbar calls the generated purego ABI wrapper for zg_screen_scrollbar.
+func ScreenScrollbar(self unsafe.Pointer) (ScrollbarData, int32) {
+	var outResult ScrollbarData
+	code := bindings().fnScreenScrollbar(self, unsafe.Pointer(&outResult))
+	return outResult, code
+}
+
+// ScreenFormat calls the generated purego ABI wrapper for zg_screen_format_purego_v2.
+func ScreenFormat(self unsafe.Pointer, opts FormatOptionsData, writerCallback, writerHandle uintptr) int32 {
+	code := bindings().fnScreenFormat(self, unsafe.Pointer(&opts), writerCallback, writerHandle)
+	return code
+}
+
+// ScreenFormatSelection calls the generated purego ABI wrapper for zg_screen_format_selection_purego_v2.
+func ScreenFormatSelection(self unsafe.Pointer, opts FormatOptionsData, sel SelectionData, writerCallback, writerHandle uintptr) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnScreenFormatSelection(self, unsafe.Pointer(&opts), unsafe.Pointer(&sel), writerCallback, writerHandle, &outResult)
+	return outResult, code
+}
+
+// ScreenSelectionContains calls the generated purego ABI wrapper for zg_screen_selection_contains.
+func ScreenSelectionContains(self unsafe.Pointer, sel SelectionData, x uint16, y uint32) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnScreenSelectionContains(self, unsafe.Pointer(&sel), x, y, &outResult)
+	return outResult, code
+}
+
+// ScreenSelectionAdjust calls the generated purego ABI wrapper for zg_screen_selection_adjust.
+func ScreenSelectionAdjust(self unsafe.Pointer, sel SelectionData, adjustment uint8) (SelectionData, bool, int32) {
+	var outResultHas uint8
+	var outResult SelectionData
+	code := bindings().fnScreenSelectionAdjust(self, unsafe.Pointer(&sel), adjustment, &outResultHas, unsafe.Pointer(&outResult))
+	return outResult, outResultHas != 0, code
+}
+
+// ScreenStartHyperlink calls the generated purego ABI wrapper for zg_screen_start_hyperlink.
+func ScreenStartHyperlink(self unsafe.Pointer, uri string, id string) int32 {
+	var uriPtr unsafe.Pointer
+	if len(uri) != 0 {
+		uriPtr = unsafe.Pointer(unsafe.StringData(uri))
+	}
+	var idPtr unsafe.Pointer
+	if len(id) != 0 {
+		idPtr = unsafe.Pointer(unsafe.StringData(id))
+	}
+	code := bindings().fnScreenStartHyperlink(self, uriPtr, uintptr(len(uri)), idPtr, uintptr(len(id)))
+	return code
+}
+
+// SearchSearchClose calls the generated purego ABI wrapper for zg_search_search_close.
+func SearchSearchClose(self unsafe.Pointer) int32 {
+	code := bindings().fnSearchSearchClose(self)
+	return code
+}
+
+// SearchNeedle calls the generated purego ABI wrapper for zg_search_needle.
+func SearchNeedle(self unsafe.Pointer) (string, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnSearchNeedle(self, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", code
+	}
+	if outResultLen == 0 {
+		return "", code
+	}
+	return string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen))), code
+}
+
+// SearchStatus calls the generated purego ABI wrapper for zg_search_status.
+func SearchStatus(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnSearchStatus(self, &outResult)
+	return outResult, code
+}
+
+// SearchTick calls the generated purego ABI wrapper for zg_search_tick.
+func SearchTick(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnSearchTick(self, &outResult)
+	return outResult, code
+}
+
+// SearchFeed calls the generated purego ABI wrapper for zg_search_feed.
+func SearchFeed(self unsafe.Pointer, activeDirty uint8) int32 {
+	code := bindings().fnSearchFeed(self, activeDirty)
+	return code
+}
+
+// SearchAll calls the generated purego ABI wrapper for zg_search_all.
+func SearchAll(self unsafe.Pointer) int32 {
+	code := bindings().fnSearchAll(self)
+	return code
+}
+
+// SearchSelect calls the generated purego ABI wrapper for zg_search_select.
+func SearchSelect(self unsafe.Pointer, to uint8, scroll uint8) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnSearchSelect(self, to, scroll, &outResult)
+	return outResult, code
+}
+
+// SearchMatchCount calls the generated purego ABI wrapper for zg_search_match_count.
+func SearchMatchCount(self unsafe.Pointer) (uint, int32) {
+	var outResult uintptr
+	code := bindings().fnSearchMatchCount(self, &outResult)
+	return uint(outResult), code
+}
+
+// SearchMatches calls the generated purego ABI wrapper for zg_search_matches.
+func SearchMatches(self unsafe.Pointer, dst []SelectionData) (uint, int32) {
+	var dstPtr unsafe.Pointer
+	if len(dst) != 0 {
+		dstPtr = unsafe.Pointer(&dst[0])
+	}
+	var outResult uintptr
+	code := bindings().fnSearchMatches(self, dstPtr, uintptr(len(dst)), &outResult)
+	return uint(outResult), code
+}
+
+// SearchViewportMatches calls the generated purego ABI wrapper for zg_search_viewport_matches.
+func SearchViewportMatches(self unsafe.Pointer, dst []SelectionData) (uint, int32) {
+	var dstPtr unsafe.Pointer
+	if len(dst) != 0 {
+		dstPtr = unsafe.Pointer(&dst[0])
+	}
+	var outResult uintptr
+	code := bindings().fnSearchViewportMatches(self, dstPtr, uintptr(len(dst)), &outResult)
+	return uint(outResult), code
+}
+
+// SearchSelectedMatch calls the generated purego ABI wrapper for zg_search_selected_match.
+func SearchSelectedMatch(self unsafe.Pointer) (SelectionData, bool, int32) {
+	var outResultHas uint8
+	var outResult SelectionData
+	code := bindings().fnSearchSelectedMatch(self, &outResultHas, unsafe.Pointer(&outResult))
+	return outResult, outResultHas != 0, code
+}
+
+// SearchSelectedIndex calls the generated purego ABI wrapper for zg_search_selected_index.
+func SearchSelectedIndex(self unsafe.Pointer) (uint, bool, int32) {
+	var outResultHas uint8
+	var outResult uintptr
+	code := bindings().fnSearchSelectedIndex(self, &outResultHas, &outResult)
+	return uint(outResult), outResultHas != 0, code
+}
+
+// GridRefGridRefClose calls the generated purego ABI wrapper for zg_grid_ref_grid_ref_close.
+func GridRefGridRefClose(self unsafe.Pointer) int32 {
+	code := bindings().fnGridRefGridRefClose(self)
+	return code
+}
+
+// GridRefHasValue calls the generated purego ABI wrapper for zg_grid_ref_has_value.
+func GridRefHasValue(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnGridRefHasValue(self, &outResult)
+	return outResult, code
+}
+
+// GridRefPoint calls the generated purego ABI wrapper for zg_grid_ref_point.
+func GridRefPoint(self unsafe.Pointer, tag uint8) (GridPointData, bool, int32) {
+	var outResultHas uint8
+	var outResult GridPointData
+	code := bindings().fnGridRefPoint(self, tag, &outResultHas, unsafe.Pointer(&outResult))
+	return outResult, outResultHas != 0, code
+}
+
+// GridRefSet calls the generated purego ABI wrapper for zg_grid_ref_set.
+func GridRefSet(self unsafe.Pointer, tag uint8, x uint16, y uint32) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnGridRefSet(self, tag, x, y, &outResult)
+	return outResult, code
+}
+
+// GridRefCell calls the generated purego ABI wrapper for zg_grid_ref_cell.
+func GridRefCell(self unsafe.Pointer) (RenderCellData, bool, int32) {
+	var outResultHas uint8
+	var outResult RenderCellData
+	code := bindings().fnGridRefCell(self, &outResultHas, unsafe.Pointer(&outResult))
+	return outResult, outResultHas != 0, code
+}
+
+// GridRefGraphemes calls the generated purego ABI wrapper for zg_grid_ref_graphemes.
+func GridRefGraphemes(self unsafe.Pointer, dst []uint32) (uint, int32) {
+	var dstPtr unsafe.Pointer
+	if len(dst) != 0 {
+		dstPtr = unsafe.Pointer(&dst[0])
+	}
+	var outResult uintptr
+	code := bindings().fnGridRefGraphemes(self, dstPtr, uintptr(len(dst)), &outResult)
+	return uint(outResult), code
+}
+
+// GridRefHyperlinkUri calls the generated purego ABI wrapper for zg_grid_ref_hyperlink_uri.
+func GridRefHyperlinkUri(self unsafe.Pointer) (string, bool, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnGridRefHyperlinkUri(self, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", false, code
+	}
+	if outResultPtr == nil {
+		return "", false, code
+	}
+	var result string
+	if outResultLen != 0 {
+		result = string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen)))
+	}
+	bindings().fnFreeString(outResultPtr, outResultLen)
+	return result, true, code
+}
+
+// GestureGestureClose calls the generated purego ABI wrapper for zg_gesture_gesture_close.
+func GestureGestureClose(self unsafe.Pointer) int32 {
+	code := bindings().fnGestureGestureClose(self)
+	return code
+}
+
+// GestureSetBehaviors calls the generated purego ABI wrapper for zg_gesture_set_behaviors.
+func GestureSetBehaviors(self unsafe.Pointer, singleClick uint8, doubleClick uint8, tripleClick uint8) int32 {
+	code := bindings().fnGestureSetBehaviors(self, singleClick, doubleClick, tripleClick)
+	return code
+}
+
+// GestureSetWordBoundaries calls the generated purego ABI wrapper for zg_gesture_set_word_boundaries.
+func GestureSetWordBoundaries(self unsafe.Pointer, boundaries []uint32) int32 {
+	var boundariesPtr unsafe.Pointer
+	if len(boundaries) != 0 {
+		boundariesPtr = unsafe.Pointer(&boundaries[0])
+	}
+	code := bindings().fnGestureSetWordBoundaries(self, boundariesPtr, uintptr(len(boundaries)))
+	return code
+}
+
+// GestureSetGeometry calls the generated purego ABI wrapper for zg_gesture_set_geometry.
+func GestureSetGeometry(self unsafe.Pointer, geometry GestureGeometryData) int32 {
+	code := bindings().fnGestureSetGeometry(self, unsafe.Pointer(&geometry))
+	return code
+}
+
+// GesturePress calls the generated purego ABI wrapper for zg_gesture_press.
+func GesturePress(self unsafe.Pointer, p GesturePressEventData) (SelectionData, bool, int32) {
+	var outResultHas uint8
+	var outResult SelectionData
+	code := bindings().fnGesturePress(self, unsafe.Pointer(&p), &outResultHas, unsafe.Pointer(&outResult))
+	return outResult, outResultHas != 0, code
+}
+
+// GestureDrag calls the generated purego ABI wrapper for zg_gesture_drag.
+func GestureDrag(self unsafe.Pointer, d GestureDragEventData) (SelectionData, bool, int32) {
+	var outResultHas uint8
+	var outResult SelectionData
+	code := bindings().fnGestureDrag(self, unsafe.Pointer(&d), &outResultHas, unsafe.Pointer(&outResult))
+	return outResult, outResultHas != 0, code
+}
+
+// GestureAutoscroll calls the generated purego ABI wrapper for zg_gesture_autoscroll.
+func GestureAutoscroll(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnGestureAutoscroll(self, &outResult)
+	return outResult, code
+}
+
+// GestureAutoscrollTick calls the generated purego ABI wrapper for zg_gesture_autoscroll_tick.
+func GestureAutoscrollTick(self unsafe.Pointer, d GestureDragEventData) (SelectionData, bool, int32) {
+	var outResultHas uint8
+	var outResult SelectionData
+	code := bindings().fnGestureAutoscrollTick(self, unsafe.Pointer(&d), &outResultHas, unsafe.Pointer(&outResult))
+	return outResult, outResultHas != 0, code
+}
+
+// GestureDeepPress calls the generated purego ABI wrapper for zg_gesture_deep_press.
+func GestureDeepPress(self unsafe.Pointer) (SelectionData, bool, int32) {
+	var outResultHas uint8
+	var outResult SelectionData
+	code := bindings().fnGestureDeepPress(self, &outResultHas, unsafe.Pointer(&outResult))
+	return outResult, outResultHas != 0, code
+}
+
+// GestureRelease calls the generated purego ABI wrapper for zg_gesture_release.
+func GestureRelease(self unsafe.Pointer, x uint16, y uint16) int32 {
+	code := bindings().fnGestureRelease(self, x, y)
+	return code
+}
+
+// GestureReset calls the generated purego ABI wrapper for zg_gesture_reset.
+func GestureReset(self unsafe.Pointer) int32 {
+	code := bindings().fnGestureReset(self)
+	return code
+}
+
+// ColorNameDefault calls the generated purego ABI wrapper for zg_color_name_default.
+func ColorNameDefault(self uint8) (RGBData, bool) {
+	var outResult RGBData
+	result := bindings().fnColorNameDefault(self, unsafe.Pointer(&outResult))
+	return outResult, result != 0
+}
+
+// StreamFreeStream calls the generated purego ABI wrapper for zg_stream_free_stream.
+func StreamFreeStream(self unsafe.Pointer) int32 {
+	code := bindings().fnStreamFreeStream(self)
+	return code
+}
+
+// StreamAtGround calls the generated purego ABI wrapper for zg_stream_at_ground.
+func StreamAtGround(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnStreamAtGround(self, &outResult)
+	return outResult, code
+}
+
+// StreamFeedUntilGround calls the generated purego ABI wrapper for zg_stream_feed_until_ground.
+func StreamFeedUntilGround(self unsafe.Pointer, data []uint8) (FeedBoundaryData, int32) {
+	var dataPtr unsafe.Pointer
+	if len(data) != 0 {
+		dataPtr = unsafe.Pointer(&data[0])
+	}
+	var outResult FeedBoundaryData
+	code := bindings().fnStreamFeedUntilGround(self, dataPtr, uintptr(len(data)), unsafe.Pointer(&outResult))
+	return outResult, code
+}
+
+// StreamFeedUntil calls the generated purego ABI wrapper for zg_stream_feed_until.
+func StreamFeedUntil(self unsafe.Pointer, data []uint8, boundaries uint16) (FeedStopData, bool, int32) {
+	var dataPtr unsafe.Pointer
+	if len(data) != 0 {
+		dataPtr = unsafe.Pointer(&data[0])
+	}
+	var outResultHas uint8
+	var outResult FeedStopData
+	code := bindings().fnStreamFeedUntil(self, dataPtr, uintptr(len(data)), boundaries, &outResultHas, unsafe.Pointer(&outResult))
+	return outResult, outResultHas != 0, code
+}
+
+// StreamFeed calls the generated purego ABI wrapper for zg_stream_feed.
+func StreamFeed(self unsafe.Pointer, bytes []uint8) int32 {
+	var bytesPtr unsafe.Pointer
+	if len(bytes) != 0 {
+		bytesPtr = unsafe.Pointer(&bytes[0])
+	}
+	code := bindings().fnStreamFeed(self, bytesPtr, uintptr(len(bytes)))
+	return code
+}
+
+// StreamNextEventValue calls the generated purego ABI wrapper for zg_stream_next_event_value.
+func StreamNextEventValue(self unsafe.Pointer) ([]byte, bool, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnStreamNextEventValue(self, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return nil, false, code
+	}
+	if outResultPtr == nil {
+		return nil, false, code
+	}
+	var result []uint8
+	if outResultLen != 0 {
+		result = unsafe.Slice((*uint8)(outResultPtr), int(outResultLen))
+	}
+	return result, true, code
+}
+
+// StreamResizeCells calls the generated purego ABI wrapper for zg_stream_resize_cells.
+func StreamResizeCells(self unsafe.Pointer, width uint16, height uint16, cellWidth uint32, cellHeight uint32) int32 {
+	code := bindings().fnStreamResizeCells(self, width, height, cellWidth, cellHeight)
+	return code
+}
+
+// StreamSetUnknownMaxBytes calls the generated purego ABI wrapper for zg_stream_set_unknown_max_bytes.
+func StreamSetUnknownMaxBytes(self unsafe.Pointer, max uint) int32 {
+	code := bindings().fnStreamSetUnknownMaxBytes(self, uintptr(max))
+	return code
+}
+
+// StreamSetVersionReport calls the generated purego ABI wrapper for zg_stream_set_version_report.
+func StreamSetVersionReport(self unsafe.Pointer, name string, version string) int32 {
+	var namePtr unsafe.Pointer
+	if len(name) != 0 {
+		namePtr = unsafe.Pointer(unsafe.StringData(name))
+	}
+	var versionPtr unsafe.Pointer
+	if len(version) != 0 {
+		versionPtr = unsafe.Pointer(unsafe.StringData(version))
+	}
+	code := bindings().fnStreamSetVersionReport(self, namePtr, uintptr(len(name)), versionPtr, uintptr(len(version)))
+	return code
+}
+
+// StreamSetEnquiryResponse calls the generated purego ABI wrapper for zg_stream_set_enquiry_response.
+func StreamSetEnquiryResponse(self unsafe.Pointer, reply string) int32 {
+	var replyPtr unsafe.Pointer
+	if len(reply) != 0 {
+		replyPtr = unsafe.Pointer(unsafe.StringData(reply))
+	}
+	code := bindings().fnStreamSetEnquiryResponse(self, replyPtr, uintptr(len(reply)))
+	return code
+}
+
+// StreamColorSchemeChanged calls the generated purego ABI wrapper for zg_stream_color_scheme_changed.
+func StreamColorSchemeChanged(self unsafe.Pointer, scheme uint8) int32 {
+	code := bindings().fnStreamColorSchemeChanged(self, scheme)
+	return code
+}
+
+// StreamClearColorScheme calls the generated purego ABI wrapper for zg_stream_clear_color_scheme.
+func StreamClearColorScheme(self unsafe.Pointer) int32 {
+	code := bindings().fnStreamClearColorScheme(self)
+	return code
+}
+
+// StreamOnDrag calls the generated purego ABI wrapper for zg_stream_on_drag_purego_v2.
+func StreamOnDrag(self unsafe.Pointer, callbackCallback, callbackToken uintptr) int32 {
+	code := bindings().fnStreamOnDrag(self, callbackCallback, callbackToken)
+	return code
+}
+
+// StreamDragActive calls the generated purego ABI wrapper for zg_stream_drag_active.
+func StreamDragActive(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnStreamDragActive(self, &outResult)
+	return outResult, code
+}
+
+// StreamDragRegisteredMimes calls the generated purego ABI wrapper for zg_stream_drag_registered_mimes.
+func StreamDragRegisteredMimes(self unsafe.Pointer) (string, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnStreamDragRegisteredMimes(self, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", code
+	}
+	if outResultLen == 0 {
+		return "", code
+	}
+	return string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen))), code
+}
+
+// StreamDragClientAccepted calls the generated purego ABI wrapper for zg_stream_drag_client_accepted.
+func StreamDragClientAccepted(self unsafe.Pointer) (uint8, bool, int32) {
+	var outResultHas uint8
+	var outResult uint8
+	code := bindings().fnStreamDragClientAccepted(self, &outResultHas, &outResult)
+	return outResult, outResultHas != 0, code
+}
+
+// StreamDragMove calls the generated purego ABI wrapper for zg_stream_drag_move.
+func StreamDragMove(self unsafe.Pointer, ev DragMoveData, mimes string) int32 {
+	var mimesPtr unsafe.Pointer
+	if len(mimes) != 0 {
+		mimesPtr = unsafe.Pointer(unsafe.StringData(mimes))
+	}
+	code := bindings().fnStreamDragMove(self, unsafe.Pointer(&ev), mimesPtr, uintptr(len(mimes)))
+	return code
+}
+
+// StreamDragLeave calls the generated purego ABI wrapper for zg_stream_drag_leave.
+func StreamDragLeave(self unsafe.Pointer) int32 {
+	code := bindings().fnStreamDragLeave(self)
+	return code
+}
+
+// StreamDragAddItem calls the generated purego ABI wrapper for zg_stream_drag_add_item.
+func StreamDragAddItem(self unsafe.Pointer, mime string, data []uint8) int32 {
+	var mimePtr unsafe.Pointer
+	if len(mime) != 0 {
+		mimePtr = unsafe.Pointer(unsafe.StringData(mime))
+	}
+	var dataPtr unsafe.Pointer
+	if len(data) != 0 {
+		dataPtr = unsafe.Pointer(&data[0])
+	}
+	code := bindings().fnStreamDragAddItem(self, mimePtr, uintptr(len(mime)), dataPtr, uintptr(len(data)))
+	return code
+}
+
+// StreamDragDrop calls the generated purego ABI wrapper for zg_stream_drag_drop.
+func StreamDragDrop(self unsafe.Pointer, ev DragMoveData) int32 {
+	code := bindings().fnStreamDragDrop(self, unsafe.Pointer(&ev))
+	return code
+}
+
+// StreamDragClearItems calls the generated purego ABI wrapper for zg_stream_drag_clear_items.
+func StreamDragClearItems(self unsafe.Pointer) int32 {
+	code := bindings().fnStreamDragClearItems(self)
+	return code
+}
+
+// StreamOnClipboardWriteRequest calls the generated purego ABI wrapper for zg_stream_on_clipboard_write_request_purego_v2.
+func StreamOnClipboardWriteRequest(self unsafe.Pointer, callbackCallback, callbackToken uintptr) int32 {
+	code := bindings().fnStreamOnClipboardWriteRequest(self, callbackCallback, callbackToken)
+	return code
+}
+
+// StreamOnClipboardReadRequest calls the generated purego ABI wrapper for zg_stream_on_clipboard_read_request_purego_v2.
+func StreamOnClipboardReadRequest(self unsafe.Pointer, callbackCallback, callbackToken uintptr) int32 {
+	code := bindings().fnStreamOnClipboardReadRequest(self, callbackCallback, callbackToken)
+	return code
+}
+
+// StreamWriteContinuation calls the generated purego ABI wrapper for zg_stream_write_continuation_purego_v2.
+func StreamWriteContinuation(self unsafe.Pointer, writerCallback, writerHandle uintptr) int32 {
+	code := bindings().fnStreamWriteContinuation(self, writerCallback, writerHandle)
+	return code
+}
+
+// StreamHasReplies calls the generated purego ABI wrapper for zg_stream_has_replies.
+func StreamHasReplies(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnStreamHasReplies(self, &outResult)
+	return outResult, code
+}
+
+// StreamWriteSnapshot calls the generated purego ABI wrapper for zg_stream_write_snapshot_purego_v2.
+func StreamWriteSnapshot(self unsafe.Pointer, writerCallback, writerHandle uintptr) int32 {
+	code := bindings().fnStreamWriteSnapshot(self, writerCallback, writerHandle)
+	return code
+}
+
+// StreamWriteReplies calls the generated purego ABI wrapper for zg_stream_write_replies_purego_v2.
+func StreamWriteReplies(self unsafe.Pointer, writerCallback, writerHandle uintptr) int32 {
+	code := bindings().fnStreamWriteReplies(self, writerCallback, writerHandle)
+	return code
+}
+
+// ClipboardRequestLocation calls the generated purego ABI wrapper for zg_clipboard_request_location.
+func ClipboardRequestLocation(self unsafe.Pointer) (int32, int32) {
+	var outResult int32
+	code := bindings().fnClipboardRequestLocation(self, &outResult)
+	return outResult, code
+}
+
+// ClipboardRequestName calls the generated purego ABI wrapper for zg_clipboard_request_name.
+func ClipboardRequestName(self unsafe.Pointer) (string, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnClipboardRequestName(self, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", code
+	}
+	if outResultLen == 0 {
+		return "", code
+	}
+	return string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen))), code
+}
+
+// ClipboardRequestGranted calls the generated purego ABI wrapper for zg_clipboard_request_granted.
+func ClipboardRequestGranted(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnClipboardRequestGranted(self, &outResult)
+	return outResult, code
+}
+
+// ClipboardRequestCanRemember calls the generated purego ABI wrapper for zg_clipboard_request_can_remember.
+func ClipboardRequestCanRemember(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnClipboardRequestCanRemember(self, &outResult)
+	return outResult, code
+}
+
+// ClipboardRequestContentCount calls the generated purego ABI wrapper for zg_clipboard_request_content_count.
+func ClipboardRequestContentCount(self unsafe.Pointer) (uint, int32) {
+	var outResult uintptr
+	code := bindings().fnClipboardRequestContentCount(self, &outResult)
+	return uint(outResult), code
+}
+
+// ClipboardRequestContentMime calls the generated purego ABI wrapper for zg_clipboard_request_content_mime.
+func ClipboardRequestContentMime(self unsafe.Pointer, index uint) (string, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnClipboardRequestContentMime(self, uintptr(index), &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", code
+	}
+	if outResultLen == 0 {
+		return "", code
+	}
+	return string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen))), code
+}
+
+// ClipboardRequestMimeCount calls the generated purego ABI wrapper for zg_clipboard_request_mime_count.
+func ClipboardRequestMimeCount(self unsafe.Pointer) (uint, int32) {
+	var outResult uintptr
+	code := bindings().fnClipboardRequestMimeCount(self, &outResult)
+	return uint(outResult), code
+}
+
+// ClipboardRequestMime calls the generated purego ABI wrapper for zg_clipboard_request_mime.
+func ClipboardRequestMime(self unsafe.Pointer, index uint) (string, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnClipboardRequestMime(self, uintptr(index), &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", code
+	}
+	if outResultLen == 0 {
+		return "", code
+	}
+	return string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen))), code
+}
+
+// ClipboardRequestAllow calls the generated purego ABI wrapper for zg_clipboard_request_allow.
+func ClipboardRequestAllow(self unsafe.Pointer, remember uint8) int32 {
+	code := bindings().fnClipboardRequestAllow(self, remember)
+	return code
+}
+
+// ClipboardRequestReplyText calls the generated purego ABI wrapper for zg_clipboard_request_reply_text.
+func ClipboardRequestReplyText(self unsafe.Pointer, text string, remember uint8) int32 {
+	var textPtr unsafe.Pointer
+	if len(text) != 0 {
+		textPtr = unsafe.Pointer(unsafe.StringData(text))
+	}
+	code := bindings().fnClipboardRequestReplyText(self, textPtr, uintptr(len(text)), remember)
+	return code
+}
+
+// ClipboardRequestClearReplyContents calls the generated purego ABI wrapper for zg_clipboard_request_clear_reply_contents.
+func ClipboardRequestClearReplyContents(self unsafe.Pointer) int32 {
+	code := bindings().fnClipboardRequestClearReplyContents(self)
+	return code
+}
+
+// ClipboardRequestReplyContents calls the generated purego ABI wrapper for zg_clipboard_request_reply_contents.
+func ClipboardRequestReplyContents(self unsafe.Pointer, remember uint8) int32 {
+	code := bindings().fnClipboardRequestReplyContents(self, remember)
+	return code
+}
+
+// ClipboardRequestDeny calls the generated purego ABI wrapper for zg_clipboard_request_deny.
+func ClipboardRequestDeny(self unsafe.Pointer, reason uint8) int32 {
+	code := bindings().fnClipboardRequestDeny(self, reason)
+	return code
+}
+
+// ClipboardRequestAddContent calls the generated purego ABI wrapper for zg_clipboard_request_add_content.
+func ClipboardRequestAddContent(self unsafe.Pointer, mimeType string, data []uint8) int32 {
+	var mimeTypePtr unsafe.Pointer
+	if len(mimeType) != 0 {
+		mimeTypePtr = unsafe.Pointer(unsafe.StringData(mimeType))
+	}
+	var dataPtr unsafe.Pointer
+	if len(data) != 0 {
+		dataPtr = unsafe.Pointer(&data[0])
+	}
+	code := bindings().fnClipboardRequestAddContent(self, mimeTypePtr, uintptr(len(mimeType)), dataPtr, uintptr(len(data)))
+	return code
+}
+
+// ClipboardRequestContentData calls the generated purego ABI wrapper for zg_clipboard_request_content_data.
+func ClipboardRequestContentData(self unsafe.Pointer, index uint) ([]uint8, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnClipboardRequestContentData(self, uintptr(index), &outResultPtr, &outResultLen)
+	if code != 0 {
+		return nil, code
+	}
+	if outResultLen == 0 {
+		return nil, code
+	}
+	result := make([]uint8, int(outResultLen))
+	copy(result, unsafe.Slice((*uint8)(outResultPtr), int(outResultLen)))
+	return result, code
+}
+
+// NewOscParser calls the generated purego ABI wrapper for zg_new_osc_parser.
+func NewOscParser() (unsafe.Pointer, int32) {
+	var outResult unsafe.Pointer
+	code := bindings().fnNewOscParser(&outResult)
+	return outResult, code
+}
+
+// OscParserFreeOscParser calls the generated purego ABI wrapper for zg_osc_parser_free_osc_parser.
+func OscParserFreeOscParser(self unsafe.Pointer) int32 {
+	code := bindings().fnOscParserFreeOscParser(self)
+	return code
+}
+
+// OscParserFeed calls the generated purego ABI wrapper for zg_osc_parser_feed.
+func OscParserFeed(self unsafe.Pointer, bytes []uint8) int32 {
+	var bytesPtr unsafe.Pointer
+	if len(bytes) != 0 {
+		bytesPtr = unsafe.Pointer(&bytes[0])
+	}
+	code := bindings().fnOscParserFeed(self, bytesPtr, uintptr(len(bytes)))
+	return code
+}
+
+// OscParserEnd calls the generated purego ABI wrapper for zg_osc_parser_end.
+func OscParserEnd(self unsafe.Pointer, terminator uint8) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnOscParserEnd(self, terminator, &outResult)
+	return outResult, code
+}
+
+// OscParserReset calls the generated purego ABI wrapper for zg_osc_parser_reset.
+func OscParserReset(self unsafe.Pointer) int32 {
+	code := bindings().fnOscParserReset(self)
+	return code
+}
+
+// DecodeSnapshot calls the generated purego ABI wrapper for zg_decode_snapshot_purego_v2.
+func DecodeSnapshot(readerCallback, readerHandle uintptr, readerData []byte, maxContinuationBytes uint) (unsafe.Pointer, int32) {
+	var readerDataPtr unsafe.Pointer
+	if readerData != nil {
+		if len(readerData) != 0 {
+			readerDataPtr = unsafe.Pointer(&readerData[0])
+		} else {
+			readerDataPtr = unsafe.Pointer(&zigoEmptyStreamData)
+		}
+	}
+	var outResult unsafe.Pointer
+	code := bindings().fnDecodeSnapshot(readerCallback, readerDataPtr, uintptr(len(readerData)), readerHandle, uintptr(maxContinuationBytes), &outResult)
+	runtime.KeepAlive(readerData)
+	return outResult, code
+}
+
+// SnapshotDeinit calls the generated purego ABI wrapper for zg_snapshot_deinit.
+func SnapshotDeinit(self unsafe.Pointer) int32 {
+	code := bindings().fnSnapshotDeinit(self)
+	return code
+}
+
+// SnapshotRestoreInto calls the generated purego ABI wrapper for zg_snapshot_restore_into.
+func SnapshotRestoreInto(self unsafe.Pointer, term unsafe.Pointer) int32 {
+	code := bindings().fnSnapshotRestoreInto(self, term)
+	return code
+}
+
+// SnapshotSnapshotTerminal calls the generated purego ABI wrapper for zg_snapshot_snapshot_terminal.
+func SnapshotSnapshotTerminal(self unsafe.Pointer) (unsafe.Pointer, int32) {
+	var outResult unsafe.Pointer
+	code := bindings().fnSnapshotSnapshotTerminal(self, &outResult)
+	return outResult, code
+}
+
+// SnapshotContinuation calls the generated purego ABI wrapper for zg_snapshot_continuation.
+func SnapshotContinuation(self unsafe.Pointer) ([]uint8, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnSnapshotContinuation(self, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return nil, code
+	}
+	if outResultLen == 0 {
+		return nil, code
+	}
+	result := make([]uint8, int(outResultLen))
+	copy(result, unsafe.Slice((*uint8)(outResultPtr), int(outResultLen)))
+	return result, code
+}
+
+// NewSnapshotDecoder calls the generated purego ABI wrapper for zg_new_snapshot_decoder.
+func NewSnapshotDecoder(data []uint8) (unsafe.Pointer, int32) {
+	var dataPtr unsafe.Pointer
+	if len(data) != 0 {
+		dataPtr = unsafe.Pointer(&data[0])
+	}
+	var outResult unsafe.Pointer
+	code := bindings().fnNewSnapshotDecoder(dataPtr, uintptr(len(data)), &outResult)
+	return outResult, code
+}
+
+// SnapshotDecoderFreeSnapshotDecoder calls the generated purego ABI wrapper for zg_snapshot_decoder_free_snapshot_decoder.
+func SnapshotDecoderFreeSnapshotDecoder(self unsafe.Pointer) int32 {
+	code := bindings().fnSnapshotDecoderFreeSnapshotDecoder(self)
+	return code
+}
+
+// SnapshotDecoderReady calls the generated purego ABI wrapper for zg_snapshot_decoder_ready.
+func SnapshotDecoderReady(self unsafe.Pointer, maxContinuationBytes uint) int32 {
+	code := bindings().fnSnapshotDecoderReady(self, uintptr(maxContinuationBytes))
+	return code
+}
+
+// SnapshotDecoderRestoreInto calls the generated purego ABI wrapper for zg_snapshot_decoder_restore_into.
+func SnapshotDecoderRestoreInto(self unsafe.Pointer, term unsafe.Pointer) int32 {
+	code := bindings().fnSnapshotDecoderRestoreInto(self, term)
+	return code
+}
+
+// SnapshotDecoderContinuation calls the generated purego ABI wrapper for zg_snapshot_decoder_continuation.
+func SnapshotDecoderContinuation(self unsafe.Pointer) ([]uint8, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnSnapshotDecoderContinuation(self, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return nil, code
+	}
+	if outResultLen == 0 {
+		return nil, code
+	}
+	result := make([]uint8, int(outResultLen))
+	copy(result, unsafe.Slice((*uint8)(outResultPtr), int(outResultLen)))
+	return result, code
+}
+
+// SnapshotDecoderNext calls the generated purego ABI wrapper for zg_snapshot_decoder_next.
+func SnapshotDecoderNext(self unsafe.Pointer, term unsafe.Pointer) (SnapshotProgressData, bool, int32) {
+	var outResultHas uint8
+	var outResult SnapshotProgressData
+	code := bindings().fnSnapshotDecoderNext(self, term, &outResultHas, unsafe.Pointer(&outResult))
+	return outResult, outResultHas != 0, code
+}
+
+// SnapshotDecoderSetKittyImageStorageLimit calls the generated purego ABI wrapper for zg_snapshot_decoder_set_kitty_image_storage_limit.
+func SnapshotDecoderSetKittyImageStorageLimit(self unsafe.Pointer, bytes uint) int32 {
+	code := bindings().fnSnapshotDecoderSetKittyImageStorageLimit(self, uintptr(bytes))
+	return code
+}
+
+// SnapshotDecoderKittyCounts calls the generated purego ABI wrapper for zg_snapshot_decoder_kitty_counts.
+func SnapshotDecoderKittyCounts(self unsafe.Pointer) (SnapshotKittyCountsData, int32) {
+	var outResult SnapshotKittyCountsData
+	code := bindings().fnSnapshotDecoderKittyCounts(self, unsafe.Pointer(&outResult))
+	return outResult, code
+}
+
+// NewRenderState calls the generated purego ABI wrapper for zg_new_render_state.
+func NewRenderState() (unsafe.Pointer, int32) {
+	var outResult unsafe.Pointer
+	code := bindings().fnNewRenderState(&outResult)
+	return outResult, code
+}
+
+// RenderStateDeinit calls the generated purego ABI wrapper for zg_render_state_deinit.
+func RenderStateDeinit(self unsafe.Pointer) int32 {
+	code := bindings().fnRenderStateDeinit(self)
+	return code
+}
+
+// RenderStateUpdate calls the generated purego ABI wrapper for zg_render_state_update.
+func RenderStateUpdate(self unsafe.Pointer, t unsafe.Pointer) int32 {
+	code := bindings().fnRenderStateUpdate(self, t)
+	return code
+}
+
+// RenderStateClean calls the generated purego ABI wrapper for zg_render_state_clean.
+func RenderStateClean(self unsafe.Pointer) int32 {
+	code := bindings().fnRenderStateClean(self)
+	return code
+}
+
+// RenderStateCursor calls the generated purego ABI wrapper for zg_render_state_cursor.
+func RenderStateCursor(self unsafe.Pointer) (uint64, int32) {
+	var outResult uint64
+	code := bindings().fnRenderStateCursor(self, &outResult)
+	return outResult, code
+}
+
+// RenderStateColors calls the generated purego ABI wrapper for zg_render_state_colors.
+func RenderStateColors(self unsafe.Pointer) (RenderColorsData, int32) {
+	var outResult RenderColorsData
+	code := bindings().fnRenderStateColors(self, unsafe.Pointer(&outResult))
+	return outResult, code
+}
+
+// RenderStateCellCount calls the generated purego ABI wrapper for zg_render_state_cell_count.
+func RenderStateCellCount(self unsafe.Pointer) (uint, int32) {
+	var outResult uintptr
+	code := bindings().fnRenderStateCellCount(self, &outResult)
+	return uint(outResult), code
+}
+
+// RenderStateCells calls the generated purego ABI wrapper for zg_render_state_cells.
+func RenderStateCells(self unsafe.Pointer, dst []RenderCellData) (uint, int32) {
+	var dstPtr unsafe.Pointer
+	if len(dst) != 0 {
+		dstPtr = unsafe.Pointer(&dst[0])
+	}
+	var outResult uintptr
+	code := bindings().fnRenderStateCells(self, dstPtr, uintptr(len(dst)), &outResult)
+	return uint(outResult), code
+}
+
+// RenderStateDirty calls the generated purego ABI wrapper for zg_render_state_dirty.
+func RenderStateDirty(self unsafe.Pointer) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnRenderStateDirty(self, &outResult)
+	return outResult, code
+}
+
+// RenderStateDirtyRows calls the generated purego ABI wrapper for zg_render_state_dirty_rows.
+func RenderStateDirtyRows(self unsafe.Pointer, dst []uint16) (uint, int32) {
+	var dstPtr unsafe.Pointer
+	if len(dst) != 0 {
+		dstPtr = unsafe.Pointer(&dst[0])
+	}
+	var outResult uintptr
+	code := bindings().fnRenderStateDirtyRows(self, dstPtr, uintptr(len(dst)), &outResult)
+	return uint(outResult), code
+}
+
+// RenderStateRowCells calls the generated purego ABI wrapper for zg_render_state_row_cells.
+func RenderStateRowCells(self unsafe.Pointer, y uint16, dst []RenderCellData) (uint, int32) {
+	var dstPtr unsafe.Pointer
+	if len(dst) != 0 {
+		dstPtr = unsafe.Pointer(&dst[0])
+	}
+	var outResult uintptr
+	code := bindings().fnRenderStateRowCells(self, y, dstPtr, uintptr(len(dst)), &outResult)
+	return uint(outResult), code
+}
+
+// RenderStateGraphemes calls the generated purego ABI wrapper for zg_render_state_graphemes.
+func RenderStateGraphemes(self unsafe.Pointer, x uint16, y uint16, dst []uint32) (uint, int32) {
+	var dstPtr unsafe.Pointer
+	if len(dst) != 0 {
+		dstPtr = unsafe.Pointer(&dst[0])
+	}
+	var outResult uintptr
+	code := bindings().fnRenderStateGraphemes(self, x, y, dstPtr, uintptr(len(dst)), &outResult)
+	return uint(outResult), code
+}
+
+// RenderStateHyperlinkAt calls the generated purego ABI wrapper for zg_render_state_hyperlink_at.
+func RenderStateHyperlinkAt(self unsafe.Pointer, x uint16, y uint16) (string, bool, int32) {
+	var outResultPtr unsafe.Pointer
+	var outResultLen uintptr
+	code := bindings().fnRenderStateHyperlinkAt(self, x, y, &outResultPtr, &outResultLen)
+	if code != 0 {
+		return "", false, code
+	}
+	if outResultPtr == nil {
+		return "", false, code
+	}
+	var result string
+	if outResultLen != 0 {
+		result = string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen)))
+	}
+	bindings().fnFreeString(outResultPtr, outResultLen)
+	return result, true, code
+}
+
+// RenderStateImagePlacementCount calls the generated purego ABI wrapper for zg_render_state_image_placement_count.
+func RenderStateImagePlacementCount(self unsafe.Pointer) (uint, int32) {
+	var outResult uintptr
+	code := bindings().fnRenderStateImagePlacementCount(self, &outResult)
+	return uint(outResult), code
+}
+
+// RenderStateImagePlacements calls the generated purego ABI wrapper for zg_render_state_image_placements.
+func RenderStateImagePlacements(self unsafe.Pointer, dst []RenderImagePlacementData) (uint, int32) {
+	var dstPtr unsafe.Pointer
+	if len(dst) != 0 {
+		dstPtr = unsafe.Pointer(&dst[0])
+	}
+	var outResult uintptr
+	code := bindings().fnRenderStateImagePlacements(self, dstPtr, uintptr(len(dst)), &outResult)
+	return uint(outResult), code
+}
+
+// RenderStateImagePlacementsGeneration calls the generated purego ABI wrapper for zg_render_state_image_placements_generation.
+func RenderStateImagePlacementsGeneration(self unsafe.Pointer) (uint64, int32) {
+	var outResult uint64
+	code := bindings().fnRenderStateImagePlacementsGeneration(self, &outResult)
+	return outResult, code
+}
+
+// NewKittyImages calls the generated purego ABI wrapper for zg_new_kitty_images.
+func NewKittyImages() (unsafe.Pointer, int32) {
+	var outResult unsafe.Pointer
+	code := bindings().fnNewKittyImages(&outResult)
+	return outResult, code
+}
+
+// KittyImagesFreeKittyImages calls the generated purego ABI wrapper for zg_kitty_images_free_kitty_images.
+func KittyImagesFreeKittyImages(self unsafe.Pointer) int32 {
+	code := bindings().fnKittyImagesFreeKittyImages(self)
+	return code
+}
+
+// KittyImagesUpdate calls the generated purego ABI wrapper for zg_kitty_images_update.
+func KittyImagesUpdate(self unsafe.Pointer, term unsafe.Pointer) int32 {
+	code := bindings().fnKittyImagesUpdate(self, term)
+	return code
+}
+
+// KittyImagesPlacementCount calls the generated purego ABI wrapper for zg_kitty_images_placement_count.
+func KittyImagesPlacementCount(self unsafe.Pointer) (uint, int32) {
+	var outResult uintptr
+	code := bindings().fnKittyImagesPlacementCount(self, &outResult)
+	return uint(outResult), code
+}
+
+// KittyImagesPlacements calls the generated purego ABI wrapper for zg_kitty_images_placements.
+func KittyImagesPlacements(self unsafe.Pointer, dst []KittyPlacementData) (uint, int32) {
+	var dstPtr unsafe.Pointer
+	if len(dst) != 0 {
+		dstPtr = unsafe.Pointer(&dst[0])
+	}
+	var outResult uintptr
+	code := bindings().fnKittyImagesPlacements(self, dstPtr, uintptr(len(dst)), &outResult)
+	return uint(outResult), code
+}
+
+// UnicodeCodepointWidth calls the generated purego ABI wrapper for zg_unicode_codepoint_width.
+func UnicodeCodepointWidth(cp uint32) (uint8, int32) {
+	var outResult uint8
+	code := bindings().fnUnicodeCodepointWidth(cp, &outResult)
+	return outResult, code
+}
+
+// GraphemeWidth calls the generated purego ABI wrapper for zg_grapheme_width.
+func GraphemeWidth(cps []uint32) uint8 {
+	var cpsPtr unsafe.Pointer
+	if len(cps) != 0 {
+		cpsPtr = unsafe.Pointer(&cps[0])
+	}
+	result := bindings().fnGraphemeWidth(cpsPtr, uintptr(len(cps)))
+	return uint8(result)
+}
+
+// FreeBuffer calls the generated purego ABI wrapper for zg_free_buffer.
+func FreeBuffer(buffer []uint8) {
+	var bufferPtr unsafe.Pointer
+	if len(buffer) != 0 {
+		bufferPtr = unsafe.Pointer(&buffer[0])
+	}
+	bindings().fnFreeBuffer(bufferPtr, uintptr(len(buffer)))
+}
+
+// FreeString calls the generated purego ABI wrapper for zg_free_string.
+func FreeString(str string) {
+	var strPtr unsafe.Pointer
+	if len(str) != 0 {
+		strPtr = unsafe.Pointer(unsafe.StringData(str))
+	}
+	bindings().fnFreeString(strPtr, uintptr(len(str)))
+}
+
+// SgrAttributeCount calls the generated purego ABI wrapper for zg_sgr_attribute_count.
+func SgrAttributeCount(params []uint16, colonMask uint32) (uint, int32) {
+	var paramsPtr unsafe.Pointer
+	if len(params) != 0 {
+		paramsPtr = unsafe.Pointer(&params[0])
+	}
+	var outResult uintptr
+	code := bindings().fnSgrAttributeCount(paramsPtr, uintptr(len(params)), colonMask, &outResult)
+	return uint(outResult), code
+}
+
+// SgrAttributeAt calls the generated purego ABI wrapper for zg_sgr_attribute_at.
+func SgrAttributeAt(params []uint16, colonMask uint32, index uint) (AttributeData, int32) {
+	var paramsPtr unsafe.Pointer
+	if len(params) != 0 {
+		paramsPtr = unsafe.Pointer(&params[0])
+	}
+	var outResult AttributeData
+	code := bindings().fnSgrAttributeAt(paramsPtr, uintptr(len(params)), colonMask, uintptr(index), unsafe.Pointer(&outResult))
+	return outResult, code
+}
