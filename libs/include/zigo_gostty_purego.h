@@ -695,6 +695,15 @@ typedef struct zg_format_options {
     uint8_t resolve_palette;
 } zg_format_options;
 
+typedef struct zg_memory_usage {
+    uint64_t pages;
+    uint64_t virtual_bytes;
+    uint64_t resident_bytes;
+    uint64_t compressed_pages;
+    uint64_t compressed_bytes;
+    uint64_t image_bytes;
+} zg_memory_usage;
+
 typedef struct zg_rgb {
     uint8_t r;
     uint8_t g;
@@ -1048,6 +1057,7 @@ ZIGO_EXPORT int32_t zg_screen_viewport_is_bottom(const zg_screen * self, uint8_t
 ZIGO_EXPORT int32_t zg_screen_scroll_clear(zg_screen * self);
 ZIGO_EXPORT int32_t zg_screen_clear_selection(zg_screen * self);
 ZIGO_EXPORT int32_t zg_screen_end_hyperlink(zg_screen * self);
+ZIGO_EXPORT int32_t zg_screen_memory_usage(zg_screen * self, zg_memory_usage * out_result);
 ZIGO_EXPORT int32_t zg_screen_select_all(zg_screen * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_screen_has_selection(zg_screen * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_screen_select_range(zg_screen * self, uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint8_t rectangle, uint8_t * out_result);

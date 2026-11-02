@@ -502,6 +502,33 @@ type FormatOptions struct {
 	ResolvePalette bool
 }
 
+// MemoryUsage mirrors the Zig `extern struct` of the same name.
+type MemoryUsage struct {
+	// Pages in the list, compressed ones included.
+	Pages uint64
+	// VirtualBytes: Address space reserved for page memory, resident or compressed.
+	VirtualBytes uint64
+	// ResidentBytes: Physical memory the pages use: a resident page at its full size, a
+	// compressed one at its encoded size.
+	ResidentBytes uint64
+	// CompressedPages: Pages held compressed, and the bytes their encoded data takes.
+	CompressedPages uint64
+	// CompressedBytes corresponds to the Zig field compressed_bytes.
+	CompressedBytes uint64
+	// ImageBytes: Bytes of Kitty graphics image data.
+	ImageBytes uint64
+}
+
+// MemoryUsage is reinterpreted as raw.MemoryUsageData instead of copied, so the two
+// layouts must stay identical.
+var _ = [1]struct{}{}[unsafe.Sizeof(MemoryUsage{})-unsafe.Sizeof(raw.MemoryUsageData{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(MemoryUsage{}.Pages)-unsafe.Offsetof(raw.MemoryUsageData{}.Pages)]
+var _ = [1]struct{}{}[unsafe.Offsetof(MemoryUsage{}.VirtualBytes)-unsafe.Offsetof(raw.MemoryUsageData{}.VirtualBytes)]
+var _ = [1]struct{}{}[unsafe.Offsetof(MemoryUsage{}.ResidentBytes)-unsafe.Offsetof(raw.MemoryUsageData{}.ResidentBytes)]
+var _ = [1]struct{}{}[unsafe.Offsetof(MemoryUsage{}.CompressedPages)-unsafe.Offsetof(raw.MemoryUsageData{}.CompressedPages)]
+var _ = [1]struct{}{}[unsafe.Offsetof(MemoryUsage{}.CompressedBytes)-unsafe.Offsetof(raw.MemoryUsageData{}.CompressedBytes)]
+var _ = [1]struct{}{}[unsafe.Offsetof(MemoryUsage{}.ImageBytes)-unsafe.Offsetof(raw.MemoryUsageData{}.ImageBytes)]
+
 // Scrollbar mirrors the Zig `extern struct` of the same name.
 type Scrollbar struct {
 	// Total size of the scrollable area.
@@ -968,6 +995,17 @@ func zigoFormatOptionsToRaw(value FormatOptions) raw.FormatOptionsData {
 		NoStyles:               zigoBoolToUint8(value.NoStyles),
 		NoHyperlinks:           zigoBoolToUint8(value.NoHyperlinks),
 		ResolvePalette:         zigoBoolToUint8(value.ResolvePalette),
+	}
+}
+
+func zigoMemoryUsageFromRaw(value raw.MemoryUsageData) MemoryUsage {
+	return MemoryUsage{
+		Pages:           value.Pages,
+		VirtualBytes:    value.VirtualBytes,
+		ResidentBytes:   value.ResidentBytes,
+		CompressedPages: value.CompressedPages,
+		CompressedBytes: value.CompressedBytes,
+		ImageBytes:      value.ImageBytes,
 	}
 }
 

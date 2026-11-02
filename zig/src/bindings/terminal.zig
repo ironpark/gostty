@@ -279,6 +279,7 @@ const screen_group = Screen.members(p.functions(api, .{
     api.func("screenScrollClear", .{ .covers = &.{Screen.ref("scrollClear")} }),
     Screen.func("clearSelection", .{}),
     Screen.func("endHyperlink", .{}),
+    api.func("screenMemoryUsage", .{ .covers = &.{Screen.ref("memoryUsage")} }),
     // Wrappers whose receiver zigo infers from their first argument. The
     // shared prefix is what keeps them apart in Zig; the Go name drops it.
     api.func("screenSelectAll", .{ .covers = &.{Screen.ref("selectAll")} }),
@@ -403,6 +404,7 @@ pub const declarations = [_]zigo.Entry{
     p.printed("Selection"),
     p.enumeration("FormatterFormat", .{ .text = true }),
     api.value("FormatOptions", .{}),
+    api.value("MemoryUsage", .{}),
     api.value("RGB", .{ .go = .{
         .type = "RGB",
         .to_raw = "rgbToRaw",

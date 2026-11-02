@@ -6112,6 +6112,27 @@
     },
     {
       "covers": [
+        "Screen.memoryUsage"
+      ],
+      "doc": "The memory the screen holds. It visits every page but restores none\nthat is compressed.",
+      "name": "screenMemoryUsage",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Screen",
+      "return": {
+        "kind": "value_struct",
+        "ref": "MemoryUsage"
+      },
+      "source": {
+        "path": "screen.zig",
+        "line": 238,
+        "column": 8
+      },
+      "zig_path": "screenMemoryUsage",
+      "symbol": "zg_screen_screen_memory_usage"
+    },
+    {
+      "covers": [
         "Screen.selectAll"
       ],
       "doc": "Select the whole screen. Returns false when there is nothing to select.",
@@ -13725,6 +13746,79 @@
         "column": 11
       },
       "zig_path": "format.FormatOptions"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "doc": "Pages in the list, compressed ones included.",
+          "name": "pages",
+          "type": {
+            "bits": 64,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "doc": "Address space reserved for page memory, resident or compressed.",
+          "name": "virtual_bytes",
+          "type": {
+            "bits": 64,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "doc": "Physical memory the pages use: a resident page at its full size, a\ncompressed one at its encoded size.",
+          "name": "resident_bytes",
+          "type": {
+            "bits": 64,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "doc": "Pages held compressed, and the bytes their encoded data takes.",
+          "name": "compressed_pages",
+          "type": {
+            "bits": 64,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "name": "compressed_bytes",
+          "type": {
+            "bits": 64,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "doc": "Bytes of Kitty graphics image data.",
+          "name": "image_bytes",
+          "type": {
+            "bits": 64,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "kind": "value_struct",
+      "layout": "extern",
+      "name": "MemoryUsage",
+      "source": {
+        "path": "screen.zig",
+        "line": 221,
+        "column": 11
+      },
+      "zig_path": "screen.MemoryUsage"
     },
     {
       "exhaustive": true,

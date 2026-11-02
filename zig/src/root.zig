@@ -126,6 +126,8 @@ pub const screenSelectionAdjust = screen_.screenSelectionAdjust;
 pub const screenViewportTop = screen_.screenViewportTop;
 pub const Scrollbar = screen_.Scrollbar;
 pub const screenScrollbar = screen_.screenScrollbar;
+pub const MemoryUsage = screen_.MemoryUsage;
+pub const screenMemoryUsage = screen_.screenMemoryUsage;
 
 // Kitty drag and drop (OSC 72).
 const dnd_ = @import("dnd.zig");

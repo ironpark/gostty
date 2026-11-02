@@ -3576,6 +3576,27 @@ func (s *Screen) EndHyperlink() {
 	}
 }
 
+// zigoCheckedMemoryUsage is the checked form of MemoryUsage, which a plugin replaced.
+func (s *Screen) zigoCheckedMemoryUsage() (MemoryUsage, error) {
+	ptr, err := zigoCheckedPointer("Screen.MemoryUsage receiver", s)
+	if err != nil {
+		return MemoryUsage{}, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.ScreenMemoryUsage(ptr)
+	if code != 0 {
+		return MemoryUsage{}, zigoPoisonAfterPanic(zigoErrorForCode("Screen.MemoryUsage", code), s)
+	}
+	return zigoMemoryUsageFromRaw(result), nil
+}
+
+// MemoryUsage: The memory the screen holds. It visits every page but restores none
+// that is compressed.
+// It panics with the typed error it would otherwise return.
+func (s *Screen) MemoryUsage() MemoryUsage {
+	return zigoMust(s.zigoCheckedMemoryUsage())
+}
+
 // SelectAll: Select the whole screen. Returns false when there is nothing to select.
 func (s *Screen) SelectAll() (bool, error) {
 	ptr, err := zigoCheckedPointer("Screen.SelectAll receiver", s)

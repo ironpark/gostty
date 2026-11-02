@@ -212,3 +212,37 @@ pub fn screenStartHyperlink(self: *Screen, uri: []const u8, id: []const u8) !voi
 pub fn screenScrollClear(self: *Screen) Allocator.Error!void {
     return self.scrollClear();
 }
+
+/// What a screen's memory takes: its page memory, which holds every cell
+/// with its styles, graphemes and hyperlinks, and the images stored through
+/// the Kitty graphics protocol, which lie outside the pages. ghostty's own
+/// figure nests a struct in a struct, which has no C representation, so this
+/// is the flattened equivalent.
+pub const MemoryUsage = extern struct {
+    /// Pages in the list, compressed ones included.
+    pages: u64,
+    /// Address space reserved for page memory, resident or compressed.
+    virtual_bytes: u64,
+    /// Physical memory the pages use: a resident page at its full size, a
+    /// compressed one at its encoded size.
+    resident_bytes: u64,
+    /// Pages held compressed, and the bytes their encoded data takes.
+    compressed_pages: u64,
+    compressed_bytes: u64,
+    /// Bytes of Kitty graphics image data.
+    image_bytes: u64,
+};
+
+/// The memory the screen holds. It visits every page but restores none
+/// that is compressed.
+pub fn screenMemoryUsage(self: *Screen) MemoryUsage {
+    const u = self.memoryUsage();
+    return .{
+        .pages = u.pages.pages,
+        .virtual_bytes = u.pages.virtual_bytes,
+        .resident_bytes = u.pages.resident_bytes,
+        .compressed_pages = u.pages.compressed_pages,
+        .compressed_bytes = u.pages.compressed_bytes,
+        .image_bytes = u.image_bytes,
+    };
+}

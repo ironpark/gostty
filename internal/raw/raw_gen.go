@@ -236,6 +236,7 @@ type nativeBindings struct {
 	fnScreenScrollClear                        func(unsafe.Pointer) int32
 	fnScreenClearSelection                     func(unsafe.Pointer) int32
 	fnScreenEndHyperlink                       func(unsafe.Pointer) int32
+	fnScreenMemoryUsage                        func(unsafe.Pointer, unsafe.Pointer) int32
 	fnScreenSelectAll                          func(unsafe.Pointer, *uint8) int32
 	fnScreenHasSelection                       func(unsafe.Pointer, *uint8) int32
 	fnScreenSelectRange                        func(unsafe.Pointer, uint16, uint16, uint16, uint16, uint8, *uint8) int32
@@ -1542,6 +1543,10 @@ func loadCandidate(path string) error {
 	if err != nil {
 		return fail("zg_screen_end_hyperlink", err)
 	}
+	addrScreenMemoryUsage, err := resolveSymbol(handle, "zg_screen_memory_usage")
+	if err != nil {
+		return fail("zg_screen_memory_usage", err)
+	}
 	addrScreenSelectAll, err := resolveSymbol(handle, "zg_screen_select_all")
 	if err != nil {
 		return fail("zg_screen_select_all", err)
@@ -2262,6 +2267,7 @@ func loadCandidate(path string) error {
 	purego.RegisterFunc(&next.fnScreenScrollClear, addrScreenScrollClear)
 	purego.RegisterFunc(&next.fnScreenClearSelection, addrScreenClearSelection)
 	purego.RegisterFunc(&next.fnScreenEndHyperlink, addrScreenEndHyperlink)
+	purego.RegisterFunc(&next.fnScreenMemoryUsage, addrScreenMemoryUsage)
 	purego.RegisterFunc(&next.fnScreenSelectAll, addrScreenSelectAll)
 	purego.RegisterFunc(&next.fnScreenHasSelection, addrScreenHasSelection)
 	purego.RegisterFunc(&next.fnScreenSelectRange, addrScreenSelectRange)
@@ -2497,6 +2503,16 @@ type FormatOptionsData struct {
 	NoStyles               uint8
 	NoHyperlinks           uint8
 	ResolvePalette         uint8
+}
+
+// MemoryUsageData mirrors the zg_memory_usage layout, padding included.
+type MemoryUsageData struct {
+	Pages           uint64
+	VirtualBytes    uint64
+	ResidentBytes   uint64
+	CompressedPages uint64
+	CompressedBytes uint64
+	ImageBytes      uint64
 }
 
 // RGBData mirrors the zg_rgb layout, padding included.
@@ -4063,6 +4079,13 @@ func ScreenClearSelection(self unsafe.Pointer) int32 {
 func ScreenEndHyperlink(self unsafe.Pointer) int32 {
 	code := bindings().fnScreenEndHyperlink(self)
 	return code
+}
+
+// ScreenMemoryUsage calls the generated purego ABI wrapper for zg_screen_memory_usage.
+func ScreenMemoryUsage(self unsafe.Pointer) (MemoryUsageData, int32) {
+	var outResult MemoryUsageData
+	code := bindings().fnScreenMemoryUsage(self, unsafe.Pointer(&outResult))
+	return outResult, code
 }
 
 // ScreenSelectAll calls the generated purego ABI wrapper for zg_screen_select_all.
