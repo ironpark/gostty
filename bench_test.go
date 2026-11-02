@@ -52,3 +52,26 @@ func BenchmarkCarriageReturn(b *testing.B) {
 		term.CarriageReturn()
 	}
 }
+
+// A 200x60 frame's cells, whole and one row at a time.
+func BenchmarkRenderCells(b *testing.B) {
+	term, _ := NewTerminal(200, 60)
+	defer term.Close()
+	state, _ := NewRenderState()
+	defer state.Close()
+	_ = state.Update(term)
+	cells := make([]RenderCell, state.CellCount())
+	row := make([]RenderCell, 200)
+	b.Run("Cells", func(b *testing.B) {
+		b.ReportAllocs()
+		for b.Loop() {
+			_, _ = state.Cells(cells)
+		}
+	})
+	b.Run("RowCells", func(b *testing.B) {
+		b.ReportAllocs()
+		for b.Loop() {
+			_, _ = state.RowCells(3, row)
+		}
+	})
+}

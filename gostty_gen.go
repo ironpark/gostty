@@ -2624,7 +2624,9 @@ func (te *Terminal) zigoCheckedPaletteColors(dst []RGB) (uint, error) {
 		return 0, err
 	}
 	defer te.zigoRelease()
-	dstRaw := make([]raw.RGBData, len(dst))
+	dstScratch := te.zigoScratchRGB.take(len(dst))
+	defer te.zigoScratchRGB.give(dstScratch)
+	dstRaw := *dstScratch
 	result, code := raw.TerminalPaletteColors(ptr, dstRaw)
 	if code != 0 {
 		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PaletteColors", code), te)
@@ -4079,7 +4081,9 @@ func (s *Search) zigoCheckedMatches(dst []Selection) (uint, error) {
 		return 0, err
 	}
 	defer s.zigoRelease()
-	dstRaw := make([]raw.SelectionData, len(dst))
+	dstScratch := s.zigoScratchSelection.take(len(dst))
+	defer s.zigoScratchSelection.give(dstScratch)
+	dstRaw := *dstScratch
 	result, code := raw.SearchMatches(ptr, dstRaw)
 	if code != 0 {
 		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Search.Matches", code), s)
@@ -4113,7 +4117,9 @@ func (s *Search) ViewportMatches(dst []Selection) (uint, error) {
 		return 0, err
 	}
 	defer s.zigoRelease()
-	dstRaw := make([]raw.SelectionData, len(dst))
+	dstScratch := s.zigoScratchSelection.take(len(dst))
+	defer s.zigoScratchSelection.give(dstScratch)
+	dstRaw := *dstScratch
 	result, code := raw.SearchViewportMatches(ptr, dstRaw)
 	if code != 0 {
 		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Search.ViewportMatches", code), s)
@@ -6022,7 +6028,9 @@ func (r *RenderState) Cells(dst []RenderCell) (uint, error) {
 		return 0, err
 	}
 	defer r.zigoRelease()
-	dstRaw := make([]raw.RenderCellData, len(dst))
+	dstScratch := r.zigoScratchRenderCell.take(len(dst))
+	defer r.zigoScratchRenderCell.give(dstScratch)
+	dstRaw := *dstScratch
 	result, code := raw.RenderStateCells(ptr, dstRaw)
 	if code != 0 {
 		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.Cells", code), r)
@@ -6077,7 +6085,9 @@ func (r *RenderState) RowCells(y uint16, dst []RenderCell) (uint, error) {
 		return 0, err
 	}
 	defer r.zigoRelease()
-	dstRaw := make([]raw.RenderCellData, len(dst))
+	dstScratch := r.zigoScratchRenderCell.take(len(dst))
+	defer r.zigoScratchRenderCell.give(dstScratch)
+	dstRaw := *dstScratch
 	result, code := raw.RenderStateRowCells(ptr, y, dstRaw)
 	if code != 0 {
 		return 0, zigoPoisonAfterPanic(zigoErrorForCode("RenderState.RowCells", code), r)
@@ -6252,7 +6262,9 @@ func (k *KittyImages) Placements(dst []KittyPlacement) (uint, error) {
 		return 0, err
 	}
 	defer k.zigoRelease()
-	dstRaw := make([]raw.KittyPlacementData, len(dst))
+	dstScratch := k.zigoScratchKittyPlacement.take(len(dst))
+	defer k.zigoScratchKittyPlacement.give(dstScratch)
+	dstRaw := *dstScratch
 	result, code := raw.KittyImagesPlacements(ptr, dstRaw)
 	if code != 0 {
 		return 0, zigoPoisonAfterPanic(zigoErrorForCode("KittyImages.Placements", code), k)

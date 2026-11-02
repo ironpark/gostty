@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"unsafe"
 
 	lifecycle "github.com/ironpark/gostty/internal/lifecycle"
@@ -20,13 +21,14 @@ import (
 // operations. Callbacks may answer their supplied request but must not
 // recursively feed, resize, reset or close the same terminal.
 type Terminal struct {
-	ptr      unsafe.Pointer
-	mu       sync.Mutex
-	active   int
-	children int
-	closed   bool
-	poison   *NativePanicError
-	cleanup  runtime.Cleanup
+	ptr            unsafe.Pointer
+	mu             sync.Mutex
+	active         int
+	children       int
+	closed         bool
+	poison         *NativePanicError
+	cleanup        runtime.Cleanup
+	zigoScratchRGB zigoScratch[raw.RGBData]
 }
 
 // zigoAcquire pins te open for one native call and hands back its pointer;
@@ -169,6 +171,17 @@ func (te *Terminal) zigoTakeLocked() (zigoTerminalCleanupState, bool) {
 		state.ptr = nil
 	}
 	return state, true
+}
+
+// ReleaseScratch drops the raw buffer that PaletteColors
+// keeps between calls to convert through, for an owner that will not call
+// it for a while. The next call allocates afresh. It is safe at any time;
+// a call already in progress hands its buffer back when it returns.
+func (te *Terminal) ReleaseScratch() {
+	if te == nil {
+		return
+	}
+	te.zigoScratchRGB.release()
 }
 
 // TerminalConfig configures a new terminal. Cols and Rows must be nonzero.
@@ -896,13 +909,14 @@ var _ io.Closer = (*Screen)(nil)
 
 // Search is a caller-owned native handle. Call Close when it is no longer needed.
 type Search struct {
-	ptr     unsafe.Pointer
-	mu      sync.Mutex
-	active  int
-	closed  bool
-	poison  *NativePanicError
-	parent  zigoChildHandle
-	cleanup runtime.Cleanup
+	ptr                  unsafe.Pointer
+	mu                   sync.Mutex
+	active               int
+	closed               bool
+	poison               *NativePanicError
+	parent               zigoChildHandle
+	cleanup              runtime.Cleanup
+	zigoScratchSelection zigoScratch[raw.SelectionData]
 }
 
 // zigoAcquire pins s and its parent open for one native call.
@@ -1037,6 +1051,17 @@ func (s *Search) zigoTakeLocked() (zigoSearchCleanupState, bool) {
 		state.ptr = nil
 	}
 	return state, true
+}
+
+// ReleaseScratch drops the raw buffer that Matches and ViewportMatches
+// keep between calls to convert through, for an owner that will not call
+// them for a while. The next call allocates afresh. It is safe at any time;
+// a call already in progress hands its buffer back when it returns.
+func (s *Search) ReleaseScratch() {
+	if s == nil {
+		return
+	}
+	s.zigoScratchSelection.release()
 }
 
 // GridRef is a caller-owned native handle. Call Close when it is no longer needed.
@@ -1984,12 +2009,13 @@ func (s *SnapshotDecoder) zigoTakeLocked() (zigoSnapshotDecoderCleanupState, boo
 // cell, cursor and color values can be retained across updates. Call Clean
 // only after successfully drawing the frame.
 type RenderState struct {
-	ptr     unsafe.Pointer
-	mu      sync.Mutex
-	active  int
-	closed  bool
-	poison  *NativePanicError
-	cleanup runtime.Cleanup
+	ptr                   unsafe.Pointer
+	mu                    sync.Mutex
+	active                int
+	closed                bool
+	poison                *NativePanicError
+	cleanup               runtime.Cleanup
+	zigoScratchRenderCell zigoScratch[raw.RenderCellData]
 }
 
 // zigoAcquire pins r open for one native call and hands back its pointer;
@@ -2097,14 +2123,26 @@ func (r *RenderState) zigoTakeLocked() (zigoRenderStateCleanupState, bool) {
 	return state, true
 }
 
+// ReleaseScratch drops the raw buffer that Cells and RowCells
+// keep between calls to convert through, for an owner that will not call
+// them for a while. The next call allocates afresh. It is safe at any time;
+// a call already in progress hands its buffer back when it returns.
+func (r *RenderState) ReleaseScratch() {
+	if r == nil {
+		return
+	}
+	r.zigoScratchRenderCell.release()
+}
+
 // KittyImages is a caller-owned native handle. Call Close when it is no longer needed.
 type KittyImages struct {
-	ptr     unsafe.Pointer
-	mu      sync.Mutex
-	active  int
-	closed  bool
-	poison  *NativePanicError
-	cleanup runtime.Cleanup
+	ptr                       unsafe.Pointer
+	mu                        sync.Mutex
+	active                    int
+	closed                    bool
+	poison                    *NativePanicError
+	cleanup                   runtime.Cleanup
+	zigoScratchKittyPlacement zigoScratch[raw.KittyPlacementData]
 }
 
 // zigoAcquire pins k open for one native call and hands back its pointer;
@@ -2212,6 +2250,17 @@ func (k *KittyImages) zigoTakeLocked() (zigoKittyImagesCleanupState, bool) {
 	return state, true
 }
 
+// ReleaseScratch drops the raw buffer that Placements
+// keeps between calls to convert through, for an owner that will not call
+// it for a while. The next call allocates afresh. It is safe at any time;
+// a call already in progress hands its buffer back when it returns.
+func (k *KittyImages) ReleaseScratch() {
+	if k == nil {
+		return
+	}
+	k.zigoScratchKittyPlacement.release()
+}
+
 // zigoLeakTracking is set from ZIGO_DEBUG_LEAKS once, when the package is
 // initialised. While it is set, a handle the garbage collector reclaims
 // without Close reports on standard error where it was created.
@@ -2235,3 +2284,29 @@ func zigoReportLeak(typeName string, site []byte) {
 	}
 	os.Stderr.WriteString("zigo: " + typeName + " was garbage-collected without Close; created at:\n" + string(site) + "\n")
 }
+
+// zigoScratch is a raw buffer a handle lends its own calls that convert
+// through one, so a caller filling the same slice every frame does not
+// allocate a fresh buffer each time. A call takes it for its duration: one
+// made while another holds it allocates its own, and the first handed back
+// is kept.
+type zigoScratch[T any] struct{ buffer atomic.Pointer[[]T] }
+
+// take lends the buffer, at least n long and sliced to n.
+func (s *zigoScratch[T]) take(n int) *[]T {
+	buffer := s.buffer.Swap(nil)
+	if buffer == nil {
+		buffer = new([]T)
+	}
+	if cap(*buffer) < n {
+		*buffer = make([]T, n)
+	}
+	*buffer = (*buffer)[:n]
+	return buffer
+}
+
+// give hands a buffer back, unless another call already has.
+func (s *zigoScratch[T]) give(buffer *[]T) { s.buffer.CompareAndSwap(nil, buffer) }
+
+// release drops the buffer. One a call holds comes back when the call gives it.
+func (s *zigoScratch[T]) release() { s.buffer.Store(nil) }

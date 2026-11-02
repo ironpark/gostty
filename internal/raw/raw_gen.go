@@ -53,324 +53,324 @@ func (err *LibraryError) Is(target error) bool { return target == ErrLibraryLoad
 func (err *LibraryError) Unwrap() error { return err.Cause }
 
 type nativeBindings struct {
-	lastError                                  func() unsafe.Pointer
-	panicMessage                               func(int32) unsafe.Pointer
-	fnTerminalCols                             func(unsafe.Pointer, *uint16) int32
-	fnTerminalRows                             func(unsafe.Pointer, *uint16) int32
-	fnTerminalCursorX                          func(unsafe.Pointer, *uint16) int32
-	fnTerminalCursorY                          func(unsafe.Pointer, *uint16) int32
-	fnTerminalCursorStyle                      func(unsafe.Pointer, *uint8) int32
-	fnTerminalActiveScreenKey                  func(unsafe.Pointer, *uint8) int32
-	fnTerminalCursorPendingWrap                func(unsafe.Pointer, *uint8) int32
-	fnTerminalCursorProtected                  func(unsafe.Pointer, *uint8) int32
-	fnTerminalWidthPx                          func(unsafe.Pointer, *uint32) int32
-	fnTerminalHeightPx                         func(unsafe.Pointer, *uint32) int32
-	fnTerminalFocused                          func(unsafe.Pointer, *uint8) int32
-	fnTerminalVisible                          func(unsafe.Pointer, *uint8) int32
-	fnTerminalPasswordInput                    func(unsafe.Pointer, *uint8) int32
-	fnTerminalCharsetGl                        func(unsafe.Pointer, *uint8) int32
-	fnTerminalCharsetGr                        func(unsafe.Pointer, *uint8) int32
-	fnTerminalCharsetSingleShift               func(unsafe.Pointer, *uint8, *uint8) int32
-	fnTerminalProtectedMode                    func(unsafe.Pointer, *uint8) int32
-	fnGestureClickCount                        func(unsafe.Pointer, *uint8) int32
-	fnGestureDragged                           func(unsafe.Pointer, *uint8) int32
-	fnStreamFailed                             func(unsafe.Pointer, *uint8) int32
-	fnOscParserCommand                         func(unsafe.Pointer, *uint8) int32
-	fnOscParserWindowTitle                     func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
-	fnOscParserIcon                            func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
-	fnOscParserPwd                             func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
-	fnOscParserHyperlinkUri                    func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
-	fnOscParserHyperlinkID                     func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
-	fnOscParserNotificationTitle               func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
-	fnOscParserNotificationBody                func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
-	fnOscParserClipboardData                   func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
-	fnOscParserClipboardSelection              func(unsafe.Pointer, *uint8) int32
-	fnOscParserMouseShape                      func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
-	fnOscParserSemanticPromptAction            func(unsafe.Pointer, *uint8) int32
-	fnOscParserSemanticPromptOptions           func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
-	fnOscParserProgressState                   func(unsafe.Pointer, *uint8) int32
-	fnOscParserProgressValue                   func(unsafe.Pointer, *int16) int32
-	fnRenderStateRows                          func(unsafe.Pointer, *uint16) int32
-	fnRenderStateCols                          func(unsafe.Pointer, *uint16) int32
-	fnRenderStateCursorVisible                 func(unsafe.Pointer, *uint8) int32
-	fnRenderStateCursorStyle                   func(unsafe.Pointer, *uint8) int32
-	fnRenderStateCursorBlinking                func(unsafe.Pointer, *uint8) int32
-	fnRenderStateCursorPasswordInput           func(unsafe.Pointer, *uint8) int32
-	fnKittyImagesGeneration                    func(unsafe.Pointer, *uint64) int32
-	fnSysOnPngDecodeRequest                    func(uintptr, uintptr)
-	fnSysReplyPngImage                         func(uint32, uint32, unsafe.Pointer, uintptr) int32
-	fnSysOnSecureRandomRequest                 func(uintptr, uintptr)
-	fnSysOnLog                                 func(uintptr, uintptr)
-	fnSysClear                                 func()
-	fnSysReplySecureRandom                     func(unsafe.Pointer, uintptr) int32
-	fnKeyCodepoint                             func(int32, *uint32) uint8
-	fnKeyPrintable                             func(int32) uint8
-	fnKeyModifier                              func(int32) uint8
-	fnKeyKeypad                                func(int32) uint8
-	fnKeyLeftOrRightShift                      func(int32) uint8
-	fnKeyLeftOrRightAlt                        func(int32) uint8
-	fnKeyCtrlOrSuper                           func(int32) uint8
-	fnKeyShouldBeRemappable                    func(int32) uint8
-	fnKeyW3C                                   func(int32, *unsafe.Pointer, *uintptr)
-	fnEncodeKey                                func(uintptr, uintptr, unsafe.Pointer, unsafe.Pointer, unsafe.Pointer, uintptr) int32
-	fnEncodeMouse                              func(uintptr, uintptr, unsafe.Pointer, unsafe.Pointer, unsafe.Pointer, uint8) int32
-	fnKeyKeyFromAscii                          func(uint8, *int32) uint8
-	fnKeyKeyFromW3C                            func(unsafe.Pointer, uintptr, *int32) uint8
-	fnInputEncodeFocus                         func(uintptr, uintptr, uint8) int32
-	fnInputIsSafePaste                         func(unsafe.Pointer, uintptr) uint8
-	fnEncodePaste                              func(uintptr, uintptr, unsafe.Pointer, unsafe.Pointer, uintptr) int32
-	fnTerminalNewTerminal                      func(uint16, uint16, *uintptr, *uintptr, uint8, *uint8, *unsafe.Pointer) int32
-	fnTerminalDeinit                           func(unsafe.Pointer) int32
-	fnTerminalNewStream                        func(unsafe.Pointer, uintptr, *unsafe.Pointer) int32
-	fnTerminalNewSearch                        func(unsafe.Pointer, unsafe.Pointer, uintptr, *unsafe.Pointer) int32
-	fnTerminalNewGesture                       func(unsafe.Pointer, *unsafe.Pointer) int32
-	fnTerminalNewGridRef                       func(unsafe.Pointer, uint8, uint16, uint32, *unsafe.Pointer) int32
-	fnTerminalPrintString                      func(unsafe.Pointer, unsafe.Pointer, uintptr) int32
-	fnTerminalPlainString                      func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
-	fnTerminalPlainStringUnwrapped             func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
-	fnTerminalPrint                            func(unsafe.Pointer, uint32) int32
-	fnTerminalPrintRepeat                      func(unsafe.Pointer, uintptr) int32
-	fnTerminalPrintSlice                       func(unsafe.Pointer, unsafe.Pointer, uintptr) int32
-	fnTerminalSetCursorStyle                   func(unsafe.Pointer, uint8) int32
-	fnTerminalSetCursorPos                     func(unsafe.Pointer, uintptr, uintptr) int32
-	fnTerminalCarriageReturn                   func(unsafe.Pointer) int32
-	fnTerminalLinefeed                         func(unsafe.Pointer) int32
-	fnTerminalBackspace                        func(unsafe.Pointer) int32
-	fnTerminalCursorIsAtPrompt                 func(unsafe.Pointer, *uint8) int32
-	fnTerminalFullReset                        func(unsafe.Pointer) int32
-	fnTerminalSoftReset                        func(unsafe.Pointer) int32
-	fnTerminalCursorUp                         func(unsafe.Pointer, uintptr) int32
-	fnTerminalCursorDown                       func(unsafe.Pointer, uintptr) int32
-	fnTerminalCursorLeft                       func(unsafe.Pointer, uintptr) int32
-	fnTerminalCursorRight                      func(unsafe.Pointer, uintptr) int32
-	fnTerminalSetCursorRow                     func(unsafe.Pointer, uintptr) int32
-	fnTerminalSetCursorCol                     func(unsafe.Pointer, uintptr) int32
-	fnTerminalCursorRowRelative                func(unsafe.Pointer, uintptr) int32
-	fnTerminalCursorColRelative                func(unsafe.Pointer, uintptr) int32
-	fnTerminalSaveCursor                       func(unsafe.Pointer) int32
-	fnTerminalRestoreCursor                    func(unsafe.Pointer) int32
-	fnTerminalIndex                            func(unsafe.Pointer) int32
-	fnTerminalReverseIndex                     func(unsafe.Pointer) int32
-	fnTerminalSwitchScreen                     func(unsafe.Pointer, uint8, *unsafe.Pointer) int32
-	fnTerminalSwitchScreenMode                 func(unsafe.Pointer, uint8, uint8) int32
-	fnTerminalActiveScreen                     func(unsafe.Pointer, *unsafe.Pointer) int32
-	fnTerminalScreen                           func(unsafe.Pointer, uint8, *unsafe.Pointer) int32
-	fnTerminalPrintAttributesInto              func(unsafe.Pointer, unsafe.Pointer, uintptr, *uintptr) int32
-	fnTerminalHistoryString                    func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
-	fnTerminalHorizontalTab                    func(unsafe.Pointer) int32
-	fnTerminalHorizontalTabBack                func(unsafe.Pointer) int32
-	fnTerminalTabSet                           func(unsafe.Pointer) int32
-	fnTerminalTabReset                         func(unsafe.Pointer) int32
-	fnTerminalTabClear                         func(unsafe.Pointer, uint8) int32
-	fnTerminalSetTabstop                       func(unsafe.Pointer, uintptr) int32
-	fnTerminalUnsetTabstop                     func(unsafe.Pointer, uintptr) int32
-	fnTerminalResetTabstops                    func(unsafe.Pointer, uintptr) int32
-	fnTerminalScrollUp                         func(unsafe.Pointer, uintptr) int32
-	fnTerminalScrollDown                       func(unsafe.Pointer, uintptr) int32
-	fnTerminalSetTopAndBottomMargin            func(unsafe.Pointer, uintptr, uintptr) int32
-	fnTerminalSetLeftAndRightMargin            func(unsafe.Pointer, uintptr, uintptr) int32
-	fnTerminalScrollViewport                   func(unsafe.Pointer, uint8, int, uintptr, int) int32
-	fnTerminalSetScrollbackMaxBytes            func(unsafe.Pointer, uintptr) int32
-	fnTerminalClearScrollbackMaxBytes          func(unsafe.Pointer) int32
-	fnTerminalSetScrollbackMaxLines            func(unsafe.Pointer, uintptr) int32
-	fnTerminalClearScrollbackMaxLines          func(unsafe.Pointer) int32
-	fnTerminalInsertLines                      func(unsafe.Pointer, uintptr) int32
-	fnTerminalDeleteLines                      func(unsafe.Pointer, uintptr) int32
-	fnTerminalInsertBlanks                     func(unsafe.Pointer, uintptr) int32
-	fnTerminalDeleteChars                      func(unsafe.Pointer, uintptr) int32
-	fnTerminalEraseChars                       func(unsafe.Pointer, uintptr) int32
-	fnTerminalEraseLine                        func(unsafe.Pointer, uint8, uint8) int32
-	fnTerminalEraseDisplay                     func(unsafe.Pointer, uint8, uint8) int32
-	fnTerminalDecaln                           func(unsafe.Pointer) int32
-	fnTerminalResize                           func(unsafe.Pointer, uint16, uint16) int32
-	fnTerminalResizeCells                      func(unsafe.Pointer, uint16, uint16, uint32, uint32) int32
-	fnTerminalFormat                           func(unsafe.Pointer, unsafe.Pointer, uintptr, uintptr) int32
-	fnTerminalFormatSelection                  func(unsafe.Pointer, unsafe.Pointer, unsafe.Pointer, uintptr, uintptr, *uint8) int32
-	fnTerminalSetPwd                           func(unsafe.Pointer, unsafe.Pointer, uintptr) int32
-	fnTerminalGetPwd                           func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
-	fnTerminalGetTitle                         func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
-	fnTerminalSetTitle                         func(unsafe.Pointer, unsafe.Pointer, uintptr) int32
-	fnTerminalBackgroundColor                  func(unsafe.Pointer, *uint8, unsafe.Pointer) int32
-	fnTerminalForegroundColor                  func(unsafe.Pointer, *uint8, unsafe.Pointer) int32
-	fnTerminalCursorColor                      func(unsafe.Pointer, *uint8, unsafe.Pointer) int32
-	fnTerminalPaletteColors                    func(unsafe.Pointer, unsafe.Pointer, uintptr, *uintptr) int32
-	fnTerminalModeEnabled                      func(unsafe.Pointer, uint16, *uint8) int32
-	fnTerminalSetMode                          func(unsafe.Pointer, uint16, uint8) int32
-	fnTerminalSetAttribute                     func(unsafe.Pointer, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8) int32
-	fnTerminalSetProtectedMode                 func(unsafe.Pointer, uint8) int32
-	fnTerminalConfigureCharset                 func(unsafe.Pointer, uint8, uint8) int32
-	fnTerminalInvokeCharset                    func(unsafe.Pointer, uint8, uint8, uint8) int32
-	fnTerminalDeccolm                          func(unsafe.Pointer, uint8) int32
-	fnTerminalCompress                         func(unsafe.Pointer, uint8, *uint8) int32
-	fnTerminalCompressionActivity              func(unsafe.Pointer, *uint64) int32
-	fnTerminalSetDefaultBackgroundColor        func(unsafe.Pointer, unsafe.Pointer) int32
-	fnTerminalSetDefaultForegroundColor        func(unsafe.Pointer, unsafe.Pointer) int32
-	fnTerminalSetDefaultCursorColor            func(unsafe.Pointer, unsafe.Pointer) int32
-	fnTerminalSetDefaultCursorStyle            func(unsafe.Pointer, uint8) int32
-	fnTerminalSetDefaultCursorBlink            func(unsafe.Pointer, uint8) int32
-	fnTerminalResetDefaultCursorBlink          func(unsafe.Pointer) int32
-	fnTerminalPaletteColor                     func(unsafe.Pointer, uint8, unsafe.Pointer) int32
-	fnTerminalSetPaletteColor                  func(unsafe.Pointer, uint8, unsafe.Pointer) int32
-	fnTerminalResetPaletteColor                func(unsafe.Pointer, uint8) int32
-	fnTerminalResetPalette                     func(unsafe.Pointer) int32
-	fnTerminalSetDefaultPaletteColor           func(unsafe.Pointer, uint8, unsafe.Pointer) int32
-	fnTerminalResetDefaultPalette              func(unsafe.Pointer) int32
-	fnTerminalSetDefaultMode                   func(unsafe.Pointer, uint16, uint8) int32
-	fnTerminalResetModes                       func(unsafe.Pointer) int32
-	fnTerminalSaveMode                         func(unsafe.Pointer, uint16) int32
-	fnTerminalRestoreMode                      func(unsafe.Pointer, uint16, *uint8) int32
-	fnTerminalSetKittyGraphicsSizeLimit        func(unsafe.Pointer, uintptr) int32
-	fnTerminalSetKittyGraphicsLoadingLimits    func(unsafe.Pointer, uint8, unsafe.Pointer, uintptr, uint8) int32
-	fnTerminalKittyImage                       func(unsafe.Pointer, uint32, *uint8, unsafe.Pointer) int32
-	fnTerminalKittyImageData                   func(unsafe.Pointer, uint32, unsafe.Pointer, uintptr, *uintptr) int32
-	fnTerminalKittyAnimationTick               func(unsafe.Pointer, uint64, *uint8, *uint64) int32
-	fnTerminalScrollRegion                     func(unsafe.Pointer, unsafe.Pointer) int32
-	fnTerminalCharset                          func(unsafe.Pointer, uint8, *uint8) int32
-	fnTerminalMouseTracking                    func(unsafe.Pointer, *uint8) int32
-	fnTerminalMouseTrackingSendsMotion         func(unsafe.Pointer, *uint8) int32
-	fnTerminalMouseReportFormat                func(unsafe.Pointer, *uint8) int32
-	fnTerminalModeReport                       func(unsafe.Pointer, uint16, uint8, *uint8) int32
-	fnTerminalCellAt                           func(unsafe.Pointer, uint8, uint16, uint32, *uint8, unsafe.Pointer) int32
-	fnTerminalHyperlinkAt                      func(unsafe.Pointer, uint8, uint16, uint32, *unsafe.Pointer, *uintptr) int32
-	fnScreenViewportIsBottom                   func(unsafe.Pointer, *uint8) int32
-	fnScreenScrollClear                        func(unsafe.Pointer) int32
-	fnScreenClearSelection                     func(unsafe.Pointer) int32
-	fnScreenEndHyperlink                       func(unsafe.Pointer) int32
-	fnScreenMemoryUsage                        func(unsafe.Pointer, unsafe.Pointer) int32
-	fnScreenSelectAll                          func(unsafe.Pointer, *uint8) int32
-	fnScreenHasSelection                       func(unsafe.Pointer, *uint8) int32
-	fnScreenSelectRange                        func(unsafe.Pointer, uint16, uint16, uint16, uint16, uint8, *uint8) int32
-	fnScreenSelectWord                         func(unsafe.Pointer, uint16, uint16, unsafe.Pointer, uintptr, *uint8) int32
-	fnScreenSelectLine                         func(unsafe.Pointer, uint16, uint16, *uint8) int32
-	fnScreenSelectOutput                       func(unsafe.Pointer, uint16, uint16, *uint8) int32
-	fnScreenSelectionString                    func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
-	fnScreenSelection                          func(unsafe.Pointer, *uint8, unsafe.Pointer) int32
-	fnScreenSetSelection                       func(unsafe.Pointer, unsafe.Pointer, *uint8) int32
-	fnScreenViewportTop                        func(unsafe.Pointer, *uint32) int32
-	fnScreenScrollbar                          func(unsafe.Pointer, unsafe.Pointer) int32
-	fnScreenFormat                             func(unsafe.Pointer, unsafe.Pointer, uintptr, uintptr) int32
-	fnScreenFormatSelection                    func(unsafe.Pointer, unsafe.Pointer, unsafe.Pointer, uintptr, uintptr, *uint8) int32
-	fnScreenSelectionContains                  func(unsafe.Pointer, unsafe.Pointer, uint16, uint32, *uint8) int32
-	fnScreenSelectionAdjust                    func(unsafe.Pointer, unsafe.Pointer, uint8, *uint8, unsafe.Pointer) int32
-	fnScreenStartHyperlink                     func(unsafe.Pointer, unsafe.Pointer, uintptr, unsafe.Pointer, uintptr) int32
-	fnSearchSearchClose                        func(unsafe.Pointer) int32
-	fnSearchNeedle                             func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
-	fnSearchStatus                             func(unsafe.Pointer, *uint8) int32
-	fnSearchTick                               func(unsafe.Pointer, *uint8) int32
-	fnSearchFeed                               func(unsafe.Pointer, uint8) int32
-	fnSearchAll                                func(unsafe.Pointer) int32
-	fnSearchSelect                             func(unsafe.Pointer, uint8, uint8, *uint8) int32
-	fnSearchMatchCount                         func(unsafe.Pointer, *uintptr) int32
-	fnSearchMatches                            func(unsafe.Pointer, unsafe.Pointer, uintptr, *uintptr) int32
-	fnSearchViewportMatches                    func(unsafe.Pointer, unsafe.Pointer, uintptr, *uintptr) int32
-	fnSearchSelectedMatch                      func(unsafe.Pointer, *uint8, unsafe.Pointer) int32
-	fnSearchSelectedIndex                      func(unsafe.Pointer, *uint8, *uintptr) int32
-	fnGridRefGridRefClose                      func(unsafe.Pointer) int32
-	fnGridRefHasValue                          func(unsafe.Pointer, *uint8) int32
-	fnGridRefPoint                             func(unsafe.Pointer, uint8, *uint8, unsafe.Pointer) int32
-	fnGridRefSet                               func(unsafe.Pointer, uint8, uint16, uint32, *uint8) int32
-	fnGridRefCell                              func(unsafe.Pointer, *uint8, unsafe.Pointer) int32
-	fnGridRefGraphemes                         func(unsafe.Pointer, unsafe.Pointer, uintptr, *uintptr) int32
-	fnGridRefHyperlinkUri                      func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
-	fnGestureGestureClose                      func(unsafe.Pointer) int32
-	fnGestureSetBehaviors                      func(unsafe.Pointer, uint8, uint8, uint8) int32
-	fnGestureSetWordBoundaries                 func(unsafe.Pointer, unsafe.Pointer, uintptr) int32
-	fnGestureSetGeometry                       func(unsafe.Pointer, unsafe.Pointer) int32
-	fnGesturePress                             func(unsafe.Pointer, unsafe.Pointer, *uint8, unsafe.Pointer) int32
-	fnGestureDrag                              func(unsafe.Pointer, unsafe.Pointer, *uint8, unsafe.Pointer) int32
-	fnGestureAutoscroll                        func(unsafe.Pointer, *uint8) int32
-	fnGestureAutoscrollTick                    func(unsafe.Pointer, unsafe.Pointer, *uint8, unsafe.Pointer) int32
-	fnGestureDeepPress                         func(unsafe.Pointer, *uint8, unsafe.Pointer) int32
-	fnGestureRelease                           func(unsafe.Pointer, uint16, uint16) int32
-	fnGestureReset                             func(unsafe.Pointer) int32
-	fnColorNameDefault                         func(uint8, unsafe.Pointer) uint8
-	fnStreamFreeStream                         func(unsafe.Pointer) int32
-	fnStreamAtGround                           func(unsafe.Pointer, *uint8) int32
-	fnStreamFeedUntilGround                    func(unsafe.Pointer, unsafe.Pointer, uintptr, unsafe.Pointer) int32
-	fnStreamFeedUntil                          func(unsafe.Pointer, unsafe.Pointer, uintptr, uint16, *uint8, unsafe.Pointer) int32
-	fnStreamFeed                               func(unsafe.Pointer, unsafe.Pointer, uintptr) int32
-	fnStreamNextEventValue                     func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
-	fnStreamResizeCells                        func(unsafe.Pointer, uint16, uint16, uint32, uint32) int32
-	fnStreamSetUnknownMaxBytes                 func(unsafe.Pointer, uintptr) int32
-	fnStreamSetVersionReport                   func(unsafe.Pointer, unsafe.Pointer, uintptr, unsafe.Pointer, uintptr) int32
-	fnStreamSetEnquiryResponse                 func(unsafe.Pointer, unsafe.Pointer, uintptr) int32
-	fnStreamColorSchemeChanged                 func(unsafe.Pointer, uint8) int32
-	fnStreamClearColorScheme                   func(unsafe.Pointer) int32
-	fnStreamOnDrag                             func(unsafe.Pointer, uintptr, uintptr) int32
-	fnStreamDragActive                         func(unsafe.Pointer, *uint8) int32
-	fnStreamDragRegisteredMimes                func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
-	fnStreamDragClientAccepted                 func(unsafe.Pointer, *uint8, *uint8) int32
-	fnStreamDragMove                           func(unsafe.Pointer, unsafe.Pointer, unsafe.Pointer, uintptr) int32
-	fnStreamDragLeave                          func(unsafe.Pointer) int32
-	fnStreamDragAddItem                        func(unsafe.Pointer, unsafe.Pointer, uintptr, unsafe.Pointer, uintptr) int32
-	fnStreamDragDrop                           func(unsafe.Pointer, unsafe.Pointer) int32
-	fnStreamDragClearItems                     func(unsafe.Pointer) int32
-	fnStreamOnClipboardWriteRequest            func(unsafe.Pointer, uintptr, uintptr) int32
-	fnStreamOnClipboardReadRequest             func(unsafe.Pointer, uintptr, uintptr) int32
-	fnStreamWriteContinuation                  func(unsafe.Pointer, uintptr, uintptr) int32
-	fnStreamHasReplies                         func(unsafe.Pointer, *uint8) int32
-	fnStreamWriteSnapshot                      func(unsafe.Pointer, uintptr, uintptr) int32
-	fnStreamWriteReplies                       func(unsafe.Pointer, uintptr, uintptr) int32
-	fnClipboardRequestLocation                 func(unsafe.Pointer, *int32) int32
-	fnClipboardRequestName                     func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
-	fnClipboardRequestGranted                  func(unsafe.Pointer, *uint8) int32
-	fnClipboardRequestCanRemember              func(unsafe.Pointer, *uint8) int32
-	fnClipboardRequestContentCount             func(unsafe.Pointer, *uintptr) int32
-	fnClipboardRequestContentMime              func(unsafe.Pointer, uintptr, *unsafe.Pointer, *uintptr) int32
-	fnClipboardRequestMimeCount                func(unsafe.Pointer, *uintptr) int32
-	fnClipboardRequestMime                     func(unsafe.Pointer, uintptr, *unsafe.Pointer, *uintptr) int32
-	fnClipboardRequestAllow                    func(unsafe.Pointer, uint8) int32
-	fnClipboardRequestReplyText                func(unsafe.Pointer, unsafe.Pointer, uintptr, uint8) int32
-	fnClipboardRequestClearReplyContents       func(unsafe.Pointer) int32
-	fnClipboardRequestReplyContents            func(unsafe.Pointer, uint8) int32
-	fnClipboardRequestDeny                     func(unsafe.Pointer, uint8) int32
-	fnClipboardRequestAddContent               func(unsafe.Pointer, unsafe.Pointer, uintptr, unsafe.Pointer, uintptr) int32
-	fnClipboardRequestContentData              func(unsafe.Pointer, uintptr, *unsafe.Pointer, *uintptr) int32
-	fnNewOscParser                             func(*unsafe.Pointer) int32
-	fnOscParserFreeOscParser                   func(unsafe.Pointer) int32
-	fnOscParserFeed                            func(unsafe.Pointer, unsafe.Pointer, uintptr) int32
-	fnOscParserEnd                             func(unsafe.Pointer, uint8, *uint8) int32
-	fnOscParserReset                           func(unsafe.Pointer) int32
-	fnDecodeSnapshot                           func(uintptr, unsafe.Pointer, uintptr, uintptr, uintptr, *unsafe.Pointer) int32
-	fnSnapshotDeinit                           func(unsafe.Pointer) int32
-	fnSnapshotRestoreInto                      func(unsafe.Pointer, unsafe.Pointer) int32
-	fnSnapshotSnapshotTerminal                 func(unsafe.Pointer, *unsafe.Pointer) int32
-	fnSnapshotContinuation                     func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
-	fnNewSnapshotDecoder                       func(unsafe.Pointer, uintptr, *unsafe.Pointer) int32
-	fnSnapshotDecoderFreeSnapshotDecoder       func(unsafe.Pointer) int32
-	fnSnapshotDecoderReady                     func(unsafe.Pointer, uintptr) int32
-	fnSnapshotDecoderRestoreInto               func(unsafe.Pointer, unsafe.Pointer) int32
-	fnSnapshotDecoderContinuation              func(unsafe.Pointer, *unsafe.Pointer, *uintptr) int32
-	fnSnapshotDecoderNext                      func(unsafe.Pointer, unsafe.Pointer, *uint8, unsafe.Pointer) int32
-	fnSnapshotDecoderSetKittyImageStorageLimit func(unsafe.Pointer, uintptr) int32
-	fnSnapshotDecoderKittyCounts               func(unsafe.Pointer, unsafe.Pointer) int32
-	fnNewRenderState                           func(*unsafe.Pointer) int32
-	fnRenderStateDeinit                        func(unsafe.Pointer) int32
-	fnRenderStateUpdate                        func(unsafe.Pointer, unsafe.Pointer) int32
-	fnRenderStateClean                         func(unsafe.Pointer) int32
-	fnRenderStateCursor                        func(unsafe.Pointer, *uint64) int32
-	fnRenderStateColors                        func(unsafe.Pointer, unsafe.Pointer) int32
-	fnRenderStateCellCount                     func(unsafe.Pointer, *uintptr) int32
-	fnRenderStateCells                         func(unsafe.Pointer, unsafe.Pointer, uintptr, *uintptr) int32
-	fnRenderStateDirty                         func(unsafe.Pointer, *uint8) int32
-	fnRenderStateDirtyRows                     func(unsafe.Pointer, unsafe.Pointer, uintptr, *uintptr) int32
-	fnRenderStateRowCells                      func(unsafe.Pointer, uint16, unsafe.Pointer, uintptr, *uintptr) int32
-	fnRenderStateGraphemes                     func(unsafe.Pointer, uint16, uint16, unsafe.Pointer, uintptr, *uintptr) int32
-	fnRenderStateHyperlinkAt                   func(unsafe.Pointer, uint16, uint16, *unsafe.Pointer, *uintptr) int32
-	fnRenderStateImagePlacementCount           func(unsafe.Pointer, *uintptr) int32
-	fnRenderStateImagePlacements               func(unsafe.Pointer, unsafe.Pointer, uintptr, *uintptr) int32
-	fnRenderStateImagePlacementsGeneration     func(unsafe.Pointer, *uint64) int32
-	fnNewKittyImages                           func(*unsafe.Pointer) int32
-	fnKittyImagesFreeKittyImages               func(unsafe.Pointer) int32
-	fnKittyImagesUpdate                        func(unsafe.Pointer, unsafe.Pointer) int32
-	fnKittyImagesPlacementCount                func(unsafe.Pointer, *uintptr) int32
-	fnKittyImagesPlacements                    func(unsafe.Pointer, unsafe.Pointer, uintptr, *uintptr) int32
-	fnUnicodeCodepointWidth                    func(uint32, *uint8) int32
-	fnGraphemeWidth                            func(unsafe.Pointer, uintptr) uint8
-	fnFreeBuffer                               func(unsafe.Pointer, uintptr)
-	fnFreeString                               func(unsafe.Pointer, uintptr)
-	fnSgrAttributeCount                        func(unsafe.Pointer, uintptr, uint32, *uintptr) int32
-	fnSgrAttributeAt                           func(unsafe.Pointer, uintptr, uint32, uintptr, unsafe.Pointer) int32
+	lastError                                    func() unsafe.Pointer
+	panicMessage                                 func(int32) unsafe.Pointer
+	addrTerminalCols                             uintptr
+	addrTerminalRows                             uintptr
+	addrTerminalCursorX                          uintptr
+	addrTerminalCursorY                          uintptr
+	addrTerminalCursorStyle                      uintptr
+	addrTerminalActiveScreenKey                  uintptr
+	addrTerminalCursorPendingWrap                uintptr
+	addrTerminalCursorProtected                  uintptr
+	addrTerminalWidthPx                          uintptr
+	addrTerminalHeightPx                         uintptr
+	addrTerminalFocused                          uintptr
+	addrTerminalVisible                          uintptr
+	addrTerminalPasswordInput                    uintptr
+	addrTerminalCharsetGl                        uintptr
+	addrTerminalCharsetGr                        uintptr
+	addrTerminalCharsetSingleShift               uintptr
+	addrTerminalProtectedMode                    uintptr
+	addrGestureClickCount                        uintptr
+	addrGestureDragged                           uintptr
+	addrStreamFailed                             uintptr
+	addrOscParserCommand                         uintptr
+	addrOscParserWindowTitle                     uintptr
+	addrOscParserIcon                            uintptr
+	addrOscParserPwd                             uintptr
+	addrOscParserHyperlinkUri                    uintptr
+	addrOscParserHyperlinkID                     uintptr
+	addrOscParserNotificationTitle               uintptr
+	addrOscParserNotificationBody                uintptr
+	addrOscParserClipboardData                   uintptr
+	addrOscParserClipboardSelection              uintptr
+	addrOscParserMouseShape                      uintptr
+	addrOscParserSemanticPromptAction            uintptr
+	addrOscParserSemanticPromptOptions           uintptr
+	addrOscParserProgressState                   uintptr
+	addrOscParserProgressValue                   uintptr
+	addrRenderStateRows                          uintptr
+	addrRenderStateCols                          uintptr
+	addrRenderStateCursorVisible                 uintptr
+	addrRenderStateCursorStyle                   uintptr
+	addrRenderStateCursorBlinking                uintptr
+	addrRenderStateCursorPasswordInput           uintptr
+	addrKittyImagesGeneration                    uintptr
+	addrSysOnPngDecodeRequest                    uintptr
+	addrSysReplyPngImage                         uintptr
+	addrSysOnSecureRandomRequest                 uintptr
+	addrSysOnLog                                 uintptr
+	addrSysClear                                 uintptr
+	addrSysReplySecureRandom                     uintptr
+	addrKeyCodepoint                             uintptr
+	addrKeyPrintable                             uintptr
+	addrKeyModifier                              uintptr
+	addrKeyKeypad                                uintptr
+	addrKeyLeftOrRightShift                      uintptr
+	addrKeyLeftOrRightAlt                        uintptr
+	addrKeyCtrlOrSuper                           uintptr
+	addrKeyShouldBeRemappable                    uintptr
+	addrKeyW3C                                   uintptr
+	addrEncodeKey                                uintptr
+	addrEncodeMouse                              uintptr
+	addrKeyKeyFromAscii                          uintptr
+	addrKeyKeyFromW3C                            uintptr
+	addrInputEncodeFocus                         uintptr
+	addrInputIsSafePaste                         uintptr
+	addrEncodePaste                              uintptr
+	addrTerminalNewTerminal                      uintptr
+	addrTerminalDeinit                           uintptr
+	addrTerminalNewStream                        uintptr
+	addrTerminalNewSearch                        uintptr
+	addrTerminalNewGesture                       uintptr
+	addrTerminalNewGridRef                       uintptr
+	addrTerminalPrintString                      uintptr
+	addrTerminalPlainString                      uintptr
+	addrTerminalPlainStringUnwrapped             uintptr
+	addrTerminalPrint                            uintptr
+	addrTerminalPrintRepeat                      uintptr
+	addrTerminalPrintSlice                       uintptr
+	addrTerminalSetCursorStyle                   uintptr
+	addrTerminalSetCursorPos                     uintptr
+	addrTerminalCarriageReturn                   uintptr
+	addrTerminalLinefeed                         uintptr
+	addrTerminalBackspace                        uintptr
+	addrTerminalCursorIsAtPrompt                 uintptr
+	addrTerminalFullReset                        uintptr
+	addrTerminalSoftReset                        uintptr
+	addrTerminalCursorUp                         uintptr
+	addrTerminalCursorDown                       uintptr
+	addrTerminalCursorLeft                       uintptr
+	addrTerminalCursorRight                      uintptr
+	addrTerminalSetCursorRow                     uintptr
+	addrTerminalSetCursorCol                     uintptr
+	addrTerminalCursorRowRelative                uintptr
+	addrTerminalCursorColRelative                uintptr
+	addrTerminalSaveCursor                       uintptr
+	addrTerminalRestoreCursor                    uintptr
+	addrTerminalIndex                            uintptr
+	addrTerminalReverseIndex                     uintptr
+	addrTerminalSwitchScreen                     uintptr
+	addrTerminalSwitchScreenMode                 uintptr
+	addrTerminalActiveScreen                     uintptr
+	addrTerminalScreen                           uintptr
+	addrTerminalPrintAttributesInto              uintptr
+	addrTerminalHistoryString                    uintptr
+	addrTerminalHorizontalTab                    uintptr
+	addrTerminalHorizontalTabBack                uintptr
+	addrTerminalTabSet                           uintptr
+	addrTerminalTabReset                         uintptr
+	addrTerminalTabClear                         uintptr
+	addrTerminalSetTabstop                       uintptr
+	addrTerminalUnsetTabstop                     uintptr
+	addrTerminalResetTabstops                    uintptr
+	addrTerminalScrollUp                         uintptr
+	addrTerminalScrollDown                       uintptr
+	addrTerminalSetTopAndBottomMargin            uintptr
+	addrTerminalSetLeftAndRightMargin            uintptr
+	addrTerminalScrollViewport                   uintptr
+	addrTerminalSetScrollbackMaxBytes            uintptr
+	addrTerminalClearScrollbackMaxBytes          uintptr
+	addrTerminalSetScrollbackMaxLines            uintptr
+	addrTerminalClearScrollbackMaxLines          uintptr
+	addrTerminalInsertLines                      uintptr
+	addrTerminalDeleteLines                      uintptr
+	addrTerminalInsertBlanks                     uintptr
+	addrTerminalDeleteChars                      uintptr
+	addrTerminalEraseChars                       uintptr
+	addrTerminalEraseLine                        uintptr
+	addrTerminalEraseDisplay                     uintptr
+	addrTerminalDecaln                           uintptr
+	addrTerminalResize                           uintptr
+	addrTerminalResizeCells                      uintptr
+	addrTerminalFormat                           uintptr
+	addrTerminalFormatSelection                  uintptr
+	addrTerminalSetPwd                           uintptr
+	addrTerminalGetPwd                           uintptr
+	addrTerminalGetTitle                         uintptr
+	addrTerminalSetTitle                         uintptr
+	addrTerminalBackgroundColor                  uintptr
+	addrTerminalForegroundColor                  uintptr
+	addrTerminalCursorColor                      uintptr
+	addrTerminalPaletteColors                    uintptr
+	addrTerminalModeEnabled                      uintptr
+	addrTerminalSetMode                          uintptr
+	fnTerminalSetAttribute                       func(unsafe.Pointer, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8) int32
+	addrTerminalSetProtectedMode                 uintptr
+	addrTerminalConfigureCharset                 uintptr
+	addrTerminalInvokeCharset                    uintptr
+	addrTerminalDeccolm                          uintptr
+	addrTerminalCompress                         uintptr
+	addrTerminalCompressionActivity              uintptr
+	addrTerminalSetDefaultBackgroundColor        uintptr
+	addrTerminalSetDefaultForegroundColor        uintptr
+	addrTerminalSetDefaultCursorColor            uintptr
+	addrTerminalSetDefaultCursorStyle            uintptr
+	addrTerminalSetDefaultCursorBlink            uintptr
+	addrTerminalResetDefaultCursorBlink          uintptr
+	addrTerminalPaletteColor                     uintptr
+	addrTerminalSetPaletteColor                  uintptr
+	addrTerminalResetPaletteColor                uintptr
+	addrTerminalResetPalette                     uintptr
+	addrTerminalSetDefaultPaletteColor           uintptr
+	addrTerminalResetDefaultPalette              uintptr
+	addrTerminalSetDefaultMode                   uintptr
+	addrTerminalResetModes                       uintptr
+	addrTerminalSaveMode                         uintptr
+	addrTerminalRestoreMode                      uintptr
+	addrTerminalSetKittyGraphicsSizeLimit        uintptr
+	addrTerminalSetKittyGraphicsLoadingLimits    uintptr
+	addrTerminalKittyImage                       uintptr
+	addrTerminalKittyImageData                   uintptr
+	addrTerminalKittyAnimationTick               uintptr
+	addrTerminalScrollRegion                     uintptr
+	addrTerminalCharset                          uintptr
+	addrTerminalMouseTracking                    uintptr
+	addrTerminalMouseTrackingSendsMotion         uintptr
+	addrTerminalMouseReportFormat                uintptr
+	addrTerminalModeReport                       uintptr
+	addrTerminalCellAt                           uintptr
+	addrTerminalHyperlinkAt                      uintptr
+	addrScreenViewportIsBottom                   uintptr
+	addrScreenScrollClear                        uintptr
+	addrScreenClearSelection                     uintptr
+	addrScreenEndHyperlink                       uintptr
+	addrScreenMemoryUsage                        uintptr
+	addrScreenSelectAll                          uintptr
+	addrScreenHasSelection                       uintptr
+	addrScreenSelectRange                        uintptr
+	addrScreenSelectWord                         uintptr
+	addrScreenSelectLine                         uintptr
+	addrScreenSelectOutput                       uintptr
+	addrScreenSelectionString                    uintptr
+	addrScreenSelection                          uintptr
+	addrScreenSetSelection                       uintptr
+	addrScreenViewportTop                        uintptr
+	addrScreenScrollbar                          uintptr
+	addrScreenFormat                             uintptr
+	addrScreenFormatSelection                    uintptr
+	addrScreenSelectionContains                  uintptr
+	addrScreenSelectionAdjust                    uintptr
+	addrScreenStartHyperlink                     uintptr
+	addrSearchSearchClose                        uintptr
+	addrSearchNeedle                             uintptr
+	addrSearchStatus                             uintptr
+	addrSearchTick                               uintptr
+	addrSearchFeed                               uintptr
+	addrSearchAll                                uintptr
+	addrSearchSelect                             uintptr
+	addrSearchMatchCount                         uintptr
+	addrSearchMatches                            uintptr
+	addrSearchViewportMatches                    uintptr
+	addrSearchSelectedMatch                      uintptr
+	addrSearchSelectedIndex                      uintptr
+	addrGridRefGridRefClose                      uintptr
+	addrGridRefHasValue                          uintptr
+	addrGridRefPoint                             uintptr
+	addrGridRefSet                               uintptr
+	addrGridRefCell                              uintptr
+	addrGridRefGraphemes                         uintptr
+	addrGridRefHyperlinkUri                      uintptr
+	addrGestureGestureClose                      uintptr
+	addrGestureSetBehaviors                      uintptr
+	addrGestureSetWordBoundaries                 uintptr
+	addrGestureSetGeometry                       uintptr
+	addrGesturePress                             uintptr
+	addrGestureDrag                              uintptr
+	addrGestureAutoscroll                        uintptr
+	addrGestureAutoscrollTick                    uintptr
+	addrGestureDeepPress                         uintptr
+	addrGestureRelease                           uintptr
+	addrGestureReset                             uintptr
+	addrColorNameDefault                         uintptr
+	addrStreamFreeStream                         uintptr
+	addrStreamAtGround                           uintptr
+	addrStreamFeedUntilGround                    uintptr
+	addrStreamFeedUntil                          uintptr
+	addrStreamFeed                               uintptr
+	addrStreamNextEventValue                     uintptr
+	addrStreamResizeCells                        uintptr
+	addrStreamSetUnknownMaxBytes                 uintptr
+	addrStreamSetVersionReport                   uintptr
+	addrStreamSetEnquiryResponse                 uintptr
+	addrStreamColorSchemeChanged                 uintptr
+	addrStreamClearColorScheme                   uintptr
+	addrStreamOnDrag                             uintptr
+	addrStreamDragActive                         uintptr
+	addrStreamDragRegisteredMimes                uintptr
+	addrStreamDragClientAccepted                 uintptr
+	addrStreamDragMove                           uintptr
+	addrStreamDragLeave                          uintptr
+	addrStreamDragAddItem                        uintptr
+	addrStreamDragDrop                           uintptr
+	addrStreamDragClearItems                     uintptr
+	addrStreamOnClipboardWriteRequest            uintptr
+	addrStreamOnClipboardReadRequest             uintptr
+	addrStreamWriteContinuation                  uintptr
+	addrStreamHasReplies                         uintptr
+	addrStreamWriteSnapshot                      uintptr
+	addrStreamWriteReplies                       uintptr
+	addrClipboardRequestLocation                 uintptr
+	addrClipboardRequestName                     uintptr
+	addrClipboardRequestGranted                  uintptr
+	addrClipboardRequestCanRemember              uintptr
+	addrClipboardRequestContentCount             uintptr
+	addrClipboardRequestContentMime              uintptr
+	addrClipboardRequestMimeCount                uintptr
+	addrClipboardRequestMime                     uintptr
+	addrClipboardRequestAllow                    uintptr
+	addrClipboardRequestReplyText                uintptr
+	addrClipboardRequestClearReplyContents       uintptr
+	addrClipboardRequestReplyContents            uintptr
+	addrClipboardRequestDeny                     uintptr
+	addrClipboardRequestAddContent               uintptr
+	addrClipboardRequestContentData              uintptr
+	addrNewOscParser                             uintptr
+	addrOscParserFreeOscParser                   uintptr
+	addrOscParserFeed                            uintptr
+	addrOscParserEnd                             uintptr
+	addrOscParserReset                           uintptr
+	addrDecodeSnapshot                           uintptr
+	addrSnapshotDeinit                           uintptr
+	addrSnapshotRestoreInto                      uintptr
+	addrSnapshotSnapshotTerminal                 uintptr
+	addrSnapshotContinuation                     uintptr
+	addrNewSnapshotDecoder                       uintptr
+	addrSnapshotDecoderFreeSnapshotDecoder       uintptr
+	addrSnapshotDecoderReady                     uintptr
+	addrSnapshotDecoderRestoreInto               uintptr
+	addrSnapshotDecoderContinuation              uintptr
+	addrSnapshotDecoderNext                      uintptr
+	addrSnapshotDecoderSetKittyImageStorageLimit uintptr
+	addrSnapshotDecoderKittyCounts               uintptr
+	addrNewRenderState                           uintptr
+	addrRenderStateDeinit                        uintptr
+	addrRenderStateUpdate                        uintptr
+	addrRenderStateClean                         uintptr
+	addrRenderStateCursor                        uintptr
+	addrRenderStateColors                        uintptr
+	addrRenderStateCellCount                     uintptr
+	addrRenderStateCells                         uintptr
+	addrRenderStateDirty                         uintptr
+	addrRenderStateDirtyRows                     uintptr
+	addrRenderStateRowCells                      uintptr
+	addrRenderStateGraphemes                     uintptr
+	addrRenderStateHyperlinkAt                   uintptr
+	addrRenderStateImagePlacementCount           uintptr
+	addrRenderStateImagePlacements               uintptr
+	addrRenderStateImagePlacementsGeneration     uintptr
+	addrNewKittyImages                           uintptr
+	addrKittyImagesFreeKittyImages               uintptr
+	addrKittyImagesUpdate                        uintptr
+	addrKittyImagesPlacementCount                uintptr
+	addrKittyImagesPlacements                    uintptr
+	addrUnicodeCodepointWidth                    uintptr
+	addrGraphemeWidth                            uintptr
+	addrFreeBuffer                               uintptr
+	addrFreeString                               uintptr
+	addrSgrAttributeCount                        uintptr
+	addrSgrAttributeAt                           uintptr
 }
 
 type callbackEntry struct {
@@ -2086,322 +2086,322 @@ func loadCandidate(path string) error {
 	var next nativeBindings
 	purego.RegisterFunc(&next.lastError, addrLastError)
 	purego.RegisterFunc(&next.panicMessage, addrPanicMessage)
-	purego.RegisterFunc(&next.fnTerminalCols, addrTerminalCols)
-	purego.RegisterFunc(&next.fnTerminalRows, addrTerminalRows)
-	purego.RegisterFunc(&next.fnTerminalCursorX, addrTerminalCursorX)
-	purego.RegisterFunc(&next.fnTerminalCursorY, addrTerminalCursorY)
-	purego.RegisterFunc(&next.fnTerminalCursorStyle, addrTerminalCursorStyle)
-	purego.RegisterFunc(&next.fnTerminalActiveScreenKey, addrTerminalActiveScreenKey)
-	purego.RegisterFunc(&next.fnTerminalCursorPendingWrap, addrTerminalCursorPendingWrap)
-	purego.RegisterFunc(&next.fnTerminalCursorProtected, addrTerminalCursorProtected)
-	purego.RegisterFunc(&next.fnTerminalWidthPx, addrTerminalWidthPx)
-	purego.RegisterFunc(&next.fnTerminalHeightPx, addrTerminalHeightPx)
-	purego.RegisterFunc(&next.fnTerminalFocused, addrTerminalFocused)
-	purego.RegisterFunc(&next.fnTerminalVisible, addrTerminalVisible)
-	purego.RegisterFunc(&next.fnTerminalPasswordInput, addrTerminalPasswordInput)
-	purego.RegisterFunc(&next.fnTerminalCharsetGl, addrTerminalCharsetGl)
-	purego.RegisterFunc(&next.fnTerminalCharsetGr, addrTerminalCharsetGr)
-	purego.RegisterFunc(&next.fnTerminalCharsetSingleShift, addrTerminalCharsetSingleShift)
-	purego.RegisterFunc(&next.fnTerminalProtectedMode, addrTerminalProtectedMode)
-	purego.RegisterFunc(&next.fnGestureClickCount, addrGestureClickCount)
-	purego.RegisterFunc(&next.fnGestureDragged, addrGestureDragged)
-	purego.RegisterFunc(&next.fnStreamFailed, addrStreamFailed)
-	purego.RegisterFunc(&next.fnOscParserCommand, addrOscParserCommand)
-	purego.RegisterFunc(&next.fnOscParserWindowTitle, addrOscParserWindowTitle)
-	purego.RegisterFunc(&next.fnOscParserIcon, addrOscParserIcon)
-	purego.RegisterFunc(&next.fnOscParserPwd, addrOscParserPwd)
-	purego.RegisterFunc(&next.fnOscParserHyperlinkUri, addrOscParserHyperlinkUri)
-	purego.RegisterFunc(&next.fnOscParserHyperlinkID, addrOscParserHyperlinkID)
-	purego.RegisterFunc(&next.fnOscParserNotificationTitle, addrOscParserNotificationTitle)
-	purego.RegisterFunc(&next.fnOscParserNotificationBody, addrOscParserNotificationBody)
-	purego.RegisterFunc(&next.fnOscParserClipboardData, addrOscParserClipboardData)
-	purego.RegisterFunc(&next.fnOscParserClipboardSelection, addrOscParserClipboardSelection)
-	purego.RegisterFunc(&next.fnOscParserMouseShape, addrOscParserMouseShape)
-	purego.RegisterFunc(&next.fnOscParserSemanticPromptAction, addrOscParserSemanticPromptAction)
-	purego.RegisterFunc(&next.fnOscParserSemanticPromptOptions, addrOscParserSemanticPromptOptions)
-	purego.RegisterFunc(&next.fnOscParserProgressState, addrOscParserProgressState)
-	purego.RegisterFunc(&next.fnOscParserProgressValue, addrOscParserProgressValue)
-	purego.RegisterFunc(&next.fnRenderStateRows, addrRenderStateRows)
-	purego.RegisterFunc(&next.fnRenderStateCols, addrRenderStateCols)
-	purego.RegisterFunc(&next.fnRenderStateCursorVisible, addrRenderStateCursorVisible)
-	purego.RegisterFunc(&next.fnRenderStateCursorStyle, addrRenderStateCursorStyle)
-	purego.RegisterFunc(&next.fnRenderStateCursorBlinking, addrRenderStateCursorBlinking)
-	purego.RegisterFunc(&next.fnRenderStateCursorPasswordInput, addrRenderStateCursorPasswordInput)
-	purego.RegisterFunc(&next.fnKittyImagesGeneration, addrKittyImagesGeneration)
-	purego.RegisterFunc(&next.fnSysOnPngDecodeRequest, addrSysOnPngDecodeRequest)
-	purego.RegisterFunc(&next.fnSysReplyPngImage, addrSysReplyPngImage)
-	purego.RegisterFunc(&next.fnSysOnSecureRandomRequest, addrSysOnSecureRandomRequest)
-	purego.RegisterFunc(&next.fnSysOnLog, addrSysOnLog)
-	purego.RegisterFunc(&next.fnSysClear, addrSysClear)
-	purego.RegisterFunc(&next.fnSysReplySecureRandom, addrSysReplySecureRandom)
-	purego.RegisterFunc(&next.fnKeyCodepoint, addrKeyCodepoint)
-	purego.RegisterFunc(&next.fnKeyPrintable, addrKeyPrintable)
-	purego.RegisterFunc(&next.fnKeyModifier, addrKeyModifier)
-	purego.RegisterFunc(&next.fnKeyKeypad, addrKeyKeypad)
-	purego.RegisterFunc(&next.fnKeyLeftOrRightShift, addrKeyLeftOrRightShift)
-	purego.RegisterFunc(&next.fnKeyLeftOrRightAlt, addrKeyLeftOrRightAlt)
-	purego.RegisterFunc(&next.fnKeyCtrlOrSuper, addrKeyCtrlOrSuper)
-	purego.RegisterFunc(&next.fnKeyShouldBeRemappable, addrKeyShouldBeRemappable)
-	purego.RegisterFunc(&next.fnKeyW3C, addrKeyW3C)
-	purego.RegisterFunc(&next.fnEncodeKey, addrEncodeKey)
-	purego.RegisterFunc(&next.fnEncodeMouse, addrEncodeMouse)
-	purego.RegisterFunc(&next.fnKeyKeyFromAscii, addrKeyKeyFromAscii)
-	purego.RegisterFunc(&next.fnKeyKeyFromW3C, addrKeyKeyFromW3C)
-	purego.RegisterFunc(&next.fnInputEncodeFocus, addrInputEncodeFocus)
-	purego.RegisterFunc(&next.fnInputIsSafePaste, addrInputIsSafePaste)
-	purego.RegisterFunc(&next.fnEncodePaste, addrEncodePaste)
-	purego.RegisterFunc(&next.fnTerminalNewTerminal, addrTerminalNewTerminal)
-	purego.RegisterFunc(&next.fnTerminalDeinit, addrTerminalDeinit)
-	purego.RegisterFunc(&next.fnTerminalNewStream, addrTerminalNewStream)
-	purego.RegisterFunc(&next.fnTerminalNewSearch, addrTerminalNewSearch)
-	purego.RegisterFunc(&next.fnTerminalNewGesture, addrTerminalNewGesture)
-	purego.RegisterFunc(&next.fnTerminalNewGridRef, addrTerminalNewGridRef)
-	purego.RegisterFunc(&next.fnTerminalPrintString, addrTerminalPrintString)
-	purego.RegisterFunc(&next.fnTerminalPlainString, addrTerminalPlainString)
-	purego.RegisterFunc(&next.fnTerminalPlainStringUnwrapped, addrTerminalPlainStringUnwrapped)
-	purego.RegisterFunc(&next.fnTerminalPrint, addrTerminalPrint)
-	purego.RegisterFunc(&next.fnTerminalPrintRepeat, addrTerminalPrintRepeat)
-	purego.RegisterFunc(&next.fnTerminalPrintSlice, addrTerminalPrintSlice)
-	purego.RegisterFunc(&next.fnTerminalSetCursorStyle, addrTerminalSetCursorStyle)
-	purego.RegisterFunc(&next.fnTerminalSetCursorPos, addrTerminalSetCursorPos)
-	purego.RegisterFunc(&next.fnTerminalCarriageReturn, addrTerminalCarriageReturn)
-	purego.RegisterFunc(&next.fnTerminalLinefeed, addrTerminalLinefeed)
-	purego.RegisterFunc(&next.fnTerminalBackspace, addrTerminalBackspace)
-	purego.RegisterFunc(&next.fnTerminalCursorIsAtPrompt, addrTerminalCursorIsAtPrompt)
-	purego.RegisterFunc(&next.fnTerminalFullReset, addrTerminalFullReset)
-	purego.RegisterFunc(&next.fnTerminalSoftReset, addrTerminalSoftReset)
-	purego.RegisterFunc(&next.fnTerminalCursorUp, addrTerminalCursorUp)
-	purego.RegisterFunc(&next.fnTerminalCursorDown, addrTerminalCursorDown)
-	purego.RegisterFunc(&next.fnTerminalCursorLeft, addrTerminalCursorLeft)
-	purego.RegisterFunc(&next.fnTerminalCursorRight, addrTerminalCursorRight)
-	purego.RegisterFunc(&next.fnTerminalSetCursorRow, addrTerminalSetCursorRow)
-	purego.RegisterFunc(&next.fnTerminalSetCursorCol, addrTerminalSetCursorCol)
-	purego.RegisterFunc(&next.fnTerminalCursorRowRelative, addrTerminalCursorRowRelative)
-	purego.RegisterFunc(&next.fnTerminalCursorColRelative, addrTerminalCursorColRelative)
-	purego.RegisterFunc(&next.fnTerminalSaveCursor, addrTerminalSaveCursor)
-	purego.RegisterFunc(&next.fnTerminalRestoreCursor, addrTerminalRestoreCursor)
-	purego.RegisterFunc(&next.fnTerminalIndex, addrTerminalIndex)
-	purego.RegisterFunc(&next.fnTerminalReverseIndex, addrTerminalReverseIndex)
-	purego.RegisterFunc(&next.fnTerminalSwitchScreen, addrTerminalSwitchScreen)
-	purego.RegisterFunc(&next.fnTerminalSwitchScreenMode, addrTerminalSwitchScreenMode)
-	purego.RegisterFunc(&next.fnTerminalActiveScreen, addrTerminalActiveScreen)
-	purego.RegisterFunc(&next.fnTerminalScreen, addrTerminalScreen)
-	purego.RegisterFunc(&next.fnTerminalPrintAttributesInto, addrTerminalPrintAttributesInto)
-	purego.RegisterFunc(&next.fnTerminalHistoryString, addrTerminalHistoryString)
-	purego.RegisterFunc(&next.fnTerminalHorizontalTab, addrTerminalHorizontalTab)
-	purego.RegisterFunc(&next.fnTerminalHorizontalTabBack, addrTerminalHorizontalTabBack)
-	purego.RegisterFunc(&next.fnTerminalTabSet, addrTerminalTabSet)
-	purego.RegisterFunc(&next.fnTerminalTabReset, addrTerminalTabReset)
-	purego.RegisterFunc(&next.fnTerminalTabClear, addrTerminalTabClear)
-	purego.RegisterFunc(&next.fnTerminalSetTabstop, addrTerminalSetTabstop)
-	purego.RegisterFunc(&next.fnTerminalUnsetTabstop, addrTerminalUnsetTabstop)
-	purego.RegisterFunc(&next.fnTerminalResetTabstops, addrTerminalResetTabstops)
-	purego.RegisterFunc(&next.fnTerminalScrollUp, addrTerminalScrollUp)
-	purego.RegisterFunc(&next.fnTerminalScrollDown, addrTerminalScrollDown)
-	purego.RegisterFunc(&next.fnTerminalSetTopAndBottomMargin, addrTerminalSetTopAndBottomMargin)
-	purego.RegisterFunc(&next.fnTerminalSetLeftAndRightMargin, addrTerminalSetLeftAndRightMargin)
-	purego.RegisterFunc(&next.fnTerminalScrollViewport, addrTerminalScrollViewport)
-	purego.RegisterFunc(&next.fnTerminalSetScrollbackMaxBytes, addrTerminalSetScrollbackMaxBytes)
-	purego.RegisterFunc(&next.fnTerminalClearScrollbackMaxBytes, addrTerminalClearScrollbackMaxBytes)
-	purego.RegisterFunc(&next.fnTerminalSetScrollbackMaxLines, addrTerminalSetScrollbackMaxLines)
-	purego.RegisterFunc(&next.fnTerminalClearScrollbackMaxLines, addrTerminalClearScrollbackMaxLines)
-	purego.RegisterFunc(&next.fnTerminalInsertLines, addrTerminalInsertLines)
-	purego.RegisterFunc(&next.fnTerminalDeleteLines, addrTerminalDeleteLines)
-	purego.RegisterFunc(&next.fnTerminalInsertBlanks, addrTerminalInsertBlanks)
-	purego.RegisterFunc(&next.fnTerminalDeleteChars, addrTerminalDeleteChars)
-	purego.RegisterFunc(&next.fnTerminalEraseChars, addrTerminalEraseChars)
-	purego.RegisterFunc(&next.fnTerminalEraseLine, addrTerminalEraseLine)
-	purego.RegisterFunc(&next.fnTerminalEraseDisplay, addrTerminalEraseDisplay)
-	purego.RegisterFunc(&next.fnTerminalDecaln, addrTerminalDecaln)
-	purego.RegisterFunc(&next.fnTerminalResize, addrTerminalResize)
-	purego.RegisterFunc(&next.fnTerminalResizeCells, addrTerminalResizeCells)
-	purego.RegisterFunc(&next.fnTerminalFormat, addrTerminalFormat)
-	purego.RegisterFunc(&next.fnTerminalFormatSelection, addrTerminalFormatSelection)
-	purego.RegisterFunc(&next.fnTerminalSetPwd, addrTerminalSetPwd)
-	purego.RegisterFunc(&next.fnTerminalGetPwd, addrTerminalGetPwd)
-	purego.RegisterFunc(&next.fnTerminalGetTitle, addrTerminalGetTitle)
-	purego.RegisterFunc(&next.fnTerminalSetTitle, addrTerminalSetTitle)
-	purego.RegisterFunc(&next.fnTerminalBackgroundColor, addrTerminalBackgroundColor)
-	purego.RegisterFunc(&next.fnTerminalForegroundColor, addrTerminalForegroundColor)
-	purego.RegisterFunc(&next.fnTerminalCursorColor, addrTerminalCursorColor)
-	purego.RegisterFunc(&next.fnTerminalPaletteColors, addrTerminalPaletteColors)
-	purego.RegisterFunc(&next.fnTerminalModeEnabled, addrTerminalModeEnabled)
-	purego.RegisterFunc(&next.fnTerminalSetMode, addrTerminalSetMode)
+	next.addrTerminalCols = addrTerminalCols
+	next.addrTerminalRows = addrTerminalRows
+	next.addrTerminalCursorX = addrTerminalCursorX
+	next.addrTerminalCursorY = addrTerminalCursorY
+	next.addrTerminalCursorStyle = addrTerminalCursorStyle
+	next.addrTerminalActiveScreenKey = addrTerminalActiveScreenKey
+	next.addrTerminalCursorPendingWrap = addrTerminalCursorPendingWrap
+	next.addrTerminalCursorProtected = addrTerminalCursorProtected
+	next.addrTerminalWidthPx = addrTerminalWidthPx
+	next.addrTerminalHeightPx = addrTerminalHeightPx
+	next.addrTerminalFocused = addrTerminalFocused
+	next.addrTerminalVisible = addrTerminalVisible
+	next.addrTerminalPasswordInput = addrTerminalPasswordInput
+	next.addrTerminalCharsetGl = addrTerminalCharsetGl
+	next.addrTerminalCharsetGr = addrTerminalCharsetGr
+	next.addrTerminalCharsetSingleShift = addrTerminalCharsetSingleShift
+	next.addrTerminalProtectedMode = addrTerminalProtectedMode
+	next.addrGestureClickCount = addrGestureClickCount
+	next.addrGestureDragged = addrGestureDragged
+	next.addrStreamFailed = addrStreamFailed
+	next.addrOscParserCommand = addrOscParserCommand
+	next.addrOscParserWindowTitle = addrOscParserWindowTitle
+	next.addrOscParserIcon = addrOscParserIcon
+	next.addrOscParserPwd = addrOscParserPwd
+	next.addrOscParserHyperlinkUri = addrOscParserHyperlinkUri
+	next.addrOscParserHyperlinkID = addrOscParserHyperlinkID
+	next.addrOscParserNotificationTitle = addrOscParserNotificationTitle
+	next.addrOscParserNotificationBody = addrOscParserNotificationBody
+	next.addrOscParserClipboardData = addrOscParserClipboardData
+	next.addrOscParserClipboardSelection = addrOscParserClipboardSelection
+	next.addrOscParserMouseShape = addrOscParserMouseShape
+	next.addrOscParserSemanticPromptAction = addrOscParserSemanticPromptAction
+	next.addrOscParserSemanticPromptOptions = addrOscParserSemanticPromptOptions
+	next.addrOscParserProgressState = addrOscParserProgressState
+	next.addrOscParserProgressValue = addrOscParserProgressValue
+	next.addrRenderStateRows = addrRenderStateRows
+	next.addrRenderStateCols = addrRenderStateCols
+	next.addrRenderStateCursorVisible = addrRenderStateCursorVisible
+	next.addrRenderStateCursorStyle = addrRenderStateCursorStyle
+	next.addrRenderStateCursorBlinking = addrRenderStateCursorBlinking
+	next.addrRenderStateCursorPasswordInput = addrRenderStateCursorPasswordInput
+	next.addrKittyImagesGeneration = addrKittyImagesGeneration
+	next.addrSysOnPngDecodeRequest = addrSysOnPngDecodeRequest
+	next.addrSysReplyPngImage = addrSysReplyPngImage
+	next.addrSysOnSecureRandomRequest = addrSysOnSecureRandomRequest
+	next.addrSysOnLog = addrSysOnLog
+	next.addrSysClear = addrSysClear
+	next.addrSysReplySecureRandom = addrSysReplySecureRandom
+	next.addrKeyCodepoint = addrKeyCodepoint
+	next.addrKeyPrintable = addrKeyPrintable
+	next.addrKeyModifier = addrKeyModifier
+	next.addrKeyKeypad = addrKeyKeypad
+	next.addrKeyLeftOrRightShift = addrKeyLeftOrRightShift
+	next.addrKeyLeftOrRightAlt = addrKeyLeftOrRightAlt
+	next.addrKeyCtrlOrSuper = addrKeyCtrlOrSuper
+	next.addrKeyShouldBeRemappable = addrKeyShouldBeRemappable
+	next.addrKeyW3C = addrKeyW3C
+	next.addrEncodeKey = addrEncodeKey
+	next.addrEncodeMouse = addrEncodeMouse
+	next.addrKeyKeyFromAscii = addrKeyKeyFromAscii
+	next.addrKeyKeyFromW3C = addrKeyKeyFromW3C
+	next.addrInputEncodeFocus = addrInputEncodeFocus
+	next.addrInputIsSafePaste = addrInputIsSafePaste
+	next.addrEncodePaste = addrEncodePaste
+	next.addrTerminalNewTerminal = addrTerminalNewTerminal
+	next.addrTerminalDeinit = addrTerminalDeinit
+	next.addrTerminalNewStream = addrTerminalNewStream
+	next.addrTerminalNewSearch = addrTerminalNewSearch
+	next.addrTerminalNewGesture = addrTerminalNewGesture
+	next.addrTerminalNewGridRef = addrTerminalNewGridRef
+	next.addrTerminalPrintString = addrTerminalPrintString
+	next.addrTerminalPlainString = addrTerminalPlainString
+	next.addrTerminalPlainStringUnwrapped = addrTerminalPlainStringUnwrapped
+	next.addrTerminalPrint = addrTerminalPrint
+	next.addrTerminalPrintRepeat = addrTerminalPrintRepeat
+	next.addrTerminalPrintSlice = addrTerminalPrintSlice
+	next.addrTerminalSetCursorStyle = addrTerminalSetCursorStyle
+	next.addrTerminalSetCursorPos = addrTerminalSetCursorPos
+	next.addrTerminalCarriageReturn = addrTerminalCarriageReturn
+	next.addrTerminalLinefeed = addrTerminalLinefeed
+	next.addrTerminalBackspace = addrTerminalBackspace
+	next.addrTerminalCursorIsAtPrompt = addrTerminalCursorIsAtPrompt
+	next.addrTerminalFullReset = addrTerminalFullReset
+	next.addrTerminalSoftReset = addrTerminalSoftReset
+	next.addrTerminalCursorUp = addrTerminalCursorUp
+	next.addrTerminalCursorDown = addrTerminalCursorDown
+	next.addrTerminalCursorLeft = addrTerminalCursorLeft
+	next.addrTerminalCursorRight = addrTerminalCursorRight
+	next.addrTerminalSetCursorRow = addrTerminalSetCursorRow
+	next.addrTerminalSetCursorCol = addrTerminalSetCursorCol
+	next.addrTerminalCursorRowRelative = addrTerminalCursorRowRelative
+	next.addrTerminalCursorColRelative = addrTerminalCursorColRelative
+	next.addrTerminalSaveCursor = addrTerminalSaveCursor
+	next.addrTerminalRestoreCursor = addrTerminalRestoreCursor
+	next.addrTerminalIndex = addrTerminalIndex
+	next.addrTerminalReverseIndex = addrTerminalReverseIndex
+	next.addrTerminalSwitchScreen = addrTerminalSwitchScreen
+	next.addrTerminalSwitchScreenMode = addrTerminalSwitchScreenMode
+	next.addrTerminalActiveScreen = addrTerminalActiveScreen
+	next.addrTerminalScreen = addrTerminalScreen
+	next.addrTerminalPrintAttributesInto = addrTerminalPrintAttributesInto
+	next.addrTerminalHistoryString = addrTerminalHistoryString
+	next.addrTerminalHorizontalTab = addrTerminalHorizontalTab
+	next.addrTerminalHorizontalTabBack = addrTerminalHorizontalTabBack
+	next.addrTerminalTabSet = addrTerminalTabSet
+	next.addrTerminalTabReset = addrTerminalTabReset
+	next.addrTerminalTabClear = addrTerminalTabClear
+	next.addrTerminalSetTabstop = addrTerminalSetTabstop
+	next.addrTerminalUnsetTabstop = addrTerminalUnsetTabstop
+	next.addrTerminalResetTabstops = addrTerminalResetTabstops
+	next.addrTerminalScrollUp = addrTerminalScrollUp
+	next.addrTerminalScrollDown = addrTerminalScrollDown
+	next.addrTerminalSetTopAndBottomMargin = addrTerminalSetTopAndBottomMargin
+	next.addrTerminalSetLeftAndRightMargin = addrTerminalSetLeftAndRightMargin
+	next.addrTerminalScrollViewport = addrTerminalScrollViewport
+	next.addrTerminalSetScrollbackMaxBytes = addrTerminalSetScrollbackMaxBytes
+	next.addrTerminalClearScrollbackMaxBytes = addrTerminalClearScrollbackMaxBytes
+	next.addrTerminalSetScrollbackMaxLines = addrTerminalSetScrollbackMaxLines
+	next.addrTerminalClearScrollbackMaxLines = addrTerminalClearScrollbackMaxLines
+	next.addrTerminalInsertLines = addrTerminalInsertLines
+	next.addrTerminalDeleteLines = addrTerminalDeleteLines
+	next.addrTerminalInsertBlanks = addrTerminalInsertBlanks
+	next.addrTerminalDeleteChars = addrTerminalDeleteChars
+	next.addrTerminalEraseChars = addrTerminalEraseChars
+	next.addrTerminalEraseLine = addrTerminalEraseLine
+	next.addrTerminalEraseDisplay = addrTerminalEraseDisplay
+	next.addrTerminalDecaln = addrTerminalDecaln
+	next.addrTerminalResize = addrTerminalResize
+	next.addrTerminalResizeCells = addrTerminalResizeCells
+	next.addrTerminalFormat = addrTerminalFormat
+	next.addrTerminalFormatSelection = addrTerminalFormatSelection
+	next.addrTerminalSetPwd = addrTerminalSetPwd
+	next.addrTerminalGetPwd = addrTerminalGetPwd
+	next.addrTerminalGetTitle = addrTerminalGetTitle
+	next.addrTerminalSetTitle = addrTerminalSetTitle
+	next.addrTerminalBackgroundColor = addrTerminalBackgroundColor
+	next.addrTerminalForegroundColor = addrTerminalForegroundColor
+	next.addrTerminalCursorColor = addrTerminalCursorColor
+	next.addrTerminalPaletteColors = addrTerminalPaletteColors
+	next.addrTerminalModeEnabled = addrTerminalModeEnabled
+	next.addrTerminalSetMode = addrTerminalSetMode
 	purego.RegisterFunc(&next.fnTerminalSetAttribute, addrTerminalSetAttribute)
-	purego.RegisterFunc(&next.fnTerminalSetProtectedMode, addrTerminalSetProtectedMode)
-	purego.RegisterFunc(&next.fnTerminalConfigureCharset, addrTerminalConfigureCharset)
-	purego.RegisterFunc(&next.fnTerminalInvokeCharset, addrTerminalInvokeCharset)
-	purego.RegisterFunc(&next.fnTerminalDeccolm, addrTerminalDeccolm)
-	purego.RegisterFunc(&next.fnTerminalCompress, addrTerminalCompress)
-	purego.RegisterFunc(&next.fnTerminalCompressionActivity, addrTerminalCompressionActivity)
-	purego.RegisterFunc(&next.fnTerminalSetDefaultBackgroundColor, addrTerminalSetDefaultBackgroundColor)
-	purego.RegisterFunc(&next.fnTerminalSetDefaultForegroundColor, addrTerminalSetDefaultForegroundColor)
-	purego.RegisterFunc(&next.fnTerminalSetDefaultCursorColor, addrTerminalSetDefaultCursorColor)
-	purego.RegisterFunc(&next.fnTerminalSetDefaultCursorStyle, addrTerminalSetDefaultCursorStyle)
-	purego.RegisterFunc(&next.fnTerminalSetDefaultCursorBlink, addrTerminalSetDefaultCursorBlink)
-	purego.RegisterFunc(&next.fnTerminalResetDefaultCursorBlink, addrTerminalResetDefaultCursorBlink)
-	purego.RegisterFunc(&next.fnTerminalPaletteColor, addrTerminalPaletteColor)
-	purego.RegisterFunc(&next.fnTerminalSetPaletteColor, addrTerminalSetPaletteColor)
-	purego.RegisterFunc(&next.fnTerminalResetPaletteColor, addrTerminalResetPaletteColor)
-	purego.RegisterFunc(&next.fnTerminalResetPalette, addrTerminalResetPalette)
-	purego.RegisterFunc(&next.fnTerminalSetDefaultPaletteColor, addrTerminalSetDefaultPaletteColor)
-	purego.RegisterFunc(&next.fnTerminalResetDefaultPalette, addrTerminalResetDefaultPalette)
-	purego.RegisterFunc(&next.fnTerminalSetDefaultMode, addrTerminalSetDefaultMode)
-	purego.RegisterFunc(&next.fnTerminalResetModes, addrTerminalResetModes)
-	purego.RegisterFunc(&next.fnTerminalSaveMode, addrTerminalSaveMode)
-	purego.RegisterFunc(&next.fnTerminalRestoreMode, addrTerminalRestoreMode)
-	purego.RegisterFunc(&next.fnTerminalSetKittyGraphicsSizeLimit, addrTerminalSetKittyGraphicsSizeLimit)
-	purego.RegisterFunc(&next.fnTerminalSetKittyGraphicsLoadingLimits, addrTerminalSetKittyGraphicsLoadingLimits)
-	purego.RegisterFunc(&next.fnTerminalKittyImage, addrTerminalKittyImage)
-	purego.RegisterFunc(&next.fnTerminalKittyImageData, addrTerminalKittyImageData)
-	purego.RegisterFunc(&next.fnTerminalKittyAnimationTick, addrTerminalKittyAnimationTick)
-	purego.RegisterFunc(&next.fnTerminalScrollRegion, addrTerminalScrollRegion)
-	purego.RegisterFunc(&next.fnTerminalCharset, addrTerminalCharset)
-	purego.RegisterFunc(&next.fnTerminalMouseTracking, addrTerminalMouseTracking)
-	purego.RegisterFunc(&next.fnTerminalMouseTrackingSendsMotion, addrTerminalMouseTrackingSendsMotion)
-	purego.RegisterFunc(&next.fnTerminalMouseReportFormat, addrTerminalMouseReportFormat)
-	purego.RegisterFunc(&next.fnTerminalModeReport, addrTerminalModeReport)
-	purego.RegisterFunc(&next.fnTerminalCellAt, addrTerminalCellAt)
-	purego.RegisterFunc(&next.fnTerminalHyperlinkAt, addrTerminalHyperlinkAt)
-	purego.RegisterFunc(&next.fnScreenViewportIsBottom, addrScreenViewportIsBottom)
-	purego.RegisterFunc(&next.fnScreenScrollClear, addrScreenScrollClear)
-	purego.RegisterFunc(&next.fnScreenClearSelection, addrScreenClearSelection)
-	purego.RegisterFunc(&next.fnScreenEndHyperlink, addrScreenEndHyperlink)
-	purego.RegisterFunc(&next.fnScreenMemoryUsage, addrScreenMemoryUsage)
-	purego.RegisterFunc(&next.fnScreenSelectAll, addrScreenSelectAll)
-	purego.RegisterFunc(&next.fnScreenHasSelection, addrScreenHasSelection)
-	purego.RegisterFunc(&next.fnScreenSelectRange, addrScreenSelectRange)
-	purego.RegisterFunc(&next.fnScreenSelectWord, addrScreenSelectWord)
-	purego.RegisterFunc(&next.fnScreenSelectLine, addrScreenSelectLine)
-	purego.RegisterFunc(&next.fnScreenSelectOutput, addrScreenSelectOutput)
-	purego.RegisterFunc(&next.fnScreenSelectionString, addrScreenSelectionString)
-	purego.RegisterFunc(&next.fnScreenSelection, addrScreenSelection)
-	purego.RegisterFunc(&next.fnScreenSetSelection, addrScreenSetSelection)
-	purego.RegisterFunc(&next.fnScreenViewportTop, addrScreenViewportTop)
-	purego.RegisterFunc(&next.fnScreenScrollbar, addrScreenScrollbar)
-	purego.RegisterFunc(&next.fnScreenFormat, addrScreenFormat)
-	purego.RegisterFunc(&next.fnScreenFormatSelection, addrScreenFormatSelection)
-	purego.RegisterFunc(&next.fnScreenSelectionContains, addrScreenSelectionContains)
-	purego.RegisterFunc(&next.fnScreenSelectionAdjust, addrScreenSelectionAdjust)
-	purego.RegisterFunc(&next.fnScreenStartHyperlink, addrScreenStartHyperlink)
-	purego.RegisterFunc(&next.fnSearchSearchClose, addrSearchSearchClose)
-	purego.RegisterFunc(&next.fnSearchNeedle, addrSearchNeedle)
-	purego.RegisterFunc(&next.fnSearchStatus, addrSearchStatus)
-	purego.RegisterFunc(&next.fnSearchTick, addrSearchTick)
-	purego.RegisterFunc(&next.fnSearchFeed, addrSearchFeed)
-	purego.RegisterFunc(&next.fnSearchAll, addrSearchAll)
-	purego.RegisterFunc(&next.fnSearchSelect, addrSearchSelect)
-	purego.RegisterFunc(&next.fnSearchMatchCount, addrSearchMatchCount)
-	purego.RegisterFunc(&next.fnSearchMatches, addrSearchMatches)
-	purego.RegisterFunc(&next.fnSearchViewportMatches, addrSearchViewportMatches)
-	purego.RegisterFunc(&next.fnSearchSelectedMatch, addrSearchSelectedMatch)
-	purego.RegisterFunc(&next.fnSearchSelectedIndex, addrSearchSelectedIndex)
-	purego.RegisterFunc(&next.fnGridRefGridRefClose, addrGridRefGridRefClose)
-	purego.RegisterFunc(&next.fnGridRefHasValue, addrGridRefHasValue)
-	purego.RegisterFunc(&next.fnGridRefPoint, addrGridRefPoint)
-	purego.RegisterFunc(&next.fnGridRefSet, addrGridRefSet)
-	purego.RegisterFunc(&next.fnGridRefCell, addrGridRefCell)
-	purego.RegisterFunc(&next.fnGridRefGraphemes, addrGridRefGraphemes)
-	purego.RegisterFunc(&next.fnGridRefHyperlinkUri, addrGridRefHyperlinkUri)
-	purego.RegisterFunc(&next.fnGestureGestureClose, addrGestureGestureClose)
-	purego.RegisterFunc(&next.fnGestureSetBehaviors, addrGestureSetBehaviors)
-	purego.RegisterFunc(&next.fnGestureSetWordBoundaries, addrGestureSetWordBoundaries)
-	purego.RegisterFunc(&next.fnGestureSetGeometry, addrGestureSetGeometry)
-	purego.RegisterFunc(&next.fnGesturePress, addrGesturePress)
-	purego.RegisterFunc(&next.fnGestureDrag, addrGestureDrag)
-	purego.RegisterFunc(&next.fnGestureAutoscroll, addrGestureAutoscroll)
-	purego.RegisterFunc(&next.fnGestureAutoscrollTick, addrGestureAutoscrollTick)
-	purego.RegisterFunc(&next.fnGestureDeepPress, addrGestureDeepPress)
-	purego.RegisterFunc(&next.fnGestureRelease, addrGestureRelease)
-	purego.RegisterFunc(&next.fnGestureReset, addrGestureReset)
-	purego.RegisterFunc(&next.fnColorNameDefault, addrColorNameDefault)
-	purego.RegisterFunc(&next.fnStreamFreeStream, addrStreamFreeStream)
-	purego.RegisterFunc(&next.fnStreamAtGround, addrStreamAtGround)
-	purego.RegisterFunc(&next.fnStreamFeedUntilGround, addrStreamFeedUntilGround)
-	purego.RegisterFunc(&next.fnStreamFeedUntil, addrStreamFeedUntil)
-	purego.RegisterFunc(&next.fnStreamFeed, addrStreamFeed)
-	purego.RegisterFunc(&next.fnStreamNextEventValue, addrStreamNextEventValue)
-	purego.RegisterFunc(&next.fnStreamResizeCells, addrStreamResizeCells)
-	purego.RegisterFunc(&next.fnStreamSetUnknownMaxBytes, addrStreamSetUnknownMaxBytes)
-	purego.RegisterFunc(&next.fnStreamSetVersionReport, addrStreamSetVersionReport)
-	purego.RegisterFunc(&next.fnStreamSetEnquiryResponse, addrStreamSetEnquiryResponse)
-	purego.RegisterFunc(&next.fnStreamColorSchemeChanged, addrStreamColorSchemeChanged)
-	purego.RegisterFunc(&next.fnStreamClearColorScheme, addrStreamClearColorScheme)
-	purego.RegisterFunc(&next.fnStreamOnDrag, addrStreamOnDrag)
-	purego.RegisterFunc(&next.fnStreamDragActive, addrStreamDragActive)
-	purego.RegisterFunc(&next.fnStreamDragRegisteredMimes, addrStreamDragRegisteredMimes)
-	purego.RegisterFunc(&next.fnStreamDragClientAccepted, addrStreamDragClientAccepted)
-	purego.RegisterFunc(&next.fnStreamDragMove, addrStreamDragMove)
-	purego.RegisterFunc(&next.fnStreamDragLeave, addrStreamDragLeave)
-	purego.RegisterFunc(&next.fnStreamDragAddItem, addrStreamDragAddItem)
-	purego.RegisterFunc(&next.fnStreamDragDrop, addrStreamDragDrop)
-	purego.RegisterFunc(&next.fnStreamDragClearItems, addrStreamDragClearItems)
-	purego.RegisterFunc(&next.fnStreamOnClipboardWriteRequest, addrStreamOnClipboardWriteRequest)
-	purego.RegisterFunc(&next.fnStreamOnClipboardReadRequest, addrStreamOnClipboardReadRequest)
-	purego.RegisterFunc(&next.fnStreamWriteContinuation, addrStreamWriteContinuation)
-	purego.RegisterFunc(&next.fnStreamHasReplies, addrStreamHasReplies)
-	purego.RegisterFunc(&next.fnStreamWriteSnapshot, addrStreamWriteSnapshot)
-	purego.RegisterFunc(&next.fnStreamWriteReplies, addrStreamWriteReplies)
-	purego.RegisterFunc(&next.fnClipboardRequestLocation, addrClipboardRequestLocation)
-	purego.RegisterFunc(&next.fnClipboardRequestName, addrClipboardRequestName)
-	purego.RegisterFunc(&next.fnClipboardRequestGranted, addrClipboardRequestGranted)
-	purego.RegisterFunc(&next.fnClipboardRequestCanRemember, addrClipboardRequestCanRemember)
-	purego.RegisterFunc(&next.fnClipboardRequestContentCount, addrClipboardRequestContentCount)
-	purego.RegisterFunc(&next.fnClipboardRequestContentMime, addrClipboardRequestContentMime)
-	purego.RegisterFunc(&next.fnClipboardRequestMimeCount, addrClipboardRequestMimeCount)
-	purego.RegisterFunc(&next.fnClipboardRequestMime, addrClipboardRequestMime)
-	purego.RegisterFunc(&next.fnClipboardRequestAllow, addrClipboardRequestAllow)
-	purego.RegisterFunc(&next.fnClipboardRequestReplyText, addrClipboardRequestReplyText)
-	purego.RegisterFunc(&next.fnClipboardRequestClearReplyContents, addrClipboardRequestClearReplyContents)
-	purego.RegisterFunc(&next.fnClipboardRequestReplyContents, addrClipboardRequestReplyContents)
-	purego.RegisterFunc(&next.fnClipboardRequestDeny, addrClipboardRequestDeny)
-	purego.RegisterFunc(&next.fnClipboardRequestAddContent, addrClipboardRequestAddContent)
-	purego.RegisterFunc(&next.fnClipboardRequestContentData, addrClipboardRequestContentData)
-	purego.RegisterFunc(&next.fnNewOscParser, addrNewOscParser)
-	purego.RegisterFunc(&next.fnOscParserFreeOscParser, addrOscParserFreeOscParser)
-	purego.RegisterFunc(&next.fnOscParserFeed, addrOscParserFeed)
-	purego.RegisterFunc(&next.fnOscParserEnd, addrOscParserEnd)
-	purego.RegisterFunc(&next.fnOscParserReset, addrOscParserReset)
-	purego.RegisterFunc(&next.fnDecodeSnapshot, addrDecodeSnapshot)
-	purego.RegisterFunc(&next.fnSnapshotDeinit, addrSnapshotDeinit)
-	purego.RegisterFunc(&next.fnSnapshotRestoreInto, addrSnapshotRestoreInto)
-	purego.RegisterFunc(&next.fnSnapshotSnapshotTerminal, addrSnapshotSnapshotTerminal)
-	purego.RegisterFunc(&next.fnSnapshotContinuation, addrSnapshotContinuation)
-	purego.RegisterFunc(&next.fnNewSnapshotDecoder, addrNewSnapshotDecoder)
-	purego.RegisterFunc(&next.fnSnapshotDecoderFreeSnapshotDecoder, addrSnapshotDecoderFreeSnapshotDecoder)
-	purego.RegisterFunc(&next.fnSnapshotDecoderReady, addrSnapshotDecoderReady)
-	purego.RegisterFunc(&next.fnSnapshotDecoderRestoreInto, addrSnapshotDecoderRestoreInto)
-	purego.RegisterFunc(&next.fnSnapshotDecoderContinuation, addrSnapshotDecoderContinuation)
-	purego.RegisterFunc(&next.fnSnapshotDecoderNext, addrSnapshotDecoderNext)
-	purego.RegisterFunc(&next.fnSnapshotDecoderSetKittyImageStorageLimit, addrSnapshotDecoderSetKittyImageStorageLimit)
-	purego.RegisterFunc(&next.fnSnapshotDecoderKittyCounts, addrSnapshotDecoderKittyCounts)
-	purego.RegisterFunc(&next.fnNewRenderState, addrNewRenderState)
-	purego.RegisterFunc(&next.fnRenderStateDeinit, addrRenderStateDeinit)
-	purego.RegisterFunc(&next.fnRenderStateUpdate, addrRenderStateUpdate)
-	purego.RegisterFunc(&next.fnRenderStateClean, addrRenderStateClean)
-	purego.RegisterFunc(&next.fnRenderStateCursor, addrRenderStateCursor)
-	purego.RegisterFunc(&next.fnRenderStateColors, addrRenderStateColors)
-	purego.RegisterFunc(&next.fnRenderStateCellCount, addrRenderStateCellCount)
-	purego.RegisterFunc(&next.fnRenderStateCells, addrRenderStateCells)
-	purego.RegisterFunc(&next.fnRenderStateDirty, addrRenderStateDirty)
-	purego.RegisterFunc(&next.fnRenderStateDirtyRows, addrRenderStateDirtyRows)
-	purego.RegisterFunc(&next.fnRenderStateRowCells, addrRenderStateRowCells)
-	purego.RegisterFunc(&next.fnRenderStateGraphemes, addrRenderStateGraphemes)
-	purego.RegisterFunc(&next.fnRenderStateHyperlinkAt, addrRenderStateHyperlinkAt)
-	purego.RegisterFunc(&next.fnRenderStateImagePlacementCount, addrRenderStateImagePlacementCount)
-	purego.RegisterFunc(&next.fnRenderStateImagePlacements, addrRenderStateImagePlacements)
-	purego.RegisterFunc(&next.fnRenderStateImagePlacementsGeneration, addrRenderStateImagePlacementsGeneration)
-	purego.RegisterFunc(&next.fnNewKittyImages, addrNewKittyImages)
-	purego.RegisterFunc(&next.fnKittyImagesFreeKittyImages, addrKittyImagesFreeKittyImages)
-	purego.RegisterFunc(&next.fnKittyImagesUpdate, addrKittyImagesUpdate)
-	purego.RegisterFunc(&next.fnKittyImagesPlacementCount, addrKittyImagesPlacementCount)
-	purego.RegisterFunc(&next.fnKittyImagesPlacements, addrKittyImagesPlacements)
-	purego.RegisterFunc(&next.fnUnicodeCodepointWidth, addrUnicodeCodepointWidth)
-	purego.RegisterFunc(&next.fnGraphemeWidth, addrGraphemeWidth)
-	purego.RegisterFunc(&next.fnFreeBuffer, addrFreeBuffer)
-	purego.RegisterFunc(&next.fnFreeString, addrFreeString)
-	purego.RegisterFunc(&next.fnSgrAttributeCount, addrSgrAttributeCount)
-	purego.RegisterFunc(&next.fnSgrAttributeAt, addrSgrAttributeAt)
+	next.addrTerminalSetProtectedMode = addrTerminalSetProtectedMode
+	next.addrTerminalConfigureCharset = addrTerminalConfigureCharset
+	next.addrTerminalInvokeCharset = addrTerminalInvokeCharset
+	next.addrTerminalDeccolm = addrTerminalDeccolm
+	next.addrTerminalCompress = addrTerminalCompress
+	next.addrTerminalCompressionActivity = addrTerminalCompressionActivity
+	next.addrTerminalSetDefaultBackgroundColor = addrTerminalSetDefaultBackgroundColor
+	next.addrTerminalSetDefaultForegroundColor = addrTerminalSetDefaultForegroundColor
+	next.addrTerminalSetDefaultCursorColor = addrTerminalSetDefaultCursorColor
+	next.addrTerminalSetDefaultCursorStyle = addrTerminalSetDefaultCursorStyle
+	next.addrTerminalSetDefaultCursorBlink = addrTerminalSetDefaultCursorBlink
+	next.addrTerminalResetDefaultCursorBlink = addrTerminalResetDefaultCursorBlink
+	next.addrTerminalPaletteColor = addrTerminalPaletteColor
+	next.addrTerminalSetPaletteColor = addrTerminalSetPaletteColor
+	next.addrTerminalResetPaletteColor = addrTerminalResetPaletteColor
+	next.addrTerminalResetPalette = addrTerminalResetPalette
+	next.addrTerminalSetDefaultPaletteColor = addrTerminalSetDefaultPaletteColor
+	next.addrTerminalResetDefaultPalette = addrTerminalResetDefaultPalette
+	next.addrTerminalSetDefaultMode = addrTerminalSetDefaultMode
+	next.addrTerminalResetModes = addrTerminalResetModes
+	next.addrTerminalSaveMode = addrTerminalSaveMode
+	next.addrTerminalRestoreMode = addrTerminalRestoreMode
+	next.addrTerminalSetKittyGraphicsSizeLimit = addrTerminalSetKittyGraphicsSizeLimit
+	next.addrTerminalSetKittyGraphicsLoadingLimits = addrTerminalSetKittyGraphicsLoadingLimits
+	next.addrTerminalKittyImage = addrTerminalKittyImage
+	next.addrTerminalKittyImageData = addrTerminalKittyImageData
+	next.addrTerminalKittyAnimationTick = addrTerminalKittyAnimationTick
+	next.addrTerminalScrollRegion = addrTerminalScrollRegion
+	next.addrTerminalCharset = addrTerminalCharset
+	next.addrTerminalMouseTracking = addrTerminalMouseTracking
+	next.addrTerminalMouseTrackingSendsMotion = addrTerminalMouseTrackingSendsMotion
+	next.addrTerminalMouseReportFormat = addrTerminalMouseReportFormat
+	next.addrTerminalModeReport = addrTerminalModeReport
+	next.addrTerminalCellAt = addrTerminalCellAt
+	next.addrTerminalHyperlinkAt = addrTerminalHyperlinkAt
+	next.addrScreenViewportIsBottom = addrScreenViewportIsBottom
+	next.addrScreenScrollClear = addrScreenScrollClear
+	next.addrScreenClearSelection = addrScreenClearSelection
+	next.addrScreenEndHyperlink = addrScreenEndHyperlink
+	next.addrScreenMemoryUsage = addrScreenMemoryUsage
+	next.addrScreenSelectAll = addrScreenSelectAll
+	next.addrScreenHasSelection = addrScreenHasSelection
+	next.addrScreenSelectRange = addrScreenSelectRange
+	next.addrScreenSelectWord = addrScreenSelectWord
+	next.addrScreenSelectLine = addrScreenSelectLine
+	next.addrScreenSelectOutput = addrScreenSelectOutput
+	next.addrScreenSelectionString = addrScreenSelectionString
+	next.addrScreenSelection = addrScreenSelection
+	next.addrScreenSetSelection = addrScreenSetSelection
+	next.addrScreenViewportTop = addrScreenViewportTop
+	next.addrScreenScrollbar = addrScreenScrollbar
+	next.addrScreenFormat = addrScreenFormat
+	next.addrScreenFormatSelection = addrScreenFormatSelection
+	next.addrScreenSelectionContains = addrScreenSelectionContains
+	next.addrScreenSelectionAdjust = addrScreenSelectionAdjust
+	next.addrScreenStartHyperlink = addrScreenStartHyperlink
+	next.addrSearchSearchClose = addrSearchSearchClose
+	next.addrSearchNeedle = addrSearchNeedle
+	next.addrSearchStatus = addrSearchStatus
+	next.addrSearchTick = addrSearchTick
+	next.addrSearchFeed = addrSearchFeed
+	next.addrSearchAll = addrSearchAll
+	next.addrSearchSelect = addrSearchSelect
+	next.addrSearchMatchCount = addrSearchMatchCount
+	next.addrSearchMatches = addrSearchMatches
+	next.addrSearchViewportMatches = addrSearchViewportMatches
+	next.addrSearchSelectedMatch = addrSearchSelectedMatch
+	next.addrSearchSelectedIndex = addrSearchSelectedIndex
+	next.addrGridRefGridRefClose = addrGridRefGridRefClose
+	next.addrGridRefHasValue = addrGridRefHasValue
+	next.addrGridRefPoint = addrGridRefPoint
+	next.addrGridRefSet = addrGridRefSet
+	next.addrGridRefCell = addrGridRefCell
+	next.addrGridRefGraphemes = addrGridRefGraphemes
+	next.addrGridRefHyperlinkUri = addrGridRefHyperlinkUri
+	next.addrGestureGestureClose = addrGestureGestureClose
+	next.addrGestureSetBehaviors = addrGestureSetBehaviors
+	next.addrGestureSetWordBoundaries = addrGestureSetWordBoundaries
+	next.addrGestureSetGeometry = addrGestureSetGeometry
+	next.addrGesturePress = addrGesturePress
+	next.addrGestureDrag = addrGestureDrag
+	next.addrGestureAutoscroll = addrGestureAutoscroll
+	next.addrGestureAutoscrollTick = addrGestureAutoscrollTick
+	next.addrGestureDeepPress = addrGestureDeepPress
+	next.addrGestureRelease = addrGestureRelease
+	next.addrGestureReset = addrGestureReset
+	next.addrColorNameDefault = addrColorNameDefault
+	next.addrStreamFreeStream = addrStreamFreeStream
+	next.addrStreamAtGround = addrStreamAtGround
+	next.addrStreamFeedUntilGround = addrStreamFeedUntilGround
+	next.addrStreamFeedUntil = addrStreamFeedUntil
+	next.addrStreamFeed = addrStreamFeed
+	next.addrStreamNextEventValue = addrStreamNextEventValue
+	next.addrStreamResizeCells = addrStreamResizeCells
+	next.addrStreamSetUnknownMaxBytes = addrStreamSetUnknownMaxBytes
+	next.addrStreamSetVersionReport = addrStreamSetVersionReport
+	next.addrStreamSetEnquiryResponse = addrStreamSetEnquiryResponse
+	next.addrStreamColorSchemeChanged = addrStreamColorSchemeChanged
+	next.addrStreamClearColorScheme = addrStreamClearColorScheme
+	next.addrStreamOnDrag = addrStreamOnDrag
+	next.addrStreamDragActive = addrStreamDragActive
+	next.addrStreamDragRegisteredMimes = addrStreamDragRegisteredMimes
+	next.addrStreamDragClientAccepted = addrStreamDragClientAccepted
+	next.addrStreamDragMove = addrStreamDragMove
+	next.addrStreamDragLeave = addrStreamDragLeave
+	next.addrStreamDragAddItem = addrStreamDragAddItem
+	next.addrStreamDragDrop = addrStreamDragDrop
+	next.addrStreamDragClearItems = addrStreamDragClearItems
+	next.addrStreamOnClipboardWriteRequest = addrStreamOnClipboardWriteRequest
+	next.addrStreamOnClipboardReadRequest = addrStreamOnClipboardReadRequest
+	next.addrStreamWriteContinuation = addrStreamWriteContinuation
+	next.addrStreamHasReplies = addrStreamHasReplies
+	next.addrStreamWriteSnapshot = addrStreamWriteSnapshot
+	next.addrStreamWriteReplies = addrStreamWriteReplies
+	next.addrClipboardRequestLocation = addrClipboardRequestLocation
+	next.addrClipboardRequestName = addrClipboardRequestName
+	next.addrClipboardRequestGranted = addrClipboardRequestGranted
+	next.addrClipboardRequestCanRemember = addrClipboardRequestCanRemember
+	next.addrClipboardRequestContentCount = addrClipboardRequestContentCount
+	next.addrClipboardRequestContentMime = addrClipboardRequestContentMime
+	next.addrClipboardRequestMimeCount = addrClipboardRequestMimeCount
+	next.addrClipboardRequestMime = addrClipboardRequestMime
+	next.addrClipboardRequestAllow = addrClipboardRequestAllow
+	next.addrClipboardRequestReplyText = addrClipboardRequestReplyText
+	next.addrClipboardRequestClearReplyContents = addrClipboardRequestClearReplyContents
+	next.addrClipboardRequestReplyContents = addrClipboardRequestReplyContents
+	next.addrClipboardRequestDeny = addrClipboardRequestDeny
+	next.addrClipboardRequestAddContent = addrClipboardRequestAddContent
+	next.addrClipboardRequestContentData = addrClipboardRequestContentData
+	next.addrNewOscParser = addrNewOscParser
+	next.addrOscParserFreeOscParser = addrOscParserFreeOscParser
+	next.addrOscParserFeed = addrOscParserFeed
+	next.addrOscParserEnd = addrOscParserEnd
+	next.addrOscParserReset = addrOscParserReset
+	next.addrDecodeSnapshot = addrDecodeSnapshot
+	next.addrSnapshotDeinit = addrSnapshotDeinit
+	next.addrSnapshotRestoreInto = addrSnapshotRestoreInto
+	next.addrSnapshotSnapshotTerminal = addrSnapshotSnapshotTerminal
+	next.addrSnapshotContinuation = addrSnapshotContinuation
+	next.addrNewSnapshotDecoder = addrNewSnapshotDecoder
+	next.addrSnapshotDecoderFreeSnapshotDecoder = addrSnapshotDecoderFreeSnapshotDecoder
+	next.addrSnapshotDecoderReady = addrSnapshotDecoderReady
+	next.addrSnapshotDecoderRestoreInto = addrSnapshotDecoderRestoreInto
+	next.addrSnapshotDecoderContinuation = addrSnapshotDecoderContinuation
+	next.addrSnapshotDecoderNext = addrSnapshotDecoderNext
+	next.addrSnapshotDecoderSetKittyImageStorageLimit = addrSnapshotDecoderSetKittyImageStorageLimit
+	next.addrSnapshotDecoderKittyCounts = addrSnapshotDecoderKittyCounts
+	next.addrNewRenderState = addrNewRenderState
+	next.addrRenderStateDeinit = addrRenderStateDeinit
+	next.addrRenderStateUpdate = addrRenderStateUpdate
+	next.addrRenderStateClean = addrRenderStateClean
+	next.addrRenderStateCursor = addrRenderStateCursor
+	next.addrRenderStateColors = addrRenderStateColors
+	next.addrRenderStateCellCount = addrRenderStateCellCount
+	next.addrRenderStateCells = addrRenderStateCells
+	next.addrRenderStateDirty = addrRenderStateDirty
+	next.addrRenderStateDirtyRows = addrRenderStateDirtyRows
+	next.addrRenderStateRowCells = addrRenderStateRowCells
+	next.addrRenderStateGraphemes = addrRenderStateGraphemes
+	next.addrRenderStateHyperlinkAt = addrRenderStateHyperlinkAt
+	next.addrRenderStateImagePlacementCount = addrRenderStateImagePlacementCount
+	next.addrRenderStateImagePlacements = addrRenderStateImagePlacements
+	next.addrRenderStateImagePlacementsGeneration = addrRenderStateImagePlacementsGeneration
+	next.addrNewKittyImages = addrNewKittyImages
+	next.addrKittyImagesFreeKittyImages = addrKittyImagesFreeKittyImages
+	next.addrKittyImagesUpdate = addrKittyImagesUpdate
+	next.addrKittyImagesPlacementCount = addrKittyImagesPlacementCount
+	next.addrKittyImagesPlacements = addrKittyImagesPlacements
+	next.addrUnicodeCodepointWidth = addrUnicodeCodepointWidth
+	next.addrGraphemeWidth = addrGraphemeWidth
+	next.addrFreeBuffer = addrFreeBuffer
+	next.addrFreeString = addrFreeString
+	next.addrSgrAttributeCount = addrSgrAttributeCount
+	next.addrSgrAttributeAt = addrSgrAttributeAt
 	loadedBindings.Store(&next)
 	return nil
 }
@@ -2715,6 +2715,4384 @@ type AttributeData struct {
 // at. The shim tells the fast path from the dispatcher path by the pointer
 // being non-NULL, so an empty stream still needs an address.
 var zigoEmptyStreamData byte
+
+// zigoCallFrame holds one direct call's arguments and the slots its out
+// parameters are written to. purego.SyscallN lets its argument slice escape,
+// and native code must not be handed an address on a goroutine stack that a
+// callback could grow and move, so both live in a pooled frame on the heap.
+type zigoCallFrame struct {
+	args [8]uintptr
+	out  [10]uint64
+}
+
+var zigoCallFrames = sync.Pool{New: func() any { return new(zigoCallFrame) }}
+
+// zigoEscapeSink is never written. zigoEscape only has to look as though it
+// might store its argument, so that the compiler keeps what a pointer handed
+// to native code points at on the heap, as a call through RegisterFunc did.
+var zigoEscapeSink struct {
+	enabled bool
+	p       unsafe.Pointer
+}
+
+func zigoEscape(p unsafe.Pointer) {
+	if zigoEscapeSink.enabled {
+		zigoEscapeSink.p = p
+	}
+}
+
+// fnTerminalCols calls zg_terminal_cols through purego.SyscallN.
+func (b *nativeBindings) fnTerminalCols(p0 unsafe.Pointer, p1 *uint16) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint16)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalCols, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalRows calls zg_terminal_rows through purego.SyscallN.
+func (b *nativeBindings) fnTerminalRows(p0 unsafe.Pointer, p1 *uint16) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint16)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalRows, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalCursorX calls zg_terminal_cursor_x through purego.SyscallN.
+func (b *nativeBindings) fnTerminalCursorX(p0 unsafe.Pointer, p1 *uint16) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint16)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalCursorX, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalCursorY calls zg_terminal_cursor_y through purego.SyscallN.
+func (b *nativeBindings) fnTerminalCursorY(p0 unsafe.Pointer, p1 *uint16) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint16)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalCursorY, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalCursorStyle calls zg_terminal_cursor_style through purego.SyscallN.
+func (b *nativeBindings) fnTerminalCursorStyle(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalCursorStyle, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalActiveScreenKey calls zg_terminal_active_screen_key through purego.SyscallN.
+func (b *nativeBindings) fnTerminalActiveScreenKey(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalActiveScreenKey, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalCursorPendingWrap calls zg_terminal_cursor_pending_wrap through purego.SyscallN.
+func (b *nativeBindings) fnTerminalCursorPendingWrap(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalCursorPendingWrap, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalCursorProtected calls zg_terminal_cursor_protected through purego.SyscallN.
+func (b *nativeBindings) fnTerminalCursorProtected(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalCursorProtected, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalWidthPx calls zg_terminal_width_px through purego.SyscallN.
+func (b *nativeBindings) fnTerminalWidthPx(p0 unsafe.Pointer, p1 *uint32) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint32)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalWidthPx, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalHeightPx calls zg_terminal_height_px through purego.SyscallN.
+func (b *nativeBindings) fnTerminalHeightPx(p0 unsafe.Pointer, p1 *uint32) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint32)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalHeightPx, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalFocused calls zg_terminal_focused through purego.SyscallN.
+func (b *nativeBindings) fnTerminalFocused(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalFocused, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalVisible calls zg_terminal_visible through purego.SyscallN.
+func (b *nativeBindings) fnTerminalVisible(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalVisible, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalPasswordInput calls zg_terminal_password_input through purego.SyscallN.
+func (b *nativeBindings) fnTerminalPasswordInput(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalPasswordInput, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalCharsetGl calls zg_terminal_charset_gl through purego.SyscallN.
+func (b *nativeBindings) fnTerminalCharsetGl(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalCharsetGl, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalCharsetGr calls zg_terminal_charset_gr through purego.SyscallN.
+func (b *nativeBindings) fnTerminalCharsetGr(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalCharsetGr, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalCharsetSingleShift calls zg_terminal_charset_single_shift through purego.SyscallN.
+func (b *nativeBindings) fnTerminalCharsetSingleShift(p0 unsafe.Pointer, p1 *uint8, p2 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uint8)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrTerminalCharsetSingleShift, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalProtectedMode calls zg_terminal_protected_mode through purego.SyscallN.
+func (b *nativeBindings) fnTerminalProtectedMode(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalProtectedMode, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnGestureClickCount calls zg_gesture_click_count through purego.SyscallN.
+func (b *nativeBindings) fnGestureClickCount(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrGestureClickCount, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnGestureDragged calls zg_gesture_dragged through purego.SyscallN.
+func (b *nativeBindings) fnGestureDragged(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrGestureDragged, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamFailed calls zg_stream_failed through purego.SyscallN.
+func (b *nativeBindings) fnStreamFailed(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrStreamFailed, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnOscParserCommand calls zg_osc_parser_command through purego.SyscallN.
+func (b *nativeBindings) fnOscParserCommand(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrOscParserCommand, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnOscParserWindowTitle calls zg_osc_parser_window_title through purego.SyscallN.
+func (b *nativeBindings) fnOscParserWindowTitle(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrOscParserWindowTitle, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnOscParserIcon calls zg_osc_parser_icon through purego.SyscallN.
+func (b *nativeBindings) fnOscParserIcon(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrOscParserIcon, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnOscParserPwd calls zg_osc_parser_pwd through purego.SyscallN.
+func (b *nativeBindings) fnOscParserPwd(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrOscParserPwd, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnOscParserHyperlinkUri calls zg_osc_parser_hyperlink_uri through purego.SyscallN.
+func (b *nativeBindings) fnOscParserHyperlinkUri(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrOscParserHyperlinkUri, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnOscParserHyperlinkID calls zg_osc_parser_hyperlink_id through purego.SyscallN.
+func (b *nativeBindings) fnOscParserHyperlinkID(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrOscParserHyperlinkID, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnOscParserNotificationTitle calls zg_osc_parser_notification_title through purego.SyscallN.
+func (b *nativeBindings) fnOscParserNotificationTitle(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrOscParserNotificationTitle, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnOscParserNotificationBody calls zg_osc_parser_notification_body through purego.SyscallN.
+func (b *nativeBindings) fnOscParserNotificationBody(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrOscParserNotificationBody, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnOscParserClipboardData calls zg_osc_parser_clipboard_data through purego.SyscallN.
+func (b *nativeBindings) fnOscParserClipboardData(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrOscParserClipboardData, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnOscParserClipboardSelection calls zg_osc_parser_clipboard_selection through purego.SyscallN.
+func (b *nativeBindings) fnOscParserClipboardSelection(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrOscParserClipboardSelection, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnOscParserMouseShape calls zg_osc_parser_mouse_shape through purego.SyscallN.
+func (b *nativeBindings) fnOscParserMouseShape(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrOscParserMouseShape, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnOscParserSemanticPromptAction calls zg_osc_parser_semantic_prompt_action through purego.SyscallN.
+func (b *nativeBindings) fnOscParserSemanticPromptAction(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrOscParserSemanticPromptAction, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnOscParserSemanticPromptOptions calls zg_osc_parser_semantic_prompt_options through purego.SyscallN.
+func (b *nativeBindings) fnOscParserSemanticPromptOptions(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrOscParserSemanticPromptOptions, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnOscParserProgressState calls zg_osc_parser_progress_state through purego.SyscallN.
+func (b *nativeBindings) fnOscParserProgressState(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrOscParserProgressState, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnOscParserProgressValue calls zg_osc_parser_progress_value through purego.SyscallN.
+func (b *nativeBindings) fnOscParserProgressValue(p0 unsafe.Pointer, p1 *int16) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*int16)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrOscParserProgressValue, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnRenderStateRows calls zg_render_state_rows through purego.SyscallN.
+func (b *nativeBindings) fnRenderStateRows(p0 unsafe.Pointer, p1 *uint16) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint16)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrRenderStateRows, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnRenderStateCols calls zg_render_state_cols through purego.SyscallN.
+func (b *nativeBindings) fnRenderStateCols(p0 unsafe.Pointer, p1 *uint16) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint16)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrRenderStateCols, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnRenderStateCursorVisible calls zg_render_state_cursor_visible through purego.SyscallN.
+func (b *nativeBindings) fnRenderStateCursorVisible(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrRenderStateCursorVisible, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnRenderStateCursorStyle calls zg_render_state_cursor_style through purego.SyscallN.
+func (b *nativeBindings) fnRenderStateCursorStyle(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrRenderStateCursorStyle, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnRenderStateCursorBlinking calls zg_render_state_cursor_blinking through purego.SyscallN.
+func (b *nativeBindings) fnRenderStateCursorBlinking(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrRenderStateCursorBlinking, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnRenderStateCursorPasswordInput calls zg_render_state_cursor_password_input through purego.SyscallN.
+func (b *nativeBindings) fnRenderStateCursorPasswordInput(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrRenderStateCursorPasswordInput, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnKittyImagesGeneration calls zg_kitty_images_generation through purego.SyscallN.
+func (b *nativeBindings) fnKittyImagesGeneration(p0 unsafe.Pointer, p1 *uint64) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint64)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrKittyImagesGeneration, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSysOnPngDecodeRequest calls zg_sys_on_png_decode_request_purego_v2 through purego.SyscallN.
+func (b *nativeBindings) fnSysOnPngDecodeRequest(p0 uintptr, p1 uintptr) {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	purego.SyscallN(b.addrSysOnPngDecodeRequest, f.args[:2]...)
+	zigoCallFrames.Put(f)
+}
+
+// fnSysReplyPngImage calls zg_sys_reply_png_image through purego.SyscallN.
+func (b *nativeBindings) fnSysReplyPngImage(p0 uint32, p1 uint32, p2 unsafe.Pointer, p3 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	zigoEscape(p2)
+	f.args[2] = uintptr(p2)
+	f.args[3] = uintptr(p3)
+	r, _, _ := purego.SyscallN(b.addrSysReplyPngImage, f.args[:4]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSysOnSecureRandomRequest calls zg_sys_on_secure_random_request_purego_v2 through purego.SyscallN.
+func (b *nativeBindings) fnSysOnSecureRandomRequest(p0 uintptr, p1 uintptr) {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	purego.SyscallN(b.addrSysOnSecureRandomRequest, f.args[:2]...)
+	zigoCallFrames.Put(f)
+}
+
+// fnSysOnLog calls zg_sys_on_log_purego_v2 through purego.SyscallN.
+func (b *nativeBindings) fnSysOnLog(p0 uintptr, p1 uintptr) {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	purego.SyscallN(b.addrSysOnLog, f.args[:2]...)
+	zigoCallFrames.Put(f)
+}
+
+// fnSysClear calls zg_sys_clear through purego.SyscallN.
+func (b *nativeBindings) fnSysClear() {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	purego.SyscallN(b.addrSysClear, f.args[:0]...)
+	zigoCallFrames.Put(f)
+}
+
+// fnSysReplySecureRandom calls zg_sys_reply_secure_random through purego.SyscallN.
+func (b *nativeBindings) fnSysReplySecureRandom(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrSysReplySecureRandom, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnKeyCodepoint calls zg_key_codepoint through purego.SyscallN.
+func (b *nativeBindings) fnKeyCodepoint(p0 int32, p1 *uint32) uint8 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint32)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrKeyCodepoint, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return uint8(r)
+}
+
+// fnKeyPrintable calls zg_key_printable through purego.SyscallN.
+func (b *nativeBindings) fnKeyPrintable(p0 int32) uint8 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrKeyPrintable, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return uint8(r)
+}
+
+// fnKeyModifier calls zg_key_modifier through purego.SyscallN.
+func (b *nativeBindings) fnKeyModifier(p0 int32) uint8 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrKeyModifier, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return uint8(r)
+}
+
+// fnKeyKeypad calls zg_key_keypad through purego.SyscallN.
+func (b *nativeBindings) fnKeyKeypad(p0 int32) uint8 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrKeyKeypad, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return uint8(r)
+}
+
+// fnKeyLeftOrRightShift calls zg_key_left_or_right_shift through purego.SyscallN.
+func (b *nativeBindings) fnKeyLeftOrRightShift(p0 int32) uint8 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrKeyLeftOrRightShift, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return uint8(r)
+}
+
+// fnKeyLeftOrRightAlt calls zg_key_left_or_right_alt through purego.SyscallN.
+func (b *nativeBindings) fnKeyLeftOrRightAlt(p0 int32) uint8 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrKeyLeftOrRightAlt, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return uint8(r)
+}
+
+// fnKeyCtrlOrSuper calls zg_key_ctrl_or_super through purego.SyscallN.
+func (b *nativeBindings) fnKeyCtrlOrSuper(p0 int32) uint8 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrKeyCtrlOrSuper, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return uint8(r)
+}
+
+// fnKeyShouldBeRemappable calls zg_key_should_be_remappable through purego.SyscallN.
+func (b *nativeBindings) fnKeyShouldBeRemappable(p0 int32) uint8 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrKeyShouldBeRemappable, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return uint8(r)
+}
+
+// fnKeyW3C calls zg_key_w3_c through purego.SyscallN.
+func (b *nativeBindings) fnKeyW3C(p0 int32, p1 *unsafe.Pointer, p2 *uintptr) {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	purego.SyscallN(b.addrKeyW3C, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+}
+
+// fnEncodeKey calls zg_encode_key_purego_v2 through purego.SyscallN.
+func (b *nativeBindings) fnEncodeKey(p0 uintptr, p1 uintptr, p2 unsafe.Pointer, p3 unsafe.Pointer, p4 unsafe.Pointer, p5 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	zigoEscape(p2)
+	f.args[2] = uintptr(p2)
+	s3 := (*KeyEventData)(unsafe.Pointer(&f.out[0]))
+	*s3 = *(*KeyEventData)(p3)
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	zigoEscape(p4)
+	f.args[4] = uintptr(p4)
+	f.args[5] = uintptr(p5)
+	r, _, _ := purego.SyscallN(b.addrEncodeKey, f.args[:6]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnEncodeMouse calls zg_encode_mouse_purego_v2 through purego.SyscallN.
+func (b *nativeBindings) fnEncodeMouse(p0 uintptr, p1 uintptr, p2 unsafe.Pointer, p3 unsafe.Pointer, p4 unsafe.Pointer, p5 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	zigoEscape(p2)
+	f.args[2] = uintptr(p2)
+	s3 := (*MouseEventData)(unsafe.Pointer(&f.out[0]))
+	*s3 = *(*MouseEventData)(p3)
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	s4 := (*RenderSizeData)(unsafe.Pointer(&f.out[3]))
+	*s4 = *(*RenderSizeData)(p4)
+	f.args[4] = uintptr(unsafe.Pointer(s4))
+	f.args[5] = uintptr(p5)
+	r, _, _ := purego.SyscallN(b.addrEncodeMouse, f.args[:6]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnKeyKeyFromAscii calls zg_key_from_ascii through purego.SyscallN.
+func (b *nativeBindings) fnKeyKeyFromAscii(p0 uint8, p1 *int32) uint8 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	f.args[0] = uintptr(p0)
+	s1 := (*int32)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrKeyKeyFromAscii, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return uint8(r)
+}
+
+// fnKeyKeyFromW3C calls zg_key_from_w3c through purego.SyscallN.
+func (b *nativeBindings) fnKeyKeyFromW3C(p0 unsafe.Pointer, p1 uintptr, p2 *int32) uint8 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	s2 := (*int32)(unsafe.Pointer(&f.out[0]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrKeyKeyFromW3C, f.args[:3]...)
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return uint8(r)
+}
+
+// fnInputEncodeFocus calls zg_input_encode_focus_purego_v2 through purego.SyscallN.
+func (b *nativeBindings) fnInputEncodeFocus(p0 uintptr, p1 uintptr, p2 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrInputEncodeFocus, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnInputIsSafePaste calls zg_input_is_safe_paste through purego.SyscallN.
+func (b *nativeBindings) fnInputIsSafePaste(p0 unsafe.Pointer, p1 uintptr) uint8 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrInputIsSafePaste, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return uint8(r)
+}
+
+// fnEncodePaste calls zg_encode_paste_purego_v2 through purego.SyscallN.
+func (b *nativeBindings) fnEncodePaste(p0 uintptr, p1 uintptr, p2 unsafe.Pointer, p3 unsafe.Pointer, p4 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	zigoEscape(p2)
+	f.args[2] = uintptr(p2)
+	zigoEscape(p3)
+	f.args[3] = uintptr(p3)
+	f.args[4] = uintptr(p4)
+	r, _, _ := purego.SyscallN(b.addrEncodePaste, f.args[:5]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalNewTerminal calls zg_terminal_new_terminal through purego.SyscallN.
+func (b *nativeBindings) fnTerminalNewTerminal(p0 uint16, p1 uint16, p2 *uintptr, p3 *uintptr, p4 uint8, p5 *uint8, p6 *unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	zigoEscape(unsafe.Pointer(p2))
+	f.args[2] = uintptr(unsafe.Pointer(p2))
+	zigoEscape(unsafe.Pointer(p3))
+	f.args[3] = uintptr(unsafe.Pointer(p3))
+	f.args[4] = uintptr(p4)
+	zigoEscape(unsafe.Pointer(p5))
+	f.args[5] = uintptr(unsafe.Pointer(p5))
+	s6 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s6 = *p6
+	f.args[6] = uintptr(unsafe.Pointer(s6))
+	r, _, _ := purego.SyscallN(b.addrTerminalNewTerminal, f.args[:7]...)
+	*p6 = *s6
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalDeinit calls zg_terminal_deinit through purego.SyscallN.
+func (b *nativeBindings) fnTerminalDeinit(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrTerminalDeinit, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalNewStream calls zg_terminal_new_stream through purego.SyscallN.
+func (b *nativeBindings) fnTerminalNewStream(p0 unsafe.Pointer, p1 uintptr, p2 *unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	s2 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrTerminalNewStream, f.args[:3]...)
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalNewSearch calls zg_terminal_new_search through purego.SyscallN.
+func (b *nativeBindings) fnTerminalNewSearch(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr, p3 *unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	s3 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s3 = *p3
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrTerminalNewSearch, f.args[:4]...)
+	*p3 = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalNewGesture calls zg_terminal_new_gesture through purego.SyscallN.
+func (b *nativeBindings) fnTerminalNewGesture(p0 unsafe.Pointer, p1 *unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalNewGesture, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalNewGridRef calls zg_terminal_new_grid_ref through purego.SyscallN.
+func (b *nativeBindings) fnTerminalNewGridRef(p0 unsafe.Pointer, p1 uint8, p2 uint16, p3 uint32, p4 *unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	f.args[3] = uintptr(p3)
+	s4 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s4 = *p4
+	f.args[4] = uintptr(unsafe.Pointer(s4))
+	r, _, _ := purego.SyscallN(b.addrTerminalNewGridRef, f.args[:5]...)
+	*p4 = *s4
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalPrintString calls zg_terminal_print_string through purego.SyscallN.
+func (b *nativeBindings) fnTerminalPrintString(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrTerminalPrintString, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalPlainString calls zg_terminal_plain_string through purego.SyscallN.
+func (b *nativeBindings) fnTerminalPlainString(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrTerminalPlainString, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalPlainStringUnwrapped calls zg_terminal_plain_string_unwrapped through purego.SyscallN.
+func (b *nativeBindings) fnTerminalPlainStringUnwrapped(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrTerminalPlainStringUnwrapped, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalPrint calls zg_terminal_print through purego.SyscallN.
+func (b *nativeBindings) fnTerminalPrint(p0 unsafe.Pointer, p1 uint32) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalPrint, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalPrintRepeat calls zg_terminal_print_repeat through purego.SyscallN.
+func (b *nativeBindings) fnTerminalPrintRepeat(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalPrintRepeat, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalPrintSlice calls zg_terminal_print_slice through purego.SyscallN.
+func (b *nativeBindings) fnTerminalPrintSlice(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrTerminalPrintSlice, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetCursorStyle calls zg_terminal_set_cursor_style through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetCursorStyle(p0 unsafe.Pointer, p1 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalSetCursorStyle, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetCursorPos calls zg_terminal_set_cursor_pos through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetCursorPos(p0 unsafe.Pointer, p1 uintptr, p2 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrTerminalSetCursorPos, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalCarriageReturn calls zg_terminal_carriage_return through purego.SyscallN.
+func (b *nativeBindings) fnTerminalCarriageReturn(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrTerminalCarriageReturn, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalLinefeed calls zg_terminal_linefeed through purego.SyscallN.
+func (b *nativeBindings) fnTerminalLinefeed(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrTerminalLinefeed, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalBackspace calls zg_terminal_backspace through purego.SyscallN.
+func (b *nativeBindings) fnTerminalBackspace(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrTerminalBackspace, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalCursorIsAtPrompt calls zg_terminal_cursor_is_at_prompt through purego.SyscallN.
+func (b *nativeBindings) fnTerminalCursorIsAtPrompt(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalCursorIsAtPrompt, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalFullReset calls zg_terminal_full_reset through purego.SyscallN.
+func (b *nativeBindings) fnTerminalFullReset(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrTerminalFullReset, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSoftReset calls zg_terminal_soft_reset through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSoftReset(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrTerminalSoftReset, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalCursorUp calls zg_terminal_cursor_up through purego.SyscallN.
+func (b *nativeBindings) fnTerminalCursorUp(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalCursorUp, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalCursorDown calls zg_terminal_cursor_down through purego.SyscallN.
+func (b *nativeBindings) fnTerminalCursorDown(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalCursorDown, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalCursorLeft calls zg_terminal_cursor_left through purego.SyscallN.
+func (b *nativeBindings) fnTerminalCursorLeft(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalCursorLeft, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalCursorRight calls zg_terminal_cursor_right through purego.SyscallN.
+func (b *nativeBindings) fnTerminalCursorRight(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalCursorRight, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetCursorRow calls zg_terminal_set_cursor_row through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetCursorRow(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalSetCursorRow, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetCursorCol calls zg_terminal_set_cursor_col through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetCursorCol(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalSetCursorCol, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalCursorRowRelative calls zg_terminal_cursor_row_relative through purego.SyscallN.
+func (b *nativeBindings) fnTerminalCursorRowRelative(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalCursorRowRelative, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalCursorColRelative calls zg_terminal_cursor_col_relative through purego.SyscallN.
+func (b *nativeBindings) fnTerminalCursorColRelative(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalCursorColRelative, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSaveCursor calls zg_terminal_save_cursor through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSaveCursor(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrTerminalSaveCursor, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalRestoreCursor calls zg_terminal_restore_cursor through purego.SyscallN.
+func (b *nativeBindings) fnTerminalRestoreCursor(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrTerminalRestoreCursor, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalIndex calls zg_terminal_index through purego.SyscallN.
+func (b *nativeBindings) fnTerminalIndex(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrTerminalIndex, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalReverseIndex calls zg_terminal_reverse_index through purego.SyscallN.
+func (b *nativeBindings) fnTerminalReverseIndex(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrTerminalReverseIndex, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSwitchScreen calls zg_terminal_switch_screen through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSwitchScreen(p0 unsafe.Pointer, p1 uint8, p2 *unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	s2 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrTerminalSwitchScreen, f.args[:3]...)
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSwitchScreenMode calls zg_terminal_switch_screen_mode through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSwitchScreenMode(p0 unsafe.Pointer, p1 uint8, p2 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrTerminalSwitchScreenMode, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalActiveScreen calls zg_terminal_active_screen through purego.SyscallN.
+func (b *nativeBindings) fnTerminalActiveScreen(p0 unsafe.Pointer, p1 *unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalActiveScreen, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalScreen calls zg_terminal_screen through purego.SyscallN.
+func (b *nativeBindings) fnTerminalScreen(p0 unsafe.Pointer, p1 uint8, p2 *unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	s2 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrTerminalScreen, f.args[:3]...)
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalPrintAttributesInto calls zg_terminal_print_attributes_into through purego.SyscallN.
+func (b *nativeBindings) fnTerminalPrintAttributesInto(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr, p3 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	s3 := (*uintptr)(unsafe.Pointer(&f.out[0]))
+	*s3 = *p3
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrTerminalPrintAttributesInto, f.args[:4]...)
+	*p3 = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalHistoryString calls zg_terminal_history_string through purego.SyscallN.
+func (b *nativeBindings) fnTerminalHistoryString(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrTerminalHistoryString, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalHorizontalTab calls zg_terminal_horizontal_tab through purego.SyscallN.
+func (b *nativeBindings) fnTerminalHorizontalTab(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrTerminalHorizontalTab, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalHorizontalTabBack calls zg_terminal_horizontal_tab_back through purego.SyscallN.
+func (b *nativeBindings) fnTerminalHorizontalTabBack(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrTerminalHorizontalTabBack, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalTabSet calls zg_terminal_tab_set through purego.SyscallN.
+func (b *nativeBindings) fnTerminalTabSet(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrTerminalTabSet, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalTabReset calls zg_terminal_tab_reset through purego.SyscallN.
+func (b *nativeBindings) fnTerminalTabReset(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrTerminalTabReset, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalTabClear calls zg_terminal_tab_clear through purego.SyscallN.
+func (b *nativeBindings) fnTerminalTabClear(p0 unsafe.Pointer, p1 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalTabClear, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetTabstop calls zg_terminal_set_tabstop through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetTabstop(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalSetTabstop, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalUnsetTabstop calls zg_terminal_unset_tabstop through purego.SyscallN.
+func (b *nativeBindings) fnTerminalUnsetTabstop(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalUnsetTabstop, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalResetTabstops calls zg_terminal_reset_tabstops through purego.SyscallN.
+func (b *nativeBindings) fnTerminalResetTabstops(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalResetTabstops, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalScrollUp calls zg_terminal_scroll_up through purego.SyscallN.
+func (b *nativeBindings) fnTerminalScrollUp(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalScrollUp, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalScrollDown calls zg_terminal_scroll_down through purego.SyscallN.
+func (b *nativeBindings) fnTerminalScrollDown(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalScrollDown, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetTopAndBottomMargin calls zg_terminal_set_top_and_bottom_margin through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetTopAndBottomMargin(p0 unsafe.Pointer, p1 uintptr, p2 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrTerminalSetTopAndBottomMargin, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetLeftAndRightMargin calls zg_terminal_set_left_and_right_margin through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetLeftAndRightMargin(p0 unsafe.Pointer, p1 uintptr, p2 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrTerminalSetLeftAndRightMargin, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalScrollViewport calls zg_terminal_scroll_viewport through purego.SyscallN.
+func (b *nativeBindings) fnTerminalScrollViewport(p0 unsafe.Pointer, p1 uint8, p2 int, p3 uintptr, p4 int) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	f.args[3] = uintptr(p3)
+	f.args[4] = uintptr(p4)
+	r, _, _ := purego.SyscallN(b.addrTerminalScrollViewport, f.args[:5]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetScrollbackMaxBytes calls zg_terminal_set_scrollback_max_bytes through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetScrollbackMaxBytes(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalSetScrollbackMaxBytes, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalClearScrollbackMaxBytes calls zg_terminal_clear_scrollback_max_bytes through purego.SyscallN.
+func (b *nativeBindings) fnTerminalClearScrollbackMaxBytes(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrTerminalClearScrollbackMaxBytes, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetScrollbackMaxLines calls zg_terminal_set_scrollback_max_lines through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetScrollbackMaxLines(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalSetScrollbackMaxLines, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalClearScrollbackMaxLines calls zg_terminal_clear_scrollback_max_lines through purego.SyscallN.
+func (b *nativeBindings) fnTerminalClearScrollbackMaxLines(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrTerminalClearScrollbackMaxLines, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalInsertLines calls zg_terminal_insert_lines through purego.SyscallN.
+func (b *nativeBindings) fnTerminalInsertLines(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalInsertLines, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalDeleteLines calls zg_terminal_delete_lines through purego.SyscallN.
+func (b *nativeBindings) fnTerminalDeleteLines(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalDeleteLines, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalInsertBlanks calls zg_terminal_insert_blanks through purego.SyscallN.
+func (b *nativeBindings) fnTerminalInsertBlanks(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalInsertBlanks, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalDeleteChars calls zg_terminal_delete_chars through purego.SyscallN.
+func (b *nativeBindings) fnTerminalDeleteChars(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalDeleteChars, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalEraseChars calls zg_terminal_erase_chars through purego.SyscallN.
+func (b *nativeBindings) fnTerminalEraseChars(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalEraseChars, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalEraseLine calls zg_terminal_erase_line through purego.SyscallN.
+func (b *nativeBindings) fnTerminalEraseLine(p0 unsafe.Pointer, p1 uint8, p2 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrTerminalEraseLine, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalEraseDisplay calls zg_terminal_erase_display through purego.SyscallN.
+func (b *nativeBindings) fnTerminalEraseDisplay(p0 unsafe.Pointer, p1 uint8, p2 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrTerminalEraseDisplay, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalDecaln calls zg_terminal_decaln through purego.SyscallN.
+func (b *nativeBindings) fnTerminalDecaln(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrTerminalDecaln, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalResize calls zg_terminal_resize through purego.SyscallN.
+func (b *nativeBindings) fnTerminalResize(p0 unsafe.Pointer, p1 uint16, p2 uint16) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrTerminalResize, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalResizeCells calls zg_terminal_resize_cells through purego.SyscallN.
+func (b *nativeBindings) fnTerminalResizeCells(p0 unsafe.Pointer, p1 uint16, p2 uint16, p3 uint32, p4 uint32) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	f.args[3] = uintptr(p3)
+	f.args[4] = uintptr(p4)
+	r, _, _ := purego.SyscallN(b.addrTerminalResizeCells, f.args[:5]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalFormat calls zg_terminal_format_purego_v2 through purego.SyscallN.
+func (b *nativeBindings) fnTerminalFormat(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr, p3 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*FormatOptionsData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*FormatOptionsData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	f.args[2] = uintptr(p2)
+	f.args[3] = uintptr(p3)
+	r, _, _ := purego.SyscallN(b.addrTerminalFormat, f.args[:4]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalFormatSelection calls zg_terminal_format_selection_purego_v2 through purego.SyscallN.
+func (b *nativeBindings) fnTerminalFormatSelection(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 unsafe.Pointer, p3 uintptr, p4 uintptr, p5 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*FormatOptionsData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*FormatOptionsData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*SelectionData)(unsafe.Pointer(&f.out[1]))
+	*s2 = *(*SelectionData)(p2)
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	f.args[3] = uintptr(p3)
+	f.args[4] = uintptr(p4)
+	s5 := (*uint8)(unsafe.Pointer(&f.out[4]))
+	*s5 = *p5
+	f.args[5] = uintptr(unsafe.Pointer(s5))
+	r, _, _ := purego.SyscallN(b.addrTerminalFormatSelection, f.args[:6]...)
+	*p5 = *s5
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetPwd calls zg_terminal_set_pwd through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetPwd(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrTerminalSetPwd, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalGetPwd calls zg_terminal_get_pwd through purego.SyscallN.
+func (b *nativeBindings) fnTerminalGetPwd(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrTerminalGetPwd, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalGetTitle calls zg_terminal_get_title through purego.SyscallN.
+func (b *nativeBindings) fnTerminalGetTitle(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrTerminalGetTitle, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetTitle calls zg_terminal_set_title through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetTitle(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrTerminalSetTitle, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalBackgroundColor calls zg_terminal_background_color through purego.SyscallN.
+func (b *nativeBindings) fnTerminalBackgroundColor(p0 unsafe.Pointer, p1 *uint8, p2 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*RGBData)(unsafe.Pointer(&f.out[1]))
+	*s2 = *(*RGBData)(p2)
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrTerminalBackgroundColor, f.args[:3]...)
+	*p1 = *s1
+	*(*RGBData)(p2) = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalForegroundColor calls zg_terminal_foreground_color through purego.SyscallN.
+func (b *nativeBindings) fnTerminalForegroundColor(p0 unsafe.Pointer, p1 *uint8, p2 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*RGBData)(unsafe.Pointer(&f.out[1]))
+	*s2 = *(*RGBData)(p2)
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrTerminalForegroundColor, f.args[:3]...)
+	*p1 = *s1
+	*(*RGBData)(p2) = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalCursorColor calls zg_terminal_cursor_color through purego.SyscallN.
+func (b *nativeBindings) fnTerminalCursorColor(p0 unsafe.Pointer, p1 *uint8, p2 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*RGBData)(unsafe.Pointer(&f.out[1]))
+	*s2 = *(*RGBData)(p2)
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrTerminalCursorColor, f.args[:3]...)
+	*p1 = *s1
+	*(*RGBData)(p2) = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalPaletteColors calls zg_terminal_palette_colors through purego.SyscallN.
+func (b *nativeBindings) fnTerminalPaletteColors(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr, p3 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	s3 := (*uintptr)(unsafe.Pointer(&f.out[0]))
+	*s3 = *p3
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrTerminalPaletteColors, f.args[:4]...)
+	*p3 = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalModeEnabled calls zg_terminal_mode_enabled through purego.SyscallN.
+func (b *nativeBindings) fnTerminalModeEnabled(p0 unsafe.Pointer, p1 uint16, p2 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	s2 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrTerminalModeEnabled, f.args[:3]...)
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetMode calls zg_terminal_set_mode through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetMode(p0 unsafe.Pointer, p1 uint16, p2 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrTerminalSetMode, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetProtectedMode calls zg_terminal_set_protected_mode through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetProtectedMode(p0 unsafe.Pointer, p1 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalSetProtectedMode, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalConfigureCharset calls zg_terminal_configure_charset through purego.SyscallN.
+func (b *nativeBindings) fnTerminalConfigureCharset(p0 unsafe.Pointer, p1 uint8, p2 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrTerminalConfigureCharset, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalInvokeCharset calls zg_terminal_invoke_charset through purego.SyscallN.
+func (b *nativeBindings) fnTerminalInvokeCharset(p0 unsafe.Pointer, p1 uint8, p2 uint8, p3 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	f.args[3] = uintptr(p3)
+	r, _, _ := purego.SyscallN(b.addrTerminalInvokeCharset, f.args[:4]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalDeccolm calls zg_terminal_deccolm through purego.SyscallN.
+func (b *nativeBindings) fnTerminalDeccolm(p0 unsafe.Pointer, p1 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalDeccolm, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalCompress calls zg_terminal_compress through purego.SyscallN.
+func (b *nativeBindings) fnTerminalCompress(p0 unsafe.Pointer, p1 uint8, p2 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	s2 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrTerminalCompress, f.args[:3]...)
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalCompressionActivity calls zg_terminal_compression_activity through purego.SyscallN.
+func (b *nativeBindings) fnTerminalCompressionActivity(p0 unsafe.Pointer, p1 *uint64) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint64)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalCompressionActivity, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetDefaultBackgroundColor calls zg_terminal_set_default_background_color through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetDefaultBackgroundColor(p0 unsafe.Pointer, p1 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*RGBData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*RGBData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalSetDefaultBackgroundColor, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetDefaultForegroundColor calls zg_terminal_set_default_foreground_color through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetDefaultForegroundColor(p0 unsafe.Pointer, p1 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*RGBData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*RGBData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalSetDefaultForegroundColor, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetDefaultCursorColor calls zg_terminal_set_default_cursor_color through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetDefaultCursorColor(p0 unsafe.Pointer, p1 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*RGBData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*RGBData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalSetDefaultCursorColor, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetDefaultCursorStyle calls zg_terminal_set_default_cursor_style through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetDefaultCursorStyle(p0 unsafe.Pointer, p1 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalSetDefaultCursorStyle, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetDefaultCursorBlink calls zg_terminal_set_default_cursor_blink through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetDefaultCursorBlink(p0 unsafe.Pointer, p1 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalSetDefaultCursorBlink, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalResetDefaultCursorBlink calls zg_terminal_reset_default_cursor_blink through purego.SyscallN.
+func (b *nativeBindings) fnTerminalResetDefaultCursorBlink(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrTerminalResetDefaultCursorBlink, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalPaletteColor calls zg_terminal_palette_color through purego.SyscallN.
+func (b *nativeBindings) fnTerminalPaletteColor(p0 unsafe.Pointer, p1 uint8, p2 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	s2 := (*RGBData)(unsafe.Pointer(&f.out[0]))
+	*s2 = *(*RGBData)(p2)
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrTerminalPaletteColor, f.args[:3]...)
+	*(*RGBData)(p2) = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetPaletteColor calls zg_terminal_set_palette_color through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetPaletteColor(p0 unsafe.Pointer, p1 uint8, p2 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	s2 := (*RGBData)(unsafe.Pointer(&f.out[0]))
+	*s2 = *(*RGBData)(p2)
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrTerminalSetPaletteColor, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalResetPaletteColor calls zg_terminal_reset_palette_color through purego.SyscallN.
+func (b *nativeBindings) fnTerminalResetPaletteColor(p0 unsafe.Pointer, p1 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalResetPaletteColor, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalResetPalette calls zg_terminal_reset_palette through purego.SyscallN.
+func (b *nativeBindings) fnTerminalResetPalette(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrTerminalResetPalette, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetDefaultPaletteColor calls zg_terminal_set_default_palette_color through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetDefaultPaletteColor(p0 unsafe.Pointer, p1 uint8, p2 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	s2 := (*RGBData)(unsafe.Pointer(&f.out[0]))
+	*s2 = *(*RGBData)(p2)
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrTerminalSetDefaultPaletteColor, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalResetDefaultPalette calls zg_terminal_reset_default_palette through purego.SyscallN.
+func (b *nativeBindings) fnTerminalResetDefaultPalette(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrTerminalResetDefaultPalette, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetDefaultMode calls zg_terminal_set_default_mode through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetDefaultMode(p0 unsafe.Pointer, p1 uint16, p2 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrTerminalSetDefaultMode, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalResetModes calls zg_terminal_reset_modes through purego.SyscallN.
+func (b *nativeBindings) fnTerminalResetModes(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrTerminalResetModes, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSaveMode calls zg_terminal_save_mode through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSaveMode(p0 unsafe.Pointer, p1 uint16) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalSaveMode, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalRestoreMode calls zg_terminal_restore_mode through purego.SyscallN.
+func (b *nativeBindings) fnTerminalRestoreMode(p0 unsafe.Pointer, p1 uint16, p2 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	s2 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrTerminalRestoreMode, f.args[:3]...)
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetKittyGraphicsSizeLimit calls zg_terminal_set_kitty_graphics_size_limit through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetKittyGraphicsSizeLimit(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalSetKittyGraphicsSizeLimit, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetKittyGraphicsLoadingLimits calls zg_terminal_set_kitty_graphics_loading_limits through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetKittyGraphicsLoadingLimits(p0 unsafe.Pointer, p1 uint8, p2 unsafe.Pointer, p3 uintptr, p4 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	zigoEscape(p2)
+	f.args[2] = uintptr(p2)
+	f.args[3] = uintptr(p3)
+	f.args[4] = uintptr(p4)
+	r, _, _ := purego.SyscallN(b.addrTerminalSetKittyGraphicsLoadingLimits, f.args[:5]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalKittyImage calls zg_terminal_kitty_image through purego.SyscallN.
+func (b *nativeBindings) fnTerminalKittyImage(p0 unsafe.Pointer, p1 uint32, p2 *uint8, p3 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	s2 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	s3 := (*KittyImageData)(unsafe.Pointer(&f.out[1]))
+	*s3 = *(*KittyImageData)(p3)
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrTerminalKittyImage, f.args[:4]...)
+	*p2 = *s2
+	*(*KittyImageData)(p3) = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalKittyImageData calls zg_terminal_kitty_image_data through purego.SyscallN.
+func (b *nativeBindings) fnTerminalKittyImageData(p0 unsafe.Pointer, p1 uint32, p2 unsafe.Pointer, p3 uintptr, p4 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	zigoEscape(p2)
+	f.args[2] = uintptr(p2)
+	f.args[3] = uintptr(p3)
+	s4 := (*uintptr)(unsafe.Pointer(&f.out[0]))
+	*s4 = *p4
+	f.args[4] = uintptr(unsafe.Pointer(s4))
+	r, _, _ := purego.SyscallN(b.addrTerminalKittyImageData, f.args[:5]...)
+	*p4 = *s4
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalKittyAnimationTick calls zg_terminal_kitty_animation_tick through purego.SyscallN.
+func (b *nativeBindings) fnTerminalKittyAnimationTick(p0 unsafe.Pointer, p1 uint64, p2 *uint8, p3 *uint64) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	s2 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	s3 := (*uint64)(unsafe.Pointer(&f.out[1]))
+	*s3 = *p3
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrTerminalKittyAnimationTick, f.args[:4]...)
+	*p2 = *s2
+	*p3 = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalScrollRegion calls zg_terminal_scroll_region through purego.SyscallN.
+func (b *nativeBindings) fnTerminalScrollRegion(p0 unsafe.Pointer, p1 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*ScrollRegionData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*ScrollRegionData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalScrollRegion, f.args[:2]...)
+	*(*ScrollRegionData)(p1) = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalCharset calls zg_terminal_charset through purego.SyscallN.
+func (b *nativeBindings) fnTerminalCharset(p0 unsafe.Pointer, p1 uint8, p2 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	s2 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrTerminalCharset, f.args[:3]...)
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalMouseTracking calls zg_terminal_mouse_tracking through purego.SyscallN.
+func (b *nativeBindings) fnTerminalMouseTracking(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalMouseTracking, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalMouseTrackingSendsMotion calls zg_terminal_mouse_tracking_sends_motion through purego.SyscallN.
+func (b *nativeBindings) fnTerminalMouseTrackingSendsMotion(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalMouseTrackingSendsMotion, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalMouseReportFormat calls zg_terminal_mouse_report_format through purego.SyscallN.
+func (b *nativeBindings) fnTerminalMouseReportFormat(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrTerminalMouseReportFormat, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalModeReport calls zg_terminal_mode_report through purego.SyscallN.
+func (b *nativeBindings) fnTerminalModeReport(p0 unsafe.Pointer, p1 uint16, p2 uint8, p3 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	s3 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s3 = *p3
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrTerminalModeReport, f.args[:4]...)
+	*p3 = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalCellAt calls zg_terminal_cell_at through purego.SyscallN.
+func (b *nativeBindings) fnTerminalCellAt(p0 unsafe.Pointer, p1 uint8, p2 uint16, p3 uint32, p4 *uint8, p5 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	f.args[3] = uintptr(p3)
+	s4 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s4 = *p4
+	f.args[4] = uintptr(unsafe.Pointer(s4))
+	s5 := (*RenderCellData)(unsafe.Pointer(&f.out[1]))
+	*s5 = *(*RenderCellData)(p5)
+	f.args[5] = uintptr(unsafe.Pointer(s5))
+	r, _, _ := purego.SyscallN(b.addrTerminalCellAt, f.args[:6]...)
+	*p4 = *s4
+	*(*RenderCellData)(p5) = *s5
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalHyperlinkAt calls zg_terminal_hyperlink_at through purego.SyscallN.
+func (b *nativeBindings) fnTerminalHyperlinkAt(p0 unsafe.Pointer, p1 uint8, p2 uint16, p3 uint32, p4 *unsafe.Pointer, p5 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	f.args[3] = uintptr(p3)
+	s4 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s4 = *p4
+	f.args[4] = uintptr(unsafe.Pointer(s4))
+	s5 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s5 = *p5
+	f.args[5] = uintptr(unsafe.Pointer(s5))
+	r, _, _ := purego.SyscallN(b.addrTerminalHyperlinkAt, f.args[:6]...)
+	*p4 = *s4
+	*p5 = *s5
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnScreenViewportIsBottom calls zg_screen_viewport_is_bottom through purego.SyscallN.
+func (b *nativeBindings) fnScreenViewportIsBottom(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrScreenViewportIsBottom, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnScreenScrollClear calls zg_screen_scroll_clear through purego.SyscallN.
+func (b *nativeBindings) fnScreenScrollClear(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrScreenScrollClear, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnScreenClearSelection calls zg_screen_clear_selection through purego.SyscallN.
+func (b *nativeBindings) fnScreenClearSelection(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrScreenClearSelection, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnScreenEndHyperlink calls zg_screen_end_hyperlink through purego.SyscallN.
+func (b *nativeBindings) fnScreenEndHyperlink(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrScreenEndHyperlink, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnScreenMemoryUsage calls zg_screen_memory_usage through purego.SyscallN.
+func (b *nativeBindings) fnScreenMemoryUsage(p0 unsafe.Pointer, p1 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*MemoryUsageData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*MemoryUsageData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrScreenMemoryUsage, f.args[:2]...)
+	*(*MemoryUsageData)(p1) = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnScreenSelectAll calls zg_screen_select_all through purego.SyscallN.
+func (b *nativeBindings) fnScreenSelectAll(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrScreenSelectAll, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnScreenHasSelection calls zg_screen_has_selection through purego.SyscallN.
+func (b *nativeBindings) fnScreenHasSelection(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrScreenHasSelection, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnScreenSelectRange calls zg_screen_select_range through purego.SyscallN.
+func (b *nativeBindings) fnScreenSelectRange(p0 unsafe.Pointer, p1 uint16, p2 uint16, p3 uint16, p4 uint16, p5 uint8, p6 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	f.args[3] = uintptr(p3)
+	f.args[4] = uintptr(p4)
+	f.args[5] = uintptr(p5)
+	s6 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s6 = *p6
+	f.args[6] = uintptr(unsafe.Pointer(s6))
+	r, _, _ := purego.SyscallN(b.addrScreenSelectRange, f.args[:7]...)
+	*p6 = *s6
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnScreenSelectWord calls zg_screen_select_word through purego.SyscallN.
+func (b *nativeBindings) fnScreenSelectWord(p0 unsafe.Pointer, p1 uint16, p2 uint16, p3 unsafe.Pointer, p4 uintptr, p5 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	zigoEscape(p3)
+	f.args[3] = uintptr(p3)
+	f.args[4] = uintptr(p4)
+	s5 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s5 = *p5
+	f.args[5] = uintptr(unsafe.Pointer(s5))
+	r, _, _ := purego.SyscallN(b.addrScreenSelectWord, f.args[:6]...)
+	*p5 = *s5
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnScreenSelectLine calls zg_screen_select_line through purego.SyscallN.
+func (b *nativeBindings) fnScreenSelectLine(p0 unsafe.Pointer, p1 uint16, p2 uint16, p3 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	s3 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s3 = *p3
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrScreenSelectLine, f.args[:4]...)
+	*p3 = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnScreenSelectOutput calls zg_screen_select_output through purego.SyscallN.
+func (b *nativeBindings) fnScreenSelectOutput(p0 unsafe.Pointer, p1 uint16, p2 uint16, p3 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	s3 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s3 = *p3
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrScreenSelectOutput, f.args[:4]...)
+	*p3 = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnScreenSelectionString calls zg_screen_selection_string through purego.SyscallN.
+func (b *nativeBindings) fnScreenSelectionString(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrScreenSelectionString, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnScreenSelection calls zg_screen_selection through purego.SyscallN.
+func (b *nativeBindings) fnScreenSelection(p0 unsafe.Pointer, p1 *uint8, p2 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*SelectionData)(unsafe.Pointer(&f.out[1]))
+	*s2 = *(*SelectionData)(p2)
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrScreenSelection, f.args[:3]...)
+	*p1 = *s1
+	*(*SelectionData)(p2) = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnScreenSetSelection calls zg_screen_set_selection through purego.SyscallN.
+func (b *nativeBindings) fnScreenSetSelection(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*SelectionData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*SelectionData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uint8)(unsafe.Pointer(&f.out[3]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrScreenSetSelection, f.args[:3]...)
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnScreenViewportTop calls zg_screen_viewport_top through purego.SyscallN.
+func (b *nativeBindings) fnScreenViewportTop(p0 unsafe.Pointer, p1 *uint32) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint32)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrScreenViewportTop, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnScreenScrollbar calls zg_screen_scrollbar through purego.SyscallN.
+func (b *nativeBindings) fnScreenScrollbar(p0 unsafe.Pointer, p1 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*ScrollbarData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*ScrollbarData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrScreenScrollbar, f.args[:2]...)
+	*(*ScrollbarData)(p1) = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnScreenFormat calls zg_screen_format_purego_v2 through purego.SyscallN.
+func (b *nativeBindings) fnScreenFormat(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr, p3 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*FormatOptionsData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*FormatOptionsData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	f.args[2] = uintptr(p2)
+	f.args[3] = uintptr(p3)
+	r, _, _ := purego.SyscallN(b.addrScreenFormat, f.args[:4]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnScreenFormatSelection calls zg_screen_format_selection_purego_v2 through purego.SyscallN.
+func (b *nativeBindings) fnScreenFormatSelection(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 unsafe.Pointer, p3 uintptr, p4 uintptr, p5 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*FormatOptionsData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*FormatOptionsData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*SelectionData)(unsafe.Pointer(&f.out[1]))
+	*s2 = *(*SelectionData)(p2)
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	f.args[3] = uintptr(p3)
+	f.args[4] = uintptr(p4)
+	s5 := (*uint8)(unsafe.Pointer(&f.out[4]))
+	*s5 = *p5
+	f.args[5] = uintptr(unsafe.Pointer(s5))
+	r, _, _ := purego.SyscallN(b.addrScreenFormatSelection, f.args[:6]...)
+	*p5 = *s5
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnScreenSelectionContains calls zg_screen_selection_contains through purego.SyscallN.
+func (b *nativeBindings) fnScreenSelectionContains(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uint16, p3 uint32, p4 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*SelectionData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*SelectionData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	f.args[2] = uintptr(p2)
+	f.args[3] = uintptr(p3)
+	s4 := (*uint8)(unsafe.Pointer(&f.out[3]))
+	*s4 = *p4
+	f.args[4] = uintptr(unsafe.Pointer(s4))
+	r, _, _ := purego.SyscallN(b.addrScreenSelectionContains, f.args[:5]...)
+	*p4 = *s4
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnScreenSelectionAdjust calls zg_screen_selection_adjust through purego.SyscallN.
+func (b *nativeBindings) fnScreenSelectionAdjust(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uint8, p3 *uint8, p4 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*SelectionData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*SelectionData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	f.args[2] = uintptr(p2)
+	s3 := (*uint8)(unsafe.Pointer(&f.out[3]))
+	*s3 = *p3
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	s4 := (*SelectionData)(unsafe.Pointer(&f.out[4]))
+	*s4 = *(*SelectionData)(p4)
+	f.args[4] = uintptr(unsafe.Pointer(s4))
+	r, _, _ := purego.SyscallN(b.addrScreenSelectionAdjust, f.args[:5]...)
+	*p3 = *s3
+	*(*SelectionData)(p4) = *s4
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnScreenStartHyperlink calls zg_screen_start_hyperlink through purego.SyscallN.
+func (b *nativeBindings) fnScreenStartHyperlink(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr, p3 unsafe.Pointer, p4 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	zigoEscape(p3)
+	f.args[3] = uintptr(p3)
+	f.args[4] = uintptr(p4)
+	r, _, _ := purego.SyscallN(b.addrScreenStartHyperlink, f.args[:5]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSearchSearchClose calls zg_search_search_close through purego.SyscallN.
+func (b *nativeBindings) fnSearchSearchClose(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrSearchSearchClose, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSearchNeedle calls zg_search_needle through purego.SyscallN.
+func (b *nativeBindings) fnSearchNeedle(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrSearchNeedle, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSearchStatus calls zg_search_status through purego.SyscallN.
+func (b *nativeBindings) fnSearchStatus(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrSearchStatus, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSearchTick calls zg_search_tick through purego.SyscallN.
+func (b *nativeBindings) fnSearchTick(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrSearchTick, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSearchFeed calls zg_search_feed through purego.SyscallN.
+func (b *nativeBindings) fnSearchFeed(p0 unsafe.Pointer, p1 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrSearchFeed, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSearchAll calls zg_search_all through purego.SyscallN.
+func (b *nativeBindings) fnSearchAll(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrSearchAll, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSearchSelect calls zg_search_select through purego.SyscallN.
+func (b *nativeBindings) fnSearchSelect(p0 unsafe.Pointer, p1 uint8, p2 uint8, p3 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	s3 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s3 = *p3
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrSearchSelect, f.args[:4]...)
+	*p3 = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSearchMatchCount calls zg_search_match_count through purego.SyscallN.
+func (b *nativeBindings) fnSearchMatchCount(p0 unsafe.Pointer, p1 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uintptr)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrSearchMatchCount, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSearchMatches calls zg_search_matches through purego.SyscallN.
+func (b *nativeBindings) fnSearchMatches(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr, p3 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	s3 := (*uintptr)(unsafe.Pointer(&f.out[0]))
+	*s3 = *p3
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrSearchMatches, f.args[:4]...)
+	*p3 = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSearchViewportMatches calls zg_search_viewport_matches through purego.SyscallN.
+func (b *nativeBindings) fnSearchViewportMatches(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr, p3 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	s3 := (*uintptr)(unsafe.Pointer(&f.out[0]))
+	*s3 = *p3
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrSearchViewportMatches, f.args[:4]...)
+	*p3 = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSearchSelectedMatch calls zg_search_selected_match through purego.SyscallN.
+func (b *nativeBindings) fnSearchSelectedMatch(p0 unsafe.Pointer, p1 *uint8, p2 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*SelectionData)(unsafe.Pointer(&f.out[1]))
+	*s2 = *(*SelectionData)(p2)
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrSearchSelectedMatch, f.args[:3]...)
+	*p1 = *s1
+	*(*SelectionData)(p2) = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSearchSelectedIndex calls zg_search_selected_index through purego.SyscallN.
+func (b *nativeBindings) fnSearchSelectedIndex(p0 unsafe.Pointer, p1 *uint8, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrSearchSelectedIndex, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnGridRefGridRefClose calls zg_grid_ref_grid_ref_close through purego.SyscallN.
+func (b *nativeBindings) fnGridRefGridRefClose(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrGridRefGridRefClose, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnGridRefHasValue calls zg_grid_ref_has_value through purego.SyscallN.
+func (b *nativeBindings) fnGridRefHasValue(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrGridRefHasValue, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnGridRefPoint calls zg_grid_ref_point through purego.SyscallN.
+func (b *nativeBindings) fnGridRefPoint(p0 unsafe.Pointer, p1 uint8, p2 *uint8, p3 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	s2 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	s3 := (*GridPointData)(unsafe.Pointer(&f.out[1]))
+	*s3 = *(*GridPointData)(p3)
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrGridRefPoint, f.args[:4]...)
+	*p2 = *s2
+	*(*GridPointData)(p3) = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnGridRefSet calls zg_grid_ref_set through purego.SyscallN.
+func (b *nativeBindings) fnGridRefSet(p0 unsafe.Pointer, p1 uint8, p2 uint16, p3 uint32, p4 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	f.args[3] = uintptr(p3)
+	s4 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s4 = *p4
+	f.args[4] = uintptr(unsafe.Pointer(s4))
+	r, _, _ := purego.SyscallN(b.addrGridRefSet, f.args[:5]...)
+	*p4 = *s4
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnGridRefCell calls zg_grid_ref_cell through purego.SyscallN.
+func (b *nativeBindings) fnGridRefCell(p0 unsafe.Pointer, p1 *uint8, p2 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*RenderCellData)(unsafe.Pointer(&f.out[1]))
+	*s2 = *(*RenderCellData)(p2)
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrGridRefCell, f.args[:3]...)
+	*p1 = *s1
+	*(*RenderCellData)(p2) = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnGridRefGraphemes calls zg_grid_ref_graphemes through purego.SyscallN.
+func (b *nativeBindings) fnGridRefGraphemes(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr, p3 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	s3 := (*uintptr)(unsafe.Pointer(&f.out[0]))
+	*s3 = *p3
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrGridRefGraphemes, f.args[:4]...)
+	*p3 = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnGridRefHyperlinkUri calls zg_grid_ref_hyperlink_uri through purego.SyscallN.
+func (b *nativeBindings) fnGridRefHyperlinkUri(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrGridRefHyperlinkUri, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnGestureGestureClose calls zg_gesture_gesture_close through purego.SyscallN.
+func (b *nativeBindings) fnGestureGestureClose(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrGestureGestureClose, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnGestureSetBehaviors calls zg_gesture_set_behaviors through purego.SyscallN.
+func (b *nativeBindings) fnGestureSetBehaviors(p0 unsafe.Pointer, p1 uint8, p2 uint8, p3 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	f.args[3] = uintptr(p3)
+	r, _, _ := purego.SyscallN(b.addrGestureSetBehaviors, f.args[:4]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnGestureSetWordBoundaries calls zg_gesture_set_word_boundaries through purego.SyscallN.
+func (b *nativeBindings) fnGestureSetWordBoundaries(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrGestureSetWordBoundaries, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnGestureSetGeometry calls zg_gesture_set_geometry through purego.SyscallN.
+func (b *nativeBindings) fnGestureSetGeometry(p0 unsafe.Pointer, p1 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*GestureGeometryData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*GestureGeometryData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrGestureSetGeometry, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnGesturePress calls zg_gesture_press through purego.SyscallN.
+func (b *nativeBindings) fnGesturePress(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 *uint8, p3 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*GesturePressEventData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*GesturePressEventData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uint8)(unsafe.Pointer(&f.out[6]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	s3 := (*SelectionData)(unsafe.Pointer(&f.out[7]))
+	*s3 = *(*SelectionData)(p3)
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrGesturePress, f.args[:4]...)
+	*p2 = *s2
+	*(*SelectionData)(p3) = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnGestureDrag calls zg_gesture_drag through purego.SyscallN.
+func (b *nativeBindings) fnGestureDrag(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 *uint8, p3 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*GestureDragEventData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*GestureDragEventData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uint8)(unsafe.Pointer(&f.out[4]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	s3 := (*SelectionData)(unsafe.Pointer(&f.out[5]))
+	*s3 = *(*SelectionData)(p3)
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrGestureDrag, f.args[:4]...)
+	*p2 = *s2
+	*(*SelectionData)(p3) = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnGestureAutoscroll calls zg_gesture_autoscroll through purego.SyscallN.
+func (b *nativeBindings) fnGestureAutoscroll(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrGestureAutoscroll, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnGestureAutoscrollTick calls zg_gesture_autoscroll_tick through purego.SyscallN.
+func (b *nativeBindings) fnGestureAutoscrollTick(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 *uint8, p3 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*GestureDragEventData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*GestureDragEventData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uint8)(unsafe.Pointer(&f.out[4]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	s3 := (*SelectionData)(unsafe.Pointer(&f.out[5]))
+	*s3 = *(*SelectionData)(p3)
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrGestureAutoscrollTick, f.args[:4]...)
+	*p2 = *s2
+	*(*SelectionData)(p3) = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnGestureDeepPress calls zg_gesture_deep_press through purego.SyscallN.
+func (b *nativeBindings) fnGestureDeepPress(p0 unsafe.Pointer, p1 *uint8, p2 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*SelectionData)(unsafe.Pointer(&f.out[1]))
+	*s2 = *(*SelectionData)(p2)
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrGestureDeepPress, f.args[:3]...)
+	*p1 = *s1
+	*(*SelectionData)(p2) = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnGestureRelease calls zg_gesture_release through purego.SyscallN.
+func (b *nativeBindings) fnGestureRelease(p0 unsafe.Pointer, p1 uint16, p2 uint16) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrGestureRelease, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnGestureReset calls zg_gesture_reset through purego.SyscallN.
+func (b *nativeBindings) fnGestureReset(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrGestureReset, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnColorNameDefault calls zg_color_name_default through purego.SyscallN.
+func (b *nativeBindings) fnColorNameDefault(p0 uint8, p1 unsafe.Pointer) uint8 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	f.args[0] = uintptr(p0)
+	s1 := (*RGBData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*RGBData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrColorNameDefault, f.args[:2]...)
+	*(*RGBData)(p1) = *s1
+	zigoCallFrames.Put(f)
+	return uint8(r)
+}
+
+// fnStreamFreeStream calls zg_stream_free_stream through purego.SyscallN.
+func (b *nativeBindings) fnStreamFreeStream(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrStreamFreeStream, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamAtGround calls zg_stream_at_ground through purego.SyscallN.
+func (b *nativeBindings) fnStreamAtGround(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrStreamAtGround, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamFeedUntilGround calls zg_stream_feed_until_ground through purego.SyscallN.
+func (b *nativeBindings) fnStreamFeedUntilGround(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr, p3 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	s3 := (*FeedBoundaryData)(unsafe.Pointer(&f.out[0]))
+	*s3 = *(*FeedBoundaryData)(p3)
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrStreamFeedUntilGround, f.args[:4]...)
+	*(*FeedBoundaryData)(p3) = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamFeedUntil calls zg_stream_feed_until through purego.SyscallN.
+func (b *nativeBindings) fnStreamFeedUntil(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr, p3 uint16, p4 *uint8, p5 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	f.args[3] = uintptr(p3)
+	s4 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s4 = *p4
+	f.args[4] = uintptr(unsafe.Pointer(s4))
+	s5 := (*FeedStopData)(unsafe.Pointer(&f.out[1]))
+	*s5 = *(*FeedStopData)(p5)
+	f.args[5] = uintptr(unsafe.Pointer(s5))
+	r, _, _ := purego.SyscallN(b.addrStreamFeedUntil, f.args[:6]...)
+	*p4 = *s4
+	*(*FeedStopData)(p5) = *s5
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamFeed calls zg_stream_feed through purego.SyscallN.
+func (b *nativeBindings) fnStreamFeed(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrStreamFeed, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamNextEventValue calls zg_stream_next_event_value through purego.SyscallN.
+func (b *nativeBindings) fnStreamNextEventValue(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrStreamNextEventValue, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamResizeCells calls zg_stream_resize_cells through purego.SyscallN.
+func (b *nativeBindings) fnStreamResizeCells(p0 unsafe.Pointer, p1 uint16, p2 uint16, p3 uint32, p4 uint32) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	f.args[3] = uintptr(p3)
+	f.args[4] = uintptr(p4)
+	r, _, _ := purego.SyscallN(b.addrStreamResizeCells, f.args[:5]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamSetUnknownMaxBytes calls zg_stream_set_unknown_max_bytes through purego.SyscallN.
+func (b *nativeBindings) fnStreamSetUnknownMaxBytes(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrStreamSetUnknownMaxBytes, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamSetVersionReport calls zg_stream_set_version_report through purego.SyscallN.
+func (b *nativeBindings) fnStreamSetVersionReport(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr, p3 unsafe.Pointer, p4 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	zigoEscape(p3)
+	f.args[3] = uintptr(p3)
+	f.args[4] = uintptr(p4)
+	r, _, _ := purego.SyscallN(b.addrStreamSetVersionReport, f.args[:5]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamSetEnquiryResponse calls zg_stream_set_enquiry_response through purego.SyscallN.
+func (b *nativeBindings) fnStreamSetEnquiryResponse(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrStreamSetEnquiryResponse, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamColorSchemeChanged calls zg_stream_color_scheme_changed through purego.SyscallN.
+func (b *nativeBindings) fnStreamColorSchemeChanged(p0 unsafe.Pointer, p1 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrStreamColorSchemeChanged, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamClearColorScheme calls zg_stream_clear_color_scheme through purego.SyscallN.
+func (b *nativeBindings) fnStreamClearColorScheme(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrStreamClearColorScheme, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamOnDrag calls zg_stream_on_drag_purego_v2 through purego.SyscallN.
+func (b *nativeBindings) fnStreamOnDrag(p0 unsafe.Pointer, p1 uintptr, p2 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrStreamOnDrag, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamDragActive calls zg_stream_drag_active through purego.SyscallN.
+func (b *nativeBindings) fnStreamDragActive(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrStreamDragActive, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamDragRegisteredMimes calls zg_stream_drag_registered_mimes through purego.SyscallN.
+func (b *nativeBindings) fnStreamDragRegisteredMimes(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrStreamDragRegisteredMimes, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamDragClientAccepted calls zg_stream_drag_client_accepted through purego.SyscallN.
+func (b *nativeBindings) fnStreamDragClientAccepted(p0 unsafe.Pointer, p1 *uint8, p2 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uint8)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrStreamDragClientAccepted, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamDragMove calls zg_stream_drag_move through purego.SyscallN.
+func (b *nativeBindings) fnStreamDragMove(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 unsafe.Pointer, p3 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*DragMoveData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*DragMoveData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	zigoEscape(p2)
+	f.args[2] = uintptr(p2)
+	f.args[3] = uintptr(p3)
+	r, _, _ := purego.SyscallN(b.addrStreamDragMove, f.args[:4]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamDragLeave calls zg_stream_drag_leave through purego.SyscallN.
+func (b *nativeBindings) fnStreamDragLeave(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrStreamDragLeave, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamDragAddItem calls zg_stream_drag_add_item through purego.SyscallN.
+func (b *nativeBindings) fnStreamDragAddItem(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr, p3 unsafe.Pointer, p4 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	zigoEscape(p3)
+	f.args[3] = uintptr(p3)
+	f.args[4] = uintptr(p4)
+	r, _, _ := purego.SyscallN(b.addrStreamDragAddItem, f.args[:5]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamDragDrop calls zg_stream_drag_drop through purego.SyscallN.
+func (b *nativeBindings) fnStreamDragDrop(p0 unsafe.Pointer, p1 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*DragMoveData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*DragMoveData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrStreamDragDrop, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamDragClearItems calls zg_stream_drag_clear_items through purego.SyscallN.
+func (b *nativeBindings) fnStreamDragClearItems(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrStreamDragClearItems, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamOnClipboardWriteRequest calls zg_stream_on_clipboard_write_request_purego_v2 through purego.SyscallN.
+func (b *nativeBindings) fnStreamOnClipboardWriteRequest(p0 unsafe.Pointer, p1 uintptr, p2 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrStreamOnClipboardWriteRequest, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamOnClipboardReadRequest calls zg_stream_on_clipboard_read_request_purego_v2 through purego.SyscallN.
+func (b *nativeBindings) fnStreamOnClipboardReadRequest(p0 unsafe.Pointer, p1 uintptr, p2 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrStreamOnClipboardReadRequest, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamWriteContinuation calls zg_stream_write_continuation_purego_v2 through purego.SyscallN.
+func (b *nativeBindings) fnStreamWriteContinuation(p0 unsafe.Pointer, p1 uintptr, p2 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrStreamWriteContinuation, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamHasReplies calls zg_stream_has_replies through purego.SyscallN.
+func (b *nativeBindings) fnStreamHasReplies(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrStreamHasReplies, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamWriteSnapshot calls zg_stream_write_snapshot_purego_v2 through purego.SyscallN.
+func (b *nativeBindings) fnStreamWriteSnapshot(p0 unsafe.Pointer, p1 uintptr, p2 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrStreamWriteSnapshot, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnStreamWriteReplies calls zg_stream_write_replies_purego_v2 through purego.SyscallN.
+func (b *nativeBindings) fnStreamWriteReplies(p0 unsafe.Pointer, p1 uintptr, p2 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrStreamWriteReplies, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnClipboardRequestLocation calls zg_clipboard_request_location through purego.SyscallN.
+func (b *nativeBindings) fnClipboardRequestLocation(p0 unsafe.Pointer, p1 *int32) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*int32)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrClipboardRequestLocation, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnClipboardRequestName calls zg_clipboard_request_name through purego.SyscallN.
+func (b *nativeBindings) fnClipboardRequestName(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrClipboardRequestName, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnClipboardRequestGranted calls zg_clipboard_request_granted through purego.SyscallN.
+func (b *nativeBindings) fnClipboardRequestGranted(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrClipboardRequestGranted, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnClipboardRequestCanRemember calls zg_clipboard_request_can_remember through purego.SyscallN.
+func (b *nativeBindings) fnClipboardRequestCanRemember(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrClipboardRequestCanRemember, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnClipboardRequestContentCount calls zg_clipboard_request_content_count through purego.SyscallN.
+func (b *nativeBindings) fnClipboardRequestContentCount(p0 unsafe.Pointer, p1 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uintptr)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrClipboardRequestContentCount, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnClipboardRequestContentMime calls zg_clipboard_request_content_mime through purego.SyscallN.
+func (b *nativeBindings) fnClipboardRequestContentMime(p0 unsafe.Pointer, p1 uintptr, p2 *unsafe.Pointer, p3 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	s2 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	s3 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s3 = *p3
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrClipboardRequestContentMime, f.args[:4]...)
+	*p2 = *s2
+	*p3 = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnClipboardRequestMimeCount calls zg_clipboard_request_mime_count through purego.SyscallN.
+func (b *nativeBindings) fnClipboardRequestMimeCount(p0 unsafe.Pointer, p1 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uintptr)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrClipboardRequestMimeCount, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnClipboardRequestMime calls zg_clipboard_request_mime through purego.SyscallN.
+func (b *nativeBindings) fnClipboardRequestMime(p0 unsafe.Pointer, p1 uintptr, p2 *unsafe.Pointer, p3 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	s2 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	s3 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s3 = *p3
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrClipboardRequestMime, f.args[:4]...)
+	*p2 = *s2
+	*p3 = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnClipboardRequestAllow calls zg_clipboard_request_allow through purego.SyscallN.
+func (b *nativeBindings) fnClipboardRequestAllow(p0 unsafe.Pointer, p1 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrClipboardRequestAllow, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnClipboardRequestReplyText calls zg_clipboard_request_reply_text through purego.SyscallN.
+func (b *nativeBindings) fnClipboardRequestReplyText(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr, p3 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	f.args[3] = uintptr(p3)
+	r, _, _ := purego.SyscallN(b.addrClipboardRequestReplyText, f.args[:4]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnClipboardRequestClearReplyContents calls zg_clipboard_request_clear_reply_contents through purego.SyscallN.
+func (b *nativeBindings) fnClipboardRequestClearReplyContents(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrClipboardRequestClearReplyContents, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnClipboardRequestReplyContents calls zg_clipboard_request_reply_contents through purego.SyscallN.
+func (b *nativeBindings) fnClipboardRequestReplyContents(p0 unsafe.Pointer, p1 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrClipboardRequestReplyContents, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnClipboardRequestDeny calls zg_clipboard_request_deny through purego.SyscallN.
+func (b *nativeBindings) fnClipboardRequestDeny(p0 unsafe.Pointer, p1 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrClipboardRequestDeny, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnClipboardRequestAddContent calls zg_clipboard_request_add_content through purego.SyscallN.
+func (b *nativeBindings) fnClipboardRequestAddContent(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr, p3 unsafe.Pointer, p4 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	zigoEscape(p3)
+	f.args[3] = uintptr(p3)
+	f.args[4] = uintptr(p4)
+	r, _, _ := purego.SyscallN(b.addrClipboardRequestAddContent, f.args[:5]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnClipboardRequestContentData calls zg_clipboard_request_content_data through purego.SyscallN.
+func (b *nativeBindings) fnClipboardRequestContentData(p0 unsafe.Pointer, p1 uintptr, p2 *unsafe.Pointer, p3 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	s2 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	s3 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s3 = *p3
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrClipboardRequestContentData, f.args[:4]...)
+	*p2 = *s2
+	*p3 = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnNewOscParser calls zg_new_osc_parser through purego.SyscallN.
+func (b *nativeBindings) fnNewOscParser(p0 *unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	s0 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s0 = *p0
+	f.args[0] = uintptr(unsafe.Pointer(s0))
+	r, _, _ := purego.SyscallN(b.addrNewOscParser, f.args[:1]...)
+	*p0 = *s0
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnOscParserFreeOscParser calls zg_osc_parser_free_osc_parser through purego.SyscallN.
+func (b *nativeBindings) fnOscParserFreeOscParser(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrOscParserFreeOscParser, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnOscParserFeed calls zg_osc_parser_feed through purego.SyscallN.
+func (b *nativeBindings) fnOscParserFeed(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	r, _, _ := purego.SyscallN(b.addrOscParserFeed, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnOscParserEnd calls zg_osc_parser_end through purego.SyscallN.
+func (b *nativeBindings) fnOscParserEnd(p0 unsafe.Pointer, p1 uint8, p2 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	s2 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrOscParserEnd, f.args[:3]...)
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnOscParserReset calls zg_osc_parser_reset through purego.SyscallN.
+func (b *nativeBindings) fnOscParserReset(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrOscParserReset, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnDecodeSnapshot calls zg_decode_snapshot_purego_v2 through purego.SyscallN.
+func (b *nativeBindings) fnDecodeSnapshot(p0 uintptr, p1 unsafe.Pointer, p2 uintptr, p3 uintptr, p4 uintptr, p5 *unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	f.args[3] = uintptr(p3)
+	f.args[4] = uintptr(p4)
+	s5 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s5 = *p5
+	f.args[5] = uintptr(unsafe.Pointer(s5))
+	r, _, _ := purego.SyscallN(b.addrDecodeSnapshot, f.args[:6]...)
+	*p5 = *s5
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSnapshotDeinit calls zg_snapshot_deinit through purego.SyscallN.
+func (b *nativeBindings) fnSnapshotDeinit(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrSnapshotDeinit, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSnapshotRestoreInto calls zg_snapshot_restore_into through purego.SyscallN.
+func (b *nativeBindings) fnSnapshotRestoreInto(p0 unsafe.Pointer, p1 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrSnapshotRestoreInto, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSnapshotSnapshotTerminal calls zg_snapshot_snapshot_terminal through purego.SyscallN.
+func (b *nativeBindings) fnSnapshotSnapshotTerminal(p0 unsafe.Pointer, p1 *unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrSnapshotSnapshotTerminal, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSnapshotContinuation calls zg_snapshot_continuation through purego.SyscallN.
+func (b *nativeBindings) fnSnapshotContinuation(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrSnapshotContinuation, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnNewSnapshotDecoder calls zg_new_snapshot_decoder through purego.SyscallN.
+func (b *nativeBindings) fnNewSnapshotDecoder(p0 unsafe.Pointer, p1 uintptr, p2 *unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	s2 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrNewSnapshotDecoder, f.args[:3]...)
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSnapshotDecoderFreeSnapshotDecoder calls zg_snapshot_decoder_free_snapshot_decoder through purego.SyscallN.
+func (b *nativeBindings) fnSnapshotDecoderFreeSnapshotDecoder(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrSnapshotDecoderFreeSnapshotDecoder, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSnapshotDecoderReady calls zg_snapshot_decoder_ready through purego.SyscallN.
+func (b *nativeBindings) fnSnapshotDecoderReady(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrSnapshotDecoderReady, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSnapshotDecoderRestoreInto calls zg_snapshot_decoder_restore_into through purego.SyscallN.
+func (b *nativeBindings) fnSnapshotDecoderRestoreInto(p0 unsafe.Pointer, p1 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrSnapshotDecoderRestoreInto, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSnapshotDecoderContinuation calls zg_snapshot_decoder_continuation through purego.SyscallN.
+func (b *nativeBindings) fnSnapshotDecoderContinuation(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrSnapshotDecoderContinuation, f.args[:3]...)
+	*p1 = *s1
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSnapshotDecoderNext calls zg_snapshot_decoder_next through purego.SyscallN.
+func (b *nativeBindings) fnSnapshotDecoderNext(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 *uint8, p3 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	s2 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	s3 := (*SnapshotProgressData)(unsafe.Pointer(&f.out[1]))
+	*s3 = *(*SnapshotProgressData)(p3)
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrSnapshotDecoderNext, f.args[:4]...)
+	*p2 = *s2
+	*(*SnapshotProgressData)(p3) = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSnapshotDecoderSetKittyImageStorageLimit calls zg_snapshot_decoder_set_kitty_image_storage_limit through purego.SyscallN.
+func (b *nativeBindings) fnSnapshotDecoderSetKittyImageStorageLimit(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrSnapshotDecoderSetKittyImageStorageLimit, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSnapshotDecoderKittyCounts calls zg_snapshot_decoder_kitty_counts through purego.SyscallN.
+func (b *nativeBindings) fnSnapshotDecoderKittyCounts(p0 unsafe.Pointer, p1 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*SnapshotKittyCountsData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*SnapshotKittyCountsData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrSnapshotDecoderKittyCounts, f.args[:2]...)
+	*(*SnapshotKittyCountsData)(p1) = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnNewRenderState calls zg_new_render_state through purego.SyscallN.
+func (b *nativeBindings) fnNewRenderState(p0 *unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	s0 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s0 = *p0
+	f.args[0] = uintptr(unsafe.Pointer(s0))
+	r, _, _ := purego.SyscallN(b.addrNewRenderState, f.args[:1]...)
+	*p0 = *s0
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnRenderStateDeinit calls zg_render_state_deinit through purego.SyscallN.
+func (b *nativeBindings) fnRenderStateDeinit(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrRenderStateDeinit, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnRenderStateUpdate calls zg_render_state_update through purego.SyscallN.
+func (b *nativeBindings) fnRenderStateUpdate(p0 unsafe.Pointer, p1 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrRenderStateUpdate, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnRenderStateClean calls zg_render_state_clean through purego.SyscallN.
+func (b *nativeBindings) fnRenderStateClean(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrRenderStateClean, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnRenderStateCursor calls zg_render_state_cursor through purego.SyscallN.
+func (b *nativeBindings) fnRenderStateCursor(p0 unsafe.Pointer, p1 *uint64) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint64)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrRenderStateCursor, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnRenderStateColors calls zg_render_state_colors through purego.SyscallN.
+func (b *nativeBindings) fnRenderStateColors(p0 unsafe.Pointer, p1 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*RenderColorsData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*RenderColorsData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrRenderStateColors, f.args[:2]...)
+	*(*RenderColorsData)(p1) = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnRenderStateCellCount calls zg_render_state_cell_count through purego.SyscallN.
+func (b *nativeBindings) fnRenderStateCellCount(p0 unsafe.Pointer, p1 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uintptr)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrRenderStateCellCount, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnRenderStateCells calls zg_render_state_cells through purego.SyscallN.
+func (b *nativeBindings) fnRenderStateCells(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr, p3 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	s3 := (*uintptr)(unsafe.Pointer(&f.out[0]))
+	*s3 = *p3
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrRenderStateCells, f.args[:4]...)
+	*p3 = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnRenderStateDirty calls zg_render_state_dirty through purego.SyscallN.
+func (b *nativeBindings) fnRenderStateDirty(p0 unsafe.Pointer, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrRenderStateDirty, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnRenderStateDirtyRows calls zg_render_state_dirty_rows through purego.SyscallN.
+func (b *nativeBindings) fnRenderStateDirtyRows(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr, p3 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	s3 := (*uintptr)(unsafe.Pointer(&f.out[0]))
+	*s3 = *p3
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrRenderStateDirtyRows, f.args[:4]...)
+	*p3 = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnRenderStateRowCells calls zg_render_state_row_cells through purego.SyscallN.
+func (b *nativeBindings) fnRenderStateRowCells(p0 unsafe.Pointer, p1 uint16, p2 unsafe.Pointer, p3 uintptr, p4 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	zigoEscape(p2)
+	f.args[2] = uintptr(p2)
+	f.args[3] = uintptr(p3)
+	s4 := (*uintptr)(unsafe.Pointer(&f.out[0]))
+	*s4 = *p4
+	f.args[4] = uintptr(unsafe.Pointer(s4))
+	r, _, _ := purego.SyscallN(b.addrRenderStateRowCells, f.args[:5]...)
+	*p4 = *s4
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnRenderStateGraphemes calls zg_render_state_graphemes through purego.SyscallN.
+func (b *nativeBindings) fnRenderStateGraphemes(p0 unsafe.Pointer, p1 uint16, p2 uint16, p3 unsafe.Pointer, p4 uintptr, p5 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	zigoEscape(p3)
+	f.args[3] = uintptr(p3)
+	f.args[4] = uintptr(p4)
+	s5 := (*uintptr)(unsafe.Pointer(&f.out[0]))
+	*s5 = *p5
+	f.args[5] = uintptr(unsafe.Pointer(s5))
+	r, _, _ := purego.SyscallN(b.addrRenderStateGraphemes, f.args[:6]...)
+	*p5 = *s5
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnRenderStateHyperlinkAt calls zg_render_state_hyperlink_at through purego.SyscallN.
+func (b *nativeBindings) fnRenderStateHyperlinkAt(p0 unsafe.Pointer, p1 uint16, p2 uint16, p3 *unsafe.Pointer, p4 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	s3 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s3 = *p3
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	s4 := (*uintptr)(unsafe.Pointer(&f.out[1]))
+	*s4 = *p4
+	f.args[4] = uintptr(unsafe.Pointer(s4))
+	r, _, _ := purego.SyscallN(b.addrRenderStateHyperlinkAt, f.args[:5]...)
+	*p3 = *s3
+	*p4 = *s4
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnRenderStateImagePlacementCount calls zg_render_state_image_placement_count through purego.SyscallN.
+func (b *nativeBindings) fnRenderStateImagePlacementCount(p0 unsafe.Pointer, p1 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uintptr)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrRenderStateImagePlacementCount, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnRenderStateImagePlacements calls zg_render_state_image_placements through purego.SyscallN.
+func (b *nativeBindings) fnRenderStateImagePlacements(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr, p3 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	s3 := (*uintptr)(unsafe.Pointer(&f.out[0]))
+	*s3 = *p3
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrRenderStateImagePlacements, f.args[:4]...)
+	*p3 = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnRenderStateImagePlacementsGeneration calls zg_render_state_image_placements_generation through purego.SyscallN.
+func (b *nativeBindings) fnRenderStateImagePlacementsGeneration(p0 unsafe.Pointer, p1 *uint64) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint64)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrRenderStateImagePlacementsGeneration, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnNewKittyImages calls zg_new_kitty_images through purego.SyscallN.
+func (b *nativeBindings) fnNewKittyImages(p0 *unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	s0 := (*unsafe.Pointer)(unsafe.Pointer(&f.out[0]))
+	*s0 = *p0
+	f.args[0] = uintptr(unsafe.Pointer(s0))
+	r, _, _ := purego.SyscallN(b.addrNewKittyImages, f.args[:1]...)
+	*p0 = *s0
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnKittyImagesFreeKittyImages calls zg_kitty_images_free_kitty_images through purego.SyscallN.
+func (b *nativeBindings) fnKittyImagesFreeKittyImages(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrKittyImagesFreeKittyImages, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnKittyImagesUpdate calls zg_kitty_images_update through purego.SyscallN.
+func (b *nativeBindings) fnKittyImagesUpdate(p0 unsafe.Pointer, p1 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrKittyImagesUpdate, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnKittyImagesPlacementCount calls zg_kitty_images_placement_count through purego.SyscallN.
+func (b *nativeBindings) fnKittyImagesPlacementCount(p0 unsafe.Pointer, p1 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*uintptr)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrKittyImagesPlacementCount, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnKittyImagesPlacements calls zg_kitty_images_placements through purego.SyscallN.
+func (b *nativeBindings) fnKittyImagesPlacements(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr, p3 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	s3 := (*uintptr)(unsafe.Pointer(&f.out[0]))
+	*s3 = *p3
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrKittyImagesPlacements, f.args[:4]...)
+	*p3 = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnUnicodeCodepointWidth calls zg_unicode_codepoint_width through purego.SyscallN.
+func (b *nativeBindings) fnUnicodeCodepointWidth(p0 uint32, p1 *uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	f.args[0] = uintptr(p0)
+	s1 := (*uint8)(unsafe.Pointer(&f.out[0]))
+	*s1 = *p1
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	r, _, _ := purego.SyscallN(b.addrUnicodeCodepointWidth, f.args[:2]...)
+	*p1 = *s1
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnGraphemeWidth calls zg_grapheme_width through purego.SyscallN.
+func (b *nativeBindings) fnGraphemeWidth(p0 unsafe.Pointer, p1 uintptr) uint8 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrGraphemeWidth, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return uint8(r)
+}
+
+// fnFreeBuffer calls zg_free_buffer through purego.SyscallN.
+func (b *nativeBindings) fnFreeBuffer(p0 unsafe.Pointer, p1 uintptr) {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	purego.SyscallN(b.addrFreeBuffer, f.args[:2]...)
+	zigoCallFrames.Put(f)
+}
+
+// fnFreeString calls zg_free_string through purego.SyscallN.
+func (b *nativeBindings) fnFreeString(p0 unsafe.Pointer, p1 uintptr) {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	purego.SyscallN(b.addrFreeString, f.args[:2]...)
+	zigoCallFrames.Put(f)
+}
+
+// fnSgrAttributeCount calls zg_sgr_attribute_count through purego.SyscallN.
+func (b *nativeBindings) fnSgrAttributeCount(p0 unsafe.Pointer, p1 uintptr, p2 uint32, p3 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	s3 := (*uintptr)(unsafe.Pointer(&f.out[0]))
+	*s3 = *p3
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrSgrAttributeCount, f.args[:4]...)
+	*p3 = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnSgrAttributeAt calls zg_sgr_attribute_at through purego.SyscallN.
+func (b *nativeBindings) fnSgrAttributeAt(p0 unsafe.Pointer, p1 uintptr, p2 uint32, p3 uintptr, p4 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	f.args[3] = uintptr(p3)
+	zigoEscape(p4)
+	f.args[4] = uintptr(p4)
+	r, _, _ := purego.SyscallN(b.addrSgrAttributeAt, f.args[:5]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
 
 // TerminalCols calls the generated purego ABI wrapper for zg_terminal_cols.
 func TerminalCols(self unsafe.Pointer) (uint16, int32) {
