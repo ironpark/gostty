@@ -1965,7 +1965,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 825,
+            "line": 859,
             "column": 34
           },
           "type": {
@@ -1978,7 +1978,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 825,
+            "line": 859,
             "column": 55
           },
           "type": {
@@ -2005,7 +2005,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 825,
+        "line": 859,
         "column": 8
       },
       "zig_path": "newStream",
@@ -8157,7 +8157,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 844,
+            "line": 878,
             "column": 34
           },
           "type": {
@@ -8171,7 +8171,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 844,
+        "line": 878,
         "column": 8
       },
       "zig_path": "freeStream",
@@ -8188,7 +8188,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 575,
+        "line": 609,
         "column": 12
       },
       "symbol": "zg_stream_at_ground"
@@ -8204,7 +8204,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 582,
+            "line": 616,
             "column": 43
           },
           "type": {
@@ -8226,7 +8226,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 582,
+        "line": 616,
         "column": 12
       },
       "symbol": "zg_stream_feed_until_ground"
@@ -8242,7 +8242,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 597,
+            "line": 631,
             "column": 37
           },
           "type": {
@@ -8262,7 +8262,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 597,
+            "line": 631,
             "column": 55
           },
           "type": {
@@ -8281,10 +8281,50 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 597,
+        "line": 631,
         "column": 12
       },
       "symbol": "zg_stream_feed_until"
+    },
+    {
+      "doc": "Feed bytes through the first render hold that ends in them, and return\nhow many were consumed: all of them when no hold ends.\n\nA program drawing frame after frame, each in a hold, begins the next in\nthe same piece of output that ends the last. Fed whole, the terminal is\nalways amid a frame when a renderer looks, and the last frame it read\nstays up until the program stops. Fed through the end of each hold, a\nrenderer can copy the frame just finished before feeding the rest.",
+      "name": "feedThroughHoldEnd",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "data",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 586,
+            "column": 46
+          },
+          "type": {
+            "const": true,
+            "element": {
+              "bits": 8,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          }
+        }
+      ],
+      "receiver": "Stream",
+      "return": {
+        "bits": 64,
+        "is_usize": true,
+        "kind": "int",
+        "signed": false
+      },
+      "source": {
+        "path": "stream.zig",
+        "line": 586,
+        "column": 12
+      },
+      "symbol": "zg_stream_feed_through_hold_end"
     },
     {
       "doc": "Feed bytes to the parser, applying them to the terminal.",
@@ -8306,7 +8346,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 570,
+            "line": 574,
             "column": 32
           },
           "type": {
@@ -8327,7 +8367,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 570,
+        "line": 574,
         "column": 12
       },
       "symbol": "zg_stream_feed"
@@ -8353,7 +8393,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 686,
+        "line": 720,
         "column": 12
       },
       "symbol": "zg_stream_next_event_value"
@@ -8369,7 +8409,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 634,
+            "line": 668,
             "column": 9
           },
           "type": {
@@ -8385,7 +8425,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 635,
+            "line": 669,
             "column": 9
           },
           "type": {
@@ -8401,7 +8441,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 636,
+            "line": 670,
             "column": 9
           },
           "type": {
@@ -8417,7 +8457,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 637,
+            "line": 671,
             "column": 9
           },
           "type": {
@@ -8441,7 +8481,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 632,
+        "line": 666,
         "column": 12
       },
       "symbol": "zg_stream_resize_cells"
@@ -8457,7 +8497,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 721,
+            "line": 755,
             "column": 46
           },
           "type": {
@@ -8474,7 +8514,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 721,
+        "line": 755,
         "column": 12
       },
       "symbol": "zg_stream_set_unknown_max_bytes"
@@ -8491,7 +8531,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 736,
+            "line": 770,
             "column": 44
           },
           "type": {
@@ -8512,7 +8552,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 736,
+            "line": 770,
             "column": 62
           },
           "type": {
@@ -8533,7 +8573,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 736,
+        "line": 770,
         "column": 12
       },
       "symbol": "zg_stream_set_version_report"
@@ -8550,7 +8590,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 753,
+            "line": 787,
             "column": 46
           },
           "type": {
@@ -8571,7 +8611,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 753,
+        "line": 787,
         "column": 12
       },
       "symbol": "zg_stream_set_enquiry_response"
@@ -8587,7 +8627,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 768,
+            "line": 802,
             "column": 46
           },
           "type": {
@@ -8602,7 +8642,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 768,
+        "line": 802,
         "column": 12
       },
       "symbol": "zg_stream_color_scheme_changed"
@@ -8618,7 +8658,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 781,
+        "line": 815,
         "column": 12
       },
       "symbol": "zg_stream_clear_color_scheme"
@@ -8987,7 +9027,7 @@
           "name_source": "ast",
           "retention": "retained",
           "source": {
-            "line": 789,
+            "line": 823,
             "column": 9
           },
           "type": {
@@ -9020,7 +9060,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 790,
+            "line": 824,
             "column": 9
           },
           "type": {
@@ -9037,7 +9077,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 787,
+        "line": 821,
         "column": 12
       },
       "symbol": "zg_stream_on_clipboard_write_request"
@@ -9055,7 +9095,7 @@
           "name_source": "ast",
           "retention": "retained",
           "source": {
-            "line": 801,
+            "line": 835,
             "column": 9
           },
           "type": {
@@ -9088,7 +9128,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 802,
+            "line": 836,
             "column": 9
           },
           "type": {
@@ -9105,7 +9145,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 799,
+        "line": 833,
         "column": 12
       },
       "symbol": "zg_stream_on_clipboard_read_request"
@@ -9121,7 +9161,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 645,
+            "line": 679,
             "column": 45
           },
           "type": {
@@ -9143,7 +9183,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 645,
+        "line": 679,
         "column": 12
       },
       "symbol": "zg_stream_write_continuation"
@@ -9159,7 +9199,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 603,
+        "line": 637,
         "column": 12
       },
       "symbol": "zg_stream_has_replies"
@@ -9175,7 +9215,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 652,
+            "line": 686,
             "column": 41
           },
           "type": {
@@ -9221,7 +9261,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 652,
+        "line": 686,
         "column": 12
       },
       "symbol": "zg_stream_write_snapshot"
@@ -9237,7 +9277,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 616,
+            "line": 650,
             "column": 40
           },
           "type": {
@@ -9257,7 +9297,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 616,
+        "line": 650,
         "column": 12
       },
       "symbol": "zg_stream_write_replies"
@@ -16187,7 +16227,7 @@
       "name": "FeedBoundary",
       "source": {
         "path": "stream.zig",
-        "line": 856,
+        "line": 890,
         "column": 11
       },
       "zig_path": "stream.FeedBoundary"
@@ -16276,7 +16316,7 @@
       "registered_value": true,
       "source": {
         "path": "stream.zig",
-        "line": 872,
+        "line": 906,
         "column": 11
       },
       "zig_path": "stream.FeedBoundaries"
@@ -16360,7 +16400,7 @@
       "name": "FeedStop",
       "source": {
         "path": "stream.zig",
-        "line": 947,
+        "line": 981,
         "column": 11
       },
       "zig_path": "stream.FeedStop"
@@ -16392,7 +16432,7 @@
       "text": true,
       "source": {
         "path": "stream.zig",
-        "line": 912,
+        "line": 946,
         "column": 11
       },
       "zig_path": "stream.ControlString"
@@ -16422,7 +16462,7 @@
       "text": true,
       "source": {
         "path": "stream.zig",
-        "line": 915,
+        "line": 949,
         "column": 11
       },
       "zig_path": "stream.ControlStringStart"
@@ -16467,7 +16507,7 @@
       "text": true,
       "source": {
         "path": "stream.zig",
-        "line": 926,
+        "line": 960,
         "column": 11
       },
       "zig_path": "stream.ControlStringEnd"

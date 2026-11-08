@@ -346,3 +346,33 @@ func TestSessionResizeReportsInBandSize(t *testing.T) {
 		t.Errorf("reply = %q, want %q", got, want)
 	}
 }
+
+// A feed through a hold's end stops just past it, so the frame the program
+// finished can be read before the next one it began; with no hold ending,
+// it feeds everything.
+func TestFeedThroughHoldEnd(t *testing.T) {
+	term, stream := newStreamPair(t, 20, 3)
+	first := "\x1b[?2026h\x1b[Hfirst\x1b[38;5;1m!\x1b[m\x1b[?2026l"
+	data := []byte(first + "\x1b[?2026h\x1b[Hsecond")
+	n := stream.FeedThroughHoldEnd(data)
+	if int(n) != len(first) {
+		t.Fatalf("consumed %d, want %d, through the first hold's end", n, len(first))
+	}
+	if text, _ := term.PlainText(); !strings.HasPrefix(text, "first!") {
+		t.Fatalf("screen %q, want the first frame", text)
+	}
+	if n := stream.FeedThroughHoldEnd(data[n:]); int(n) != len(data)-len(first) {
+		t.Fatalf("with no hold ending, consumed %d of %d", n, len(data)-len(first))
+	}
+	if text, _ := term.PlainText(); !strings.HasPrefix(text, "second") {
+		t.Fatalf("screen %q, want the second frame", text)
+	}
+	// A sequence cut at the end of a piece is taken whole once it is.
+	part := []byte("\x1b[?2026")
+	if n := stream.FeedThroughHoldEnd(part); int(n) != len(part) {
+		t.Fatalf("a cut sequence consumed %d of %d", n, len(part))
+	}
+	if n := stream.FeedThroughHoldEnd([]byte("lafter")); n != 1 {
+		t.Fatalf("the cut hold's end consumed %d, want 1", n)
+	}
+}

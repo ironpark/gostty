@@ -353,6 +353,8 @@ pub const Stream = struct {
     /// What `nextEventValue` is materializing. Its payload stays readable until
     /// the following call.
     current: ?Queued = null,
+    /// Set as a render hold ends, for `feedThroughHoldEnd`.
+    hold_ended: bool = false,
 
     const Queued = struct {
         kind: StreamEvent,
@@ -428,7 +430,9 @@ pub const Stream = struct {
     }
 
     fn onRenderHold(handler: *vt.TerminalStream.Handler, held: bool) void {
-        streamFromHandler(handler).push(.{ .kind = .render_hold, .held = held });
+        const self = streamFromHandler(handler);
+        if (!held) self.hold_ended = true;
+        self.push(.{ .kind = .render_hold, .held = held });
     }
 
     /// A query the terminal answered itself, such as a device status report or
@@ -569,6 +573,36 @@ pub const Stream = struct {
     /// Feed bytes to the parser, applying them to the terminal.
     pub fn feed(self: *Stream, bytes: []const u8) void {
         self.inner.nextSlice(bytes);
+    }
+
+    /// Feed bytes through the first render hold that ends in them, and return
+    /// how many were consumed: all of them when no hold ends.
+    ///
+    /// A program drawing frame after frame, each in a hold, begins the next in
+    /// the same piece of output that ends the last. Fed whole, the terminal is
+    /// always amid a frame when a renderer looks, and the last frame it read
+    /// stays up until the program stops. Fed through the end of each hold, a
+    /// renderer can copy the frame just finished before feeding the rest.
+    pub fn feedThroughHoldEnd(self: *Stream, data: []const u8) usize {
+        self.hold_ended = false;
+        var at: usize = 0;
+        while (at < data.len) {
+            if (self.inner.ground()) {
+                // Up to the next escape, nothing can end a hold.
+                const esc = std.mem.indexOfScalarPos(u8, data, at, 0x1b) orelse data.len;
+                self.inner.nextSlice(data[at..esc]);
+                at = esc;
+                if (at == data.len) break;
+                // The escape itself, leaving ground, so asking for ground
+                // stops at the end of its sequence rather than at once.
+                self.inner.nextSlice(data[at .. at + 1]);
+                at += 1;
+            }
+            const stop = self.inner.nextSliceUntil(data[at..], .initOne(.ground)) orelse return data.len;
+            at += stop.consumed;
+            if (self.hold_ended) return at;
+        }
+        return at;
     }
 
     /// Whether the parser is between UTF-8 codepoints and VT sequences.

@@ -54,6 +54,7 @@ const stream_group = Stream.members(p.functions(api, .{
     Stream.func("atGround", .{}),
     Stream.func("feedUntilGround", .{ .params = &.{p.bytesArg(1)} }),
     Stream.func("feedUntil", .{ .params = &.{p.bytesArg(1)} }),
+    Stream.func("feedThroughHoldEnd", .{ .params = &.{p.bytesArg(1)} }),
     // The writer adapter makes fmt.Fprintf(stream, ...) feed VT bytes, and the
     // string_writer beside it keeps io.WriteString off the copy path. `feed`
     // takes bytes rather than text -- what arrives from a pty is not UTF-8 by

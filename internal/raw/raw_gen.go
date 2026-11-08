@@ -295,6 +295,7 @@ type nativeBindings struct {
 	addrStreamAtGround                           uintptr
 	addrStreamFeedUntilGround                    uintptr
 	addrStreamFeedUntil                          uintptr
+	addrStreamFeedThroughHoldEnd                 uintptr
 	addrStreamFeed                               uintptr
 	addrStreamNextEventValue                     uintptr
 	addrStreamResizeCells                        uintptr
@@ -1786,6 +1787,10 @@ func loadCandidate(path string) error {
 	if err != nil {
 		return fail("zg_stream_feed_until", err)
 	}
+	addrStreamFeedThroughHoldEnd, err := resolveSymbol(handle, "zg_stream_feed_through_hold_end")
+	if err != nil {
+		return fail("zg_stream_feed_through_hold_end", err)
+	}
 	addrStreamFeed, err := resolveSymbol(handle, "zg_stream_feed")
 	if err != nil {
 		return fail("zg_stream_feed", err)
@@ -2361,6 +2366,7 @@ func loadCandidate(path string) error {
 	next.addrStreamAtGround = addrStreamAtGround
 	next.addrStreamFeedUntilGround = addrStreamFeedUntilGround
 	next.addrStreamFeedUntil = addrStreamFeedUntil
+	next.addrStreamFeedThroughHoldEnd = addrStreamFeedThroughHoldEnd
 	next.addrStreamFeed = addrStreamFeed
 	next.addrStreamNextEventValue = addrStreamNextEventValue
 	next.addrStreamResizeCells = addrStreamResizeCells
@@ -6092,6 +6098,23 @@ func (b *nativeBindings) fnStreamFeedUntil(p0 unsafe.Pointer, p1 unsafe.Pointer,
 	return int32(r)
 }
 
+// fnStreamFeedThroughHoldEnd calls zg_stream_feed_through_hold_end through purego.SyscallN.
+func (b *nativeBindings) fnStreamFeedThroughHoldEnd(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr, p3 *uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	s3 := (*uintptr)(unsafe.Pointer(&f.out[0]))
+	*s3 = *p3
+	f.args[3] = uintptr(unsafe.Pointer(s3))
+	r, _, _ := purego.SyscallN(b.addrStreamFeedThroughHoldEnd, f.args[:4]...)
+	*p3 = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
 // fnStreamFeed calls zg_stream_feed through purego.SyscallN.
 func (b *nativeBindings) fnStreamFeed(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr) int32 {
 	f := zigoCallFrames.Get().(*zigoCallFrame)
@@ -9075,6 +9098,17 @@ func StreamFeedUntil(self unsafe.Pointer, data []uint8, boundaries uint16) (Feed
 	var outResult FeedStopData
 	code := bindings().fnStreamFeedUntil(self, dataPtr, uintptr(len(data)), boundaries, &outResultHas, unsafe.Pointer(&outResult))
 	return outResult, outResultHas != 0, code
+}
+
+// StreamFeedThroughHoldEnd calls the generated purego ABI wrapper for zg_stream_feed_through_hold_end.
+func StreamFeedThroughHoldEnd(self unsafe.Pointer, data []uint8) (uint, int32) {
+	var dataPtr unsafe.Pointer
+	if len(data) != 0 {
+		dataPtr = unsafe.Pointer(&data[0])
+	}
+	var outResult uintptr
+	code := bindings().fnStreamFeedThroughHoldEnd(self, dataPtr, uintptr(len(data)), &outResult)
+	return uint(outResult), code
 }
 
 // StreamFeed calls the generated purego ABI wrapper for zg_stream_feed.

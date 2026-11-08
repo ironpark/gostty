@@ -4868,6 +4868,38 @@ func (s *Stream) FeedUntil(data []byte, boundaries FeedBoundaries) (FeedStop, bo
 	return zigoMustMatch(s.zigoCheckedFeedUntil(data, boundaries))
 }
 
+// zigoCheckedFeedThroughHoldEnd is the checked form of FeedThroughHoldEnd, which a plugin replaced.
+func (s *Stream) zigoCheckedFeedThroughHoldEnd(data []byte) (uint, error) {
+	ptr, err := zigoCheckedPointer("Stream.FeedThroughHoldEnd receiver", s)
+	if err != nil {
+		return 0, err
+	}
+	defer s.zigoRelease()
+	result, code := raw.StreamFeedThroughHoldEnd(ptr, data)
+	if zigoCallbackPanicPending() {
+		for slot := range 3 {
+			zigoRethrowCallbackPanic("Stream.FeedThroughHoldEnd", s.zigoCallbackHandle(slot))
+		}
+	}
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Stream.FeedThroughHoldEnd", code), s)
+	}
+	return result, nil
+}
+
+// FeedThroughHoldEnd: Feed bytes through the first render hold that ends in them, and return
+// how many were consumed: all of them when no hold ends.
+//
+// A program drawing frame after frame, each in a hold, begins the next in
+// the same piece of output that ends the last. Fed whole, the terminal is
+// always amid a frame when a renderer looks, and the last frame it read
+// stays up until the program stops. Fed through the end of each hold, a
+// renderer can copy the frame just finished before feeding the rest.
+// It panics with the typed error it would otherwise return.
+func (s *Stream) FeedThroughHoldEnd(data []byte) uint {
+	return zigoMust(s.zigoCheckedFeedThroughHoldEnd(data))
+}
+
 // zigoCheckedFeed is the checked form of Feed, which a plugin replaced.
 func (s *Stream) zigoCheckedFeed(bytes []byte) error {
 	ptr, err := zigoCheckedPointer("Stream.Feed receiver", s)

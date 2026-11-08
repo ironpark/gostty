@@ -1129,6 +1129,7 @@ ZIGO_EXPORT int32_t zg_stream_free_stream(zg_stream * self);
 ZIGO_EXPORT int32_t zg_stream_at_ground(zg_stream * self, uint8_t * out_result);
 ZIGO_EXPORT int32_t zg_stream_feed_until_ground(zg_stream * self, const uint8_t * data_ptr, size_t data_len, zg_feed_boundary * out_result);
 ZIGO_EXPORT int32_t zg_stream_feed_until(zg_stream * self, const uint8_t * data_ptr, size_t data_len, uint16_t boundaries, uint8_t * out_result_has, zg_feed_stop * out_result);
+ZIGO_EXPORT int32_t zg_stream_feed_through_hold_end(zg_stream * self, const uint8_t * data_ptr, size_t data_len, size_t * out_result);
 ZIGO_EXPORT int32_t zg_stream_feed(zg_stream * self, const uint8_t * bytes_ptr, size_t bytes_len);
 ZIGO_EXPORT int32_t zg_stream_next_event_value(zg_stream * self, uint8_t * * out_result_ptr, size_t * out_result_len);
 ZIGO_EXPORT int32_t zg_stream_resize_cells(zg_stream * self, uint16_t width, uint16_t height, uint32_t cell_width, uint32_t cell_height);
