@@ -104,6 +104,17 @@ pub fn resetTabstops(self: *Terminal, interval: usize) void {
     self.tabstops.reset(interval);
 }
 
+/// The Kitty graphics transmission mediums that read something a program
+/// names, beyond direct transmission, which is always allowed. The temporary
+/// file medium is enabled by a directory rather than a flag, so it is the
+/// separate `temp_dir` argument of `setKittyGraphicsLoadingLimits`.
+pub const KittyGraphicsMediums = extern struct {
+    /// Read an arbitrary path the program names (`t=f`).
+    file: bool = false,
+    /// Read a POSIX shared memory object the program names (`t=s`).
+    shared_memory: bool = false,
+};
+
 /// Choose which mediums a program may transmit a Kitty image over.
 ///
 /// The default is direct transmission only: the pixels arrive base64-encoded in
@@ -120,21 +131,20 @@ pub fn resetTabstops(self: *Terminal, interval: usize) void {
 pub fn setKittyGraphicsLoadingLimits(
     self: *Terminal,
     gpa: Allocator,
-    file: bool,
+    mediums: KittyGraphicsMediums,
     temp_dir: []const u8,
-    shared_memory: bool,
 ) !void {
     const previous = self.screens.active.kitty_images.image_limits;
     const owned: []const u8 = if (temp_dir.len > 0) try gpa.dupe(u8, temp_dir) else "";
     errdefer if (owned.len > 0) gpa.free(owned);
 
     self.setKittyGraphicsLoadingLimits(.{
-        .file = file,
+        .file = mediums.file,
         .temporary_file = if (owned.len > 0)
             .{ .enabled = .{ .directory = owned } }
         else
             .disabled,
-        .shared_memory = shared_memory,
+        .shared_memory = mediums.shared_memory,
     });
 
     switch (previous.temporary_file) {

@@ -102,6 +102,7 @@
         "path": "screens.active.cursor.x",
         "setter": false
       },
+      "doc": "The cursor column, 0-based. Note that SetCursorPos, SetCursorRow and SetCursorCol take 1-based coordinates, as the VT sequences do: SetCursorCol(CursorX()+1) leaves the cursor where it is.",
       "name": "cursorX",
       "ownership": "borrowed",
       "params": [],
@@ -119,6 +120,7 @@
         "path": "screens.active.cursor.y",
         "setter": false
       },
+      "doc": "The cursor row within the active area, 0-based. Note that SetCursorPos, SetCursorRow and SetCursorCol take 1-based coordinates, as the VT sequences do: SetCursorRow(CursorY()+1) leaves the cursor where it is.",
       "name": "cursorY",
       "ownership": "borrowed",
       "params": [],
@@ -1771,7 +1773,7 @@
     },
     {
       "boxed": "create",
-      "doc": "Initialize a new terminal.",
+      "doc": "Initialize a new terminal with the given options.\n\nThe returned terminal owns its memory. Call `deinit` with the same\nallocator when you are done with it.\n\n```zig\nvar t: Terminal = try .init(io, alloc, .{ .cols = 80, .rows = 24 });\ndefer t.deinit(alloc);\n```\n\nReturns `error.InvalidValue` if `cols` or `rows` is zero. This check\nhappens before anything is allocated. If the size comes from an\nuntrusted source, you can rely on this check instead of validating\nit yourself.",
       "name": "newTerminal",
       "namespace": "Terminal",
       "ownership": "caller",
@@ -1783,7 +1785,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 330,
+            "line": 345,
             "column": 5
           },
           "type": {
@@ -1797,7 +1799,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 331,
+            "line": 346,
             "column": 5
           },
           "type": {
@@ -1885,7 +1887,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 332,
+            "line": 347,
             "column": 5
           },
           "type": {
@@ -1896,7 +1898,8 @@
       ],
       "return": {
         "error_set": [
-          "OutOfMemory"
+          "OutOfMemory",
+          "InvalidValue"
         ],
         "kind": "error_union",
         "payload": {
@@ -1908,7 +1911,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 329,
+        "line": 344,
         "column": 8
       },
       "zig_path": "Terminal.init",
@@ -1927,7 +1930,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 376,
+            "line": 395,
             "column": 32
           },
           "type": {
@@ -1941,14 +1944,14 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 376,
+        "line": 395,
         "column": 8
       },
       "symbol": "zg_terminal_deinit"
     },
     {
       "child_of_receiver": true,
-      "doc": "Create a VT stream that applies escape sequences to `terminal`.\n\n`continuation_max_bytes` caps the unfinished-sequence suffix the stream\ntracks across feeds; zero disables tracking.",
+      "doc": "Create a VT stream that applies escape sequences to `terminal`.\n\n`continuation_max_bytes` caps the unfinished-sequence suffix the stream\ntracks across feeds; zero disables tracking.\n\nThe bare constructor. `NewStreamWithOptions` is the usual way to make a\nstream with any other setting, and `NewStreamWithConfig` the same from a\nstruct; most programs want neither and use `New`, which builds a terminal\nand its stream together.",
       "go": {
         "owner": "Stream"
       },
@@ -1962,7 +1965,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 820,
+            "line": 825,
             "column": 34
           },
           "type": {
@@ -1975,7 +1978,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 820,
+            "line": 825,
             "column": 55
           },
           "type": {
@@ -2002,7 +2005,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 820,
+        "line": 825,
         "column": 8
       },
       "zig_path": "newStream",
@@ -2210,7 +2213,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 534,
+            "line": 553,
             "column": 37
           },
           "type": {
@@ -2239,13 +2242,13 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 534,
+        "line": 553,
         "column": 8
       },
       "symbol": "zg_terminal_print_string"
     },
     {
-      "doc": "Return the current string value of the terminal. Newlines are\nencoded as \"\\n\". This omits any formatting such as fg/bg.\n\nThe caller must free the string.",
+      "doc": "The viewport -- the rows currently on display, without scrollback -- as\nplain text. Newlines are encoded as \"\\n\" and every soft wrap is a line\nbreak; PlainStringUnwrapped joins wrapped rows instead.\n\nFor the whole active screen including scrollback, use PlainText, or\nFormatString for styled output.",
       "name": "plainString",
       "ownership": "caller",
       "params": [
@@ -2256,7 +2259,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 5060,
+            "line": 5854,
             "column": 37
           },
           "type": {
@@ -2287,13 +2290,13 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 5060,
+        "line": 5854,
         "column": 8
       },
       "symbol": "zg_terminal_plain_string"
     },
     {
-      "doc": "Same as plainString, but respects row wrap state when building the string.",
+      "doc": "The viewport as plain text, like PlainString, but with soft-wrapped rows\njoined back into the line the program wrote.",
       "name": "plainStringUnwrapped",
       "ownership": "caller",
       "params": [
@@ -2304,7 +2307,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 5065,
+            "line": 5859,
             "column": 46
           },
           "type": {
@@ -2335,7 +2338,7 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 5065,
+        "line": 5859,
         "column": 8
       },
       "symbol": "zg_terminal_plain_string_unwrapped"
@@ -2351,7 +2354,7 @@
           "retention": "borrowed",
           "semantic": "codepoint",
           "source": {
-            "line": 1262,
+            "line": 1893,
             "column": 31
           },
           "type": {
@@ -2375,7 +2378,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 1262,
+        "line": 1893,
         "column": 8
       },
       "symbol": "zg_terminal_print"
@@ -2391,7 +2394,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 550,
+            "line": 569,
             "column": 37
           },
           "type": {
@@ -2415,7 +2418,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 550,
+        "line": 569,
         "column": 8
       },
       "symbol": "zg_terminal_print_repeat"
@@ -2432,7 +2435,7 @@
           "retention": "borrowed",
           "semantic": "codepoint",
           "source": {
-            "line": 589,
+            "line": 608,
             "column": 36
           },
           "type": {
@@ -2460,7 +2463,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 589,
+        "line": 608,
         "column": 8
       },
       "symbol": "zg_terminal_print_slice"
@@ -2476,7 +2479,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 440,
+            "line": 459,
             "column": 40
           },
           "type": {
@@ -2491,7 +2494,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 440,
+        "line": 459,
         "column": 8
       },
       "symbol": "zg_terminal_set_cursor_style"
@@ -2507,7 +2510,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 2588,
+            "line": 3235,
             "column": 38
           },
           "type": {
@@ -2523,7 +2526,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 2588,
+            "line": 3235,
             "column": 54
           },
           "type": {
@@ -2540,7 +2543,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 2588,
+        "line": 3235,
         "column": 8
       },
       "symbol": "zg_terminal_set_cursor_pos"
@@ -2556,7 +2559,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 1869,
+        "line": 2516,
         "column": 8
       },
       "symbol": "zg_terminal_carriage_return"
@@ -2578,7 +2581,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 1883,
+        "line": 2530,
         "column": 8
       },
       "symbol": "zg_terminal_linefeed"
@@ -2594,7 +2597,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 1889,
+        "line": 2536,
         "column": 8
       },
       "symbol": "zg_terminal_backspace"
@@ -2610,7 +2613,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 2294,
+        "line": 2941,
         "column": 8
       },
       "symbol": "zg_terminal_cursor_is_at_prompt"
@@ -2626,7 +2629,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 5074,
+        "line": 5868,
         "column": 8
       },
       "symbol": "zg_terminal_full_reset"
@@ -2642,7 +2645,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 5124,
+        "line": 5918,
         "column": 8
       },
       "symbol": "zg_terminal_soft_reset"
@@ -2658,7 +2661,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1896,
+            "line": 2543,
             "column": 34
           },
           "type": {
@@ -2675,7 +2678,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 1896,
+        "line": 2543,
         "column": 8
       },
       "symbol": "zg_terminal_cursor_up"
@@ -2691,7 +2694,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1914,
+            "line": 2561,
             "column": 36
           },
           "type": {
@@ -2708,7 +2711,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 1914,
+        "line": 2561,
         "column": 8
       },
       "symbol": "zg_terminal_cursor_down"
@@ -2724,7 +2727,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1945,
+            "line": 2592,
             "column": 36
           },
           "type": {
@@ -2741,7 +2744,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 1945,
+        "line": 2592,
         "column": 8
       },
       "symbol": "zg_terminal_cursor_left"
@@ -2757,7 +2760,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1931,
+            "line": 2578,
             "column": 37
           },
           "type": {
@@ -2774,7 +2777,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 1931,
+        "line": 2578,
         "column": 8
       },
       "symbol": "zg_terminal_cursor_right"
@@ -2790,7 +2793,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 2650,
+            "line": 3297,
             "column": 38
           },
           "type": {
@@ -2807,7 +2810,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 2650,
+        "line": 3297,
         "column": 8
       },
       "symbol": "zg_terminal_set_cursor_row"
@@ -2823,7 +2826,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 2656,
+            "line": 3303,
             "column": 38
           },
           "type": {
@@ -2840,30 +2843,33 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 2656,
+        "line": 3303,
         "column": 8
       },
       "symbol": "zg_terminal_set_cursor_col"
     },
     {
-      "doc": "Move the cursor down by count rows, keeping its column (VPR). Unlike\ncursorDown, this stops only at the bottom of the screen, or of the\nscrolling region in origin mode.",
+      "covers": [
+        "Terminal.cursorRowRelative"
+      ],
+      "doc": "Move the cursor `delta` rows down, or up when negative, keeping its column\n(VPR, and its reverse). Unlike `cursorDown`/`cursorUp`, this stops only at\nthe edge of the screen, or of the scrolling region in origin mode.\n\nWrapped because ghostty takes an unsigned count and only moves forward,\nwhich the name \"relative\" does not suggest.",
       "name": "cursorRowRelative",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
-          "name": "count",
+          "name": "delta",
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 2663,
+            "line": 235,
             "column": 43
           },
           "type": {
             "bits": 64,
             "is_usize": true,
             "kind": "int",
-            "signed": false
+            "signed": true
           }
         }
       ],
@@ -2872,31 +2878,35 @@
         "kind": "void"
       },
       "source": {
-        "path": "terminal/Terminal.zig",
-        "line": 2663,
+        "path": "terminal.zig",
+        "line": 235,
         "column": 8
       },
+      "zig_path": "cursorRowRelative",
       "symbol": "zg_terminal_cursor_row_relative"
     },
     {
-      "doc": "Move the cursor right by count columns, keeping its row (HPR). Unlike\ncursorRight, this stops only at the right edge of the screen, or of\nthe scrolling region in origin mode.",
+      "covers": [
+        "Terminal.cursorColRelative"
+      ],
+      "doc": "Move the cursor `delta` columns right, or left when negative, keeping its\nrow (HPR, and its reverse). Unlike `cursorRight`/`cursorLeft`, this stops\nonly at the edge of the screen, or of the scrolling region in origin mode.",
       "name": "cursorColRelative",
       "ownership": "borrowed",
       "params": [
         {
           "direction": "in",
-          "name": "count",
+          "name": "delta",
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 2671,
+            "line": 245,
             "column": 43
           },
           "type": {
             "bits": 64,
             "is_usize": true,
             "kind": "int",
-            "signed": false
+            "signed": true
           }
         }
       ],
@@ -2905,10 +2915,11 @@
         "kind": "void"
       },
       "source": {
-        "path": "terminal/Terminal.zig",
-        "line": 2671,
+        "path": "terminal.zig",
+        "line": 245,
         "column": 8
       },
+      "zig_path": "cursorColRelative",
       "symbol": "zg_terminal_cursor_col_relative"
     },
     {
@@ -2922,7 +2933,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 2056,
+        "line": 2703,
         "column": 8
       },
       "symbol": "zg_terminal_save_cursor"
@@ -2938,7 +2949,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 2072,
+        "line": 2719,
         "column": 8
       },
       "symbol": "zg_terminal_restore_cursor"
@@ -2960,7 +2971,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 2370,
+        "line": 3017,
         "column": 8
       },
       "symbol": "zg_terminal_index"
@@ -2976,10 +2987,42 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 2570,
+        "line": 3217,
         "column": 8
       },
       "symbol": "zg_terminal_reverse_index"
+    },
+    {
+      "doc": "DECBI - Back Index. If the cursor is on the left margin, the contents\nof the scrolling region are shifted one column right and a blank\ncolumn is inserted at the left margin. Otherwise the cursor moves one\ncolumn left, unless it is already at the left edge of the screen.\n\nThis unsets the pending wrap state without wrapping.",
+      "name": "backIndex",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Terminal",
+      "return": {
+        "kind": "void"
+      },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 4229,
+        "column": 8
+      },
+      "symbol": "zg_terminal_back_index"
+    },
+    {
+      "doc": "DECFI - Forward Index. If the cursor is on the right margin, the\ncontents of the scrolling region are shifted one column left, losing\nthe column at the left margin, and a blank column is inserted at the\nright margin. Otherwise the cursor\nmoves one column right, unless it is already at the right edge of\nthe screen.\n\nThis unsets the pending wrap state without wrapping.",
+      "name": "forwardIndex",
+      "ownership": "borrowed",
+      "params": [],
+      "receiver": "Terminal",
+      "return": {
+        "kind": "void"
+      },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 4248,
+        "column": 8
+      },
+      "symbol": "zg_terminal_forward_index"
     },
     {
       "borrowed_return": true,
@@ -2993,7 +3036,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 4886,
+            "line": 5680,
             "column": 38
           },
           "type": {
@@ -3017,7 +3060,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 4886,
+        "line": 5680,
         "column": 8
       },
       "symbol": "zg_terminal_switch_screen"
@@ -3033,7 +3076,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 4966,
+            "line": 5760,
             "column": 5
           },
           "type": {
@@ -3047,7 +3090,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 4967,
+            "line": 5761,
             "column": 5
           },
           "type": {
@@ -3067,7 +3110,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 4964,
+        "line": 5758,
         "column": 8
       },
       "symbol": "zg_terminal_switch_screen_mode"
@@ -3140,7 +3183,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 3953,
+            "line": 4733,
             "column": 41
           },
           "type": {
@@ -3171,7 +3214,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 3953,
+        "line": 4733,
         "column": 8
       },
       "zig_path": "Terminal.printAttributes",
@@ -3240,7 +3283,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 2311,
+        "line": 2958,
         "column": 8
       },
       "symbol": "zg_terminal_horizontal_tab"
@@ -3256,7 +3299,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 2324,
+        "line": 2971,
         "column": 8
       },
       "symbol": "zg_terminal_horizontal_tab_back"
@@ -3272,7 +3315,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 2349,
+        "line": 2996,
         "column": 8
       },
       "symbol": "zg_terminal_tab_set"
@@ -3288,7 +3331,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 2354,
+        "line": 3001,
         "column": 8
       },
       "symbol": "zg_terminal_tab_reset"
@@ -3304,7 +3347,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 2339,
+            "line": 2986,
             "column": 34
           },
           "type": {
@@ -3319,7 +3362,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 2339,
+        "line": 2986,
         "column": 8
       },
       "symbol": "zg_terminal_tab_clear"
@@ -3437,7 +3480,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 2753,
+            "line": 3400,
             "column": 34
           },
           "type": {
@@ -3460,7 +3503,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 2753,
+        "line": 3400,
         "column": 8
       },
       "symbol": "zg_terminal_scroll_up"
@@ -3476,7 +3519,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 2713,
+            "line": 3360,
             "column": 36
           },
           "type": {
@@ -3493,7 +3536,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 2713,
+        "line": 3360,
         "column": 8
       },
       "symbol": "zg_terminal_scroll_down"
@@ -3509,7 +3552,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 2688,
+            "line": 3335,
             "column": 47
           },
           "type": {
@@ -3525,7 +3568,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 2688,
+            "line": 3335,
             "column": 63
           },
           "type": {
@@ -3542,7 +3585,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 2688,
+        "line": 3335,
         "column": 8
       },
       "symbol": "zg_terminal_set_top_and_bottom_margin"
@@ -3558,7 +3601,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 2699,
+            "line": 3346,
             "column": 47
           },
           "type": {
@@ -3574,7 +3617,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 2699,
+            "line": 3346,
             "column": 64
           },
           "type": {
@@ -3591,7 +3634,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 2699,
+        "line": 3346,
         "column": 8
       },
       "symbol": "zg_terminal_set_left_and_right_margin"
@@ -3607,7 +3650,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 2875,
+            "line": 3522,
             "column": 40
           },
           "type": {
@@ -3622,7 +3665,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 2875,
+        "line": 3522,
         "column": 8
       },
       "symbol": "zg_terminal_scroll_viewport"
@@ -3641,7 +3684,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 233,
+            "line": 279,
             "column": 47
           },
           "type": {
@@ -3658,7 +3701,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 233,
+        "line": 279,
         "column": 8
       },
       "zig_path": "setScrollbackMaxBytes",
@@ -3675,7 +3718,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 238,
+        "line": 284,
         "column": 8
       },
       "zig_path": "clearScrollbackMaxBytes",
@@ -3695,7 +3738,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 243,
+            "line": 289,
             "column": 47
           },
           "type": {
@@ -3712,7 +3755,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 243,
+        "line": 289,
         "column": 8
       },
       "zig_path": "setScrollbackMaxLines",
@@ -3729,7 +3772,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 248,
+        "line": 294,
         "column": 8
       },
       "zig_path": "clearScrollbackMaxLines",
@@ -3746,7 +3789,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 3052,
+            "line": 3699,
             "column": 37
           },
           "type": {
@@ -3763,7 +3806,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 3052,
+        "line": 3699,
         "column": 8
       },
       "symbol": "zg_terminal_insert_lines"
@@ -3779,7 +3822,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 3226,
+            "line": 3873,
             "column": 37
           },
           "type": {
@@ -3796,7 +3839,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 3226,
+        "line": 3873,
         "column": 8
       },
       "symbol": "zg_terminal_delete_lines"
@@ -3812,7 +3855,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 3385,
+            "line": 4032,
             "column": 38
           },
           "type": {
@@ -3829,7 +3872,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 3385,
+        "line": 4032,
         "column": 8
       },
       "symbol": "zg_terminal_insert_blanks"
@@ -3845,7 +3888,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 3486,
+            "line": 4133,
             "column": 37
           },
           "type": {
@@ -3862,10 +3905,76 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 3486,
+        "line": 4133,
         "column": 8
       },
       "symbol": "zg_terminal_delete_chars"
+    },
+    {
+      "doc": "DECIC - Insert Column. Inserts count blank columns at the cursor\ncolumn in every row of the scrolling region, moving existing cell\ncontents to the right. The contents of the count right-most columns\nin the scroll region are lost. The cursor position is not changed.\n\nThis does nothing if the cursor is outside the scrolling region.",
+      "name": "insertColumns",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "count",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 4189,
+            "column": 39
+          },
+          "type": {
+            "bits": 64,
+            "is_usize": true,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "receiver": "Terminal",
+      "return": {
+        "kind": "void"
+      },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 4189,
+        "column": 8
+      },
+      "symbol": "zg_terminal_insert_columns"
+    },
+    {
+      "doc": "DECDC - Delete Column. Deletes count columns starting at the cursor\ncolumn in every row of the scrolling region, moving the remaining\ncell contents to the left and filling from the right margin with\nblanks. The cursor position is not changed.\n\nThis does nothing if the cursor is outside the scrolling region.",
+      "name": "deleteColumns",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "count",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 4209,
+            "column": 39
+          },
+          "type": {
+            "bits": 64,
+            "is_usize": true,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "receiver": "Terminal",
+      "return": {
+        "kind": "void"
+      },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 4209,
+        "column": 8
+      },
+      "symbol": "zg_terminal_delete_columns"
     },
     {
       "name": "eraseChars",
@@ -3877,7 +3986,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 3536,
+            "line": 4275,
             "column": 36
           },
           "type": {
@@ -3894,7 +4003,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 3536,
+        "line": 4275,
         "column": 8
       },
       "symbol": "zg_terminal_erase_chars"
@@ -3910,7 +4019,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 3590,
+            "line": 4329,
             "column": 5
           },
           "type": {
@@ -3924,7 +4033,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 3591,
+            "line": 4330,
             "column": 5
           },
           "type": {
@@ -3938,13 +4047,13 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 3588,
+        "line": 4327,
         "column": 8
       },
       "symbol": "zg_terminal_erase_line"
     },
     {
-      "doc": "Erase the display.",
+      "doc": "Erase the display (ED, `CSI Ps J`). The mode picks what is erased:\n\n- `below`: from the cursor to the end of the screen.\n- `above`: from the start of the screen to the cursor.\n- `complete`: the whole screen. See \"Clearing at a prompt\" below.\n- `scrollback`: the scrollback history. The screen is left as is.\n- `scroll_complete`: moves the screen contents into scrollback,\nthen clears the screen. This is a Kitty extension (`CSI 22 J`).\n\nProtected cells are kept if `protected_req` is true, or if the most\nrecent protection mode was ISO (set by SPA, `ESC V`).\n\nClearing at a prompt: on the primary screen, a `complete` erase acts\nlike `scroll_complete` when the last non-blank row is a shell prompt.\nThis keeps the previous command output in scrollback when the user\npresses Ctrl+L at a prompt. Shells usually send `CSI H CSI 2 J`, so\nthe cursor is already at the top and its position can't be used to\ntell whether a prompt is showing. Instead, prompt rows are found\nusing semantic prompt marks (OSC 133). A screen that has never\nreceived OSC 133 prompt or input marks has no prompt rows, so the\nerase is a plain clear. See #905.\n\nFor example, with a shell that marks its prompts:\n\n```\nESC ] 133 ; A ESC \\ $ ESC ] 133 ; B ESC \\   (prompt, then input starts)\nESC [ H ESC [ 2 J                           (Ctrl+L: scrolls, then clears)\n```\n\nWithout the OSC 133 sequences, the same `CSI H CSI 2 J` just clears.",
       "name": "eraseDisplay",
       "ownership": "borrowed",
       "params": [
@@ -3954,7 +4063,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 3675,
+            "line": 4443,
             "column": 5
           },
           "type": {
@@ -3968,7 +4077,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 3676,
+            "line": 4444,
             "column": 5
           },
           "type": {
@@ -3982,7 +4091,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 3673,
+        "line": 4441,
         "column": 8
       },
       "symbol": "zg_terminal_erase_display"
@@ -4005,7 +4114,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 3813,
+        "line": 4586,
         "column": 8
       },
       "symbol": "zg_terminal_decaln"
@@ -4022,7 +4131,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 4134,
+            "line": 4914,
             "column": 5
           },
           "type": {
@@ -4055,7 +4164,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 4135,
+            "line": 4915,
             "column": 5
           },
           "type": {
@@ -4077,7 +4186,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 4132,
+        "line": 4912,
         "column": 8
       },
       "symbol": "zg_terminal_resize"
@@ -4313,7 +4422,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 4776,
+            "line": 5570,
             "column": 32
           },
           "type": {
@@ -4340,14 +4449,14 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 4776,
+        "line": 5570,
         "column": 8
       },
       "symbol": "zg_terminal_set_pwd"
     },
     {
       "doc": "Returns the pwd for the terminal, if any. The memory is owned by the\nTerminal and is not copied. It is safe until a reset or setPwd.",
-      "name": "getPwd",
+      "name": "pwd",
       "ownership": "borrowed",
       "params": [],
       "receiver": "Terminal",
@@ -4368,14 +4477,15 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 4793,
+        "line": 5587,
         "column": 8
       },
-      "symbol": "zg_terminal_get_pwd"
+      "zig_path": "Terminal.getPwd",
+      "symbol": "zg_terminal_pwd"
     },
     {
       "doc": "Returns the title for the terminal, if any. The memory is owned by the\nTerminal and is not copied. It is safe until a reset or setTitle.",
-      "name": "getTitle",
+      "name": "title",
       "ownership": "borrowed",
       "params": [],
       "receiver": "Terminal",
@@ -4396,10 +4506,11 @@
       "return_semantic": "utf8_string",
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 4841,
+        "line": 5635,
         "column": 8
       },
-      "symbol": "zg_terminal_get_title"
+      "zig_path": "Terminal.getTitle",
+      "symbol": "zg_terminal_title"
     },
     {
       "doc": "Set the title for the terminal, as set by escape sequences (e.g. OSC 0/2).",
@@ -4408,12 +4519,12 @@
       "params": [
         {
           "direction": "in",
-          "name": "t",
-          "name_source": "ast",
+          "name": "title",
+          "name_source": "sidecar",
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 4824,
+            "line": 5618,
             "column": 34
           },
           "type": {
@@ -4440,7 +4551,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 4824,
+        "line": 5618,
         "column": 8
       },
       "symbol": "zg_terminal_set_title"
@@ -4460,7 +4571,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 256,
+        "line": 302,
         "column": 8
       },
       "zig_path": "backgroundColor",
@@ -4481,7 +4592,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 261,
+        "line": 307,
         "column": 8
       },
       "zig_path": "foregroundColor",
@@ -4502,7 +4613,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 267,
+        "line": 313,
         "column": 8
       },
       "zig_path": "cursorColor",
@@ -4519,7 +4630,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 273,
+            "line": 319,
             "column": 45
           },
           "type": {
@@ -4542,7 +4653,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 273,
+        "line": 319,
         "column": 8
       },
       "zig_path": "paletteColors",
@@ -4559,7 +4670,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 301,
+            "line": 347,
             "column": 43
           },
           "type": {
@@ -4574,7 +4685,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 301,
+        "line": 347,
         "column": 8
       },
       "zig_path": "modeEnabled",
@@ -4591,7 +4702,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 309,
+            "line": 355,
             "column": 33
           },
           "type": {
@@ -4605,7 +4716,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 309,
+            "line": 355,
             "column": 45
           },
           "type": {
@@ -4619,7 +4730,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 309,
+        "line": 355,
         "column": 8
       },
       "zig_path": "setMode",
@@ -4668,6 +4779,71 @@
       "symbol": "zg_terminal_set_attribute"
     },
     {
+      "covers": [
+        "Terminal.setAttributes"
+      ],
+      "doc": "Apply every attribute of one CSI SGR sequence to the cursor's pen at once.\n`params` and `colon_mask` are what `sgrAttributeCount` takes: the\nparameters of `CSI ... m` without the `m`, and bit `i` set when parameter\n`i` was followed by a colon. The resulting style is committed once, so\n`CSI 0;1;31 m` costs one style update rather than three, and on failure the\npen reverts to what it was before the sequence.\n\nWrapped because ghostty takes its `sgr.Parser`, whose separator list is a\n`std.StaticBitSet` with no C representation.",
+      "name": "setAttributes",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "params",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 225,
+            "column": 39
+          },
+          "type": {
+            "const": true,
+            "element": {
+              "bits": 16,
+              "is_usize": false,
+              "kind": "int",
+              "signed": false
+            },
+            "kind": "slice"
+          }
+        },
+        {
+          "direction": "in",
+          "name": "colon_mask",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 225,
+            "column": 60
+          },
+          "type": {
+            "bits": 32,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "receiver": "Terminal",
+      "return": {
+        "error_set": [
+          "OutOfMemory",
+          "OutOfSpace",
+          "SGRTooManyParams"
+        ],
+        "kind": "error_union",
+        "payload": {
+          "kind": "void"
+        }
+      },
+      "source": {
+        "path": "terminal.zig",
+        "line": 225,
+        "column": 8
+      },
+      "zig_path": "setAttributes",
+      "symbol": "zg_terminal_set_attributes"
+    },
+    {
       "doc": "Set the character protection mode for the terminal.",
       "name": "setProtectedMode",
       "ownership": "borrowed",
@@ -4678,7 +4854,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 2110,
+            "line": 2757,
             "column": 42
           },
           "type": {
@@ -4693,7 +4869,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 2110,
+        "line": 2757,
         "column": 8
       },
       "symbol": "zg_terminal_set_protected_mode"
@@ -4709,7 +4885,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1844,
+            "line": 2491,
             "column": 42
           },
           "type": {
@@ -4723,7 +4899,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1844,
+            "line": 2491,
             "column": 64
           },
           "type": {
@@ -4738,7 +4914,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 1844,
+        "line": 2491,
         "column": 8
       },
       "symbol": "zg_terminal_configure_charset"
@@ -4754,7 +4930,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1852,
+            "line": 2499,
             "column": 5
           },
           "type": {
@@ -4768,7 +4944,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1853,
+            "line": 2500,
             "column": 5
           },
           "type": {
@@ -4782,7 +4958,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 1854,
+            "line": 2501,
             "column": 5
           },
           "type": {
@@ -4796,7 +4972,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 1850,
+        "line": 2497,
         "column": 8
       },
       "symbol": "zg_terminal_invoke_charset"
@@ -4813,7 +4989,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 4057,
+            "line": 4837,
             "column": 33
           },
           "type": {
@@ -4826,7 +5002,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 4057,
+            "line": 4837,
             "column": 51
           },
           "type": {
@@ -4848,7 +5024,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 4057,
+        "line": 4837,
         "column": 8
       },
       "symbol": "zg_terminal_deccolm"
@@ -4864,7 +5040,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 2940,
+            "line": 3587,
             "column": 5
           },
           "type": {
@@ -4880,7 +5056,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 2938,
+        "line": 3585,
         "column": 8
       },
       "symbol": "zg_terminal_compress"
@@ -4899,7 +5075,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 2899,
+        "line": 3546,
         "column": 8
       },
       "symbol": "zg_terminal_compression_activity"
@@ -4915,7 +5091,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 281,
+            "line": 327,
             "column": 51
           },
           "type": {
@@ -4930,7 +5106,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 281,
+        "line": 327,
         "column": 8
       },
       "zig_path": "setDefaultBackgroundColor",
@@ -4947,7 +5123,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 286,
+            "line": 332,
             "column": 51
           },
           "type": {
@@ -4962,7 +5138,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 286,
+        "line": 332,
         "column": 8
       },
       "zig_path": "setDefaultForegroundColor",
@@ -4979,7 +5155,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 291,
+            "line": 337,
             "column": 47
           },
           "type": {
@@ -4994,7 +5170,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 291,
+        "line": 337,
         "column": 8
       },
       "zig_path": "setDefaultCursorColor",
@@ -5011,7 +5187,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 468,
+            "line": 487,
             "column": 5
           },
           "type": {
@@ -5026,7 +5202,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 466,
+        "line": 485,
         "column": 8
       },
       "symbol": "zg_terminal_set_default_cursor_style"
@@ -5045,7 +5221,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 222,
+            "line": 268,
             "column": 47
           },
           "type": {
@@ -5059,7 +5235,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 222,
+        "line": 268,
         "column": 8
       },
       "zig_path": "setDefaultCursorBlink",
@@ -5076,7 +5252,7 @@
       },
       "source": {
         "path": "terminal.zig",
-        "line": 227,
+        "line": 273,
         "column": 8
       },
       "zig_path": "resetDefaultCursorBlink",
@@ -5454,7 +5630,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 3918,
+            "line": 4692,
             "column": 5
           },
           "type": {
@@ -5467,7 +5643,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 3919,
+            "line": 4693,
             "column": 5
           },
           "type": {
@@ -5484,7 +5660,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 3916,
+        "line": 4690,
         "column": 8
       },
       "symbol": "zg_terminal_set_kitty_graphics_size_limit"
@@ -5504,7 +5680,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 122,
+            "line": 133,
             "column": 5
           },
           "type": {
@@ -5513,15 +5689,16 @@
         },
         {
           "direction": "in",
-          "name": "file",
+          "name": "mediums",
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 123,
+            "line": 134,
             "column": 5
           },
           "type": {
-            "kind": "bool"
+            "kind": "value_struct",
+            "ref": "KittyGraphicsMediums"
           }
         },
         {
@@ -5531,7 +5708,7 @@
           "retention": "borrowed",
           "semantic": "utf8_string",
           "source": {
-            "line": 124,
+            "line": 135,
             "column": 5
           },
           "type": {
@@ -5543,19 +5720,6 @@
               "signed": false
             },
             "kind": "slice"
-          }
-        },
-        {
-          "direction": "in",
-          "name": "shared_memory",
-          "name_source": "ast",
-          "retention": "borrowed",
-          "source": {
-            "line": 125,
-            "column": 5
-          },
-          "type": {
-            "kind": "bool"
           }
         }
       ],
@@ -5571,7 +5735,7 @@
       },
       "source": {
         "path": "config.zig",
-        "line": 120,
+        "line": 131,
         "column": 8
       },
       "zig_path": "setKittyGraphicsLoadingLimits",
@@ -5872,6 +6036,71 @@
       "symbol": "zg_terminal_mode_report"
     },
     {
+      "doc": "Compute the DECRQCRA checksum of a rectangle of the active area,\nusing the variant selected by XTCHECKSUM.",
+      "name": "rectXtChecksum",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "req",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 441,
+            "column": 46
+          },
+          "type": {
+            "kind": "value_struct",
+            "ref": "XtChecksumRequest"
+          }
+        }
+      ],
+      "receiver": "Terminal",
+      "return": {
+        "bits": 16,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 441,
+        "column": 8
+      },
+      "symbol": "zg_terminal_rect_xt_checksum"
+    },
+    {
+      "doc": "Set the checksum variant restored by RIS and DECSTR. Like\n`ModeState.setDefault`, this also changes the current variant.",
+      "name": "setDefaultXtChecksum",
+      "ownership": "borrowed",
+      "params": [
+        {
+          "direction": "in",
+          "name": "flags",
+          "name_source": "ast",
+          "retention": "borrowed",
+          "source": {
+            "line": 434,
+            "column": 46
+          },
+          "type": {
+            "kind": "value_struct",
+            "ref": "XtChecksumFlags"
+          }
+        }
+      ],
+      "receiver": "Terminal",
+      "return": {
+        "kind": "void"
+      },
+      "source": {
+        "path": "terminal/Terminal.zig",
+        "line": 434,
+        "column": 8
+      },
+      "symbol": "zg_terminal_set_default_xt_checksum"
+    },
+    {
       "doc": "The cell at `x`, `y` of the active screen, in the coordinate system `tag`\nnames, without tracking it. Null if there is no such cell. For a read\nthat happens once, such as what is under a click; a cell that is read\nagain after the terminal changes wants a `GridRef`.",
       "name": "cellAt",
       "ownership": "borrowed",
@@ -6047,7 +6276,7 @@
       },
       "source": {
         "path": "terminal/Screen.zig",
-        "line": 1723,
+        "line": 1807,
         "column": 15
       },
       "symbol": "zg_screen_viewport_is_bottom"
@@ -6089,7 +6318,7 @@
       },
       "source": {
         "path": "terminal/Screen.zig",
-        "line": 3050,
+        "line": 3100,
         "column": 8
       },
       "symbol": "zg_screen_clear_selection"
@@ -6105,7 +6334,7 @@
       },
       "source": {
         "path": "terminal/Screen.zig",
-        "line": 2877,
+        "line": 2917,
         "column": 8
       },
       "symbol": "zg_screen_end_hyperlink"
@@ -7928,7 +8157,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 839,
+            "line": 844,
             "column": 34
           },
           "type": {
@@ -7942,7 +8171,7 @@
       },
       "source": {
         "path": "stream.zig",
-        "line": 839,
+        "line": 844,
         "column": 8
       },
       "zig_path": "freeStream",
@@ -9756,6 +9985,7 @@
           "InvalidSpacerTailLocation",
           "InvalidSpacerHeadLocation",
           "UnwrappedSpacerHead",
+          "BlankRowHasContent",
           "InvalidPageDimensions",
           "NoPages",
           "InsufficientRows",
@@ -10092,6 +10322,7 @@
           "InvalidSpacerTailLocation",
           "InvalidSpacerHeadLocation",
           "UnwrappedSpacerHead",
+          "BlankRowHasContent",
           "InvalidPageDimensions",
           "NoPages",
           "InsufficientRows",
@@ -10264,6 +10495,7 @@
           "InvalidSpacerTailLocation",
           "InvalidSpacerHeadLocation",
           "UnwrappedSpacerHead",
+          "BlankRowHasContent",
           "InvalidPageDimensions",
           "DecoderNotReady",
           "DecoderFailed",
@@ -10386,7 +10618,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 882,
+            "line": 885,
             "column": 39
           },
           "type": {
@@ -10400,7 +10632,7 @@
       },
       "source": {
         "path": "terminal/render.zig",
-        "line": 882,
+        "line": 885,
         "column": 12
       },
       "symbol": "zg_render_state_deinit"
@@ -10421,7 +10653,7 @@
           "name_source": "ast",
           "retention": "borrowed",
           "source": {
-            "line": 910,
+            "line": 913,
             "column": 9
           },
           "type": {
@@ -10434,7 +10666,7 @@
           "name_source": "sidecar",
           "retention": "borrowed",
           "source": {
-            "line": 911,
+            "line": 914,
             "column": 9
           },
           "type": {
@@ -10457,7 +10689,7 @@
       },
       "source": {
         "path": "terminal/render.zig",
-        "line": 908,
+        "line": 911,
         "column": 12
       },
       "symbol": "zg_render_state_update"
@@ -10473,7 +10705,7 @@
       },
       "source": {
         "path": "terminal/render.zig",
-        "line": 1478,
+        "line": 1481,
         "column": 12
       },
       "symbol": "zg_render_state_clean"
@@ -13384,7 +13616,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 5038,
+        "line": 5832,
         "column": 11
       },
       "zig_path": "terminal.Terminal.SwitchScreenMode"
@@ -14029,7 +14261,7 @@
           "value": 6
         },
         {
-          "name": "underline_color_rgb",
+          "name": "underline_color",
           "type": {
             "kind": "value_struct",
             "ref": "RGB"
@@ -14259,7 +14491,7 @@
           "value": 6
         },
         {
-          "name": "underline_color_rgb",
+          "name": "underline_color",
           "value": 7
         },
         {
@@ -14639,7 +14871,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 4045,
+        "line": 4825,
         "column": 11
       },
       "zig_path": "terminal.Terminal.DeccolmMode"
@@ -14755,7 +14987,7 @@
       },
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 2832,
+        "line": 3479,
         "column": 11
       },
       "zig_path": "terminal.Terminal.ScrollViewport"
@@ -15111,6 +15343,154 @@
         "column": 11
       },
       "zig_path": "gesture.GestureGeometry"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "doc": "Read an arbitrary path the program names (`t=f`).",
+          "name": "file",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
+          "doc": "Read a POSIX shared memory object the program names (`t=s`).",
+          "name": "shared_memory",
+          "type": {
+            "kind": "bool"
+          }
+        }
+      ],
+      "kind": "value_struct",
+      "layout": "extern",
+      "name": "KittyGraphicsMediums",
+      "source": {
+        "path": "config.zig",
+        "line": 111,
+        "column": 11
+      },
+      "zig_path": "config.KittyGraphicsMediums"
+    },
+    {
+      "exhaustive": true,
+      "fields": [
+        {
+          "name": "id",
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "name": "top",
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "name": "left",
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "name": "bottom",
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        },
+        {
+          "name": "right",
+          "type": {
+            "bits": 16,
+            "is_usize": false,
+            "kind": "int",
+            "signed": false
+          }
+        }
+      ],
+      "kind": "value_struct",
+      "layout": "extern",
+      "name": "XtChecksumRequest",
+      "source": {
+        "path": "terminal/xt_checksum.zig",
+        "line": 62,
+        "column": 11
+      },
+      "zig_path": "terminal.xt_checksum.Request"
+    },
+    {
+      "backing_type": {
+        "bits": 5,
+        "is_usize": false,
+        "kind": "int",
+        "signed": false
+      },
+      "exhaustive": true,
+      "ext": {
+        "STRINGER": {
+          "style": "flags"
+        }
+      },
+      "fields": [
+        {
+          "doc": "Don't negate the result.",
+          "name": "positive",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
+          "doc": "Don't add the VT100 video attributes to each cell.",
+          "name": "no_attributes",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
+          "doc": "Don't omit blanks. The DEC checksum only counts a plain space if it\nis the first cell of the rectangle.",
+          "name": "no_trim",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
+          "doc": "Count cells that were never written to as spaces instead of\nskipping them.",
+          "name": "undrawn",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
+          "doc": "Use the full codepoint rather than the DEC 8-bit value. Wide\nspacers are skipped and, as in xterm, combining marks are not\ncounted in this mode.",
+          "name": "full",
+          "type": {
+            "kind": "bool"
+          }
+        }
+      ],
+      "kind": "value_struct",
+      "layout": "packed",
+      "name": "XtChecksumFlags",
+      "registered_value": true,
+      "source": {
+        "path": "terminal/xt_checksum.zig",
+        "line": 38,
+        "column": 11
+      },
+      "zig_path": "terminal.xt_checksum.Flags"
     },
     {
       "exhaustive": true,
@@ -15807,7 +16187,7 @@
       "name": "FeedBoundary",
       "source": {
         "path": "stream.zig",
-        "line": 851,
+        "line": 856,
         "column": 11
       },
       "zig_path": "stream.FeedBoundary"
@@ -15896,7 +16276,7 @@
       "registered_value": true,
       "source": {
         "path": "stream.zig",
-        "line": 867,
+        "line": 872,
         "column": 11
       },
       "zig_path": "stream.FeedBoundaries"
@@ -15980,7 +16360,7 @@
       "name": "FeedStop",
       "source": {
         "path": "stream.zig",
-        "line": 942,
+        "line": 947,
         "column": 11
       },
       "zig_path": "stream.FeedStop"
@@ -16012,7 +16392,7 @@
       "text": true,
       "source": {
         "path": "stream.zig",
-        "line": 907,
+        "line": 912,
         "column": 11
       },
       "zig_path": "stream.ControlString"
@@ -16042,7 +16422,7 @@
       "text": true,
       "source": {
         "path": "stream.zig",
-        "line": 910,
+        "line": 915,
         "column": 11
       },
       "zig_path": "stream.ControlStringStart"
@@ -16087,7 +16467,7 @@
       "text": true,
       "source": {
         "path": "stream.zig",
-        "line": 921,
+        "line": 926,
         "column": 11
       },
       "zig_path": "stream.ControlStringEnd"
@@ -16999,7 +17379,7 @@
       },
       "source": {
         "path": "terminal/page.zig",
-        "line": 2207,
+        "line": 2459,
         "column": 15
       },
       "zig_path": "terminal.page.Cell.Wide"
@@ -17652,6 +18032,7 @@
       "exhaustive": true,
       "fields": [
         {
+          "doc": "The size of the terminal grid in cells. Both must be at least 1,\notherwise `init` returns `error.InvalidValue`.",
           "name": "cols",
           "type": {
             "bits": 16,
@@ -17749,7 +18130,7 @@
       "name": "Resize",
       "source": {
         "path": "terminal/Terminal.zig",
-        "line": 4090,
+        "line": 4870,
         "column": 11
       },
       "zig_path": "terminal.Terminal.Resize"

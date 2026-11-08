@@ -1246,8 +1246,8 @@ const (
 	AttributeTagFaint AttributeTag = 5
 	// AttributeTagUnderline corresponds to the Zig tag underline.
 	AttributeTagUnderline AttributeTag = 6
-	// AttributeTagUnderlineColorRgb corresponds to the Zig tag underline_color_rgb.
-	AttributeTagUnderlineColorRgb AttributeTag = 7
+	// AttributeTagUnderlineColor corresponds to the Zig tag underline_color.
+	AttributeTagUnderlineColor AttributeTag = 7
 	// AttributeTagUnderlineColor256 corresponds to the Zig tag underline_color_256.
 	AttributeTagUnderlineColor256 AttributeTag = 8
 	// AttributeTagResetUnderlineColor corresponds to the Zig tag reset_underline_color.
@@ -1304,7 +1304,7 @@ var zigoAttributeTagNames = [31]string{
 	4:  "reset_italic",
 	5:  "faint",
 	6:  "underline",
-	7:  "underline_color_rgb",
+	7:  "underline_color",
 	8:  "underline_color_256",
 	9:  "reset_underline_color",
 	10: "overline",

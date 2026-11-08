@@ -16,8 +16,10 @@ const TerminalDecl = api.handle("Terminal", .{
         // accessor's doc is not the field's, so it is spelled here.
         .{ .path = "cols", .doc = "The current column count, read without touching page memory." },
         .{ .path = "rows", .doc = "The number of populated rows, read without touching page memory." },
-        .{ .path = "screens.active.cursor.x", .name = "cursorX" },
-        .{ .path = "screens.active.cursor.y", .name = "cursorY" },
+        // 0-based, unlike the 1-based coordinates `setCursorPos`, `setCursorRow`
+        // and `setCursorCol` take: those are the VT parameters (CUP, VPA, CHA).
+        .{ .path = "screens.active.cursor.x", .name = "cursorX", .doc = "The cursor column, 0-based. Note that SetCursorPos, SetCursorRow and SetCursorCol take 1-based coordinates, as the VT sequences do: SetCursorCol(CursorX()+1) leaves the cursor where it is." },
+        .{ .path = "screens.active.cursor.y", .name = "cursorY", .doc = "The cursor row within the active area, 0-based. Note that SetCursorPos, SetCursorRow and SetCursorCol take 1-based coordinates, as the VT sequences do: SetCursorRow(CursorY()+1) leaves the cursor where it is." },
         .{ .path = "screens.active.cursor.cursor_style", .name = "cursorStyle" },
         .{ .path = "screens.active_key", .name = "activeScreenKey" },
         // The LCF: set once printing has filled the last column, so the next
@@ -115,8 +117,18 @@ const terminal_group = Terminal.members(p.functions(api, .{
 
     // Printing and the cursor.
     Terminal.func("printString", .{}),
-    Terminal.func("plainString", .{ .returns = zigo.result.owned() }),
-    Terminal.func("plainStringUnwrapped", .{ .returns = zigo.result.owned() }),
+    Terminal.func("plainString", .{ .returns = zigo.result.owned(), .doc =
+        \\The viewport -- the rows currently on display, without scrollback -- as
+        \\plain text. Newlines are encoded as "\n" and every soft wrap is a line
+        \\break; PlainStringUnwrapped joins wrapped rows instead.
+        \\
+        \\For the whole active screen including scrollback, use PlainText, or
+        \\FormatString for styled output.
+    }),
+    Terminal.func("plainStringUnwrapped", .{ .returns = zigo.result.owned(), .doc =
+        \\The viewport as plain text, like PlainString, but with soft-wrapped rows
+        \\joined back into the line the program wrote.
+    }),
     Terminal.func("print", .{ .params = &.{.{ .index = 1, .go_name = "c" }} }),
     Terminal.func("printRepeat", .{}),
     Terminal.func("printSlice", .{ .params = &.{.{ .index = 1, .semantic = .codepoint }} }),
@@ -134,13 +146,16 @@ const terminal_group = Terminal.members(p.functions(api, .{
     Terminal.func("cursorRight", .{}),
     Terminal.func("setCursorRow", .{}),
     Terminal.func("setCursorCol", .{}),
-    Terminal.func("cursorRowRelative", .{}),
-    Terminal.func("cursorColRelative", .{}),
+    // Signed, so a negative delta moves back; ghostty's own only moves forward.
+    api.func("cursorRowRelative", .{ .covers = &.{Terminal.ref("cursorRowRelative")} }),
+    api.func("cursorColRelative", .{ .covers = &.{Terminal.ref("cursorColRelative")} }),
 }) ++ Terminal.funcs(.{ .names = &.{
     "saveCursor",
     "restoreCursor",
     "index",
     "reverseIndex",
+    "backIndex",
+    "forwardIndex",
 } }) ++ p.functions(api, .{
     // Screens. `switchScreen` returns the screen being left, borrowed, or
     // absent when `key` was already active.
@@ -191,6 +206,8 @@ const terminal_group = Terminal.members(p.functions(api, .{
         "deleteLines",
         "insertBlanks",
         "deleteChars",
+        "insertColumns",
+        "deleteColumns",
         "eraseChars",
         "eraseLine",
         "eraseDisplay",
@@ -211,9 +228,10 @@ const terminal_group = Terminal.members(p.functions(api, .{
     // Both return `?[:0]const u8`, which the utf8 inference does not reach --
     // dropping these two hints turns the Go results from `string` into
     // `[]byte`, so they are spelled rather than left to the default.
-    Terminal.func("getPwd", .{ .returns = .{ .semantic = .utf8_string } }),
-    Terminal.func("getTitle", .{ .returns = .{ .semantic = .utf8_string } }),
-    Terminal.func("setTitle", .{}),
+    // Go getters carry no `Get` prefix.
+    Terminal.func("getPwd", .{ .name = "pwd", .returns = .{ .semantic = .utf8_string } }),
+    Terminal.func("getTitle", .{ .name = "title", .returns = .{ .semantic = .utf8_string } }),
+    Terminal.func("setTitle", .{ .params = &.{.{ .index = 1, .go_name = "title" }} }),
 
     // Colors and modes: what a program on the pty asks for.
     "backgroundColor",
@@ -223,6 +241,7 @@ const terminal_group = Terminal.members(p.functions(api, .{
     "modeEnabled",
     "setMode",
     api.func("setAttribute", .{ .covers = &.{Terminal.ref("setAttribute")} }),
+    api.func("setAttributes", .{ .covers = &.{Terminal.ref("setAttributes")} }),
     Terminal.func("setProtectedMode", .{}),
     Terminal.func("configureCharset", .{}),
     Terminal.func("invokeCharset", .{}),
@@ -266,6 +285,9 @@ const terminal_group = Terminal.members(p.functions(api, .{
     "mouseTrackingSendsMotion",
     "mouseReportFormat",
     "modeReport",
+    // XTCHECKSUM / DECRQCRA.
+    Terminal.func("rectXtChecksum", .{}),
+    Terminal.func("setDefaultXtChecksum", .{}),
 
     // The untracked one-off reads; `GridRef` is the tracked form.
     "cellAt",
@@ -439,6 +461,9 @@ pub const declarations = [_]zigo.Entry{
     p.enumeration("GestureBehavior", .{ .text = true }),
     p.enumeration("GestureAutoscrollDirection", .{ .text = true }),
     api.value("GestureGeometry", .{}),
+    api.value("KittyGraphicsMediums", .{}),
+    api.value("XtChecksumRequest", .{}),
+    api.value("XtChecksumFlags", .{}).use(p.stringer.plugin, .{ .style = .flags }),
     api.value("GesturePressEvent", .{}),
     api.value("GestureDragEvent", .{}),
 };

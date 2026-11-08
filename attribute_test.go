@@ -110,12 +110,44 @@ func TestOSCReachesTerminalState(t *testing.T) {
 	feed(t, stream, "\x1b]0;my title\x07")
 	feed(t, stream, "\x1b]7;file:///tmp/work\x1b\\")
 
-	title, ok := term.GetTitle()
+	title, ok := term.Title()
 	if !ok || title != "my title" {
 		t.Errorf("GetTitle() = %q, %v; want \"my title\", true", title, ok)
 	}
-	pwd, ok := term.GetPwd()
+	pwd, ok := term.Pwd()
 	if !ok || pwd != "file:///tmp/work" {
 		t.Errorf("GetPwd() = %q, %v; want the reported URL, true", pwd, ok)
+	}
+}
+
+// SetAttributes applies a whole SGR sequence, and the colon mask decides how
+// the parameters group: `4:3` is a curly underline, `4;3` underline then
+// italic.
+func TestSetAttributes(t *testing.T) {
+	term := newTerm(t, 20, 3)
+
+	if err := term.SetAttributes([]uint16{0, 1, 3}, 0); err != nil {
+		t.Fatalf("SetAttributes(0;1;3): %v", err)
+	}
+	if got := attrs(t, term); !strings.Contains(got, "1") || !strings.Contains(got, "3") {
+		t.Errorf("after 0;1;3 attributes = %q, want bold and italic", got)
+	}
+
+	if err := term.SetAttributes(nil, 0); err != nil {
+		t.Fatalf("SetAttributes(reset): %v", err)
+	}
+	if got, want := attrs(t, term), "0"; got != want {
+		t.Errorf("after empty SGR attributes = %q, want %q", got, want)
+	}
+
+	if err := term.SetAttributes([]uint16{4, 3}, 1); err != nil {
+		t.Fatalf("SetAttributes(4:3): %v", err)
+	}
+	if got := attrs(t, term); !strings.Contains(got, "4:3") {
+		t.Errorf("after 4:3 attributes = %q, want a curly underline", got)
+	}
+
+	if err := term.SetAttributes(make([]uint16, 64), 0); err == nil {
+		t.Error("SetAttributes accepted more parameters than ghostty records")
 	}
 }

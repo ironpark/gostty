@@ -817,6 +817,11 @@ pub fn streamFromHandler(handler: *vt.TerminalStream.Handler) *Stream {
 ///
 /// `continuation_max_bytes` caps the unfinished-sequence suffix the stream
 /// tracks across feeds; zero disables tracking.
+///
+/// The bare constructor. `NewStreamWithOptions` is the usual way to make a
+/// stream with any other setting, and `NewStreamWithConfig` the same from a
+/// struct; most programs want neither and use `New`, which builds a terminal
+/// and its stream together.
 pub fn newStream(gpa: Allocator, terminal: *Terminal, continuation_max_bytes: usize) !*Stream {
     const self = try gpa.create(Stream);
     errdefer gpa.destroy(self);

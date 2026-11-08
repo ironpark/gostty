@@ -312,7 +312,10 @@ var ErrPageTooLarge = &Error{Code: 83, Name: "PageTooLarge"}
 // ErrUnexpectedKittyKey represents Zig error.UnexpectedKittyKey.
 var ErrUnexpectedKittyKey = &Error{Code: 84, Name: "UnexpectedKittyKey"}
 
-var zigoErrorNames = [84]string{
+// ErrBlankRowHasContent represents Zig error.BlankRowHasContent.
+var ErrBlankRowHasContent = &Error{Code: 85, Name: "BlankRowHasContent"}
+
+var zigoErrorNames = [85]string{
 	0:  "OutOfMemory",
 	1:  "InvalidUtf8",
 	2:  "OutOfSpace",
@@ -397,6 +400,7 @@ var zigoErrorNames = [84]string{
 	81: "OutOfBounds",
 	82: "PageTooLarge",
 	83: "UnexpectedKittyKey",
+	84: "BlankRowHasContent",
 }
 
 func zigoErrorForCode(operation string, code int32) error {
@@ -406,7 +410,7 @@ func zigoErrorForCode(operation string, code int32) error {
 	if code == -3 {
 		return &Error{Code: -3, Name: "OmittedVariant", Operation: operation}
 	}
-	if code >= 1 && code <= 84 {
+	if code >= 1 && code <= 85 {
 		if name := zigoErrorNames[code-1]; name != "" {
 			return &Error{Code: code, Name: name, Operation: operation}
 		}

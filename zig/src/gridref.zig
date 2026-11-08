@@ -228,7 +228,7 @@ fn cellFromPin(t: *const Terminal, pin: vt.Pin) RenderCell {
 }
 
 fn resolveColor(t: *const Terminal, c: vt.Style.Color) ?RGB {
-    return switch (c) {
+    return switch (c.value()) {
         .none => null,
         .palette => |i| packColor(t.colors.palette.current[i]),
         .rgb => |v| packColor(v),

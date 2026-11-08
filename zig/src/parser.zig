@@ -237,7 +237,7 @@ pub fn sgrAttributeAt(params: []const u16, colon_mask: u32, index: usize) termin
     return .unknown;
 }
 
-fn sgrParser(params: []const u16, colon_mask: u32) !vt.sgr.Parser {
+pub fn sgrParser(params: []const u16, colon_mask: u32) !vt.sgr.Parser {
     if (params.len > MAX_SGR_PARAMS) return error.SGRTooManyParams;
     var sep: @TypeOf(@as(vt.sgr.Parser, undefined).params_sep) = .empty;
     for (0..params.len) |i| {

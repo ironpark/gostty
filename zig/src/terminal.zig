@@ -104,7 +104,7 @@ pub const Attribute = union(enum) {
     reset_italic,
     faint,
     underline: Underline,
-    underline_color_rgb: RGB,
+    underline_color: RGB,
     underline_color_256: u8,
     reset_underline_color,
     overline,
@@ -142,7 +142,7 @@ pub const Attribute = union(enum) {
             .reset_italic => .reset_italic,
             .faint => .faint,
             .underline => |v| .{ .underline = v },
-            .underline_color_rgb => |v| .{ .underline_color = unpackColor(v) },
+            .underline_color => |v| .{ .underline_color = unpackColor(v) },
             .underline_color_256 => |v| .{ .@"256_underline_color" = v },
             .reset_underline_color => .reset_underline_color,
             .overline => .overline,
@@ -180,7 +180,7 @@ pub const Attribute = union(enum) {
             .reset_italic => .reset_italic,
             .faint => .faint,
             .underline => |v| .{ .underline = v },
-            .underline_color => |v| .{ .underline_color_rgb = packColor(v) },
+            .underline_color => |v| .{ .underline_color = packColor(v) },
             .@"256_underline_color" => |v| .{ .underline_color_256 = v },
             .reset_underline_color => .reset_underline_color,
             .overline => .overline,
@@ -211,6 +211,52 @@ pub const Attribute = union(enum) {
 /// carries it until it is reset.
 pub fn setAttribute(self: *Terminal, attr: Attribute) !void {
     try self.setAttribute(attr.toVt());
+}
+
+/// Apply every attribute of one CSI SGR sequence to the cursor's pen at once.
+/// `params` and `colon_mask` are what `sgrAttributeCount` takes: the
+/// parameters of `CSI ... m` without the `m`, and bit `i` set when parameter
+/// `i` was followed by a colon. The resulting style is committed once, so
+/// `CSI 0;1;31 m` costs one style update rather than three, and on failure the
+/// pen reverts to what it was before the sequence.
+///
+/// Wrapped because ghostty takes its `sgr.Parser`, whose separator list is a
+/// `std.StaticBitSet` with no C representation.
+pub fn setAttributes(self: *Terminal, params: []const u16, colon_mask: u32) !void {
+    try self.setAttributes(try @import("parser.zig").sgrParser(params, colon_mask));
+}
+
+/// Move the cursor `delta` rows down, or up when negative, keeping its column
+/// (VPR, and its reverse). Unlike `cursorDown`/`cursorUp`, this stops only at
+/// the edge of the screen, or of the scrolling region in origin mode.
+///
+/// Wrapped because ghostty takes an unsigned count and only moves forward,
+/// which the name "relative" does not suggest.
+pub fn cursorRowRelative(self: *Terminal, delta: isize) void {
+    if (delta >= 0) return self.cursorRowRelative(@intCast(delta));
+    const pos = cursorPosForSet(self);
+    // setCursorPos clamps a row of 0 to 1, so saturating is enough.
+    self.setCursorPos(pos.row -| @abs(delta), pos.col);
+}
+
+/// Move the cursor `delta` columns right, or left when negative, keeping its
+/// row (HPR, and its reverse). Unlike `cursorRight`/`cursorLeft`, this stops
+/// only at the edge of the screen, or of the scrolling region in origin mode.
+pub fn cursorColRelative(self: *Terminal, delta: isize) void {
+    if (delta >= 0) return self.cursorColRelative(@intCast(delta));
+    const pos = cursorPosForSet(self);
+    self.setCursorPos(pos.row, pos.col -| @abs(delta));
+}
+
+/// ghostty's private `cursorPosForSet`: the cursor in `setCursorPos`
+/// coordinates, 1-based and relative to the scrolling region in origin mode.
+fn cursorPosForSet(self: *const Terminal) struct { row: usize, col: usize } {
+    const cursor = &self.screens.active.cursor;
+    const origin = self.modes.get(.origin);
+    return .{
+        .row = @as(usize, cursor.y -| if (origin) self.scrolling_region.top else 0) + 1,
+        .col = @as(usize, cursor.x -| if (origin) self.scrolling_region.left else 0) + 1,
+    };
 }
 
 // ghostty expresses "no limit" and "use the default" as null parameters. A Go

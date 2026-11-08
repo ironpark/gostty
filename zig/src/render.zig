@@ -248,7 +248,7 @@ pub fn renderHyperlinkAt(self: *RenderState, gpa: Allocator, x: u16, y: u16) !?[
 }
 
 fn resolveColor(self: *RenderState, c: vt.Style.Color) ?RGB {
-    return switch (c) {
+    return switch (c.value()) {
         .none => null,
         .palette => |i| packColor(self.colors.palette[i]),
         .rgb => |v| packColor(v),

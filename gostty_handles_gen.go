@@ -31,76 +31,76 @@ type Terminal struct {
 	zigoScratchRGB zigoScratch[raw.RGBData]
 }
 
-// zigoAcquire pins te open for one native call and hands back its pointer;
+// zigoAcquire pins t open for one native call and hands back its pointer;
 // the call ends with zigoRelease. A nil, closed, or poisoned handle is the error.
-func (te *Terminal) zigoAcquire(operation string) (unsafe.Pointer, error) {
-	if te == nil {
+func (t *Terminal) zigoAcquire(operation string) (unsafe.Pointer, error) {
+	if t == nil {
 		return nil, &HandleError{Operation: operation}
 	}
-	te.mu.Lock()
-	defer te.mu.Unlock()
-	if te.closed || te.ptr == nil {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.closed || t.ptr == nil {
 		return nil, &HandleError{Operation: operation}
 	}
-	if te.poison != nil {
-		return nil, te.poison.Poisoned(operation)
+	if t.poison != nil {
+		return nil, t.poison.Poisoned(operation)
 	}
-	te.active++
-	return te.ptr, nil
+	t.active++
+	return t.ptr, nil
 }
 
-func (te *Terminal) zigoRelease() {
-	if te == nil {
+func (t *Terminal) zigoRelease() {
+	if t == nil {
 		return
 	}
-	te.mu.Lock()
-	te.active--
-	state, release := te.zigoTakeLocked()
-	te.mu.Unlock()
+	t.mu.Lock()
+	t.active--
+	state, release := t.zigoTakeLocked()
+	t.mu.Unlock()
 	if release {
 		zigoCleanupTerminal(state)
 	}
 }
 
-// zigoPoison marks te unusable: a Zig panic unwound through native frames
+// zigoPoison marks t unusable: a Zig panic unwound through native frames
 // without running their defers, so the state behind it is unknown.
-func (te *Terminal) zigoPoison(cause *NativePanicError) {
-	if te == nil {
+func (t *Terminal) zigoPoison(cause *NativePanicError) {
+	if t == nil {
 		return
 	}
-	te.mu.Lock()
-	defer te.mu.Unlock()
-	if te.poison == nil {
-		te.poison = cause
-		te.cleanup.Stop()
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.poison == nil {
+		t.poison = cause
+		t.cleanup.Stop()
 	}
 }
 
 // zigoAcquireChild reserves one dependent child atomically with the call pin.
-func (te *Terminal) zigoAcquireChild(operation string) (unsafe.Pointer, zigoChildHandle, error) {
-	if te == nil {
+func (t *Terminal) zigoAcquireChild(operation string) (unsafe.Pointer, zigoChildHandle, error) {
+	if t == nil {
 		return nil, nil, &HandleError{Operation: operation}
 	}
-	te.mu.Lock()
-	defer te.mu.Unlock()
-	if te.closed || te.ptr == nil {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.closed || t.ptr == nil {
 		return nil, nil, &HandleError{Operation: operation}
 	}
-	if te.poison != nil {
-		return nil, nil, te.poison.Poisoned(operation)
+	if t.poison != nil {
+		return nil, nil, t.poison.Poisoned(operation)
 	}
-	te.active++
-	te.children++
-	return te.ptr, te, nil
+	t.active++
+	t.children++
+	return t.ptr, t, nil
 }
 
-func (te *Terminal) zigoDropChild() {
-	if te == nil {
+func (t *Terminal) zigoDropChild() {
+	if t == nil {
 		return
 	}
-	te.mu.Lock()
-	te.children--
-	te.mu.Unlock()
+	t.mu.Lock()
+	t.children--
+	t.mu.Unlock()
 }
 
 type zigoTerminalCleanupState struct {
@@ -126,48 +126,48 @@ func zigoCleanupTerminal(state zigoTerminalCleanupState) {
 // It returns *HandleInUseError while a call is still inside native or a dependent child remains open.
 // Close does not wait: a call still inside native keeps the resources until it
 // returns, and every call made after Close fails with *HandleError.
-func (te *Terminal) Close() error {
-	if te == nil {
+func (t *Terminal) Close() error {
+	if t == nil {
 		return nil
 	}
-	te.mu.Lock()
-	if te.closed {
-		te.mu.Unlock()
+	t.mu.Lock()
+	if t.closed {
+		t.mu.Unlock()
 		return nil
 	}
-	if te.children != 0 {
-		children := te.children
-		te.mu.Unlock()
+	if t.children != 0 {
+		children := t.children
+		t.mu.Unlock()
 		return &HandleInUseError{Operation: "Terminal.Close", Children: children}
 	}
-	if te.active != 0 {
-		active := te.active
-		te.mu.Unlock()
+	if t.active != 0 {
+		active := t.active
+		t.mu.Unlock()
 		return &HandleInUseError{Operation: "Terminal.Close", Children: active}
 	}
-	te.closed = true
-	te.cleanup.Stop()
-	state, release := te.zigoTakeLocked()
-	te.mu.Unlock()
+	t.closed = true
+	t.cleanup.Stop()
+	state, release := t.zigoTakeLocked()
+	t.mu.Unlock()
 	if release {
 		zigoCleanupTerminal(state)
 	}
-	runtime.KeepAlive(te)
+	runtime.KeepAlive(t)
 	return nil
 }
 
 var _ io.Closer = (*Terminal)(nil)
 
-// zigoTakeLocked hands out what is left to release once te is closed and no
+// zigoTakeLocked hands out what is left to release once t is closed and no
 // call is inside native; mu must be held. A poisoned handle keeps its native
 // object: releasing state a panic left half-changed could fault, so it leaks.
-func (te *Terminal) zigoTakeLocked() (zigoTerminalCleanupState, bool) {
-	if !te.closed || te.active != 0 || te.ptr == nil {
+func (t *Terminal) zigoTakeLocked() (zigoTerminalCleanupState, bool) {
+	if !t.closed || t.active != 0 || t.ptr == nil {
 		return zigoTerminalCleanupState{}, false
 	}
-	state := zigoTerminalCleanupState{ptr: te.ptr}
-	te.ptr = nil
-	if te.poison != nil {
+	state := zigoTerminalCleanupState{ptr: t.ptr}
+	t.ptr = nil
+	if t.poison != nil {
 		state.ptr = nil
 	}
 	return state, true
@@ -177,11 +177,11 @@ func (te *Terminal) zigoTakeLocked() (zigoTerminalCleanupState, bool) {
 // keeps between calls to convert through, for an owner that will not call
 // it for a while. The next call allocates afresh. It is safe at any time;
 // a call already in progress hands its buffer back when it returns.
-func (te *Terminal) ReleaseScratch() {
-	if te == nil {
+func (t *Terminal) ReleaseScratch() {
+	if t == nil {
 		return
 	}
-	te.zigoScratchRGB.release()
+	t.zigoScratchRGB.release()
 }
 
 // TerminalConfig configures a new terminal. Cols and Rows must be nonzero.
@@ -281,6 +281,10 @@ type VersionReport struct{ Name, Version string }
 
 // NewStreamWithConfig creates a child stream and applies all settings before
 // returning it. On failure it closes the stream and releases the parent claim.
+//
+// NewStreamWithOptions is the same with functional options, and the one to
+// reach for by default; this form is for settings that already live in a
+// struct. A program that does not need the terminal and stream apart uses New.
 func (t *Terminal) NewStreamWithConfig(cfg StreamConfig) (_ *Stream, err error) {
 	s, err := t.NewStream(cfg.ContinuationMaxBytes)
 	if err != nil {
@@ -382,7 +386,9 @@ func WithClipboardWriteHandler(handler ClipboardHandler) StreamOption {
 	return func(c *StreamConfig) { c.ClipboardWrite = handler }
 }
 
-// NewStreamWithOptions creates a child stream and applies functional options before returning it.
+// NewStreamWithOptions creates a child stream and applies functional options
+// before returning it. This is the recommended way to make a stream on its own
+// terminal; New makes both together.
 func (t *Terminal) NewStreamWithOptions(opts ...StreamOption) (*Stream, error) {
 	var cfg StreamConfig
 	for _, opt := range opts {
@@ -393,6 +399,11 @@ func (t *Terminal) NewStreamWithOptions(opts ...StreamOption) (*Stream, error) {
 
 // FormatString formats the active screen contents, including scrollback,
 // according to opts and returns the result as a string.
+//
+// Of the ways to read a terminal's text, PlainText and FormatString cover the
+// whole active screen with scrollback, PlainString and PlainStringUnwrapped
+// only the viewport, and Formatter is FormatString made reusable for repeated
+// reads.
 func (t *Terminal) FormatString(opts FormatOptions) (string, error) {
 	var buf strings.Builder
 	if err := t.Format(opts, &buf); err != nil {
@@ -403,7 +414,7 @@ func (t *Terminal) FormatString(opts FormatOptions) (string, error) {
 
 // PlainText returns the active screen contents, including scrollback, as
 // trimmed plain text. Use FormatString with KeepTrailingWhitespace to preserve
-// trailing spaces.
+// trailing spaces, and PlainString for the viewport alone.
 func (t *Terminal) PlainText() (string, error) {
 	return t.FormatString(FormatOptions{
 		Format: FormatterFormatPlain,
@@ -491,7 +502,8 @@ func WithStreamOptions(opts ...StreamOption) SessionOption {
 // NewTerminal is still there for a caller who wants the terminal alone --
 // replaying a snapshot, or driving it only through the printing methods.
 // NewSession adopts an already-built terminal; New builds the pair from
-// options. If either construction step fails, nothing escapes.
+// options. If either construction step fails, nothing escapes. MustNew is
+// New for tests and examples, where a failure should panic.
 func New(cols, rows uint16, opts ...SessionOption) (*Session, error) {
 	cfg := SessionConfig{Terminal: TerminalConfig{Cols: cols, Rows: rows}}
 	for _, opt := range opts {

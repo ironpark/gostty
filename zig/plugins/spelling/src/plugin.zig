@@ -10,6 +10,7 @@
 //!   The suffix comes off.
 //! - Go writes initialisms in one case: `URI`, `GL`, `ASCII`, `PNG`. zigo's
 //!   own table has `ID`, `URL` and `UTF8`; the rest of what this library uses
+//!   (`SGR` and `RGB` among them, to match `OSCParser` and `NewRGB`)
 //!   is added here, as an exact name override on functions and types, so
 //!   `HyperlinkURI` and `HyperlinkID` read as a pair.
 //!
@@ -75,6 +76,8 @@ const initialisms = [_]Initialism{
     .{ .titled = "Ascii", .canonical = "ASCII" },
     .{ .titled = "Png", .canonical = "PNG" },
     .{ .titled = "W3c", .canonical = "W3C" },
+    .{ .titled = "Sgr", .canonical = "SGR" },
+    .{ .titled = "Rgb", .canonical = "RGB" },
 };
 
 /// Whether the word at `at` ends where a new word begins: the end of the
@@ -121,6 +124,9 @@ test "initialisms are respelled only as whole words" {
         .{ .in = "CharsetGl", .out = "CharsetGL" },
         .{ .in = "KeyFromAscii", .out = "KeyFromASCII" },
         .{ .in = "OnPngDecodeRequest", .out = "OnPNGDecodeRequest" },
+        .{ .in = "SgrAttributeCount", .out = "SGRAttributeCount" },
+        .{ .in = "AsUnderlineColorRgb", .out = "AsUnderlineColorRGB" },
+        .{ .in = "Rgba", .out = null },
         .{ .in = "Graphemes", .out = null },
         .{ .in = "Granted", .out = null },
         .{ .in = "GridRefs", .out = null },

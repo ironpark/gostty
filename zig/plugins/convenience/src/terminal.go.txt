@@ -95,6 +95,10 @@ type VersionReport struct{ Name, Version string }
 
 // NewStreamWithConfig creates a child stream and applies all settings before
 // returning it. On failure it closes the stream and releases the parent claim.
+//
+// NewStreamWithOptions is the same with functional options, and the one to
+// reach for by default; this form is for settings that already live in a
+// struct. A program that does not need the terminal and stream apart uses New.
 func (t *Terminal) NewStreamWithConfig(cfg StreamConfig) (_ *Stream, err error) {
 	s, err := t.NewStream(cfg.ContinuationMaxBytes)
 	if err != nil {
@@ -196,7 +200,9 @@ func WithClipboardWriteHandler(handler ClipboardHandler) StreamOption {
 	return func(c *StreamConfig) { c.ClipboardWrite = handler }
 }
 
-// NewStreamWithOptions creates a child stream and applies functional options before returning it.
+// NewStreamWithOptions creates a child stream and applies functional options
+// before returning it. This is the recommended way to make a stream on its own
+// terminal; New makes both together.
 func (t *Terminal) NewStreamWithOptions(opts ...StreamOption) (*Stream, error) {
 	var cfg StreamConfig
 	for _, opt := range opts {
@@ -207,6 +213,11 @@ func (t *Terminal) NewStreamWithOptions(opts ...StreamOption) (*Stream, error) {
 
 // FormatString formats the active screen contents, including scrollback,
 // according to opts and returns the result as a string.
+//
+// Of the ways to read a terminal's text, PlainText and FormatString cover the
+// whole active screen with scrollback, PlainString and PlainStringUnwrapped
+// only the viewport, and Formatter is FormatString made reusable for repeated
+// reads.
 func (t *Terminal) FormatString(opts FormatOptions) (string, error) {
 	var buf strings.Builder
 	if err := t.Format(opts, &buf); err != nil {
@@ -217,7 +228,7 @@ func (t *Terminal) FormatString(opts FormatOptions) (string, error) {
 
 // PlainText returns the active screen contents, including scrollback, as
 // trimmed plain text. Use FormatString with KeepTrailingWhitespace to preserve
-// trailing spaces.
+// trailing spaces, and PlainString for the viewport alone.
 func (t *Terminal) PlainText() (string, error) {
 	return t.FormatString(FormatOptions{
 		Format: FormatterFormatPlain,
@@ -305,7 +316,8 @@ func WithStreamOptions(opts ...StreamOption) SessionOption {
 // NewTerminal is still there for a caller who wants the terminal alone --
 // replaying a snapshot, or driving it only through the printing methods.
 // NewSession adopts an already-built terminal; New builds the pair from
-// options. If either construction step fails, nothing escapes.
+// options. If either construction step fails, nothing escapes. MustNew is
+// New for tests and examples, where a failure should panic.
 func New(cols, rows uint16, opts ...SessionOption) (*Session, error) {
 	cfg := SessionConfig{Terminal: TerminalConfig{Cols: cols, Rows: rows}}
 	for _, opt := range opts {

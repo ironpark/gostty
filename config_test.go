@@ -278,14 +278,14 @@ func TestKittyGraphicsLoadingLimitsGateFileMedium(t *testing.T) {
 		t.Fatalf("file medium loaded with the default limits")
 	}
 
-	term.SetKittyGraphicsLoadingLimits(true, "", false)
+	term.SetKittyGraphicsLoadingLimits(KittyGraphicsMediums{File: true}, "")
 	transmitPath(t, stream, 2, "f", path)
 	if !hasImage(t, term, 2) {
 		t.Fatalf("file medium still refused after being allowed")
 	}
 
 	// And the gate closes again.
-	term.SetKittyGraphicsLoadingLimits(false, "", false)
+	term.SetKittyGraphicsLoadingLimits(KittyGraphicsMediums{}, "")
 	transmitPath(t, stream, 3, "f", path)
 	if hasImage(t, term, 3) {
 		t.Errorf("file medium loaded after being disallowed again")
@@ -324,7 +324,7 @@ func TestKittyGraphicsLoadingLimitsTempDir(t *testing.T) {
 		t.Fatalf("temporary file medium loaded with the default limits")
 	}
 
-	term.SetKittyGraphicsLoadingLimits(false, dir, false)
+	term.SetKittyGraphicsLoadingLimits(KittyGraphicsMediums{}, dir)
 	transmitPath(t, stream, 2, "t", writeImageFile(t, dir, "tty-graphics-protocol-b.rgb"))
 	if !hasImage(t, term, 2) {
 		t.Fatalf("temporary file medium refused inside the allowed directory")
@@ -332,7 +332,7 @@ func TestKittyGraphicsLoadingLimitsTempDir(t *testing.T) {
 
 	// Setting the limits again frees the previous copy of the directory; the
 	// medium must still work through the replacement.
-	term.SetKittyGraphicsLoadingLimits(false, dir, false)
+	term.SetKittyGraphicsLoadingLimits(KittyGraphicsMediums{}, dir)
 	transmitPath(t, stream, 3, "t", writeImageFile(t, dir, "tty-graphics-protocol-c.rgb"))
 	if !hasImage(t, term, 3) {
 		t.Fatalf("temporary file medium refused after the limits were replaced")

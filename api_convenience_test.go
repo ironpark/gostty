@@ -150,7 +150,7 @@ func TestFeedUntilStringBoundaries(t *testing.T) {
 	if text, err := term.PlainString(); err != nil || text != "ab" {
 		t.Fatalf("text = %q, %v; want the bytes outside the strings applied", text, err)
 	}
-	if title, ok := term.GetTitle(); !ok || title != "title" {
+	if title, ok := term.Title(); !ok || title != "title" {
 		t.Fatalf("title = %q, %v; want the OSC applied", title, ok)
 	}
 }

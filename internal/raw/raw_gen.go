@@ -151,6 +151,8 @@ type nativeBindings struct {
 	addrTerminalRestoreCursor                    uintptr
 	addrTerminalIndex                            uintptr
 	addrTerminalReverseIndex                     uintptr
+	addrTerminalBackIndex                        uintptr
+	addrTerminalForwardIndex                     uintptr
 	addrTerminalSwitchScreen                     uintptr
 	addrTerminalSwitchScreenMode                 uintptr
 	addrTerminalActiveScreen                     uintptr
@@ -178,6 +180,8 @@ type nativeBindings struct {
 	addrTerminalDeleteLines                      uintptr
 	addrTerminalInsertBlanks                     uintptr
 	addrTerminalDeleteChars                      uintptr
+	addrTerminalInsertColumns                    uintptr
+	addrTerminalDeleteColumns                    uintptr
 	addrTerminalEraseChars                       uintptr
 	addrTerminalEraseLine                        uintptr
 	addrTerminalEraseDisplay                     uintptr
@@ -187,8 +191,8 @@ type nativeBindings struct {
 	addrTerminalFormat                           uintptr
 	addrTerminalFormatSelection                  uintptr
 	addrTerminalSetPwd                           uintptr
-	addrTerminalGetPwd                           uintptr
-	addrTerminalGetTitle                         uintptr
+	addrTerminalPwd                              uintptr
+	addrTerminalTitle                            uintptr
 	addrTerminalSetTitle                         uintptr
 	addrTerminalBackgroundColor                  uintptr
 	addrTerminalForegroundColor                  uintptr
@@ -197,6 +201,7 @@ type nativeBindings struct {
 	addrTerminalModeEnabled                      uintptr
 	addrTerminalSetMode                          uintptr
 	fnTerminalSetAttribute                       func(unsafe.Pointer, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8) int32
+	addrTerminalSetAttributes                    uintptr
 	addrTerminalSetProtectedMode                 uintptr
 	addrTerminalConfigureCharset                 uintptr
 	addrTerminalInvokeCharset                    uintptr
@@ -230,6 +235,8 @@ type nativeBindings struct {
 	addrTerminalMouseTrackingSendsMotion         uintptr
 	addrTerminalMouseReportFormat                uintptr
 	addrTerminalModeReport                       uintptr
+	addrTerminalRectXtChecksum                   uintptr
+	addrTerminalSetDefaultXtChecksum             uintptr
 	addrTerminalCellAt                           uintptr
 	addrTerminalHyperlinkAt                      uintptr
 	addrScreenViewportIsBottom                   uintptr
@@ -1203,6 +1210,14 @@ func loadCandidate(path string) error {
 	if err != nil {
 		return fail("zg_terminal_reverse_index", err)
 	}
+	addrTerminalBackIndex, err := resolveSymbol(handle, "zg_terminal_back_index")
+	if err != nil {
+		return fail("zg_terminal_back_index", err)
+	}
+	addrTerminalForwardIndex, err := resolveSymbol(handle, "zg_terminal_forward_index")
+	if err != nil {
+		return fail("zg_terminal_forward_index", err)
+	}
 	addrTerminalSwitchScreen, err := resolveSymbol(handle, "zg_terminal_switch_screen")
 	if err != nil {
 		return fail("zg_terminal_switch_screen", err)
@@ -1311,6 +1326,14 @@ func loadCandidate(path string) error {
 	if err != nil {
 		return fail("zg_terminal_delete_chars", err)
 	}
+	addrTerminalInsertColumns, err := resolveSymbol(handle, "zg_terminal_insert_columns")
+	if err != nil {
+		return fail("zg_terminal_insert_columns", err)
+	}
+	addrTerminalDeleteColumns, err := resolveSymbol(handle, "zg_terminal_delete_columns")
+	if err != nil {
+		return fail("zg_terminal_delete_columns", err)
+	}
 	addrTerminalEraseChars, err := resolveSymbol(handle, "zg_terminal_erase_chars")
 	if err != nil {
 		return fail("zg_terminal_erase_chars", err)
@@ -1347,13 +1370,13 @@ func loadCandidate(path string) error {
 	if err != nil {
 		return fail("zg_terminal_set_pwd", err)
 	}
-	addrTerminalGetPwd, err := resolveSymbol(handle, "zg_terminal_get_pwd")
+	addrTerminalPwd, err := resolveSymbol(handle, "zg_terminal_pwd")
 	if err != nil {
-		return fail("zg_terminal_get_pwd", err)
+		return fail("zg_terminal_pwd", err)
 	}
-	addrTerminalGetTitle, err := resolveSymbol(handle, "zg_terminal_get_title")
+	addrTerminalTitle, err := resolveSymbol(handle, "zg_terminal_title")
 	if err != nil {
-		return fail("zg_terminal_get_title", err)
+		return fail("zg_terminal_title", err)
 	}
 	addrTerminalSetTitle, err := resolveSymbol(handle, "zg_terminal_set_title")
 	if err != nil {
@@ -1386,6 +1409,10 @@ func loadCandidate(path string) error {
 	addrTerminalSetAttribute, err := resolveSymbol(handle, "zg_terminal_set_attribute")
 	if err != nil {
 		return fail("zg_terminal_set_attribute", err)
+	}
+	addrTerminalSetAttributes, err := resolveSymbol(handle, "zg_terminal_set_attributes")
+	if err != nil {
+		return fail("zg_terminal_set_attributes", err)
 	}
 	addrTerminalSetProtectedMode, err := resolveSymbol(handle, "zg_terminal_set_protected_mode")
 	if err != nil {
@@ -1518,6 +1545,14 @@ func loadCandidate(path string) error {
 	addrTerminalModeReport, err := resolveSymbol(handle, "zg_terminal_mode_report")
 	if err != nil {
 		return fail("zg_terminal_mode_report", err)
+	}
+	addrTerminalRectXtChecksum, err := resolveSymbol(handle, "zg_terminal_rect_xt_checksum")
+	if err != nil {
+		return fail("zg_terminal_rect_xt_checksum", err)
+	}
+	addrTerminalSetDefaultXtChecksum, err := resolveSymbol(handle, "zg_terminal_set_default_xt_checksum")
+	if err != nil {
+		return fail("zg_terminal_set_default_xt_checksum", err)
 	}
 	addrTerminalCellAt, err := resolveSymbol(handle, "zg_terminal_cell_at")
 	if err != nil {
@@ -2182,6 +2217,8 @@ func loadCandidate(path string) error {
 	next.addrTerminalRestoreCursor = addrTerminalRestoreCursor
 	next.addrTerminalIndex = addrTerminalIndex
 	next.addrTerminalReverseIndex = addrTerminalReverseIndex
+	next.addrTerminalBackIndex = addrTerminalBackIndex
+	next.addrTerminalForwardIndex = addrTerminalForwardIndex
 	next.addrTerminalSwitchScreen = addrTerminalSwitchScreen
 	next.addrTerminalSwitchScreenMode = addrTerminalSwitchScreenMode
 	next.addrTerminalActiveScreen = addrTerminalActiveScreen
@@ -2209,6 +2246,8 @@ func loadCandidate(path string) error {
 	next.addrTerminalDeleteLines = addrTerminalDeleteLines
 	next.addrTerminalInsertBlanks = addrTerminalInsertBlanks
 	next.addrTerminalDeleteChars = addrTerminalDeleteChars
+	next.addrTerminalInsertColumns = addrTerminalInsertColumns
+	next.addrTerminalDeleteColumns = addrTerminalDeleteColumns
 	next.addrTerminalEraseChars = addrTerminalEraseChars
 	next.addrTerminalEraseLine = addrTerminalEraseLine
 	next.addrTerminalEraseDisplay = addrTerminalEraseDisplay
@@ -2218,8 +2257,8 @@ func loadCandidate(path string) error {
 	next.addrTerminalFormat = addrTerminalFormat
 	next.addrTerminalFormatSelection = addrTerminalFormatSelection
 	next.addrTerminalSetPwd = addrTerminalSetPwd
-	next.addrTerminalGetPwd = addrTerminalGetPwd
-	next.addrTerminalGetTitle = addrTerminalGetTitle
+	next.addrTerminalPwd = addrTerminalPwd
+	next.addrTerminalTitle = addrTerminalTitle
 	next.addrTerminalSetTitle = addrTerminalSetTitle
 	next.addrTerminalBackgroundColor = addrTerminalBackgroundColor
 	next.addrTerminalForegroundColor = addrTerminalForegroundColor
@@ -2228,6 +2267,7 @@ func loadCandidate(path string) error {
 	next.addrTerminalModeEnabled = addrTerminalModeEnabled
 	next.addrTerminalSetMode = addrTerminalSetMode
 	purego.RegisterFunc(&next.fnTerminalSetAttribute, addrTerminalSetAttribute)
+	next.addrTerminalSetAttributes = addrTerminalSetAttributes
 	next.addrTerminalSetProtectedMode = addrTerminalSetProtectedMode
 	next.addrTerminalConfigureCharset = addrTerminalConfigureCharset
 	next.addrTerminalInvokeCharset = addrTerminalInvokeCharset
@@ -2261,6 +2301,8 @@ func loadCandidate(path string) error {
 	next.addrTerminalMouseTrackingSendsMotion = addrTerminalMouseTrackingSendsMotion
 	next.addrTerminalMouseReportFormat = addrTerminalMouseReportFormat
 	next.addrTerminalModeReport = addrTerminalModeReport
+	next.addrTerminalRectXtChecksum = addrTerminalRectXtChecksum
+	next.addrTerminalSetDefaultXtChecksum = addrTerminalSetDefaultXtChecksum
 	next.addrTerminalCellAt = addrTerminalCellAt
 	next.addrTerminalHyperlinkAt = addrTerminalHyperlinkAt
 	next.addrScreenViewportIsBottom = addrScreenViewportIsBottom
@@ -2545,6 +2587,21 @@ type GestureGeometryData struct {
 	ScreenHeight uint32
 }
 
+// KittyGraphicsMediumsData mirrors the zg_kitty_graphics_mediums layout, padding included.
+type KittyGraphicsMediumsData struct {
+	File         uint8
+	SharedMemory uint8
+}
+
+// XtChecksumRequestData mirrors the zg_xt_checksum_request layout, padding included.
+type XtChecksumRequestData struct {
+	ID     uint16
+	Top    uint16
+	Left   uint16
+	Bottom uint16
+	Right  uint16
+}
+
 // GesturePressEventData mirrors the zg_gesture_press_event layout, padding included.
 type GesturePressEventData struct {
 	X                uint16
@@ -2691,24 +2748,24 @@ type KittyImageData struct {
 
 // AttributeData mirrors the zg_attribute_snapshot_t layout, padding included.
 type AttributeData struct {
-	Tag                uint8
-	Underline          uint8
-	UnderlineColorRgbR uint8
-	UnderlineColorRgbG uint8
-	UnderlineColorRgbB uint8
-	UnderlineColor256  uint8
-	DirectColorFgR     uint8
-	DirectColorFgG     uint8
-	DirectColorFgB     uint8
-	DirectColorBgR     uint8
-	DirectColorBgG     uint8
-	DirectColorBgB     uint8
-	Color256Fg         uint8
-	Color256Bg         uint8
-	NamedFg            uint8
-	NamedBg            uint8
-	BrightNamedFg      uint8
-	BrightNamedBg      uint8
+	Tag               uint8
+	Underline         uint8
+	UnderlineColorR   uint8
+	UnderlineColorG   uint8
+	UnderlineColorB   uint8
+	UnderlineColor256 uint8
+	DirectColorFgR    uint8
+	DirectColorFgG    uint8
+	DirectColorFgB    uint8
+	DirectColorBgR    uint8
+	DirectColorBgG    uint8
+	DirectColorBgB    uint8
+	Color256Fg        uint8
+	Color256Bg        uint8
+	NamedFg           uint8
+	NamedBg           uint8
+	BrightNamedFg     uint8
+	BrightNamedBg     uint8
 }
 
 // zigoEmptyStreamData is what a present but empty byte-slice reader points
@@ -3957,7 +4014,7 @@ func (b *nativeBindings) fnTerminalSetCursorCol(p0 unsafe.Pointer, p1 uintptr) i
 }
 
 // fnTerminalCursorRowRelative calls zg_terminal_cursor_row_relative through purego.SyscallN.
-func (b *nativeBindings) fnTerminalCursorRowRelative(p0 unsafe.Pointer, p1 uintptr) int32 {
+func (b *nativeBindings) fnTerminalCursorRowRelative(p0 unsafe.Pointer, p1 int) int32 {
 	f := zigoCallFrames.Get().(*zigoCallFrame)
 	zigoEscape(p0)
 	f.args[0] = uintptr(p0)
@@ -3968,7 +4025,7 @@ func (b *nativeBindings) fnTerminalCursorRowRelative(p0 unsafe.Pointer, p1 uintp
 }
 
 // fnTerminalCursorColRelative calls zg_terminal_cursor_col_relative through purego.SyscallN.
-func (b *nativeBindings) fnTerminalCursorColRelative(p0 unsafe.Pointer, p1 uintptr) int32 {
+func (b *nativeBindings) fnTerminalCursorColRelative(p0 unsafe.Pointer, p1 int) int32 {
 	f := zigoCallFrames.Get().(*zigoCallFrame)
 	zigoEscape(p0)
 	f.args[0] = uintptr(p0)
@@ -4014,6 +4071,26 @@ func (b *nativeBindings) fnTerminalReverseIndex(p0 unsafe.Pointer) int32 {
 	zigoEscape(p0)
 	f.args[0] = uintptr(p0)
 	r, _, _ := purego.SyscallN(b.addrTerminalReverseIndex, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalBackIndex calls zg_terminal_back_index through purego.SyscallN.
+func (b *nativeBindings) fnTerminalBackIndex(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrTerminalBackIndex, f.args[:1]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalForwardIndex calls zg_terminal_forward_index through purego.SyscallN.
+func (b *nativeBindings) fnTerminalForwardIndex(p0 unsafe.Pointer) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	r, _, _ := purego.SyscallN(b.addrTerminalForwardIndex, f.args[:1]...)
 	zigoCallFrames.Put(f)
 	return int32(r)
 }
@@ -4339,6 +4416,28 @@ func (b *nativeBindings) fnTerminalDeleteChars(p0 unsafe.Pointer, p1 uintptr) in
 	return int32(r)
 }
 
+// fnTerminalInsertColumns calls zg_terminal_insert_columns through purego.SyscallN.
+func (b *nativeBindings) fnTerminalInsertColumns(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalInsertColumns, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalDeleteColumns calls zg_terminal_delete_columns through purego.SyscallN.
+func (b *nativeBindings) fnTerminalDeleteColumns(p0 unsafe.Pointer, p1 uintptr) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalDeleteColumns, f.args[:2]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
 // fnTerminalEraseChars calls zg_terminal_erase_chars through purego.SyscallN.
 func (b *nativeBindings) fnTerminalEraseChars(p0 unsafe.Pointer, p1 uintptr) int32 {
 	f := zigoCallFrames.Get().(*zigoCallFrame)
@@ -4460,8 +4559,8 @@ func (b *nativeBindings) fnTerminalSetPwd(p0 unsafe.Pointer, p1 unsafe.Pointer, 
 	return int32(r)
 }
 
-// fnTerminalGetPwd calls zg_terminal_get_pwd through purego.SyscallN.
-func (b *nativeBindings) fnTerminalGetPwd(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+// fnTerminalPwd calls zg_terminal_pwd through purego.SyscallN.
+func (b *nativeBindings) fnTerminalPwd(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
 	f := zigoCallFrames.Get().(*zigoCallFrame)
 	zigoEscape(p0)
 	f.args[0] = uintptr(p0)
@@ -4471,15 +4570,15 @@ func (b *nativeBindings) fnTerminalGetPwd(p0 unsafe.Pointer, p1 *unsafe.Pointer,
 	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
 	*s2 = *p2
 	f.args[2] = uintptr(unsafe.Pointer(s2))
-	r, _, _ := purego.SyscallN(b.addrTerminalGetPwd, f.args[:3]...)
+	r, _, _ := purego.SyscallN(b.addrTerminalPwd, f.args[:3]...)
 	*p1 = *s1
 	*p2 = *s2
 	zigoCallFrames.Put(f)
 	return int32(r)
 }
 
-// fnTerminalGetTitle calls zg_terminal_get_title through purego.SyscallN.
-func (b *nativeBindings) fnTerminalGetTitle(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
+// fnTerminalTitle calls zg_terminal_title through purego.SyscallN.
+func (b *nativeBindings) fnTerminalTitle(p0 unsafe.Pointer, p1 *unsafe.Pointer, p2 *uintptr) int32 {
 	f := zigoCallFrames.Get().(*zigoCallFrame)
 	zigoEscape(p0)
 	f.args[0] = uintptr(p0)
@@ -4489,7 +4588,7 @@ func (b *nativeBindings) fnTerminalGetTitle(p0 unsafe.Pointer, p1 *unsafe.Pointe
 	s2 := (*uintptr)(unsafe.Pointer(&f.out[1]))
 	*s2 = *p2
 	f.args[2] = uintptr(unsafe.Pointer(s2))
-	r, _, _ := purego.SyscallN(b.addrTerminalGetTitle, f.args[:3]...)
+	r, _, _ := purego.SyscallN(b.addrTerminalTitle, f.args[:3]...)
 	*p1 = *s1
 	*p2 = *s2
 	zigoCallFrames.Put(f)
@@ -4603,6 +4702,20 @@ func (b *nativeBindings) fnTerminalSetMode(p0 unsafe.Pointer, p1 uint16, p2 uint
 	f.args[1] = uintptr(p1)
 	f.args[2] = uintptr(p2)
 	r, _, _ := purego.SyscallN(b.addrTerminalSetMode, f.args[:3]...)
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetAttributes calls zg_terminal_set_attributes through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetAttributes(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 uintptr, p3 uint32) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	zigoEscape(p1)
+	f.args[1] = uintptr(p1)
+	f.args[2] = uintptr(p2)
+	f.args[3] = uintptr(p3)
+	r, _, _ := purego.SyscallN(b.addrTerminalSetAttributes, f.args[:4]...)
 	zigoCallFrames.Put(f)
 	return int32(r)
 }
@@ -4888,16 +5001,17 @@ func (b *nativeBindings) fnTerminalSetKittyGraphicsSizeLimit(p0 unsafe.Pointer, 
 }
 
 // fnTerminalSetKittyGraphicsLoadingLimits calls zg_terminal_set_kitty_graphics_loading_limits through purego.SyscallN.
-func (b *nativeBindings) fnTerminalSetKittyGraphicsLoadingLimits(p0 unsafe.Pointer, p1 uint8, p2 unsafe.Pointer, p3 uintptr, p4 uint8) int32 {
+func (b *nativeBindings) fnTerminalSetKittyGraphicsLoadingLimits(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 unsafe.Pointer, p3 uintptr) int32 {
 	f := zigoCallFrames.Get().(*zigoCallFrame)
 	zigoEscape(p0)
 	f.args[0] = uintptr(p0)
-	f.args[1] = uintptr(p1)
+	s1 := (*KittyGraphicsMediumsData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*KittyGraphicsMediumsData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
 	zigoEscape(p2)
 	f.args[2] = uintptr(p2)
 	f.args[3] = uintptr(p3)
-	f.args[4] = uintptr(p4)
-	r, _, _ := purego.SyscallN(b.addrTerminalSetKittyGraphicsLoadingLimits, f.args[:5]...)
+	r, _, _ := purego.SyscallN(b.addrTerminalSetKittyGraphicsLoadingLimits, f.args[:4]...)
 	zigoCallFrames.Put(f)
 	return int32(r)
 }
@@ -5041,6 +5155,34 @@ func (b *nativeBindings) fnTerminalModeReport(p0 unsafe.Pointer, p1 uint16, p2 u
 	f.args[3] = uintptr(unsafe.Pointer(s3))
 	r, _, _ := purego.SyscallN(b.addrTerminalModeReport, f.args[:4]...)
 	*p3 = *s3
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalRectXtChecksum calls zg_terminal_rect_xt_checksum through purego.SyscallN.
+func (b *nativeBindings) fnTerminalRectXtChecksum(p0 unsafe.Pointer, p1 unsafe.Pointer, p2 *uint16) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	s1 := (*XtChecksumRequestData)(unsafe.Pointer(&f.out[0]))
+	*s1 = *(*XtChecksumRequestData)(p1)
+	f.args[1] = uintptr(unsafe.Pointer(s1))
+	s2 := (*uint16)(unsafe.Pointer(&f.out[2]))
+	*s2 = *p2
+	f.args[2] = uintptr(unsafe.Pointer(s2))
+	r, _, _ := purego.SyscallN(b.addrTerminalRectXtChecksum, f.args[:3]...)
+	*p2 = *s2
+	zigoCallFrames.Put(f)
+	return int32(r)
+}
+
+// fnTerminalSetDefaultXtChecksum calls zg_terminal_set_default_xt_checksum through purego.SyscallN.
+func (b *nativeBindings) fnTerminalSetDefaultXtChecksum(p0 unsafe.Pointer, p1 uint8) int32 {
+	f := zigoCallFrames.Get().(*zigoCallFrame)
+	zigoEscape(p0)
+	f.args[0] = uintptr(p0)
+	f.args[1] = uintptr(p1)
+	r, _, _ := purego.SyscallN(b.addrTerminalSetDefaultXtChecksum, f.args[:2]...)
 	zigoCallFrames.Put(f)
 	return int32(r)
 }
@@ -7814,14 +7956,14 @@ func TerminalSetCursorCol(self unsafe.Pointer, col uint) int32 {
 }
 
 // TerminalCursorRowRelative calls the generated purego ABI wrapper for zg_terminal_cursor_row_relative.
-func TerminalCursorRowRelative(self unsafe.Pointer, count uint) int32 {
-	code := bindings().fnTerminalCursorRowRelative(self, uintptr(count))
+func TerminalCursorRowRelative(self unsafe.Pointer, delta int) int32 {
+	code := bindings().fnTerminalCursorRowRelative(self, delta)
 	return code
 }
 
 // TerminalCursorColRelative calls the generated purego ABI wrapper for zg_terminal_cursor_col_relative.
-func TerminalCursorColRelative(self unsafe.Pointer, count uint) int32 {
-	code := bindings().fnTerminalCursorColRelative(self, uintptr(count))
+func TerminalCursorColRelative(self unsafe.Pointer, delta int) int32 {
+	code := bindings().fnTerminalCursorColRelative(self, delta)
 	return code
 }
 
@@ -7846,6 +7988,18 @@ func TerminalIndex(self unsafe.Pointer) int32 {
 // TerminalReverseIndex calls the generated purego ABI wrapper for zg_terminal_reverse_index.
 func TerminalReverseIndex(self unsafe.Pointer) int32 {
 	code := bindings().fnTerminalReverseIndex(self)
+	return code
+}
+
+// TerminalBackIndex calls the generated purego ABI wrapper for zg_terminal_back_index.
+func TerminalBackIndex(self unsafe.Pointer) int32 {
+	code := bindings().fnTerminalBackIndex(self)
+	return code
+}
+
+// TerminalForwardIndex calls the generated purego ABI wrapper for zg_terminal_forward_index.
+func TerminalForwardIndex(self unsafe.Pointer) int32 {
+	code := bindings().fnTerminalForwardIndex(self)
 	return code
 }
 
@@ -8029,6 +8183,18 @@ func TerminalDeleteChars(self unsafe.Pointer, count uint) int32 {
 	return code
 }
 
+// TerminalInsertColumns calls the generated purego ABI wrapper for zg_terminal_insert_columns.
+func TerminalInsertColumns(self unsafe.Pointer, count uint) int32 {
+	code := bindings().fnTerminalInsertColumns(self, uintptr(count))
+	return code
+}
+
+// TerminalDeleteColumns calls the generated purego ABI wrapper for zg_terminal_delete_columns.
+func TerminalDeleteColumns(self unsafe.Pointer, count uint) int32 {
+	code := bindings().fnTerminalDeleteColumns(self, uintptr(count))
+	return code
+}
+
 // TerminalEraseChars calls the generated purego ABI wrapper for zg_terminal_erase_chars.
 func TerminalEraseChars(self unsafe.Pointer, count uint) int32 {
 	code := bindings().fnTerminalEraseChars(self, uintptr(count))
@@ -8088,11 +8254,11 @@ func TerminalSetPwd(self unsafe.Pointer, pwd string) int32 {
 	return code
 }
 
-// TerminalGetPwd calls the generated purego ABI wrapper for zg_terminal_get_pwd.
-func TerminalGetPwd(self unsafe.Pointer) (string, bool, int32) {
+// TerminalPwd calls the generated purego ABI wrapper for zg_terminal_pwd.
+func TerminalPwd(self unsafe.Pointer) (string, bool, int32) {
 	var outResultPtr unsafe.Pointer
 	var outResultLen uintptr
-	code := bindings().fnTerminalGetPwd(self, &outResultPtr, &outResultLen)
+	code := bindings().fnTerminalPwd(self, &outResultPtr, &outResultLen)
 	if code != 0 {
 		return "", false, code
 	}
@@ -8105,11 +8271,11 @@ func TerminalGetPwd(self unsafe.Pointer) (string, bool, int32) {
 	return string(unsafe.Slice((*uint8)(outResultPtr), int(outResultLen))), true, code
 }
 
-// TerminalGetTitle calls the generated purego ABI wrapper for zg_terminal_get_title.
-func TerminalGetTitle(self unsafe.Pointer) (string, bool, int32) {
+// TerminalTitle calls the generated purego ABI wrapper for zg_terminal_title.
+func TerminalTitle(self unsafe.Pointer) (string, bool, int32) {
 	var outResultPtr unsafe.Pointer
 	var outResultLen uintptr
-	code := bindings().fnTerminalGetTitle(self, &outResultPtr, &outResultLen)
+	code := bindings().fnTerminalTitle(self, &outResultPtr, &outResultLen)
 	if code != 0 {
 		return "", false, code
 	}
@@ -8123,12 +8289,12 @@ func TerminalGetTitle(self unsafe.Pointer) (string, bool, int32) {
 }
 
 // TerminalSetTitle calls the generated purego ABI wrapper for zg_terminal_set_title.
-func TerminalSetTitle(self unsafe.Pointer, t string) int32 {
-	var tPtr unsafe.Pointer
-	if len(t) != 0 {
-		tPtr = unsafe.Pointer(unsafe.StringData(t))
+func TerminalSetTitle(self unsafe.Pointer, title string) int32 {
+	var titlePtr unsafe.Pointer
+	if len(title) != 0 {
+		titlePtr = unsafe.Pointer(unsafe.StringData(title))
 	}
-	code := bindings().fnTerminalSetTitle(self, tPtr, uintptr(len(t)))
+	code := bindings().fnTerminalSetTitle(self, titlePtr, uintptr(len(title)))
 	return code
 }
 
@@ -8181,8 +8347,18 @@ func TerminalSetMode(self unsafe.Pointer, mode uint16, value uint8) int32 {
 }
 
 // TerminalSetAttribute calls the generated purego ABI wrapper for zg_terminal_set_attribute.
-func TerminalSetAttribute(self unsafe.Pointer, attr_tag uint8, attr_underline uint8, attr_underline_color_rgb_r uint8, attr_underline_color_rgb_g uint8, attr_underline_color_rgb_b uint8, attr_underline_color_256 uint8, attr_direct_color_fg_r uint8, attr_direct_color_fg_g uint8, attr_direct_color_fg_b uint8, attr_direct_color_bg_r uint8, attr_direct_color_bg_g uint8, attr_direct_color_bg_b uint8, attr_color_256_fg uint8, attr_color_256_bg uint8, attr_named_fg uint8, attr_named_bg uint8, attr_bright_named_fg uint8, attr_bright_named_bg uint8) int32 {
-	code := bindings().fnTerminalSetAttribute(self, attr_tag, attr_underline, attr_underline_color_rgb_r, attr_underline_color_rgb_g, attr_underline_color_rgb_b, attr_underline_color_256, attr_direct_color_fg_r, attr_direct_color_fg_g, attr_direct_color_fg_b, attr_direct_color_bg_r, attr_direct_color_bg_g, attr_direct_color_bg_b, attr_color_256_fg, attr_color_256_bg, attr_named_fg, attr_named_bg, attr_bright_named_fg, attr_bright_named_bg)
+func TerminalSetAttribute(self unsafe.Pointer, attr_tag uint8, attr_underline uint8, attr_underline_color_r uint8, attr_underline_color_g uint8, attr_underline_color_b uint8, attr_underline_color_256 uint8, attr_direct_color_fg_r uint8, attr_direct_color_fg_g uint8, attr_direct_color_fg_b uint8, attr_direct_color_bg_r uint8, attr_direct_color_bg_g uint8, attr_direct_color_bg_b uint8, attr_color_256_fg uint8, attr_color_256_bg uint8, attr_named_fg uint8, attr_named_bg uint8, attr_bright_named_fg uint8, attr_bright_named_bg uint8) int32 {
+	code := bindings().fnTerminalSetAttribute(self, attr_tag, attr_underline, attr_underline_color_r, attr_underline_color_g, attr_underline_color_b, attr_underline_color_256, attr_direct_color_fg_r, attr_direct_color_fg_g, attr_direct_color_fg_b, attr_direct_color_bg_r, attr_direct_color_bg_g, attr_direct_color_bg_b, attr_color_256_fg, attr_color_256_bg, attr_named_fg, attr_named_bg, attr_bright_named_fg, attr_bright_named_bg)
+	return code
+}
+
+// TerminalSetAttributes calls the generated purego ABI wrapper for zg_terminal_set_attributes.
+func TerminalSetAttributes(self unsafe.Pointer, params []uint16, colonMask uint32) int32 {
+	var paramsPtr unsafe.Pointer
+	if len(params) != 0 {
+		paramsPtr = unsafe.Pointer(&params[0])
+	}
+	code := bindings().fnTerminalSetAttributes(self, paramsPtr, uintptr(len(params)), colonMask)
 	return code
 }
 
@@ -8329,12 +8505,12 @@ func TerminalSetKittyGraphicsSizeLimit(self unsafe.Pointer, limit uint) int32 {
 }
 
 // TerminalSetKittyGraphicsLoadingLimits calls the generated purego ABI wrapper for zg_terminal_set_kitty_graphics_loading_limits.
-func TerminalSetKittyGraphicsLoadingLimits(self unsafe.Pointer, file uint8, tempDir string, sharedMemory uint8) int32 {
+func TerminalSetKittyGraphicsLoadingLimits(self unsafe.Pointer, mediums KittyGraphicsMediumsData, tempDir string) int32 {
 	var tempDirPtr unsafe.Pointer
 	if len(tempDir) != 0 {
 		tempDirPtr = unsafe.Pointer(unsafe.StringData(tempDir))
 	}
-	code := bindings().fnTerminalSetKittyGraphicsLoadingLimits(self, file, tempDirPtr, uintptr(len(tempDir)), sharedMemory)
+	code := bindings().fnTerminalSetKittyGraphicsLoadingLimits(self, unsafe.Pointer(&mediums), tempDirPtr, uintptr(len(tempDir)))
 	return code
 }
 
@@ -8405,6 +8581,19 @@ func TerminalModeReport(self unsafe.Pointer, mode uint16, ansi uint8) (uint8, in
 	var outResult uint8
 	code := bindings().fnTerminalModeReport(self, mode, ansi, &outResult)
 	return outResult, code
+}
+
+// TerminalRectXtChecksum calls the generated purego ABI wrapper for zg_terminal_rect_xt_checksum.
+func TerminalRectXtChecksum(self unsafe.Pointer, req XtChecksumRequestData) (uint16, int32) {
+	var outResult uint16
+	code := bindings().fnTerminalRectXtChecksum(self, unsafe.Pointer(&req), &outResult)
+	return outResult, code
+}
+
+// TerminalSetDefaultXtChecksum calls the generated purego ABI wrapper for zg_terminal_set_default_xt_checksum.
+func TerminalSetDefaultXtChecksum(self unsafe.Pointer, flags uint8) int32 {
+	code := bindings().fnTerminalSetDefaultXtChecksum(self, flags)
+	return code
 }
 
 // TerminalCellAt calls the generated purego ABI wrapper for zg_terminal_cell_at.

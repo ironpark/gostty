@@ -197,6 +197,9 @@ pub const ColorName = terminal_.ColorName;
 pub const colorNameDefault = terminal_.colorNameDefault;
 pub const Attribute = terminal_.Attribute;
 pub const setAttribute = terminal_.setAttribute;
+pub const setAttributes = terminal_.setAttributes;
+pub const cursorRowRelative = terminal_.cursorRowRelative;
+pub const cursorColRelative = terminal_.cursorColRelative;
 pub const setDefaultCursorBlink = terminal_.setDefaultCursorBlink;
 pub const resetDefaultCursorBlink = terminal_.resetDefaultCursorBlink;
 pub const setScrollbackMaxBytes = terminal_.setScrollbackMaxBytes;
@@ -346,6 +349,12 @@ pub const hyperlinkAt = gridref_.hyperlinkAt;
 const state_ = @import("state.zig");
 
 pub const ScrollRegion = state_.ScrollRegion;
+/// A DECRQCRA rectangle, as it arrives in `CSI Pi ; Pg ; Pt ; Pl ; Pb ; Pr * y`:
+/// 1-based, with zero meaning the parameter was omitted.
+pub const XtChecksumRequest = vt.xt_checksum.Request;
+/// The XTCHECKSUM variant: which of xterm's adjustments to the DEC checksum
+/// are on.
+pub const XtChecksumFlags = vt.xt_checksum.Flags;
 pub const scrollRegion = state_.scrollRegion;
 pub const charset = state_.charset;
 pub const MouseTracking = state_.MouseTracking;
@@ -374,6 +383,7 @@ pub const setTabstop = config_.setTabstop;
 pub const unsetTabstop = config_.unsetTabstop;
 pub const resetTabstops = config_.resetTabstops;
 pub const setKittyGraphicsLoadingLimits = config_.setKittyGraphicsLoadingLimits;
+pub const KittyGraphicsMediums = config_.KittyGraphicsMediums;
 
 // The standalone OSC and SGR parsers: a sequence in, what it said out, with no
 // terminal behind them.

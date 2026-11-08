@@ -119,11 +119,11 @@ func TestTitleAndPwdEvents(t *testing.T) {
 		t.Fatalf("events = %v, %v; want title_changed then pwd_changed", got[0].kind, got[1].kind)
 	}
 
-	title, ok := term.GetTitle()
+	title, ok := term.Title()
 	if !ok || title != "my title" {
 		t.Errorf("GetTitle() = %q, %v", title, ok)
 	}
-	pwd, ok := term.GetPwd()
+	pwd, ok := term.Pwd()
 	if !ok || pwd != "file:///tmp/work" {
 		t.Errorf("GetPwd() = %q, %v", pwd, ok)
 	}

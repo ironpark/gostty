@@ -82,6 +82,77 @@ func zigoDecodeEventInto(buffer []byte, offset uint64, result *Event) {
 	result.HasProgress = zigoMaterializedWord(buffer, offset+76, 1) != 0
 }
 
+// XtChecksumFlags mirrors the Zig packed struct of the same name.
+type XtChecksumFlags struct {
+	// Positive: Don't negate the result.
+	Positive bool
+	// NoAttributes: Don't add the VT100 video attributes to each cell.
+	NoAttributes bool
+	// NoTrim: Don't omit blanks. The DEC checksum only counts a plain space if it
+	// is the first cell of the rectangle.
+	NoTrim bool
+	// Undrawn: Count cells that were never written to as spaces instead of
+	// skipping them.
+	Undrawn bool
+	// Full: Use the full codepoint rather than the DEC 8-bit value. Wide
+	// spacers are skipped and, as in xterm, combining marks are not
+	// counted in this mode.
+	Full bool
+}
+
+func zigoXtChecksumFlagsToBacking(value XtChecksumFlags) uint8 {
+	var result uint64
+	result |= (uint64(zigoBoolToUint8(value.Positive)) & 0x1) << 0
+	result |= (uint64(zigoBoolToUint8(value.NoAttributes)) & 0x1) << 1
+	result |= (uint64(zigoBoolToUint8(value.NoTrim)) & 0x1) << 2
+	result |= (uint64(zigoBoolToUint8(value.Undrawn)) & 0x1) << 3
+	result |= (uint64(zigoBoolToUint8(value.Full)) & 0x1) << 4
+	return uint8(result)
+}
+
+// Backing returns the integer representation used by Zig.
+func (value XtChecksumFlags) Backing() uint8 { return zigoXtChecksumFlagsToBacking(value) }
+
+// XtChecksumFlagsFromBacking reconstructs a XtChecksumFlags from its Zig integer representation.
+func XtChecksumFlagsFromBacking(value uint8) XtChecksumFlags {
+	return XtChecksumFlags{
+		Positive:     ((uint64(value) >> 0) & 0x1) != 0,
+		NoAttributes: ((uint64(value) >> 1) & 0x1) != 0,
+		NoTrim:       ((uint64(value) >> 2) & 0x1) != 0,
+		Undrawn:      ((uint64(value) >> 3) & 0x1) != 0,
+		Full:         ((uint64(value) >> 4) & 0x1) != 0,
+	}
+}
+
+// String names the set members of XtChecksumFlags, joined by "|". A member left at
+// its zero value is not named, so the zero XtChecksumFlags is "none".
+func (value XtChecksumFlags) String() string {
+	var parts []string
+	if value.Positive {
+		parts = append(parts, "Positive")
+	}
+	if value.NoAttributes {
+		parts = append(parts, "NoAttributes")
+	}
+	if value.NoTrim {
+		parts = append(parts, "NoTrim")
+	}
+	if value.Undrawn {
+		parts = append(parts, "Undrawn")
+	}
+	if value.Full {
+		parts = append(parts, "Full")
+	}
+	if len(parts) == 0 {
+		return "none"
+	}
+	return strings.Join(parts, "|")
+}
+
+// XtChecksumFlags satisfies fmt.Stringer as a value, which is the form `%v` is
+// handed; a pointer receiver would stop this compiling.
+var _ fmt.Stringer = *new(XtChecksumFlags)
+
 // DragOperations mirrors the Zig packed struct of the same name.
 type DragOperations struct {
 	Copy bool
@@ -601,6 +672,37 @@ var _ = [1]struct{}{}[unsafe.Offsetof(GestureGeometry{}.CellWidth)-unsafe.Offset
 var _ = [1]struct{}{}[unsafe.Offsetof(GestureGeometry{}.PaddingLeft)-unsafe.Offsetof(raw.GestureGeometryData{}.PaddingLeft)]
 var _ = [1]struct{}{}[unsafe.Offsetof(GestureGeometry{}.ScreenHeight)-unsafe.Offsetof(raw.GestureGeometryData{}.ScreenHeight)]
 
+// KittyGraphicsMediums mirrors the Zig `extern struct` of the same name.
+type KittyGraphicsMediums struct {
+	// File: Read an arbitrary path the program names (`t=f`).
+	File bool
+	// SharedMemory: Read a POSIX shared memory object the program names (`t=s`).
+	SharedMemory bool
+}
+
+// XtChecksumRequest mirrors the Zig `extern struct` of the same name.
+type XtChecksumRequest struct {
+	// ID corresponds to the Zig field id.
+	ID uint16
+	// Top corresponds to the Zig field top.
+	Top uint16
+	// Left corresponds to the Zig field left.
+	Left uint16
+	// Bottom corresponds to the Zig field bottom.
+	Bottom uint16
+	// Right corresponds to the Zig field right.
+	Right uint16
+}
+
+// XtChecksumRequest is reinterpreted as raw.XtChecksumRequestData instead of copied, so the two
+// layouts must stay identical.
+var _ = [1]struct{}{}[unsafe.Sizeof(XtChecksumRequest{})-unsafe.Sizeof(raw.XtChecksumRequestData{})]
+var _ = [1]struct{}{}[unsafe.Offsetof(XtChecksumRequest{}.ID)-unsafe.Offsetof(raw.XtChecksumRequestData{}.ID)]
+var _ = [1]struct{}{}[unsafe.Offsetof(XtChecksumRequest{}.Top)-unsafe.Offsetof(raw.XtChecksumRequestData{}.Top)]
+var _ = [1]struct{}{}[unsafe.Offsetof(XtChecksumRequest{}.Left)-unsafe.Offsetof(raw.XtChecksumRequestData{}.Left)]
+var _ = [1]struct{}{}[unsafe.Offsetof(XtChecksumRequest{}.Bottom)-unsafe.Offsetof(raw.XtChecksumRequestData{}.Bottom)]
+var _ = [1]struct{}{}[unsafe.Offsetof(XtChecksumRequest{}.Right)-unsafe.Offsetof(raw.XtChecksumRequestData{}.Right)]
+
 // GesturePressEvent mirrors the Zig `extern struct` of the same name.
 type GesturePressEvent struct {
 	// X: Column of the cell under the pointer, in viewport coordinates.
@@ -1057,6 +1159,23 @@ func zigoGestureGeometryToRaw(value GestureGeometry) raw.GestureGeometryData {
 	}
 }
 
+func zigoKittyGraphicsMediumsToRaw(value KittyGraphicsMediums) raw.KittyGraphicsMediumsData {
+	return raw.KittyGraphicsMediumsData{
+		File:         zigoBoolToUint8(value.File),
+		SharedMemory: zigoBoolToUint8(value.SharedMemory),
+	}
+}
+
+func zigoXtChecksumRequestToRaw(value XtChecksumRequest) raw.XtChecksumRequestData {
+	return raw.XtChecksumRequestData{
+		ID:     value.ID,
+		Top:    value.Top,
+		Left:   value.Left,
+		Bottom: value.Bottom,
+		Right:  value.Right,
+	}
+}
+
 func zigoGesturePressEventToRaw(value GesturePressEvent) raw.GesturePressEventData {
 	return raw.GesturePressEventData{
 		X:                value.X,
@@ -1222,8 +1341,8 @@ func zigoAttributeFromRaw(value raw.AttributeData) Attribute {
 		return AttributeFaint()
 	case AttributeTagUnderline:
 		return AttributeUnderline(Underline(value.Underline))
-	case AttributeTagUnderlineColorRgb:
-		return AttributeUnderlineColorRgb(zigoRGBFromRaw(raw.RGBData{R: value.UnderlineColorRgbR, G: value.UnderlineColorRgbG, B: value.UnderlineColorRgbB}))
+	case AttributeTagUnderlineColor:
+		return AttributeUnderlineColor(zigoRGBFromRaw(raw.RGBData{R: value.UnderlineColorR, G: value.UnderlineColorG, B: value.UnderlineColorB}))
 	case AttributeTagUnderlineColor256:
 		return AttributeUnderlineColor256(value.UnderlineColor256)
 	case AttributeTagResetUnderlineColor:
@@ -1279,7 +1398,7 @@ func zigoAttributeFromRaw(value raw.AttributeData) Attribute {
 type Attribute struct {
 	tag               AttributeTag
 	underline         Underline
-	underlineColorRgb RGB
+	underlineColor    RGB
 	underlineColor256 uint8
 	directColorFg     RGB
 	directColorBg     RGB
@@ -1299,9 +1418,9 @@ func (value Attribute) AsUnderline() (Underline, bool) {
 	return value.underline, value.tag == AttributeTagUnderline
 }
 
-// AsUnderlineColorRgb returns the underline_color_rgb payload and whether it is the active variant.
-func (value Attribute) AsUnderlineColorRgb() (RGB, bool) {
-	return value.underlineColorRgb, value.tag == AttributeTagUnderlineColorRgb
+// AsUnderlineColor returns the underline_color payload and whether it is the active variant.
+func (value Attribute) AsUnderlineColor() (RGB, bool) {
+	return value.underlineColor, value.tag == AttributeTagUnderlineColor
 }
 
 // AsUnderlineColor256 returns the underline_color_256 payload and whether it is the active variant.
@@ -1384,9 +1503,9 @@ func AttributeUnderline(value Underline) Attribute {
 	return Attribute{tag: AttributeTagUnderline, underline: value}
 }
 
-// AttributeUnderlineColorRgb constructs the underline_color_rgb variant.
-func AttributeUnderlineColorRgb(value RGB) Attribute {
-	return Attribute{tag: AttributeTagUnderlineColorRgb, underlineColorRgb: value}
+// AttributeUnderlineColor constructs the underline_color variant.
+func AttributeUnderlineColor(value RGB) Attribute {
+	return Attribute{tag: AttributeTagUnderlineColor, underlineColor: value}
 }
 
 // AttributeUnderlineColor256 constructs the underline_color_256 variant.

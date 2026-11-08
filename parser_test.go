@@ -209,15 +209,15 @@ func TestOSCParserGarbage(t *testing.T) {
 
 func parseSGR(t *testing.T, params []uint16, colonMask uint32) []Attribute {
 	t.Helper()
-	n, err := SgrAttributeCount(params, colonMask)
+	n, err := SGRAttributeCount(params, colonMask)
 	if err != nil {
-		t.Fatalf("SgrAttributeCount(%v): %v", params, err)
+		t.Fatalf("SGRAttributeCount(%v): %v", params, err)
 	}
 	out := make([]Attribute, n)
 	for i := range out {
-		attr, err := SgrAttributeAt(params, colonMask, uint(i))
+		attr, err := SGRAttributeAt(params, colonMask, uint(i))
 		if err != nil {
-			t.Fatalf("SgrAttributeAt(%v, %d): %v", params, i, err)
+			t.Fatalf("SGRAttributeAt(%v, %d): %v", params, i, err)
 		}
 		out[i] = attr
 	}
@@ -291,7 +291,7 @@ func TestSGRTruecolor(t *testing.T) {
 	expectSGR(t, parseSGR(t, []uint16{38, 2, 0, 255, 136, 0}, 0b011111), AttributeDirectColorFg(orange))
 
 	// Underline colour: CSI 58:2::255:136:0 m
-	expectSGR(t, parseSGR(t, []uint16{58, 2, 0, 255, 136, 0}, 0b011111), AttributeUnderlineColorRgb(orange))
+	expectSGR(t, parseSGR(t, []uint16{58, 2, 0, 255, 136, 0}, 0b011111), AttributeUnderlineColor(orange))
 }
 
 func TestSGRResets(t *testing.T) {
@@ -329,11 +329,11 @@ func TestSGRAttributeApplies(t *testing.T) {
 // ghostty's CSI parser records at most 24 parameters, and the colon bitset is
 // exactly that wide, so a longer list is refused rather than truncated.
 func TestSGRTooManyParams(t *testing.T) {
-	if _, err := SgrAttributeCount(make([]uint16, 25), 0); err == nil {
-		t.Fatal("SgrAttributeCount accepted 25 parameters")
+	if _, err := SGRAttributeCount(make([]uint16, 25), 0); err == nil {
+		t.Fatal("SGRAttributeCount accepted 25 parameters")
 	}
-	if _, err := SgrAttributeCount(make([]uint16, 24), 0); err != nil {
-		t.Fatalf("SgrAttributeCount(24 params): %v", err)
+	if _, err := SGRAttributeCount(make([]uint16, 24), 0); err != nil {
+		t.Fatalf("SGRAttributeCount(24 params): %v", err)
 	}
 }
 
@@ -341,12 +341,12 @@ func TestSGRTooManyParams(t *testing.T) {
 // tagged union cannot travel with an error, and the count is where the list is
 // validated.
 func TestSGRAttributeAtOutOfRange(t *testing.T) {
-	attr, err := SgrAttributeAt([]uint16{1, 3, 4}, 0, 3)
+	attr, err := SGRAttributeAt([]uint16{1, 3, 4}, 0, 3)
 	if err != nil || attr != AttributeUnknown() {
-		t.Fatalf("SgrAttributeAt past the end = %v, %v; want unknown", attr, err)
+		t.Fatalf("SGRAttributeAt past the end = %v, %v; want unknown", attr, err)
 	}
-	attr, err = SgrAttributeAt(make([]uint16, 25), 0, 0)
+	attr, err = SGRAttributeAt(make([]uint16, 25), 0, 0)
 	if err != nil || attr != AttributeUnknown() {
-		t.Fatalf("SgrAttributeAt on a refused list = %v, %v; want unknown", attr, err)
+		t.Fatalf("SGRAttributeAt on a refused list = %v, %v; want unknown", attr, err)
 	}
 }

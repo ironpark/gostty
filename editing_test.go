@@ -167,7 +167,7 @@ func TestFormatUnwrap(t *testing.T) {
 func TestPwdAndTitleRoundTrip(t *testing.T) {
 	term := newTerm(t, 10, 2)
 
-	if _, ok := term.GetPwd(); ok {
+	if _, ok := term.Pwd(); ok {
 		t.Errorf("GetPwd() on a fresh terminal = ok %v; want false", ok)
 	}
 
@@ -178,11 +178,11 @@ func TestPwdAndTitleRoundTrip(t *testing.T) {
 		t.Fatalf("SetTitle: %v", err)
 	}
 
-	pwd, ok := term.GetPwd()
+	pwd, ok := term.Pwd()
 	if !ok || pwd != "/tmp" {
 		t.Errorf("GetPwd() = %q, %v; want \"/tmp\", true", pwd, ok)
 	}
-	title, ok := term.GetTitle()
+	title, ok := term.Title()
 	if !ok || title != "shell" {
 		t.Errorf("GetTitle() = %q, %v; want \"shell\", true", title, ok)
 	}
@@ -362,5 +362,99 @@ func TestScrollViewportTag(t *testing.T) {
 	}
 	if got := ScrollViewportDeltaPrompt(1).Tag().String(); got != "delta_prompt" {
 		t.Errorf("Tag().String() = %q, want %q", got, "delta_prompt")
+	}
+}
+
+// DECIC and DECDC shift every row of the scrolling region at the cursor
+// column, and leave the cursor where it was.
+func TestInsertDeleteColumns(t *testing.T) {
+	term := newTerm(t, 6, 2)
+	term.PrintString("abcdef")
+	term.SetCursorPos(2, 1)
+	term.PrintString("ghijkl")
+	term.SetCursorPos(1, 3)
+
+	term.InsertColumns(2)
+	if got, want := screen(t, term), "ab  cd\ngh  ij"; got != want {
+		t.Errorf("after InsertColumns(2) = %q, want %q", got, want)
+	}
+	if x, y := term.CursorX(), term.CursorY(); x != 2 || y != 0 {
+		t.Errorf("cursor after InsertColumns = (%d,%d), want (2,0)", x, y)
+	}
+
+	term.DeleteColumns(3)
+	if got, want := screen(t, term), "abd\nghj"; got != want {
+		t.Errorf("after DeleteColumns(3) = %q, want %q", got, want)
+	}
+}
+
+// DECBI and DECFI move the cursor inside the screen and shift the region only
+// at its margins.
+func TestBackForwardIndex(t *testing.T) {
+	term := newTerm(t, 4, 1)
+	term.PrintString("abcd")
+
+	term.SetCursorPos(1, 2)
+	term.BackIndex()
+	if x := term.CursorX(); x != 0 {
+		t.Errorf("cursor after BackIndex = %d, want 0", x)
+	}
+	term.BackIndex()
+	if got, want := screen(t, term), " abc"; got != want {
+		t.Errorf("BackIndex at the left margin = %q, want %q", got, want)
+	}
+
+	term.SetCursorPos(1, 3)
+	term.ForwardIndex()
+	if x := term.CursorX(); x != 3 {
+		t.Errorf("cursor after ForwardIndex = %d, want 3", x)
+	}
+	term.ForwardIndex()
+	if got, want := screen(t, term), "abc"; got != want {
+		t.Errorf("ForwardIndex at the right margin = %q, want %q", got, want)
+	}
+}
+
+// The relative moves are signed: a negative delta moves back, and both
+// directions stop at the edge of the screen.
+func TestCursorRelativeNegative(t *testing.T) {
+	term := newTerm(t, 20, 6)
+	term.SetCursorPos(4, 10)
+	term.CursorRowRelative(-2)
+	term.CursorColRelative(-3)
+	if x, y := term.CursorX(), term.CursorY(); x != 6 || y != 1 {
+		t.Errorf("after negative moves = (%d,%d), want (6,1)", x, y)
+	}
+	term.CursorRowRelative(-100)
+	term.CursorColRelative(-100)
+	if x, y := term.CursorX(), term.CursorY(); x != 0 || y != 0 {
+		t.Errorf("after moving past the edge = (%d,%d), want (0,0)", x, y)
+	}
+}
+
+// DECRQCRA: the DEC checksum is negated, so the Positive variant of the same
+// rectangle is its two's complement, and text changes the sum.
+func TestRectXtChecksum(t *testing.T) {
+	term := newTerm(t, 10, 3)
+	whole := XtChecksumRequest{}
+	blank := term.RectXtChecksum(whole)
+
+	term.PrintString("hello")
+	negated := term.RectXtChecksum(whole)
+	if negated == blank {
+		t.Fatalf("checksum did not change after printing: %#04x", negated)
+	}
+
+	term.SetDefaultXtChecksum(XtChecksumFlags{Positive: true})
+	positive := term.RectXtChecksum(whole)
+	if negated+positive != 0 {
+		t.Errorf("negated %#04x + positive %#04x != 0", negated, positive)
+	}
+
+	// Only the first row holds text, so a rectangle below it sums like blank
+	// cells do.
+	term.SetDefaultXtChecksum(XtChecksumFlags{})
+	if got := term.RectXtChecksum(XtChecksumRequest{Top: 2, Left: 1, Bottom: 3, Right: 10}); got != blank {
+		t.Errorf("rows 2-3 = %#04x, want the blank sum %#04x", got, blank)
 	}
 }

@@ -36,343 +36,343 @@ func LibraryLoaded() bool { return raw.LibraryLoaded() }
 var DefaultLibraryName = raw.DefaultLibraryName
 
 // zigoCheckedCols is the checked form of Cols, which a plugin replaced.
-func (te *Terminal) zigoCheckedCols() (uint16, error) {
-	ptr, err := zigoCheckedPointer("Terminal.Cols receiver", te)
+func (t *Terminal) zigoCheckedCols() (uint16, error) {
+	ptr, err := zigoCheckedPointer("Terminal.Cols receiver", t)
 	if err != nil {
 		return 0, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalCols(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Cols", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Cols", code), t)
 	}
 	return result, nil
 }
 
 // Cols: The current column count, read without touching page memory.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) Cols() uint16 {
-	return zigoMust(te.zigoCheckedCols())
+func (t *Terminal) Cols() uint16 {
+	return zigoMust(t.zigoCheckedCols())
 }
 
 // zigoCheckedRows is the checked form of Rows, which a plugin replaced.
-func (te *Terminal) zigoCheckedRows() (uint16, error) {
-	ptr, err := zigoCheckedPointer("Terminal.Rows receiver", te)
+func (t *Terminal) zigoCheckedRows() (uint16, error) {
+	ptr, err := zigoCheckedPointer("Terminal.Rows receiver", t)
 	if err != nil {
 		return 0, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalRows(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Rows", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Rows", code), t)
 	}
 	return result, nil
 }
 
 // Rows: The number of populated rows, read without touching page memory.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) Rows() uint16 {
-	return zigoMust(te.zigoCheckedRows())
+func (t *Terminal) Rows() uint16 {
+	return zigoMust(t.zigoCheckedRows())
 }
 
 // zigoCheckedCursorX is the checked form of CursorX, which a plugin replaced.
-func (te *Terminal) zigoCheckedCursorX() (uint16, error) {
-	ptr, err := zigoCheckedPointer("Terminal.CursorX receiver", te)
+func (t *Terminal) zigoCheckedCursorX() (uint16, error) {
+	ptr, err := zigoCheckedPointer("Terminal.CursorX receiver", t)
 	if err != nil {
 		return 0, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalCursorX(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorX", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorX", code), t)
 	}
 	return result, nil
 }
 
-// CursorX calls the Zig function Terminal.cursorX.
+// CursorX: The cursor column, 0-based. Note that SetCursorPos, SetCursorRow and SetCursorCol take 1-based coordinates, as the VT sequences do: SetCursorCol(CursorX()+1) leaves the cursor where it is.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) CursorX() uint16 {
-	return zigoMust(te.zigoCheckedCursorX())
+func (t *Terminal) CursorX() uint16 {
+	return zigoMust(t.zigoCheckedCursorX())
 }
 
 // zigoCheckedCursorY is the checked form of CursorY, which a plugin replaced.
-func (te *Terminal) zigoCheckedCursorY() (uint16, error) {
-	ptr, err := zigoCheckedPointer("Terminal.CursorY receiver", te)
+func (t *Terminal) zigoCheckedCursorY() (uint16, error) {
+	ptr, err := zigoCheckedPointer("Terminal.CursorY receiver", t)
 	if err != nil {
 		return 0, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalCursorY(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorY", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorY", code), t)
 	}
 	return result, nil
 }
 
-// CursorY calls the Zig function Terminal.cursorY.
+// CursorY: The cursor row within the active area, 0-based. Note that SetCursorPos, SetCursorRow and SetCursorCol take 1-based coordinates, as the VT sequences do: SetCursorRow(CursorY()+1) leaves the cursor where it is.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) CursorY() uint16 {
-	return zigoMust(te.zigoCheckedCursorY())
+func (t *Terminal) CursorY() uint16 {
+	return zigoMust(t.zigoCheckedCursorY())
 }
 
 // zigoCheckedCursorStyle is the checked form of CursorStyle, which a plugin replaced.
-func (te *Terminal) zigoCheckedCursorStyle() (CursorStyle, error) {
-	ptr, err := zigoCheckedPointer("Terminal.CursorStyle receiver", te)
+func (t *Terminal) zigoCheckedCursorStyle() (CursorStyle, error) {
+	ptr, err := zigoCheckedPointer("Terminal.CursorStyle receiver", t)
 	if err != nil {
 		return 0, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalCursorStyle(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorStyle", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorStyle", code), t)
 	}
 	return CursorStyle(result), nil
 }
 
 // CursorStyle calls the Zig function Terminal.cursorStyle.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) CursorStyle() CursorStyle {
-	return zigoMust(te.zigoCheckedCursorStyle())
+func (t *Terminal) CursorStyle() CursorStyle {
+	return zigoMust(t.zigoCheckedCursorStyle())
 }
 
 // zigoCheckedActiveScreenKey is the checked form of ActiveScreenKey, which a plugin replaced.
-func (te *Terminal) zigoCheckedActiveScreenKey() (ScreenKey, error) {
-	ptr, err := zigoCheckedPointer("Terminal.ActiveScreenKey receiver", te)
+func (t *Terminal) zigoCheckedActiveScreenKey() (ScreenKey, error) {
+	ptr, err := zigoCheckedPointer("Terminal.ActiveScreenKey receiver", t)
 	if err != nil {
 		return 0, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalActiveScreenKey(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ActiveScreenKey", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ActiveScreenKey", code), t)
 	}
 	return ScreenKey(result), nil
 }
 
 // ActiveScreenKey calls the Zig function Terminal.activeScreenKey.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) ActiveScreenKey() ScreenKey {
-	return zigoMust(te.zigoCheckedActiveScreenKey())
+func (t *Terminal) ActiveScreenKey() ScreenKey {
+	return zigoMust(t.zigoCheckedActiveScreenKey())
 }
 
 // zigoCheckedCursorPendingWrap is the checked form of CursorPendingWrap, which a plugin replaced.
-func (te *Terminal) zigoCheckedCursorPendingWrap() (bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.CursorPendingWrap receiver", te)
+func (t *Terminal) zigoCheckedCursorPendingWrap() (bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.CursorPendingWrap receiver", t)
 	if err != nil {
 		return false, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalCursorPendingWrap(ptr)
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorPendingWrap", code), te)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorPendingWrap", code), t)
 	}
 	return result != 0, nil
 }
 
 // CursorPendingWrap calls the Zig function Terminal.cursorPendingWrap.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) CursorPendingWrap() bool {
-	return zigoMust(te.zigoCheckedCursorPendingWrap())
+func (t *Terminal) CursorPendingWrap() bool {
+	return zigoMust(t.zigoCheckedCursorPendingWrap())
 }
 
 // zigoCheckedCursorProtected is the checked form of CursorProtected, which a plugin replaced.
-func (te *Terminal) zigoCheckedCursorProtected() (bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.CursorProtected receiver", te)
+func (t *Terminal) zigoCheckedCursorProtected() (bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.CursorProtected receiver", t)
 	if err != nil {
 		return false, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalCursorProtected(ptr)
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorProtected", code), te)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorProtected", code), t)
 	}
 	return result != 0, nil
 }
 
 // CursorProtected calls the Zig function Terminal.cursorProtected.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) CursorProtected() bool {
-	return zigoMust(te.zigoCheckedCursorProtected())
+func (t *Terminal) CursorProtected() bool {
+	return zigoMust(t.zigoCheckedCursorProtected())
 }
 
 // zigoCheckedWidthPx is the checked form of WidthPx, which a plugin replaced.
-func (te *Terminal) zigoCheckedWidthPx() (uint32, error) {
-	ptr, err := zigoCheckedPointer("Terminal.WidthPx receiver", te)
+func (t *Terminal) zigoCheckedWidthPx() (uint32, error) {
+	ptr, err := zigoCheckedPointer("Terminal.WidthPx receiver", t)
 	if err != nil {
 		return 0, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalWidthPx(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.WidthPx", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.WidthPx", code), t)
 	}
 	return result, nil
 }
 
 // WidthPx calls the Zig function Terminal.widthPx.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) WidthPx() uint32 {
-	return zigoMust(te.zigoCheckedWidthPx())
+func (t *Terminal) WidthPx() uint32 {
+	return zigoMust(t.zigoCheckedWidthPx())
 }
 
 // zigoCheckedHeightPx is the checked form of HeightPx, which a plugin replaced.
-func (te *Terminal) zigoCheckedHeightPx() (uint32, error) {
-	ptr, err := zigoCheckedPointer("Terminal.HeightPx receiver", te)
+func (t *Terminal) zigoCheckedHeightPx() (uint32, error) {
+	ptr, err := zigoCheckedPointer("Terminal.HeightPx receiver", t)
 	if err != nil {
 		return 0, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalHeightPx(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.HeightPx", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.HeightPx", code), t)
 	}
 	return result, nil
 }
 
 // HeightPx calls the Zig function Terminal.heightPx.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) HeightPx() uint32 {
-	return zigoMust(te.zigoCheckedHeightPx())
+func (t *Terminal) HeightPx() uint32 {
+	return zigoMust(t.zigoCheckedHeightPx())
 }
 
 // zigoCheckedFocused is the checked form of Focused, which a plugin replaced.
-func (te *Terminal) zigoCheckedFocused() (bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.Focused receiver", te)
+func (t *Terminal) zigoCheckedFocused() (bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.Focused receiver", t)
 	if err != nil {
 		return false, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalFocused(ptr)
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Focused", code), te)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Focused", code), t)
 	}
 	return result != 0, nil
 }
 
 // Focused calls the Zig function Terminal.focused.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) Focused() bool {
-	return zigoMust(te.zigoCheckedFocused())
+func (t *Terminal) Focused() bool {
+	return zigoMust(t.zigoCheckedFocused())
 }
 
 // zigoCheckedVisible is the checked form of Visible, which a plugin replaced.
-func (te *Terminal) zigoCheckedVisible() (bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.Visible receiver", te)
+func (t *Terminal) zigoCheckedVisible() (bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.Visible receiver", t)
 	if err != nil {
 		return false, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalVisible(ptr)
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Visible", code), te)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Visible", code), t)
 	}
 	return result != 0, nil
 }
 
 // Visible calls the Zig function Terminal.visible.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) Visible() bool {
-	return zigoMust(te.zigoCheckedVisible())
+func (t *Terminal) Visible() bool {
+	return zigoMust(t.zigoCheckedVisible())
 }
 
 // zigoCheckedPasswordInput is the checked form of PasswordInput, which a plugin replaced.
-func (te *Terminal) zigoCheckedPasswordInput() (bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.PasswordInput receiver", te)
+func (t *Terminal) zigoCheckedPasswordInput() (bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.PasswordInput receiver", t)
 	if err != nil {
 		return false, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalPasswordInput(ptr)
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PasswordInput", code), te)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PasswordInput", code), t)
 	}
 	return result != 0, nil
 }
 
 // PasswordInput calls the Zig function Terminal.passwordInput.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) PasswordInput() bool {
-	return zigoMust(te.zigoCheckedPasswordInput())
+func (t *Terminal) PasswordInput() bool {
+	return zigoMust(t.zigoCheckedPasswordInput())
 }
 
 // zigoCheckedCharsetGL is the checked form of CharsetGL, which a plugin replaced.
-func (te *Terminal) zigoCheckedCharsetGL() (CharsetSlot, error) {
-	ptr, err := zigoCheckedPointer("Terminal.CharsetGL receiver", te)
+func (t *Terminal) zigoCheckedCharsetGL() (CharsetSlot, error) {
+	ptr, err := zigoCheckedPointer("Terminal.CharsetGL receiver", t)
 	if err != nil {
 		return 0, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalCharsetGl(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CharsetGL", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CharsetGL", code), t)
 	}
 	return CharsetSlot(result), nil
 }
 
 // CharsetGL: The slot GL resolves to: the set used for codepoints up to 127.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) CharsetGL() CharsetSlot {
-	return zigoMust(te.zigoCheckedCharsetGL())
+func (t *Terminal) CharsetGL() CharsetSlot {
+	return zigoMust(t.zigoCheckedCharsetGL())
 }
 
 // zigoCheckedCharsetGR is the checked form of CharsetGR, which a plugin replaced.
-func (te *Terminal) zigoCheckedCharsetGR() (CharsetSlot, error) {
-	ptr, err := zigoCheckedPointer("Terminal.CharsetGR receiver", te)
+func (t *Terminal) zigoCheckedCharsetGR() (CharsetSlot, error) {
+	ptr, err := zigoCheckedPointer("Terminal.CharsetGR receiver", t)
 	if err != nil {
 		return 0, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalCharsetGr(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CharsetGR", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CharsetGR", code), t)
 	}
 	return CharsetSlot(result), nil
 }
 
 // CharsetGR: The slot GR resolves to: the set used for 8-bit printable codepoints.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) CharsetGR() CharsetSlot {
-	return zigoMust(te.zigoCheckedCharsetGR())
+func (t *Terminal) CharsetGR() CharsetSlot {
+	return zigoMust(t.zigoCheckedCharsetGR())
 }
 
 // zigoCheckedCharsetSingleShift is the checked form of CharsetSingleShift, which a plugin replaced.
-func (te *Terminal) zigoCheckedCharsetSingleShift() (CharsetSlot, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.CharsetSingleShift receiver", te)
+func (t *Terminal) zigoCheckedCharsetSingleShift() (CharsetSlot, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.CharsetSingleShift receiver", t)
 	if err != nil {
 		return 0, false, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, zigoHas, code := raw.TerminalCharsetSingleShift(ptr)
 	if code != 0 {
-		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CharsetSingleShift", code), te)
+		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CharsetSingleShift", code), t)
 	}
 	return CharsetSlot(result), zigoHas, nil
 }
 
 // CharsetSingleShift: The slot a pending single shift (SS2/SS3) will use for exactly one character, or absent if none is pending.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) CharsetSingleShift() (CharsetSlot, bool) {
-	return zigoMustMatch(te.zigoCheckedCharsetSingleShift())
+func (t *Terminal) CharsetSingleShift() (CharsetSlot, bool) {
+	return zigoMustMatch(t.zigoCheckedCharsetSingleShift())
 }
 
 // zigoCheckedProtectedMode is the checked form of ProtectedMode, which a plugin replaced.
-func (te *Terminal) zigoCheckedProtectedMode() (ProtectedMode, error) {
-	ptr, err := zigoCheckedPointer("Terminal.ProtectedMode receiver", te)
+func (t *Terminal) zigoCheckedProtectedMode() (ProtectedMode, error) {
+	ptr, err := zigoCheckedPointer("Terminal.ProtectedMode receiver", t)
 	if err != nil {
 		return 0, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalProtectedMode(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ProtectedMode", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ProtectedMode", code), t)
 	}
 	return ProtectedMode(result), nil
 }
 
 // ProtectedMode: The most recent protected mode (DECSCA or the older SPA/EPA) on the active screen. This never returns to off once set, until the screen is reset: ECH and friends key off the most recent mode, not the current pen.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) ProtectedMode() ProtectedMode {
-	return zigoMust(te.zigoCheckedProtectedMode())
+func (t *Terminal) ProtectedMode() ProtectedMode {
+	return zigoMust(t.zigoCheckedProtectedMode())
 }
 
 // zigoCheckedClickCount is the checked form of ClickCount, which a plugin replaced.
@@ -918,7 +918,20 @@ func WithTerminalDefaultCursorBlink(defaultCursorBlink *bool) TerminalOption {
 	}
 }
 
-// NewTerminal: Initialize a new terminal.
+// NewTerminal: Initialize a new terminal with the given options.
+//
+// The returned terminal owns its memory. Call `deinit` with the same
+// allocator when you are done with it.
+//
+// ```zig
+// var t: Terminal = try .init(io, alloc, .{ .cols = 80, .rows = 24 });
+// defer t.deinit(alloc);
+// ```
+//
+// Returns `error.InvalidValue` if `cols` or `rows` is zero. This check
+// happens before anything is allocated. If the size comes from an
+// untrusted source, you can rely on this check instead of validating
+// it yourself.
 // The caller must call Close on the returned handle.
 func NewTerminal(cols uint16, rows uint16, opts ...TerminalOption) (*Terminal, error) {
 	var zigoDefaultMaxScrollbackBytes uint = 10000
@@ -948,22 +961,27 @@ func NewTerminal(cols uint16, rows uint16, opts ...TerminalOption) (*Terminal, e
 //
 // `continuation_max_bytes` caps the unfinished-sequence suffix the stream
 // tracks across feeds; zero disables tracking.
+//
+// The bare constructor. `NewStreamWithOptions` is the usual way to make a
+// stream with any other setting, and `NewStreamWithConfig` the same from a
+// struct; most programs want neither and use `New`, which builds a terminal
+// and its stream together.
 // The caller must call Close on the returned handle.
-func (te *Terminal) NewStream(continuationMaxBytes uint) (*Stream, error) {
-	ptr, zigoChildParent, err := te.zigoAcquireChild("Terminal.NewStream receiver")
+func (t *Terminal) NewStream(continuationMaxBytes uint) (*Stream, error) {
+	ptr, zigoChildParent, err := t.zigoAcquireChild("Terminal.NewStream receiver")
 	if err != nil {
 		return nil, err
 	}
 	zigoChildCreated := false
 	defer func() {
-		te.zigoRelease()
+		t.zigoRelease()
 		if !zigoChildCreated {
 			lifecycle.DropChild(zigoChildParent)
 		}
 	}()
 	result, code := raw.TerminalNewStream(ptr, continuationMaxBytes)
 	if code != 0 {
-		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.NewStream", code), te)
+		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.NewStream", code), t)
 	}
 	zigoChildCreated = true
 	return zigoNewStream(result, zigoChildParent, []zigoCallbackHandle{0, 0, 0}), nil
@@ -975,42 +993,42 @@ func (te *Terminal) NewStream(continuationMaxBytes uint) (*Stream, error) {
 // returned and `tick` can make progress immediately. Returned by value, like
 // `Terminal.init`: zigo boxes the result and frees the box in `close`.
 // The caller must call Close on the returned handle.
-func (te *Terminal) NewSearch(needle string) (*Search, error) {
-	ptr, zigoChildParent, err := te.zigoAcquireChild("Terminal.NewSearch receiver")
+func (t *Terminal) NewSearch(needle string) (*Search, error) {
+	ptr, zigoChildParent, err := t.zigoAcquireChild("Terminal.NewSearch receiver")
 	if err != nil {
 		return nil, err
 	}
 	zigoChildCreated := false
 	defer func() {
-		te.zigoRelease()
+		t.zigoRelease()
 		if !zigoChildCreated {
 			lifecycle.DropChild(zigoChildParent)
 		}
 	}()
 	result, code := raw.TerminalNewSearch(ptr, needle)
 	if code != 0 {
-		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.NewSearch", code), te)
+		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.NewSearch", code), t)
 	}
 	zigoChildCreated = true
 	return zigoNewSearch(result, zigoChildParent), nil
 }
 
 // zigoCheckedNewGesture is the checked form of NewGesture, which a plugin replaced.
-func (te *Terminal) zigoCheckedNewGesture() (*Gesture, error) {
-	ptr, zigoChildParent, err := te.zigoAcquireChild("Terminal.NewGesture receiver")
+func (t *Terminal) zigoCheckedNewGesture() (*Gesture, error) {
+	ptr, zigoChildParent, err := t.zigoAcquireChild("Terminal.NewGesture receiver")
 	if err != nil {
 		return nil, err
 	}
 	zigoChildCreated := false
 	defer func() {
-		te.zigoRelease()
+		t.zigoRelease()
 		if !zigoChildCreated {
 			lifecycle.DropChild(zigoChildParent)
 		}
 	}()
 	result, code := raw.TerminalNewGesture(ptr)
 	if code != 0 {
-		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.NewGesture", code), te)
+		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.NewGesture", code), t)
 	}
 	zigoChildCreated = true
 	return zigoNewGesture(result, zigoChildParent), nil
@@ -1022,8 +1040,8 @@ func (te *Terminal) zigoCheckedNewGesture() (*Gesture, error) {
 // Returned by value, like `Terminal.init`: zigo boxes it and frees the box in
 // `Close`.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) NewGesture() *Gesture {
-	return zigoMust(te.zigoCheckedNewGesture())
+func (t *Terminal) NewGesture() *Gesture {
+	return zigoMust(t.zigoCheckedNewGesture())
 }
 
 // NewGridRef: Start tracking the cell at `x`, `y` in the coordinate system `tag` names,
@@ -1032,98 +1050,101 @@ func (te *Terminal) NewGesture() *Gesture {
 // Returned by value, like `Terminal.init`: zigo boxes the result and frees
 // the box in `close`.
 // The caller must call Close on the returned handle.
-func (te *Terminal) NewGridRef(tag PointTag, x uint16, y uint32) (*GridRef, error) {
-	ptr, zigoChildParent, err := te.zigoAcquireChild("Terminal.NewGridRef receiver")
+func (t *Terminal) NewGridRef(tag PointTag, x uint16, y uint32) (*GridRef, error) {
+	ptr, zigoChildParent, err := t.zigoAcquireChild("Terminal.NewGridRef receiver")
 	if err != nil {
 		return nil, err
 	}
 	zigoChildCreated := false
 	defer func() {
-		te.zigoRelease()
+		t.zigoRelease()
 		if !zigoChildCreated {
 			lifecycle.DropChild(zigoChildParent)
 		}
 	}()
 	result, code := raw.TerminalNewGridRef(ptr, uint8(tag), x, y)
 	if code != 0 {
-		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.NewGridRef", code), te)
+		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.NewGridRef", code), t)
 	}
 	zigoChildCreated = true
 	return zigoNewGridRef(result, zigoChildParent), nil
 }
 
 // PrintString: Print UTF-8 encoded string to the terminal.
-func (te *Terminal) PrintString(str string) error {
-	ptr, err := zigoCheckedPointer("Terminal.PrintString receiver", te)
+func (t *Terminal) PrintString(str string) error {
+	ptr, err := zigoCheckedPointer("Terminal.PrintString receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalPrintString(ptr, str)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PrintString", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PrintString", code), t)
 	}
 	return nil
 }
 
-// PlainString: Return the current string value of the terminal. Newlines are
-// encoded as "\n". This omits any formatting such as fg/bg.
+// PlainString: The viewport -- the rows currently on display, without scrollback -- as
+// plain text. Newlines are encoded as "\n" and every soft wrap is a line
+// break; PlainStringUnwrapped joins wrapped rows instead.
 //
-// The caller must free the string.
-func (te *Terminal) PlainString() (string, error) {
-	ptr, err := zigoCheckedPointer("Terminal.PlainString receiver", te)
+// For the whole active screen including scrollback, use PlainText, or
+// FormatString for styled output.
+func (t *Terminal) PlainString() (string, error) {
+	ptr, err := zigoCheckedPointer("Terminal.PlainString receiver", t)
 	if err != nil {
 		return "", err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalPlainString(ptr)
 	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PlainString", code), te)
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PlainString", code), t)
 	}
 	return result, nil
 }
 
-// PlainStringUnwrapped: Same as plainString, but respects row wrap state when building the string.
-func (te *Terminal) PlainStringUnwrapped() (string, error) {
-	ptr, err := zigoCheckedPointer("Terminal.PlainStringUnwrapped receiver", te)
+// PlainStringUnwrapped: The viewport as plain text, like PlainString, but with soft-wrapped rows
+// joined back into the line the program wrote.
+func (t *Terminal) PlainStringUnwrapped() (string, error) {
+	ptr, err := zigoCheckedPointer("Terminal.PlainStringUnwrapped receiver", t)
 	if err != nil {
 		return "", err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalPlainStringUnwrapped(ptr)
 	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PlainStringUnwrapped", code), te)
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PlainStringUnwrapped", code), t)
 	}
 	return result, nil
 }
 
 // Print calls the Zig function Terminal.print.
-func (te *Terminal) Print(c rune) error {
+func (t *Terminal) Print(c rune) error {
 	if c < 0 || c > 1114111 {
 		return &RangeError{Operation: "Terminal.Print", Parameter: "c", Type: "codepoint"}
 	}
-	ptr, err := zigoCheckedPointer("Terminal.Print receiver", te)
+	ptr, err := zigoCheckedPointer("Terminal.Print receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalPrint(ptr, uint32(c))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Print", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Print", code), t)
 	}
 	return nil
 }
 
 // PrintRepeat: Print the previous printed character a repeated amount of times.
-func (te *Terminal) PrintRepeat(count uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.PrintRepeat receiver", te)
+func (t *Terminal) PrintRepeat(count uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.PrintRepeat receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalPrintRepeat(ptr, count)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PrintRepeat", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PrintRepeat", code), t)
 	}
 	return nil
 }
@@ -1143,34 +1164,34 @@ func (te *Terminal) PrintRepeat(count uint) error {
 // grapheme clustering) are handled correctly but fall back to the
 // slower per-codepoint path. They're less common and this is optimized
 // for the aforementioned cases.
-func (te *Terminal) PrintSlice(cps []rune) error {
+func (t *Terminal) PrintSlice(cps []rune) error {
 	for _, zigoValue := range cps {
 		if zigoValue < 0 || zigoValue > 1114111 {
 			return &RangeError{Operation: "Terminal.PrintSlice", Parameter: "cps", Type: "codepoint"}
 		}
 	}
-	ptr, err := zigoCheckedPointer("Terminal.PrintSlice receiver", te)
+	ptr, err := zigoCheckedPointer("Terminal.PrintSlice receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalPrintSlice(ptr, zigoRunesToUint32(cps))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PrintSlice", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PrintSlice", code), t)
 	}
 	return nil
 }
 
 // zigoCheckedSetCursorStyle is the checked form of SetCursorStyle, which a plugin replaced.
-func (te *Terminal) zigoCheckedSetCursorStyle(value CursorStyleReq) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetCursorStyle receiver", te)
+func (t *Terminal) zigoCheckedSetCursorStyle(value CursorStyleReq) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetCursorStyle receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSetCursorStyle(ptr, uint8(value))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetCursorStyle", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetCursorStyle", code), t)
 	}
 	return nil
 }
@@ -1181,22 +1202,22 @@ func (te *Terminal) zigoCheckedSetCursorStyle(value CursorStyleReq) error {
 // is general: `.default` selects the configured defaults, while any other
 // value selects a concrete appearance until it is changed again or reset.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) SetCursorStyle(value CursorStyleReq) {
-	if err := te.zigoCheckedSetCursorStyle(value); err != nil {
+func (t *Terminal) SetCursorStyle(value CursorStyleReq) {
+	if err := t.zigoCheckedSetCursorStyle(value); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedSetCursorPos is the checked form of SetCursorPos, which a plugin replaced.
-func (te *Terminal) zigoCheckedSetCursorPos(row uint, col uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetCursorPos receiver", te)
+func (t *Terminal) zigoCheckedSetCursorPos(row uint, col uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetCursorPos receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSetCursorPos(ptr, row, col)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetCursorPos", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetCursorPos", code), t)
 	}
 	return nil
 }
@@ -1208,80 +1229,80 @@ func (te *Terminal) zigoCheckedSetCursorPos(row uint, col uint) error {
 // greater than the bottom-most row it is adjusted to the bottom-most
 // row.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) SetCursorPos(row uint, col uint) {
-	if err := te.zigoCheckedSetCursorPos(row, col); err != nil {
+func (t *Terminal) SetCursorPos(row uint, col uint) {
+	if err := t.zigoCheckedSetCursorPos(row, col); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedCarriageReturn is the checked form of CarriageReturn, which a plugin replaced.
-func (te *Terminal) zigoCheckedCarriageReturn() error {
-	ptr, err := zigoCheckedPointer("Terminal.CarriageReturn receiver", te)
+func (t *Terminal) zigoCheckedCarriageReturn() error {
+	ptr, err := zigoCheckedPointer("Terminal.CarriageReturn receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalCarriageReturn(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CarriageReturn", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CarriageReturn", code), t)
 	}
 	return nil
 }
 
 // CarriageReturn: Carriage return moves the cursor to the first column.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) CarriageReturn() {
-	if err := te.zigoCheckedCarriageReturn(); err != nil {
+func (t *Terminal) CarriageReturn() {
+	if err := t.zigoCheckedCarriageReturn(); err != nil {
 		panic(err)
 	}
 }
 
 // Linefeed moves the cursor to the next line.
-func (te *Terminal) Linefeed() error {
-	ptr, err := zigoCheckedPointer("Terminal.Linefeed receiver", te)
+func (t *Terminal) Linefeed() error {
+	ptr, err := zigoCheckedPointer("Terminal.Linefeed receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalLinefeed(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Linefeed", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Linefeed", code), t)
 	}
 	return nil
 }
 
 // zigoCheckedBackspace is the checked form of Backspace, which a plugin replaced.
-func (te *Terminal) zigoCheckedBackspace() error {
-	ptr, err := zigoCheckedPointer("Terminal.Backspace receiver", te)
+func (t *Terminal) zigoCheckedBackspace() error {
+	ptr, err := zigoCheckedPointer("Terminal.Backspace receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalBackspace(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Backspace", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Backspace", code), t)
 	}
 	return nil
 }
 
 // Backspace moves the cursor back a column (but not less than 0).
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) Backspace() {
-	if err := te.zigoCheckedBackspace(); err != nil {
+func (t *Terminal) Backspace() {
+	if err := t.zigoCheckedBackspace(); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedCursorIsAtPrompt is the checked form of CursorIsAtPrompt, which a plugin replaced.
-func (te *Terminal) zigoCheckedCursorIsAtPrompt() (bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.CursorIsAtPrompt receiver", te)
+func (t *Terminal) zigoCheckedCursorIsAtPrompt() (bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.CursorIsAtPrompt receiver", t)
 	if err != nil {
 		return false, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalCursorIsAtPrompt(ptr)
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorIsAtPrompt", code), te)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorIsAtPrompt", code), t)
 	}
 	return result != 0, nil
 }
@@ -1292,20 +1313,20 @@ func (te *Terminal) zigoCheckedCursorIsAtPrompt() (bool, error) {
 //
 // If the shell integration doesn't exist, this will always return false.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) CursorIsAtPrompt() bool {
-	return zigoMust(te.zigoCheckedCursorIsAtPrompt())
+func (t *Terminal) CursorIsAtPrompt() bool {
+	return zigoMust(t.zigoCheckedCursorIsAtPrompt())
 }
 
 // zigoCheckedFullReset is the checked form of FullReset, which a plugin replaced.
-func (te *Terminal) zigoCheckedFullReset() error {
-	ptr, err := zigoCheckedPointer("Terminal.FullReset receiver", te)
+func (t *Terminal) zigoCheckedFullReset() error {
+	ptr, err := zigoCheckedPointer("Terminal.FullReset receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalFullReset(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.FullReset", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.FullReset", code), t)
 	}
 	return nil
 }
@@ -1316,22 +1337,22 @@ func (te *Terminal) zigoCheckedFullReset() error {
 // this will reuse the existing memory. In the latter case, memory may
 // be wasted (since its unused) but it isn't leaked.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) FullReset() {
-	if err := te.zigoCheckedFullReset(); err != nil {
+func (t *Terminal) FullReset() {
+	if err := t.zigoCheckedFullReset(); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedSoftReset is the checked form of SoftReset, which a plugin replaced.
-func (te *Terminal) zigoCheckedSoftReset() error {
-	ptr, err := zigoCheckedPointer("Terminal.SoftReset receiver", te)
+func (t *Terminal) zigoCheckedSoftReset() error {
+	ptr, err := zigoCheckedPointer("Terminal.SoftReset receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSoftReset(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SoftReset", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SoftReset", code), t)
 	}
 	return nil
 }
@@ -1342,22 +1363,22 @@ func (te *Terminal) zigoCheckedSoftReset() error {
 // reset does: left and right margins, the cursor style, the color palette,
 // modifyOtherKeys, and the XTCHECKSUM variant.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) SoftReset() {
-	if err := te.zigoCheckedSoftReset(); err != nil {
+func (t *Terminal) SoftReset() {
+	if err := t.zigoCheckedSoftReset(); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedCursorUp is the checked form of CursorUp, which a plugin replaced.
-func (te *Terminal) zigoCheckedCursorUp(count uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.CursorUp receiver", te)
+func (t *Terminal) zigoCheckedCursorUp(count uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.CursorUp receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalCursorUp(ptr, count)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorUp", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorUp", code), t)
 	}
 	return nil
 }
@@ -1366,22 +1387,22 @@ func (te *Terminal) zigoCheckedCursorUp(count uint) error {
 // move distance then it is internally adjusted to the maximum. If amount is
 // 0, adjust it to 1.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) CursorUp(count uint) {
-	if err := te.zigoCheckedCursorUp(count); err != nil {
+func (t *Terminal) CursorUp(count uint) {
+	if err := t.zigoCheckedCursorUp(count); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedCursorDown is the checked form of CursorDown, which a plugin replaced.
-func (te *Terminal) zigoCheckedCursorDown(count uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.CursorDown receiver", te)
+func (t *Terminal) zigoCheckedCursorDown(count uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.CursorDown receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalCursorDown(ptr, count)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorDown", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorDown", code), t)
 	}
 	return nil
 }
@@ -1390,44 +1411,44 @@ func (te *Terminal) zigoCheckedCursorDown(count uint) error {
 // move distance then it is internally adjusted to the maximum. This sequence
 // will not scroll the screen or scroll region. If amount is 0, adjust it to 1.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) CursorDown(count uint) {
-	if err := te.zigoCheckedCursorDown(count); err != nil {
+func (t *Terminal) CursorDown(count uint) {
+	if err := t.zigoCheckedCursorDown(count); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedCursorLeft is the checked form of CursorLeft, which a plugin replaced.
-func (te *Terminal) zigoCheckedCursorLeft(count uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.CursorLeft receiver", te)
+func (t *Terminal) zigoCheckedCursorLeft(count uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.CursorLeft receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalCursorLeft(ptr, count)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorLeft", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorLeft", code), t)
 	}
 	return nil
 }
 
 // CursorLeft: Move the cursor to the left amount cells. If amount is 0, adjust it to 1.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) CursorLeft(count uint) {
-	if err := te.zigoCheckedCursorLeft(count); err != nil {
+func (t *Terminal) CursorLeft(count uint) {
+	if err := t.zigoCheckedCursorLeft(count); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedCursorRight is the checked form of CursorRight, which a plugin replaced.
-func (te *Terminal) zigoCheckedCursorRight(count uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.CursorRight receiver", te)
+func (t *Terminal) zigoCheckedCursorRight(count uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.CursorRight receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalCursorRight(ptr, count)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorRight", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorRight", code), t)
 	}
 	return nil
 }
@@ -1437,22 +1458,22 @@ func (te *Terminal) zigoCheckedCursorRight(count uint) error {
 // This sequence will not scroll the screen or scroll region. If amount is
 // 0, adjust it to 1.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) CursorRight(count uint) {
-	if err := te.zigoCheckedCursorRight(count); err != nil {
+func (t *Terminal) CursorRight(count uint) {
+	if err := t.zigoCheckedCursorRight(count); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedSetCursorRow is the checked form of SetCursorRow, which a plugin replaced.
-func (te *Terminal) zigoCheckedSetCursorRow(row uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetCursorRow receiver", te)
+func (t *Terminal) zigoCheckedSetCursorRow(row uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetCursorRow receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSetCursorRow(ptr, row)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetCursorRow", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetCursorRow", code), t)
 	}
 	return nil
 }
@@ -1460,22 +1481,22 @@ func (te *Terminal) zigoCheckedSetCursorRow(row uint) error {
 // SetCursorRow: Move the cursor to the given row (1-indexed), keeping its column (VPA).
 // In origin mode the row is relative to the top margin.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) SetCursorRow(row uint) {
-	if err := te.zigoCheckedSetCursorRow(row); err != nil {
+func (t *Terminal) SetCursorRow(row uint) {
+	if err := t.zigoCheckedSetCursorRow(row); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedSetCursorCol is the checked form of SetCursorCol, which a plugin replaced.
-func (te *Terminal) zigoCheckedSetCursorCol(col uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetCursorCol receiver", te)
+func (t *Terminal) zigoCheckedSetCursorCol(col uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetCursorCol receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSetCursorCol(ptr, col)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetCursorCol", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetCursorCol", code), t)
 	}
 	return nil
 }
@@ -1483,70 +1504,73 @@ func (te *Terminal) zigoCheckedSetCursorCol(col uint) error {
 // SetCursorCol: Move the cursor to the given column (1-indexed), keeping its row (CHA
 // and HPA). In origin mode the column is relative to the left margin.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) SetCursorCol(col uint) {
-	if err := te.zigoCheckedSetCursorCol(col); err != nil {
+func (t *Terminal) SetCursorCol(col uint) {
+	if err := t.zigoCheckedSetCursorCol(col); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedCursorRowRelative is the checked form of CursorRowRelative, which a plugin replaced.
-func (te *Terminal) zigoCheckedCursorRowRelative(count uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.CursorRowRelative receiver", te)
+func (t *Terminal) zigoCheckedCursorRowRelative(delta int) error {
+	ptr, err := zigoCheckedPointer("Terminal.CursorRowRelative receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
-	code := raw.TerminalCursorRowRelative(ptr, count)
+	defer t.zigoRelease()
+	code := raw.TerminalCursorRowRelative(ptr, delta)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorRowRelative", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorRowRelative", code), t)
 	}
 	return nil
 }
 
-// CursorRowRelative: Move the cursor down by count rows, keeping its column (VPR). Unlike
-// cursorDown, this stops only at the bottom of the screen, or of the
-// scrolling region in origin mode.
+// CursorRowRelative: Move the cursor `delta` rows down, or up when negative, keeping its column
+// (VPR, and its reverse). Unlike `cursorDown`/`cursorUp`, this stops only at
+// the edge of the screen, or of the scrolling region in origin mode.
+//
+// Wrapped because ghostty takes an unsigned count and only moves forward,
+// which the name "relative" does not suggest.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) CursorRowRelative(count uint) {
-	if err := te.zigoCheckedCursorRowRelative(count); err != nil {
+func (t *Terminal) CursorRowRelative(delta int) {
+	if err := t.zigoCheckedCursorRowRelative(delta); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedCursorColRelative is the checked form of CursorColRelative, which a plugin replaced.
-func (te *Terminal) zigoCheckedCursorColRelative(count uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.CursorColRelative receiver", te)
+func (t *Terminal) zigoCheckedCursorColRelative(delta int) error {
+	ptr, err := zigoCheckedPointer("Terminal.CursorColRelative receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
-	code := raw.TerminalCursorColRelative(ptr, count)
+	defer t.zigoRelease()
+	code := raw.TerminalCursorColRelative(ptr, delta)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorColRelative", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorColRelative", code), t)
 	}
 	return nil
 }
 
-// CursorColRelative: Move the cursor right by count columns, keeping its row (HPR). Unlike
-// cursorRight, this stops only at the right edge of the screen, or of
-// the scrolling region in origin mode.
+// CursorColRelative: Move the cursor `delta` columns right, or left when negative, keeping its
+// row (HPR, and its reverse). Unlike `cursorRight`/`cursorLeft`, this stops
+// only at the edge of the screen, or of the scrolling region in origin mode.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) CursorColRelative(count uint) {
-	if err := te.zigoCheckedCursorColRelative(count); err != nil {
+func (t *Terminal) CursorColRelative(delta int) {
+	if err := t.zigoCheckedCursorColRelative(delta); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedSaveCursor is the checked form of SaveCursor, which a plugin replaced.
-func (te *Terminal) zigoCheckedSaveCursor() error {
-	ptr, err := zigoCheckedPointer("Terminal.SaveCursor receiver", te)
+func (t *Terminal) zigoCheckedSaveCursor() error {
+	ptr, err := zigoCheckedPointer("Terminal.SaveCursor receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSaveCursor(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SaveCursor", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SaveCursor", code), t)
 	}
 	return nil
 }
@@ -1557,22 +1581,22 @@ func (te *Terminal) zigoCheckedSaveCursor() error {
 // is kept per screen (main / alternative). If for the current screen state
 // was already saved it is overwritten.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) SaveCursor() {
-	if err := te.zigoCheckedSaveCursor(); err != nil {
+func (t *Terminal) SaveCursor() {
+	if err := t.zigoCheckedSaveCursor(); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedRestoreCursor is the checked form of RestoreCursor, which a plugin replaced.
-func (te *Terminal) zigoCheckedRestoreCursor() error {
-	ptr, err := zigoCheckedPointer("Terminal.RestoreCursor receiver", te)
+func (t *Terminal) zigoCheckedRestoreCursor() error {
+	ptr, err := zigoCheckedPointer("Terminal.RestoreCursor receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalRestoreCursor(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.RestoreCursor", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.RestoreCursor", code), t)
 	}
 	return nil
 }
@@ -1582,8 +1606,8 @@ func (te *Terminal) zigoCheckedRestoreCursor() error {
 // The primary and alternate screen have distinct save state.
 // If no save was done before values are reset to their initial values.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) RestoreCursor() {
-	if err := te.zigoCheckedRestoreCursor(); err != nil {
+func (t *Terminal) RestoreCursor() {
+	if err := t.zigoCheckedRestoreCursor(); err != nil {
 		panic(err)
 	}
 }
@@ -1600,29 +1624,29 @@ func (te *Terminal) RestoreCursor() {
 // move the cursor one line down
 //
 // This unsets the pending wrap state without wrapping.
-func (te *Terminal) Index() error {
-	ptr, err := zigoCheckedPointer("Terminal.Index receiver", te)
+func (t *Terminal) Index() error {
+	ptr, err := zigoCheckedPointer("Terminal.Index receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalIndex(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Index", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Index", code), t)
 	}
 	return nil
 }
 
 // zigoCheckedReverseIndex is the checked form of ReverseIndex, which a plugin replaced.
-func (te *Terminal) zigoCheckedReverseIndex() error {
-	ptr, err := zigoCheckedPointer("Terminal.ReverseIndex receiver", te)
+func (t *Terminal) zigoCheckedReverseIndex() error {
+	ptr, err := zigoCheckedPointer("Terminal.ReverseIndex receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalReverseIndex(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ReverseIndex", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ReverseIndex", code), t)
 	}
 	return nil
 }
@@ -1640,8 +1664,64 @@ func (te *Terminal) zigoCheckedReverseIndex() error {
 // * If the cursor is not on the top-most line of the scrolling region:
 // move the cursor one line up
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) ReverseIndex() {
-	if err := te.zigoCheckedReverseIndex(); err != nil {
+func (t *Terminal) ReverseIndex() {
+	if err := t.zigoCheckedReverseIndex(); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedBackIndex is the checked form of BackIndex, which a plugin replaced.
+func (t *Terminal) zigoCheckedBackIndex() error {
+	ptr, err := zigoCheckedPointer("Terminal.BackIndex receiver", t)
+	if err != nil {
+		return err
+	}
+	defer t.zigoRelease()
+	code := raw.TerminalBackIndex(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.BackIndex", code), t)
+	}
+	return nil
+}
+
+// BackIndex: DECBI - Back Index. If the cursor is on the left margin, the contents
+// of the scrolling region are shifted one column right and a blank
+// column is inserted at the left margin. Otherwise the cursor moves one
+// column left, unless it is already at the left edge of the screen.
+//
+// This unsets the pending wrap state without wrapping.
+// It panics with the typed error it would otherwise return.
+func (t *Terminal) BackIndex() {
+	if err := t.zigoCheckedBackIndex(); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedForwardIndex is the checked form of ForwardIndex, which a plugin replaced.
+func (t *Terminal) zigoCheckedForwardIndex() error {
+	ptr, err := zigoCheckedPointer("Terminal.ForwardIndex receiver", t)
+	if err != nil {
+		return err
+	}
+	defer t.zigoRelease()
+	code := raw.TerminalForwardIndex(ptr)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ForwardIndex", code), t)
+	}
+	return nil
+}
+
+// ForwardIndex: DECFI - Forward Index. If the cursor is on the right margin, the
+// contents of the scrolling region are shifted one column left, losing
+// the column at the left margin, and a blank column is inserted at the
+// right margin. Otherwise the cursor
+// moves one column right, unless it is already at the right edge of
+// the screen.
+//
+// This unsets the pending wrap state without wrapping.
+// It panics with the typed error it would otherwise return.
+func (t *Terminal) ForwardIndex() {
+	if err := t.zigoCheckedForwardIndex(); err != nil {
 		panic(err)
 	}
 }
@@ -1662,20 +1742,20 @@ func (te *Terminal) ReverseIndex() {
 // currently a spec for this, but it is something I think might
 // be useful in the future.
 // The returned reference remains valid only while its parent handle remains open.
-func (te *Terminal) SwitchScreen(key ScreenKey) (*Screen, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.SwitchScreen receiver", te)
+func (t *Terminal) SwitchScreen(key ScreenKey) (*Screen, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.SwitchScreen receiver", t)
 	if err != nil {
 		return nil, false, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalSwitchScreen(ptr, uint8(key))
 	if code != 0 {
-		return nil, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SwitchScreen", code), te)
+		return nil, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SwitchScreen", code), t)
 	}
 	if result == nil {
 		return nil, false, nil
 	}
-	return zigoNewBorrowedScreen(result, te), true, nil
+	return zigoNewBorrowedScreen(result, t), true, nil
 }
 
 // SwitchScreenMode: Switch screen via a mode switch (e.g. mode 47, 1047, 1049).
@@ -1687,61 +1767,61 @@ func (te *Terminal) SwitchScreen(key ScreenKey) (*Screen, bool, error) {
 // This should be used for legacy compatibility with VT protocols,
 // but more modern usage should use `switchScreen` instead and handle
 // details like clearing the screen, cursor saving, etc. manually.
-func (te *Terminal) SwitchScreenMode(mode SwitchScreenMode, enabled bool) error {
-	ptr, err := zigoCheckedPointer("Terminal.SwitchScreenMode receiver", te)
+func (t *Terminal) SwitchScreenMode(mode SwitchScreenMode, enabled bool) error {
+	ptr, err := zigoCheckedPointer("Terminal.SwitchScreenMode receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSwitchScreenMode(ptr, uint8(mode), zigoBoolToUint8(enabled))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SwitchScreenMode", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SwitchScreenMode", code), t)
 	}
 	return nil
 }
 
 // zigoCheckedActiveScreen is the checked form of ActiveScreen, which a plugin replaced.
-func (te *Terminal) zigoCheckedActiveScreen() (*Screen, error) {
-	ptr, err := zigoCheckedPointer("Terminal.ActiveScreen receiver", te)
+func (t *Terminal) zigoCheckedActiveScreen() (*Screen, error) {
+	ptr, err := zigoCheckedPointer("Terminal.ActiveScreen receiver", t)
 	if err != nil {
 		return nil, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalActiveScreen(ptr)
 	if code != 0 {
-		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ActiveScreen", code), te)
+		return nil, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ActiveScreen", code), t)
 	}
-	return zigoNewBorrowedScreen(result, te), nil
+	return zigoNewBorrowedScreen(result, t), nil
 }
 
 // ActiveScreen: The screen the terminal is currently writing to.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) ActiveScreen() *Screen {
-	return zigoMust(te.zigoCheckedActiveScreen())
+func (t *Terminal) ActiveScreen() *Screen {
+	return zigoMust(t.zigoCheckedActiveScreen())
 }
 
 // zigoCheckedScreen is the checked form of Screen, which a plugin replaced.
-func (te *Terminal) zigoCheckedScreen(key ScreenKey) (*Screen, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.Screen receiver", te)
+func (t *Terminal) zigoCheckedScreen(key ScreenKey) (*Screen, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.Screen receiver", t)
 	if err != nil {
 		return nil, false, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalScreen(ptr, uint8(key))
 	if code != 0 {
-		return nil, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Screen", code), te)
+		return nil, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Screen", code), t)
 	}
 	if result == nil {
 		return nil, false, nil
 	}
-	return zigoNewBorrowedScreen(result, te), true, nil
+	return zigoNewBorrowedScreen(result, t), true, nil
 }
 
 // Screen: A specific screen, or absent if the terminal has not created it yet. The
 // alternate screen only exists once something has switched to it.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) Screen(key ScreenKey) (*Screen, bool) {
-	return zigoMustMatch(te.zigoCheckedScreen(key))
+func (t *Terminal) Screen(key ScreenKey) (*Screen, bool) {
+	return zigoMustMatch(t.zigoCheckedScreen(key))
 }
 
 // PrintAttributesInto: Print the active attributes as a string. This is used to respond to DECRQSS
@@ -1749,15 +1829,15 @@ func (te *Terminal) Screen(key ScreenKey) (*Screen, bool) {
 //
 // Boolean attributes are printed first, followed by foreground color, then
 // background color. Each attribute is separated by a semicolon.
-func (te *Terminal) PrintAttributesInto(buf []byte) (uint, error) {
-	ptr, err := zigoCheckedPointer("Terminal.PrintAttributesInto receiver", te)
+func (t *Terminal) PrintAttributesInto(buf []byte) (uint, error) {
+	ptr, err := zigoCheckedPointer("Terminal.PrintAttributesInto receiver", t)
 	if err != nil {
 		return 0, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalPrintAttributesInto(ptr, buf)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PrintAttributesInto", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PrintAttributesInto", code), t)
 	}
 	return result, nil
 }
@@ -1771,29 +1851,29 @@ func (te *Terminal) PrintAttributesInto(buf []byte) (uint, error) {
 // `newGridRef`), and the other three origins are already reachable:
 // `plainString` is the active area and `Screen.format` is the screen with its
 // scrollback. What is left for this one to be is the scrollback, named.
-func (te *Terminal) HistoryString() (string, error) {
-	ptr, err := zigoCheckedPointer("Terminal.HistoryString receiver", te)
+func (t *Terminal) HistoryString() (string, error) {
+	ptr, err := zigoCheckedPointer("Terminal.HistoryString receiver", t)
 	if err != nil {
 		return "", err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalHistoryString(ptr)
 	if code != 0 {
-		return "", zigoPoisonAfterPanic(zigoErrorForCode("Terminal.HistoryString", code), te)
+		return "", zigoPoisonAfterPanic(zigoErrorForCode("Terminal.HistoryString", code), t)
 	}
 	return result, nil
 }
 
 // zigoCheckedHorizontalTab is the checked form of HorizontalTab, which a plugin replaced.
-func (te *Terminal) zigoCheckedHorizontalTab() error {
-	ptr, err := zigoCheckedPointer("Terminal.HorizontalTab receiver", te)
+func (t *Terminal) zigoCheckedHorizontalTab() error {
+	ptr, err := zigoCheckedPointer("Terminal.HorizontalTab receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalHorizontalTab(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.HorizontalTab", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.HorizontalTab", code), t)
 	}
 	return nil
 }
@@ -1801,44 +1881,44 @@ func (te *Terminal) zigoCheckedHorizontalTab() error {
 // HorizontalTab: Horizontal tab moves the cursor to the next tabstop, clearing
 // the screen to the left the tabstop.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) HorizontalTab() {
-	if err := te.zigoCheckedHorizontalTab(); err != nil {
+func (t *Terminal) HorizontalTab() {
+	if err := t.zigoCheckedHorizontalTab(); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedHorizontalTabBack is the checked form of HorizontalTabBack, which a plugin replaced.
-func (te *Terminal) zigoCheckedHorizontalTabBack() error {
-	ptr, err := zigoCheckedPointer("Terminal.HorizontalTabBack receiver", te)
+func (t *Terminal) zigoCheckedHorizontalTabBack() error {
+	ptr, err := zigoCheckedPointer("Terminal.HorizontalTabBack receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalHorizontalTabBack(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.HorizontalTabBack", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.HorizontalTabBack", code), t)
 	}
 	return nil
 }
 
 // HorizontalTabBack: Same as horizontalTab but moves to the previous tabstop instead of the next.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) HorizontalTabBack() {
-	if err := te.zigoCheckedHorizontalTabBack(); err != nil {
+func (t *Terminal) HorizontalTabBack() {
+	if err := t.zigoCheckedHorizontalTabBack(); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedTabSet is the checked form of TabSet, which a plugin replaced.
-func (te *Terminal) zigoCheckedTabSet() error {
-	ptr, err := zigoCheckedPointer("Terminal.TabSet receiver", te)
+func (t *Terminal) zigoCheckedTabSet() error {
+	ptr, err := zigoCheckedPointer("Terminal.TabSet receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalTabSet(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.TabSet", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.TabSet", code), t)
 	}
 	return nil
 }
@@ -1846,66 +1926,66 @@ func (te *Terminal) zigoCheckedTabSet() error {
 // TabSet: Set a tab stop on the current cursor.
 // TODO: test
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) TabSet() {
-	if err := te.zigoCheckedTabSet(); err != nil {
+func (t *Terminal) TabSet() {
+	if err := t.zigoCheckedTabSet(); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedTabReset is the checked form of TabReset, which a plugin replaced.
-func (te *Terminal) zigoCheckedTabReset() error {
-	ptr, err := zigoCheckedPointer("Terminal.TabReset receiver", te)
+func (t *Terminal) zigoCheckedTabReset() error {
+	ptr, err := zigoCheckedPointer("Terminal.TabReset receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalTabReset(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.TabReset", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.TabReset", code), t)
 	}
 	return nil
 }
 
 // TabReset: TODO: test
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) TabReset() {
-	if err := te.zigoCheckedTabReset(); err != nil {
+func (t *Terminal) TabReset() {
+	if err := t.zigoCheckedTabReset(); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedTabClear is the checked form of TabClear, which a plugin replaced.
-func (te *Terminal) zigoCheckedTabClear(cmd TabClear) error {
-	ptr, err := zigoCheckedPointer("Terminal.TabClear receiver", te)
+func (t *Terminal) zigoCheckedTabClear(cmd TabClear) error {
+	ptr, err := zigoCheckedPointer("Terminal.TabClear receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalTabClear(ptr, uint8(cmd))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.TabClear", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.TabClear", code), t)
 	}
 	return nil
 }
 
 // TabClear: Clear tab stops.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) TabClear(cmd TabClear) {
-	if err := te.zigoCheckedTabClear(cmd); err != nil {
+func (t *Terminal) TabClear(cmd TabClear) {
+	if err := t.zigoCheckedTabClear(cmd); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedSetTabstop is the checked form of SetTabstop, which a plugin replaced.
-func (te *Terminal) zigoCheckedSetTabstop(col uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetTabstop receiver", te)
+func (t *Terminal) zigoCheckedSetTabstop(col uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetTabstop receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSetTabstop(ptr, col)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetTabstop", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetTabstop", code), t)
 	}
 	return nil
 }
@@ -1915,44 +1995,44 @@ func (te *Terminal) zigoCheckedSetTabstop(col uint) error {
 // Unlike `tabSet`, which is HTS and acts on the cursor's column, this does not
 // move or read the cursor.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) SetTabstop(col uint) {
-	if err := te.zigoCheckedSetTabstop(col); err != nil {
+func (t *Terminal) SetTabstop(col uint) {
+	if err := t.zigoCheckedSetTabstop(col); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedUnsetTabstop is the checked form of UnsetTabstop, which a plugin replaced.
-func (te *Terminal) zigoCheckedUnsetTabstop(col uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.UnsetTabstop receiver", te)
+func (t *Terminal) zigoCheckedUnsetTabstop(col uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.UnsetTabstop receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalUnsetTabstop(ptr, col)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.UnsetTabstop", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.UnsetTabstop", code), t)
 	}
 	return nil
 }
 
 // UnsetTabstop: Remove the tabstop at an absolute column, if there is one.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) UnsetTabstop(col uint) {
-	if err := te.zigoCheckedUnsetTabstop(col); err != nil {
+func (t *Terminal) UnsetTabstop(col uint) {
+	if err := t.zigoCheckedUnsetTabstop(col); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedResetTabstops is the checked form of ResetTabstops, which a plugin replaced.
-func (te *Terminal) zigoCheckedResetTabstops(interval uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.ResetTabstops receiver", te)
+func (t *Terminal) zigoCheckedResetTabstops(interval uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.ResetTabstops receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalResetTabstops(ptr, interval)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetTabstops", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetTabstops", code), t)
 	}
 	return nil
 }
@@ -1961,8 +2041,8 @@ func (te *Terminal) zigoCheckedResetTabstops(interval uint) error {
 //
 // An interval of zero just clears them all. The terminal's own default is 8.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) ResetTabstops(interval uint) {
-	if err := te.zigoCheckedResetTabstops(interval); err != nil {
+func (t *Terminal) ResetTabstops(interval uint) {
+	if err := t.zigoCheckedResetTabstops(interval); err != nil {
 		panic(err)
 	}
 }
@@ -1974,51 +2054,51 @@ func (te *Terminal) ResetTabstops(interval uint) {
 // The new lines are created according to the current SGR state.
 //
 // Does not change the (absolute) cursor position.
-func (te *Terminal) ScrollUp(count uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.ScrollUp receiver", te)
+func (t *Terminal) ScrollUp(count uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.ScrollUp receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalScrollUp(ptr, count)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ScrollUp", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ScrollUp", code), t)
 	}
 	return nil
 }
 
 // zigoCheckedScrollDown is the checked form of ScrollDown, which a plugin replaced.
-func (te *Terminal) zigoCheckedScrollDown(count uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.ScrollDown receiver", te)
+func (t *Terminal) zigoCheckedScrollDown(count uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.ScrollDown receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalScrollDown(ptr, count)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ScrollDown", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ScrollDown", code), t)
 	}
 	return nil
 }
 
 // ScrollDown: Scroll the text down by one row.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) ScrollDown(count uint) {
-	if err := te.zigoCheckedScrollDown(count); err != nil {
+func (t *Terminal) ScrollDown(count uint) {
+	if err := t.zigoCheckedScrollDown(count); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedSetTopAndBottomMargin is the checked form of SetTopAndBottomMargin, which a plugin replaced.
-func (te *Terminal) zigoCheckedSetTopAndBottomMargin(top uint, bottom uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetTopAndBottomMargin receiver", te)
+func (t *Terminal) zigoCheckedSetTopAndBottomMargin(top uint, bottom uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetTopAndBottomMargin receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSetTopAndBottomMargin(ptr, top, bottom)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetTopAndBottomMargin", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetTopAndBottomMargin", code), t)
 	}
 	return nil
 }
@@ -2036,66 +2116,66 @@ func (te *Terminal) zigoCheckedSetTopAndBottomMargin(top uint, bottom uint) erro
 //
 // Top and bottom are 1-indexed.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) SetTopAndBottomMargin(top uint, bottom uint) {
-	if err := te.zigoCheckedSetTopAndBottomMargin(top, bottom); err != nil {
+func (t *Terminal) SetTopAndBottomMargin(top uint, bottom uint) {
+	if err := t.zigoCheckedSetTopAndBottomMargin(top, bottom); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedSetLeftAndRightMargin is the checked form of SetLeftAndRightMargin, which a plugin replaced.
-func (te *Terminal) zigoCheckedSetLeftAndRightMargin(left uint, right uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetLeftAndRightMargin receiver", te)
+func (t *Terminal) zigoCheckedSetLeftAndRightMargin(left uint, right uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetLeftAndRightMargin receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSetLeftAndRightMargin(ptr, left, right)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetLeftAndRightMargin", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetLeftAndRightMargin", code), t)
 	}
 	return nil
 }
 
 // SetLeftAndRightMargin: DECSLRM
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) SetLeftAndRightMargin(left uint, right uint) {
-	if err := te.zigoCheckedSetLeftAndRightMargin(left, right); err != nil {
+func (t *Terminal) SetLeftAndRightMargin(left uint, right uint) {
+	if err := t.zigoCheckedSetLeftAndRightMargin(left, right); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedScrollViewport is the checked form of ScrollViewport, which a plugin replaced.
-func (te *Terminal) zigoCheckedScrollViewport(behavior ScrollViewport) error {
-	ptr, err := zigoCheckedPointer("Terminal.ScrollViewport receiver", te)
+func (t *Terminal) zigoCheckedScrollViewport(behavior ScrollViewport) error {
+	ptr, err := zigoCheckedPointer("Terminal.ScrollViewport receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalScrollViewport(ptr, uint8(behavior.tag), behavior.delta, behavior.row, behavior.deltaPrompt)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ScrollViewport", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ScrollViewport", code), t)
 	}
 	return nil
 }
 
 // ScrollViewport: Scroll the viewport of the terminal grid.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) ScrollViewport(behavior ScrollViewport) {
-	if err := te.zigoCheckedScrollViewport(behavior); err != nil {
+func (t *Terminal) ScrollViewport(behavior ScrollViewport) {
+	if err := t.zigoCheckedScrollViewport(behavior); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedSetScrollbackMaxBytes is the checked form of SetScrollbackMaxBytes, which a plugin replaced.
-func (te *Terminal) zigoCheckedSetScrollbackMaxBytes(max uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetScrollbackMaxBytes receiver", te)
+func (t *Terminal) zigoCheckedSetScrollbackMaxBytes(max uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetScrollbackMaxBytes receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSetScrollbackMaxBytes(ptr, max)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetScrollbackMaxBytes", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetScrollbackMaxBytes", code), t)
 	}
 	return nil
 }
@@ -2103,88 +2183,88 @@ func (te *Terminal) zigoCheckedSetScrollbackMaxBytes(max uint) error {
 // SetScrollbackMaxBytes: Limit the primary screen's scrollback to `max` bytes. Zero disables
 // scrollback and erases retained history.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) SetScrollbackMaxBytes(max uint) {
-	if err := te.zigoCheckedSetScrollbackMaxBytes(max); err != nil {
+func (t *Terminal) SetScrollbackMaxBytes(max uint) {
+	if err := t.zigoCheckedSetScrollbackMaxBytes(max); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedClearScrollbackMaxBytes is the checked form of ClearScrollbackMaxBytes, which a plugin replaced.
-func (te *Terminal) zigoCheckedClearScrollbackMaxBytes() error {
-	ptr, err := zigoCheckedPointer("Terminal.ClearScrollbackMaxBytes receiver", te)
+func (t *Terminal) zigoCheckedClearScrollbackMaxBytes() error {
+	ptr, err := zigoCheckedPointer("Terminal.ClearScrollbackMaxBytes receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalClearScrollbackMaxBytes(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ClearScrollbackMaxBytes", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ClearScrollbackMaxBytes", code), t)
 	}
 	return nil
 }
 
 // ClearScrollbackMaxBytes: Remove the primary screen's scrollback byte limit.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) ClearScrollbackMaxBytes() {
-	if err := te.zigoCheckedClearScrollbackMaxBytes(); err != nil {
+func (t *Terminal) ClearScrollbackMaxBytes() {
+	if err := t.zigoCheckedClearScrollbackMaxBytes(); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedSetScrollbackMaxLines is the checked form of SetScrollbackMaxLines, which a plugin replaced.
-func (te *Terminal) zigoCheckedSetScrollbackMaxLines(max uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetScrollbackMaxLines receiver", te)
+func (t *Terminal) zigoCheckedSetScrollbackMaxLines(max uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetScrollbackMaxLines receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSetScrollbackMaxLines(ptr, max)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetScrollbackMaxLines", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetScrollbackMaxLines", code), t)
 	}
 	return nil
 }
 
 // SetScrollbackMaxLines: Limit the primary screen's scrollback to `max` physical lines.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) SetScrollbackMaxLines(max uint) {
-	if err := te.zigoCheckedSetScrollbackMaxLines(max); err != nil {
+func (t *Terminal) SetScrollbackMaxLines(max uint) {
+	if err := t.zigoCheckedSetScrollbackMaxLines(max); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedClearScrollbackMaxLines is the checked form of ClearScrollbackMaxLines, which a plugin replaced.
-func (te *Terminal) zigoCheckedClearScrollbackMaxLines() error {
-	ptr, err := zigoCheckedPointer("Terminal.ClearScrollbackMaxLines receiver", te)
+func (t *Terminal) zigoCheckedClearScrollbackMaxLines() error {
+	ptr, err := zigoCheckedPointer("Terminal.ClearScrollbackMaxLines receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalClearScrollbackMaxLines(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ClearScrollbackMaxLines", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ClearScrollbackMaxLines", code), t)
 	}
 	return nil
 }
 
 // ClearScrollbackMaxLines: Remove the primary screen's scrollback line limit.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) ClearScrollbackMaxLines() {
-	if err := te.zigoCheckedClearScrollbackMaxLines(); err != nil {
+func (t *Terminal) ClearScrollbackMaxLines() {
+	if err := t.zigoCheckedClearScrollbackMaxLines(); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedInsertLines is the checked form of InsertLines, which a plugin replaced.
-func (te *Terminal) zigoCheckedInsertLines(count uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.InsertLines receiver", te)
+func (t *Terminal) zigoCheckedInsertLines(count uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.InsertLines receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalInsertLines(ptr, count)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.InsertLines", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.InsertLines", code), t)
 	}
 	return nil
 }
@@ -2208,22 +2288,22 @@ func (te *Terminal) zigoCheckedInsertLines(count uint) error {
 //
 // Moves the cursor to the left margin.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) InsertLines(count uint) {
-	if err := te.zigoCheckedInsertLines(count); err != nil {
+func (t *Terminal) InsertLines(count uint) {
+	if err := t.zigoCheckedInsertLines(count); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedDeleteLines is the checked form of DeleteLines, which a plugin replaced.
-func (te *Terminal) zigoCheckedDeleteLines(count uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.DeleteLines receiver", te)
+func (t *Terminal) zigoCheckedDeleteLines(count uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.DeleteLines receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalDeleteLines(ptr, count)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.DeleteLines", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.DeleteLines", code), t)
 	}
 	return nil
 }
@@ -2245,22 +2325,22 @@ func (te *Terminal) zigoCheckedDeleteLines(count uint) error {
 //
 // Moves the cursor to the left margin.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) DeleteLines(count uint) {
-	if err := te.zigoCheckedDeleteLines(count); err != nil {
+func (t *Terminal) DeleteLines(count uint) {
+	if err := t.zigoCheckedDeleteLines(count); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedInsertBlanks is the checked form of InsertBlanks, which a plugin replaced.
-func (te *Terminal) zigoCheckedInsertBlanks(count uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.InsertBlanks receiver", te)
+func (t *Terminal) zigoCheckedInsertBlanks(count uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.InsertBlanks receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalInsertBlanks(ptr, count)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.InsertBlanks", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.InsertBlanks", code), t)
 	}
 	return nil
 }
@@ -2273,22 +2353,22 @@ func (te *Terminal) zigoCheckedInsertBlanks(count uint) error {
 //
 // The inserted cells are colored according to the current SGR state.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) InsertBlanks(count uint) {
-	if err := te.zigoCheckedInsertBlanks(count); err != nil {
+func (t *Terminal) InsertBlanks(count uint) {
+	if err := t.zigoCheckedInsertBlanks(count); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedDeleteChars is the checked form of DeleteChars, which a plugin replaced.
-func (te *Terminal) zigoCheckedDeleteChars(count uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.DeleteChars receiver", te)
+func (t *Terminal) zigoCheckedDeleteChars(count uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.DeleteChars receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalDeleteChars(ptr, count)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.DeleteChars", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.DeleteChars", code), t)
 	}
 	return nil
 }
@@ -2302,74 +2382,157 @@ func (te *Terminal) zigoCheckedDeleteChars(count uint) error {
 //
 // Does not change the cursor position.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) DeleteChars(count uint) {
-	if err := te.zigoCheckedDeleteChars(count); err != nil {
+func (t *Terminal) DeleteChars(count uint) {
+	if err := t.zigoCheckedDeleteChars(count); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedInsertColumns is the checked form of InsertColumns, which a plugin replaced.
+func (t *Terminal) zigoCheckedInsertColumns(count uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.InsertColumns receiver", t)
+	if err != nil {
+		return err
+	}
+	defer t.zigoRelease()
+	code := raw.TerminalInsertColumns(ptr, count)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.InsertColumns", code), t)
+	}
+	return nil
+}
+
+// InsertColumns: DECIC - Insert Column. Inserts count blank columns at the cursor
+// column in every row of the scrolling region, moving existing cell
+// contents to the right. The contents of the count right-most columns
+// in the scroll region are lost. The cursor position is not changed.
+//
+// This does nothing if the cursor is outside the scrolling region.
+// It panics with the typed error it would otherwise return.
+func (t *Terminal) InsertColumns(count uint) {
+	if err := t.zigoCheckedInsertColumns(count); err != nil {
+		panic(err)
+	}
+}
+
+// zigoCheckedDeleteColumns is the checked form of DeleteColumns, which a plugin replaced.
+func (t *Terminal) zigoCheckedDeleteColumns(count uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.DeleteColumns receiver", t)
+	if err != nil {
+		return err
+	}
+	defer t.zigoRelease()
+	code := raw.TerminalDeleteColumns(ptr, count)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.DeleteColumns", code), t)
+	}
+	return nil
+}
+
+// DeleteColumns: DECDC - Delete Column. Deletes count columns starting at the cursor
+// column in every row of the scrolling region, moving the remaining
+// cell contents to the left and filling from the right margin with
+// blanks. The cursor position is not changed.
+//
+// This does nothing if the cursor is outside the scrolling region.
+// It panics with the typed error it would otherwise return.
+func (t *Terminal) DeleteColumns(count uint) {
+	if err := t.zigoCheckedDeleteColumns(count); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedEraseChars is the checked form of EraseChars, which a plugin replaced.
-func (te *Terminal) zigoCheckedEraseChars(count uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.EraseChars receiver", te)
+func (t *Terminal) zigoCheckedEraseChars(count uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.EraseChars receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalEraseChars(ptr, count)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.EraseChars", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.EraseChars", code), t)
 	}
 	return nil
 }
 
 // EraseChars calls the Zig function Terminal.eraseChars.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) EraseChars(count uint) {
-	if err := te.zigoCheckedEraseChars(count); err != nil {
+func (t *Terminal) EraseChars(count uint) {
+	if err := t.zigoCheckedEraseChars(count); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedEraseLine is the checked form of EraseLine, which a plugin replaced.
-func (te *Terminal) zigoCheckedEraseLine(mode EraseLine, protected bool) error {
-	ptr, err := zigoCheckedPointer("Terminal.EraseLine receiver", te)
+func (t *Terminal) zigoCheckedEraseLine(mode EraseLine, protected bool) error {
+	ptr, err := zigoCheckedPointer("Terminal.EraseLine receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalEraseLine(ptr, uint8(mode), zigoBoolToUint8(protected))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.EraseLine", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.EraseLine", code), t)
 	}
 	return nil
 }
 
 // EraseLine: Erase the line.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) EraseLine(mode EraseLine, protected bool) {
-	if err := te.zigoCheckedEraseLine(mode, protected); err != nil {
+func (t *Terminal) EraseLine(mode EraseLine, protected bool) {
+	if err := t.zigoCheckedEraseLine(mode, protected); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedEraseDisplay is the checked form of EraseDisplay, which a plugin replaced.
-func (te *Terminal) zigoCheckedEraseDisplay(mode EraseDisplay, protected bool) error {
-	ptr, err := zigoCheckedPointer("Terminal.EraseDisplay receiver", te)
+func (t *Terminal) zigoCheckedEraseDisplay(mode EraseDisplay, protected bool) error {
+	ptr, err := zigoCheckedPointer("Terminal.EraseDisplay receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalEraseDisplay(ptr, uint8(mode), zigoBoolToUint8(protected))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.EraseDisplay", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.EraseDisplay", code), t)
 	}
 	return nil
 }
 
-// EraseDisplay: Erase the display.
+// EraseDisplay: Erase the display (ED, `CSI Ps J`). The mode picks what is erased:
+//
+// - `below`: from the cursor to the end of the screen.
+// - `above`: from the start of the screen to the cursor.
+// - `complete`: the whole screen. See "Clearing at a prompt" below.
+// - `scrollback`: the scrollback history. The screen is left as is.
+// - `scroll_complete`: moves the screen contents into scrollback,
+// then clears the screen. This is a Kitty extension (`CSI 22 J`).
+//
+// Protected cells are kept if `protected_req` is true, or if the most
+// recent protection mode was ISO (set by SPA, `ESC V`).
+//
+// Clearing at a prompt: on the primary screen, a `complete` erase acts
+// like `scroll_complete` when the last non-blank row is a shell prompt.
+// This keeps the previous command output in scrollback when the user
+// presses Ctrl+L at a prompt. Shells usually send `CSI H CSI 2 J`, so
+// the cursor is already at the top and its position can't be used to
+// tell whether a prompt is showing. Instead, prompt rows are found
+// using semantic prompt marks (OSC 133). A screen that has never
+// received OSC 133 prompt or input marks has no prompt rows, so the
+// erase is a plain clear. See #905.
+//
+// For example, with a shell that marks its prompts:
+//
+// ```
+// ESC ] 133 ; A ESC \ $ ESC ] 133 ; B ESC \   (prompt, then input starts)
+// ESC [ H ESC [ 2 J                           (Ctrl+L: scrolls, then clears)
+// ```
+//
+// Without the OSC 133 sequences, the same `CSI H CSI 2 J` just clears.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) EraseDisplay(mode EraseDisplay, protected bool) {
-	if err := te.zigoCheckedEraseDisplay(mode, protected); err != nil {
+func (t *Terminal) EraseDisplay(mode EraseDisplay, protected bool) {
+	if err := t.zigoCheckedEraseDisplay(mode, protected); err != nil {
 		panic(err)
 	}
 }
@@ -2377,29 +2540,29 @@ func (te *Terminal) EraseDisplay(mode EraseDisplay, protected bool) {
 // Decaln: Resets all margins and fills the whole screen with the character 'E'
 //
 // Sets the cursor to the top left corner.
-func (te *Terminal) Decaln() error {
-	ptr, err := zigoCheckedPointer("Terminal.Decaln receiver", te)
+func (t *Terminal) Decaln() error {
+	ptr, err := zigoCheckedPointer("Terminal.Decaln receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalDecaln(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Decaln", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Decaln", code), t)
 	}
 	return nil
 }
 
 // Resize: Change the viewport size, leaving the pixel geometry alone.
-func (te *Terminal) Resize(cols uint16, rows uint16) error {
-	ptr, err := zigoCheckedPointer("Terminal.Resize receiver", te)
+func (t *Terminal) Resize(cols uint16, rows uint16) error {
+	ptr, err := zigoCheckedPointer("Terminal.Resize receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalResize(ptr, cols, rows)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Resize", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Resize", code), t)
 	}
 	return nil
 }
@@ -2415,15 +2578,15 @@ func (te *Terminal) Resize(cols uint16, rows uint16) error {
 // A terminal a stream feeds should be resized through `Stream.resizeCells`
 // instead: this one never reaches the stream, so a program that asked for
 // in-band size reports (mode 2048) is not told and a render hold does not end.
-func (te *Terminal) ResizeCells(width uint16, height uint16, cellWidth uint32, cellHeight uint32) error {
-	ptr, err := zigoCheckedPointer("Terminal.ResizeCells receiver", te)
+func (t *Terminal) ResizeCells(width uint16, height uint16, cellWidth uint32, cellHeight uint32) error {
+	ptr, err := zigoCheckedPointer("Terminal.ResizeCells receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalResizeCells(ptr, width, height, cellWidth, cellHeight)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResizeCells", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResizeCells", code), t)
 	}
 	return nil
 }
@@ -2435,15 +2598,15 @@ func (te *Terminal) ResizeCells(width uint16, height uint16, cellWidth uint32, c
 // list of the active screen, not just the rows on display. This differs from
 // `Screen.format` only in that it follows whichever screen is active rather
 // than staying with the one it was given.
-func (te *Terminal) Format(opts FormatOptions, writer io.Writer) error {
+func (t *Terminal) Format(opts FormatOptions, writer io.Writer) error {
 	if writer == nil {
 		return &StreamError{Operation: "Terminal.Format", Parameter: "writer", Err: ErrNilStream}
 	}
-	ptr, err := zigoCheckedPointer("Terminal.Format receiver", te)
+	ptr, err := zigoCheckedPointer("Terminal.Format receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	writerHandle := zigoNewWriterStreamHandle(writer)
 	defer zigoDeleteCallbackHandle(writerHandle)
 	code := raw.TerminalFormat(ptr, zigoFormatOptionsToRaw(opts), raw.StreamWriterCallbackPointer(), uintptr(writerHandle))
@@ -2454,7 +2617,7 @@ func (te *Terminal) Format(opts FormatOptions, writer io.Writer) error {
 		return err
 	}
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Format", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Format", code), t)
 	}
 	return nil
 }
@@ -2462,15 +2625,15 @@ func (te *Terminal) Format(opts FormatOptions, writer io.Writer) error {
 // FormatSelection: Format the part of the active screen inside `sel`, using the terminal's
 // default colors and palette. Returns false, writing nothing, when `sel` is
 // outside the active screen.
-func (te *Terminal) FormatSelection(opts FormatOptions, sel Selection, writer io.Writer) (bool, error) {
+func (t *Terminal) FormatSelection(opts FormatOptions, sel Selection, writer io.Writer) (bool, error) {
 	if writer == nil {
 		return false, &StreamError{Operation: "Terminal.FormatSelection", Parameter: "writer", Err: ErrNilStream}
 	}
-	ptr, err := zigoCheckedPointer("Terminal.FormatSelection receiver", te)
+	ptr, err := zigoCheckedPointer("Terminal.FormatSelection receiver", t)
 	if err != nil {
 		return false, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	writerHandle := zigoNewWriterStreamHandle(writer)
 	defer zigoDeleteCallbackHandle(writerHandle)
 	result, code := raw.TerminalFormatSelection(ptr, zigoFormatOptionsToRaw(opts), zigoSelectionToRaw(sel), raw.StreamWriterCallbackPointer(), uintptr(writerHandle))
@@ -2481,131 +2644,131 @@ func (te *Terminal) FormatSelection(opts FormatOptions, sel Selection, writer io
 		return false, err
 	}
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.FormatSelection", code), te)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.FormatSelection", code), t)
 	}
 	return result != 0, nil
 }
 
 // SetPwd: Set the pwd for the terminal.
-func (te *Terminal) SetPwd(pwd string) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetPwd receiver", te)
+func (t *Terminal) SetPwd(pwd string) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetPwd receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSetPwd(ptr, pwd)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetPwd", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetPwd", code), t)
 	}
 	return nil
 }
 
-// zigoCheckedGetPwd is the checked form of GetPwd, which a plugin replaced.
-func (te *Terminal) zigoCheckedGetPwd() (string, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.GetPwd receiver", te)
+// zigoCheckedPwd is the checked form of Pwd, which a plugin replaced.
+func (t *Terminal) zigoCheckedPwd() (string, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.Pwd receiver", t)
 	if err != nil {
 		return "", false, err
 	}
-	defer te.zigoRelease()
-	result, zigoHas, code := raw.TerminalGetPwd(ptr)
+	defer t.zigoRelease()
+	result, zigoHas, code := raw.TerminalPwd(ptr)
 	if code != 0 {
-		return "", false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.GetPwd", code), te)
+		return "", false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Pwd", code), t)
 	}
 	return result, zigoHas, nil
 }
 
-// GetPwd: Returns the pwd for the terminal, if any. The memory is owned by the
+// Pwd: Returns the pwd for the terminal, if any. The memory is owned by the
 // Terminal and is not copied. It is safe until a reset or setPwd.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) GetPwd() (string, bool) {
-	return zigoMustMatch(te.zigoCheckedGetPwd())
+func (t *Terminal) Pwd() (string, bool) {
+	return zigoMustMatch(t.zigoCheckedPwd())
 }
 
-// zigoCheckedGetTitle is the checked form of GetTitle, which a plugin replaced.
-func (te *Terminal) zigoCheckedGetTitle() (string, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.GetTitle receiver", te)
+// zigoCheckedTitle is the checked form of Title, which a plugin replaced.
+func (t *Terminal) zigoCheckedTitle() (string, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.Title receiver", t)
 	if err != nil {
 		return "", false, err
 	}
-	defer te.zigoRelease()
-	result, zigoHas, code := raw.TerminalGetTitle(ptr)
+	defer t.zigoRelease()
+	result, zigoHas, code := raw.TerminalTitle(ptr)
 	if code != 0 {
-		return "", false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.GetTitle", code), te)
+		return "", false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Title", code), t)
 	}
 	return result, zigoHas, nil
 }
 
-// GetTitle: Returns the title for the terminal, if any. The memory is owned by the
+// Title: Returns the title for the terminal, if any. The memory is owned by the
 // Terminal and is not copied. It is safe until a reset or setTitle.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) GetTitle() (string, bool) {
-	return zigoMustMatch(te.zigoCheckedGetTitle())
+func (t *Terminal) Title() (string, bool) {
+	return zigoMustMatch(t.zigoCheckedTitle())
 }
 
 // SetTitle: Set the title for the terminal, as set by escape sequences (e.g. OSC 0/2).
-func (te *Terminal) SetTitle(t string) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetTitle receiver", te)
+func (t *Terminal) SetTitle(title string) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetTitle receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetTitle(ptr, t)
+	defer t.zigoRelease()
+	code := raw.TerminalSetTitle(ptr, title)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetTitle", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetTitle", code), t)
 	}
 	return nil
 }
 
 // zigoCheckedBackgroundColor is the checked form of BackgroundColor, which a plugin replaced.
-func (te *Terminal) zigoCheckedBackgroundColor() (RGB, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.BackgroundColor receiver", te)
+func (t *Terminal) zigoCheckedBackgroundColor() (RGB, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.BackgroundColor receiver", t)
 	if err != nil {
 		return *new(RGB), false, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, zigoHas, code := raw.TerminalBackgroundColor(ptr)
 	if code != 0 {
-		return *new(RGB), false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.BackgroundColor", code), te)
+		return *new(RGB), false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.BackgroundColor", code), t)
 	}
 	return zigoRGBFromRaw(result), zigoHas, nil
 }
 
 // BackgroundColor: The current background color: what OSC 11 set, else the default.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) BackgroundColor() (RGB, bool) {
-	return zigoMustMatch(te.zigoCheckedBackgroundColor())
+func (t *Terminal) BackgroundColor() (RGB, bool) {
+	return zigoMustMatch(t.zigoCheckedBackgroundColor())
 }
 
 // zigoCheckedForegroundColor is the checked form of ForegroundColor, which a plugin replaced.
-func (te *Terminal) zigoCheckedForegroundColor() (RGB, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.ForegroundColor receiver", te)
+func (t *Terminal) zigoCheckedForegroundColor() (RGB, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.ForegroundColor receiver", t)
 	if err != nil {
 		return *new(RGB), false, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, zigoHas, code := raw.TerminalForegroundColor(ptr)
 	if code != 0 {
-		return *new(RGB), false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ForegroundColor", code), te)
+		return *new(RGB), false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ForegroundColor", code), t)
 	}
 	return zigoRGBFromRaw(result), zigoHas, nil
 }
 
 // ForegroundColor: The current foreground color: what OSC 10 set, else the default.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) ForegroundColor() (RGB, bool) {
-	return zigoMustMatch(te.zigoCheckedForegroundColor())
+func (t *Terminal) ForegroundColor() (RGB, bool) {
+	return zigoMustMatch(t.zigoCheckedForegroundColor())
 }
 
 // zigoCheckedCursorColor is the checked form of CursorColor, which a plugin replaced.
-func (te *Terminal) zigoCheckedCursorColor() (RGB, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.CursorColor receiver", te)
+func (t *Terminal) zigoCheckedCursorColor() (RGB, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.CursorColor receiver", t)
 	if err != nil {
 		return *new(RGB), false, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, zigoHas, code := raw.TerminalCursorColor(ptr)
 	if code != 0 {
-		return *new(RGB), false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorColor", code), te)
+		return *new(RGB), false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CursorColor", code), t)
 	}
 	return zigoRGBFromRaw(result), zigoHas, nil
 }
@@ -2613,23 +2776,23 @@ func (te *Terminal) zigoCheckedCursorColor() (RGB, bool, error) {
 // CursorColor: The current cursor color, if one was set or configured. Null means the
 // cursor takes the foreground color.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) CursorColor() (RGB, bool) {
-	return zigoMustMatch(te.zigoCheckedCursorColor())
+func (t *Terminal) CursorColor() (RGB, bool) {
+	return zigoMustMatch(t.zigoCheckedCursorColor())
 }
 
 // zigoCheckedPaletteColors is the checked form of PaletteColors, which a plugin replaced.
-func (te *Terminal) zigoCheckedPaletteColors(dst []RGB) (uint, error) {
-	ptr, err := zigoCheckedPointer("Terminal.PaletteColors receiver", te)
+func (t *Terminal) zigoCheckedPaletteColors(dst []RGB) (uint, error) {
+	ptr, err := zigoCheckedPointer("Terminal.PaletteColors receiver", t)
 	if err != nil {
 		return 0, err
 	}
-	defer te.zigoRelease()
-	dstScratch := te.zigoScratchRGB.take(len(dst))
-	defer te.zigoScratchRGB.give(dstScratch)
+	defer t.zigoRelease()
+	dstScratch := t.zigoScratchRGB.take(len(dst))
+	defer t.zigoScratchRGB.give(dstScratch)
 	dstRaw := *dstScratch
 	result, code := raw.TerminalPaletteColors(ptr, dstRaw)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PaletteColors", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PaletteColors", code), t)
 	}
 	zigoRGBSliceCopyFromRaw(dst, dstRaw, int(result))
 	return result, nil
@@ -2638,40 +2801,40 @@ func (te *Terminal) zigoCheckedPaletteColors(dst []RGB) (uint, error) {
 // PaletteColors: Copy the current 256-color palette into `dst` and return how many entries
 // were written: 256, or `dst.len` if shorter.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) PaletteColors(dst []RGB) uint {
-	return zigoMust(te.zigoCheckedPaletteColors(dst))
+func (t *Terminal) PaletteColors(dst []RGB) uint {
+	return zigoMust(t.zigoCheckedPaletteColors(dst))
 }
 
 // zigoCheckedModeEnabled is the checked form of ModeEnabled, which a plugin replaced.
-func (te *Terminal) zigoCheckedModeEnabled(mode Mode) (bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.ModeEnabled receiver", te)
+func (t *Terminal) zigoCheckedModeEnabled(mode Mode) (bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.ModeEnabled receiver", t)
 	if err != nil {
 		return false, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalModeEnabled(ptr, uint16(mode))
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ModeEnabled", code), te)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ModeEnabled", code), t)
 	}
 	return result != 0, nil
 }
 
 // ModeEnabled: Whether `mode` is currently on.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) ModeEnabled(mode Mode) bool {
-	return zigoMust(te.zigoCheckedModeEnabled(mode))
+func (t *Terminal) ModeEnabled(mode Mode) bool {
+	return zigoMust(t.zigoCheckedModeEnabled(mode))
 }
 
 // zigoCheckedSetMode is the checked form of SetMode, which a plugin replaced.
-func (te *Terminal) zigoCheckedSetMode(mode Mode, value bool) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetMode receiver", te)
+func (t *Terminal) zigoCheckedSetMode(mode Mode, value bool) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetMode receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSetMode(ptr, uint16(mode), zigoBoolToUint8(value))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetMode", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetMode", code), t)
 	}
 	return nil
 }
@@ -2681,81 +2844,103 @@ func (te *Terminal) zigoCheckedSetMode(mode Mode, value bool) error {
 // 1049, resizing for 132-column -- do not run. Use `switchScreenMode` and
 // `deccolm` for those.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) SetMode(mode Mode, value bool) {
-	if err := te.zigoCheckedSetMode(mode, value); err != nil {
+func (t *Terminal) SetMode(mode Mode, value bool) {
+	if err := t.zigoCheckedSetMode(mode, value); err != nil {
 		panic(err)
 	}
 }
 
 // SetAttribute: Apply an SGR attribute to the cursor's pen. Everything printed afterwards
 // carries it until it is reset.
-func (te *Terminal) SetAttribute(attr Attribute) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetAttribute receiver", te)
+func (t *Terminal) SetAttribute(attr Attribute) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetAttribute receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetAttribute(ptr, uint8(attr.tag), uint8(attr.underline), zigoRGBToRaw(attr.underlineColorRgb).R, zigoRGBToRaw(attr.underlineColorRgb).G, zigoRGBToRaw(attr.underlineColorRgb).B, attr.underlineColor256, zigoRGBToRaw(attr.directColorFg).R, zigoRGBToRaw(attr.directColorFg).G, zigoRGBToRaw(attr.directColorFg).B, zigoRGBToRaw(attr.directColorBg).R, zigoRGBToRaw(attr.directColorBg).G, zigoRGBToRaw(attr.directColorBg).B, attr.color256Fg, attr.color256Bg, uint8(attr.namedFg), uint8(attr.namedBg), uint8(attr.brightNamedFg), uint8(attr.brightNamedBg))
+	defer t.zigoRelease()
+	code := raw.TerminalSetAttribute(ptr, uint8(attr.tag), uint8(attr.underline), zigoRGBToRaw(attr.underlineColor).R, zigoRGBToRaw(attr.underlineColor).G, zigoRGBToRaw(attr.underlineColor).B, attr.underlineColor256, zigoRGBToRaw(attr.directColorFg).R, zigoRGBToRaw(attr.directColorFg).G, zigoRGBToRaw(attr.directColorFg).B, zigoRGBToRaw(attr.directColorBg).R, zigoRGBToRaw(attr.directColorBg).G, zigoRGBToRaw(attr.directColorBg).B, attr.color256Fg, attr.color256Bg, uint8(attr.namedFg), uint8(attr.namedBg), uint8(attr.brightNamedFg), uint8(attr.brightNamedBg))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetAttribute", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetAttribute", code), t)
+	}
+	return nil
+}
+
+// SetAttributes: Apply every attribute of one CSI SGR sequence to the cursor's pen at once.
+// `params` and `colon_mask` are what `sgrAttributeCount` takes: the
+// parameters of `CSI ... m` without the `m`, and bit `i` set when parameter
+// `i` was followed by a colon. The resulting style is committed once, so
+// `CSI 0;1;31 m` costs one style update rather than three, and on failure the
+// pen reverts to what it was before the sequence.
+//
+// Wrapped because ghostty takes its `sgr.Parser`, whose separator list is a
+// `std.StaticBitSet` with no C representation.
+func (t *Terminal) SetAttributes(params []uint16, colonMask uint32) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetAttributes receiver", t)
+	if err != nil {
+		return err
+	}
+	defer t.zigoRelease()
+	code := raw.TerminalSetAttributes(ptr, params, colonMask)
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetAttributes", code), t)
 	}
 	return nil
 }
 
 // zigoCheckedSetProtectedMode is the checked form of SetProtectedMode, which a plugin replaced.
-func (te *Terminal) zigoCheckedSetProtectedMode(mode ProtectedMode) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetProtectedMode receiver", te)
+func (t *Terminal) zigoCheckedSetProtectedMode(mode ProtectedMode) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetProtectedMode receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSetProtectedMode(ptr, uint8(mode))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetProtectedMode", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetProtectedMode", code), t)
 	}
 	return nil
 }
 
 // SetProtectedMode: Set the character protection mode for the terminal.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) SetProtectedMode(mode ProtectedMode) {
-	if err := te.zigoCheckedSetProtectedMode(mode); err != nil {
+func (t *Terminal) SetProtectedMode(mode ProtectedMode) {
+	if err := t.zigoCheckedSetProtectedMode(mode); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedConfigureCharset is the checked form of ConfigureCharset, which a plugin replaced.
-func (te *Terminal) zigoCheckedConfigureCharset(slot CharsetSlot, set Charset) error {
-	ptr, err := zigoCheckedPointer("Terminal.ConfigureCharset receiver", te)
+func (t *Terminal) zigoCheckedConfigureCharset(slot CharsetSlot, set Charset) error {
+	ptr, err := zigoCheckedPointer("Terminal.ConfigureCharset receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalConfigureCharset(ptr, uint8(slot), uint8(set))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ConfigureCharset", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ConfigureCharset", code), t)
 	}
 	return nil
 }
 
 // ConfigureCharset: Set the charset into the given slot.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) ConfigureCharset(slot CharsetSlot, set Charset) {
-	if err := te.zigoCheckedConfigureCharset(slot, set); err != nil {
+func (t *Terminal) ConfigureCharset(slot CharsetSlot, set Charset) {
+	if err := t.zigoCheckedConfigureCharset(slot, set); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedInvokeCharset is the checked form of InvokeCharset, which a plugin replaced.
-func (te *Terminal) zigoCheckedInvokeCharset(active CharsetActiveSlot, slot CharsetSlot, single bool) error {
-	ptr, err := zigoCheckedPointer("Terminal.InvokeCharset receiver", te)
+func (t *Terminal) zigoCheckedInvokeCharset(active CharsetActiveSlot, slot CharsetSlot, single bool) error {
+	ptr, err := zigoCheckedPointer("Terminal.InvokeCharset receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalInvokeCharset(ptr, uint8(active), uint8(slot), zigoBoolToUint8(single))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.InvokeCharset", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.InvokeCharset", code), t)
 	}
 	return nil
 }
@@ -2763,8 +2948,8 @@ func (te *Terminal) zigoCheckedInvokeCharset(active CharsetActiveSlot, slot Char
 // InvokeCharset: Invoke the charset in slot into the active slot. If single is true,
 // then this will only be invoked for a single character.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) InvokeCharset(active CharsetActiveSlot, slot CharsetSlot, single bool) {
-	if err := te.zigoCheckedInvokeCharset(active, slot, single); err != nil {
+func (t *Terminal) InvokeCharset(active CharsetActiveSlot, slot CharsetSlot, single bool) {
+	if err := t.zigoCheckedInvokeCharset(active, slot, single); err != nil {
 		panic(err)
 	}
 }
@@ -2776,29 +2961,29 @@ func (te *Terminal) InvokeCharset(active CharsetActiveSlot, slot CharsetSlot, si
 // This breaks the expectation around modern terminals that they resize
 // with the window. This will fix the grid at either 80 or 132 columns.
 // The rows will continue to be variable.
-func (te *Terminal) Deccolm(mode DeccolmMode) error {
-	ptr, err := zigoCheckedPointer("Terminal.Deccolm receiver", te)
+func (t *Terminal) Deccolm(mode DeccolmMode) error {
+	ptr, err := zigoCheckedPointer("Terminal.Deccolm receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalDeccolm(ptr, uint8(mode))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Deccolm", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Deccolm", code), t)
 	}
 	return nil
 }
 
 // zigoCheckedCompress is the checked form of Compress, which a plugin replaced.
-func (te *Terminal) zigoCheckedCompress(mode CompressionMode) (CompressionResult, error) {
-	ptr, err := zigoCheckedPointer("Terminal.Compress receiver", te)
+func (t *Terminal) zigoCheckedCompress(mode CompressionMode) (CompressionResult, error) {
+	ptr, err := zigoCheckedPointer("Terminal.Compress receiver", t)
 	if err != nil {
 		return 0, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalCompress(ptr, uint8(mode))
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Compress", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Compress", code), t)
 	}
 	return CompressionResult(result), nil
 }
@@ -2818,20 +3003,20 @@ func (te *Terminal) zigoCheckedCompress(mode CompressionMode) (CompressionResult
 // Callers should schedule compression when it doesn't impact user
 // experience, for example during idle times.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) Compress(mode CompressionMode) CompressionResult {
-	return zigoMust(te.zigoCheckedCompress(mode))
+func (t *Terminal) Compress(mode CompressionMode) CompressionResult {
+	return zigoMust(t.zigoCheckedCompress(mode))
 }
 
 // zigoCheckedCompressionActivity is the checked form of CompressionActivity, which a plugin replaced.
-func (te *Terminal) zigoCheckedCompressionActivity() (uint64, error) {
-	ptr, err := zigoCheckedPointer("Terminal.CompressionActivity receiver", te)
+func (t *Terminal) zigoCheckedCompressionActivity() (uint64, error) {
+	ptr, err := zigoCheckedPointer("Terminal.CompressionActivity receiver", t)
 	if err != nil {
 		return 0, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalCompressionActivity(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CompressionActivity", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CompressionActivity", code), t)
 	}
 	return result, nil
 }
@@ -2851,20 +3036,20 @@ func (te *Terminal) zigoCheckedCompressionActivity() (uint64, error) {
 // physical memory backings. Callers must still use `compress` to determine
 // whether compression is supported on the current target.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) CompressionActivity() uint64 {
-	return zigoMust(te.zigoCheckedCompressionActivity())
+func (t *Terminal) CompressionActivity() uint64 {
+	return zigoMust(t.zigoCheckedCompressionActivity())
 }
 
 // zigoCheckedSetDefaultBackgroundColor is the checked form of SetDefaultBackgroundColor, which a plugin replaced.
-func (te *Terminal) zigoCheckedSetDefaultBackgroundColor(rgb RGB) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetDefaultBackgroundColor receiver", te)
+func (t *Terminal) zigoCheckedSetDefaultBackgroundColor(rgb RGB) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetDefaultBackgroundColor receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSetDefaultBackgroundColor(ptr, zigoRGBToRaw(rgb))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultBackgroundColor", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultBackgroundColor", code), t)
 	}
 	return nil
 }
@@ -2872,66 +3057,66 @@ func (te *Terminal) zigoCheckedSetDefaultBackgroundColor(rgb RGB) error {
 // SetDefaultBackgroundColor: Set the configured default background: the value in effect until OSC 11
 // overrides it and again after OSC 111 resets it.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) SetDefaultBackgroundColor(rgb RGB) {
-	if err := te.zigoCheckedSetDefaultBackgroundColor(rgb); err != nil {
+func (t *Terminal) SetDefaultBackgroundColor(rgb RGB) {
+	if err := t.zigoCheckedSetDefaultBackgroundColor(rgb); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedSetDefaultForegroundColor is the checked form of SetDefaultForegroundColor, which a plugin replaced.
-func (te *Terminal) zigoCheckedSetDefaultForegroundColor(rgb RGB) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetDefaultForegroundColor receiver", te)
+func (t *Terminal) zigoCheckedSetDefaultForegroundColor(rgb RGB) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetDefaultForegroundColor receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSetDefaultForegroundColor(ptr, zigoRGBToRaw(rgb))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultForegroundColor", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultForegroundColor", code), t)
 	}
 	return nil
 }
 
 // SetDefaultForegroundColor: Set the configured default foreground. See `setDefaultBackgroundColor`.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) SetDefaultForegroundColor(rgb RGB) {
-	if err := te.zigoCheckedSetDefaultForegroundColor(rgb); err != nil {
+func (t *Terminal) SetDefaultForegroundColor(rgb RGB) {
+	if err := t.zigoCheckedSetDefaultForegroundColor(rgb); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedSetDefaultCursorColor is the checked form of SetDefaultCursorColor, which a plugin replaced.
-func (te *Terminal) zigoCheckedSetDefaultCursorColor(rgb RGB) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetDefaultCursorColor receiver", te)
+func (t *Terminal) zigoCheckedSetDefaultCursorColor(rgb RGB) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetDefaultCursorColor receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSetDefaultCursorColor(ptr, zigoRGBToRaw(rgb))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultCursorColor", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultCursorColor", code), t)
 	}
 	return nil
 }
 
 // SetDefaultCursorColor: Set the configured default cursor color. See `setDefaultBackgroundColor`.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) SetDefaultCursorColor(rgb RGB) {
-	if err := te.zigoCheckedSetDefaultCursorColor(rgb); err != nil {
+func (t *Terminal) SetDefaultCursorColor(rgb RGB) {
+	if err := t.zigoCheckedSetDefaultCursorColor(rgb); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedSetDefaultCursorStyle is the checked form of SetDefaultCursorStyle, which a plugin replaced.
-func (te *Terminal) zigoCheckedSetDefaultCursorStyle(configuredStyle CursorStyle) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetDefaultCursorStyle receiver", te)
+func (t *Terminal) zigoCheckedSetDefaultCursorStyle(configuredStyle CursorStyle) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetDefaultCursorStyle receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSetDefaultCursorStyle(ptr, uint8(configuredStyle))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultCursorStyle", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultCursorStyle", code), t)
 	}
 	return nil
 }
@@ -2942,22 +3127,22 @@ func (te *Terminal) zigoCheckedSetDefaultCursorStyle(configuredStyle CursorStyle
 // immediately. Otherwise the new shape is saved for the next reset or default
 // selection, such as DECSCUSR `CSI 0 SP q`.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) SetDefaultCursorStyle(configuredStyle CursorStyle) {
-	if err := te.zigoCheckedSetDefaultCursorStyle(configuredStyle); err != nil {
+func (t *Terminal) SetDefaultCursorStyle(configuredStyle CursorStyle) {
+	if err := t.zigoCheckedSetDefaultCursorStyle(configuredStyle); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedSetDefaultCursorBlink is the checked form of SetDefaultCursorBlink, which a plugin replaced.
-func (te *Terminal) zigoCheckedSetDefaultCursorBlink(blink bool) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetDefaultCursorBlink receiver", te)
+func (t *Terminal) zigoCheckedSetDefaultCursorBlink(blink bool) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetDefaultCursorBlink receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSetDefaultCursorBlink(ptr, zigoBoolToUint8(blink))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultCursorBlink", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultCursorBlink", code), t)
 	}
 	return nil
 }
@@ -2965,116 +3150,116 @@ func (te *Terminal) zigoCheckedSetDefaultCursorBlink(blink bool) error {
 // SetDefaultCursorBlink: Set the default cursor blink. Applied immediately only when the cursor
 // currently follows its defaults; otherwise saved for the next reset.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) SetDefaultCursorBlink(blink bool) {
-	if err := te.zigoCheckedSetDefaultCursorBlink(blink); err != nil {
+func (t *Terminal) SetDefaultCursorBlink(blink bool) {
+	if err := t.zigoCheckedSetDefaultCursorBlink(blink); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedResetDefaultCursorBlink is the checked form of ResetDefaultCursorBlink, which a plugin replaced.
-func (te *Terminal) zigoCheckedResetDefaultCursorBlink() error {
-	ptr, err := zigoCheckedPointer("Terminal.ResetDefaultCursorBlink receiver", te)
+func (t *Terminal) zigoCheckedResetDefaultCursorBlink() error {
+	ptr, err := zigoCheckedPointer("Terminal.ResetDefaultCursorBlink receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalResetDefaultCursorBlink(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetDefaultCursorBlink", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetDefaultCursorBlink", code), t)
 	}
 	return nil
 }
 
 // ResetDefaultCursorBlink: Return the default cursor blink to the emulator default (blinking).
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) ResetDefaultCursorBlink() {
-	if err := te.zigoCheckedResetDefaultCursorBlink(); err != nil {
+func (t *Terminal) ResetDefaultCursorBlink() {
+	if err := t.zigoCheckedResetDefaultCursorBlink(); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedPaletteColor is the checked form of PaletteColor, which a plugin replaced.
-func (te *Terminal) zigoCheckedPaletteColor(idx uint8) (RGB, error) {
-	ptr, err := zigoCheckedPointer("Terminal.PaletteColor receiver", te)
+func (t *Terminal) zigoCheckedPaletteColor(idx uint8) (RGB, error) {
+	ptr, err := zigoCheckedPointer("Terminal.PaletteColor receiver", t)
 	if err != nil {
 		return *new(RGB), err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalPaletteColor(ptr, idx)
 	if code != 0 {
-		return *new(RGB), zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PaletteColor", code), te)
+		return *new(RGB), zigoPoisonAfterPanic(zigoErrorForCode("Terminal.PaletteColor", code), t)
 	}
 	return zigoRGBFromRaw(result), nil
 }
 
 // PaletteColor: Read one entry of the 256 color palette.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) PaletteColor(idx uint8) RGB {
-	return zigoMust(te.zigoCheckedPaletteColor(idx))
+func (t *Terminal) PaletteColor(idx uint8) RGB {
+	return zigoMust(t.zigoCheckedPaletteColor(idx))
 }
 
 // zigoCheckedSetPaletteColor is the checked form of SetPaletteColor, which a plugin replaced.
-func (te *Terminal) zigoCheckedSetPaletteColor(idx uint8, rgb RGB) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetPaletteColor receiver", te)
+func (t *Terminal) zigoCheckedSetPaletteColor(idx uint8, rgb RGB) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetPaletteColor receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSetPaletteColor(ptr, idx, zigoRGBToRaw(rgb))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetPaletteColor", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetPaletteColor", code), t)
 	}
 	return nil
 }
 
 // SetPaletteColor: Override one palette entry, as OSC 4 does.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) SetPaletteColor(idx uint8, rgb RGB) {
-	if err := te.zigoCheckedSetPaletteColor(idx, rgb); err != nil {
+func (t *Terminal) SetPaletteColor(idx uint8, rgb RGB) {
+	if err := t.zigoCheckedSetPaletteColor(idx, rgb); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedResetPaletteColor is the checked form of ResetPaletteColor, which a plugin replaced.
-func (te *Terminal) zigoCheckedResetPaletteColor(idx uint8) error {
-	ptr, err := zigoCheckedPointer("Terminal.ResetPaletteColor receiver", te)
+func (t *Terminal) zigoCheckedResetPaletteColor(idx uint8) error {
+	ptr, err := zigoCheckedPointer("Terminal.ResetPaletteColor receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalResetPaletteColor(ptr, idx)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetPaletteColor", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetPaletteColor", code), t)
 	}
 	return nil
 }
 
 // ResetPaletteColor: Drop the override on one palette entry, restoring its default.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) ResetPaletteColor(idx uint8) {
-	if err := te.zigoCheckedResetPaletteColor(idx); err != nil {
+func (t *Terminal) ResetPaletteColor(idx uint8) {
+	if err := t.zigoCheckedResetPaletteColor(idx); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedResetPalette is the checked form of ResetPalette, which a plugin replaced.
-func (te *Terminal) zigoCheckedResetPalette() error {
-	ptr, err := zigoCheckedPointer("Terminal.ResetPalette receiver", te)
+func (t *Terminal) zigoCheckedResetPalette() error {
+	ptr, err := zigoCheckedPointer("Terminal.ResetPalette receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalResetPalette(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetPalette", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetPalette", code), t)
 	}
 	return nil
 }
 
 // ResetPalette: Drop every palette override.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) ResetPalette() {
-	if err := te.zigoCheckedResetPalette(); err != nil {
+func (t *Terminal) ResetPalette() {
+	if err := t.zigoCheckedResetPalette(); err != nil {
 		panic(err)
 	}
 }
@@ -3086,51 +3271,51 @@ func (te *Terminal) ResetPalette() {
 // value `resetPaletteColor` will later restore that moves. ghostty only
 // offers this a whole palette at a time, so the single entry is edited into a
 // copy of the current defaults.
-func (te *Terminal) SetDefaultPaletteColor(idx uint8, rgb RGB) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetDefaultPaletteColor receiver", te)
+func (t *Terminal) SetDefaultPaletteColor(idx uint8, rgb RGB) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetDefaultPaletteColor receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSetDefaultPaletteColor(ptr, idx, zigoRGBToRaw(rgb))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultPaletteColor", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultPaletteColor", code), t)
 	}
 	return nil
 }
 
 // zigoCheckedResetDefaultPalette is the checked form of ResetDefaultPalette, which a plugin replaced.
-func (te *Terminal) zigoCheckedResetDefaultPalette() error {
-	ptr, err := zigoCheckedPointer("Terminal.ResetDefaultPalette receiver", te)
+func (t *Terminal) zigoCheckedResetDefaultPalette() error {
+	ptr, err := zigoCheckedPointer("Terminal.ResetDefaultPalette receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalResetDefaultPalette(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetDefaultPalette", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetDefaultPalette", code), t)
 	}
 	return nil
 }
 
 // ResetDefaultPalette: Restore the built-in xterm palette as the default, preserving overrides.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) ResetDefaultPalette() {
-	if err := te.zigoCheckedResetDefaultPalette(); err != nil {
+func (t *Terminal) ResetDefaultPalette() {
+	if err := t.zigoCheckedResetDefaultPalette(); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedSetDefaultMode is the checked form of SetDefaultMode, which a plugin replaced.
-func (te *Terminal) zigoCheckedSetDefaultMode(mode Mode, value bool) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetDefaultMode receiver", te)
+func (t *Terminal) zigoCheckedSetDefaultMode(mode Mode, value bool) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetDefaultMode receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSetDefaultMode(ptr, uint16(mode), zigoBoolToUint8(value))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultMode", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultMode", code), t)
 	}
 	return nil
 }
@@ -3138,44 +3323,44 @@ func (te *Terminal) zigoCheckedSetDefaultMode(mode Mode, value bool) error {
 // SetDefaultMode: Set a mode and make that value the one `resetModes` and `fullReset` return
 // to.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) SetDefaultMode(mode Mode, value bool) {
-	if err := te.zigoCheckedSetDefaultMode(mode, value); err != nil {
+func (t *Terminal) SetDefaultMode(mode Mode, value bool) {
+	if err := t.zigoCheckedSetDefaultMode(mode, value); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedResetModes is the checked form of ResetModes, which a plugin replaced.
-func (te *Terminal) zigoCheckedResetModes() error {
-	ptr, err := zigoCheckedPointer("Terminal.ResetModes receiver", te)
+func (t *Terminal) zigoCheckedResetModes() error {
+	ptr, err := zigoCheckedPointer("Terminal.ResetModes receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalResetModes(ptr)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetModes", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ResetModes", code), t)
 	}
 	return nil
 }
 
 // ResetModes: Return every mode to its default and discard the XTSAVE slots.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) ResetModes() {
-	if err := te.zigoCheckedResetModes(); err != nil {
+func (t *Terminal) ResetModes() {
+	if err := t.zigoCheckedResetModes(); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedSaveMode is the checked form of SaveMode, which a plugin replaced.
-func (te *Terminal) zigoCheckedSaveMode(mode Mode) error {
-	ptr, err := zigoCheckedPointer("Terminal.SaveMode receiver", te)
+func (t *Terminal) zigoCheckedSaveMode(mode Mode) error {
+	ptr, err := zigoCheckedPointer("Terminal.SaveMode receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSaveMode(ptr, uint16(mode))
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SaveMode", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SaveMode", code), t)
 	}
 	return nil
 }
@@ -3185,22 +3370,22 @@ func (te *Terminal) zigoCheckedSaveMode(mode Mode) error {
 // There is one slot per mode, so saving twice without restoring loses the
 // first value.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) SaveMode(mode Mode) {
-	if err := te.zigoCheckedSaveMode(mode); err != nil {
+func (t *Terminal) SaveMode(mode Mode) {
+	if err := t.zigoCheckedSaveMode(mode); err != nil {
 		panic(err)
 	}
 }
 
 // zigoCheckedRestoreMode is the checked form of RestoreMode, which a plugin replaced.
-func (te *Terminal) zigoCheckedRestoreMode(mode Mode) (bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.RestoreMode receiver", te)
+func (t *Terminal) zigoCheckedRestoreMode(mode Mode) (bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.RestoreMode receiver", t)
 	if err != nil {
 		return false, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalRestoreMode(ptr, uint16(mode))
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.RestoreMode", code), te)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.RestoreMode", code), t)
 	}
 	return result != 0, nil
 }
@@ -3210,28 +3395,28 @@ func (te *Terminal) zigoCheckedRestoreMode(mode Mode) (bool, error) {
 // A mode that was never saved restores to false, which is the slot's initial
 // state rather than the mode's default.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) RestoreMode(mode Mode) bool {
-	return zigoMust(te.zigoCheckedRestoreMode(mode))
+func (t *Terminal) RestoreMode(mode Mode) bool {
+	return zigoMust(t.zigoCheckedRestoreMode(mode))
 }
 
 // zigoCheckedSetKittyGraphicsSizeLimit is the checked form of SetKittyGraphicsSizeLimit, which a plugin replaced.
-func (te *Terminal) zigoCheckedSetKittyGraphicsSizeLimit(limit uint) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetKittyGraphicsSizeLimit receiver", te)
+func (t *Terminal) zigoCheckedSetKittyGraphicsSizeLimit(limit uint) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetKittyGraphicsSizeLimit receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	code := raw.TerminalSetKittyGraphicsSizeLimit(ptr, limit)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetKittyGraphicsSizeLimit", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetKittyGraphicsSizeLimit", code), t)
 	}
 	return nil
 }
 
 // SetKittyGraphicsSizeLimit: Set the storage size limit for Kitty graphics across all screens.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) SetKittyGraphicsSizeLimit(limit uint) {
-	if err := te.zigoCheckedSetKittyGraphicsSizeLimit(limit); err != nil {
+func (t *Terminal) SetKittyGraphicsSizeLimit(limit uint) {
+	if err := t.zigoCheckedSetKittyGraphicsSizeLimit(limit); err != nil {
 		panic(err)
 	}
 }
@@ -3249,37 +3434,37 @@ func (te *Terminal) SetKittyGraphicsSizeLimit(limit uint) {
 // and the previous one released. The last copy is released by nothing: it
 // lives as long as the terminal, and ghostty's `deinit` does not know it is
 // owned.
-func (te *Terminal) SetKittyGraphicsLoadingLimits(file bool, tempDir string, sharedMemory bool) error {
-	ptr, err := zigoCheckedPointer("Terminal.SetKittyGraphicsLoadingLimits receiver", te)
+func (t *Terminal) SetKittyGraphicsLoadingLimits(mediums KittyGraphicsMediums, tempDir string) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetKittyGraphicsLoadingLimits receiver", t)
 	if err != nil {
 		return err
 	}
-	defer te.zigoRelease()
-	code := raw.TerminalSetKittyGraphicsLoadingLimits(ptr, zigoBoolToUint8(file), tempDir, zigoBoolToUint8(sharedMemory))
+	defer t.zigoRelease()
+	code := raw.TerminalSetKittyGraphicsLoadingLimits(ptr, zigoKittyGraphicsMediumsToRaw(mediums), tempDir)
 	if code != 0 {
-		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetKittyGraphicsLoadingLimits", code), te)
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetKittyGraphicsLoadingLimits", code), t)
 	}
 	return nil
 }
 
 // zigoCheckedKittyImage is the checked form of KittyImage, which a plugin replaced.
-func (te *Terminal) zigoCheckedKittyImage(imageID uint32) (KittyImage, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.KittyImage receiver", te)
+func (t *Terminal) zigoCheckedKittyImage(imageID uint32) (KittyImage, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.KittyImage receiver", t)
 	if err != nil {
 		return KittyImage{}, false, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, zigoHas, code := raw.TerminalKittyImage(ptr, imageID)
 	if code != 0 {
-		return KittyImage{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.KittyImage", code), te)
+		return KittyImage{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.KittyImage", code), t)
 	}
 	return zigoKittyImageFromRaw(result), zigoHas, nil
 }
 
 // KittyImage: Look up an image on the active screen by id.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) KittyImage(imageID uint32) (KittyImage, bool) {
-	return zigoMustMatch(te.zigoCheckedKittyImage(imageID))
+func (t *Terminal) KittyImage(imageID uint32) (KittyImage, bool) {
+	return zigoMustMatch(t.zigoCheckedKittyImage(imageID))
 }
 
 // KittyImageData: Copy an image's pixels into `dst` and report how many bytes were written,
@@ -3289,29 +3474,29 @@ func (te *Terminal) KittyImage(imageID uint32) (KittyImage, bool) {
 // a PNG, and it is the renderer that decodes it. For an animated image these
 // are the current frame's, which is why the generation stamp moves when the
 // frame does.
-func (te *Terminal) KittyImageData(imageID uint32, dst []byte) (uint, error) {
-	ptr, err := zigoCheckedPointer("Terminal.KittyImageData receiver", te)
+func (t *Terminal) KittyImageData(imageID uint32, dst []byte) (uint, error) {
+	ptr, err := zigoCheckedPointer("Terminal.KittyImageData receiver", t)
 	if err != nil {
 		return 0, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalKittyImageData(ptr, imageID, dst)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.KittyImageData", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.KittyImageData", code), t)
 	}
 	return result, nil
 }
 
 // zigoCheckedKittyAnimationTick is the checked form of KittyAnimationTick, which a plugin replaced.
-func (te *Terminal) zigoCheckedKittyAnimationTick(nowMs uint64) (uint64, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.KittyAnimationTick receiver", te)
+func (t *Terminal) zigoCheckedKittyAnimationTick(nowMs uint64) (uint64, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.KittyAnimationTick receiver", t)
 	if err != nil {
 		return 0, false, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, zigoHas, code := raw.TerminalKittyAnimationTick(ptr, nowMs)
 	if code != 0 {
-		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.KittyAnimationTick", code), te)
+		return 0, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.KittyAnimationTick", code), t)
 	}
 	return result, zigoHas, nil
 }
@@ -3330,120 +3515,120 @@ func (te *Terminal) zigoCheckedKittyAnimationTick(nowMs uint64) (uint64, bool, e
 // Animations only play here: without ticks, an image stays on whatever frame
 // the program last selected.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) KittyAnimationTick(nowMs uint64) (uint64, bool) {
-	return zigoMustMatch(te.zigoCheckedKittyAnimationTick(nowMs))
+func (t *Terminal) KittyAnimationTick(nowMs uint64) (uint64, bool) {
+	return zigoMustMatch(t.zigoCheckedKittyAnimationTick(nowMs))
 }
 
 // zigoCheckedScrollRegion is the checked form of ScrollRegion, which a plugin replaced.
-func (te *Terminal) zigoCheckedScrollRegion() (ScrollRegion, error) {
-	ptr, err := zigoCheckedPointer("Terminal.ScrollRegion receiver", te)
+func (t *Terminal) zigoCheckedScrollRegion() (ScrollRegion, error) {
+	ptr, err := zigoCheckedPointer("Terminal.ScrollRegion receiver", t)
 	if err != nil {
 		return ScrollRegion{}, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalScrollRegion(ptr)
 	if code != 0 {
-		return ScrollRegion{}, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ScrollRegion", code), te)
+		return ScrollRegion{}, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ScrollRegion", code), t)
 	}
 	return zigoScrollRegionFromRaw(result), nil
 }
 
 // ScrollRegion: The current scrolling region.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) ScrollRegion() ScrollRegion {
-	return zigoMust(te.zigoCheckedScrollRegion())
+func (t *Terminal) ScrollRegion() ScrollRegion {
+	return zigoMust(t.zigoCheckedScrollRegion())
 }
 
 // zigoCheckedCharset is the checked form of Charset, which a plugin replaced.
-func (te *Terminal) zigoCheckedCharset(slot CharsetSlot) (Charset, error) {
-	ptr, err := zigoCheckedPointer("Terminal.Charset receiver", te)
+func (t *Terminal) zigoCheckedCharset(slot CharsetSlot) (Charset, error) {
+	ptr, err := zigoCheckedPointer("Terminal.Charset receiver", t)
 	if err != nil {
 		return 0, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalCharset(ptr, uint8(slot))
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Charset", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.Charset", code), t)
 	}
 	return Charset(result), nil
 }
 
 // Charset: The character set configured in one slot, as SCS set it.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) Charset(slot CharsetSlot) Charset {
-	return zigoMust(te.zigoCheckedCharset(slot))
+func (t *Terminal) Charset(slot CharsetSlot) Charset {
+	return zigoMust(t.zigoCheckedCharset(slot))
 }
 
 // zigoCheckedMouseTracking is the checked form of MouseTracking, which a plugin replaced.
-func (te *Terminal) zigoCheckedMouseTracking() (MouseTracking, error) {
-	ptr, err := zigoCheckedPointer("Terminal.MouseTracking receiver", te)
+func (t *Terminal) zigoCheckedMouseTracking() (MouseTracking, error) {
+	ptr, err := zigoCheckedPointer("Terminal.MouseTracking receiver", t)
 	if err != nil {
 		return 0, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalMouseTracking(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.MouseTracking", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.MouseTracking", code), t)
 	}
 	return MouseTracking(result), nil
 }
 
 // MouseTracking: The tracking mode currently in effect.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) MouseTracking() MouseTracking {
-	return zigoMust(te.zigoCheckedMouseTracking())
+func (t *Terminal) MouseTracking() MouseTracking {
+	return zigoMust(t.zigoCheckedMouseTracking())
 }
 
 // zigoCheckedMouseTrackingSendsMotion is the checked form of MouseTrackingSendsMotion, which a plugin replaced.
-func (te *Terminal) zigoCheckedMouseTrackingSendsMotion() (bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.MouseTrackingSendsMotion receiver", te)
+func (t *Terminal) zigoCheckedMouseTrackingSendsMotion() (bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.MouseTrackingSendsMotion receiver", t)
 	if err != nil {
 		return false, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalMouseTrackingSendsMotion(ptr)
 	if code != 0 {
-		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.MouseTrackingSendsMotion", code), te)
+		return false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.MouseTrackingSendsMotion", code), t)
 	}
 	return result != 0, nil
 }
 
 // MouseTrackingSendsMotion: Whether the current tracking mode reports motion as well as buttons.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) MouseTrackingSendsMotion() bool {
-	return zigoMust(te.zigoCheckedMouseTrackingSendsMotion())
+func (t *Terminal) MouseTrackingSendsMotion() bool {
+	return zigoMust(t.zigoCheckedMouseTrackingSendsMotion())
 }
 
 // zigoCheckedMouseReportFormat is the checked form of MouseReportFormat, which a plugin replaced.
-func (te *Terminal) zigoCheckedMouseReportFormat() (MouseReportFormat, error) {
-	ptr, err := zigoCheckedPointer("Terminal.MouseReportFormat receiver", te)
+func (t *Terminal) zigoCheckedMouseReportFormat() (MouseReportFormat, error) {
+	ptr, err := zigoCheckedPointer("Terminal.MouseReportFormat receiver", t)
 	if err != nil {
 		return 0, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalMouseReportFormat(ptr)
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.MouseReportFormat", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.MouseReportFormat", code), t)
 	}
 	return MouseReportFormat(result), nil
 }
 
 // MouseReportFormat: The report encoding currently in effect.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) MouseReportFormat() MouseReportFormat {
-	return zigoMust(te.zigoCheckedMouseReportFormat())
+func (t *Terminal) MouseReportFormat() MouseReportFormat {
+	return zigoMust(t.zigoCheckedMouseReportFormat())
 }
 
 // zigoCheckedModeReport is the checked form of ModeReport, which a plugin replaced.
-func (te *Terminal) zigoCheckedModeReport(mode uint16, ansi bool) (ModeReport, error) {
-	ptr, err := zigoCheckedPointer("Terminal.ModeReport receiver", te)
+func (t *Terminal) zigoCheckedModeReport(mode uint16, ansi bool) (ModeReport, error) {
+	ptr, err := zigoCheckedPointer("Terminal.ModeReport receiver", t)
 	if err != nil {
 		return 0, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, code := raw.TerminalModeReport(ptr, mode, zigoBoolToUint8(ansi))
 	if code != 0 {
-		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ModeReport", code), te)
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.ModeReport", code), t)
 	}
 	return ModeReport(result), nil
 }
@@ -3456,20 +3641,64 @@ func (te *Terminal) zigoCheckedModeReport(mode uint16, ansi bool) (ModeReport, e
 // learn whether a number is implemented at all, which an exhaustive enum
 // could never express.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) ModeReport(mode uint16, ansi bool) ModeReport {
-	return zigoMust(te.zigoCheckedModeReport(mode, ansi))
+func (t *Terminal) ModeReport(mode uint16, ansi bool) ModeReport {
+	return zigoMust(t.zigoCheckedModeReport(mode, ansi))
+}
+
+// zigoCheckedRectXtChecksum is the checked form of RectXtChecksum, which a plugin replaced.
+func (t *Terminal) zigoCheckedRectXtChecksum(req XtChecksumRequest) (uint16, error) {
+	ptr, err := zigoCheckedPointer("Terminal.RectXtChecksum receiver", t)
+	if err != nil {
+		return 0, err
+	}
+	defer t.zigoRelease()
+	result, code := raw.TerminalRectXtChecksum(ptr, zigoXtChecksumRequestToRaw(req))
+	if code != 0 {
+		return 0, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.RectXtChecksum", code), t)
+	}
+	return result, nil
+}
+
+// RectXtChecksum: Compute the DECRQCRA checksum of a rectangle of the active area,
+// using the variant selected by XTCHECKSUM.
+// It panics with the typed error it would otherwise return.
+func (t *Terminal) RectXtChecksum(req XtChecksumRequest) uint16 {
+	return zigoMust(t.zigoCheckedRectXtChecksum(req))
+}
+
+// zigoCheckedSetDefaultXtChecksum is the checked form of SetDefaultXtChecksum, which a plugin replaced.
+func (t *Terminal) zigoCheckedSetDefaultXtChecksum(flags XtChecksumFlags) error {
+	ptr, err := zigoCheckedPointer("Terminal.SetDefaultXtChecksum receiver", t)
+	if err != nil {
+		return err
+	}
+	defer t.zigoRelease()
+	code := raw.TerminalSetDefaultXtChecksum(ptr, flags.Backing())
+	if code != 0 {
+		return zigoPoisonAfterPanic(zigoErrorForCode("Terminal.SetDefaultXtChecksum", code), t)
+	}
+	return nil
+}
+
+// SetDefaultXtChecksum: Set the checksum variant restored by RIS and DECSTR. Like
+// `ModeState.setDefault`, this also changes the current variant.
+// It panics with the typed error it would otherwise return.
+func (t *Terminal) SetDefaultXtChecksum(flags XtChecksumFlags) {
+	if err := t.zigoCheckedSetDefaultXtChecksum(flags); err != nil {
+		panic(err)
+	}
 }
 
 // zigoCheckedCellAt is the checked form of CellAt, which a plugin replaced.
-func (te *Terminal) zigoCheckedCellAt(tag PointTag, x uint16, y uint32) (RenderCell, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.CellAt receiver", te)
+func (t *Terminal) zigoCheckedCellAt(tag PointTag, x uint16, y uint32) (RenderCell, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.CellAt receiver", t)
 	if err != nil {
 		return RenderCell{}, false, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, zigoHas, code := raw.TerminalCellAt(ptr, uint8(tag), x, y)
 	if code != 0 {
-		return RenderCell{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CellAt", code), te)
+		return RenderCell{}, false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.CellAt", code), t)
 	}
 	return zigoRenderCellFromRaw(result), zigoHas, nil
 }
@@ -3479,22 +3708,22 @@ func (te *Terminal) zigoCheckedCellAt(tag PointTag, x uint16, y uint32) (RenderC
 // that happens once, such as what is under a click; a cell that is read
 // again after the terminal changes wants a `GridRef`.
 // It panics with the typed error it would otherwise return.
-func (te *Terminal) CellAt(tag PointTag, x uint16, y uint32) (RenderCell, bool) {
-	return zigoMustMatch(te.zigoCheckedCellAt(tag, x, y))
+func (t *Terminal) CellAt(tag PointTag, x uint16, y uint32) (RenderCell, bool) {
+	return zigoMustMatch(t.zigoCheckedCellAt(tag, x, y))
 }
 
 // HyperlinkAt: The hyperlink URI of the cell at `x`, `y` of the active screen, or null
 // when the cell is not a link or there is no such cell.
 // The bool result reports whether a value was present; the value before it is zero when it was not.
-func (te *Terminal) HyperlinkAt(tag PointTag, x uint16, y uint32) (string, bool, error) {
-	ptr, err := zigoCheckedPointer("Terminal.HyperlinkAt receiver", te)
+func (t *Terminal) HyperlinkAt(tag PointTag, x uint16, y uint32) (string, bool, error) {
+	ptr, err := zigoCheckedPointer("Terminal.HyperlinkAt receiver", t)
 	if err != nil {
 		return "", false, err
 	}
-	defer te.zigoRelease()
+	defer t.zigoRelease()
 	result, zigoHas, code := raw.TerminalHyperlinkAt(ptr, uint8(tag), x, y)
 	if code != 0 {
-		return "", false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.HyperlinkAt", code), te)
+		return "", false, zigoPoisonAfterPanic(zigoErrorForCode("Terminal.HyperlinkAt", code), t)
 	}
 	return result, zigoHas, nil
 }
@@ -6312,20 +6541,20 @@ func GraphemeWidth(cps []rune) (uint8, error) {
 	return raw.GraphemeWidth(zigoRunesToUint32(cps)), nil
 }
 
-// SgrAttributeCount: How many attributes a CSI SGR parameter list yields, so a caller knows how
+// SGRAttributeCount: How many attributes a CSI SGR parameter list yields, so a caller knows how
 // many indices `sgrAttributeAt` answers. An empty list is the SGR reset, so
 // it yields one. Refuses a list longer than ghostty's CSI parser records.
 //
 // See `sgrAttributeAt` for what `colon_mask` means.
-func SgrAttributeCount(params []uint16, colonMask uint32) (uint, error) {
+func SGRAttributeCount(params []uint16, colonMask uint32) (uint, error) {
 	result, code := raw.SgrAttributeCount(params, colonMask)
 	if code != 0 {
-		return 0, zigoErrorForCode("SgrAttributeCount", code)
+		return 0, zigoErrorForCode("SGRAttributeCount", code)
 	}
 	return result, nil
 }
 
-// SgrAttributeAt: The `index`th attribute a CSI SGR parameter list yields, as the same
+// SGRAttributeAt: The `index`th attribute a CSI SGR parameter list yields, as the same
 // `Attribute` that `setAttribute` takes, so what the parser saw can be applied
 // as it is.
 //
@@ -6348,10 +6577,10 @@ func SgrAttributeCount(params []uint16, colonMask uint32) (uint, error) {
 // slice element across the boundary. The parse is a linear pass over at most
 // `MAX_SGR_PARAMS` integers, so re-running it per index costs nothing.
 // A native panic is returned as *NativePanicError.
-func SgrAttributeAt(params []uint16, colonMask uint32, index uint) (Attribute, error) {
+func SGRAttributeAt(params []uint16, colonMask uint32, index uint) (Attribute, error) {
 	result, code := raw.SgrAttributeAt(params, colonMask, index)
 	if code != 0 {
-		return Attribute{}, zigoErrorForCode("SgrAttributeAt", code)
+		return Attribute{}, zigoErrorForCode("SGRAttributeAt", code)
 	}
 	return zigoAttributeFromRaw(result), nil
 }
@@ -6379,5 +6608,5 @@ type BuildInfo struct {
 
 // GetBuildInfo identifies the bundled native build. Values are fixed at generation time.
 func GetBuildInfo() BuildInfo {
-	return BuildInfo{GhosttyRevision: "0fe113a35370667d8c4d6970ee5c1704825dce6b", ZigoVersion: "0.32.2", Optimize: "ReleaseSafe", SIMD: true, KittyGraphics: true, TmuxControlMode: false}
+	return BuildInfo{GhosttyRevision: "0fa3d577a5614150ff8e2c152de5fb9d5c6d2dec", ZigoVersion: "0.32.2", Optimize: "ReleaseSafe", SIMD: true, KittyGraphics: true, TmuxControlMode: false}
 }
